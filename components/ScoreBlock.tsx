@@ -12,8 +12,10 @@ import { StarIcon } from "./icons";
 export interface ScoreBlockProps {
   /** Correct answers. */
   score: number;
-  /** Cards in the round: the score reads "7 of 10" and the best "Best 9 / 10". */
-  total: number;
+  /** What follows the score in the small style: "of 10", "cards", "of 17". Left out: no unit. */
+  unit?: string;
+  /** How a record reads in the comparison: "9 / 10", "21 cards", "12". */
+  best: (record: number) => string;
   comparison: Comparison;
   /** The label over the score. Defaults to "Your score". */
   label?: string;
@@ -56,7 +58,7 @@ function NewBestStamp({ animate }: { animate: boolean }) {
   );
 }
 
-function ComparisonLines({ comparison, total, animate }: { comparison: Comparison; total: number; animate: boolean }) {
+function ComparisonLines({ comparison, best, animate }: { comparison: Comparison; best: (record: number) => string; animate: boolean }) {
   switch (comparison.kind) {
     case "first":
       return <b className={EMPHASIS}>First round on this route</b>;
@@ -65,7 +67,7 @@ function ComparisonLines({ comparison, total, animate }: { comparison: Compariso
         <>
           <NewBestStamp animate={animate} />
           <span className={`${BEST} mt-(--space-10)`}>
-            Previous best {comparison.previousBest} / {total}
+            Previous best {best(comparison.previousBest)}
           </span>
         </>
       );
@@ -74,7 +76,7 @@ function ComparisonLines({ comparison, total, animate }: { comparison: Compariso
         <>
           <b className={EMPHASIS}>Equals your best</b>
           <span className={`${BEST} mt-(--space-2)`}>
-            Best {comparison.best} / {total}
+            Best {best(comparison.best)}
           </span>
         </>
       );
@@ -83,14 +85,14 @@ function ComparisonLines({ comparison, total, animate }: { comparison: Compariso
         <>
           <b className={EMPHASIS}>{comparison.by} short of your best</b>
           <span className={`${BEST} mt-(--space-2)`}>
-            Best {comparison.best} / {total}
+            Best {best(comparison.best)}
           </span>
         </>
       );
   }
 }
 
-export function ScoreBlock({ score, total, comparison, label = "Your score", animate = false }: ScoreBlockProps) {
+export function ScoreBlock({ score, unit, best, comparison, label = "Your score", animate = false }: ScoreBlockProps) {
   return (
     <div
       data-score-block=""
@@ -99,12 +101,17 @@ export function ScoreBlock({ score, total, comparison, label = "Your score", ani
       <dl className="m-0">
         <dt className={LABEL}>{label}</dt>
         <dd data-score="" className={SCORE}>
-          {score}{" "}
-          <small className="text-[20px] tracking-normal whitespace-nowrap text-(--color-ink-muted)">of {total}</small>
+          {score}
+          {unit === undefined ? null : (
+            <>
+              {" "}
+              <small className="text-[20px] tracking-normal whitespace-nowrap text-(--color-ink-muted)">{unit}</small>
+            </>
+          )}
         </dd>
       </dl>
       <p data-comparison={comparison.kind} className="m-0 flex flex-col items-end pb-(--space-2) text-right">
-        <ComparisonLines comparison={comparison} total={total} animate={animate} />
+        <ComparisonLines comparison={comparison} best={best} animate={animate} />
       </p>
     </div>
   );

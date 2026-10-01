@@ -6,7 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress, recordKey } from "@/src/progress/progress";
-import { DECK, DECK_ID, INDEX, cardByStatement, fakeNetwork, harness, type Harness } from "./fixtures";
+import { DECK, DECK_ID, INDEX, cardByStatement, fakeNetwork, harness, memoryStorage, pendingFor, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -217,5 +217,44 @@ describe("PlayScreen: a deck update between rounds", () => {
     // Every SEC card that is left has been seen once or twice; the record of the route survives the update.
     expect(Object.keys(progress.cards).sort()).toEqual(cards.filter((card) => card.section === "SEC").map((card) => card.id).sort());
     expect(progress.records[recordKey(ROUTE, "classic")]).toBe(10);
+  });
+});
+
+describe("PlayScreen: the result of a Streak round", () => {
+  it("a record stored before the deck changed still counts", async () => {
+    // The player's record was set on the first version of the deck; the network now serves a second
+    // version without one SEC card. The stored record is kept as it is and the round compares with it.
+    const records = { [recordKey(ROUTE, "streak")]: 2 };
+    const local = memoryStorage({
+      [PROGRESS_KEY]: JSON.stringify({ version: 1, cards: {}, records, last: null }),
+      [`truthy.deck.${DECK_ID}`]: JSON.stringify(DECK),
+    });
+    const h = harness(pendingFor("streak"), local);
+    const cards = DECK.cards.slice(1);
+    const index = structuredClone(INDEX);
+    const entry = index.areas[0]?.platforms[0]?.decks[0];
+    if (!entry) throw new Error("the fixture index has no deck");
+    entry.hash = "hash-2";
+    entry.cardCount = cards.length;
+    entry.sections = entry.sections.map((section) => (section.id === "SEC" ? { ...section, cardCount: 11 } : section));
+    const network = fakeNetwork({ "/decks/index.json": index, [`/decks/${DECK_ID}.json`]: { ...DECK, hash: "hash-2", cards } });
+    h.services.fetcher = network.fetcher;
+
+    await playRound(h, [true, true, false]);
+
+    expect(network.calls).toContain(`/decks/${DECK_ID}.json?v=hash-2`);
+    expect(document.querySelector("[data-comparison]")?.textContent).toBe("Equals your bestBest 2");
+    expect(document.querySelector("[data-new-best]")).toBeNull();
+    expect(document.querySelector("[data-score]")?.textContent).toBe("2");
+    expect(parseProgress(h.local.getItem(PROGRESS_KEY)).records[recordKey(ROUTE, "streak")]).toBe(2);
+  });
+
+  it("Play again after a Streak result deals a new Streak round", async () => {
+    const h = harness(pendingFor("streak"));
+    await playRound(h, [true, true, false]);
+    expect(screen.getByRole("img", { name: "Streak over on card 3. 2 correct in a row. Card 3 was wrong." })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await screen.findByRole("button", { name: "True" });
+    expect(screen.getByRole("img", { name: "Streak of 0 correct answers. Your best on this route is 2." })).toBeTruthy();
   });
 });

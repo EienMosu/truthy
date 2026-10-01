@@ -1,23 +1,25 @@
 "use client";
 
-// The result of a finished Classic round (spec sections 6, 7 and 9; mockup result-classic): the completed
-// flight path, the ticket with the score block and the comparison with the record for this route and
-// mode, the missed cards with their explanations, and two actions: play the same route and mode again,
-// or choose another route. Showing it records the round in the progress on the device, exactly once.
+// The result of a finished round in any mode (spec sections 6, 7 and 9; mockups result-classic, result-streak,
+// result-lives, result-timed): the completed flight path, the ticket with the score block and the comparison
+// with the record for this route and mode, the missed cards with their explanations, and two actions: play
+// the same route and mode again, or choose another route. What follows the mode (the three fields, the score
+// and its unit, the header's words) comes from resultCopy. Showing it records the round in the progress on
+// the device, exactly once.
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { BoardingPass } from "@/components/BoardingPass";
-import { FlightPath } from "@/components/FlightPath";
+import { FlightPath, Num } from "@/components/FlightPath";
 import { MissedCards, missedCards } from "@/components/MissedCards";
 import { PillButton } from "@/components/PillButton";
 import { QuietButton } from "@/components/QuietButton";
 import { RoundButton } from "@/components/RoundButton";
 import { ScoreBlock } from "@/components/ScoreBlock";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
-import { pad2 } from "@/components/format";
 import { CloseIcon, ReplayIcon, RouteIcon } from "@/components/icons";
 import { summarise, type RoundState } from "@/src/engine/round";
 import { applyResult, compareWithBest, type ApplyOutcome } from "@/src/progress/progress";
 import type { ProgressStore } from "@/src/progress/local";
+import { resultCopy } from "./resultCopy";
 import type { TicketInfo } from "./useRound";
 
 export interface ResultViewProps {
@@ -80,7 +82,7 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
   const outcome = useRecordedRound(round, progressStore);
   const result = summarise(round);
   const comparison = compareWithBest(result.score, outcome.previousBest);
-  const total = round.cards.length;
+  const copy = resultCopy(result, ticket.modeLabel, round.cards.length, outcome.previousBest);
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   // The ticket jolts as the New best stamp lands, so the jolt starts after the first frame.
@@ -98,7 +100,19 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
         <RoundButton label="Close results" onClick={onHome}>
           <CloseIcon />
         </RoundButton>
-        <FlightPath variant="completed" total={total} results={round.answers.map((answer) => answer.correct)} />
+        <FlightPath
+          variant="completed"
+          total={copy.marks}
+          results={round.answers.map((answer) => answer.correct)}
+          progress={
+            <>
+              <Num>{copy.ended}</Num>
+              {copy.endedDetail}
+            </>
+          }
+          label={copy.label}
+          ring={copy.ring}
+        />
       </header>
       <section aria-labelledby={headingId} className="relative mt-(--space-12) min-h-0 flex-1">
         <h1 id={headingId} ref={headingRef} tabIndex={-1} className="sr-only">
@@ -109,15 +123,18 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
             className="grid min-h-full grid-rows-[max-content_minmax(var(--size-lower),1fr)]"
             from={{ code: ticket.deckCode, name: ticket.deckName }}
             to={{ code: ticket.sectionCode, name: ticket.sectionName }}
-            fields={[
-              { label: "Class", value: ticket.modeLabel },
-              { label: "Cards", value: `${pad2(result.total)} / ${pad2(total)}` },
-              { label: "Missed", value: pad2(result.missed.length) },
-            ]}
+            fields={copy.fields}
             jolt={landed && comparison.kind === "new-best"}
             lower={<MissedCards missed={missedCards(round.answers)} className="contain-size" />}
           >
-            <ScoreBlock score={result.score} total={total} comparison={comparison} animate />
+            <ScoreBlock
+              score={result.score}
+              label={copy.scoreLabel}
+              unit={copy.unit}
+              best={copy.best}
+              comparison={comparison}
+              animate
+            />
           </BoardingPass>
         </div>
       </section>

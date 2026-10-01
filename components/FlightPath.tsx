@@ -26,8 +26,15 @@ export interface RoundFlightPathProps {
 /** On the result screen: the whole route flown, every card resolved, no plane ("Arrived · 10 of 10"). */
 export interface CompletedFlightPathProps {
   variant: "completed";
+  /** Marks on the route: the cards dealt (Classic) or the cards answered (the other modes). */
   total: number;
   results: readonly boolean[];
+  /** Left of the label row. Default: Arrived · {results.length} of {total}. */
+  progress?: ReactNode;
+  /** The accessible name. Default: completedLabel(total, results). */
+  label?: string;
+  /** Index (from 0) of a card to ring (Streak: where the previous best was reached). */
+  ring?: number;
   className?: string;
 }
 
@@ -119,6 +126,16 @@ export function completedLabel(total: number, results: readonly boolean[]): stri
 }
 
 const MARK_STROKE = 1.8;
+
+/**
+ * The scale of the marks on a completed route (1 is a circle of radius 7 and a square of 13): full size up
+ * to 10 cards, 6/7 up to 17, then as large as keeps neighbours apart (35% of the 264 wide route per gap).
+ */
+export function completedScale(cards: number): number {
+  if (cards <= 10) return 1;
+  if (cards <= 17) return 6 / 7;
+  return Math.min(6, (0.35 * 264) / (cards - 1)) / 7;
+}
 
 export interface MarkProps {
   verdict: "correct" | "wrong";
@@ -240,42 +257,88 @@ export function Num({ children }: { children: ReactNode }) {
   return <b className="font-(--font-weight-mono-semibold)">{children}</b>;
 }
 
+function CompletedMarks({ results, total, ring }: { results: readonly boolean[]; total: number; ring: number | undefined }) {
+  const scale = completedScale(total);
+  // A mark too small to carry its tick or its x is drawn plain.
+  const plainCorrect = 7 * scale < 5;
+  const plainWrong = 13 * scale < 6;
+  const ringAt = ring === undefined || ring < 0 || ring >= total ? null : pointAt(waypointT(ring, total));
+  return (
+    <>
+      {results.slice(0, total).map((correct, i) => (
+        <Mark
+          key={i}
+          verdict={correct ? "correct" : "wrong"}
+          at={pointAt(waypointT(i, total))}
+          scale={scale}
+          plain={correct ? plainCorrect : plainWrong}
+        />
+      ))}
+      {ringAt === null ? null : (
+        <circle
+          data-ring="reached"
+          cx={ringAt.x}
+          cy={ringAt.y}
+          r={round2(7 * scale + 3.5)}
+          fill="none"
+          className="stroke-(--color-ink)"
+          strokeWidth="1.4"
+        />
+      )}
+    </>
+  );
+}
+
 export function FlightPath(props: FlightPathProps) {
   const { total, results, className } = props;
-  const completed = props.variant === "completed";
-  const current = completed ? total - 1 : props.current;
-  const answered = completed ? true : props.answered;
-  const states = waypointStates(total, results, completed ? total : current, answered);
-  const t = completed ? 1 : waypointT(current, total);
   const correct = results.filter(Boolean).length;
   const wrong = results.length - correct;
+  const tally = (
+    <>
+      {correct} correct · {wrong} wrong
+    </>
+  );
+
+  if (props.variant === "completed") {
+    return (
+      <PathFrame
+        label={props.label ?? completedLabel(total, results)}
+        className={className}
+        progress={
+          props.progress ?? (
+            <>
+              <Num>Arrived</Num> · {results.length} of {total}
+            </>
+          )
+        }
+        tally={tally}
+      >
+        <RouteLine flownTo={1} />
+        <CompletedMarks results={results} total={total} ring={props.ring} />
+      </PathFrame>
+    );
+  }
+
+  const { current, answered } = props;
+  const states = waypointStates(total, results, current, answered);
+  const t = waypointT(current, total);
 
   return (
     <PathFrame
-      label={completed ? completedLabel(total, results) : flightPathLabel(total, results, current)}
+      label={flightPathLabel(total, results, current)}
       className={className}
       progress={
-        completed ? (
-          <>
-            <Num>Arrived</Num> · {results.length} of {total}
-          </>
-        ) : (
-          <>
-            Card <Num>{current + 1}</Num> of {total}
-          </>
-        )
-      }
-      tally={
         <>
-          {correct} correct · {wrong} wrong
+          Card <Num>{current + 1}</Num> of {total}
         </>
       }
+      tally={tally}
     >
       <RouteLine flownTo={t} />
       {states.map((state, i) => (
-        <Waypoint key={i} state={state} at={pointAt(waypointT(i, total))} isLast={i === total - 1} isCurrent={!completed && i === current} />
+        <Waypoint key={i} state={state} at={pointAt(waypointT(i, total))} isLast={i === total - 1} isCurrent={i === current} />
       ))}
-      {completed ? null : <Plane at={pointAt(t)} heading={headingAt(t)} hidden={answered} />}
+      <Plane at={pointAt(t)} heading={headingAt(t)} hidden={answered} />
     </PathFrame>
   );
 }

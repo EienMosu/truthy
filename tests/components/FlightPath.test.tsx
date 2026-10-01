@@ -5,6 +5,7 @@ import {
   FlightPath,
   Mark,
   completedLabel,
+  completedScale,
   flightPathLabel,
   flownPath,
   headingAt,
@@ -135,6 +136,80 @@ describe("FlightPath, completed (result screens)", () => {
     const { container } = render(<FlightPath variant="completed" total={10} results={results} />);
     expect(container.querySelector("[data-progress]")?.textContent).toBe("Arrived · 10 of 10");
     expect(container.querySelector("[data-tally]")?.textContent).toBe("7 correct · 3 wrong");
+  });
+
+  it("scales the marks so that they never touch", () => {
+    const expected: [number, number][] = [
+      [10, 7],
+      [11, 6],
+      [14, 6],
+      [17, 6],
+      [18, 5.435],
+      [21, 4.62],
+      [60, 1.566],
+    ];
+    for (const [cards, radius] of expected) expect(7 * completedScale(cards)).toBeCloseTo(radius, 2);
+  });
+
+  it("drops the ticks of small marks and keeps the x while it fits", () => {
+    const wrongOn = (n: number, ...numbers: number[]) => Array.from({ length: n }, (_, i) => !numbers.includes(i + 1));
+    const small = render(<FlightPath variant="completed" total={21} results={wrongOn(21, 6, 15, 21)} />);
+    const correct = [...small.container.querySelectorAll('[data-waypoint="correct"]')];
+    const wrong = [...small.container.querySelectorAll('[data-waypoint="wrong"]')];
+    expect(correct).toHaveLength(18);
+    expect(wrong).toHaveLength(3);
+    for (const mark of correct) expect(mark.querySelector("path")).toBeNull();
+    for (const mark of wrong) expect(mark.querySelector("path")).not.toBeNull();
+    cleanup();
+    const larger = render(<FlightPath variant="completed" total={14} results={wrongOn(14, 14)} />);
+    for (const mark of larger.container.querySelectorAll("[data-waypoint]")) expect(mark.querySelector("path")).not.toBeNull();
+    cleanup();
+    const tiny = render(<FlightPath variant="completed" total={60} results={wrongOn(60, 7)} />);
+    expect(tiny.container.querySelector('[data-waypoint="wrong"] path')).toBeNull();
+  });
+
+  it("rings one card when asked", () => {
+    const fourteen = Array.from({ length: 14 }, (_, i) => i !== 13);
+    const { container } = render(<FlightPath variant="completed" total={14} results={fourteen} ring={11} />);
+    const rings = container.querySelectorAll('[data-ring="reached"]');
+    expect(rings).toHaveLength(1);
+    const at = pointAt(waypointT(11, 14));
+    expect(rings[0]?.getAttribute("cx")).toBe(String(at.x));
+    expect(rings[0]?.getAttribute("cy")).toBe(String(at.y));
+    expect(Number(rings[0]?.getAttribute("r"))).toBeCloseTo(7 * completedScale(14) + 3.5, 5);
+    expect(rings[0]?.getAttribute("fill")).toBe("none");
+    expect(render(<FlightPath variant="completed" total={14} results={fourteen} />).container.querySelector("[data-ring]")).toBeNull();
+  });
+
+  it("takes its label row and its name from the caller, and keeps the Classic ones by default", () => {
+    const { container } = render(
+      <FlightPath
+        variant="completed"
+        total={3}
+        results={[true, false, false]}
+        progress={
+          <>
+            <b>Out of lives</b>
+          </>
+        }
+        label="Out of lives after 3 cards."
+      />,
+    );
+    expect(screen.getByRole("img", { name: "Out of lives after 3 cards." })).toBeTruthy();
+    expect(container.querySelector("[data-progress]")?.textContent).toBe("Out of lives");
+    expect(container.querySelector("[data-tally]")?.textContent).toBe("1 correct · 2 wrong");
+    cleanup();
+    const plain = render(<FlightPath variant="completed" total={3} results={[true, false, false]} />);
+    expect(plain.container.querySelector("[data-progress]")?.textContent).toBe("Arrived · 3 of 3");
+    expect(screen.getByRole("img", { name: "Round complete. 3 of 3 cards. 1 correct, 2 wrong: cards 2 and 3." })).toBeTruthy();
+  });
+
+  it("draws an empty solid route for no cards", () => {
+    const { container } = render(<FlightPath variant="completed" total={0} results={[]} />);
+    expect(container.querySelectorAll("[data-waypoint]")).toHaveLength(0);
+    expect(container.querySelector("[data-plane]")).toBeNull();
+    expect(container.querySelectorAll("svg > path")[1]?.getAttribute("d")).toBe("M6 24 Q138 -6 270 24");
+    expect(container.querySelector("[data-progress]")?.textContent).toBe("Arrived · 0 of 0");
   });
 });
 
