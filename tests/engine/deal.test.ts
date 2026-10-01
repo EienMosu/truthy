@@ -362,3 +362,72 @@ describe("deal: relaxing the constraints when the pool is too small", () => {
     expect(trueCount(dealt)).toBe(7);
   });
 });
+
+function longestRun(dealt: readonly Card[]): number {
+  let longest = 0;
+  let run = 0;
+  dealt.forEach((c, i) => {
+    run = i > 0 && dealt[i - 1]?.answer === c.answer ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  });
+  return longest;
+}
+
+describe("deal: order", () => {
+  it("never puts more than three equal answers in a row (200 seeds)", () => {
+    const pool = cards("c", 20);
+    for (let seed = 0; seed < 200; seed++) {
+      expect(longestRun(deal(pool, {}, createRng(seed), { count: 10 }))).toBeLessThanOrEqual(DEAL.maxRun);
+    }
+  });
+
+  it("keeps runs of at most three when the balance is at its edge (6 True, 4 False)", () => {
+    const pool = [...cards("t", 6, () => true), ...cards("f", 4, () => false)];
+    for (let seed = 0; seed < 200; seed++) {
+      expect(longestRun(deal(pool, {}, createRng(seed), { count: 10 }))).toBeLessThanOrEqual(DEAL.maxRun);
+    }
+  });
+
+  it("keeps runs of at most three even with 7 True and 3 False after relaxing the balance", () => {
+    const pool = cards("c", 10, (i) => i < 7);
+    for (let seed = 0; seed < 200; seed++) {
+      expect(longestRun(deal(pool, {}, createRng(seed), { count: 10 }))).toBeLessThanOrEqual(DEAL.maxRun);
+    }
+  });
+
+  it("makes the longest run as short as it can be when three is impossible: 9 True and 1 False give at most 5", () => {
+    const pool = cards("c", 10, (i) => i < 9);
+    for (let seed = 0; seed < 100; seed++) {
+      expect(longestRun(deal(pool, {}, createRng(seed), { count: 10 }))).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it("keeps runs of at most three over a long deal of twenty", () => {
+    const pool = cards("c", 40);
+    for (let seed = 0; seed < 100; seed++) {
+      expect(longestRun(deal(pool, {}, createRng(seed), { count: 20 }))).toBeLessThanOrEqual(DEAL.maxRun);
+    }
+  });
+
+  it("shuffles: missed cards are not always dealt first", () => {
+    const wrong = cards("m", 3);
+    const unseen = cards("u", 20);
+    const history: History = { m1: missed(1), m2: missed(2), m3: missed(3) };
+    const firstIds = new Set(
+      Array.from({ length: 30 }, (_, seed) => deal([...wrong, ...unseen], history, createRng(seed), { count: 10 })[0]?.id),
+    );
+    expect([...firstIds].some((id) => id?.startsWith("u"))).toBe(true);
+  });
+
+  it("varies the answer pattern between seeds", () => {
+    const pool = cards("c", 20);
+    const patterns = new Set(
+      Array.from({ length: 30 }, (_, seed) =>
+        deal(pool, {}, createRng(seed), { count: 10 })
+          .map((c) => (c.answer ? "T" : "F"))
+          .join(""),
+      ),
+    );
+    expect(patterns.size).toBeGreaterThan(10);
+  });
+});

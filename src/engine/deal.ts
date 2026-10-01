@@ -23,7 +23,8 @@ export function deal(pool: readonly Card[], history: History, rng: Rng, options:
   const size = dealSize(options.count, cards.length);
   if (size === 0) return [];
   const ranking = rankByPriority(cards, history, rng, size);
-  return choose(ranking, size, options.avoid ?? []);
+  const chosen = choose(ranking, size, options.avoid ?? []);
+  return arrange(chosen, rng);
 }
 
 // The first card with each id wins, so a card can never be dealt twice.
@@ -224,4 +225,68 @@ function trueCount(cards: readonly Card[]): number {
 // so a full deal picked under this rule always lands inside the balance.
 function balanceAllows(answer: boolean, trues: number, falses: number, size: number, balance: Balance): boolean {
   return answer ? trues < balance.maxTrue : falses < size - balance.minTrue;
+}
+
+// Puts the chosen cards in a random order with no run of equal answers longer than the run limit.
+// Position by position, it draws True or False in proportion to how many of each are left, among the
+// answers that still allow the rest to be placed; then it takes the next card of that answer.
+function arrange(chosen: readonly Card[], rng: Rng): Card[] {
+  const trues = shuffle(chosen.filter((card) => card.answer), rng);
+  const falses = shuffle(chosen.filter((card) => !card.answer), rng);
+  const limit = runLimit(trues.length, falses.length);
+  const canPlace = placementCheck(limit);
+  const order: Card[] = [];
+  let last: boolean | null = null;
+  let run = 0;
+
+  while (trues.length + falses.length > 0) {
+    const allowed = [true, false].filter((answer) => {
+      const left = answer ? trues.length : falses.length;
+      if (left === 0 || (answer === last && run >= limit)) return false;
+      const nextRun = answer === last ? run + 1 : 1;
+      return canPlace(trues.length - (answer ? 1 : 0), falses.length - (answer ? 0 : 1), answer, nextRun);
+    });
+    const answer = pickAnswer(allowed, trues.length, falses.length, rng);
+    const card = answer ? trues.shift() : falses.shift();
+    if (card === undefined) break;
+    order.push(card);
+    run = answer === last ? run + 1 : 1;
+    last = answer;
+  }
+  return order;
+}
+
+// The run limit is DEAL.maxRun, unless the answers are so uneven that no order can keep it
+// (all True, or 9 True and 1 False); then it is the shortest longest run that is possible.
+// The majority can be split into at most minority + 1 runs.
+function runLimit(trues: number, falses: number): number {
+  const majority = Math.max(trues, falses);
+  const minority = Math.min(trues, falses);
+  return Math.max(DEAL.maxRun, Math.ceil(majority / (minority + 1)));
+}
+
+// canPlace(t, f, last, run): can t True and f False cards still be placed after a run of `run` cards
+// with answer `last`, without any run passing the limit? Memoised, so a whole deal costs little.
+function placementCheck(limit: number): (t: number, f: number, last: boolean, run: number) => boolean {
+  const memo = new Map<string, boolean>();
+  const canPlace = (t: number, f: number, last: boolean, run: number): boolean => {
+    if (t === 0 && f === 0) return true;
+    const key = `${t},${f},${last},${run}`;
+    const known = memo.get(key);
+    if (known !== undefined) return known;
+    const result =
+      (t > 0 && (last !== true || run < limit) && canPlace(t - 1, f, true, last === true ? run + 1 : 1)) ||
+      (f > 0 && (last !== false || run < limit) && canPlace(t, f - 1, false, last === false ? run + 1 : 1));
+    memo.set(key, result);
+    return result;
+  };
+  return canPlace;
+}
+
+// Chooses between the allowed answers in proportion to the cards left of each.
+// The run limit always leaves at least one allowed answer; the empty case is only a guard.
+function pickAnswer(allowed: readonly boolean[], trues: number, falses: number, rng: Rng): boolean {
+  if (allowed.length === 0) return trues > 0;
+  if (allowed.length === 1) return allowed[0] === true;
+  return rng() * (trues + falses) < trues;
 }
