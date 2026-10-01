@@ -2,8 +2,8 @@
 
 // The /play screen (spec sections 6, 8, 9 and 10): loads the pending round, shows the boarding pass with
 // the statement and the stub, takes answers from the swipe, the buttons and the keyboard through one
-// function, reveals the answer slip, and leaves with one confirmation. The finished round is task 12's
-// result screen; until then a placeholder marks its place.
+// function, reveals the answer slip, and leaves with one confirmation. A finished round shows its result
+// (ResultView), which records it and offers Play again and another route.
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
@@ -33,6 +33,7 @@ import {
 } from "@/src/engine/round";
 import { applyResult } from "@/src/progress/progress";
 import { LeaveDialog } from "./LeaveDialog";
+import { ResultView } from "./ResultView";
 import { browserPlayServices, useRound, type PlayServices, type TicketInfo } from "./useRound";
 import { useSwipe } from "./useSwipe";
 
@@ -70,7 +71,7 @@ export function verdictText(correct: boolean, answer: boolean): string {
 export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) {
   const router = useRouter();
   const goHome = useCallback(() => router.replace("/"), [router]);
-  const { status, dispatch, retry, progressStore } = useRound(services, goHome);
+  const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome);
 
   // A round in progress with answers that are not in the card history yet. Leaving any other way than the
   // close control (the phone's back gesture, the browser's back button) unmounts this screen; the cleanup
@@ -111,29 +112,12 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   if (status.kind !== "ready" || status.round.abandoned) return <Loading onLeave={goHome} />;
 
   const { round, ticket } = status;
-  // BEGIN finished-round placeholder (task 12 replaces this block)
-  if (round.phase === "finished") return <FinishedPlaceholder round={round} />;
-  // END finished-round placeholder
+  if (round.phase === "finished") {
+    return <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={goHome} />;
+  }
 
   return <RoundView round={round} ticket={ticket} now={services.now} dispatch={dispatch} onLeave={() => leave(round)} />;
 }
-
-// BEGIN FinishedPlaceholder (task 12 deletes this component)
-function FinishedPlaceholder({ round }: { round: RoundState }) {
-  const result = summarise(round);
-  return (
-    <main className="flex min-h-0 flex-1 flex-col items-center justify-center">
-      <SkyBackdrop />
-      <h1 className="m-0 font-(family-name:--type-step-title-family) text-(length:--type-step-title-size) font-(--type-step-title-weight)">
-        Round complete
-      </h1>
-      <p role="status" className="m-0 mt-(--space-8)">
-        {result.score} of {result.total} correct
-      </p>
-    </main>
-  );
-}
-// END FinishedPlaceholder
 
 function Header({ onLeave, closeRef, children }: { onLeave: () => void; closeRef?: Ref<HTMLButtonElement>; children?: ReactNode }) {
   return (

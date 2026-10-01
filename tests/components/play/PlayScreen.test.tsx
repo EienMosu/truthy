@@ -231,13 +231,16 @@ describe("PlayScreen: moving on", () => {
     expect(screen.getByRole("img", { name: /^Card 2 of 10\./ })).toBeTruthy();
   });
 
-  it("finishes the round after the tenth card", async () => {
+  it("finishes the round after the tenth card and shows its result", async () => {
     await start();
     for (let i = 0; i < 9; i++) await answerAndNext(true);
     expect(screen.getByRole("img", { name: /^Card 10 of 10\./ })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "True" }));
     fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
     expect(await screen.findByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: /^Round complete\. 10 of 10 cards\./ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Play again" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Leave round" })).toBeNull();
   });
 });
 
