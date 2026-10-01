@@ -18,17 +18,25 @@ describe("SkyBackdrop", () => {
     expect(sky.className).toContain("pointer-events-none");
   });
 
-  it("is a fixed layer behind the app frame, as wide as the frame", () => {
+  it("is a fixed layer behind everything, as wide as the viewport", () => {
     const sky = layer(render(<SkyBackdrop />).container);
     expect(sky.className).toContain("fixed");
+    expect(sky.className).toContain("inset-0");
     expect(sky.className).toContain("-z-10");
-    expect(sky.className).toContain("max-w-(--app-max-width)");
+    expect(sky.className).not.toContain("max-w-");
   });
 
-  it("paints the four sky bands with hard stops at 22, 48 and 76 percent", () => {
+  it("keeps the clouds inside the app frame", () => {
+    const frame = render(<SkyBackdrop />).container.querySelector<HTMLElement>("[data-sky-frame]");
+    expect(frame?.className).toContain("max-w-(--app-max-width)");
+    expect(frame?.className).toContain("overflow-hidden");
+    expect(frame?.querySelectorAll("svg")).toHaveLength(2);
+  });
+
+  it("blends the four sky colours smoothly from top to bottom, with no hard stops", () => {
     const sky = layer(render(<SkyBackdrop />).container);
     expect(sky.style.backgroundImage).toBe(
-      "linear-gradient(180deg, var(--color-sky-1) 0 22%, var(--color-sky-2) 22% 48%, var(--color-sky-3) 48% 76%, var(--color-sky-4) 76% 100%)",
+      "linear-gradient(180deg, var(--color-sky-1) 0%, var(--color-sky-2) 35%, var(--color-sky-3) 62%, var(--color-sky-4) 100%)",
     );
   });
 

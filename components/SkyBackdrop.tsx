@@ -1,6 +1,6 @@
-// The calm ground of every screen: four hard-stop sky bands and two clouds (design system 5.1).
-// A fixed layer behind the app frame, as wide as the frame and as tall as the viewport. It ignores touches
-// and is hidden from screen readers.
+// The calm ground of every screen: the four sky colours blended from top to bottom, and two clouds
+// (design system 5.1). A fixed layer behind everything, as wide and as tall as the viewport; the clouds
+// stay inside the app frame. It ignores touches and is hidden from screen readers.
 import { ICON_PATHS } from "./icons";
 
 /** Top of the lower cloud in px: 620 on the game and result screens, 660 in the start flow (under its foot zone). */
@@ -12,17 +12,19 @@ export interface SkyBackdropProps {
   lowerCloud?: LowerCloud;
 }
 
-const SKY_BANDS =
-  "linear-gradient(180deg, var(--color-sky-1) 0 22%, var(--color-sky-2) 22% 48%, var(--color-sky-3) 48% 76%, var(--color-sky-4) 76% 100%)";
+// Smooth on purpose: hard stops cut through text and cards and read as a rendering fault.
+const SKY =
+  "linear-gradient(180deg, var(--color-sky-1) 0%, var(--color-sky-2) 35%, var(--color-sky-3) 62%, var(--color-sky-4) 100%)";
 
 export function SkyBackdrop({ lowerCloud = "game" }: SkyBackdropProps) {
   return (
     <div
       aria-hidden="true"
       data-sky-backdrop=""
-      className="pointer-events-none fixed inset-0 -z-10 mx-auto w-full max-w-(--app-max-width) overflow-hidden"
-      style={{ backgroundImage: SKY_BANDS }}
+      className="pointer-events-none fixed inset-0 -z-10"
+      style={{ backgroundImage: SKY }}
     >
+      <div data-sky-frame="" className="relative mx-auto h-full w-full max-w-(--app-max-width) overflow-hidden">
       <svg
         data-cloud="upper"
         className="absolute fill-(--color-cloud) opacity-(--opacity-cloud)"
@@ -45,6 +47,7 @@ export function SkyBackdrop({ lowerCloud = "game" }: SkyBackdropProps) {
       >
         <path d={ICON_PATHS.skyCloud} />
       </svg>
+      </div>
     </div>
   );
 }

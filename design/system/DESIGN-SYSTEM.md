@@ -168,7 +168,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 
 ### 5.1 Sky backdrop
 - **Purpose:** the calm ground of every screen; it says "travel" without saying anything.
-- **Anatomy:** a vertical gradient with hard stops: `sky-1` 0 to 22%, `sky-2` 22 to 48%, `sky-3` 48 to 76%, `sky-4` 76 to 100%. On top sit two cloud shapes (one path, viewBox 150 × 46) filled `cloud` at opacity 0.7, ignoring touches. Cloud 1: 150 × 46 at left −30, top 196. Cloud 2: 170 × 50 at right −40, top 620 (game, mode, result) or top 660 (browse-c, start).
+- **Anatomy:** a smooth vertical gradient across the whole viewport: `sky-1` at 0%, `sky-2` at 35%, `sky-3` at 62%, `sky-4` at 100% (the first build used hard stops at 22, 48 and 76%; on a real screen the bands cut through text and cards and read as a fault, so they were blended). Inside the app frame sit two cloud shapes (one path, viewBox 150 × 46) filled `cloud` at opacity 0.7, ignoring touches. Cloud 1: 150 × 46 at left −30, top 196. Cloud 2: 170 × 50 at right −40, top 620 (game, mode, result) or top 660 (browse-c, start).
 - **Variants:** day, night.
 - **Used by:** all screens.
 
