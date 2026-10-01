@@ -57,3 +57,28 @@ function withAnswers(cards: Readonly<Record<string, CardHistory>>, result: Round
   }
   return next;
 }
+
+// Drops the history of cards of this deck that are not in the deck any more.
+// A card belongs to the deck when its id starts with `${deckId}-`. Records and the last route are kept.
+export function pruneDeck(progress: Progress, deckId: string, cardIds: readonly string[]): Progress {
+  const prefix = `${deckId}-`;
+  const current = new Set(cardIds);
+  const cards: Record<string, CardHistory> = {};
+  for (const [id, entry] of Object.entries(progress.cards)) {
+    if (id.startsWith(prefix) && !current.has(id)) continue;
+    cards[id] = entry;
+  }
+  return { ...progress, cards, records: { ...progress.records } };
+}
+
+// The share (0 to 1) of the given cards that have been seen at least once. No cards gives 0.
+export function seenShare(history: History, cardIds: readonly string[]): number {
+  const ids = new Set(cardIds);
+  if (ids.size === 0) return 0;
+  let seen = 0;
+  for (const id of ids) {
+    const entry = Object.hasOwn(history, id) ? history[id] : undefined;
+    if (entry !== undefined && entry.seen > 0) seen += 1;
+  }
+  return seen / ids.size;
+}

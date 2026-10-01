@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Card, Route } from "@/src/content/schema";
 import type { Answered, RoundResult } from "@/src/engine/round";
-import { applyResult, emptyProgress, recordKey, type Progress } from "@/src/progress/progress";
+import {
+  applyResult,
+  emptyProgress,
+  pruneDeck,
+  recordKey,
+  seenShare,
+  type Progress,
+} from "@/src/progress/progress";
 
 describe("emptyProgress", () => {
   it("has version 1, no card history, no records and no last route", () => {
@@ -232,5 +239,99 @@ describe("applyResult: an abandoned round", () => {
     expect(outcome.progress.records).toEqual({});
     expect(outcome.previousBest).toBeNull();
     expect(outcome.isNewBest).toBe(false);
+  });
+});
+
+function seenOnce(at = 1) {
+  return { seen: 1, lastCorrect: true, lastSeenAt: at };
+}
+
+describe("pruneDeck", () => {
+  const before: Progress = {
+    version: 1,
+    cards: {
+      "aws-clf-c02-t1.1-01": seenOnce(),
+      "aws-clf-c02-t1.1-02": seenOnce(),
+      "aws-clf-c02-t2.1-06": seenOnce(),
+      "nextjs-rendering-rsc-01": seenOnce(),
+    },
+    records: { "aws-clf-c02/SEC#classic": 7 },
+    last: { route: SEC, mode: "classic" },
+  };
+
+  it("removes the history of that deck's cards that no longer exist", () => {
+    const after = pruneDeck(before, "aws-clf-c02", ["aws-clf-c02-t1.1-01", "aws-clf-c02-t2.1-06"]);
+    expect(Object.keys(after.cards).sort()).toEqual([
+      "aws-clf-c02-t1.1-01",
+      "aws-clf-c02-t2.1-06",
+      "nextjs-rendering-rsc-01",
+    ]);
+  });
+
+  it("keeps the history of other decks' cards", () => {
+    const after = pruneDeck(before, "aws-clf-c02", ["aws-clf-c02-t1.1-01"]);
+    expect(after.cards["nextjs-rendering-rsc-01"]).toEqual(seenOnce());
+  });
+
+  it("keeps the entries of the cards that still exist unchanged", () => {
+    const after = pruneDeck(before, "aws-clf-c02", ["aws-clf-c02-t1.1-01", "aws-clf-c02-t1.1-02", "aws-clf-c02-t2.1-06"]);
+    expect(after.cards).toEqual(before.cards);
+  });
+
+  it("does not add entries for current cards that were never seen", () => {
+    const after = pruneDeck(before, "aws-clf-c02", ["aws-clf-c02-t1.1-01", "aws-clf-c02-t9.9-99"]);
+    expect(after.cards["aws-clf-c02-t9.9-99"]).toBeUndefined();
+  });
+
+  it("keeps the records and the last route", () => {
+    const after = pruneDeck(before, "aws-clf-c02", []);
+    expect(after.records).toEqual(before.records);
+    expect(after.last).toEqual(before.last);
+  });
+
+  it("does nothing for a deck with no history", () => {
+    const after = pruneDeck(before, "gcp-cdl", ["gcp-cdl-01"]);
+    expect(after).toEqual(before);
+  });
+
+  it("does not change the progress it is given", () => {
+    const frozen = deepFreeze(structuredClone(before));
+    const after = pruneDeck(frozen, "aws-clf-c02", []);
+    expect(frozen).toEqual(before);
+    expect(after).not.toBe(frozen);
+  });
+});
+
+describe("seenShare", () => {
+  it("is 0 for a deck with no cards", () => {
+    expect(seenShare({ a: seenOnce() }, [])).toBe(0);
+  });
+
+  it("is 0 with no history", () => {
+    expect(seenShare({}, ["a", "b"])).toBe(0);
+  });
+
+  it("is 0 with neither cards nor history", () => {
+    expect(seenShare({}, [])).toBe(0);
+  });
+
+  it("is the share of the given cards seen at least once", () => {
+    expect(seenShare({ a: seenOnce(), c: seenOnce() }, ["a", "b", "c", "d"])).toBe(0.5);
+  });
+
+  it("is 1 when every card has been seen", () => {
+    expect(seenShare({ a: seenOnce(), b: seenOnce() }, ["a", "b"])).toBe(1);
+  });
+
+  it("ignores history of cards that are not in the list", () => {
+    expect(seenShare({ a: seenOnce(), gone: seenOnce(), other: seenOnce() }, ["a", "b"])).toBe(0.5);
+  });
+
+  it("does not count an entry with a seen count of 0", () => {
+    expect(seenShare({ a: { seen: 0, lastCorrect: false, lastSeenAt: 0 } }, ["a"])).toBe(0);
+  });
+
+  it("counts a card listed twice once", () => {
+    expect(seenShare({ a: seenOnce() }, ["a", "a", "b"])).toBe(0.5);
   });
 });
