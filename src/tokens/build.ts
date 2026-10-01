@@ -56,6 +56,11 @@ interface Token {
   type: string | undefined;
   value: unknown;
 }
+// Every token by dotted path, and the dotted paths of the groups, so a reference to a group can be named as such.
+interface Registry {
+  tokens: ReadonlyMap<string, Token>;
+  groups: ReadonlySet<string>;
+}
 
 const REFERENCE = /^\{([^{}]+)\}$/;
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -70,26 +75,38 @@ function fail(path: string, problem: string): never {
 }
 
 // Every token in the file by its dotted path. A group's $type applies to the tokens below it.
-function collect(node: Dict, path: string, inherited: string | undefined, out: Map<string, Token>): void {
+function collect(
+  node: Dict,
+  path: string,
+  inherited: string | undefined,
+  out: Map<string, Token>,
+  groups?: Set<string>,
+): void {
   const type = typeof node.$type === "string" ? node.$type : inherited;
   if ("$value" in node) {
     out.set(path, { path, type, value: node.$value });
     return;
   }
+  groups?.add(path);
   for (const [key, child] of Object.entries(node)) {
     if (key.startsWith("$") || !isDict(child)) continue;
-    collect(child, path === "" ? key : `${path}.${key}`, type, out);
+    collect(child, path === "" ? key : `${path}.${key}`, type, out, groups);
   }
 }
 
 // Follows "{a.b.c}" references until a literal value. `chain` starts with the token being emitted.
-function deref(raw: unknown, chain: readonly string[], all: ReadonlyMap<string, Token>): unknown {
+function deref(raw: unknown, chain: readonly string[], all: Registry): unknown {
   if (typeof raw !== "string") return raw;
-  const match = REFERENCE.exec(raw);
-  if (!match) return raw;
-  const target = match[1] as string;
   const holder = chain[chain.length - 1] as string;
-  const token = all.get(target);
+  const match = REFERENCE.exec(raw);
+  if (!match) {
+    if (/[{}]/.test(raw)) fail(holder, `has a malformed reference: ${raw}`);
+    return raw;
+  }
+  const target = match[1] as string;
+  if (target.trim() !== target) fail(holder, `has a malformed reference: ${raw}`);
+  const token = all.tokens.get(target);
+  if (!token && all.groups.has(target)) fail(holder, `refers to {${target}}, which is a group, not a token`);
   if (!token) fail(holder, `refers to {${target}}, which does not exist`);
   if (chain.includes(target)) fail(chain[0] as string, `has a circular reference: ${[...chain, target].join(" -> ")}`);
   return deref(token.value, [...chain, target], all);
@@ -171,12 +188,12 @@ function formatCubicBezier(value: unknown, path: string): string {
   return `cubic-bezier(${value.join(", ")})`;
 }
 
-function field(value: Dict, name: string, path: string, all: ReadonlyMap<string, Token>): unknown {
+function field(value: Dict, name: string, path: string, all: Registry): unknown {
   if (value[name] === undefined) fail(path, `is missing ${name}`);
   return deref(value[name], [path], all);
 }
 
-function formatShadow(value: unknown, path: string, all: ReadonlyMap<string, Token>): string {
+function formatShadow(value: unknown, path: string, all: Registry): string {
   const layers = Array.isArray(value) ? value : [value];
   if (layers.length === 0) fail(path, "has a shadow with no layers");
   return layers
@@ -196,7 +213,7 @@ function formatShadow(value: unknown, path: string, all: ReadonlyMap<string, Tok
 
 // A transition token is written as "<duration> <timing function> <delay>", ready for
 // `transition: transform var(--transition-press)`.
-function formatTransition(value: unknown, path: string, all: ReadonlyMap<string, Token>): string {
+function formatTransition(value: unknown, path: string, all: Registry): string {
   if (!isDict(value)) fail(path, "has a transition value that is not an object");
   return [
     formatMeasure("duration", field(value, "duration", path, all), path),
@@ -205,7 +222,7 @@ function formatTransition(value: unknown, path: string, all: ReadonlyMap<string,
   ].join(" ");
 }
 
-function formatValue(type: string | undefined, raw: unknown, path: string, all: ReadonlyMap<string, Token>): string {
+function formatValue(type: string | undefined, raw: unknown, path: string, all: Registry): string {
   const value = deref(raw, [path], all);
   switch (type) {
     case "color":
@@ -233,14 +250,14 @@ function formatValue(type: string | undefined, raw: unknown, path: string, all: 
   }
 }
 
-function fontFamilyEntry(token: Token, all: ReadonlyMap<string, Token>): string {
+function fontFamilyEntry(token: Token, all: Registry): string {
   if (token.type !== "fontFamily") fail(token.path, `has type ${String(token.type)}, expected fontFamily`);
   const stack = fontStack(deref(token.value, [token.path], all), token.path);
   const variable = NEXT_FONT_VARIABLES[token.path.slice("font.family.".length)];
   return variable === undefined ? stack.join(", ") : [`var(${variable})`, ...stack.slice(1)].join(", ");
 }
 
-function typographyEntries(token: Token, name: string, all: ReadonlyMap<string, Token>): [string, string][] {
+function typographyEntries(token: Token, name: string, all: Registry): [string, string][] {
   if (token.type !== "typography") fail(token.path, `has type ${String(token.type)}, expected typography`);
   const role = deref(token.value, [token.path], all);
   if (!isDict(role)) fail(token.path, "has a typography value that is not an object");
@@ -264,7 +281,7 @@ function typographyEntries(token: Token, name: string, all: ReadonlyMap<string, 
   });
 }
 
-function entriesFor(group: Group, token: Token, name: string, all: ReadonlyMap<string, Token>): [string, string][] {
+function entriesFor(group: Group, token: Token, name: string, all: Registry): [string, string][] {
   switch (group.kind) {
     case "font-family":
       return [[name, fontFamilyEntry(token, all)]];
@@ -290,8 +307,10 @@ function groupAt(root: Dict, path: string): { node: Dict; type: string | undefin
 
 export function tokensToCss(tokens: unknown): string {
   if (!isDict(tokens)) throw new TokenError("The design tokens must be a JSON object");
-  const all = new Map<string, Token>();
-  collect(tokens, "", undefined, all);
+  const byPath = new Map<string, Token>();
+  const groups = new Set<string>();
+  collect(tokens, "", undefined, byPath, groups);
+  const all: Registry = { tokens: byPath, groups };
 
   const sections: string[] = [];
   const emitted = new Set<string>();

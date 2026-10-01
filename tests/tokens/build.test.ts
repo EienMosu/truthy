@@ -584,3 +584,19 @@ describe("scripts/build-tokens.ts", () => {
     expect(readFileSync(join(dir, "tokens.css"), "utf8")).toBe("/* previous */\n");
   });
 });
+
+describe("tokensToCss: awkward references", () => {
+  it("rejects text that looks like a reference but is not exactly one", () => {
+    for (const bad of ["{color.primitive.navy-900", "{ color.primitive.navy-900 }", "{color.primitive.navy-900} 50%"]) {
+      const tokens = base();
+      tokens.font.family.sans.$value = bad;
+      expect(() => tokensToCss(tokens), bad).toThrow(/font\.family\.sans has a malformed reference/);
+    }
+  });
+
+  it("says so when a reference points at a group instead of a token", () => {
+    const tokens = base();
+    tokens.color.day.ink.$value = "{color.primitive}";
+    expect(() => tokensToCss(tokens)).toThrow("color.day.ink refers to {color.primitive}, which is a group, not a token");
+  });
+});
