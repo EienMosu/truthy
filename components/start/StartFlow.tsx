@@ -9,6 +9,8 @@
 //   - the step and the choices: `view` state, mirrored into the browser history (one entry per step on
 //     the path, the URL never changes), so the browser's back and forward buttons move through the steps;
 //   - the index and the progress: useCatalog;
+//   - the settle time: for 250 ms after a step becomes current, presses on its options, the continue
+//     line and Start round are ignored (the next step's cards appear where the chosen card was);
 //   - the motion: AnimatePresence per zone (top, main, foot), plus one "ghost" copy of the chosen name
 //     that travels into its field of the pass. Reduced motion swaps all of it for a cross-fade.
 import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Transition, type Variants } from "motion/react";
@@ -24,6 +26,7 @@ import { savePending } from "@/src/app-state/pending";
 import { browserAppServices, browserStepHistory, type AppServices, type StepHistory } from "@/src/app-state/services";
 import { WHOLE_DECK, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
+import { SWIPE } from "@/src/input/swipe";
 import { ContinueLine } from "./ContinueLine";
 import { bestFor, continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "./useCatalog";
 
@@ -32,9 +35,11 @@ import { bestFor, continueTarget, deckCount, decksLabel, seenPercent, useCatalog
 export interface StartServices extends AppServices {
   /** The browser history the flow keeps its steps in. Undefined: steps are not remembered (server, tests). */
   history: () => StepHistory | undefined;
+  /** A clock in ms for the settle time. In the browser: performance.now. */
+  now: () => number;
 }
 
-export const browserStartServices: StartServices = { ...browserAppServices, history: browserStepHistory };
+export const browserStartServices: StartServices = { ...browserAppServices, history: browserStepHistory, now: () => performance.now() };
 
 // ---------- the steps and the choices (pure) ----------
 
@@ -343,6 +348,14 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     });
   }, [services]);
 
+  // The settle time, as on the play screen (spec section 8): a step change starts it. The first render
+  // starts none, so step 1 takes a press as soon as its cards are there.
+  const shownAt = useRef(Number.NEGATIVE_INFINITY);
+  useLayoutEffect(() => {
+    if (view.seq > 0) shownAt.current = services.now();
+  }, [view.seq, services]);
+  const settled = () => services.now() - shownAt.current >= SWIPE.settleMs;
+
   // Focus: the new step's title, or (going back) the card chosen before.
   useEffect(() => {
     if (view.seq === 0) return;
@@ -353,6 +366,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
 
   /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */
   function forward(step: Step, choice: Choice, field: PassFieldName, source?: HTMLElement | null) {
+    if (!settled()) return;
     const name = source?.querySelector<HTMLElement>("[data-card-name]");
     const frame = layerRef.current?.offsetParent;
     if (!reduced && name && frame) {
@@ -365,7 +379,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     services.history()?.push(entryState({ step, choice }));
   }
 
-  /** Goes back to an earlier step, clearing it and every later choice. */
+  /** Goes back to an earlier step, clearing it and every later choice. Never held back by the settle time. */
   function backTo(target: Step) {
     const from = view.step;
     if (target >= from || boarding) return;
@@ -399,7 +413,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   }, []);
 
   function continueLast() {
-    if (!index || !progress) return;
+    if (!index || !progress || !settled()) return;
     const target = continueTarget(index, progress);
     if (!target) return;
     const choice: Choice = {
@@ -420,7 +434,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
 
   function startRound() {
     const { deckId, sectionId, mode } = view.choice;
-    if (boarding || !deckId || !sectionId || !mode) return;
+    if (boarding || !deckId || !sectionId || !mode || !settled()) return;
     savePending({ route: { deckId, sectionId }, mode }, services.sessionStorage());
     setBoarding(true);
     if (reduced) router.push("/play");

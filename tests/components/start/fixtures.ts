@@ -1,5 +1,5 @@
-// Test doubles for the start flow: a small deck index, storage in memory, a fake network and a session
-// history in memory. Everything goes in through StartFlow's `services` prop.
+// Test doubles for the start flow: a small deck index, storage in memory, a fake network, a session
+// history in memory and a clock moved by hand. Everything goes in through StartFlow's `services` prop.
 import type { AppServices, StepHistory } from "@/src/app-state/services";
 import type { DeckIndex } from "@/src/content/schema";
 import { PROGRESS_KEY } from "@/src/progress/local";
@@ -159,9 +159,15 @@ export function memoryHistory(): MemoryHistory {
   return history;
 }
 
+/** A clock in ms that only moves when a test moves it. */
+export interface ManualClock {
+  time: number;
+}
+
 /** What StartFlow takes as `services` (StartServices), written out so this file does not import the flow. */
 export interface TestServices extends AppServices {
   history: () => StepHistory | undefined;
+  now: () => number;
 }
 
 export interface Harness {
@@ -170,17 +176,20 @@ export interface Harness {
   local: MemoryStorage;
   session: MemoryStorage;
   history: MemoryHistory;
+  clock: ManualClock;
 }
 
 export function harness(local: MemoryStorage = memoryStorage(), index: unknown = INDEX): Harness {
   const network = fakeNetwork(index);
   const session = memoryStorage();
   const history = memoryHistory();
+  const clock: ManualClock = { time: 0 };
   const services: TestServices = {
     fetcher: network.fetcher,
     localStorage: () => local,
     sessionStorage: () => session,
     history: () => history,
+    now: () => clock.time,
   };
-  return { services, network, local, session, history };
+  return { services, network, local, session, history, clock };
 }

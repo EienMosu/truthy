@@ -4,6 +4,7 @@ import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { StartFlow, canShow, clearFrom, pathTo, previousStep } from "@/components/start/StartFlow";
 import { PENDING_KEY } from "@/src/app-state/pending";
+import { SWIPE } from "@/src/input/swipe";
 import { INDEX, harness, storedProgress, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -34,7 +35,13 @@ function heading(): string | null | undefined {
   return [...document.querySelectorAll("[data-step]:not([inert]) h2")].at(-1)?.textContent;
 }
 
+/** Lets the settle time pass: for 250 ms after a step change, presses on its options are ignored. */
+function settle() {
+  h.clock.time += SWIPE.settleMs;
+}
+
 async function choose(name: string | RegExp, nextHeading: string) {
+  settle();
   fireEvent.click(screen.getByRole("button", { name }));
   await waitFor(() => expect(heading()).toBe(nextHeading));
 }
@@ -158,6 +165,7 @@ describe("StartFlow: choosing a route", () => {
     expect(passText()).toContain("Cards47");
     expect(screen.getByText("10 cards, score at the end. Swipe right for true, left for false.")).toBeTruthy();
 
+    settle();
     fireEvent.click(screen.getByRole("button", { name: "Start round" }));
     expect(JSON.parse(h.session.data.get(PENDING_KEY) ?? "null")).toEqual({ route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" });
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
@@ -182,6 +190,7 @@ describe("StartFlow: choosing a route", () => {
     expect(screen.getByRole("button", { name: "Back to decks" })).toBeTruthy();
     await choose(/^Classic\./, "Your pass is ready");
     expect(document.querySelector("[data-leg='section']")?.textContent).toBe("ALLWhole deck");
+    settle();
     fireEvent.click(screen.getByRole("button", { name: "Start round" }));
     expect(JSON.parse(h.session.data.get(PENDING_KEY) ?? "null")).toEqual({ route: { deckId: "gcp-cdl", sectionId: "ALL" }, mode: "classic" });
   });
@@ -210,6 +219,7 @@ describe("StartFlow: choosing a route", () => {
     await toClasses();
     await choose(/^Classic\./, "Your pass is ready");
     const button = screen.getByRole("button", { name: "Start round" });
+    settle();
     fireEvent.click(button);
     fireEvent.click(button);
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
@@ -398,12 +408,94 @@ describe("StartFlow: keyboard", () => {
     ];
     for (const [option, next] of steps) {
       await tabTo(option);
+      settle();
       enter();
       await waitFor(() => expect(document.activeElement?.textContent).toBe(next));
       expect(document.activeElement?.tagName).toBe("H2");
     }
     await tabTo(/^Start round/);
+    settle();
     enter();
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
+  });
+});
+
+describe("StartFlow: the settle time", () => {
+  // As on the play screen (spec section 8): for 250 ms after a step becomes current, its options, the
+  // continue line and Start round ignore presses. The next step's cards appear where the chosen card was.
+  it("ignores a second tap 100 ms after a step change, so a double tap cannot choose unseen", async () => {
+    await start();
+    await choose("Cloud, 2 decks", "Choose a platform");
+    h.clock.time += 100;
+    fireEvent.click(screen.getByRole("button", { name: "AWS, 1 deck" }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose a platform");
+    expect(field("platform")).toBe("Platformnot chosen");
+    expect(h.history.position).toBe(1);
+  });
+
+  it("takes a press once 250 ms have passed", async () => {
+    await start();
+    await choose("Cloud, 2 decks", "Choose a platform");
+    h.clock.time += 249;
+    fireEvent.click(screen.getByRole("button", { name: "AWS, 1 deck" }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose a platform");
+    h.clock.time += 1;
+    fireEvent.click(screen.getByRole("button", { name: "AWS, 1 deck" }));
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+  });
+
+  it("holds back Enter on the keyboard in the same way", async () => {
+    await start();
+    await choose("Cloud, 2 decks", "Choose a platform");
+    const aws = screen.getByRole("button", { name: "AWS, 1 deck" });
+    aws.focus();
+    h.clock.time += 100;
+    fireEvent.keyDown(aws, { key: "Enter" });
+    fireEvent.click(aws); // Enter on a button activates it, as browsers do
+    await act(async () => {});
+    expect(heading()).toBe("Choose a platform");
+    h.clock.time += 150;
+    fireEvent.keyDown(aws, { key: "Enter" });
+    fireEvent.click(aws);
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+  });
+
+  it("holds back Start round right after the continue line has filled the pass", async () => {
+    await start(harness(storedProgress({ last: LAST_CLF_SEC })));
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await waitFor(() => expect(heading()).toBe("Your pass is ready"));
+    h.clock.time += 100;
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    expect(h.session.data.get(PENDING_KEY)).toBeUndefined();
+    h.clock.time += 150;
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    expect(JSON.parse(h.session.data.get(PENDING_KEY) ?? "null")).toEqual({ route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" });
+  });
+
+  it("holds back the continue line right after going back to step 1", async () => {
+    await start(harness(storedProgress({ last: LAST_CLF_SEC })));
+    await choose("Cloud, 2 decks", "Choose a platform");
+    fireEvent.click(screen.getByRole("button", { name: "Back to areas" }));
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
+    h.clock.time += 100;
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose an area");
+    h.clock.time += 150;
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await waitFor(() => expect(heading()).toBe("Your pass is ready"));
+  });
+
+  it("never holds back Back, the pass fields or Escape", async () => {
+    await start();
+    await toClasses();
+    fireEvent.click(screen.getByRole("button", { name: "Back to sections" }));
+    await waitFor(() => expect(heading()).toBe("Choose a section"));
+    fireEvent.click(screen.getByRole("button", { name: "Change platform, now AWS" }));
+    await waitFor(() => expect(heading()).toBe("Choose a platform"));
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
   });
 });
