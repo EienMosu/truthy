@@ -24,6 +24,7 @@ const TICKET: TicketInfo = {
   sectionCode: "SEC",
   sectionName: "Security and compliance",
   modeLabel: "Classic",
+  best: null,
 };
 
 /** A finished Classic round on SEC: card i is answered right when right[i] is true. */

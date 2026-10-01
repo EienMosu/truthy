@@ -10,7 +10,7 @@ import { readPending, type PendingRound } from "@/src/app-state/pending";
 import { browserAppServices, browserBackToStart, type AppServices } from "@/src/app-state/services";
 import type { Mode } from "@/src/content/play";
 import { reduce, startRound, type RoundEvent, type RoundState } from "@/src/engine/round";
-import { pruneDeck } from "@/src/progress/progress";
+import { bestFor, pruneDeck } from "@/src/progress/progress";
 import { createLocalStore, type ProgressStore } from "@/src/progress/local";
 
 /** The play screen's window on the outside world: the app services plus the clock and the dice. Tests pass fakes; the app uses browserPlayServices. */
@@ -41,6 +41,7 @@ export interface TicketInfo {
   sectionCode: string; // "SEC", or "ALL" for the whole deck
   sectionName: string; // "Security and compliance", or "Whole deck"
   modeLabel: string; // "Classic"
+  best: number | null; // the record for this route and mode when the round was dealt
 }
 
 export type RoundStatus =
@@ -64,13 +65,14 @@ export interface UseRoundResult {
 export const LOAD_FAILED_MESSAGE = "This deck didn't load. Check your connection and try again.";
 
 /** What the ticket shows about a route that was found in the index, for the mode played. */
-export function ticketFor(found: RouteInIndex, mode: Mode): TicketInfo {
+export function ticketFor(found: RouteInIndex, mode: Mode, best: number | null): TicketInfo {
   return {
     deckCode: found.deck.code,
     deckName: deckPassName(found.platform, found.deck),
     sectionCode: found.section?.id ?? WHOLE_DECK,
     sectionName: found.section?.title ?? "Whole deck",
     modeLabel: modeInfo(mode).name,
+    best,
   };
 }
 
@@ -95,7 +97,7 @@ export async function prepareRound(pending: PendingRound, services: PlayServices
   if (pool.length === 0) return null;
   const route: Route = { deckId: pending.route.deckId, sectionId: pending.route.sectionId };
   const round = startRound({ mode: pending.mode, route, pool, history: progress.cards, seed: services.randomSeed() });
-  return { round, ticket: ticketFor(found, pending.mode) };
+  return { round, ticket: ticketFor(found, pending.mode, bestFor(progress, route, pending.mode)) };
 }
 
 type Action = RoundEvent | { type: "start"; round: RoundState } | { type: "clear" };

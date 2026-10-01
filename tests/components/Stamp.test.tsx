@@ -47,4 +47,14 @@ describe("Stamp", () => {
     expect(stamp.style.transform).toContain("scale(1.9)");
     expect(stamp.style.transform).toContain("rotate(-14deg)");
   });
+
+  it("the New best stamp is a star, the words New best and a hidden Correct", () => {
+    const stamp = stampOf(render(<Stamp verdict="new-best" />).container);
+    expect(stamp.textContent).toBe("Correct. New best");
+    expect(stamp.getAttribute("data-verdict")).toBe("new-best");
+    expect(stamp.className).toContain("text-(--color-correct)");
+    expect(stamp.querySelector(".sr-only")?.textContent).toBe("Correct. ");
+    expect(stamp.querySelector("svg")?.getAttribute("width")).toBe("20");
+    expect(stamp.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  });
 });

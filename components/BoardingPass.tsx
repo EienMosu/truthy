@@ -367,11 +367,13 @@ export interface PassSlipProps {
   source: { title: string; url: string };
   /** Let the stamp land (the answer has just been given). */
   animateStamp?: boolean;
+  /** The right answer passed the record: the stamp says New best instead of Correct. Ignored after a wrong answer. */
+  newBest?: boolean;
   className?: string;
 }
 
 /** The answer slip revealed under the stub: the right answer, the verdict stamp, the explanation and the source. */
-export function PassSlip({ answer, correct, explanation, source, animateStamp = false, className }: PassSlipProps) {
+export function PassSlip({ answer, correct, explanation, source, animateStamp = false, newBest = false, className }: PassSlipProps) {
   const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
@@ -389,7 +391,7 @@ export function PassSlip({ answer, correct, explanation, source, animateStamp = 
               {answer ? "True" : "False"}
             </b>
           </p>
-          <Stamp verdict={correct ? "correct" : "wrong"} animate={animateStamp} />
+          <Stamp verdict={!correct ? "wrong" : newBest ? "new-best" : "correct"} animate={animateStamp} />
         </div>
         <p className="m-0 mt-(--space-10) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight) text-(--color-ink)">
           {explanation}

@@ -4,8 +4,8 @@ import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { PROGRESS_KEY } from "@/src/progress/local";
-import { parseProgress } from "@/src/progress/progress";
-import { DECK_ID, cardByStatement, harness, pendingFor, type Harness } from "./fixtures";
+import { emptyProgress, parseProgress } from "@/src/progress/progress";
+import { DECK_ID, cardByStatement, harness, memoryStorage, pendingFor, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -260,5 +260,104 @@ describe("PlayScreen ending: selecting text", () => {
     give(true);
     expect(card.classList.contains("select-text")).toBe(true);
     expect(card.classList.contains("select-none")).toBe(false);
+  });
+});
+
+/** A Streak round on SEC with a stored record (null: none). */
+function streakHarness(record: number | null) {
+  const records = record === null ? {} : { [`${DECK_ID}/SEC#streak`]: record };
+  return harness(pendingFor("streak"), memoryStorage({ [PROGRESS_KEY]: JSON.stringify({ ...emptyProgress(), records }) }));
+}
+
+/** The name of the header image, whatever it says. */
+function headerName(): string {
+  return screen.getByRole("img").getAttribute("aria-label") ?? "";
+}
+
+/** The verdict stamps on screen (the slip has one while a card is answered). */
+function stamps(): (string | null)[] {
+  return [...document.querySelectorAll("[data-verdict]")].map((stamp) => stamp.getAttribute("data-verdict"));
+}
+
+describe("PlayScreen: the Streak header", () => {
+  it("shows the Streak header from the first card", async () => {
+    await start(harness(pendingFor("streak")));
+    expect(screen.getByRole("img", { name: "Streak of 0 correct answers." })).toBeTruthy();
+    expect(screen.queryByRole("img", { name: /^Card 1 of/ })).toBeNull();
+  });
+
+  it("counts the streak and ends it", async () => {
+    await start(harness(pendingFor("streak")));
+    give(true);
+    expect(headerName()).toBe("Streak of 1 correct answer.");
+    await go();
+    expect(headerName()).toBe("Streak of 1 correct answer.");
+    give(true);
+    expect(headerName()).toBe("Streak of 2 correct answers.");
+    await go();
+    give(false);
+    expect(headerName()).toBe("Streak ended at 2.");
+  });
+
+  it("shows New best only on the answer that passes a stored best", async () => {
+    await start(streakHarness(2));
+    give(true);
+    expect(stamps()).toEqual(["correct"]);
+    await go();
+    give(true);
+    expect(stamps()).toEqual(["correct"]);
+    expect(headerName()).toBe("Streak of 2 correct answers, equal to your best on this route.");
+    await go();
+    give(true);
+    expect(stamps()).toEqual(["new-best"]);
+    expect(status()).toMatch(/^Correct\. The answer is (True|False)\. New best\.$/);
+    expect(headerName()).toBe("Streak of 3 correct answers. New best on this route, previous best 2.");
+    await go();
+    give(true);
+    expect(stamps()).toEqual(["correct"]);
+    expect(status()).toMatch(/^Correct\. The answer is (True|False)\.$/);
+  });
+
+  it("shows no New best on a first round, however long the streak", async () => {
+    await start(streakHarness(null));
+    for (let i = 0; i < 4; i += 1) {
+      give(true);
+      expect(stamps()).toEqual(["correct"]);
+      await go();
+    }
+  });
+
+  it("does not show New best when the streak only equals the best", async () => {
+    await start(streakHarness(2));
+    give(true);
+    await go();
+    give(true);
+    expect(stamps()).toEqual(["correct"]);
+    expect(headerName()).toBe("Streak of 2 correct answers, equal to your best on this route.");
+  });
+
+  it("shows no New best on the slip after a stored best of 0", async () => {
+    await start(streakHarness(0));
+    expect(headerName()).toBe("Streak of 0 correct answers.");
+    give(true);
+    expect(stamps()).toEqual(["correct"]);
+    expect(status()).toMatch(/^Correct\. The answer is (True|False)\.$/);
+    expect(headerName()).toBe("Streak of 1 correct answer.");
+  });
+
+  it("Play again reads the record the last round set", async () => {
+    await start(streakHarness(null));
+    give(true);
+    await go();
+    give(true);
+    await go();
+    give(false);
+    const action = await screen.findByRole("button", { name: "See results" });
+    h.advance(NEXT_ARRIVES_MS);
+    fireEvent.click(action);
+    await screen.findByRole("heading", { name: "Round complete" });
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await screen.findByRole("button", { name: "True" });
+    expect(headerName()).toBe("Streak of 0 correct answers. Your best on this route is 2.");
   });
 });

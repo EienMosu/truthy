@@ -56,6 +56,7 @@ describe("useRound", () => {
       sectionCode: "SEC",
       sectionName: "Security and compliance",
       modeLabel: "Classic",
+      best: null,
     });
     expect(h.network.calls).toEqual(["/decks/index.json", `/decks/${DECK_ID}.json?v=hash-1`]);
   });
@@ -66,6 +67,15 @@ describe("useRound", () => {
     expect(ticket.sectionCode).toBe("ALL");
     expect(ticket.sectionName).toBe("Whole deck");
     expect(round.route).toEqual({ deckId: DECK_ID, sectionId: "ALL" });
+  });
+
+  it("puts the record of the route and mode on the ticket", async () => {
+    const local = memoryStorage({
+      [PROGRESS_KEY]: JSON.stringify({ ...emptyProgress(), records: { [`${DECK_ID}/SEC#streak`]: 5, [`${DECK_ID}/SEC#classic`]: 9 } }),
+    });
+    const { status } = run(harness({ route: { deckId: DECK_ID, sectionId: "SEC" }, mode: "streak" }, local));
+    const { ticket } = await ready(status);
+    expect(ticket.best).toBe(5);
   });
 
   it("deals the same cards for the same seed", async () => {
@@ -186,7 +196,7 @@ describe("ticketFor: the deck name on the ticket", () => {
   }
 
   it("is the platform and the deck title", () => {
-    expect(ticketFor(found(INDEX), "classic").deckName).toBe("AWS Test deck");
+    expect(ticketFor(found(INDEX), "classic", null).deckName).toBe("AWS Test deck");
   });
 
   it("is the deck's pass name when it has one", () => {
@@ -194,6 +204,6 @@ describe("ticketFor: the deck name on the ticket", () => {
     const deck = index.areas[0]?.platforms[0]?.decks[0];
     if (!deck) throw new Error("no deck");
     deck.passName = "Amazon Test deck";
-    expect(ticketFor(found(index), "classic").deckName).toBe("Amazon Test deck");
+    expect(ticketFor(found(index), "classic", null).deckName).toBe("Amazon Test deck");
   });
 });

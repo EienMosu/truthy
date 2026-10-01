@@ -114,6 +114,12 @@ describe("PassSlip", () => {
     expect(link.getAttribute("rel")).toContain("noopener");
   });
 
+  it("PassSlip shows New best in place of Correct when asked", () => {
+    const { container } = render(<PassSlip answer={false} correct newBest explanation="Explained." source={source} />);
+    expect(container.querySelector('[data-verdict="new-best"]')).not.toBeNull();
+    expect(container.querySelector('[data-verdict="correct"]')).toBeNull();
+  });
+
   it("sits on the sunk paper", () => {
     const { container } = render(<PassSlip answer={false} correct explanation="Explained." source={source} />);
     expect(container.querySelector("[data-tone]")?.getAttribute("data-tone")).toBe("sunk");

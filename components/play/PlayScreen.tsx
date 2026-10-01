@@ -18,6 +18,7 @@ import {
   type TearSide,
 } from "@/components/BoardingPass";
 import { FlightPath } from "@/components/FlightPath";
+import { StreakPath } from "@/components/StreakPath";
 import { PillButton } from "@/components/PillButton";
 import { RoundButton } from "@/components/RoundButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
@@ -25,7 +26,7 @@ import { EASE } from "@/components/easing";
 import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
 import { SWIPE } from "@/src/input/swipe";
-import { currentCard, isDecided, lastAnswer, type RoundEvent, type RoundState } from "@/src/engine/round";
+import { currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
 import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
@@ -60,9 +61,9 @@ const SCROLLER: CSSProperties = {
   scrollbarWidth: "none",
 };
 
-/** What the live region says after an answer: "Correct. The answer is False." */
-export function verdictText(correct: boolean, answer: boolean): string {
-  return `${correct ? "Correct" : "Not quite"}. The answer is ${answer ? "True" : "False"}.`;
+/** What the live region says after an answer: "Correct. The answer is False." and, past the record, " New best." */
+export function verdictText(correct: boolean, answer: boolean, newBest = false): string {
+  return `${correct ? "Correct" : "Not quite"}. The answer is ${answer ? "True" : "False"}.${newBest ? " New best." : ""}`;
 }
 
 export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) {
@@ -193,6 +194,9 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
   const total = round.cards.length;
   // The action after an answer: "See results" once the mode's end rule has been met, otherwise "Next card".
   const actionLabel = isDecided(round) ? "See results" : "Next card";
+  // Streak: the answer that takes the streak one past a stored best of at least 1 gets the New best stamp, once.
+  const streak = round.mode === "streak" ? scoreOf("streak", round.answers) : 0;
+  const newBest = last?.correct === true && ticket.best !== null && ticket.best >= 1 && streak === ticket.best + 1;
 
   // A new card: start its settle time, scroll the ticket to the top, put focus on the statement.
   useEffect(() => {
@@ -289,12 +293,16 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
       <main className="flex min-h-0 flex-1 flex-col" inert={confirming}>
         <SkyBackdrop />
         <Header onLeave={requestLeave} closeRef={closeRef}>
-          <FlightPath
-            total={total}
-            results={round.answers.map((a) => a.correct)}
-            current={round.index}
-            answered={answered}
-          />
+          {round.mode === "streak" ? (
+            <StreakPath streak={streak} best={ticket.best} answered={last ? (last.correct ? "correct" : "wrong") : null} />
+          ) : (
+            <FlightPath
+              total={total}
+              results={round.answers.map((a) => a.correct)}
+              current={round.index}
+              answered={answered}
+            />
+          )}
         </Header>
         <section aria-label="Card" className="relative mt-(--space-12) -mx-(--size-gutter) min-h-0 flex-1">
           <div
@@ -336,6 +344,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
                         explanation={last.card.text.en.explanation}
                         source={last.card.source}
                         animateStamp
+                        newBest={newBest}
                       />
                     ) : null}
                     <AnimatePresence initial={false} custom={tear}>
@@ -389,7 +398,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
           </AnimatePresence>
         </div>
         <p role="status" className="sr-only">
-          {last ? verdictText(last.correct, last.card.answer) : ""}
+          {last ? verdictText(last.correct, last.card.answer, newBest) : ""}
         </p>
       </main>
       <LeaveDialog
