@@ -15,3 +15,16 @@ export function createRng(seed: number): Rng {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+// Fisher-Yates from the end. Returns a new array; the input is never changed.
+// Draws exactly items.length - 1 numbers (none for zero or one item).
+export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const held = result[i] as T;
+    result[i] = result[j] as T;
+    result[j] = held;
+  }
+  return result;
+}

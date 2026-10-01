@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRng } from "@/src/engine/rng";
+import { createRng, shuffle } from "@/src/engine/rng";
 
 function draw(seed: number, n: number): number[] {
   const rng = createRng(seed);
@@ -54,5 +54,63 @@ describe("createRng (mulberry32)", () => {
     expect(draw(-1, 3)).toEqual(draw(2 ** 32 - 1, 3));
     expect(draw(1.9, 3)).toEqual(draw(1, 3));
     expect(draw(2 ** 32 + 1, 3)).toEqual(draw(1, 3));
+  });
+});
+
+describe("shuffle (Fisher-Yates)", () => {
+  const items = Object.freeze(["a", "b", "c", "d", "e", "f", "g", "h"]);
+
+  it("returns a new array and leaves the input untouched", () => {
+    const result = shuffle(items, createRng(1));
+    expect(result).not.toBe(items);
+    expect(items).toEqual(["a", "b", "c", "d", "e", "f", "g", "h"]);
+  });
+
+  it("returns a permutation: the same items, each exactly once", () => {
+    const result = shuffle(items, createRng(5));
+    expect(result).toHaveLength(items.length);
+    expect([...result].sort()).toEqual([...items]);
+  });
+
+  it("gives the reference order for seed 1, so the native clones can match it", () => {
+    expect(shuffle(items, createRng(1))).toEqual(["c", "b", "g", "h", "e", "d", "a", "f"]);
+  });
+
+  it("is deterministic for a seed", () => {
+    expect(shuffle(items, createRng(11))).toEqual(shuffle(items, createRng(11)));
+  });
+
+  it("actually reorders: some seed out of ten changes the order", () => {
+    const orders = new Set(Array.from({ length: 10 }, (_, seed) => shuffle(items, createRng(seed)).join("")));
+    expect(orders.size).toBeGreaterThan(1);
+  });
+
+  it("handles an empty list and a single item", () => {
+    expect(shuffle([], createRng(1))).toEqual([]);
+    expect(shuffle(["only"], createRng(1))).toEqual(["only"]);
+  });
+
+  it("can put every item in every position (2,000 seeds over 4 items)", () => {
+    const seenAt = new Map<string, Set<number>>();
+    for (let seed = 0; seed < 2000; seed++) {
+      shuffle(["w", "x", "y", "z"], createRng(seed)).forEach((item, position) => {
+        const positions = seenAt.get(item) ?? new Set<number>();
+        positions.add(position);
+        seenAt.set(item, positions);
+      });
+    }
+    for (const item of ["w", "x", "y", "z"]) {
+      expect(seenAt.get(item)?.size).toBe(4);
+    }
+  });
+
+  it("uses exactly length - 1 draws, so callers can predict the generator state", () => {
+    let calls = 0;
+    const counting = () => {
+      calls++;
+      return 0.5;
+    };
+    shuffle(items, counting);
+    expect(calls).toBe(items.length - 1);
   });
 });
