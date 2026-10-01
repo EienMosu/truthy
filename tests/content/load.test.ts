@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { WHOLE_DECK, type Card, type DeckFile, type DeckIndex } from "@/src/content/schema";
-import { LoadError, createDeckCache, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
+import { LoadError, createDeckCache, loadDeck, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
 
 // A storage stand-in backed by a Map, with the same string-only contract as localStorage.
 function memoryStorage(initial: Record<string, string> = {}) {
@@ -205,5 +205,110 @@ describe("loadIndex", () => {
     zero.areas[0]!.platforms[0]!.decks[0]!.cardCount = 0;
     const fetcher = fakeFetcher({ "/decks/index.json": { ok: true, body: zero } });
     await expect(loadIndex(fetcher)).rejects.toThrow(/cardCount/);
+  });
+});
+
+describe("loadDeck", () => {
+  const entry = { id: "aws-clf", hash: "h2" };
+  const url = "/decks/aws-clf.json?v=h2";
+
+  it("uses the cached copy without fetching when the hashes match", async () => {
+    const cache = createDeckCache(memoryStorage());
+    cache.write(deckFile("aws-clf", "h2"));
+    const fetcher = fakeFetcher({});
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toEqual(deckFile("aws-clf", "h2"));
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("fetches the deck file, versioned by its hash, when nothing is cached", async () => {
+    const cache = createDeckCache(memoryStorage());
+    const fetcher = fakeFetcher({ [url]: { ok: true, body: deckFile("aws-clf", "h2") } });
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toEqual(deckFile("aws-clf", "h2"));
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).toHaveBeenCalledWith(url);
+  });
+
+  it("stores a fetched deck so the next load needs no fetch", async () => {
+    const cache = createDeckCache(memoryStorage());
+    const fetcher = fakeFetcher({ [url]: { ok: true, body: deckFile("aws-clf", "h2") } });
+    await loadDeck(entry, cache, fetcher);
+    await loadDeck(entry, cache, fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(cache.read("aws-clf")?.hash).toBe("h2");
+  });
+
+  it("fetches again and overwrites the cache when the hash in the index changed", async () => {
+    const cache = createDeckCache(memoryStorage());
+    cache.write(deckFile("aws-clf", "h1"));
+    const fresh = deckFile("aws-clf", "h2", [card("aws-clf-009", "S01")]);
+    const fetcher = fakeFetcher({ [url]: { ok: true, body: fresh } });
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toEqual(fresh);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(cache.read("aws-clf")).toEqual(fresh);
+  });
+
+  it("falls back to a cached copy of an older hash when the fetch fails", async () => {
+    const cache = createDeckCache(memoryStorage());
+    const old = deckFile("aws-clf", "h1");
+    cache.write(old);
+    const fetcher = fakeFetcher({ [url]: "network-error" });
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toEqual(old);
+    expect(cache.read("aws-clf")).toEqual(old);
+  });
+
+  it("falls back to a cached copy when the server answers with an error", async () => {
+    const cache = createDeckCache(memoryStorage());
+    cache.write(deckFile("aws-clf", "h1"));
+    const fetcher = fakeFetcher({ [url]: { ok: false, body: null } });
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toMatchObject({ hash: "h1" });
+  });
+
+  it("throws a LoadError naming the deck when the fetch fails and nothing is cached", async () => {
+    const cache = createDeckCache(memoryStorage());
+    const fetcher = fakeFetcher({ [url]: "network-error" });
+    const error = await loadDeck(entry, cache, fetcher).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(LoadError);
+    expect((error as LoadError).message).toBe('Could not load the deck "aws-clf": the request failed (Failed to fetch).');
+  });
+
+  it("throws a LoadError when there is no storage at all and the fetch fails", async () => {
+    const fetcher = fakeFetcher({ [url]: { ok: false, body: null } });
+    await expect(loadDeck(entry, createDeckCache(undefined), fetcher)).rejects.toThrow(
+      'Could not load the deck "aws-clf": the server did not return the file.',
+    );
+  });
+
+  it("rejects a fetched deck that fails validation, names the field and does not cache it", async () => {
+    const storage = memoryStorage();
+    const cache = createDeckCache(storage);
+    const bad = { id: "aws-clf", hash: "h2", cards: [{ ...card("aws-clf-001", "S01"), answer: "yes" }] };
+    const fetcher = fakeFetcher({ [url]: { ok: true, body: bad } });
+    const error = await loadDeck(entry, cache, fetcher).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(LoadError);
+    expect((error as LoadError).message).toMatch(/^Could not load the deck "aws-clf": the file is not valid \(cards\.0\.answer: /);
+    expect(storage.data.size).toBe(0);
+  });
+
+  it("uses the cached copy when the fetched deck fails validation", async () => {
+    const cache = createDeckCache(memoryStorage());
+    cache.write(deckFile("aws-clf", "h1"));
+    const fetcher = fakeFetcher({ [url]: { ok: true, body: { id: "aws-clf", hash: "h2", cards: [] } } });
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toMatchObject({ hash: "h1" });
+  });
+
+  it("still returns the fetched deck when the storage is full", async () => {
+    const cache = createDeckCache({
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+      },
+    });
+    const fetcher = fakeFetcher({ [url]: { ok: true, body: deckFile("aws-clf", "h2") } });
+    await expect(loadDeck(entry, cache, fetcher)).resolves.toEqual(deckFile("aws-clf", "h2"));
+  });
+
+  it("accepts window.fetch as a fetcher", () => {
+    const real: Fetcher = (input) => fetch(input);
+    expect(typeof real).toBe("function");
   });
 });

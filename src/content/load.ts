@@ -106,3 +106,32 @@ export async function loadIndex(fetcher: Fetcher): Promise<DeckIndex> {
   }
   return parsed.data;
 }
+
+export function deckUrl(entry: { id: string; hash: string }): string {
+  // The hash in the query makes a changed deck a new URL, so no HTTP cache can serve the old file.
+  return `/decks/${encodeURIComponent(entry.id)}.json?v=${encodeURIComponent(entry.hash)}`;
+}
+
+// Loads one deck. A cached copy with the hash from the index is used without fetching.
+// Otherwise the deck is fetched, validated and cached. When that fails, any cached copy is used,
+// even one of an older hash; with no copy at all it throws LoadError.
+export async function loadDeck(entry: { id: string; hash: string }, cache: DeckCache, fetcher: Fetcher): Promise<DeckFile> {
+  const cached = cache.read(entry.id);
+  if (cached && cached.hash === entry.hash) return cached;
+
+  const fetched = await fetchJson(fetcher, deckUrl(entry));
+  let reason: string;
+  if (fetched.ok) {
+    const parsed = DeckFileSchema.safeParse(fetched.value);
+    if (parsed.success) {
+      cache.write(parsed.data);
+      return parsed.data;
+    }
+    reason = `the file is not valid (${firstIssue(parsed.error.issues)})`;
+  } else {
+    reason = fetched.reason;
+  }
+
+  if (cached) return cached;
+  throw new LoadError(`Could not load the deck "${entry.id}": ${reason}.`);
+}
