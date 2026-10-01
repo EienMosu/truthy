@@ -17,7 +17,7 @@ const played: Progress = {
   version: 1,
   cards: { "aws-clf-c02-t2.1-06": { seen: 2, lastCorrect: true, lastSeenAt: 1_790_000_000_000 } },
   records: { "aws-clf-c02/SEC#classic": 7 },
-  last: { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" },
+  last: { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic", score: 7, total: 10 },
 };
 
 describe("PROGRESS_KEY", () => {

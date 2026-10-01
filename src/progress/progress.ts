@@ -11,7 +11,9 @@ export interface Progress {
   version: 1;
   cards: Record<string, CardHistory>;
   records: Record<string, number>; // key: recordKey(route, mode)
-  last: { route: Route; mode: Mode } | null;
+  // The last round played. score and total are null for an abandoned round and for a last route stored
+  // before scores were kept.
+  last: { route: Route; mode: Mode; score: number | null; total: number | null } | null;
 }
 
 export function emptyProgress(): Progress {
@@ -28,8 +30,8 @@ export interface ApplyOutcome {
   isNewBest: boolean;
 }
 
-// Records the answers of a round in the card history, remembers its route and mode,
-// and sets the record for that route and mode when a finished round beats it.
+// Records the answers of a round in the card history, remembers its route and mode (and its score
+// when it was finished), and sets the record for that route and mode when a finished round beats it.
 // A first finished round on a route and mode always sets the record.
 // An abandoned round keeps its answers in the history but never touches the record.
 export function applyResult(progress: Progress, result: RoundResult): ApplyOutcome {
@@ -42,7 +44,12 @@ export function applyResult(progress: Progress, result: RoundResult): ApplyOutco
       version: 1,
       cards: withAnswers(progress.cards, result),
       records,
-      last: { route: { deckId: result.route.deckId, sectionId: result.route.sectionId }, mode: result.mode },
+      last: {
+        route: { deckId: result.route.deckId, sectionId: result.route.sectionId },
+        mode: result.mode,
+        score: result.abandoned ? null : result.score,
+        total: result.abandoned ? null : result.total,
+      },
     },
     previousBest,
     isNewBest,
@@ -101,6 +108,9 @@ const ProgressSchema = z.object({
     .object({
       route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
       mode: z.enum(MODES),
+      // Missing in progress stored before scores were kept: it reads as a round without a score.
+      score: z.number().int().nonnegative().nullable().default(null),
+      total: z.number().int().nonnegative().nullable().default(null),
     })
     .nullable(),
 });

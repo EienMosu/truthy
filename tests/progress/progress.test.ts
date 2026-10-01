@@ -119,20 +119,25 @@ describe("applyResult: card history", () => {
 });
 
 describe("applyResult: last route", () => {
-  it("sets the last route and mode", () => {
+  it("sets the last route and mode, with the score of a finished round", () => {
     const { progress } = applyResult(emptyProgress(), result([answered("c1", true, 1)]));
-    expect(progress.last).toEqual({ route: SEC, mode: "classic" });
+    expect(progress.last).toEqual({ route: SEC, mode: "classic", score: 1, total: 1 });
   });
 
-  it("replaces an earlier last route", () => {
-    const before: Progress = { ...emptyProgress(), last: { route: CON, mode: "classic" } };
+  it("keeps the score and the total of the round: 7 of 10", () => {
+    const { progress } = applyResult(emptyProgress(), scored(7));
+    expect(progress.last).toEqual({ route: SEC, mode: "classic", score: 7, total: 10 });
+  });
+
+  it("replaces an earlier last route and its score", () => {
+    const before: Progress = { ...emptyProgress(), last: { route: CON, mode: "classic", score: 9, total: 10 } };
     const { progress } = applyResult(before, result([answered("c1", true, 1)], { route: SEC }));
-    expect(progress.last).toEqual({ route: SEC, mode: "classic" });
+    expect(progress.last).toEqual({ route: SEC, mode: "classic", score: 1, total: 1 });
   });
 
-  it("sets the last route even for an abandoned round", () => {
-    const { progress } = applyResult(emptyProgress(), result([], { abandoned: true }));
-    expect(progress.last).toEqual({ route: SEC, mode: "classic" });
+  it("sets the last route even for an abandoned round, without a score", () => {
+    const { progress } = applyResult(emptyProgress(), result([answered("c1", true, 1)], { abandoned: true }));
+    expect(progress.last).toEqual({ route: SEC, mode: "classic", score: null, total: null });
   });
 
   it("does not share the route object with the result", () => {
@@ -148,7 +153,7 @@ describe("applyResult: purity", () => {
       version: 1,
       cards: { c1: { seen: 1, lastCorrect: false, lastSeenAt: 1 } },
       records: { [recordKey(SEC, "classic")]: 3 },
-      last: { route: CON, mode: "classic" },
+      last: { route: CON, mode: "classic", score: 3, total: 10 },
     });
     const round = deepFreeze(result([answered("c1", true, 9), answered("c2", true, 10)]));
     const beforeCopy = structuredClone(before);
@@ -257,7 +262,7 @@ describe("pruneDeck", () => {
       "nextjs-rendering-rsc-01": seenOnce(),
     },
     records: { "aws-clf-c02/SEC#classic": 7 },
-    last: { route: SEC, mode: "classic" },
+    last: { route: SEC, mode: "classic", score: 7, total: 10 },
   };
 
   it("removes the history of that deck's cards that no longer exist", () => {
@@ -345,7 +350,7 @@ describe("parseProgress", () => {
       "aws-clf-c02-t2.1-06": { seen: 1, lastCorrect: true, lastSeenAt: 1_790_000_100_000 },
     },
     records: { "aws-clf-c02/SEC#classic": 8 },
-    last: { route: SEC, mode: "classic" },
+    last: { route: SEC, mode: "classic", score: 8, total: 10 },
   };
   const empty = emptyProgress();
 
@@ -356,6 +361,16 @@ describe("parseProgress", () => {
   it("reads a progress with no last route", () => {
     const fresh = { ...stored, last: null };
     expect(parseProgress(JSON.stringify(fresh))).toEqual(fresh);
+  });
+
+  it("reads the last route of an abandoned round, which has no score", () => {
+    const abandoned = { ...stored, last: { route: SEC, mode: "classic", score: null, total: null } };
+    expect(parseProgress(JSON.stringify(abandoned))).toEqual(abandoned);
+  });
+
+  it("reads a last route stored before scores were kept as one without a score", () => {
+    const older = { ...stored, last: { route: SEC, mode: "classic" } };
+    expect(parseProgress(JSON.stringify(older))).toEqual({ ...stored, last: { route: SEC, mode: "classic", score: null, total: null } });
   });
 
   it("gives empty progress for null (nothing stored yet)", () => {
@@ -398,6 +413,9 @@ describe("parseProgress", () => {
     expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": -3 } }))).toEqual(empty);
     expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "zen" } }))).toEqual(empty);
     expect(parseProgress(JSON.stringify({ ...stored, last: { route: { deckId: "", sectionId: "SEC" }, mode: "classic" } }))).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "classic", score: -1, total: 10 } }))).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "classic", score: 7, total: 9.5 } }))).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "classic", score: "7", total: 10 } }))).toEqual(empty);
   });
 
   it("gives empty progress for a missing version", () => {
@@ -424,7 +442,7 @@ describe("parseProgress", () => {
       version: 1,
       cards: { "aws-clf-c02-t1.1-01": { seen: 3, lastCorrect: false, lastSeenAt: 5 } },
       records: { "aws-clf-c02/SEC#classic": 8 },
-      last: { route: SEC, mode: "classic" },
+      last: { route: SEC, mode: "classic", score: null, total: null },
     });
   });
 
