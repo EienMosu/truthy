@@ -13,15 +13,35 @@ interface Group {
   prefix: string; // CSS variable prefix: --<prefix>-<token name>
   label: string; // comment above the group in the CSS
   required: boolean;
+  kind: "plain" | "font-family" | "typography";
 }
 
+// next/font exposes each loaded family as a CSS variable (app/layout.tsx). A font family token whose
+// name is listed here points at that variable, so the self-hosted font is used, and keeps its fallbacks.
+export const NEXT_FONT_VARIABLES: Readonly<Record<string, string>> = {
+  sans: "--font-overpass",
+  mono: "--font-overpass-mono",
+};
+
+// A typography token becomes one variable per field: --type-<role>-<suffix>.
+const TYPE_FIELDS = [
+  ["fontFamily", "family"],
+  ["fontSize", "size"],
+  ["fontWeight", "weight"],
+  ["lineHeight", "line-height"],
+  ["letterSpacing", "letter-spacing"],
+] as const;
+
 const GROUPS: readonly Group[] = [
-  { path: "color.day", prefix: "color", label: "Colors, day theme", required: true },
-  { path: "space", prefix: "space", label: "Spacing", required: true },
-  { path: "size", prefix: "size", label: "Sizes", required: false },
-  { path: "radius", prefix: "radius", label: "Corner radii", required: true },
-  { path: "stroke", prefix: "stroke", label: "Stroke widths", required: false },
-  { path: "opacity", prefix: "opacity", label: "Opacities", required: false },
+  { path: "color.day", prefix: "color", label: "Colors, day theme", required: true, kind: "plain" },
+  { path: "font.family", prefix: "font", label: "Font families", required: true, kind: "font-family" },
+  { path: "font.weight", prefix: "font-weight", label: "Font weights", required: false, kind: "plain" },
+  { path: "typography", prefix: "type", label: "Type roles", required: false, kind: "typography" },
+  { path: "space", prefix: "space", label: "Spacing", required: true, kind: "plain" },
+  { path: "size", prefix: "size", label: "Sizes", required: false, kind: "plain" },
+  { path: "radius", prefix: "radius", label: "Corner radii", required: true, kind: "plain" },
+  { path: "stroke", prefix: "stroke", label: "Stroke widths", required: false, kind: "plain" },
+  { path: "opacity", prefix: "opacity", label: "Opacities", required: false, kind: "plain" },
 ];
 
 type Dict = Record<string, unknown>;
@@ -115,6 +135,21 @@ function formatMeasure(type: "dimension" | "duration", value: unknown, path: str
   return `${value.value}${value.unit}`;
 }
 
+function fontStack(value: unknown, path: string): string[] {
+  const families = typeof value === "string" ? [value] : value;
+  if (!Array.isArray(families) || families.length === 0) fail(path, "has a font family that is not a name or a list of names");
+  return families.map((family) => {
+    if (typeof family !== "string" || family.trim() === "") fail(path, "has an empty font family name");
+    return /^[A-Za-z][A-Za-z0-9-]*$/.test(family) ? family : `"${family}"`;
+  });
+}
+
+function formatFontWeight(value: unknown, path: string): string {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 1 && value <= 1000) return String(value);
+  if (typeof value === "string" && /^[a-z]+(?:-[a-z]+)*$/.test(value)) return value;
+  return fail(path, "has a font weight that is neither a number from 1 to 1000 nor a keyword");
+}
+
 function formatValue(type: string | undefined, raw: unknown, path: string, all: ReadonlyMap<string, Token>): string {
   const value = deref(raw, [path], all);
   switch (type) {
@@ -124,10 +159,56 @@ function formatValue(type: string | undefined, raw: unknown, path: string, all: 
       return formatMeasure("dimension", value, path);
     case "number":
       return formatNumber(value, path);
+    case "fontWeight":
+      return formatFontWeight(value, path);
+    case "fontFamily":
+      return fontStack(value, path).join(", ");
     case undefined:
       return fail(path, "has no $type");
     default:
       return fail(path, `has unsupported type ${type}`);
+  }
+}
+
+function fontFamilyEntry(token: Token, all: ReadonlyMap<string, Token>): string {
+  if (token.type !== "fontFamily") fail(token.path, `has type ${String(token.type)}, expected fontFamily`);
+  const stack = fontStack(deref(token.value, [token.path], all), token.path);
+  const variable = NEXT_FONT_VARIABLES[token.path.slice("font.family.".length)];
+  return variable === undefined ? stack.join(", ") : [`var(${variable})`, ...stack.slice(1)].join(", ");
+}
+
+function typographyEntries(token: Token, name: string, all: ReadonlyMap<string, Token>): [string, string][] {
+  if (token.type !== "typography") fail(token.path, `has type ${String(token.type)}, expected typography`);
+  const role = deref(token.value, [token.path], all);
+  if (!isDict(role)) fail(token.path, "has a typography value that is not an object");
+  return TYPE_FIELDS.map(([field, suffix]): [string, string] => {
+    const raw = role[field];
+    if (raw === undefined) fail(token.path, `is missing ${field}`);
+    const value = deref(raw, [token.path], all);
+    let css: string;
+    if (field === "fontFamily") {
+      const reference = typeof raw === "string" ? REFERENCE.exec(raw) : null;
+      const family = reference?.[1]?.startsWith("font.family.") ? reference[1].slice("font.family.".length) : undefined;
+      css = family === undefined ? fontStack(value, token.path).join(", ") : `var(--font-${family.split(".").join("-")})`;
+    } else if (field === "fontWeight") {
+      css = formatFontWeight(value, token.path);
+    } else if (field === "lineHeight") {
+      css = typeof value === "number" ? formatNumber(value, token.path) : formatMeasure("dimension", value, token.path);
+    } else {
+      css = formatMeasure("dimension", value, token.path);
+    }
+    return [`${name}-${suffix}`, css];
+  });
+}
+
+function entriesFor(group: Group, token: Token, name: string, all: ReadonlyMap<string, Token>): [string, string][] {
+  switch (group.kind) {
+    case "font-family":
+      return [[name, fontFamilyEntry(token, all)]];
+    case "typography":
+      return typographyEntries(token, name, all);
+    case "plain":
+      return [[name, formatValue(token.type, token.value, token.path, all)]];
   }
 }
 
@@ -169,10 +250,11 @@ export function tokensToCss(tokens: unknown): string {
       if (!segments.every((segment) => NAME.test(segment))) {
         fail(token.path, "has a name that is not lowercase letters, digits and hyphens");
       }
-      const name = `--${group.prefix}-${segments.join("-")}`;
-      if (emitted.has(name)) fail(token.path, `would produce ${name} a second time`);
-      emitted.add(name);
-      lines.push(`  ${name}: ${formatValue(token.type, token.value, token.path, all)};`);
+      for (const [name, value] of entriesFor(group, token, `--${group.prefix}-${segments.join("-")}`, all)) {
+        if (emitted.has(name)) fail(token.path, `would produce ${name} a second time`);
+        emitted.add(name);
+        lines.push(`  ${name}: ${value};`);
+      }
     }
     sections.push(lines.join("\n"));
   }

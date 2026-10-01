@@ -250,3 +250,104 @@ describe("tokensToCss: sizes, numbers and names", () => {
     expect(() => tokensToCss(tokens)).toThrow(/opacity\.broken/);
   });
 });
+
+describe("tokensToCss: fonts and type roles", () => {
+  const role = (overrides: Dict = {}) => ({
+    $type: "typography",
+    $value: {
+      fontFamily: "{font.family.sans}",
+      fontSize: px(25),
+      fontWeight: "{font.weight.sans-semibold}",
+      letterSpacing: px(-0.3),
+      lineHeight: 1.28,
+      ...overrides,
+    },
+  });
+
+  function withTypography(roles: Dict): Dict {
+    const tokens = base();
+    tokens.font.weight = { "sans-semibold": { $type: "fontWeight", $value: 600 } };
+    tokens.typography = roles;
+    return tokens;
+  }
+
+  it("points --font-sans and --font-mono at the next/font variables, keeping the fallbacks", () => {
+    const out = vars(tokensToCss(base()));
+    expect(out.get("--font-sans")).toBe("var(--font-overpass), system-ui, sans-serif");
+    expect(out.get("--font-mono")).toBe("var(--font-overpass-mono), ui-monospace, monospace");
+  });
+
+  it("writes any other family as a font stack, quoting names with spaces", () => {
+    const tokens = base();
+    tokens.font.family.serif = { $type: "fontFamily", $value: ["Source Serif 4", "Georgia", "serif"] };
+    tokens.font.family.single = { $type: "fontFamily", $value: "Inter" };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--font-serif")).toBe('"Source Serif 4", Georgia, serif');
+    expect(out.get("--font-single")).toBe("Inter");
+  });
+
+  it("names the required font family group when it is missing", () => {
+    const tokens = base();
+    delete tokens.font;
+    expect(() => tokensToCss(tokens)).toThrow("font.family");
+  });
+
+  it("rejects an empty font stack", () => {
+    const tokens = base();
+    tokens.font.family.sans.$value = [];
+    expect(() => tokensToCss(tokens)).toThrow(/font\.family\.sans/);
+  });
+
+  it("emits font weights as --font-weight variables", () => {
+    const tokens = base();
+    tokens.font.weight = { "sans-extrabold": { $type: "fontWeight", $value: 800 }, "mono-bold": { $type: "fontWeight", $value: "bold" } };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--font-weight-sans-extrabold")).toBe("800");
+    expect(out.get("--font-weight-mono-bold")).toBe("bold");
+  });
+
+  it("rejects a font weight outside 1 to 1000", () => {
+    const tokens = base();
+    tokens.font.weight = { heavy: { $type: "fontWeight", $value: 1200 } };
+    expect(() => tokensToCss(tokens)).toThrow(/font\.weight\.heavy/);
+  });
+
+  it("splits a type role into five variables with references resolved", () => {
+    const out = vars(tokensToCss(withTypography({ "card-statement": role() })));
+    expect(out.get("--type-card-statement-family")).toBe("var(--font-sans)");
+    expect(out.get("--type-card-statement-size")).toBe("25px");
+    expect(out.get("--type-card-statement-weight")).toBe("600");
+    expect(out.get("--type-card-statement-line-height")).toBe("1.28");
+    expect(out.get("--type-card-statement-letter-spacing")).toBe("-0.3px");
+  });
+
+  it("points a mono role at --font-mono", () => {
+    const out = vars(tokensToCss(withTypography({ score: role({ fontFamily: "{font.family.mono}" }) })));
+    expect(out.get("--type-score-family")).toBe("var(--font-mono)");
+  });
+
+  it("writes a role with a literal family and weight as they are", () => {
+    const out = vars(tokensToCss(withTypography({ quote: role({ fontFamily: ["Georgia", "serif"], fontWeight: 400 }) })));
+    expect(out.get("--type-quote-family")).toBe("Georgia, serif");
+    expect(out.get("--type-quote-weight")).toBe("400");
+  });
+
+  it("accepts a line height given as a dimension", () => {
+    const out = vars(tokensToCss(withTypography({ tight: role({ lineHeight: px(20) }) })));
+    expect(out.get("--type-tight-line-height")).toBe("20px");
+  });
+
+  it("names the role and the field that is missing", () => {
+    const value = role().$value as Dict;
+    delete value.letterSpacing;
+    expect(() => tokensToCss(withTypography({ stamp: { $type: "typography", $value: value } }))).toThrow(
+      /typography\.stamp is missing letterSpacing/,
+    );
+  });
+
+  it("names the role when its family reference does not exist", () => {
+    expect(() => tokensToCss(withTypography({ logo: role({ fontFamily: "{font.family.display}" }) }))).toThrow(
+      "typography.logo refers to {font.family.display}, which does not exist",
+    );
+  });
+});
