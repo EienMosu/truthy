@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { WHOLE_DECK, type Card, type DeckFile, type DeckIndex } from "@/src/content/schema";
-import { LoadError, createDeckCache, loadDeck, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
+import { FETCH_TIMEOUT_MS, LoadError, createDeckCache, loadDeck, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
 
 // A storage stand-in backed by a Map, with the same string-only contract as localStorage.
 function memoryStorage(initial: Record<string, string> = {}) {
@@ -337,5 +337,102 @@ describe("files that belong to another deck", () => {
       'Could not load the deck "aws-clf": the file is for the deck "gcp-cdl".',
     );
     expect(storage.data.size).toBe(0);
+  });
+});
+
+describe("loadIndex with a cached copy", () => {
+  it("stores a fetched index under truthy.index.v1", async () => {
+    const storage = memoryStorage();
+    await loadIndex(fakeFetcher({ "/decks/index.json": { ok: true, body: index } }), storage);
+    expect(JSON.parse(storage.data.get("truthy.index.v1") ?? "null")).toEqual(index);
+  });
+
+  it("always fetches, even when a copy is cached, so new decks appear", async () => {
+    const storage = memoryStorage({ "truthy.index.v1": JSON.stringify({ areas: [] }) });
+    const fetcher = fakeFetcher({ "/decks/index.json": { ok: true, body: index } });
+    await expect(loadIndex(fetcher, storage)).resolves.toEqual(index);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the cached index when the fetch fails", async () => {
+    const storage = memoryStorage({ "truthy.index.v1": JSON.stringify(index) });
+    await expect(loadIndex(fakeFetcher({ "/decks/index.json": "network-error" }), storage)).resolves.toEqual(index);
+  });
+
+  it("falls back to the cached index when the fetched index is not valid", async () => {
+    const storage = memoryStorage({ "truthy.index.v1": JSON.stringify(index) });
+    const fetcher = fakeFetcher({ "/decks/index.json": { ok: true, body: { areas: "none" } } });
+    await expect(loadIndex(fetcher, storage)).resolves.toEqual(index);
+    expect(JSON.parse(storage.data.get("truthy.index.v1") ?? "null")).toEqual(index);
+  });
+
+  it("throws a LoadError when the fetch fails and the cached index is corrupt", async () => {
+    const storage = memoryStorage({ "truthy.index.v1": "{corrupt" });
+    await expect(loadIndex(fakeFetcher({}), storage)).rejects.toBeInstanceOf(LoadError);
+  });
+});
+
+// A phone on a weak signal: the request is sent but no answer ever comes (no error either). Without a time
+// limit the player would look at the loading state for minutes even with a good copy on the device.
+describe("a network that never answers", () => {
+  const hanging = vi.fn<Fetcher>(() => new Promise(() => {}));
+
+  async function settle<T>(promise: Promise<T>): Promise<{ value?: T; error?: unknown }> {
+    const outcome = promise.then(
+      (value) => ({ value }),
+      (error: unknown) => ({ error }),
+    );
+    await vi.advanceTimersByTimeAsync(FETCH_TIMEOUT_MS);
+    return outcome;
+  }
+
+  it("gives up after FETCH_TIMEOUT_MS, which is a few seconds", () => {
+    expect(FETCH_TIMEOUT_MS).toBeGreaterThanOrEqual(3000);
+    expect(FETCH_TIMEOUT_MS).toBeLessThanOrEqual(10000);
+  });
+
+  it("uses the cached index when the request hangs", async () => {
+    vi.useFakeTimers();
+    try {
+      const storage = memoryStorage({ "truthy.index.v1": JSON.stringify(index) });
+      expect(await settle(loadIndex(hanging, storage))).toEqual({ value: index });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("uses a cached deck of an older hash when the request hangs", async () => {
+    vi.useFakeTimers();
+    try {
+      const cache = createDeckCache(memoryStorage());
+      cache.write(deckFile("aws-clf", "h1"));
+      const outcome = await settle(loadDeck({ id: "aws-clf", hash: "h2" }, cache, hanging));
+      expect(outcome.value?.hash).toBe("h1");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("throws a LoadError when the request hangs and nothing is cached, so the player gets Try again", async () => {
+    vi.useFakeTimers();
+    try {
+      const outcome = await settle(loadIndex(hanging, memoryStorage()));
+      expect(outcome.error).toBeInstanceOf(LoadError);
+      expect((outcome.error as Error).message).toContain("no answer");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("still waits for a slow answer that arrives inside the limit", async () => {
+    vi.useFakeTimers();
+    try {
+      const slow = vi.fn<Fetcher>(
+        () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: async () => index }), FETCH_TIMEOUT_MS - 1)),
+      );
+      expect(await settle(loadIndex(slow, memoryStorage()))).toEqual({ value: index });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -71,18 +71,31 @@ export const INDEX_URL = "/decks/index.json";
 
 type Fetched = { ok: true; value: unknown } | { ok: false; reason: string };
 
+// How long a request may take before it counts as failed. On a weak phone signal a request can hang for
+// minutes without an error; after this time the cached copy is used, or the player gets Try again.
+export const FETCH_TIMEOUT_MS = 8000;
+
+// Resolves or rejects like `promise`, or rejects after `ms` when it has not settled by then.
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer within ${ms} ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 // Fetches one JSON file. Never throws: every failure comes back as a reason a person can read.
 async function fetchJson(fetcher: Fetcher, url: string): Promise<Fetched> {
   let response: Awaited<ReturnType<Fetcher>>;
   try {
-    response = await fetcher(url);
+    response = await withTimeout(fetcher(url), FETCH_TIMEOUT_MS);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return { ok: false, reason: `the request failed (${detail})` };
   }
   if (!response.ok) return { ok: false, reason: "the server did not return the file" };
   try {
-    return { ok: true, value: await response.json() };
+    return { ok: true, value: await withTimeout(response.json(), FETCH_TIMEOUT_MS) };
   } catch {
     return { ok: false, reason: "the response is not JSON" };
   }
@@ -96,15 +109,27 @@ function firstIssue(issues: readonly { path: readonly PropertyKey[]; message: st
   return path === "" ? issue.message : `${path}: ${issue.message}`;
 }
 
-// GET /decks/index.json and validate it. Throws LoadError when it cannot be fetched or is not a valid index.
-export async function loadIndex(fetcher: Fetcher): Promise<DeckIndex> {
+export const INDEX_CACHE_KEY = "truthy.index.v1";
+
+// GET /decks/index.json and validate it. The index is always fetched so new decks and new hashes show up.
+// With storage, a valid index is cached, and a failed fetch or an invalid file falls back to that copy.
+// Throws LoadError when the index cannot be loaded and there is no valid cached copy.
+export async function loadIndex(fetcher: Fetcher, storage?: ReadWriteStorage): Promise<DeckIndex> {
   const fetched = await fetchJson(fetcher, INDEX_URL);
-  if (!fetched.ok) throw new LoadError(`Could not load the deck index: ${fetched.reason}.`);
-  const parsed = DeckIndexSchema.safeParse(fetched.value);
-  if (!parsed.success) {
-    throw new LoadError(`Could not load the deck index: the file is not valid (${firstIssue(parsed.error.issues)}).`);
+  let reason: string;
+  if (fetched.ok) {
+    const parsed = DeckIndexSchema.safeParse(fetched.value);
+    if (parsed.success) {
+      writeJson(storage, INDEX_CACHE_KEY, parsed.data);
+      return parsed.data;
+    }
+    reason = `the file is not valid (${firstIssue(parsed.error.issues)})`;
+  } else {
+    reason = fetched.reason;
   }
-  return parsed.data;
+  const cached = DeckIndexSchema.safeParse(readJson(storage, INDEX_CACHE_KEY));
+  if (cached.success) return cached.data;
+  throw new LoadError(`Could not load the deck index: ${reason}.`);
 }
 
 export function deckUrl(entry: { id: string; hash: string }): string {
