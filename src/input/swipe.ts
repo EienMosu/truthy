@@ -58,6 +58,7 @@ export function interpret(samples: readonly SwipeSample[], context: SwipeContext
   const first = samples[0];
   const last = samples[samples.length - 1];
   if (samples.length < 2 || first === undefined || last === undefined) return "cancel";
+  if (!canStart(first, context)) return "cancel";
 
   const dx = last.x - first.x;
   const dy = last.y - first.y;

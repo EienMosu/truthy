@@ -225,3 +225,35 @@ describe("interpret: zig-zag gestures", () => {
     );
   });
 });
+
+describe("interpret: gestures that should never have started", () => {
+  it("cancels a 120 px swipe that started inside the settle time", () => {
+    const justShown: SwipeContext = { viewportWidth: 390, cardShownAt: 900 };
+    // Starts 100 ms after the card appeared and ends well past the commit distance.
+    expect(interpret(gesture([0, 0, 0], [120, 0, 300]), justShown)).toBe("cancel");
+  });
+
+  it("cancels a 120 px swipe that started in the left edge zone", () => {
+    const fromEdge = [
+      { x: 10, y: 400, t: 1000 },
+      { x: 130, y: 400, t: 1300 },
+    ];
+    expect(interpret(fromEdge, context)).toBe("cancel");
+  });
+
+  it("canStart ignores a touch that began before the card appeared", () => {
+    const shown: SwipeContext = { viewportWidth: 390, cardShownAt: 5000 };
+    expect(canStart({ x: 195, y: 400, t: 4990 }, shown)).toBe(false);
+  });
+});
+
+describe("interpret: fling velocity boundary", () => {
+  it("commits at exactly 0.5 px/ms measured over exactly 80 ms", () => {
+    // Slow to 20 px, then 40 px more in the last 80 ms: 60 px total, 0.5 px/ms.
+    expect(interpret(gesture([0, 0, 0], [20, 0, 400], [60, 0, 480]), context)).toBe("true");
+  });
+
+  it("cancels just below 0.5 px/ms", () => {
+    expect(interpret(gesture([0, 0, 0], [20, 0, 400], [59, 0, 480]), context)).toBe("cancel");
+  });
+});
