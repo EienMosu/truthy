@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { PlayScreen } from "@/components/play/PlayScreen";
+import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress } from "@/src/progress/progress";
 import { DECK_ID, cardByStatement, harness, memoryStorage, type Harness } from "./fixtures";
@@ -43,13 +43,20 @@ function swipeCard(): HTMLElement {
   return element;
 }
 
+/** Lets "Next card" arrive (420 ms after the answer on the test clock), then presses it. */
+async function pressNext() {
+  const next = await screen.findByRole("button", { name: "Next card" });
+  h.advance(NEXT_ARRIVES_MS);
+  fireEvent.click(next);
+}
+
 function status(): string | null {
   return screen.getAllByRole("status").at(-1)?.textContent ?? null;
 }
 
 async function answerAndNext(value: boolean) {
   fireEvent.click(screen.getByRole("button", { name: value ? "True" : "False" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
+  await pressNext();
   await screen.findByRole("button", { name: "True" });
   h.advance(1000);
 }
@@ -134,7 +141,7 @@ describe("PlayScreen: answering", () => {
     const right = currentAnswer();
     fireEvent.keyDown(window, { key: "ArrowLeft" });
     expect(status()).toBe(`${right ? "Not quite" : "Correct"}. The answer is ${right ? "True" : "False"}.`);
-    fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
+    await pressNext();
     await screen.findByRole("button", { name: "True" });
     h.advance(1000);
     const second = currentAnswer();
@@ -172,7 +179,7 @@ describe("PlayScreen: answering", () => {
   it("ignores an answer in the first 250 ms of a card (a double tap on Next card)", async () => {
     await start();
     fireEvent.click(screen.getByRole("button", { name: "True" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
+    await pressNext();
     await screen.findByRole("button", { name: "True" });
     h.advance(100);
     fireEvent.click(screen.getByRole("button", { name: "True" }));
@@ -222,10 +229,45 @@ describe("PlayScreen: moving on", () => {
     expect(document.activeElement).toBe(document.querySelector("[data-statement]"));
   });
 
+  // Review finding F1: the "Next card" row comes in where True and False were, so a double tap on an
+  // answer must not land on it before it has arrived (420 ms after the answer) and skip the verdict.
+  it("ignores Next card until it has arrived, 420 ms after the answer", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "True" }));
+    const verdict = status();
+    h.advance(150);
+    fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
+    expect(screen.getByRole("img", { name: /^Card 1 of 10\./ })).toBeTruthy();
+    expect(status()).toBe(verdict);
+    expect(screen.getByText(cardByStatement(statementText()).text.en.explanation)).toBeTruthy();
+    h.advance(269);
+    fireEvent.click(screen.getByRole("button", { name: "Next card" }));
+    expect(screen.getByRole("img", { name: /^Card 1 of 10\./ })).toBeTruthy();
+    h.advance(1);
+    fireEvent.click(screen.getByRole("button", { name: "Next card" }));
+    await screen.findByRole("button", { name: "True" });
+    expect(screen.getByRole("img", { name: /^Card 2 of 10\./ })).toBeTruthy();
+  });
+
+  it("ignores Enter until Next card has arrived", async () => {
+    await start();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    await screen.findByRole("button", { name: "Next card" });
+    h.advance(150);
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    expect(screen.getByRole("img", { name: /^Card 1 of 10\./ })).toBeTruthy();
+    expect(status()).not.toBe("");
+    h.advance(270);
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    await screen.findByRole("button", { name: "True" });
+    expect(screen.getByRole("img", { name: /^Card 2 of 10\./ })).toBeTruthy();
+  });
+
   it("goes to the next card with Enter", async () => {
     await start();
     fireEvent.keyDown(window, { key: "ArrowRight" });
     await screen.findByRole("button", { name: "Next card" });
+    h.advance(NEXT_ARRIVES_MS);
     fireEvent.keyDown(document.body, { key: "Enter" });
     await screen.findByRole("button", { name: "True" });
     expect(screen.getByRole("img", { name: /^Card 2 of 10\./ })).toBeTruthy();
@@ -236,7 +278,7 @@ describe("PlayScreen: moving on", () => {
     for (let i = 0; i < 9; i++) await answerAndNext(true);
     expect(screen.getByRole("img", { name: /^Card 10 of 10\./ })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "True" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
+    await pressNext();
     expect(await screen.findByRole("heading", { name: "Round complete" })).toBeTruthy();
     expect(screen.getByRole("img", { name: /^Round complete\. 10 of 10 cards\./ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Play again" })).toBeTruthy();

@@ -42,6 +42,37 @@ test("a double tap on Next card does not answer the next card", async ({ page })
   await expectUnanswered(page, 2);
 });
 
+// "Next card" comes in where True and False were, so a quick double tap on an answer must not land on it
+// before it has arrived: the verdict and the explanation stay on screen.
+test("a double tap on an answer keeps the verdict and the explanation", async ({ page }) => {
+  await openHome(page);
+  await chooseRoute(page, CLF_SECURITY);
+  await startRound(page);
+  const answers = await deckAnswers(page, CLF_ID);
+
+  const first = await waitForCard(page, answers, 1);
+  const box = await page.getByRole("button", { name: "True", exact: true }).boundingBox();
+  if (box === null) throw new Error("True is not on screen");
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+
+  await page.touchscreen.tap(x, y);
+  await page.waitForTimeout(150);
+  await page.touchscreen.tap(x, y);
+
+  await page.waitForTimeout(600);
+  await expect(page.getByRole("img", { name: /^Card 1 of 10\./ })).toBeVisible();
+  await expect(verdict(page)).toHaveText(verdictFor(true, first.truth));
+  const deck = (await (await page.request.get(`/decks/${CLF_ID}.json`)).json()) as {
+    cards: { text: { en: { statement: string; explanation: string } } }[];
+  };
+  const explanation = deck.cards.find((card) => card.text.en.statement === first.statement)?.text.en.explanation;
+  if (explanation === undefined) throw new Error("The card on screen is not in the deck file");
+  await expect(page.getByText(explanation, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next card" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "True", exact: true })).toHaveCount(0);
+});
+
 // The same in the start flow: the next step's cards appear where the chosen card was, so a quick double
 // tap on "Cloud" must not choose "AWS" unseen.
 test("a double tap on an area does not choose a platform", async ({ page }) => {

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MotionGlobalConfig } from "motion/react";
 import { StrictMode } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { PlayScreen } from "@/components/play/PlayScreen";
+import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress, recordKey } from "@/src/progress/progress";
 import { DECK, DECK_ID, INDEX, cardByStatement, fakeNetwork, harness, type Harness } from "./fixtures";
@@ -43,7 +43,9 @@ async function answerAll(h: Harness, right: readonly boolean[]): Promise<string[
     statements.push(statement);
     const answer = cardByStatement(statement).answer;
     fireEvent.click(screen.getByRole("button", { name: (ok ? answer : !answer) ? "True" : "False" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Next card" }));
+    const next = await screen.findByRole("button", { name: "Next card" });
+    h.advance(NEXT_ARRIVES_MS); // "Next card" takes presses once it has arrived
+    fireEvent.click(next);
   }
   await screen.findByRole("heading", { name: "Round complete" });
   return statements;
