@@ -116,6 +116,9 @@ describe("FillInPass: ready", () => {
 describe("FillInPass: travelling values", () => {
   it("hides the value that is still travelling in from its card", () => {
     render(<FillInPass stage="destination" values={{ area: "Cloud" }} now="platform" travelling="area" onJump={() => {}} />);
-    expect(document.querySelector<HTMLElement>("[data-pass-value='area']")?.style.visibility).toBe("hidden");
+    // Opacity, not visibility: Safari leaves a value blank when its visibility comes back (seen on video).
+    const travelling = document.querySelector<HTMLElement>("[data-pass-value='area']");
+    expect(travelling?.style.opacity).toBe("0");
+    expect(travelling?.style.visibility).toBe("");
   });
 });

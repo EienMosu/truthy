@@ -39,7 +39,11 @@ export interface FillInPassProps {
   sectionChoosable?: boolean;
   /** A filled field was pressed: go back to its step. */
   onJump: (field: PassFieldName) => void;
-  /** The field whose value is hidden while a copy of it travels in from its card. */
+  /**
+   * The field whose value is hidden while a copy of it travels in from its card. It is hidden with opacity,
+   * not visibility: Safari does not repaint a value whose visibility comes back inside the moving pass, so
+   * the landed value stayed blank on screen until the next step.
+   */
   travelling?: PassFieldName;
   /** Ready stage only: grow down to the height of the game ticket, then call onUnrolled. */
   unroll?: boolean;
@@ -164,7 +168,7 @@ function Field({ field, label, value, code = false, now, first = false, choosabl
       </dt>
       <dd className="relative m-0 mt-[3px] h-(--space-20)">
         {filled ? (
-          <span data-pass-value={field} className={code ? PASS_CODE : PASS_VALUE} style={hidden ? { visibility: "hidden" } : undefined}>
+          <span data-pass-value={field} className={code ? PASS_CODE : PASS_VALUE} style={hidden ? { opacity: 0 } : undefined}>
             {value}
           </span>
         ) : (
@@ -192,7 +196,7 @@ function LineWord({ field, value, hidden, onJump }: { field: PassFieldName; valu
         "active:bg-(--color-press) focus-visible:outline-offset-[-2px]",
       ].join(" ")}
     >
-      <span data-pass-value={field} className="inline-block pt-px leading-[22px]" style={hidden ? { visibility: "hidden" } : undefined}>
+      <span data-pass-value={field} className="inline-block pt-px leading-[22px]" style={hidden ? { opacity: 0 } : undefined}>
         {value}
       </span>
     </button>
