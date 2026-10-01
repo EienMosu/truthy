@@ -521,3 +521,31 @@ describe("the real content", () => {
     }
   });
 });
+
+// Spec section 3, step 1: Cloud Digital Leader ships with the first step. buildReal() above leaves its
+// reviewed file out, so this pins the deck the deploy really builds.
+describe("the real content: Cloud Digital Leader", () => {
+  function readContent(path: string): unknown {
+    return JSON.parse(readFileSync(new URL(`../../content/${path}`, import.meta.url), "utf8"));
+  }
+
+  it("builds Cloud Digital Leader as a whole deck of 133 cards next to the other two", () => {
+    const output = buildDecks({
+      catalog: readContent("catalog.json"),
+      reviewed: {
+        "aws-clf-c02": readContent("reviewed/aws-clf-c02.json"),
+        "gcp-cdl": readContent("reviewed/gcp-cdl.json"),
+        "nextjs-rendering": readContent("reviewed/nextjs-rendering.json"),
+      },
+      version: VERSION,
+    });
+    const gcp = output.index.areas.find((area) => area.id === "cloud")?.platforms.find((platform) => platform.id === "gcp");
+    expect(gcp?.decks.map((deck) => [deck.id, deck.code, deck.title, deck.cardCount, deck.sections])).toEqual([
+      ["gcp-cdl", "CDL", "Cloud Digital Leader", 133, []],
+    ]);
+    const file = output.decks.find((deck) => deck.id === "gcp-cdl");
+    expect(file?.cards).toHaveLength(133);
+    expect(file?.cards.every((card) => card.section === WHOLE_DECK)).toBe(true);
+    expect(output.decks.map((deck) => deck.id).sort()).toEqual(["aws-clf-c02", "gcp-cdl", "nextjs-rendering"]);
+  });
+});
