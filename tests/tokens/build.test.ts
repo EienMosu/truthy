@@ -156,3 +156,97 @@ describe("tokensToCss: colors and references", () => {
     expect(() => tokensToCss(tokens)).toThrow(/color\.day\.bad/);
   });
 });
+
+describe("tokensToCss: sizes, numbers and names", () => {
+  it("emits space, size, radius, stroke and opacity with their prefixes", () => {
+    const tokens = base();
+    tokens.size = { gutter: { $type: "dimension", $value: px(16) } };
+    tokens.stroke = { rule: { $type: "dimension", $value: px(1.5) } };
+    tokens.opacity = { disabled: { $type: "number", $value: 0.45 } };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--space-4")).toBe("4px");
+    expect(out.get("--size-gutter")).toBe("16px");
+    expect(out.get("--radius-card")).toBe("16px");
+    expect(out.get("--stroke-rule")).toBe("1.5px");
+    expect(out.get("--opacity-disabled")).toBe("0.45");
+  });
+
+  it("writes zero and negative dimensions with their unit", () => {
+    const tokens = base();
+    tokens.space.none = { $type: "dimension", $value: px(0) };
+    tokens.space.pull = { $type: "dimension", $value: px(-18) };
+    tokens.space.rem = { $type: "dimension", $value: { value: 1.25, unit: "rem" } };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--space-none")).toBe("0px");
+    expect(out.get("--space-pull")).toBe("-18px");
+    expect(out.get("--space-rem")).toBe("1.25rem");
+  });
+
+  it("joins nested group names with hyphens", () => {
+    const tokens = base();
+    tokens.color.day.sky = { "1": { $type: "color", $value: "{color.primitive.navy-900}" } };
+    expect(vars(tokensToCss(tokens)).get("--color-sky-1")).toBe("#10233f");
+  });
+
+  it("applies a $type declared on a group to the tokens inside it", () => {
+    const tokens = base();
+    tokens.size = { $type: "dimension", header: { $value: px(56) } };
+    expect(vars(tokensToCss(tokens)).get("--size-header")).toBe("56px");
+  });
+
+  it("skips optional groups that are absent", () => {
+    const css = tokensToCss(base());
+    expect(css).not.toContain("--size-");
+    expect(css).not.toContain("--stroke-");
+    expect(css).not.toContain("--opacity-");
+  });
+
+  it("names the required space and radius groups when they are missing", () => {
+    const noSpace = base();
+    delete noSpace.space;
+    expect(() => tokensToCss(noSpace)).toThrow("space");
+    const noRadius = base();
+    delete noRadius.radius;
+    expect(() => tokensToCss(noRadius)).toThrow("radius");
+  });
+
+  it("rejects a token name that is not a lowercase CSS name and names the token", () => {
+    const tokens = base();
+    tokens.space["Big Gap"] = { $type: "dimension", $value: px(40) };
+    expect(() => tokensToCss(tokens)).toThrow(/space\.Big Gap/);
+  });
+
+  it("rejects two tokens that would produce the same variable", () => {
+    const tokens = base();
+    tokens.color.day["sky-1"] = { $type: "color", $value: "{color.primitive.navy-900}" };
+    tokens.color.day.sky = { "1": { $type: "color", $value: "{color.primitive.cream-50}" } };
+    expect(() => tokensToCss(tokens)).toThrow(/--color-sky-1/);
+  });
+
+  it("names a token that has no $type", () => {
+    const tokens = base();
+    tokens.space.mystery = { $value: px(3) };
+    expect(() => tokensToCss(tokens)).toThrow(/space\.mystery has no \$type/);
+  });
+
+  it("names a token with a type this build does not know", () => {
+    const tokens = base();
+    tokens.space.odd = { $type: "gradient", $value: [] };
+    expect(() => tokensToCss(tokens)).toThrow(/space\.odd has unsupported type gradient/);
+  });
+
+  it("rejects a dimension without a numeric value or with an unknown unit", () => {
+    const noNumber = base();
+    noNumber.space.bad = { $type: "dimension", $value: { value: "4", unit: "px" } };
+    expect(() => tokensToCss(noNumber)).toThrow(/space\.bad/);
+    const badUnit = base();
+    badUnit.space.bad = { $type: "dimension", $value: { value: 4, unit: "vw" } };
+    expect(() => tokensToCss(badUnit)).toThrow(/space\.bad.*vw/);
+  });
+
+  it("rejects a number token that is not a finite number", () => {
+    const tokens = base();
+    tokens.opacity = { broken: { $type: "number", $value: "0.5" } };
+    expect(() => tokensToCss(tokens)).toThrow(/opacity\.broken/);
+  });
+});

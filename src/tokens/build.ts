@@ -15,7 +15,14 @@ interface Group {
   required: boolean;
 }
 
-const GROUPS: readonly Group[] = [{ path: "color.day", prefix: "color", label: "Colors, day theme", required: true }];
+const GROUPS: readonly Group[] = [
+  { path: "color.day", prefix: "color", label: "Colors, day theme", required: true },
+  { path: "space", prefix: "space", label: "Spacing", required: true },
+  { path: "size", prefix: "size", label: "Sizes", required: false },
+  { path: "radius", prefix: "radius", label: "Corner radii", required: true },
+  { path: "stroke", prefix: "stroke", label: "Stroke widths", required: false },
+  { path: "opacity", prefix: "opacity", label: "Opacities", required: false },
+];
 
 type Dict = Record<string, unknown>;
 interface Token {
@@ -25,6 +32,8 @@ interface Token {
 }
 
 const REFERENCE = /^\{([^{}]+)\}$/;
+const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const UNITS: Readonly<Record<string, readonly string[]>> = { dimension: ["px", "rem"], duration: ["ms", "s"] };
 
 function isDict(value: unknown): value is Dict {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -90,11 +99,31 @@ function formatColor(value: unknown, path: string): string {
   return `rgb(${rgb.join(" ")} / ${alpha})`;
 }
 
+function formatNumber(value: unknown, path: string): string {
+  if (typeof value !== "number" || !Number.isFinite(value)) fail(path, "has a value that is not a finite number");
+  return String(value);
+}
+
+function formatMeasure(type: "dimension" | "duration", value: unknown, path: string): string {
+  if (!isDict(value) || typeof value.value !== "number" || !Number.isFinite(value.value)) {
+    fail(path, `has a ${type} without a numeric value`);
+  }
+  const units = UNITS[type] as readonly string[];
+  if (typeof value.unit !== "string" || !units.includes(value.unit)) {
+    fail(path, `has a ${type} unit ${String(value.unit)}, expected one of ${units.join(", ")}`);
+  }
+  return `${value.value}${value.unit}`;
+}
+
 function formatValue(type: string | undefined, raw: unknown, path: string, all: ReadonlyMap<string, Token>): string {
   const value = deref(raw, [path], all);
   switch (type) {
     case "color":
       return formatColor(value, path);
+    case "dimension":
+      return formatMeasure("dimension", value, path);
+    case "number":
+      return formatNumber(value, path);
     case undefined:
       return fail(path, "has no $type");
     default:
@@ -121,6 +150,7 @@ export function tokensToCss(tokens: unknown): string {
   collect(tokens, "", undefined, all);
 
   const sections: string[] = [];
+  const emitted = new Set<string>();
   for (const group of GROUPS) {
     const found = groupAt(tokens, group.path);
     if (!found) {
@@ -135,7 +165,13 @@ export function tokensToCss(tokens: unknown): string {
     }
     const lines = [`  /* ${group.label} */`];
     for (const token of members.values()) {
-      const name = `--${group.prefix}-${token.path.slice(group.path.length + 1)}`;
+      const segments = token.path.slice(group.path.length + 1).split(".");
+      if (!segments.every((segment) => NAME.test(segment))) {
+        fail(token.path, "has a name that is not lowercase letters, digits and hyphens");
+      }
+      const name = `--${group.prefix}-${segments.join("-")}`;
+      if (emitted.has(name)) fail(token.path, `would produce ${name} a second time`);
+      emitted.add(name);
       lines.push(`  ${name}: ${formatValue(token.type, token.value, token.path, all)};`);
     }
     sections.push(lines.join("\n"));
