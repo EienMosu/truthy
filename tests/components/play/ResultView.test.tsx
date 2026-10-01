@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { StrictMode } from "react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { pointAt } from "@/components/FlightPath";
 import { ResultView, recordRound } from "@/components/play/ResultView";
 import type { TicketInfo } from "@/components/play/useRound";
 import { poolFor } from "@/src/content/load";
@@ -261,6 +262,15 @@ function scoreText(): string | null | undefined {
   return document.querySelector("[data-score]")?.textContent;
 }
 
+// The completed route has a mark for each card of the round, not for each card dealt, and its last mark sits
+// at the end of the route.
+function expectMarksEndingTheRoute(count: number): void {
+  const marks = document.querySelectorAll("[data-waypoint]");
+  expect(marks).toHaveLength(count);
+  const end = pointAt(1);
+  expect(marks[count - 1]?.getAttribute("transform")).toMatch(new RegExp(`^translate\\(${end.x} ${end.y}\\)`));
+}
+
 // 13 right answers, then a wrong one: a Streak that ends on card 14.
 const STREAK_OF_13 = [...Array.from({ length: 13 }, () => true), false];
 
@@ -275,6 +285,7 @@ describe("ResultView: Streak", () => {
     expect(scoreText()).toBe("13");
     expect(comparison()).toBe("New bestPrevious best 12");
     expect(document.querySelectorAll('[data-ring="reached"]')).toHaveLength(1);
+    expectMarksEndingTheRoute(14);
     expect(parseProgress(storage.getItem(PROGRESS_KEY)).records[recordKey(ROUTE, "streak")]).toBe(13);
   });
 
@@ -306,6 +317,8 @@ describe("ResultView: Three lives", () => {
     expect(comparison()).toBe("First round on this route");
     expect(progressText()).toBe("Out of lives");
     expect(screen.getByRole("img", { name: "Out of lives after 7 cards. 4 correct, 3 wrong: cards 2, 4 and 7." })).toBeTruthy();
+    // The round dealt a first chunk of 10 cards and used 7 of them.
+    expectMarksEndingTheRoute(7);
     expect(parseProgress(storage.getItem(PROGRESS_KEY)).records[recordKey(ROUTE, "lives")]).toBe(7);
   });
 
