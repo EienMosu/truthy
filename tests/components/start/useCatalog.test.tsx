@@ -89,6 +89,12 @@ describe("findRoute and continueTarget", () => {
     expect(continueTarget(INDEX, progressWith({ last: { ...last, route: { deckId: "aws-clf-c02", sectionId: "OLD" } } }))).toBeNull();
     expect(continueTarget(INDEX, progressWith({ last: { ...last, mode: "streak" } }))).toBeNull();
   });
+
+  it("brings the score of the last round, and none after a round that was left", () => {
+    const last = { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" as const, score: 7, total: 10 };
+    expect(continueTarget(INDEX, progressWith({ last }))?.lastScore).toEqual({ score: 7, total: 10 });
+    expect(continueTarget(INDEX, progressWith({ last: { ...last, score: null, total: null } }))?.lastScore).toBeNull();
+  });
 });
 
 describe("useCatalog", () => {

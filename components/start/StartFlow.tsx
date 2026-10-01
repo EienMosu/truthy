@@ -519,6 +519,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                 sectionCode={returning.found.section?.id ?? WHOLE_DECK}
                 sectionTitle={returning.found.section?.title ?? "Whole deck"}
                 modeLabel={MODE_OPTIONS.find((m) => m.id === returning.mode)?.name ?? returning.mode}
+                lastScore={returning.lastScore ?? undefined}
                 onContinue={continueLast}
               />
             </motion.div>

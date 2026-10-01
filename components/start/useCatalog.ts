@@ -106,11 +106,15 @@ export interface ContinueTarget {
   route: Route;
   mode: Mode;
   found: RouteInIndex;
+  /** The score of the last round; null when it was left before the end. */
+  lastScore: { score: number; total: number } | null;
 }
 
 export function continueTarget(index: DeckIndex, progress: Progress): ContinueTarget | null {
   const last = progress.last;
   if (last === null || !AVAILABLE_MODES.includes(last.mode)) return null;
   const found = findRoute(index, last.route);
-  return found ? { route: last.route, mode: last.mode, found } : null;
+  if (!found) return null;
+  const lastScore = last.score !== null && last.total !== null ? { score: last.score, total: last.total } : null;
+  return { route: last.route, mode: last.mode, found, lastScore };
 }

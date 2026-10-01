@@ -344,6 +344,12 @@ describe("StartFlow: continue", () => {
     expect(h.history.position).toBe(2);
   });
 
+  it("shows the score of the last round when it was finished", async () => {
+    await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, score: 7, total: 10 } })));
+    const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." });
+    expect(line.textContent).toBe("Continue where you left offCLF → SEC · Classic · last 7 of 10");
+  });
+
   it("is not shown when the last route is gone from the index", async () => {
     await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, route: { deckId: "aws-clf-c02", sectionId: "OLD" } } })));
     expect(screen.queryByRole("button", { name: /^Continue/ })).toBeNull();
