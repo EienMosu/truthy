@@ -2,6 +2,7 @@
 // accessible names and visible text. The one look behind the scenes is the built deck file, fetched from
 // the running app, which tells a spec the right answer to the statement on screen (so a spec can choose
 // to answer right or wrong without depending on the random deal).
+import { readFileSync } from "node:fs";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
@@ -239,4 +240,63 @@ export async function expectUnanswered(page: Page, n: number, total = 10): Promi
   await expect(verdict(page)).toHaveText("");
   await expect(page.getByRole("button", { name: "True", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Next card" })).toHaveCount(0);
+}
+
+// ---------- colours ----------
+
+interface ColorToken {
+  $value: string | { hex: string };
+}
+
+const TOKENS = JSON.parse(readFileSync(new URL("../design/system/tokens.json", import.meta.url), "utf8")) as {
+  color: Record<string, Record<string, ColorToken>>;
+};
+
+export type TokenTheme = "day" | "night";
+
+/** A colour role of a theme in design/system/tokens.json, references followed, as the browser writes it. */
+export function tokenRgb(theme: TokenTheme, role: string): string {
+  let token = TOKENS.color[theme]?.[role];
+  for (let hops = 0; token !== undefined && typeof token.$value === "string" && hops < 8; hops += 1) {
+    const [, group, name] = /^\{color\.([a-z]+)\.([a-z0-9-]+)\}$/.exec(token.$value) ?? [];
+    token = group === undefined || name === undefined ? undefined : TOKENS.color[group]?.[name];
+  }
+  if (token === undefined || typeof token.$value === "string") throw new Error(`color.${theme}.${role} does not resolve`);
+  const hex = token.$value.hex;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/** The colour role as #rrggbb, as a theme-color tag holds it. */
+export function tokenHex(theme: TokenTheme, role: string): string {
+  const [r, g, b] = (/^rgb\((\d+), (\d+), (\d+)\)$/.exec(tokenRgb(theme, role)) ?? []).slice(1).map(Number);
+  return `#${[r, g, b].map((n) => (n ?? 0).toString(16).padStart(2, "0")).join("")}`;
+}
+
+export async function computed(locator: Locator, property: "color" | "backgroundColor" | "backgroundImage"): Promise<string> {
+  return locator.evaluate((element, name) => getComputedStyle(element)[name], property);
+}
+
+const SKY = ["sky-1", "sky-2", "sky-3", "sky-4"] as const;
+
+/** The page is in this theme: its text and background, and the backdrop blends its four sky colours, in order. */
+export async function expectThemePage(page: Page, theme: TokenTheme): Promise<void> {
+  const other: TokenTheme = theme === "day" ? "night" : "day";
+  const body = page.locator("body");
+  expect(await computed(body, "color")).toBe(tokenRgb(theme, "ink"));
+  expect(await computed(body, "backgroundColor")).toBe(tokenRgb(theme, "surface"));
+
+  const sky = await computed(page.locator("[data-sky-backdrop]"), "backgroundImage");
+  expect(sky).toMatch(/^linear-gradient\(/);
+  const stops = SKY.map((role) => sky.indexOf(tokenRgb(theme, role)));
+  for (const [i, at] of stops.entries()) expect(at, `${SKY[i]} in ${sky}`).toBeGreaterThanOrEqual(0);
+  expect([...stops].sort((a, b) => a - b)).toEqual(stops);
+  for (const role of SKY) expect(sky, `${other} ${role}`).not.toContain(tokenRgb(other, role));
+}
+
+/** The main paper of the pass on screen is drawn in this theme's surface-raised colour, its text in its ink. */
+export async function expectPass(page: Page, theme: TokenTheme): Promise<void> {
+  const paper = page.locator("[data-boarding-pass] > div").nth(1);
+  expect(await computed(paper, "backgroundImage")).toContain(tokenRgb(theme, "surface-raised"));
+  expect(await computed(page.locator("[data-boarding-pass]").first(), "color")).toBe(tokenRgb(theme, "ink"));
 }
