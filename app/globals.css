@@ -8,6 +8,78 @@
    (runs automatically before `pnpm dev` and `pnpm build`). Day theme only in step 1. */
 @import "./tokens.css";
 
+/* Values decided outside tokens.json:
+   - The focus ring is ink, 2px wide with a 2px offset, everywhere (also on filled pills). The product
+     owner chose this over the 3px ring and the amber ring on pills that DESIGN-SYSTEM.md describes,
+     because amber on the light sky fails the 3:1 contrast for focus.
+   - The app frame is a phone column up to 430px wide (the design viewport, --size-max-width, is 390). */
 :root {
   color-scheme: light;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --app-max-width: 430px;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-weight: var(--font-weight-sans-semibold);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  /* Reduced motion: every CSS animation is removed and transitions end at once, so each end state must
+     be correct on its own. Motion-driven transitions swap movement for a cross-fade in their components. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition-duration: 1ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* The phone-sized column every screen lives in: centred on wider screens, as tall as the visible
+     viewport, never scrolling. Padding keeps the top 52 and bottom 34 free, as in the mockups. */
+  .app-frame {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: var(--app-max-width);
+    height: 100%;
+    height: 100dvh;
+    margin-inline: auto;
+    padding: var(--size-safe-top) var(--size-gutter) var(--size-safe-bottom);
+    overflow: hidden;
+  }
 }
