@@ -575,3 +575,48 @@ describe("StartFlow: the settle time", () => {
     await waitFor(() => expect(heading()).toBe("Choose an area"));
   });
 });
+
+describe("StartFlow: the theme switch", () => {
+  afterEach(() => document.documentElement.removeAttribute("data-theme"));
+
+  function themeSwitch(): HTMLElement {
+    return screen.getByRole("button", { name: /^Switch to (dark|light) theme$/ });
+  }
+
+  it("sits in the header on every step, after the logo or the Back pill, and never takes the focus", async () => {
+    await start();
+    expect(themeSwitch().closest("header")).not.toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).compareDocumentPosition(themeSwitch()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(document.activeElement).toBe(document.body);
+    const steps: [string | RegExp, string][] = [
+      ["Cloud, 2 decks", "Choose a platform"],
+      ["AWS, 1 deck", "Choose a deck"],
+      [/^CLF, Cloud Practitioner/, "Choose a section"],
+      [/^SEC, Security and compliance/, "Choose how to play"],
+      [/^Classic\./, "Your pass is ready"],
+    ];
+    for (const [option, next] of steps) {
+      await choose(option, next);
+      expect(themeSwitch().closest("header")).not.toBeNull();
+      const back = screen.getByRole("button", { name: /^Back to / });
+      expect(back.compareDocumentPosition(themeSwitch()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      await waitFor(() => expect(document.activeElement?.textContent).toBe(next));
+    }
+  });
+
+  it("flips the theme and keeps the choice in the flow's local storage, without moving a step or the settle time", async () => {
+    await start();
+    await choose("Cloud, 2 decks", "Choose a platform");
+    settle();
+    const position = h.history.position;
+    fireEvent.click(screen.getByRole("button", { name: "Switch to dark theme" }));
+    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(h.local.data.get("truthy.theme")).toBe("dark");
+    expect(await screen.findByRole("button", { name: "Switch to light theme" })).toBeTruthy();
+    expect(heading()).toBe("Choose a platform");
+    expect(h.history.position).toBe(position);
+    // The settle time has passed and the switch did not start a new one: the next press counts at once.
+    fireEvent.click(screen.getByRole("button", { name: "AWS, 1 deck" }));
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+  });
+});

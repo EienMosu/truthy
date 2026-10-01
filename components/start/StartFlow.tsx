@@ -22,6 +22,7 @@ import { FillInPass, type FillInPassValues, type PassFieldName, type PassStage }
 import { Logo } from "@/components/Logo";
 import { PillButton } from "@/components/PillButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { BackArrowIcon } from "@/components/icons";
 import { savePending } from "@/src/app-state/pending";
 import { browserAppServices, browserStepHistory, markStartEntryBehind, type AppServices, type StepHistory } from "@/src/app-state/services";
@@ -218,6 +219,11 @@ function swapMotion(reduced: boolean, rise: number) {
 }
 
 const TRAVEL: Transition = { duration: 0.3, delay: 0.06, ease: EASE };
+
+// The theme switch sits at the top right of the header, centred on the row beside it: the Back pill row
+// (48 tall, at the top) from step 2 on, and on step 1 the logo row, 36 down (pt-9) and 40 tall, so the
+// 48 px button's top is 36 + 20 - 24 = 32 down. e2e/theme.spec.ts checks both centres line up.
+const SWITCH_OFFSET_LOGO_ROW = 32;
 
 /** Where a name is and how it looks, relative to the app frame. */
 interface Look {
@@ -505,7 +511,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     <main ref={mainRef} className="flex min-h-0 flex-1 flex-col" inert={boarding}>
       <SkyBackdrop lowerCloud="start" />
 
-      {/* Top zone, 176 tall: the logo on step 1, the Back pill and the pass from step 2 on (same place). */}
+      {/* Top zone, 176 tall: the logo on step 1, the Back pill and the pass from step 2 on (same place),
+          and the theme switch at the top right on every step. */}
       <header className="relative z-[7] grid h-(--size-start-top-zone) flex-none">
         <AnimatePresence initial={false}>
           {step === 1 ? (
@@ -545,6 +552,16 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
             </motion.div>
           )}
         </AnimatePresence>
+        {/* The theme switch, on every step. It moves (a transform) between the logo row and the Back pill
+            row, and fades out with the Back pill when the round starts. */}
+        <motion.div
+          className="absolute top-0 right-0"
+          initial={false}
+          animate={{ y: step === 1 ? SWITCH_OFFSET_LOGO_ROW : 0, opacity: boarding ? 0 : 1 }}
+          transition={reduced ? { duration: 0 } : { y: { duration: 0.24, ease: EASE }, opacity: { duration: 0.11 } }}
+        >
+          <ThemeSwitch storage={services.localStorage} />
+        </motion.div>
       </header>
 
       {/* Main area: the title of the step and its options, one step at a time in the same place. */}
