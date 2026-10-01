@@ -12,7 +12,12 @@ test("the start page links the manifest and the icons, and every icon is served"
   const manifest = (await response.json()) as { name: string; display: string; theme_color: string; icons: { src: string; type: string }[] };
   expect(manifest.name).toBe("Truthy");
   expect(manifest.display).toBe("standalone");
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute("content", manifest.theme_color);
+  // The manifest is static and keeps the day colour; the page has a theme colour per system setting.
+  await expect(page.locator('meta[name="theme-color"]')).toHaveCount(2);
+  await expect(page.locator('meta[name="theme-color"][media="(prefers-color-scheme: light)"]')).toHaveAttribute("content", manifest.theme_color);
+  const dark = page.locator('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
+  await expect(dark).toHaveAttribute("content", /^#[0-9a-f]{6}$/);
+  expect(await dark.getAttribute("content")).not.toBe(manifest.theme_color);
 
   for (const icon of manifest.icons) {
     const file = await page.request.get(icon.src);
