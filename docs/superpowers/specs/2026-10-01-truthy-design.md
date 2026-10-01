@@ -126,7 +126,7 @@ Hand-written. It defines areas, platforms and decks, and for each deck its secti
 
 `match` lists the values of the reviewed card's `task` or `section` field that belong to the section. A deck with an empty `sections` array is played as a whole deck only. An area or platform with no decks is valid and is shown as not available yet.
 
-Initial catalog: Cloud > AWS > Cloud Practitioner (CLF: CON 45, SEC 47, TEC 88, BIL 34 cards) and Solutions Architect Associate (SAA, step 3); Cloud > Google Cloud > Cloud Digital Leader (CDL, no sections, 133 cards); Cloud > Azure (no decks); Frontend > Next.js > Rendering (RND, eight sections, 94 cards); DevOps (no decks).
+Initial catalog: Cloud > AWS > Cloud Practitioner (CLF: CON 45, SEC 47, TEC 88, BIL 34 cards) and Solutions Architect Associate (SAA: SEC 33, RES 20, PRF 54, CST 47 cards); Cloud > Google Cloud > Cloud Digital Leader (CDL, no sections, 133 cards); Cloud > Azure (no decks); Frontend > Next.js > Rendering (RND, eight sections, 94 cards); DevOps (no decks).
 
 ### Build step
 

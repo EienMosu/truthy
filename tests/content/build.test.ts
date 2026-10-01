@@ -557,3 +557,65 @@ describe("the real content: Cloud Digital Leader", () => {
     expect(output.decks.map((deck) => deck.id).sort()).toEqual(["aws-clf-c02", "gcp-cdl", "nextjs-rendering"]);
   });
 });
+
+// The AWS Solutions Architect Associate deck entered after step 1 shipped. This pins what the deploy builds:
+// all four reviewed decks together, which the blocks above never build.
+describe("the real content: Solutions Architect Associate", () => {
+  function readContent(path: string): unknown {
+    return JSON.parse(readFileSync(new URL(`../../content/${path}`, import.meta.url), "utf8"));
+  }
+
+  const output = buildDecks({
+    catalog: readContent("catalog.json"),
+    reviewed: {
+      "aws-clf-c02": readContent("reviewed/aws-clf-c02.json"),
+      "aws-saa-c03": readContent("reviewed/aws-saa-c03.json"),
+      "gcp-cdl": readContent("reviewed/gcp-cdl.json"),
+      "nextjs-rendering": readContent("reviewed/nextjs-rendering.json"),
+    },
+    version: VERSION,
+  });
+  const indexDecks = output.index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks));
+
+  it("lists it under AWS, after Cloud Practitioner, with 154 cards in four sections", () => {
+    const aws = output.index.areas.find((area) => area.id === "cloud")?.platforms.find((platform) => platform.id === "aws");
+    expect(aws?.decks.map((deck) => [deck.id, deck.code, deck.title, deck.cardCount])).toEqual([
+      ["aws-clf-c02", "CLF", "Cloud Practitioner", 214],
+      ["aws-saa-c03", "SAA", "Solutions Architect Associate", 154],
+    ]);
+    const saa = aws?.decks.find((deck) => deck.id === "aws-saa-c03");
+    expect(saa?.sections.map((section) => [section.id, section.title, section.cardCount])).toEqual([
+      ["SEC", "Secure architectures", 33],
+      ["RES", "Resilient architectures", 20],
+      ["PRF", "High-performing architectures", 54],
+      ["CST", "Cost-optimized architectures", 47],
+    ]);
+  });
+
+  it("builds a deck file whose every card belongs to the deck and to one of its sections", () => {
+    const file = output.decks.find((deck) => deck.id === "aws-saa-c03");
+    expect(file?.cards).toHaveLength(154);
+    expect(file?.cards.every((card) => card.id.startsWith("aws-saa-c03-"))).toBe(true);
+    expect([...new Set(file?.cards.map((card) => card.section))].sort()).toEqual(["CST", "PRF", "RES", "SEC"]);
+  });
+
+  it("builds next to the other three decks", () => {
+    expect(output.decks.map((deck) => deck.id).sort()).toEqual(["aws-clf-c02", "aws-saa-c03", "gcp-cdl", "nextjs-rendering"]);
+  });
+
+  it("writes four deck files the client schema accepts, each with the hash the index names", () => {
+    expect(DeckIndexSchema.safeParse(output.index).success).toBe(true);
+    for (const deck of output.decks) {
+      expect(DeckFileSchema.safeParse(deck).success, deck.id).toBe(true);
+      expect(indexDecks.find((entry) => entry.id === deck.id)?.hash, deck.id).toBe(hashDeck(deck.cards));
+    }
+  });
+
+  it("ships only conflict groups that at least two cards of a deck share", () => {
+    for (const deck of output.decks) {
+      const uses = new Map<string, number>();
+      for (const card of deck.cards) for (const group of card.conflictGroups) uses.set(group, (uses.get(group) ?? 0) + 1);
+      for (const [group, count] of uses) expect(count, `${deck.id} ${group}`).toBeGreaterThan(1);
+    }
+  });
+});
