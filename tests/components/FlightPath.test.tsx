@@ -3,6 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   FlightPath,
+  Mark,
   completedLabel,
   flightPathLabel,
   flownPath,
@@ -134,5 +135,29 @@ describe("FlightPath, completed (result screens)", () => {
     const { container } = render(<FlightPath variant="completed" total={10} results={results} />);
     expect(container.querySelector("[data-progress]")?.textContent).toBe("Arrived · 10 of 10");
     expect(container.querySelector("[data-tally]")?.textContent).toBe("7 correct · 3 wrong");
+  });
+});
+
+describe("Mark", () => {
+  it("scales as a whole and can go without its tick", () => {
+    const scaled = render(
+      <svg>
+        <Mark verdict="correct" at={{ x: 30, y: 20 }} scale={6 / 7} plain />
+      </svg>,
+    );
+    const group = scaled.container.querySelector("[data-waypoint]");
+    expect(group?.getAttribute("transform")).toMatch(/^translate\(30 20\) scale\(0\.857/);
+    expect(group?.querySelector("path")).toBeNull();
+    expect(group?.hasAttribute("data-fresh")).toBe(false);
+    cleanup();
+    const full = render(
+      <svg>
+        <Mark verdict="wrong" at={{ x: 30, y: 20 }} fresh />
+      </svg>,
+    );
+    const wrong = full.container.querySelector("[data-waypoint]");
+    expect(wrong?.getAttribute("transform")).toBe("translate(30 20)");
+    expect(wrong?.querySelector("path")).not.toBeNull();
+    expect(wrong?.hasAttribute("data-fresh")).toBe(true);
   });
 });

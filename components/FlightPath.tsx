@@ -3,6 +3,8 @@
 // tally. Waypoints differ by shape as well as colour: a circle with a tick (correct), a square with an x
 // (wrong), the plane (current), a small open circle (still to come). The whole path is one image with a
 // full-sentence label; the label row is hidden from screen readers because the image already says it.
+// PathFrame, RouteLine, Plane and Mark are the pieces every mode's header is drawn with.
+import type { ReactNode } from "react";
 import { ICON_PATHS } from "./icons";
 
 export type WaypointState = "correct" | "wrong" | "current" | "future";
@@ -36,7 +38,7 @@ const P0 = { x: 6, y: 24 };
 const P1 = { x: 138, y: -6 };
 const P2 = { x: 270, y: 24 };
 
-interface Point {
+export interface Point {
   x: number;
   y: number;
 }
@@ -85,7 +87,7 @@ export function waypointStates(total: number, results: readonly boolean[], curre
 }
 
 // "card 3", "cards 1 and 2", "cards 1, 2 and 5"
-function cardList(numbers: readonly number[]): string {
+export function cardList(numbers: readonly number[]): string {
   if (numbers.length === 1) return `card ${numbers[0]}`;
   const head = numbers.slice(0, -1).join(", ");
   return `cards ${head} and ${numbers[numbers.length - 1]}`;
@@ -118,23 +120,41 @@ export function completedLabel(total: number, results: readonly boolean[]): stri
 
 const MARK_STROKE = 1.8;
 
-function Waypoint({ state, at, isLast, isCurrent }: { state: WaypointState; at: Point; isLast: boolean; isCurrent: boolean }) {
-  if (state === "correct") {
-    // The card just answered shows its tick on the correct colour; earlier ones are ink.
+export interface MarkProps {
+  verdict: "correct" | "wrong";
+  at: Point;
+  /** 1 (default) is a circle of radius 7 or a square of 13 by 13; the whole mark scales. */
+  scale?: number;
+  /** The card just answered: a correct mark is drawn in the correct colour instead of ink; the g carries data-fresh. */
+  fresh?: boolean;
+  /** No tick and no x (marks too small to carry them). */
+  plain?: boolean;
+}
+
+/** The mark of an answered card: a circle with a tick (correct) or a square with an x (wrong). */
+export function Mark({ verdict, at, scale = 1, fresh = false, plain = false }: MarkProps) {
+  const transform = `translate(${at.x} ${at.y})${scale === 1 ? "" : ` scale(${scale})`}`;
+  const freshProps = fresh ? { "data-fresh": "" } : {};
+  if (verdict === "correct") {
     return (
-      <g data-waypoint="correct" transform={`translate(${at.x} ${at.y})`}>
-        <circle r="7" className={isCurrent ? "fill-(--color-correct)" : "fill-(--color-ink)"} />
-        <path d="M-3 0l2 2 4-4" fill="none" className="stroke-(--color-surface-raised)" strokeWidth={MARK_STROKE} />
+      <g data-waypoint="correct" transform={transform} {...freshProps}>
+        <circle r="7" className={fresh ? "fill-(--color-correct)" : "fill-(--color-ink)"} />
+        {plain ? null : <path d="M-3 0l2 2 4-4" fill="none" className="stroke-(--color-surface-raised)" strokeWidth={MARK_STROKE} />}
       </g>
     );
   }
-  if (state === "wrong") {
-    return (
-      <g data-waypoint="wrong" transform={`translate(${at.x} ${at.y})`}>
-        <rect x="-6.5" y="-6.5" width="13" height="13" rx="2" className="fill-(--color-wrong)" />
-        <path d="M-3-3l6 6m0-6l-6 6" className="stroke-(--color-surface-raised)" strokeWidth={MARK_STROKE} />
-      </g>
-    );
+  return (
+    <g data-waypoint="wrong" transform={transform} {...freshProps}>
+      <rect x="-6.5" y="-6.5" width="13" height="13" rx="2" className="fill-(--color-wrong)" />
+      {plain ? null : <path d="M-3-3l6 6m0-6l-6 6" className="stroke-(--color-surface-raised)" strokeWidth={MARK_STROKE} />}
+    </g>
+  );
+}
+
+function Waypoint({ state, at, isLast, isCurrent }: { state: WaypointState; at: Point; isLast: boolean; isCurrent: boolean }) {
+  if (state === "correct" || state === "wrong") {
+    // The card just answered shows its tick on the correct colour; earlier ones are ink.
+    return <Mark verdict={state} at={at} fresh={state === "correct" && isCurrent} />;
   }
   if (state === "current") {
     // The plane is drawn on top of everything by the caller; this keeps the waypoint's place in the list.
@@ -147,6 +167,79 @@ function Waypoint({ state, at, isLast, isCurrent }: { state: WaypointState; at: 
   );
 }
 
+export interface PathFrameProps {
+  /** The accessible name of the whole header (role="img"). */
+  label: string;
+  /** Left of the label row. */
+  progress: ReactNode;
+  /** Right of the label row; left out: nothing. */
+  tally?: ReactNode;
+  /** The SVG content, in the 276 by 34 viewBox. */
+  children: ReactNode;
+  className?: string;
+}
+
+/** The wrapper every header shares: one image with a full-sentence label, the drawing and the label row (hidden from screen readers). */
+export function PathFrame({ label, progress, tally, children, className }: PathFrameProps) {
+  return (
+    <div role="img" aria-label={label} data-flight-path="" className={["min-w-0 flex-1", className].filter(Boolean).join(" ")}>
+      <svg viewBox="0 0 276 34" aria-hidden="true" focusable="false" className="block h-(--size-flight-path-height) w-full overflow-visible">
+        {children}
+      </svg>
+      <div
+        aria-hidden="true"
+        className="mt-(--space-2) flex justify-between font-(family-name:--type-route-label-family) text-(length:--type-route-label-size) leading-(--type-route-label-line-height) font-(--type-route-label-weight) tracking-(--type-route-label-letter-spacing) text-(--color-ink)"
+      >
+        <span data-progress="">{progress}</span>
+        {tally === undefined ? null : <span data-tally="">{tally}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** The dotted curve of the route and, once the plane has left, the solid part up to t. */
+export function RouteLine({ flownTo }: { flownTo: number }) {
+  return (
+    <>
+      <path
+        d={`M${P0.x} ${P0.y} Q${P1.x} ${P1.y} ${P2.x} ${P2.y}`}
+        fill="none"
+        className="stroke-(--color-ink)"
+        strokeWidth="1.6"
+        strokeDasharray="2 5"
+        strokeLinecap="round"
+      />
+      {flownTo > 0 ? <path d={flownPath(flownTo)} fill="none" className="stroke-(--color-ink)" strokeWidth="2.4" strokeLinecap="round" /> : null}
+    </>
+  );
+}
+
+/** The plane on the card on screen; faded out (opacity, never visibility) once the card has its mark. */
+export function Plane({ at, heading, hidden = false }: { at: Point; heading: number; hidden?: boolean }) {
+  return (
+    <g
+      data-plane=""
+      transform={`translate(${at.x} ${at.y}) rotate(${heading})`}
+      className={["transition-opacity duration-(--duration-t2) ease-(--easing-ease)", hidden ? "opacity-0" : "opacity-100"].join(" ")}
+    >
+      <circle r="12" className="fill-(--color-accent)" />
+      <path
+        d={ICON_PATHS.planeArrow}
+        fill="none"
+        className="stroke-(--color-on-accent)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </g>
+  );
+}
+
+/** A bold number of the label row. */
+export function Num({ children }: { children: ReactNode }) {
+  return <b className="font-(--font-weight-mono-semibold)">{children}</b>;
+}
+
 export function FlightPath(props: FlightPathProps) {
   const { total, results, className } = props;
   const completed = props.variant === "completed";
@@ -154,74 +247,35 @@ export function FlightPath(props: FlightPathProps) {
   const answered = completed ? true : props.answered;
   const states = waypointStates(total, results, completed ? total : current, answered);
   const t = completed ? 1 : waypointT(current, total);
-  const plane = pointAt(t);
   const correct = results.filter(Boolean).length;
   const wrong = results.length - correct;
 
   return (
-    <div
-      role="img"
-      aria-label={completed ? completedLabel(total, results) : flightPathLabel(total, results, current)}
-      data-flight-path=""
-      className={["min-w-0 flex-1", className].filter(Boolean).join(" ")}
-    >
-      <svg viewBox="0 0 276 34" aria-hidden="true" focusable="false" className="block h-(--size-flight-path-height) w-full overflow-visible">
-        <path
-          d={`M${P0.x} ${P0.y} Q${P1.x} ${P1.y} ${P2.x} ${P2.y}`}
-          fill="none"
-          className="stroke-(--color-ink)"
-          strokeWidth="1.6"
-          strokeDasharray="2 5"
-          strokeLinecap="round"
-        />
-        {t > 0 ? <path d={flownPath(t)} fill="none" className="stroke-(--color-ink)" strokeWidth="2.4" strokeLinecap="round" /> : null}
-        {states.map((state, i) => (
-          <Waypoint
-            key={i}
-            state={state}
-            at={pointAt(waypointT(i, total))}
-            isLast={i === total - 1}
-            isCurrent={!completed && i === current}
-          />
-        ))}
-        {completed ? null : (
-          <g
-            data-plane=""
-            transform={`translate(${plane.x} ${plane.y}) rotate(${headingAt(t)})`}
-            className={[
-              "transition-opacity duration-(--duration-t2) ease-(--easing-ease)",
-              answered ? "opacity-0" : "opacity-100",
-            ].join(" ")}
-          >
-            <circle r="12" className="fill-(--color-accent)" />
-            <path
-              d={ICON_PATHS.planeArrow}
-              fill="none"
-              className="stroke-(--color-on-accent)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </g>
-        )}
-      </svg>
-      <div
-        aria-hidden="true"
-        className="mt-(--space-2) flex justify-between font-(family-name:--type-route-label-family) text-(length:--type-route-label-size) leading-(--type-route-label-line-height) font-(--type-route-label-weight) tracking-(--type-route-label-letter-spacing) text-(--color-ink)"
-      >
-        {completed ? (
-          <span data-progress="">
-            <b className="font-(--font-weight-mono-semibold)">Arrived</b> · {results.length} of {total}
-          </span>
+    <PathFrame
+      label={completed ? completedLabel(total, results) : flightPathLabel(total, results, current)}
+      className={className}
+      progress={
+        completed ? (
+          <>
+            <Num>Arrived</Num> · {results.length} of {total}
+          </>
         ) : (
-          <span data-progress="">
-            Card <b className="font-(--font-weight-mono-semibold)">{current + 1}</b> of {total}
-          </span>
-        )}
-        <span data-tally="">
+          <>
+            Card <Num>{current + 1}</Num> of {total}
+          </>
+        )
+      }
+      tally={
+        <>
           {correct} correct · {wrong} wrong
-        </span>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <RouteLine flownTo={t} />
+      {states.map((state, i) => (
+        <Waypoint key={i} state={state} at={pointAt(waypointT(i, total))} isLast={i === total - 1} isCurrent={!completed && i === current} />
+      ))}
+      {completed ? null : <Plane at={pointAt(t)} heading={headingAt(t)} hidden={answered} />}
+    </PathFrame>
   );
 }
