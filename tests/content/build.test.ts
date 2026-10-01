@@ -286,3 +286,100 @@ describe("buildDecks: section mapping errors", () => {
     }
   });
 });
+
+describe("buildDecks: card and catalog errors", () => {
+  it("accepts a statement of exactly 120 characters and fails on 121", () => {
+    const at = (length: number) => clfWith(reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { statement: "x".repeat(length) }));
+    expect(build([clfEntry], at(120)).decks[0]?.cards[0]?.text.en.statement).toHaveLength(120);
+    expectBuildError(() => build([clfEntry], at(121)), "card aws-clf-c02-t1.1-01: statement is 121 characters, the limit is 120");
+  });
+
+  it("accepts an explanation of exactly 240 characters and fails on 241", () => {
+    const at = (length: number) => clfWith(reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { explanation: "x".repeat(length) }));
+    expect(build([clfEntry], at(240)).decks[0]?.cards[0]?.text.en.explanation).toHaveLength(240);
+    expectBuildError(() => build([clfEntry], at(241)), "card aws-clf-c02-t1.1-01: explanation is 241 characters, the limit is 240");
+  });
+
+  it("fails on an empty or blank statement", () => {
+    for (const statement of ["", "   "]) {
+      expectBuildError(
+        () => build([clfEntry], clfWith(reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { statement }))),
+        "card aws-clf-c02-t1.1-01: statement is empty",
+      );
+    }
+  });
+
+  it("fails on a difficulty other than 1, 2 or 3", () => {
+    for (const difficulty of [0, 4, 2.5]) {
+      expectBuildError(
+        () => build([clfEntry], clfWith(reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { difficulty }))),
+        `card aws-clf-c02-t1.1-01: difficulty must be 1, 2 or 3, not ${difficulty}`,
+      );
+    }
+  });
+
+  it("fails on a source link that is not https and names the card", () => {
+    const card = reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { source: { title: "Docs", url: "http://docs.aws.amazon.com/" } });
+    expectBuildError(() => build([clfEntry], clfWith(card)), "aws-clf-c02: card aws-clf-c02-t1.1-01: source.url");
+  });
+
+  it("names a card by its position when it has no id", () => {
+    const { id: _omitted, ...withoutId } = reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" });
+    expectBuildError(() => build([clfEntry], clfWith(reviewedCard("aws-clf-c02-t1.1-02", { task: "1.1" }), withoutId)), "aws-clf-c02: card #2: id");
+  });
+
+  it("fails on a reviewed file with no cards", () => {
+    expectBuildError(() => build([clfEntry], clfWith()), "aws-clf-c02: cards");
+  });
+
+  it("fails when the reviewed file is for another deck", () => {
+    const reviewed = reviewedDeck("aws-saa-c03", [reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" })]);
+    expectBuildError(() => build([clfEntry], { "aws-clf-c02": reviewed }), "aws-clf-c02: the reviewed file is for deck aws-saa-c03");
+  });
+
+  it("fails on a card id used twice in one deck", () => {
+    const card = reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" });
+    expectBuildError(() => build([clfEntry], clfWith(card, card)), "card aws-clf-c02-t1.1-01: the card id is used twice");
+  });
+
+  it("fails on a card id that does not start with the deck id", () => {
+    expectBuildError(
+      () => build([clfEntry], clfWith(reviewedCard("clf-t1.1-01", { task: "1.1" }))),
+      "card clf-t1.1-01: the card id must start with aws-clf-c02-",
+    );
+  });
+
+  it("fails on a catalog that does not match the schema", () => {
+    expectBuildError(() => buildDecks({ catalog: { areas: "none" }, reviewed: {}, version: VERSION }), "catalog: areas");
+    expectBuildError(() => buildDecks({ catalog: null, reviewed: {}, version: VERSION }), "catalog:");
+  });
+
+  it("fails on a deck listed twice in the catalog", () => {
+    expectBuildError(() => build([clfEntry, clfEntry], { "aws-clf-c02": clfReviewed() }), "catalog: deck aws-clf-c02 is listed twice");
+  });
+
+  it("fails on an area or a platform listed twice", () => {
+    const area = { id: "cloud", title: "Cloud", platforms: [] };
+    expectBuildError(() => buildDecks({ catalog: { areas: [area, area] }, reviewed: {}, version: VERSION }), "catalog: area cloud is listed twice");
+    const platform = { id: "aws", title: "AWS", decks: [] };
+    const twice = { areas: [{ id: "cloud", title: "Cloud", platforms: [platform, platform] }] };
+    expectBuildError(() => buildDecks({ catalog: twice, reviewed: {}, version: VERSION }), "catalog: area cloud: platform aws is listed twice");
+  });
+
+  it("fails on a section id used twice in one deck", () => {
+    const twice = { ...clfEntry, sections: [clfEntry.sections[0], clfEntry.sections[0]] };
+    expectBuildError(() => build([twice], { "aws-clf-c02": clfReviewed() }), "catalog: deck aws-clf-c02: section CON is listed twice");
+  });
+
+  it("fails on a section whose id is the whole deck id", () => {
+    const reserved = { ...clfEntry, sections: [{ id: WHOLE_DECK, title: "Everything", match: ["1.1"] }] };
+    expectBuildError(() => build([reserved], { "aws-clf-c02": clfReviewed() }), `catalog: deck aws-clf-c02: section id ${WHOLE_DECK} is reserved for the whole deck`);
+  });
+
+  it("fails on a version that is not an ISO date", () => {
+    expectBuildError(
+      () => buildDecks({ catalog: catalog([clfEntry]), reviewed: { "aws-clf-c02": clfReviewed() }, version: "yesterday" }),
+      "version must be an ISO date (YYYY-MM-DD), not yesterday",
+    );
+  });
+});

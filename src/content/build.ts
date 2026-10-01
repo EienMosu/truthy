@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
+import { z } from "zod";
 import {
+  CardSchema,
   CatalogSchema,
   ReviewedDeckSchema,
   WHOLE_DECK,
@@ -42,16 +44,80 @@ function cardError(deckId: string, cardId: string, reason: string): DeckBuildErr
   return new DeckBuildError(`${deckId}: card ${cardId}: ${reason}`);
 }
 
+const LIMITS = { statement: 120, explanation: 240 } as const;
+
+function describeIssue(issue: z.core.$ZodIssue | undefined): string {
+  if (!issue) return "is not valid";
+  const path = issue.path.map(String).join(".");
+  return path ? `${path}: ${issue.message}` : issue.message;
+}
+
 function parseCatalog(raw: unknown): Catalog {
   const result = CatalogSchema.safeParse(raw);
-  if (!result.success) throw new DeckBuildError(`catalog: ${result.error.message}`);
-  return result.data;
+  if (!result.success) throw new DeckBuildError(`catalog: ${describeIssue(result.error.issues[0])}`);
+  const catalog = result.data;
+  const areaIds = new Set<string>();
+  const deckIds = new Set<string>();
+  for (const area of catalog.areas) {
+    if (areaIds.has(area.id)) throw new DeckBuildError(`catalog: area ${area.id} is listed twice`);
+    areaIds.add(area.id);
+    const platformIds = new Set<string>();
+    for (const platform of area.platforms) {
+      if (platformIds.has(platform.id)) throw new DeckBuildError(`catalog: area ${area.id}: platform ${platform.id} is listed twice`);
+      platformIds.add(platform.id);
+      for (const deck of platform.decks) {
+        if (deckIds.has(deck.id)) throw new DeckBuildError(`catalog: deck ${deck.id} is listed twice`);
+        deckIds.add(deck.id);
+        const sectionIds = new Set<string>();
+        for (const section of deck.sections) {
+          if (section.id === WHOLE_DECK) {
+            throw new DeckBuildError(`catalog: deck ${deck.id}: section id ${WHOLE_DECK} is reserved for the whole deck`);
+          }
+          if (sectionIds.has(section.id)) throw new DeckBuildError(`catalog: deck ${deck.id}: section ${section.id} is listed twice`);
+          sectionIds.add(section.id);
+        }
+      }
+    }
+  }
+  return catalog;
+}
+
+// The id of the card at a position in a file that failed validation, or its position when it has none.
+function cardLabel(raw: unknown, position: number): string {
+  const cards: unknown = typeof raw === "object" && raw !== null ? (raw as { cards?: unknown }).cards : undefined;
+  const card: unknown = Array.isArray(cards) ? cards[position] : undefined;
+  const id: unknown = typeof card === "object" && card !== null ? (card as { id?: unknown }).id : undefined;
+  return typeof id === "string" && id.length > 0 ? id : `#${position + 1}`;
 }
 
 function parseReviewed(deckId: string, raw: unknown): ReviewedDeck {
   const result = ReviewedDeckSchema.safeParse(raw);
-  if (!result.success) throw new DeckBuildError(`${deckId}: ${result.error.message}`);
+  if (!result.success) {
+    const issue = result.error.issues[0];
+    const [first, position, ...rest] = issue?.path ?? [];
+    if (issue && first === "cards" && typeof position === "number") {
+      throw new DeckBuildError(`${deckId}: card ${cardLabel(raw, position)}: ${describeIssue({ ...issue, path: rest })}`);
+    }
+    throw new DeckBuildError(`${deckId}: ${describeIssue(issue)}`);
+  }
+  if (result.data.deck !== deckId) throw new DeckBuildError(`${deckId}: the reviewed file is for deck ${result.data.deck}`);
   return result.data;
+}
+
+function checkCard(deckId: string, card: ReviewedCard, seen: Set<string>): void {
+  if (!card.id.startsWith(`${deckId}-`)) throw cardError(deckId, card.id, `the card id must start with ${deckId}-`);
+  if (seen.has(card.id)) throw cardError(deckId, card.id, "the card id is used twice");
+  seen.add(card.id);
+  for (const field of ["statement", "explanation"] as const) {
+    const text = card[field];
+    if (text.trim().length === 0) throw cardError(deckId, card.id, `${field} is empty`);
+    if (text.length > LIMITS[field]) {
+      throw cardError(deckId, card.id, `${field} is ${text.length} characters, the limit is ${LIMITS[field]}`);
+    }
+  }
+  if (![1, 2, 3].includes(card.difficulty)) {
+    throw cardError(deckId, card.id, `difficulty must be 1, 2 or 3, not ${card.difficulty}`);
+  }
 }
 
 function sectionFor(entry: CatalogDeck, card: ReviewedCard): string {
@@ -68,20 +134,26 @@ function sectionFor(entry: CatalogDeck, card: ReviewedCard): string {
 }
 
 function toCard(entry: CatalogDeck, card: ReviewedCard): Card {
-  return {
+  const shipped = {
     id: card.id,
     section: sectionFor(entry, card),
     text: { en: { statement: card.statement, explanation: card.explanation } },
     answer: card.answer,
     source: { title: card.source.title, url: card.source.url },
-    difficulty: card.difficulty as Card["difficulty"],
+    difficulty: card.difficulty,
     appliesTo: card.appliesTo ?? "",
     conflictGroups: card.conflictGroups ?? [],
   };
+  // A last guard: whatever ships must pass the schema the client validates with.
+  const result = CardSchema.safeParse(shipped);
+  if (!result.success) throw cardError(entry.id, card.id, describeIssue(result.error.issues[0]));
+  return result.data;
 }
 
 function buildDeck(entry: CatalogDeck, raw: unknown, version: string): { file: DeckFile; summary: IndexDeck } {
   const reviewed = parseReviewed(entry.id, raw);
+  const seen = new Set<string>();
+  for (const card of reviewed.cards) checkCard(entry.id, card, seen);
   const cards = reviewed.cards.map((card) => toCard(entry, card));
   const file: DeckFile = { id: entry.id, hash: hashDeck(cards), cards };
   const sections = entry.sections.map((section) => ({
@@ -102,6 +174,9 @@ function buildDeck(entry: CatalogDeck, raw: unknown, version: string): { file: D
 }
 
 export function buildDecks(input: BuildInput): BuildOutput {
+  if (!z.iso.date().safeParse(input.version).success) {
+    throw new DeckBuildError(`version must be an ISO date (YYYY-MM-DD), not ${input.version}`);
+  }
   const catalog = parseCatalog(input.catalog);
   const decks: DeckFile[] = [];
   const index: DeckIndex = {
