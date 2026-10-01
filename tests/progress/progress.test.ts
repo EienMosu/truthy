@@ -150,3 +150,87 @@ describe("applyResult: purity", () => {
     expect(round).toEqual(roundCopy);
   });
 });
+
+// A classic result with the given score out of ten, all answered at time 1.
+function scored(score: number, options: { route?: Route; abandoned?: boolean } = {}): RoundResult {
+  const answers = Array.from({ length: 10 }, (_, i) => answered(`c${i}`, i < score, 1));
+  return result(answers, options);
+}
+
+function withRecord(route: Route, best: number): Progress {
+  return { ...emptyProgress(), records: { [recordKey(route, "classic")]: best } };
+}
+
+describe("applyResult: records", () => {
+  it("sets a first record for a route and mode that has none", () => {
+    const outcome = applyResult(emptyProgress(), scored(6));
+    expect(outcome.progress.records).toEqual({ "aws-clf-c02/SEC#classic": 6 });
+    expect(outcome.previousBest).toBeNull();
+    expect(outcome.isNewBest).toBe(true);
+  });
+
+  it("replaces a record that the score beats", () => {
+    const outcome = applyResult(withRecord(SEC, 6), scored(8));
+    expect(outcome.progress.records["aws-clf-c02/SEC#classic"]).toBe(8);
+    expect(outcome.previousBest).toBe(6);
+    expect(outcome.isNewBest).toBe(true);
+  });
+
+  it("keeps a record that the score does not reach", () => {
+    const outcome = applyResult(withRecord(SEC, 8), scored(5));
+    expect(outcome.progress.records["aws-clf-c02/SEC#classic"]).toBe(8);
+    expect(outcome.previousBest).toBe(8);
+    expect(outcome.isNewBest).toBe(false);
+  });
+
+  it("does not count equalling the record as a new best", () => {
+    const outcome = applyResult(withRecord(SEC, 7), scored(7));
+    expect(outcome.progress.records["aws-clf-c02/SEC#classic"]).toBe(7);
+    expect(outcome.previousBest).toBe(7);
+    expect(outcome.isNewBest).toBe(false);
+  });
+
+  it("keeps the records of other routes and modes", () => {
+    const before: Progress = {
+      ...emptyProgress(),
+      records: { [recordKey(CON, "classic")]: 9, [recordKey(SEC, "timed")]: 20 },
+    };
+    const outcome = applyResult(before, scored(4, { route: SEC }));
+    expect(outcome.progress.records).toEqual({
+      "aws-clf-c02/CON#classic": 9,
+      "aws-clf-c02/SEC#timed": 20,
+      "aws-clf-c02/SEC#classic": 4,
+    });
+  });
+
+  it("does not compare against the record of another section", () => {
+    const outcome = applyResult(withRecord(CON, 9), scored(3, { route: SEC }));
+    expect(outcome.previousBest).toBeNull();
+    expect(outcome.isNewBest).toBe(true);
+  });
+});
+
+describe("applyResult: an abandoned round", () => {
+  it("updates the card history", () => {
+    const round = result([answered("c1", true, 100), answered("c2", false, 200)], { abandoned: true });
+    const { progress } = applyResult(emptyProgress(), round);
+    expect(progress.cards).toEqual({
+      c1: { seen: 1, lastCorrect: true, lastSeenAt: 100 },
+      c2: { seen: 1, lastCorrect: false, lastSeenAt: 200 },
+    });
+  });
+
+  it("does not beat an existing record, however high its score", () => {
+    const outcome = applyResult(withRecord(SEC, 2), scored(9, { abandoned: true }));
+    expect(outcome.progress.records["aws-clf-c02/SEC#classic"]).toBe(2);
+    expect(outcome.previousBest).toBe(2);
+    expect(outcome.isNewBest).toBe(false);
+  });
+
+  it("does not set a first record", () => {
+    const outcome = applyResult(emptyProgress(), scored(5, { abandoned: true }));
+    expect(outcome.progress.records).toEqual({});
+    expect(outcome.previousBest).toBeNull();
+    expect(outcome.isNewBest).toBe(false);
+  });
+});

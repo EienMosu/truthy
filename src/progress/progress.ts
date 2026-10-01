@@ -27,20 +27,24 @@ export interface ApplyOutcome {
   isNewBest: boolean;
 }
 
-// Records the answers of a round in the card history and remembers its route and mode.
-// Records are added in the next step.
+// Records the answers of a round in the card history, remembers its route and mode,
+// and sets the record for that route and mode when a finished round beats it.
+// A first finished round on a route and mode always sets the record.
+// An abandoned round keeps its answers in the history but never touches the record.
 export function applyResult(progress: Progress, result: RoundResult): ApplyOutcome {
   const key = recordKey(result.route, result.mode);
   const previousBest = Object.hasOwn(progress.records, key) ? (progress.records[key] ?? null) : null;
+  const isNewBest = !result.abandoned && (previousBest === null || result.score > previousBest);
+  const records = isNewBest ? { ...progress.records, [key]: result.score } : { ...progress.records };
   return {
     progress: {
       version: 1,
       cards: withAnswers(progress.cards, result),
-      records: { ...progress.records },
+      records,
       last: { route: { deckId: result.route.deckId, sectionId: result.route.sectionId }, mode: result.mode },
     },
     previousBest,
-    isNewBest: false,
+    isNewBest,
   };
 }
 
