@@ -65,6 +65,8 @@ export function reduce(state: RoundState, event: RoundEvent): RoundState {
       return state.phase === "question" ? recordAnswer(state, event.value, event.at) : state;
     case "next":
       return state.phase === "answered" ? moveOn(state) : state;
+    case "abandon":
+      return state.phase === "finished" ? state : { ...state, phase: "finished", abandoned: true };
     default:
       return state;
   }
@@ -82,4 +84,26 @@ function moveOn(state: RoundState): RoundState {
   const nextIndex = state.index + 1;
   if (nextIndex >= state.cards.length) return { ...state, phase: "finished" };
   return { ...state, index: nextIndex, phase: "question" };
+}
+
+export interface RoundResult {
+  mode: Mode;
+  route: Route;
+  score: number; // classic: correct answers
+  total: number; // classic: cards answered (10 when finished)
+  answers: readonly Answered[];
+  missed: readonly Answered[]; // answers with correct === false, in order
+  abandoned: boolean;
+}
+
+export function summarise(state: RoundState): RoundResult {
+  return {
+    mode: state.mode,
+    route: state.route,
+    score: state.answers.filter((a) => a.correct).length,
+    total: state.answers.length,
+    answers: state.answers,
+    missed: state.answers.filter((a) => !a.correct),
+    abandoned: state.abandoned,
+  };
 }

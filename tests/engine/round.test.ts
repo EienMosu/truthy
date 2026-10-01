@@ -8,6 +8,7 @@ import {
   lastAnswer,
   reduce,
   startRound,
+  summarise,
   type Mode,
   type RoundEvent,
   type RoundState,
@@ -234,5 +235,110 @@ describe("reduce: a whole Classic round", () => {
     const snapshot = JSON.stringify(state);
     expect(() => play(state, [answer(true), NEXT, answer(false), NEXT])).not.toThrow();
     expect(JSON.stringify(state)).toBe(snapshot);
+  });
+});
+
+const ABANDON: RoundEvent = { type: "abandon" };
+
+describe("reduce: abandon", () => {
+  it("ends the round as abandoned from the question phase, keeping the answers given", () => {
+    const state = play(start(), [answer(true), NEXT, ABANDON]);
+    expect(state.phase).toBe("finished");
+    expect(state.abandoned).toBe(true);
+    expect(state.answers).toHaveLength(1);
+  });
+
+  it("ends the round as abandoned from the answered phase", () => {
+    const state = play(start(), [answer(true), ABANDON]);
+    expect(state.phase).toBe("finished");
+    expect(state.abandoned).toBe(true);
+    expect(state.answers).toHaveLength(1);
+  });
+
+  it("ends the round as abandoned before any answer", () => {
+    const state = play(start(), [ABANDON]);
+    expect(state.phase).toBe("finished");
+    expect(state.abandoned).toBe(true);
+    expect(state.answers).toEqual([]);
+  });
+
+  it("can abandon at every point of a round", () => {
+    const events: RoundEvent[] = [];
+    let state = start();
+    for (let i = 0; i < 10; i++) {
+      events.push(answer(true), NEXT);
+    }
+    for (let cut = 0; cut < events.length; cut++) {
+      const left = play(state, [...events.slice(0, cut), ABANDON]);
+      expect(left.abandoned).toBe(true);
+      expect(left.phase).toBe("finished");
+      expect(left.answers).toHaveLength(Math.ceil(cut / 2));
+    }
+    state = play(state, events);
+    expect(state.abandoned).toBe(false);
+  });
+
+  it("ignores abandon once the round has finished normally", () => {
+    const finished = deepFreeze(play(start({ pool: pool(1) }), [answer(true), NEXT]));
+    expect(reduce(finished, ABANDON)).toBe(finished);
+  });
+
+  it("ignores answer and next after abandoning", () => {
+    const left = deepFreeze(play(start(), [ABANDON]));
+    expect(reduce(left, answer(true))).toBe(left);
+    expect(reduce(left, NEXT)).toBe(left);
+    expect(reduce(left, ABANDON)).toBe(left);
+  });
+});
+
+describe("summarise", () => {
+  it("scores a finished Classic round: correct answers out of ten, missed cards in order", () => {
+    let state = start();
+    const wrongAt = new Set([2, 5, 7]);
+    for (let i = 0; i < 10; i++) {
+      const right = currentCard(state)?.answer ?? true;
+      state = play(state, [answer(wrongAt.has(i) ? !right : right, 500 + i), NEXT]);
+    }
+    const result = summarise(state);
+    expect(result.mode).toBe("classic");
+    expect(result.route).toEqual(route);
+    expect(result.score).toBe(7);
+    expect(result.total).toBe(10);
+    expect(result.answers).toHaveLength(10);
+    expect(result.missed.map((a) => a.card)).toEqual([state.cards[2], state.cards[5], state.cards[7]]);
+    expect(result.missed.every((a) => !a.correct)).toBe(true);
+    expect(result.abandoned).toBe(false);
+  });
+
+  it("scores a perfect round with no missed cards", () => {
+    let state = start();
+    for (let i = 0; i < 10; i++) state = play(state, answerRight(state));
+    expect(summarise(state)).toMatchObject({ score: 10, total: 10, missed: [], abandoned: false });
+  });
+
+  it("scores a round of a small pool out of the cards it had", () => {
+    let state = start({ pool: pool(4) });
+    for (let i = 0; i < 4; i++) state = play(state, answerRight(state));
+    expect(summarise(state)).toMatchObject({ score: 4, total: 4, abandoned: false });
+  });
+
+  it("summarises an abandoned round with the answers given so far", () => {
+    let state = start();
+    const first = currentCard(state) as Card;
+    state = play(state, [answer(!first.answer, 1), NEXT]);
+    state = play(state, answerRight(state));
+    state = play(state, [ABANDON]);
+    const result = summarise(state);
+    expect(result).toMatchObject({ score: 1, total: 2, abandoned: true });
+    expect(result.missed.map((a) => a.card)).toEqual([first]);
+  });
+
+  it("summarises a round abandoned before any answer as zero out of zero", () => {
+    expect(summarise(play(start(), [ABANDON]))).toMatchObject({ score: 0, total: 0, answers: [], missed: [], abandoned: true });
+  });
+
+  it("does not change the state it summarises", () => {
+    const state = deepFreeze(play(start(), [answer(true), NEXT]));
+    expect(() => summarise(state)).not.toThrow();
   });
 });
