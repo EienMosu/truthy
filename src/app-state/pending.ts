@@ -3,7 +3,7 @@
 
 import { z } from "zod";
 import type { Route } from "@/src/content/schema";
-import type { Mode } from "@/src/engine/round";
+import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
 
 export interface PendingRound {
   route: Route;
@@ -12,11 +12,10 @@ export interface PendingRound {
 
 export const PENDING_KEY = "truthy.pending.v1";
 
-const MODES = ["classic", "streak", "lives", "timed"] as const satisfies readonly Mode[];
-
+// Only modes this build can play: a stored "streak" from a newer build must not reach startRound, which would throw.
 const PendingSchema = z.object({
   route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
-  mode: z.enum(MODES),
+  mode: z.custom<Mode>((value) => typeof value === "string" && (AVAILABLE_MODES as readonly string[]).includes(value)),
 });
 
 // window.sessionStorage, or undefined on the server and where the browser blocks storage.

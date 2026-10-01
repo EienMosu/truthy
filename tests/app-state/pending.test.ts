@@ -92,3 +92,10 @@ describe("savePending and readPending", () => {
     expect(readPending()).toBeNull();
   });
 });
+
+describe("modes this build cannot play", () => {
+  it("reads null for a mode that exists but is not available yet", () => {
+    const stored = JSON.stringify({ route: pending.route, mode: "streak" });
+    expect(readPending(memoryStorage({ [PENDING_KEY]: stored }))).toBeNull();
+  });
+});

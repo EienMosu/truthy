@@ -312,3 +312,30 @@ describe("loadDeck", () => {
     expect(typeof real).toBe("function");
   });
 });
+
+describe("files that belong to another deck", () => {
+  it("reads null when the copy under a deck's key is a different deck", () => {
+    const other = JSON.stringify(deckFile("gcp-cdl", "h1"));
+    const cache = createDeckCache(memoryStorage({ "truthy.deck.aws-clf": other }));
+    expect(cache.read("aws-clf")).toBeNull();
+  });
+
+  it("reads null and does not throw when the storage throws on read", () => {
+    const cache = createDeckCache({
+      getItem: () => {
+        throw new DOMException("The operation is insecure.", "SecurityError");
+      },
+      setItem: () => undefined,
+    });
+    expect(cache.read("aws-clf")).toBeNull();
+  });
+
+  it("rejects a fetched file whose id is not the requested deck and does not cache it", async () => {
+    const storage = memoryStorage();
+    const fetcher = fakeFetcher({ "/decks/aws-clf.json?v=h2": { ok: true, body: deckFile("gcp-cdl", "h2") } });
+    await expect(loadDeck({ id: "aws-clf", hash: "h2" }, createDeckCache(storage), fetcher)).rejects.toThrow(
+      'Could not load the deck "aws-clf": the file is for the deck "gcp-cdl".',
+    );
+    expect(storage.data.size).toBe(0);
+  });
+});

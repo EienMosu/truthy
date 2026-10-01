@@ -42,7 +42,7 @@ export function createDeckCache(storage: ReadWriteStorage | undefined): DeckCach
   return {
     read(deckId) {
       const parsed = DeckFileSchema.safeParse(readJson(storage, deckCacheKey(deckId)));
-      return parsed.success ? parsed.data : null;
+      return parsed.success && parsed.data.id === deckId ? parsed.data : null;
     },
     write(deck) {
       writeJson(storage, deckCacheKey(deck.id), deck);
@@ -123,11 +123,14 @@ export async function loadDeck(entry: { id: string; hash: string }, cache: DeckC
   let reason: string;
   if (fetched.ok) {
     const parsed = DeckFileSchema.safeParse(fetched.value);
-    if (parsed.success) {
+    if (!parsed.success) {
+      reason = `the file is not valid (${firstIssue(parsed.error.issues)})`;
+    } else if (parsed.data.id !== entry.id) {
+      reason = `the file is for the deck "${parsed.data.id}"`;
+    } else {
       cache.write(parsed.data);
       return parsed.data;
     }
-    reason = `the file is not valid (${firstIssue(parsed.error.issues)})`;
   } else {
     reason = fetched.reason;
   }
