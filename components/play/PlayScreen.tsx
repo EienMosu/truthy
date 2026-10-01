@@ -18,6 +18,7 @@ import {
   type TearSide,
 } from "@/components/BoardingPass";
 import { FlightPath } from "@/components/FlightPath";
+import { LivesPath } from "@/components/LivesPath";
 import { StreakPath } from "@/components/StreakPath";
 import { PillButton } from "@/components/PillButton";
 import { RoundButton } from "@/components/RoundButton";
@@ -295,6 +296,8 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
         <Header onLeave={requestLeave} closeRef={closeRef}>
           {round.mode === "streak" ? (
             <StreakPath streak={streak} best={ticket.best} answered={last ? (last.correct ? "correct" : "wrong") : null} />
+          ) : round.mode === "lives" ? (
+            <LivesPath results={round.answers.map((a) => a.correct)} answered={answered} />
           ) : (
             <FlightPath
               total={total}

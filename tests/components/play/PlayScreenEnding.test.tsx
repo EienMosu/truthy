@@ -361,3 +361,27 @@ describe("PlayScreen: the Streak header", () => {
     expect(headerName()).toBe("Streak of 0 correct answers. Your best on this route is 2.");
   });
 });
+
+describe("PlayScreen: the Three lives header", () => {
+  it("shows the Three lives header from the first card", async () => {
+    await start(harness(pendingFor("lives")));
+    expect(screen.getByRole("img", { name: "3 of 3 lives left. No cards answered yet." })).toBeTruthy();
+    expect(screen.queryByRole("img", { name: /^Card 1 of/ })).toBeNull();
+  });
+
+  it("takes a life per wrong answer and ends on the third", async () => {
+    await start(harness(pendingFor("lives")));
+    give(false);
+    expect(headerName()).toBe("2 of 3 lives left. 1 card answered, card 1 was wrong.");
+    await go();
+    give(true);
+    expect(headerName()).toBe("2 of 3 lives left. 2 cards answered, card 1 was wrong.");
+    await go();
+    give(false);
+    expect(headerName()).toBe("1 of 3 lives left. 3 cards answered, cards 1 and 3 were wrong.");
+    await go();
+    give(false);
+    expect(headerName()).toBe("No lives left. The round is over after 4 cards: cards 1, 3 and 4 were wrong.");
+    expect(screen.getByRole("button", { name: "See results" })).toBeTruthy();
+  });
+});
