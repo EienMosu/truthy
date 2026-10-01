@@ -23,7 +23,7 @@ export function deal(pool: readonly Card[], history: History, rng: Rng, options:
   const size = dealSize(options.count, cards.length);
   if (size === 0) return [];
   const ranking = rankByPriority(cards, history, rng, size);
-  return [...ranking.withinCap, ...ranking.overCap].slice(0, size);
+  return choose(ranking, size, options.avoid ?? []);
 }
 
 // The first card with each id wins, so a card can never be dealt twice.
@@ -78,4 +78,150 @@ function rankByPriority(cards: readonly Card[], history: History, rng: Rng, size
     withinCap: [...missed.slice(0, missedCap), ...unseen, ...seenRight],
     overCap: missed.slice(missedCap),
   };
+}
+
+// How many True cards a deal of `size` may have: 4 to 6 per ten, scaled (floor of 40%, ceiling of 60%).
+interface Balance {
+  minTrue: number;
+  maxTrue: number;
+}
+
+function balanceFor(size: number): Balance {
+  return {
+    minTrue: Math.floor((size * DEAL.minTrue) / 10),
+    maxTrue: Math.ceil((size * DEAL.maxTrue) / 10),
+  };
+}
+
+// Picks `size` cards, relaxing the rules in the order of the spec only as far as needed:
+// 1. every rule, without the missed cards over the cap;
+// 2. recency: the missed cards over the cap may join, last in line;
+// 3. conflict groups, then 4. answer balance (relaxStepByStep).
+function choose(ranking: Ranking, size: number, avoid: readonly Card[]): Card[] {
+  const balance = balanceFor(size);
+  const everyCard = [...ranking.withinCap, ...ranking.overCap];
+  return (
+    searchWithAllRules(ranking.withinCap, size, avoid, balance) ??
+    searchWithAllRules(everyCard, size, avoid, balance) ??
+    relaxStepByStep(everyCard, size, avoid, balance)
+  );
+}
+
+// A bound on the work the search may do. Real decks need a few dozen steps; the bound only matters
+// for pools where no deal keeps every rule, and then the relaxed fallback takes over.
+const SEARCH_BUDGET = 20_000;
+
+// Depth-first over the ranked cards: at each card, first try to take it, then try to leave it out.
+// The first full deal found keeps as many high-ranked cards as possible, so leaving out a higher card
+// in favour of a lower one (relaxing recency) is the first thing that gives way.
+// Returns null when no deal keeps both the conflict groups and the balance.
+function searchWithAllRules(
+  ranked: readonly Card[],
+  size: number,
+  avoid: readonly Card[],
+  balance: Balance,
+): Card[] | null {
+  const trueAfter = suffixCounts(ranked, true);
+  const falseAfter = suffixCounts(ranked, false);
+  const usedGroups = new Set(avoid.flatMap((card) => card.conflictGroups));
+  const picked: Card[] = [];
+  let trues = 0;
+  let budget = SEARCH_BUDGET;
+
+  const canTake = (card: Card): boolean =>
+    !card.conflictGroups.some((group) => usedGroups.has(group)) &&
+    balanceAllows(card.answer, trues, picked.length - trues, size, balance);
+
+  const take = (card: Card) => {
+    picked.push(card);
+    if (card.answer) trues++;
+    for (const group of card.conflictGroups) usedGroups.add(group);
+  };
+
+  // A card is only taken when none of its groups is in use, so removing them on the way back is safe.
+  const putBack = (card: Card) => {
+    picked.pop();
+    if (card.answer) trues--;
+    for (const group of card.conflictGroups) usedGroups.delete(group);
+  };
+
+  const canStillFinish = (from: number): boolean => {
+    const falses = picked.length - trues;
+    return (
+      ranked.length - from >= size - picked.length &&
+      trues + (trueAfter[from] ?? 0) >= balance.minTrue &&
+      falses + (falseAfter[from] ?? 0) >= size - balance.maxTrue
+    );
+  };
+
+  const visit = (from: number): boolean => {
+    if (picked.length === size) return true;
+    if (budget-- <= 0 || !canStillFinish(from)) return false;
+    const card = ranked[from];
+    if (card === undefined) return false;
+    if (canTake(card)) {
+      take(card);
+      if (visit(from + 1)) return true;
+      putBack(card);
+    }
+    return visit(from + 1);
+  };
+
+  return visit(0) ? picked : null;
+}
+
+// counts[i] is how many of ranked[i..] have the given answer.
+function suffixCounts(ranked: readonly Card[], answer: boolean): number[] {
+  const counts = new Array<number>(ranked.length + 1).fill(0);
+  for (let i = ranked.length - 1; i >= 0; i--) {
+    counts[i] = (counts[i + 1] ?? 0) + (ranked[i]?.answer === answer ? 1 : 0);
+  }
+  return counts;
+}
+
+interface Rules {
+  conflicts: boolean; // keep conflict groups apart (within the deal and against `avoid`)
+  balance: boolean; // keep the number of True cards inside the balance
+}
+
+// The fallback when no deal keeps every rule. Three passes over the ranked cards, each adding to the
+// cards already picked: all rules, then without conflict groups, then without the balance.
+function relaxStepByStep(ranked: readonly Card[], size: number, avoid: readonly Card[], balance: Balance): Card[] {
+  const picked: Card[] = [];
+  const pickedIds = new Set<string>();
+
+  const breaks = (card: Card, rules: Rules): boolean => {
+    if (rules.conflicts && sharesGroup(card, [...avoid, ...picked])) return true;
+    if (!rules.balance) return false;
+    const trues = trueCount(picked);
+    return !balanceAllows(card.answer, trues, picked.length - trues, size, balance);
+  };
+
+  const fill = (rules: Rules) => {
+    for (const card of ranked) {
+      if (picked.length === size) return;
+      if (pickedIds.has(card.id) || breaks(card, rules)) continue;
+      picked.push(card);
+      pickedIds.add(card.id);
+    }
+  };
+
+  fill({ conflicts: true, balance: true });
+  fill({ conflicts: false, balance: true });
+  fill({ conflicts: false, balance: false });
+  return picked;
+}
+
+function sharesGroup(card: Card, others: readonly Card[]): boolean {
+  return card.conflictGroups.some((group) => others.some((other) => other.conflictGroups.includes(group)));
+}
+
+function trueCount(cards: readonly Card[]): number {
+  return cards.filter((card) => card.answer).length;
+}
+
+// True cards may not pass maxTrue, and False cards may not pass size - minTrue,
+// so a full deal picked under this rule always lands inside the balance.
+function balanceAllows(answer: boolean, trues: number, falses: number, size: number, balance: Balance): boolean {
+  return answer ? trues < balance.maxTrue : falses < size - balance.minTrue;
 }

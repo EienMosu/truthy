@@ -187,3 +187,178 @@ describe("deal: priority", () => {
     expect(ids(deal(pool, history, createRng(1), { count: 10 }))).toContain("z");
   });
 });
+
+function trueCount(dealt: readonly Card[]): number {
+  return dealt.filter((c) => c.answer).length;
+}
+
+// The conflict groups that appear on more than one of the given cards.
+function repeatedGroups(dealt: readonly Card[]): string[] {
+  const counts = new Map<string, number>();
+  for (const c of dealt) for (const g of c.conflictGroups) counts.set(g, (counts.get(g) ?? 0) + 1);
+  return [...counts].filter(([, n]) => n > 1).map(([g]) => g);
+}
+
+function inGroup(dealt: readonly Card[], group: string): number {
+  return dealt.filter((c) => c.conflictGroups.includes(group)).length;
+}
+
+describe("deal: conflict groups", () => {
+  // Five groups of three cards and five free cards: exactly ten conflict-free cards are possible.
+  const grouped = Array.from({ length: 15 }, (_, i) => card(`g${i + 1}`, i % 2 === 0, [`group-${i % 5}`]));
+  const free = cards("f", 5, (i) => i % 2 === 1);
+  const pool = [...grouped, ...free];
+
+  it("never deals two cards that share a conflict group when ten conflict-free cards exist", () => {
+    for (let seed = 0; seed < 50; seed++) {
+      const dealt = deal(pool, {}, createRng(seed), { count: 10 });
+      expect(dealt).toHaveLength(10);
+      expect(repeatedGroups(dealt)).toEqual([]);
+    }
+  });
+
+  it("blocks every group of a card that belongs to several", () => {
+    const pool2 = [card("multi", true, ["a", "b"]), card("a2", true, ["a"]), card("b2", false, ["b"]), ...cards("f", 12)];
+    for (let seed = 0; seed < 30; seed++) {
+      const dealt = ids(deal(pool2, {}, createRng(seed), { count: 10 }));
+      if (dealt.includes("multi")) {
+        expect(dealt).not.toContain("a2");
+        expect(dealt).not.toContain("b2");
+      }
+    }
+  });
+
+  it("skips a missed card that conflicts with an older missed card, and fills from lower priority instead", () => {
+    const wrongA = card("mA", true, ["shared"]);
+    const wrongB = card("mB", false, ["shared"]);
+    const older = cards("s", 12);
+    const history: History = {
+      mA: missed(1),
+      mB: missed(2),
+      ...Object.fromEntries(older.map((c, i) => [c.id, right(100 + i)])),
+    };
+    const dealt = ids(deal([wrongB, wrongA, ...older], history, createRng(4), { count: 10 }));
+    expect(dealt).toHaveLength(10);
+    expect(dealt).toContain("mA");
+    expect(dealt).not.toContain("mB");
+  });
+
+  it("keeps clear of the groups of the avoid cards", () => {
+    const avoid = [card("before", true, ["shared"])];
+    const pool2 = [card("x1", true, ["shared"]), card("x2", false, ["shared"]), ...cards("f", 12)];
+    for (let seed = 0; seed < 30; seed++) {
+      const dealt = ids(deal(pool2, {}, createRng(seed), { count: 10, avoid }));
+      expect(dealt).not.toContain("x1");
+      expect(dealt).not.toContain("x2");
+    }
+  });
+
+  it("does not block anything for an avoid card without groups", () => {
+    const avoid = [card("before", true)];
+    expect(deal(cards("f", 10), {}, createRng(1), { count: 10, avoid })).toHaveLength(10);
+  });
+});
+
+describe("deal: answer balance", () => {
+  it("deals four to six True per ten from a pool that is mostly True", () => {
+    const pool = cards("c", 20, (i) => i < 14);
+    for (let seed = 0; seed < 50; seed++) {
+      const t = trueCount(deal(pool, {}, createRng(seed), { count: 10 }));
+      expect(t).toBeGreaterThanOrEqual(4);
+      expect(t).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it("deals four to six True per ten from a pool that is mostly False", () => {
+    const pool = cards("c", 20, (i) => i < 6);
+    for (let seed = 0; seed < 50; seed++) {
+      const t = trueCount(deal(pool, {}, createRng(seed), { count: 10 }));
+      expect(t).toBeGreaterThanOrEqual(4);
+      expect(t).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it("gives up priority before balance: older False cards replace unseen True ones", () => {
+    const unseenTrue = cards("u", 10, () => true);
+    const seenFalse = cards("s", 10, () => false);
+    const history: History = Object.fromEntries(seenFalse.map((c, i) => [c.id, right(i + 1)]));
+    const dealt = deal([...unseenTrue, ...seenFalse], history, createRng(6), { count: 10 });
+    expect(trueCount(dealt)).toBe(6);
+    expect(withPrefix(dealt, "s").sort()).toEqual(["s1", "s2", "s3", "s4"]);
+  });
+
+  it.each([
+    [5, 2, 3],
+    [1, 0, 1],
+    [3, 1, 2],
+    [20, 8, 12],
+  ])("scales the balance: %i cards have between %i and %i True", (count, min, max) => {
+    const pool = cards("c", 40, (i) => i < 30);
+    for (let seed = 0; seed < 30; seed++) {
+      const t = trueCount(deal(pool, {}, createRng(seed), { count }));
+      expect(t).toBeGreaterThanOrEqual(min);
+      expect(t).toBeLessThanOrEqual(max);
+    }
+  });
+});
+
+describe("deal: relaxing the constraints when the pool is too small", () => {
+  it("relaxes conflict groups when every card shares one group, and keeps the balance", () => {
+    const pool = Array.from({ length: 12 }, (_, i) => card(`c${i + 1}`, i % 2 === 0, ["everything"]));
+    const dealt = deal(pool, {}, createRng(2), { count: 10 });
+    expect(dealt).toHaveLength(10);
+    expect(trueCount(dealt)).toBeGreaterThanOrEqual(4);
+    expect(trueCount(dealt)).toBeLessThanOrEqual(6);
+  });
+
+  it("relaxes conflict groups before answer balance", () => {
+    // Eight free True cards, two free False cards and four False cards in one group.
+    // Keeping the groups would need seven True; keeping the balance needs a second card of the group.
+    const pool = [
+      ...cards("t", 8, () => true),
+      ...cards("f", 2, () => false),
+      ...Array.from({ length: 4 }, (_, i) => card(`g${i + 1}`, false, ["clash"])),
+    ];
+    for (let seed = 0; seed < 30; seed++) {
+      const dealt = deal(pool, {}, createRng(seed), { count: 10 });
+      expect(dealt).toHaveLength(10);
+      expect(trueCount(dealt)).toBe(6);
+      expect(inGroup(dealt, "clash")).toBe(2);
+    }
+  });
+
+  it("lets missed cards over the cap in (recency) before giving up the balance", () => {
+    // Missed: m1 to m3 True (oldest), m4 and m5 False. Never seen: eight True, two False.
+    // Within the cap there are only two False cards, so the balance needs m4 and m5.
+    const wrong = cards("m", 5, (i) => i < 3);
+    const unseen = cards("u", 10, (i) => i < 8);
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
+    const dealt = deal([...wrong, ...unseen], history, createRng(3), { count: 10 });
+    expect(trueCount(dealt)).toBe(6);
+    expect(withPrefix(dealt, "m").sort()).toEqual(["m1", "m2", "m3", "m4", "m5"]);
+  });
+
+  it("relaxes the avoid groups too when there is nothing else", () => {
+    const avoid = [card("before", true, ["shared"])];
+    const pool = Array.from({ length: 10 }, (_, i) => card(`c${i + 1}`, i % 2 === 0, ["shared"]));
+    expect(deal(pool, {}, createRng(1), { count: 10, avoid })).toHaveLength(10);
+  });
+
+  it("relaxes the balance last: a pool of only True cards is dealt in full", () => {
+    const dealt = deal(cards("c", 10, () => true), {}, createRng(1), { count: 10 });
+    expect(dealt).toHaveLength(10);
+    expect(trueCount(dealt)).toBe(10);
+  });
+
+  it("relaxes the balance last: a pool of only False cards is dealt in full", () => {
+    const dealt = deal(cards("c", 12, () => false), {}, createRng(1), { count: 10 });
+    expect(dealt).toHaveLength(10);
+    expect(trueCount(dealt)).toBe(0);
+  });
+
+  it("uses every False card there is when there are too few: 9 True and 3 False give 7 and 3", () => {
+    const dealt = deal(cards("c", 12, (i) => i < 9), {}, createRng(1), { count: 10 });
+    expect(dealt).toHaveLength(10);
+    expect(trueCount(dealt)).toBe(7);
+  });
+});
