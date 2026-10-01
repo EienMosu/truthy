@@ -17,7 +17,7 @@ Final-pass screens (built from the approved ones, same tokens): `start` and `sta
 3. **Calm and few.** Sky, paper, ink and one amber. Rules are 1.5px, there is plenty of space, and nothing is tilted except a stamp. No textures, thick outlines, loud colour blocks or giant decorative type.
 4. **What the client rejected.** Home screens that showed everything at once: the departures list with filter chips (home-a), the wallet stack (home-b) and the itinerary with nested lists (home-c), as too complicated. They also passed over the morphing-header and horizontal-push start flows (browse-a, browse-b). Filter chips existed only in those rejected screens: do not build them.
 5. **Motion explains, it does not decorate.** Every movement shows where something went (a name into its field, a stub off the ticket). There is one celebratory moment, the stamp.
-6. **Night is a remap, not a redesign.** The same components and geometry, with token values swapped. The approved night theme keeps a dark pass (the lit cream pass was rejected because it glares).
+6. **Night is a remap, not a redesign.** The same components and geometry, with token values swapped. The approved night theme keeps a dark pass (the lit cream pass was rejected because it glares). The theme follows the system setting until the player chooses one with the theme switch (5.5); the choice is kept on the device.
 
 ---
 
@@ -153,7 +153,7 @@ Inline link (source): Mono 600 13.5, colour `true`, underline 1.5px thick with a
 - **Safe zones.** The contract keeps the top 50px and the bottom 30px free of interactive content. The 52/34 padding stands in for the status bar and the home indicator. Natively, use the system safe-area insets and keep at least the same visual distance (see Open questions).
 - **Game, result and mode screens:** header row 56 → stage (flex, `margin-top` 12) → actions row 64 (`margin-top` 12). The ticket content inset is **20**. Measured on the reference: header at y 52, ticket at y 120 to 728 (carrier 44, legs 96, field grid 52, statement 188, stub 228), actions at y 746 to 810.
 - **Start flow (start.html):** three stacked zones, each holding one state at a time in the same place.
-  - **Top zone, 176:** step 1 shows the logo (36 top padding, logo, 14 gap, tagline with `max-width` 300). Steps 2 to 6 show the Back pill, a 12 gap and the fill-in pass (aligned to the top; from step 6 the pass is full size and overflows the zone, with an 8 top margin). Step 7 replaces the Back pill with the 56 flight-path header and the pass becomes the first card, at the same y as a game ticket (120).
+  - **Top zone, 176:** the theme switch (5.5) sits at its top right on steps 1 to 6. Step 1 shows the logo (36 top padding, logo, 14 gap, tagline with `max-width` 300). Steps 2 to 6 show the Back pill, a 12 gap and the fill-in pass (aligned to the top; from step 6 the pass is full size and overflows the zone, with an 8 top margin). Step 7 replaces the Back pill with the 56 flight-path header and the pass becomes the first card, at the same y as a game ticket (120).
   - **Main area:** `margin-top` 20, the step title row 36, then the scrolling card list. The list's margin (8 −8 0) and padding (6 8 24) leave room for the focus ring. Step 6 has 112 of top padding so its title clears the full pass. On step 1, when the continue line shows, the list stops 76 above the bottom.
   - **Foot zone:** absolute, 16 from each side, 38 from the bottom, 60 tall (the same place as a game's action row). It holds the continue line (step 1, returning players), "Start round →" (step 6) or the True/False pair (step 7). Steps 2 to 5 leave it empty.
 - **4/8 grid.** Structure sits on 4: gutters 16 and 20, gaps 12, heights 44 / 48 / 56 / 60 / 64 / 104 / 108 / 128 / 176 (the section card's 90 is the one exception). Text cells use small optical values (7, 9, 11, 14, 18, 22) to put text on its baseline. Keep these exactly; do not round them to the grid. The spacing steps actually used are 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24.
@@ -250,7 +250,8 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Raised** (header): `surface-raised` with `elevation.small`. The X icon (16, stroke 2.4) means leave or close ("Leave round", "Close results"). The ← icon (18 × 16, stroke 2.4) means back ("Back to sections", mode-select).
   - **Sunk** (on paper, the sheet close): `surface-sunk` with no shadow.
 - **States:** pressed scales to 0.92 (t1, ease). Focus uses the 3px ink ring, offset 3.
-- **Used by:** game-*, result-*, mode-select, start step 7 (Leave round), the browse-c sheet.
+- **Theme switch** (raised, start steps 1 to 6): at the top right of the start flow's top zone, its centre in line with the logo row on step 1 (top 32) and with the Back pill row from step 2 (top 0). It moves between the two with a transform (step timing; at once with reduced motion) and fades out with the Back pill when the round starts. The icon shows what a press gives: a moon (18, stroke 2) while the day theme is shown, a sun (18, stroke 2) while the night theme is shown. The label states the action: "Switch to dark theme", "Switch to light theme". A press flips the theme on screen and keeps the choice on the device. Not on the game or result screens.
+- **Used by:** game-*, result-*, mode-select, start step 7 (Leave round), the browse-c sheet, start steps 1 to 6 (theme switch).
 
 ### 5.6 Back pill (start flow)
 - 48 tall, padding 0 20 0 14, radius 24, `surface-raised`, `elevation.small`, gap 8. It holds a left arrow (18, stroke 2.2) and "Back" (`button-back`). It is aligned to the start of the row.
@@ -383,8 +384,10 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 | Heart | 20 | filled `ink`; lost = outline 1.6 `ink-muted` plus slash | 1.6 | lives header |
 | Carrier cloud | 22 × 16 | filled path | fill `on-accent` | carrier band |
 | Plane | r12 | `accent` circle plus `M-7 0h14M1-6l4 6-4 6M-6-3l2 3-2 3` | 2 `on-accent` | flight path |
+| Moon | 18 | `M15.8 9.6A6.8 6.8 0 1 1 8.4 2.2a5.3 5.3 0 0 0 7.4 7.4z` | 2 | theme switch, day theme shown |
+| Sun | 18 | circle r3.3 at (9, 9) plus `M9 1.5v1.6M9 14.9v1.6M1.5 9h1.6M14.9 9h1.6M3.7 3.7l1.1 1.1M13.2 13.2l1.1 1.1M3.7 14.3l1.1-1.1M13.2 4.8l1.1-1.1` | 2 | theme switch, night theme shown |
 
-The exact paths are in the reference files. Copy them; do not redraw.
+The exact paths are in the reference files. Copy them; do not redraw. The moon and the sun came after the approved screens; they are drawn in the same style (round caps and joins, `currentColor`) and their paths are in `components/icons.tsx`.
 
 ---
 

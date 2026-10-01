@@ -43,7 +43,7 @@ This document specifies all three. Implementation plans are written per step, st
 
 ### Out of scope
 
-Accounts, sync, leaderboards, any backend; Turkish or other languages; the native apps; the three.js signature moment; the "Mis-swiped?" flag; a manual theme switch; analytics; the second game idea that has not been discussed yet.
+Accounts, sync, leaderboards, any backend; Turkish or other languages; the native apps; the three.js signature moment; the "Mis-swiped?" flag; a theme menu or settings screen (the two-state theme switch of section 9 is in scope); analytics; the second game idea that has not been discussed yet.
 
 ## 4. Architecture
 
@@ -250,7 +250,18 @@ Where this document and those disagree on a visual value, the design documents w
 
 ### Tokens in code
 
-A build script turns `tokens.json` into CSS custom properties and the Tailwind theme reads those properties. Components use tokens only, never raw colour values. The day values sit on `:root` and the night values override them under `prefers-color-scheme: dark`, so the theme follows the system setting; a manual theme switch stays out of scope. The night theme was planned for step 3 and was pulled forward after step 1 shipped; every screen has been checked in both themes, and both themes pass the same contrast gate.
+A build script turns `tokens.json` into CSS custom properties and the Tailwind theme reads those properties. Components use tokens only, never raw colour values. The day values sit on `:root` and the night values override them under `prefers-color-scheme: dark`, so by default the theme follows the system setting. The night theme was planned for step 3 and was pulled forward after step 1 shipped; every screen has been checked in both themes, and both themes pass the same contrast gate.
+
+### Theme switch
+
+The player can also choose the theme. A round button at the top right of the start flow, on every start step (in line with the logo on step 1 and with the Back pill on later steps), flips the theme the player sees: day to night or night to day. It is not on the play or result screens, and there is no three-way menu or settings screen.
+
+- **Default:** no choice; the theme follows the system setting and changes with it.
+- **After a press:** the choice is remembered on the device and wins over the system setting from then on, on every screen and after a reload. It is stored in `localStorage` under `truthy.theme` as `light` or `dark`. Any other value, or storage that is missing or throws, means follow the system; the switch then still works for the current page.
+- **On the page:** the choice is `data-theme="light"` or `data-theme="dark"` on `<html>` (no attribute: follow the system). The token build writes the night values under the dark system setting for `:root:not([data-theme=light])` and again for `:root[data-theme=dark]`; `color-scheme` follows the same three cases.
+- **No flash:** an inline script at the start of `<head>` reads the stored choice and sets the attribute before the first paint, so a player who chose night never sees a day frame first. The pages stay statically prerendered.
+- **Browser bar:** with a choice, the browser bar takes the chosen theme's top sky colour (`sky-1`); without one, the two theme-color tags follow the system as before.
+- **Button:** the 48 px raised round button with a moon while the day theme is shown and a sun while the night theme is shown. Its accessible name states the action: "Switch to dark theme" or "Switch to light theme". It never takes the focus on its own and does not touch the start flow's steps or settle time.
 
 ### Typography
 
@@ -258,7 +269,7 @@ Overpass and Overpass Mono (SIL OFL), static weights, loaded with `next/font` so
 
 ### Screens
 
-1. **Start**, the fill-in pass: step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. An area or platform without decks, and a class that is not built yet, are shown as not available and cannot be chosen. A deck whose review is not finished is not listed. Option presses are ignored for 250 ms after a step appears, so a double tap cannot choose an option the player has not seen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
+1. **Start**, the fill-in pass: the theme switch sits at the top right on every step (section 9, "Theme switch"). Step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. An area or platform without decks, and a class that is not built yet, are shown as not available and cannot be chosen. A deck whose review is not finished is not listed. Option presses are ignored for 250 ms after a step appears, so a double tap cannot choose an option the player has not seen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
 2. **Play**: the flight-path header in the variant of the mode, the boarding pass card with the statement, the stub with the swipe hint, the True and False buttons; then the answer state, or the stamp in Timed. A card with a non-empty `appliesTo` shows it as one small line above the statement. The source link opens in a new tab.
 3. **Result**: as described in section 6.
 
