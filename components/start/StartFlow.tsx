@@ -441,7 +441,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     const state = boardingRef.current;
     if (!state.rewound || !state.unrolled || state.opened) return;
     state.opened = true;
-    if (state.onFirstEntry) markStartEntryBehind();
+    markStartEntryBehind(state.onFirstEntry);
     router.push("/play");
   }, [router]);
 

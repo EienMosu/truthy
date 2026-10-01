@@ -79,9 +79,12 @@ export function browserStepHistory(): StepHistory | undefined {
 // /play starts without it). Only the browser sets it.
 let startEntryBehind = false;
 
-/** The start flow has moved back to its first entry and is opening /play on top of it. */
-export function markStartEntryBehind(): void {
-  if (typeof window !== "undefined") startEntryBehind = true;
+/**
+ * The start flow is opening /play: `behind` says whether it moved back to its first entry first. Set on
+ * every start, so a start that could not move back does not inherit an earlier round's mark.
+ */
+export function markStartEntryBehind(behind: boolean): void {
+  if (typeof window !== "undefined") startEntryBehind = behind;
 }
 
 /**

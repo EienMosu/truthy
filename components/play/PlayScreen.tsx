@@ -45,12 +45,11 @@ export interface PlayScreenProps {
 const EASE = [0.2, 0.7, 0.2, 1] as const;
 
 /**
- * How long after an answer "Next card" counts as arrived: it takes focus and starts to accept presses.
- * Before that it is coming in where True and False were, so a double tap on an answer must not reach it.
- * With reduced motion it arrives with the end of the 220 ms cross-fade.
+ * How long after an answer "Next card" counts as arrived and starts to accept presses. Before that it is
+ * coming in where True and False were, so a double tap on an answer must not reach it. The time guards
+ * against the second tap, not the animation, so it is the same with reduced motion.
  */
 export const NEXT_ARRIVES_MS = 420;
-export const NEXT_ARRIVES_REDUCED_MS = 220;
 
 // The card follows --drag-x (set by useSwipe): translateX(dx) and a rotation of dx / 18 degrees.
 const CARD_TRANSFORM: CSSProperties = {
@@ -193,7 +192,6 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
   const [confirming, setConfirming] = useState(false);
   // The card index whose "Next card" has arrived (see NEXT_ARRIVES_MS); until then the row takes no taps.
   const [arrivedAt, setArrivedAt] = useState(-1);
-  const arrivesMs = reduced ? NEXT_ARRIVES_REDUCED_MS : NEXT_ARRIVES_MS;
   const shownAt = useRef(0);
   const statementRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -214,18 +212,19 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
     statementRef.current?.focus({ preventScroll: true });
   }, [round.cards, round.index, round.phase, now]);
 
-  // After an answer, "Next card" arrives (420 ms, 220 ms with reduced motion): it starts to take taps and
-  // focus moves to it.
+  // After an answer, "Next card" arrives after 420 ms and starts to take taps. Focus moves to it then, or
+  // at once with reduced motion (Enter on it still waits for the arrival, see next below).
   useEffect(() => {
     if (!answered) return;
     const index = round.index;
-    const timer = setTimeout(() => setArrivedAt(index), arrivesMs);
+    const timer = setTimeout(() => setArrivedAt(index), NEXT_ARRIVES_MS);
     return () => clearTimeout(timer);
-  }, [answered, round.index, arrivesMs]);
+  }, [answered, round.index]);
   const nextArrived = answered && arrivedAt === round.index;
+  const focusNext = answered && (reduced || nextArrived);
   useEffect(() => {
-    if (nextArrived) nextRef.current?.focus({ preventScroll: true });
-  }, [nextArrived]);
+    if (focusNext) nextRef.current?.focus({ preventScroll: true });
+  }, [focusNext, round.index]);
 
   // Closing the dialog with "Keep playing" returns focus to the close button (once <main> is not inert).
   useEffect(() => {
@@ -251,9 +250,9 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
   // "Next card" (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer.
   const answeredAt = last?.at;
   const next = useCallback(() => {
-    if (answeredAt === undefined || now() - answeredAt < arrivesMs) return;
+    if (answeredAt === undefined || now() - answeredAt < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
-  }, [answeredAt, now, arrivesMs, dispatch]);
+  }, [answeredAt, now, dispatch]);
 
   // Keyboard: left arrow answers False, right arrow True; Enter is "Next card" after an answer
   // (unless focus is on a link or a button, which handle Enter themselves).

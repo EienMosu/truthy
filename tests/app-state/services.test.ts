@@ -68,8 +68,18 @@ describe("the start's entry behind /play", () => {
     const back = vi.spyOn(window.history, "back").mockImplementation(() => undefined);
     expect(fresh.browserBackToStart()).toBe(false);
     expect(back).not.toHaveBeenCalled();
-    fresh.markStartEntryBehind();
+    fresh.markStartEntryBehind(true);
     expect(fresh.browserBackToStart()).toBe(true);
     expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the mark when a later start could not move back to its first entry", async () => {
+    vi.resetModules();
+    const fresh = await import("@/src/app-state/services");
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => undefined);
+    fresh.markStartEntryBehind(true);
+    fresh.markStartEntryBehind(false);
+    expect(fresh.browserBackToStart()).toBe(false);
+    expect(back).not.toHaveBeenCalled();
   });
 });
