@@ -3,7 +3,7 @@
 // useReducer(reduce). Everything that touches the network, storage, the clock or randomness comes in
 // through PlayServices, so the play screen runs in tests without a browser.
 import { useCallback, useEffect, useReducer, useState } from "react";
-import { WHOLE_DECK, type DeckIndex, type IndexDeck, type Route } from "@/src/content/schema";
+import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexDeck, type Route } from "@/src/content/schema";
 import { createDeckCache, loadDeck, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
 import { reduce, startRound, type Mode, type RoundEvent, type RoundState } from "@/src/engine/round";
@@ -89,7 +89,7 @@ export function locateRoute(index: DeckIndex, pending: PendingRound): Located | 
     for (const platform of area.platforms) {
       const deck = platform.decks.find((candidate) => candidate.id === deckId);
       if (!deck) continue;
-      const deckName = `${platform.title} ${deck.title}`;
+      const deckName = deckPassName(platform, deck);
       const modeLabel = MODE_LABELS[pending.mode];
       if (sectionId === WHOLE_DECK) {
         return { deck, ticket: { deckCode: deck.code, deckName, sectionCode: WHOLE_DECK, sectionName: "Whole deck", modeLabel } };

@@ -24,7 +24,7 @@ import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { BackArrowIcon } from "@/components/icons";
 import { savePending } from "@/src/app-state/pending";
 import { browserAppServices, browserStepHistory, type AppServices, type StepHistory } from "@/src/app-state/services";
-import { WHOLE_DECK, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
+import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
 import { SWIPE } from "@/src/input/swipe";
 import { ContinueLine } from "./ContinueLine";
@@ -461,7 +461,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   const passValues: FillInPassValues = {
     area: r.area?.title,
     platform: r.platform?.title,
-    deck: r.deck && r.platform ? { code: r.deck.code, name: `${r.platform.title} ${r.deck.title}` } : undefined,
+    deck: r.deck && r.platform ? { code: r.deck.code, name: deckPassName(r.platform, r.deck) } : undefined,
     section: r.section ? { code: r.section.id, name: r.section.title, whole: r.section.whole } : undefined,
     mode: r.mode?.name,
     cards: r.section?.cardCount,

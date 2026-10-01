@@ -189,6 +189,7 @@ describe("StartFlow: choosing a route", () => {
     expect(screen.queryByRole("button", { name: /^Change section/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Back to decks" })).toBeTruthy();
     await choose(/^Classic\./, "Your pass is ready");
+    expect(document.querySelector("[data-leg='deck']")?.textContent).toBe("CDLGoogle Cloud Digital Leader");
     expect(document.querySelector("[data-leg='section']")?.textContent).toBe("ALLWhole deck");
     settle();
     fireEvent.click(screen.getByRole("button", { name: "Start round" }));

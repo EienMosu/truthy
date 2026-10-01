@@ -34,7 +34,7 @@ export const INDEX: DeckIndex = {
         {
           id: "gcp",
           title: "Google Cloud",
-          decks: [{ id: "gcp-cdl", code: "CDL", title: "Cloud Digital Leader", cardCount: 133, version: "2026-10-01", hash: "cdl-1", sections: [] }],
+          decks: [{ id: "gcp-cdl", code: "CDL", title: "Cloud Digital Leader", passName: "Google Cloud Digital Leader", cardCount: 133, version: "2026-10-01", hash: "cdl-1", sections: [] }],
         },
         { id: "azure", title: "Azure", decks: [] },
       ],

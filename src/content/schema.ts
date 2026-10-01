@@ -47,6 +47,8 @@ export const CatalogSchema = z.object({
               id: z.string().min(1),
               code: z.string().length(3),
               title: z.string().min(1),
+              // The deck's name on the pass where "<platform> <title>" reads badly; see deckPassName.
+              passName: z.string().min(1).optional(),
               sections: z.array(
                 z.object({
                   id: z.string().length(3),
@@ -99,6 +101,7 @@ export const DeckIndexSchema = z.object({
               id: z.string(),
               code: z.string(),
               title: z.string(),
+              passName: z.string().optional(),
               cardCount: z.number().int().positive(),
               version: z.string(),
               hash: z.string(),
@@ -120,6 +123,15 @@ export type IndexDeck = IndexPlatform["decks"][number];
 export interface Route {
   deckId: string;
   sectionId: string; // a section id or WHOLE_DECK
+}
+
+/**
+ * The deck's name on the pass and the ticket: its own pass name when the catalog gives one, else the
+ * platform and the deck title ("AWS Cloud Practitioner"). "Google Cloud" + "Cloud Digital Leader" would
+ * say "Cloud" twice, so that deck is named "Google Cloud Digital Leader" in the catalog.
+ */
+export function deckPassName(platform: { title: string }, deck: { title: string; passName?: string | undefined }): string {
+  return deck.passName ?? `${platform.title} ${deck.title}`;
 }
 
 export function routeKey(route: Route): string {

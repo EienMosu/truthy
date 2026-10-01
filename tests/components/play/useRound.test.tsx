@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LOAD_FAILED_MESSAGE, useRound, type RoundStatus } from "@/components/play/useRound";
+import { LOAD_FAILED_MESSAGE, locateRoute, useRound, type RoundStatus } from "@/components/play/useRound";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { emptyProgress, parseProgress } from "@/src/progress/progress";
-import { DECK_ID, harness, memoryStorage, type Harness } from "./fixtures";
+import { DECK_ID, INDEX, harness, memoryStorage, type Harness } from "./fixtures";
 
 afterEach(cleanup);
 
@@ -141,5 +141,22 @@ describe("useRound", () => {
     await ready(status);
     hook.result.current.progressStore().save({ ...emptyProgress(), records: { [`${DECK_ID}/SEC#classic`]: 7 } });
     expect(parseProgress(h.local.getItem(PROGRESS_KEY)).records).toEqual({ [`${DECK_ID}/SEC#classic`]: 7 });
+  });
+});
+
+// Review finding F4: the ticket names the deck by its pass name when the index gives one.
+describe("locateRoute: the deck name on the ticket", () => {
+  const route = { route: { deckId: DECK_ID, sectionId: "SEC" }, mode: "classic" } as const;
+
+  it("is the platform and the deck title", () => {
+    expect(locateRoute(INDEX, route)?.ticket.deckName).toBe("AWS Test deck");
+  });
+
+  it("is the deck's pass name when it has one", () => {
+    const index = structuredClone(INDEX);
+    const deck = index.areas[0]?.platforms[0]?.decks[0];
+    if (!deck) throw new Error("no deck");
+    deck.passName = "Amazon Test deck";
+    expect(locateRoute(index, route)?.ticket.deckName).toBe("Amazon Test deck");
   });
 });

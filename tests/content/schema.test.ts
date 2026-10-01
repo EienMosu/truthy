@@ -8,6 +8,7 @@ import {
   ReviewedDeckSchema,
   SourceSchema,
   WHOLE_DECK,
+  deckPassName,
   routeKey,
 } from "@/src/content/schema";
 
@@ -43,6 +44,19 @@ describe("routeKey", () => {
   it("uses ALL for the whole deck", () => {
     expect(WHOLE_DECK).toBe("ALL");
     expect(routeKey({ deckId: "nextjs-rendering", sectionId: WHOLE_DECK })).toBe("nextjs-rendering/ALL");
+  });
+});
+
+// Review finding F4: "Google Cloud" + "Cloud Digital Leader" repeats a word, so a deck may name itself on the pass.
+describe("deckPassName", () => {
+  it("joins the platform and the deck title when the deck has no pass name", () => {
+    expect(deckPassName({ title: "AWS" }, { title: "Cloud Practitioner" })).toBe("AWS Cloud Practitioner");
+  });
+
+  it("uses the deck's pass name when it has one", () => {
+    expect(deckPassName({ title: "Google Cloud" }, { title: "Cloud Digital Leader", passName: "Google Cloud Digital Leader" })).toBe(
+      "Google Cloud Digital Leader",
+    );
   });
 });
 
@@ -125,6 +139,14 @@ describe("CatalogSchema", () => {
       ],
     };
     expect(CatalogSchema.safeParse(catalog).success).toBe(true);
+  });
+
+  it("accepts a deck with or without a pass name, and rejects an empty one", () => {
+    const withDecks = (decks: object[]) => ({ areas: [{ id: "cloud", title: "Cloud", platforms: [{ id: "gcp", title: "Google Cloud", decks }] }] });
+    expect(CatalogSchema.safeParse(withDecks([deck])).success).toBe(true);
+    const named = CatalogSchema.safeParse(withDecks([{ ...deck, passName: "Google Cloud Digital Leader" }]));
+    expect(named.success && named.data.areas[0]?.platforms[0]?.decks[0]?.passName).toBe("Google Cloud Digital Leader");
+    expect(CatalogSchema.safeParse(withDecks([{ ...deck, passName: "" }])).success).toBe(false);
   });
 
   it("requires a three-letter deck code", () => {
@@ -223,5 +245,13 @@ describe("DeckIndexSchema", () => {
 
   it("rejects a deck with zero cards", () => {
     expect(DeckIndexSchema.safeParse(index(0)).success).toBe(false);
+  });
+
+  it("keeps an optional pass name", () => {
+    const named = index(133);
+    const entry = named.areas[0]?.platforms[0]?.decks[0];
+    if (!entry) throw new Error("no deck");
+    const parsed = DeckIndexSchema.safeParse({ areas: [{ ...named.areas[0], platforms: [{ ...named.areas[0]?.platforms[0], decks: [{ ...entry, passName: "Google Cloud Digital Leader" }] }] }] });
+    expect(parsed.success && parsed.data.areas[0]?.platforms[0]?.decks[0]?.passName).toBe("Google Cloud Digital Leader");
   });
 });

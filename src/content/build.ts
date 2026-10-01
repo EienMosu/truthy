@@ -178,6 +178,7 @@ function buildDeck(entry: CatalogDeck, raw: unknown, version: string): { file: D
     id: entry.id,
     code: entry.code,
     title: entry.title,
+    ...(entry.passName === undefined ? {} : { passName: entry.passName }),
     cardCount: cards.length,
     version,
     hash: file.hash,

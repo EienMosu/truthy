@@ -201,6 +201,13 @@ describe("buildDecks: sections and the shipped format", () => {
     expect(firstDeck(output).cardCount).toBe(2);
   });
 
+  it("carries a deck's pass name into the index, and leaves it out when the catalog has none", () => {
+    const entry = { id: "gcp-cdl", code: "CDL", title: "Cloud Digital Leader", passName: "Google Cloud Digital Leader", sections: [] };
+    const reviewed = reviewedDeck("gcp-cdl", [reviewedCard("gcp-cdl-s1.1-01", { section: "1.1" })]);
+    expect(firstDeck(build([entry], { "gcp-cdl": reviewed })).passName).toBe("Google Cloud Digital Leader");
+    expect(firstDeck(build([clfEntry], { "aws-clf-c02": clfReviewed() }))).not.toHaveProperty("passName");
+  });
+
   it("produces output that the client schemas accept", () => {
     const output = build([clfEntry], { "aws-clf-c02": clfReviewed() });
     expect(DeckIndexSchema.safeParse(output.index).success).toBe(true);
@@ -543,6 +550,7 @@ describe("the real content: Cloud Digital Leader", () => {
     expect(gcp?.decks.map((deck) => [deck.id, deck.code, deck.title, deck.cardCount, deck.sections])).toEqual([
       ["gcp-cdl", "CDL", "Cloud Digital Leader", 133, []],
     ]);
+    expect(gcp?.decks[0]?.passName).toBe("Google Cloud Digital Leader");
     const file = output.decks.find((deck) => deck.id === "gcp-cdl");
     expect(file?.cards).toHaveLength(133);
     expect(file?.cards.every((card) => card.section === WHOLE_DECK)).toBe(true);
