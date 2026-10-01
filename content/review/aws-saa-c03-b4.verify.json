@@ -1,0 +1,23 @@
+{
+ "file": "content/raw/aws-saa-c03-b4.json",
+ "checked": 24,
+ "flagged": [
+  {
+   "id": "aws-saa-c03-s4.4-02",
+   "verdict": "explanation_error",
+   "urlStatus": "Loaded (docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-pricing.html) and supports the cost rule.",
+   "evidence": "\"If your AWS resources send or receive a significant volume of traffic across Availability Zones, ensure that the resources are in the same Availability Zone as the NAT gateway. Alternatively, create a NAT gateway in each Availability Zone with resources.\" https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-pricing.html ; the regional NAT doc says \"standard NAT gateways (referred to as zonal NAT gateways)\" https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateways-regional.html",
+   "problem": "The fact is true, but the terminology is wrong. The explanation calls it a \"subnet-based NAT gateway\", which is not an AWS term. The statement just says \"a NAT gateway in the same Availability Zone\". Since late 2025, AWS calls this type a \"zonal NAT gateway\", to tell it apart from regional NAT gateways, which span AZs. A regional NAT gateway also keeps zonal affinity, except for up to 60 minutes while it expands into a new AZ, when traffic is processed across zones.",
+   "suggestedFix": "Statement: \"Routing an EC2 instance through a zonal NAT gateway in the instance's own Availability Zone avoids cross-AZ data-transfer charges on that hop.\" (answer true). Explanation: \"AWS recommends keeping resources in the same AZ as their zonal NAT gateway, or deploying one zonal NAT gateway per AZ, to avoid cross-AZ data-transfer charges. NAT gateway hourly and per-GB processing charges still apply.\""
+  },
+  {
+   "id": "aws-saa-c03-s4.4-11",
+   "verdict": "explanation_error",
+   "urlStatus": "Loaded (aws.amazon.com/elasticloadbalancing/faqs/) and supports the answer.",
+   "evidence": "ALB: \"Since cross-zone load balancing is always on with Application Load Balancer, you are not charged for this type of regional data transfer.\" NLB: \"Yes, you will be charged for regional data transfer between Availability Zones with Network Load Balancer when cross-zone load balancing is enabled.\" https://aws.amazon.com/elasticloadbalancing/faqs/",
+   "problem": "The answer (false) is correct. The second sentence of the explanation is wrong: \"Application Load Balancer cross-zone traffic has a different billing exemption\" suggests ALB has some other exemption. In fact ALB is simply exempt, because cross-zone load balancing is always on. The first sentence also leaves out that NLB charges apply when cross-zone load balancing is enabled, which is off by default.",
+   "suggestedFix": "Explanation: \"Application Load Balancers always balance across zones and are not charged for that regional data transfer. A Network Load Balancer has cross-zone load balancing off by default; when you enable it, inter-AZ data transfer is charged.\""
+  }
+ ],
+ "okWithNotes": []
+}

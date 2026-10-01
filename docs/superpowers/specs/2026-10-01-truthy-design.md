@@ -37,7 +37,7 @@ Each step leaves working, tested, deployed software.
 
 1. **One mode end to end.** Project skeleton, design tokens, deck build, the start flow, a Classic round, the result screen, progress storage, deploy to Vercel. Decks: every deck whose review is finished when the step ships (AWS Cloud Practitioner, Next.js Rendering, Google Cloud Digital Leader).
 2. **The other three modes.** Streak, Three lives and Timed with their in-game states and result screens.
-3. **Polish.** Offline play, and the AWS Solutions Architect Associate deck once its review is finished. The night theme was planned for this step and was pulled forward after step 1 shipped (section 9, "Tokens in code").
+3. **Polish.** Offline play. The night theme and the AWS Solutions Architect Associate deck were planned for this step and were pulled forward after step 1 shipped (section 9, "Tokens in code"; the deck entered once its review was finished).
 
 This document specifies all three. Implementation plans are written per step, starting with step 1.
 
