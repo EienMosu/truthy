@@ -20,6 +20,10 @@ describe("end-to-end configuration", () => {
     ]);
   });
 
+  it("runs both projects in the light colour scheme, whatever the machine is set to; the night spec asks for dark", () => {
+    for (const project of config.projects ?? []) expect(project.use?.colorScheme, project.name).toBe("light");
+  });
+
   it("serves the production build, not the dev server", () => {
     const server = Array.isArray(config.webServer) ? config.webServer[0] : config.webServer;
     expect(server?.command).toBe("pnpm build && pnpm start --port 3100");

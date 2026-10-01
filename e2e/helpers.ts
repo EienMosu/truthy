@@ -153,6 +153,7 @@ export interface Played {
  * Plays a whole Classic round of `total` cards. `choose(number, truth)` returns the answer to give to card
  * `number` (from 1). Buttons answer by tapping True or False and go on with "Next card"; keys answer with
  * the right and left arrows and go on with Enter. Every answer is checked against the announced verdict.
+ * `from` starts at a later card when the spec has played the first ones itself.
  */
 export async function playRound(
   page: Page,
@@ -160,10 +161,11 @@ export async function playRound(
   choose: (number: number, truth: boolean) => boolean,
   method: AnswerMethod = "buttons",
   total = 10,
+  from = 1,
 ): Promise<Played[]> {
   const answers = await deckAnswers(page, deckId);
   const played: Played[] = [];
-  for (let number = 1; number <= total; number += 1) {
+  for (let number = from; number <= total; number += 1) {
     const { statement, truth } = await waitForCard(page, answers, number, total);
     const given = choose(number, truth);
     if (method === "buttons") await page.getByRole("button", { name: given ? "True" : "False", exact: true }).click();

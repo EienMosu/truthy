@@ -3,12 +3,14 @@ import { defineConfig } from "@playwright/test";
 const PORT = 3100;
 const BASE_URL = `http://localhost:${PORT}`;
 
-// Phone size from the spec: 390 by 844, touch enabled so swipe specs can use touch input.
+// Phone size from the spec: 390 by 844, touch enabled so swipe specs can use touch input. The day theme
+// unless a spec asks for dark (e2e/night.spec.ts), so no spec depends on the machine's appearance setting.
 const phone = {
   viewport: { width: 390, height: 844 },
   deviceScaleFactor: 3,
   isMobile: true,
   hasTouch: true,
+  colorScheme: "light",
 } as const;
 
 export default defineConfig({
