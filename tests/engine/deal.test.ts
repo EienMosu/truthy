@@ -431,3 +431,36 @@ describe("deal: order", () => {
     expect(patterns.size).toBeGreaterThan(10);
   });
 });
+
+describe("deal: review focus", () => {
+  it("deals 10 of a 12-card section whose four cards share a group with exactly two of them (as few as possible)", () => {
+    // The shape of the real Next.js sections: 11 or 12 cards, so some conflicts cannot be avoided.
+    const pool = [
+      ...cards("f", 8),
+      ...Array.from({ length: 4 }, (_, i) => card(`g${i + 1}`, i % 2 === 0, ["same-topic"])),
+    ];
+    for (let seed = 0; seed < 50; seed++) {
+      const dealt = deal(pool, {}, createRng(seed), { count: 10 });
+      expect(dealt).toHaveLength(10);
+      expect(inGroup(dealt, "same-topic")).toBe(2);
+      expect(longestRun(dealt)).toBeLessThanOrEqual(DEAL.maxRun);
+    }
+  });
+
+  it("still deals a full, valid round from a history with corrupt numbers", () => {
+    const pool = cards("c", 20);
+    const history: History = {
+      c1: { seen: 1, lastCorrect: false, lastSeenAt: Number.NaN },
+      c2: { seen: -4, lastCorrect: false, lastSeenAt: 5 },
+      c3: { seen: 1, lastCorrect: true, lastSeenAt: Number.POSITIVE_INFINITY },
+      c4: { seen: Number.NaN, lastCorrect: true, lastSeenAt: -1 },
+    };
+    const first = deal(pool, history, createRng(12), { count: 10 });
+    expect(first).toHaveLength(10);
+    expect(new Set(ids(first)).size).toBe(10);
+    expect(trueCount(first)).toBeGreaterThanOrEqual(4);
+    expect(trueCount(first)).toBeLessThanOrEqual(6);
+    expect(longestRun(first)).toBeLessThanOrEqual(DEAL.maxRun);
+    expect(ids(deal(pool, history, createRng(12), { count: 10 }))).toEqual(ids(first));
+  });
+});
