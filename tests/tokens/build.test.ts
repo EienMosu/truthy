@@ -1,3 +1,8 @@
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { TokenError, tokensToCss } from "@/src/tokens/build";
 
@@ -454,5 +459,128 @@ describe("tokensToCss: elevation and motion", () => {
     const out = vars(tokensToCss(tokens));
     expect(out.get("--gesture-commit-distance")).toBe("90px");
     expect(out.get("--gesture-rotation-divisor")).toBe("18");
+  });
+});
+
+describe("tokensToCss: the real design/system/tokens.json", () => {
+  const realTokens = JSON.parse(readFileSync(new URL("../../design/system/tokens.json", import.meta.url), "utf8"));
+  const out = vars(tokensToCss(realTokens));
+
+  // The names tasks 9 to 12 are written against. Values are not pinned: the design review may change them.
+  const COLORS = [
+    "sky-1", "sky-2", "sky-3", "sky-4", "surface", "surface-raised", "surface-sunk", "ink", "ink-muted", "rule",
+    "accent", "on-accent", "true", "false", "correct", "wrong", "on-dark", "cloud", "scrim", "surface-sunk-clear",
+    "focus", "focus-on-fill", "press",
+  ];
+  const TYPE_ROLES = [
+    "logo", "screen-title", "step-title", "tagline", "card-statement", "card-name", "answer-value", "answer-label",
+    "stamp", "button", "button-quiet", "button-back", "carrier-title", "carrier-label", "leg-code", "leg-name",
+    "field-label", "field-value", "field-value-pass", "body", "body-small", "list-title", "list-statement",
+    "option-title", "emphasis", "deck-code", "section-code", "score", "intent-stamp", "mono-data", "mono-data-strong",
+    "mono-caption", "route-label", "sheet-title", "pass-line",
+  ];
+  const OTHERS = [
+    "--font-sans", "--font-mono",
+    "--font-weight-sans-semibold", "--font-weight-sans-extrabold", "--font-weight-mono-regular", "--font-weight-mono-semibold",
+    ...["2", "4", "6", "8", "10", "12", "14", "16", "18", "20", "24"].map((n) => `--space-${n}`),
+    ...[
+      "safe-top", "safe-bottom", "gutter", "ticket-inset", "max-width", "touch-min", "header", "start-top-zone",
+      "round-button", "pill", "pill-small", "actions", "carrier", "carrier-compact", "statement-min", "lower", "barcode",
+      "notch", "card-notch", "card-stub", "card-stub-deck", "card-min", "card-min-deck", "card-min-off", "list-row",
+      "sheet-bar", "sheet-overrun", "grab", "radio", "progress-track", "flight-path-height", "card-min-section",
+      "card-min-class", "pass-line", "continue-icon", "foot-gap", "ready-offset",
+    ].map((n) => `--size-${n}`),
+    ...["card", "small", "pill", "pill-small", "tick"].map((n) => `--radius-${n}`),
+    ...["rule", "perforation", "focus", "stamp", "radio", "quote", "icon"].map((n) => `--stroke-${n}`),
+    "--opacity-cloud", "--opacity-disabled",
+    ...["ticket", "small", "button", "press", "sheet"].map((n) => `--elevation-${n}`),
+    ...[
+      "t1", "t2", "t3", "stamp", "tear", "jolt", "stamp-timed", "leave-timed", "deal-timed", "hold-timed", "travel-hold",
+      "travel", "step-exit-title", "step-exit", "step-enter", "step-enter-delay", "step-stagger", "top-exit",
+      "top-enter-delay", "dash-out", "dash-in", "reduced-out", "reduced-in", "board", "strike",
+    ].map((n) => `--duration-${n}`),
+    ...["ease", "spring", "fall", "ease-in", "ease-out"].map((n) => `--easing-${n}`),
+    ...["snap", "land", "land-fast"].map((n) => `--spring-${n}`),
+    ...[
+      "press", "answer-row", "tear", "stamp", "jolt", "sheet-open", "sheet-close", "disclosure", "travel", "step-enter",
+      "step-exit", "timed-leave", "timed-deal", "pass-resize", "pass-board",
+    ].map((n) => `--transition-${n}`),
+    ...["commit-distance", "intent-distance", "rotation-divisor", "stub-pull", "intent-opacity-gain"].map((n) => `--gesture-${n}`),
+  ];
+
+  it("emits every day color the UI uses", () => {
+    for (const name of COLORS) expect(out.has(`--color-${name}`), `--color-${name}`).toBe(true);
+  });
+
+  it("emits exactly the day colors, no primitives or night colors", () => {
+    const colors = [...out.keys()].filter((name) => name.startsWith("--color-"));
+    expect(colors).toHaveLength(Object.keys(realTokens.color.day).filter((key) => !key.startsWith("$")).length);
+  });
+
+  it("emits five variables for every type role", () => {
+    for (const role of TYPE_ROLES) {
+      for (const suffix of ["family", "size", "weight", "line-height", "letter-spacing"]) {
+        expect(out.has(`--type-${role}-${suffix}`), `--type-${role}-${suffix}`).toBe(true);
+      }
+    }
+  });
+
+  it("emits the font, spacing, size, radius, stroke, opacity, elevation and motion variables", () => {
+    for (const name of OTHERS) expect(out.has(name), name).toBe(true);
+  });
+
+  it("points the font families at the next/font variables", () => {
+    expect(out.get("--font-sans")).toMatch(/^var\(--font-overpass\), /);
+    expect(out.get("--font-mono")).toMatch(/^var\(--font-overpass-mono\), /);
+  });
+
+  it("leaves no unresolved reference or broken value in the output", () => {
+    for (const [name, value] of out) {
+      expect(value, name).not.toMatch(/[{}]|undefined|NaN|\[object/);
+      expect(value.trim(), name).not.toBe("");
+    }
+  });
+});
+
+describe("scripts/build-tokens.ts", () => {
+  const root = fileURLToPath(new URL("../../", import.meta.url));
+  const tsx = join(root, "node_modules/tsx/dist/cli.mjs");
+
+  function run(source: string, target: string) {
+    return spawnSync(process.execPath, [tsx, "scripts/build-tokens.ts", source, target], { cwd: root, encoding: "utf8" });
+  }
+
+  function workspace(): string {
+    return mkdtempSync(join(tmpdir(), "truthy-tokens-"));
+  }
+
+  it("writes the CSS for a valid token file and reports how many variables", () => {
+    const dir = workspace();
+    writeFileSync(join(dir, "tokens.json"), JSON.stringify(base()));
+    const result = run(join(dir, "tokens.json"), join(dir, "tokens.css"));
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/Wrote .*tokens\.css \(\d+ variables\)/);
+    expect(readFileSync(join(dir, "tokens.css"), "utf8")).toBe(tokensToCss(base()));
+  });
+
+  it("exits non-zero and names the token when a reference is broken", () => {
+    const dir = workspace();
+    const tokens = base();
+    tokens.color.day.ink.$value = "{color.primitive.gone}";
+    writeFileSync(join(dir, "tokens.json"), JSON.stringify(tokens));
+    const result = run(join(dir, "tokens.json"), join(dir, "tokens.css"));
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("color.day.ink refers to {color.primitive.gone}");
+    expect(existsSync(join(dir, "tokens.css"))).toBe(false);
+  });
+
+  it("keeps the previous CSS and names the file when tokens.json is not valid JSON", () => {
+    const dir = workspace();
+    writeFileSync(join(dir, "tokens.json"), '{ "color": { "day": { }, }');
+    writeFileSync(join(dir, "tokens.css"), "/* previous */\n");
+    const result = run(join(dir, "tokens.json"), join(dir, "tokens.css"));
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(`build:tokens failed for ${join(dir, "tokens.json")}`);
+    expect(readFileSync(join(dir, "tokens.css"), "utf8")).toBe("/* previous */\n");
   });
 });
