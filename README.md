@@ -2,6 +2,8 @@
 
 A mobile-first true or false card game that teaches IT. Pick what to study by filling in a boarding pass, then swipe right for true or left for false and learn why from a short explanation and a link to the official source. Everything runs on the device: decks are static JSON, progress lives in local storage, there is no account and no backend.
 
+Play it on your phone at https://truthy-five.vercel.app
+
 The design specification is in [docs/superpowers/specs/2026-10-01-truthy-design.md](docs/superpowers/specs/2026-10-01-truthy-design.md). The card content pipeline lives in `content/` and the design system and approved mockups in `design/`.
 
 ## Requirements

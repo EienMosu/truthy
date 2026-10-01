@@ -46,3 +46,13 @@ describe("Vercel build", () => {
     expect(ignored).toContain("public/decks/");
   });
 });
+
+describe("production URL", () => {
+  it("is recorded in the README as the public production address, not a preview one", () => {
+    const line = /^Play it on your phone at (https:\/\/[a-z0-9.-]+)\/?$/m.exec(read("README.md"));
+    expect(line, "README needs a line: Play it on your phone at https://<production domain>").not.toBeNull();
+    const url = line?.[1] ?? "";
+    // Preview and branch URLs carry "-git-" or the team slug and sit behind Vercel's login wall.
+    expect(url).not.toMatch(/-git-|-projects\.vercel\.app$/);
+  });
+});
