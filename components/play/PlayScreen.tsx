@@ -2,9 +2,10 @@
 
 // The /play screen (spec sections 6, 8, 9 and 10): loads the pending round, shows the boarding pass with
 // the statement and the stub, takes answers from the swipe, the buttons and the keyboard through one
-// function, reveals the answer slip, and leaves with one confirmation. A finished round shows its result
-// (ResultView), which records it and offers Play again and another route.
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+// function, reveals the answer slip, and leaves with one confirmation. Timed shows no slip: the verdict is
+// stamped on the stub, the next card is dealt 700 ms later, and at time up only "See results" is left.
+// A finished round shows its result (ResultView), which records it and offers Play again and another route.
+import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Variants } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import { AnswerButtons } from "@/components/AnswerButtons";
@@ -20,17 +21,20 @@ import {
 import { FlightPath } from "@/components/FlightPath";
 import { LivesPath } from "@/components/LivesPath";
 import { StreakPath } from "@/components/StreakPath";
+import { StubStamp } from "@/components/Stamp";
+import { TimedPath } from "@/components/TimedPath";
 import { PillButton } from "@/components/PillButton";
 import { RoundButton } from "@/components/RoundButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
-import { EASE } from "@/components/easing";
+import { EASE, EASE_IN, FALL } from "@/components/easing";
 import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
 import { SWIPE } from "@/src/input/swipe";
-import { currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
+import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
 import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
+import { useClock } from "./useClock";
 import { browserPlayServices, useRound, type PlayServices, type TicketInfo } from "./useRound";
 import { useSwipe } from "./useSwipe";
 
@@ -65,6 +69,50 @@ const SCROLLER: CSSProperties = {
 /** What the live region says after an answer: "Correct. The answer is False." and, past the record, " New best." */
 export function verdictText(correct: boolean, answer: boolean, newBest = false): string {
   return `${correct ? "Correct" : "Not quite"}. The answer is ${answer ? "True" : "False"}.${newBest ? " New best." : ""}`;
+}
+
+/**
+ * What the live region says in Timed: "Correct." or "Not quite." during the stamp (Timed gives the answer
+ * away nowhere during play), "Time is up. This card doesn't count." at time up, nothing on a question.
+ */
+export function timedStatus(round: RoundState): string {
+  if (isDecided(round)) return "Time is up. This card doesn't count.";
+  if (round.phase !== "stamped") return "";
+  return lastAnswer(round)?.correct ? "Correct." : "Not quite.";
+}
+
+// Timed: when the stamp has held, the answered card leaves towards the side that was answered while the next
+// is dealt under it (design system 7, "Timed beat").
+type CardSide = "left" | "right";
+const CARD_SWAP: Variants = {
+  dealt: { y: 14, opacity: 0 },
+  rest: { x: 0, y: 0, rotate: 0, opacity: 1, transition: { duration: 0.28, ease: EASE } },
+  leave: (side: CardSide | undefined) => ({
+    x: side === "right" ? "120%" : "-120%",
+    rotate: side === "right" ? 8 : -8,
+    opacity: 0,
+    transition: { default: { duration: 0.22, ease: FALL }, opacity: { duration: 0.22, ease: EASE_IN } },
+  }),
+};
+
+/**
+ * One card of the Timed swap. A card that is leaving lies on top of the one being dealt. Not animated (the
+ * other modes, and reduced motion) it is a plain wrapper and the card changes at once.
+ */
+function CardSlot({ animated, children }: { animated: boolean; children: ReactNode }) {
+  const present = useIsPresent();
+  return (
+    <motion.div
+      className="[grid-area:1/1]"
+      style={animated ? { zIndex: present ? 0 : 1 } : undefined}
+      variants={animated ? CARD_SWAP : undefined}
+      initial={animated ? "dealt" : false}
+      animate={animated ? "rest" : undefined}
+      exit={animated ? "leave" : undefined}
+    >
+      {children}
+    </motion.div>
+  );
 }
 
 export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) {
@@ -117,7 +165,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     return <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={goHome} />;
   }
 
-  return <RoundView round={round} ticket={ticket} now={services.now} dispatch={dispatch} onLeave={() => leave(round)} />;
+  return <RoundView round={round} ticket={ticket} services={services} dispatch={dispatch} onLeave={() => leave(round)} />;
 }
 
 function Header({ onLeave, closeRef, children }: { onLeave: () => void; closeRef?: Ref<HTMLButtonElement>; children?: ReactNode }) {
@@ -172,12 +220,13 @@ function LoadFailed({ onRetry, onLeave }: { onRetry: () => void; onLeave: () => 
 interface RoundViewProps {
   round: RoundState;
   ticket: TicketInfo;
-  now: () => number;
+  services: PlayServices;
   dispatch: (event: RoundEvent) => void;
   onLeave: () => void;
 }
 
-function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
+function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProps) {
+  const { now } = services;
   const reduced = useReducedMotion() ?? false;
   const [confirming, setConfirming] = useState(false);
   // The card index whose "Next card" has arrived (see NEXT_ARRIVES_MS); until then the row takes no taps.
@@ -188,38 +237,67 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
   const nextRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
+  // Timed: when RoundView saw the time run out, whether True or False has focus, and whether they had it then.
+  const timeUpAt = useRef<number | null>(null);
+  const answerRowFocused = useRef(false);
+  const focusedAtTimeUp = useRef(false);
 
   const card = currentCard(round);
   const answered = round.phase === "answered";
   const last = answered ? lastAnswer(round) : undefined;
   const total = round.cards.length;
+  const timed = round.mode === "timed";
+  const decided = isDecided(round);
+  // Timed: time is up (the card on screen does not count), or the stamp beat after an answer.
+  const timeUp = timed && decided;
+  const beat = timed && round.phase === "stamped" && !decided;
+  const stamped = beat ? lastAnswer(round) : undefined;
+  // The action row is the Next row ("Next card" or "See results"): after an answer in the modes that show
+  // a verdict, and at time up in Timed. During the Timed stamp beat it is still the answer row.
+  const awaitsNext = answered || timeUp;
   // The action after an answer: "See results" once the mode's end rule has been met, otherwise "Next card".
-  const actionLabel = isDecided(round) ? "See results" : "Next card";
+  const actionLabel = decided ? "See results" : "Next card";
   // Streak: the answer that takes the streak one past a stored best of at least 1 gets the New best stamp, once.
   const streak = round.mode === "streak" ? scoreOf("streak", round.answers) : 0;
   const newBest = last?.correct === true && ticket.best !== null && ticket.best >= 1 && streak === ticket.best + 1;
 
-  // A new card: start its settle time, scroll the ticket to the top, put focus on the statement.
+  // The Timed clock: ticks and page visibility reach the round until time is up, the round is left or the
+  // screen goes away. It keeps running while the "Leave round?" sheet is open.
+  useClock(timed && !decided, dispatch, services);
+
+  // A new card: start its settle time, scroll the ticket to the top, put focus on the statement. In Timed
+  // only the first card takes focus; later ones are announced by the statement's live region, so focus
+  // stays on the pill the player used.
   useEffect(() => {
     if (round.phase !== "question") return;
     shownAt.current = now();
     scrollerRef.current?.scrollTo?.({ top: 0 });
-    statementRef.current?.focus({ preventScroll: true });
-  }, [round.cards, round.index, round.phase, now]);
+    if (!timed || round.index === 0) statementRef.current?.focus({ preventScroll: true });
+  }, [round.cards, round.index, round.phase, now, timed]);
 
-  // After an answer, the action row arrives after 420 ms and starts to take taps. Focus moves to it then, or
-  // at once with reduced motion (Enter on it still waits for the arrival, see next below).
+  // Time is up: note the moment (See results counts its arrival from it) and whether True or False had focus.
   useEffect(() => {
-    if (!answered) return;
+    if (!timeUp) return;
+    timeUpAt.current = now();
+    focusedAtTimeUp.current = answerRowFocused.current;
+  }, [timeUp, now]);
+
+  // The action row arrives 420 ms after the answer (or after time ran out) and starts to take taps. Focus
+  // moves to it then, or at once with reduced motion (Enter on it still waits for the arrival, see next
+  // below). At time up focus only moves if True or False had it.
+  useEffect(() => {
+    if (!awaitsNext) return;
     const index = round.index;
     const timer = setTimeout(() => setArrivedAt(index), NEXT_ARRIVES_MS);
     return () => clearTimeout(timer);
-  }, [answered, round.index]);
-  const nextArrived = answered && arrivedAt === round.index;
-  const focusNext = answered && (reduced || nextArrived);
+  }, [awaitsNext, round.index]);
+  const nextArrived = awaitsNext && arrivedAt === round.index;
+  const focusNext = awaitsNext && (reduced || nextArrived);
   useEffect(() => {
-    if (focusNext) nextRef.current?.focus({ preventScroll: true });
-  }, [focusNext, round.index]);
+    if (!focusNext) return;
+    if (timeUp && !focusedAtTimeUp.current) return;
+    nextRef.current?.focus({ preventScroll: true });
+  }, [focusNext, round.index, timeUp]);
 
   // Closing the dialog with "Keep playing" returns focus to the close button (once <main> is not inert).
   useEffect(() => {
@@ -242,12 +320,14 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
     [round.phase, confirming, now, dispatch],
   );
 
-  // The action (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer.
+  // The action (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer
+  // (or as the moment time ran out).
   const answeredAt = last?.at;
   const next = useCallback(() => {
-    if (answeredAt === undefined || now() - answeredAt < NEXT_ARRIVES_MS) return;
+    const since = answeredAt ?? (timeUp ? timeUpAt.current : null);
+    if (since === null || now() - since < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
-  }, [answeredAt, now, dispatch]);
+  }, [answeredAt, timeUp, now, dispatch]);
 
   // Keyboard: left arrow answers False, right arrow True; Enter is the action after an answer
   // (unless focus is on a link or a button, which handle Enter themselves).
@@ -257,7 +337,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
       if (round.phase === "question" && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
         event.preventDefault();
         answer(event.key === "ArrowRight");
-      } else if (round.phase === "answered" && event.key === "Enter") {
+      } else if (awaitsNext && event.key === "Enter") {
         const target = event.target;
         if (target instanceof Element && target.closest("a, button, input, select, textarea")) return;
         event.preventDefault();
@@ -266,7 +346,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [round.phase, confirming, answer, next]);
+  }, [round.phase, awaitsNext, confirming, answer, next]);
 
   const swipe = useSwipe<HTMLDivElement>({
     enabled: round.phase === "question" && !confirming,
@@ -283,11 +363,29 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
   if (!card) return null;
 
   const tear: TearSide = last?.correct === false ? "right" : "left";
+  // Timed: the answered card leaves towards the side that was answered.
+  const side: CardSide = lastAnswer(round)?.given ? "right" : "left";
+  const correctCount = round.answers.filter((a) => a.correct).length;
   const cardNumber = pad2(round.index + 1);
   // Only Classic has a fixed length; the other modes show the card number alone.
   const cardField = round.mode === "classic" ? `${cardNumber} / ${pad2(total)}` : cardNumber;
   // The card can be dragged (and is being stamped) in these phases; in the answered phase the explanation can be selected.
   const dragging = round.phase === "question" || round.phase === "stamped";
+  const routeLine = `${ticket.deckCode} → ${ticket.sectionCode} · ${ticket.modeLabel}`;
+  // Timed keeps the stub of the card under its stamp; the other modes tear it off for the slip.
+  const showStub = round.phase === "question" || timed;
+  const stubStamp = timeUp ? (
+    <StubStamp kind="time-up" />
+  ) : stamped ? (
+    <StubStamp kind={stamped.correct ? "correct" : "wrong"} />
+  ) : undefined;
+  const stubHint = timeUp
+    ? `This card doesn't count · ${round.answers.length} answered`
+    : stamped
+      ? stamped.correct
+        ? "Next card coming up"
+        : "Missed, saved for review at the end"
+      : undefined;
 
   return (
     <>
@@ -298,6 +396,12 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
             <StreakPath streak={streak} best={ticket.best} answered={last ? (last.correct ? "correct" : "wrong") : null} />
           ) : round.mode === "lives" ? (
             <LivesPath results={round.answers.map((a) => a.correct)} answered={answered} />
+          ) : timed ? (
+            <TimedPath
+              remainingMs={round.clock?.remainingMs ?? TIMED.roundMs}
+              correct={correctCount}
+              wrong={round.answers.length - correctCount}
+            />
           ) : (
             <FlightPath
               total={total}
@@ -323,66 +427,81 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
               className={[
                 `group relative touch-pan-y ${dragging ? "select-none" : "select-text"}`,
                 "transition-transform duration-(--duration-t3) ease-(--easing-spring) data-dragging:transition-none",
-                answered ? "cursor-default" : "cursor-grab data-dragging:cursor-grabbing",
+                round.phase === "question" ? "cursor-grab data-dragging:cursor-grabbing" : "cursor-default",
               ].join(" ")}
               style={CARD_TRANSFORM}
             >
-              <BoardingPass
-                from={{ code: ticket.deckCode, name: ticket.deckName }}
-                to={{ code: ticket.sectionCode, name: ticket.sectionName }}
-                fields={[
-                  { label: "Class", value: ticket.modeLabel },
-                  { label: "Card", value: cardField },
-                  { label: "Gate", value: <GateValue /> },
-                ]}
-                jolt={answered}
-                lower={
-                  <div className="grid min-h-(--size-lower)">
-                    {last ? (
-                      <PassSlip
-                        key={`slip-${round.index}`}
-                        className="[grid-area:1/1]"
-                        answer={last.card.answer}
-                        correct={last.correct}
-                        explanation={last.card.text.en.explanation}
-                        source={last.card.source}
-                        animateStamp
-                        newBest={newBest}
-                      />
-                    ) : null}
-                    <AnimatePresence initial={false} custom={tear}>
-                      {round.phase === "question" ? (
-                        <PassStub
-                          key={`stub-${round.index}`}
-                          className="[grid-area:1/1]"
-                          routeLine={`${ticket.deckCode} → ${ticket.sectionCode} · ${ticket.modeLabel}`}
-                          cardLabel={`Card ${cardNumber}`}
-                          barcode={card.id}
-                        />
-                      ) : null}
-                    </AnimatePresence>
-                  </div>
-                }
-              >
-                <PassStatement ref={statementRef} appliesTo={card.appliesTo}>
-                  {card.text.en.statement}
-                </PassStatement>
-              </BoardingPass>
+              <div className="grid">
+                <AnimatePresence initial={false} custom={side}>
+                  <CardSlot key={timed ? `card-${round.index}` : "card"} animated={timed && !reduced}>
+                    <BoardingPass
+                      from={{ code: ticket.deckCode, name: ticket.deckName }}
+                      to={{ code: ticket.sectionCode, name: ticket.sectionName }}
+                      fields={[
+                        { label: "Class", value: ticket.modeLabel },
+                        { label: "Card", value: cardField },
+                        { label: "Gate", value: <GateValue closed={timeUp} /> },
+                      ]}
+                      jolt={answered || beat || timeUp}
+                      joltDelay={timeUp ? 0.24 : beat ? 0.12 : undefined}
+                      lower={
+                        <div className="grid min-h-(--size-lower)">
+                          {last ? (
+                            <PassSlip
+                              key={`slip-${round.index}`}
+                              className="[grid-area:1/1]"
+                              answer={last.card.answer}
+                              correct={last.correct}
+                              explanation={last.card.text.en.explanation}
+                              source={last.card.source}
+                              animateStamp
+                              newBest={newBest}
+                            />
+                          ) : null}
+                          <AnimatePresence initial={false} custom={tear}>
+                            {showStub ? (
+                              <PassStub
+                                key={`stub-${round.index}`}
+                                className="[grid-area:1/1]"
+                                routeLine={routeLine}
+                                cardLabel={`Card ${cardNumber}`}
+                                barcode={card.id}
+                                stamp={stubStamp}
+                                hint={stubHint}
+                              />
+                            ) : null}
+                          </AnimatePresence>
+                        </div>
+                      }
+                    >
+                      <PassStatement ref={statementRef} appliesTo={card.appliesTo} muted={timeUp} live={timed && !timeUp}>
+                        {card.text.en.statement}
+                      </PassStatement>
+                    </BoardingPass>
+                  </CardSlot>
+                </AnimatePresence>
+              </div>
             </div>
           </div>
         </section>
         <div className="relative z-10 mt-(--space-12) h-(--size-actions) flex-none">
           <AnimatePresence initial={false}>
-            {round.phase === "question" ? (
+            {!awaitsNext ? (
               <motion.div
                 key="answer"
                 className="absolute inset-0"
+                onFocus={() => {
+                  answerRowFocused.current = true;
+                }}
+                onBlur={() => {
+                  answerRowFocused.current = false;
+                }}
                 initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
                 transition={{ duration: 0.22, ease: EASE }}
               >
-                <AnswerButtons onAnswer={answer} />
+                <AnswerButtons onAnswer={answer} disabled={beat} />
               </motion.div>
             ) : (
               <motion.div
@@ -401,7 +520,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
           </AnimatePresence>
         </div>
         <p role="status" className="sr-only">
-          {last ? verdictText(last.correct, last.card.answer, newBest) : ""}
+          {timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : ""}
         </p>
       </main>
       <LeaveDialog
