@@ -23,16 +23,9 @@ import { RoundButton } from "@/components/RoundButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { CloseIcon } from "@/components/icons";
 import { SWIPE } from "@/src/input/swipe";
-import {
-  currentCard,
-  lastAnswer,
-  reduce,
-  summarise,
-  type RoundEvent,
-  type RoundState,
-} from "@/src/engine/round";
-import { applyResult } from "@/src/progress/progress";
+import { currentCard, lastAnswer, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
+import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
 import { browserPlayServices, useRound, type PlayServices, type TicketInfo } from "./useRound";
 import { useSwipe } from "./useSwipe";
@@ -97,8 +90,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
       const round = unsaved.current;
       unsaved.current = null;
       if (round) {
-        const store = progressStore();
-        store.save(applyResult(store.load(), summarise(reduce(round, { type: "abandon" }))).progress);
+        saveLeftRound(round, progressStore());
       }
     },
     [progressStore],
@@ -111,8 +103,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
       unsaved.current = null;
       dispatch({ type: "abandon" });
       if (round.answers.length > 0) {
-        const store = progressStore();
-        store.save(applyResult(store.load(), summarise(reduce(round, { type: "abandon" }))).progress);
+        saveLeftRound(round, progressStore());
       }
       goHome();
     },
