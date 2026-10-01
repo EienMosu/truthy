@@ -23,6 +23,96 @@ async function expectNoSidewaysScroll(page: Page) {
   expect(widths.scroll).toBeLessThanOrEqual(widths.client);
 }
 
+// The last round of each class, as the continue line says it ("21 cards" is the longest score, "Three lives"
+// the longest class).
+const LAST_ROUNDS = [
+  { mode: "classic", score: 7, total: 10, name: "Classic", text: "7 of 10" },
+  { mode: "streak", score: 13, total: 14, name: "Streak", text: "13 in a row" },
+  { mode: "lives", score: 21, total: 21, name: "Three lives", text: "21 cards" },
+  { mode: "timed", score: 14, total: 17, name: "Timed", text: "14 correct" },
+] as const;
+
+// Opens step 1 for a returning player whose last round was `last` on CLF / SEC, and checks the continue line
+// at rest. Each part of the mono line ([data-continue] route, class, score) is measured by its text against the
+// line's clipping box: "whole" means its text runs inside it from start to end (nothing cut, no ellipsis) on a
+// line the box shows, "hidden" means it sits on a line the box leaves out. Across, the text itself is measured;
+// up and down, the part's line box (the font's content area is a little taller than the 1.27 line height). A separator ("·") is either hidden or follows a part on its own line, never the first thing on a
+// line. Half a pixel for subpixel layout.
+async function expectReadableContinueLine(
+  page: Page,
+  last: (typeof LAST_ROUNDS)[number],
+  width: number,
+  score: "whole" | "whole or hidden",
+): Promise<void> {
+  await page.addInitScript(
+    (stored) => localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records: {}, last: stored })),
+    { route: { deckId: CLF_ID, sectionId: "SEC" }, mode: last.mode, score: last.score, total: last.total },
+  );
+  await page.goto("/");
+  const line = page.getByRole("button", { name: `Continue: Cloud Practitioner, Security and compliance, ${last.name}. Last score ${last.text}.` });
+  await expect(line).toBeVisible();
+  await expect(line.locator("em")).toHaveText(last.text);
+  await page.waitForTimeout(SETTLE_MS);
+  await expectNoSidewaysScroll(page);
+
+  const m = await line.evaluate((button) => {
+    const rect = (r: DOMRect) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+    const clip = button.querySelector<HTMLElement>("[data-continue=line]");
+    if (clip === null) throw new Error("No [data-continue=line]");
+    const text = (el: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return rect(range.getBoundingClientRect());
+    };
+    const part = (name: string) => {
+      const el = clip.querySelector<HTMLElement>(`[data-continue=${name}]`);
+      if (el === null) throw new Error(`No [data-continue=${name}]`);
+      return { text: text(el), box: rect(el.getBoundingClientRect()), scroll: el.scrollWidth, client: el.clientWidth };
+    };
+    const column = clip.parentElement;
+    if (column === null) throw new Error("The mono line has no parent");
+    return {
+      button: rect(button.getBoundingClientRect()),
+      column: rect(column.getBoundingClientRect()),
+      clip: rect(clip.getBoundingClientRect()),
+      route: part("route"),
+      mode: part("class"),
+      score: part("score"),
+      seps: [...clip.querySelectorAll("[data-continue=sep]")].map((el) => rect(el.getBoundingClientRect())),
+    };
+  });
+
+  // The row stays inside the page and its text inside the 60 px row.
+  expect(m.button.left).toBeGreaterThanOrEqual(0);
+  expect(m.button.right).toBeLessThanOrEqual(width);
+  expect(m.column.top).toBeGreaterThanOrEqual(m.button.top - 0.5);
+  expect(m.column.bottom).toBeLessThanOrEqual(m.button.bottom + 0.5);
+
+  type Box = { left: number; right: number; top: number; bottom: number };
+  type Part = { text: Box; box: Box; scroll: number; client: number };
+  const isWhole = (p: Part) =>
+    p.text.right - p.text.left > 0 &&
+    p.text.left >= m.clip.left - 0.5 &&
+    p.text.right <= Math.min(m.clip.right, p.box.right) + 0.5 &&
+    p.box.top >= m.clip.top - 0.5 &&
+    p.box.bottom <= m.clip.bottom + 0.5 &&
+    p.scroll <= p.client + 1;
+  const isHidden = (b: Box) => b.top >= m.clip.bottom - 0.5 || b.right <= m.clip.left + 0.5;
+
+  expect(isWhole(m.route), `the route is shown whole: ${JSON.stringify(m.route)} in ${JSON.stringify(m.clip)}`).toBe(true);
+  expect(isWhole(m.mode), `the class is shown whole: ${JSON.stringify(m.mode)} in ${JSON.stringify(m.clip)}`).toBe(true);
+  if (score === "whole") {
+    expect(isWhole(m.score), `the score is shown whole: ${JSON.stringify(m.score)} in ${JSON.stringify(m.clip)}`).toBe(true);
+  } else {
+    expect(isWhole(m.score) || isHidden(m.score.box), `the score is whole or hidden: ${JSON.stringify(m.score)} in ${JSON.stringify(m.clip)}`).toBe(true);
+  }
+  if (isWhole(m.score)) expect(m.score.text.right).toBeLessThanOrEqual(m.button.right - 24);
+  for (const sep of m.seps) {
+    const shownAfterAPart = sep.left > m.clip.left + 1 && sep.right <= m.clip.right + 0.5 && sep.bottom <= m.clip.bottom + 0.5;
+    expect(isHidden(sep) || shownAfterAPart, `a separator is hidden or follows a part: ${JSON.stringify(sep)} in ${JSON.stringify(m.clip)}`).toBe(true);
+  }
+}
+
 // The 320 px phones (iPhone SE first generation, small Androids): spec section 1, mobile-first.
 test.describe("on a 320 by 568 screen", () => {
   test.use({ viewport: { width: 320, height: 568 } });
@@ -62,34 +152,29 @@ test.describe("on a 320 by 568 screen", () => {
     await expect(page.getByRole("button", { name: "Play again" })).toBeVisible();
   });
 
-  // The continue line says the last score in the words of the class ("21 cards" is the longest): the whole
-  // line, the arrow included, stays inside the page.
-  for (const [mode, score, total, name, text] of [
-    ["streak", 13, 14, "Streak", "13 in a row"],
-    ["lives", 21, 21, "Three lives", "21 cards"],
-    ["timed", 14, 17, "Timed", "14 correct"],
-  ] as const) {
-    test(`the continue line after a ${name} round fits the width`, async ({ page }) => {
-      await page.addInitScript(
-        (last) => localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records: {}, last })),
-        { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode, score, total },
-      );
-      await page.goto("/");
-      const line = page.getByRole("button", { name: `Continue: Cloud Practitioner, Security and compliance, ${name}. Last score ${text}.` });
-      await expect(line).toBeVisible();
-      await expectNoSidewaysScroll(page);
-      const box = await line.boundingBox();
-      if (box === null) throw new Error("The continue line is not on screen");
-      expect(box.x).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width).toBeLessThanOrEqual(320);
-      // The route may be shortened with an ellipsis; the score never is, and it ends before the arrow.
-      const scoreBox = await line.locator("em").boundingBox();
-      if (scoreBox === null) throw new Error("The score is not on screen");
-      expect(scoreBox.x + scoreBox.width).toBeLessThanOrEqual(box.x + box.width - 24);
-      await expect(line.locator("em")).toHaveText(text);
+  // The continue line after a round of each class: the line stays inside the page and inside its 60 px
+  // row, the route and the class are shown whole, and the score, which no longer fits beside them at this
+  // width, is either shown whole or not at all, never cut and never left behind as a stray "·".
+  for (const last of LAST_ROUNDS) {
+    test(`the continue line after a ${last.name} round fits the width`, async ({ page }) => {
+      await expectReadableContinueLine(page, last, 320, "whole or hidden");
     });
   }
 });
+
+// The continue line on the phone the design is drawn for (390) and on a common smaller one (360): the whole
+// line is readable, the route, the class and the last score, each shown whole.
+for (const width of [360, 390] as const) {
+  test.describe(`the continue line on a ${width} px screen`, () => {
+    test.use({ viewport: { width, height: 780 } });
+
+    for (const last of LAST_ROUNDS) {
+      test(`after a ${last.name} round it shows the route, the class and the score whole`, async ({ page }) => {
+        await expectReadableContinueLine(page, last, width, "whole");
+      });
+    }
+  });
+}
 
 // A round handed to /play the way the start flow does (the pending round in sessionStorage), with a record for
 // its route and mode already stored (null: none).
