@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { THEME_COLOR, themeScript } from "@/src/app-state/theme";
 import { NEXT_FONT_VARIABLES, tokensToCss } from "@/src/tokens/build";
 
 // Records the options app/layout.tsx passes to next/font/google.
@@ -35,6 +36,26 @@ describe("root layout", () => {
   it("names the page Truthy with a one-line description", () => {
     expect(metadata.title).toBe("Truthy");
     expect(metadata.description).toBe("A true or false card game that teaches IT, one swipe at a time.");
+  });
+});
+
+describe("the theme the player chose", () => {
+  it("runs the theme script first thing in <head>, so a chosen theme applies before the first paint", () => {
+    expect(renderLayout()).toMatch(/^<html [^>]*><head><script>/);
+    expect(renderLayout()).toContain(`<head><script>${themeScript()}</script>`);
+  });
+
+  it("tells React that the script may change <html> before hydration", () => {
+    const html = RootLayout({ children: null });
+    expect(html.type).toBe("html");
+    expect(html.props.suppressHydrationWarning).toBe(true);
+  });
+
+  it("takes the browser bar colours from the theme module, which the theme script also uses", () => {
+    expect(viewport.themeColor).toEqual([
+      { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+      { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+    ]);
   });
 });
 

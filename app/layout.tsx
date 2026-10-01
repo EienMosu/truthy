@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Overpass, Overpass_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import { THEME_COLOR, themeScript } from "@/src/app-state/theme";
 import { APP_DESCRIPTION, APP_NAME } from "@/src/meta";
 
 // Self-hosted by next/font. The variable names are the ones app/tokens.css points --font-sans and
@@ -27,19 +28,26 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // The theme follows the system setting (the night values sit under prefers-color-scheme: dark in app/tokens.css).
+  // The theme follows the system setting (the night values sit under prefers-color-scheme: dark in app/tokens.css)
+  // until the player chooses one with the theme switch (src/app-state/theme.ts).
   colorScheme: "light dark",
   // The top sky band of each theme, --color-sky-1 in app/tokens.css (tests/app/layout.test.tsx checks they agree).
+  // With a chosen theme, the theme script and the switch give both tags the chosen theme's colour.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#a9d6f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1528" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
   ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   // The font variable classes sit on <html>: --font-sans is declared on :root and resolves its var() there.
+  // The theme script runs while <head> is parsed, before the first paint: it puts the player's chosen theme
+  // on <html> as data-theme, which React does not render, hence suppressHydrationWarning (one level deep).
   return (
-    <html lang="en" className={`${overpass.variable} ${overpassMono.variable}`}>
+    <html lang="en" className={`${overpass.variable} ${overpassMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript() }} />
+      </head>
       <body>
         <div className="app-frame">{children}</div>
       </body>
