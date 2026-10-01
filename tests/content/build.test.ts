@@ -383,3 +383,65 @@ describe("buildDecks: card and catalog errors", () => {
     );
   });
 });
+
+describe("buildDecks: conflict groups and empty sections", () => {
+  function groupsOf(output: BuildOutput) {
+    return Object.fromEntries((output.decks[0]?.cards ?? []).map((card) => [card.id, card.conflictGroups]));
+  }
+
+  it("keeps a conflict group that two cards share", () => {
+    const output = build(
+      [clfEntry],
+      clfWith(
+        reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { conflictGroups: ["shared-responsibility-split"] }),
+        reviewedCard("aws-clf-c02-t2.1-01", { task: "2.1" }, { conflictGroups: ["shared-responsibility-split"] }),
+      ),
+    );
+    expect(groupsOf(output)).toEqual({
+      "aws-clf-c02-t1.1-01": ["shared-responsibility-split"],
+      "aws-clf-c02-t2.1-01": ["shared-responsibility-split"],
+    });
+  });
+
+  it("drops a conflict group that only one card uses", () => {
+    const output = build(
+      [clfEntry],
+      clfWith(
+        reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { conflictGroups: ["lonely", "pair"] }),
+        reviewedCard("aws-clf-c02-t2.1-01", { task: "2.1" }, { conflictGroups: ["pair"] }),
+      ),
+    );
+    expect(groupsOf(output)).toEqual({ "aws-clf-c02-t1.1-01": ["pair"], "aws-clf-c02-t2.1-01": ["pair"] });
+  });
+
+  it("counts a group listed twice on one card as one use and lists it once", () => {
+    const alone = build([clfEntry], clfWith(reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { conflictGroups: ["echo", "echo"] })));
+    expect(groupsOf(alone)).toEqual({ "aws-clf-c02-t1.1-01": [] });
+    const shared = build(
+      [clfEntry],
+      clfWith(
+        reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { conflictGroups: ["echo", "echo"] }),
+        reviewedCard("aws-clf-c02-t2.1-01", { task: "2.1" }, { conflictGroups: ["echo"] }),
+      ),
+    );
+    expect(groupsOf(shared)).toEqual({ "aws-clf-c02-t1.1-01": ["echo"], "aws-clf-c02-t2.1-01": ["echo"] });
+  });
+
+  it("gives cards without a conflictGroups field an empty list", () => {
+    const { conflictGroups: _omitted, ...withoutGroups } = reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" });
+    expect(groupsOf(build([clfEntry], clfWith(withoutGroups)))).toEqual({ "aws-clf-c02-t1.1-01": [] });
+  });
+
+  it("hashes the cards after dropping single-use groups", () => {
+    const output = build([clfEntry], clfWith(reviewedCard("aws-clf-c02-t1.1-01", { task: "1.1" }, { conflictGroups: ["lonely"] })));
+    const deck = output.decks[0];
+    expect(deck?.hash).toBe(hashDeck(deck?.cards ?? []));
+  });
+
+  it("leaves a section that no card falls into out of the index", () => {
+    const withBilling = { ...clfEntry, sections: [...clfEntry.sections, { id: "BIL", title: "Billing, pricing and support", match: ["4.1"] }] };
+    const output = build([withBilling], { "aws-clf-c02": clfReviewed() });
+    expect(firstDeck(output).sections.map((section) => section.id)).toEqual(["CON", "SEC"]);
+    expect(DeckIndexSchema.safeParse(output.index).success).toBe(true);
+  });
+});

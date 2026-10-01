@@ -133,7 +133,16 @@ function sectionFor(entry: CatalogDeck, card: ReviewedCard): string {
   return only.id;
 }
 
-function toCard(entry: CatalogDeck, card: ReviewedCard): Card {
+// Each card lists a group once. A group that only one card uses cannot conflict with anything and is dropped.
+function sharedGroups(cards: readonly ReviewedCard[]): Set<string> {
+  const uses = new Map<string, number>();
+  for (const card of cards) {
+    for (const group of new Set(card.conflictGroups ?? [])) uses.set(group, (uses.get(group) ?? 0) + 1);
+  }
+  return new Set([...uses].filter(([, count]) => count > 1).map(([group]) => group));
+}
+
+function toCard(entry: CatalogDeck, card: ReviewedCard, shared: ReadonlySet<string>): Card {
   const shipped = {
     id: card.id,
     section: sectionFor(entry, card),
@@ -142,7 +151,7 @@ function toCard(entry: CatalogDeck, card: ReviewedCard): Card {
     source: { title: card.source.title, url: card.source.url },
     difficulty: card.difficulty,
     appliesTo: card.appliesTo ?? "",
-    conflictGroups: card.conflictGroups ?? [],
+    conflictGroups: [...new Set(card.conflictGroups ?? [])].filter((group) => shared.has(group)),
   };
   // A last guard: whatever ships must pass the schema the client validates with.
   const result = CardSchema.safeParse(shipped);
@@ -154,13 +163,17 @@ function buildDeck(entry: CatalogDeck, raw: unknown, version: string): { file: D
   const reviewed = parseReviewed(entry.id, raw);
   const seen = new Set<string>();
   for (const card of reviewed.cards) checkCard(entry.id, card, seen);
-  const cards = reviewed.cards.map((card) => toCard(entry, card));
+  const shared = sharedGroups(reviewed.cards);
+  const cards = reviewed.cards.map((card) => toCard(entry, card, shared));
   const file: DeckFile = { id: entry.id, hash: hashDeck(cards), cards };
-  const sections = entry.sections.map((section) => ({
-    id: section.id,
-    title: section.title,
-    cardCount: cards.filter((card) => card.section === section.id).length,
-  }));
+  // A section that no card falls into is not available yet and is left out, like a deck without a reviewed file.
+  const sections = entry.sections
+    .map((section) => ({
+      id: section.id,
+      title: section.title,
+      cardCount: cards.filter((card) => card.section === section.id).length,
+    }))
+    .filter((section) => section.cardCount > 0);
   const summary: IndexDeck = {
     id: entry.id,
     code: entry.code,
