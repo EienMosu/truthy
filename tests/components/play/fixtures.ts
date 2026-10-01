@@ -118,10 +118,21 @@ export interface Harness {
   session: MemoryStorage;
   /** Moves the clock on by ms. */
   advance: (ms: number) => void;
+  /** Calls every subscribed onTick once. */
+  tick: () => void;
+  /** Every 100 ms up to ms: moves the clock on by 100, then ticks. */
+  run: (ms: number) => void;
+  /** Changes visibility.hidden() and tells the listeners. */
+  setHidden: (hidden: boolean) => void;
+  /** How many ticker subscriptions are open. */
+  ticking: () => number;
 }
 
 export function harness(pending: PendingRound | null = { route: { deckId: DECK_ID, sectionId: "SEC" }, mode: "classic" }, local = memoryStorage()): Harness {
   let time = 1_700_000_000_000;
+  let hidden = false;
+  const tickers = new Set<() => void>();
+  const listeners = new Set<(hidden: boolean) => void>();
   const network = fakeNetwork();
   const session = memoryStorage(pending ? { [PENDING_KEY]: JSON.stringify(pending) } : {});
   const services: PlayServices = {
@@ -130,8 +141,47 @@ export function harness(pending: PendingRound | null = { route: { deckId: DECK_I
     sessionStorage: () => session,
     now: () => time,
     randomSeed: () => 12345,
+    ticker: (onTick) => {
+      // A wrapper per subscription, so the same function subscribed twice counts twice.
+      const entry = () => onTick();
+      tickers.add(entry);
+      return () => {
+        tickers.delete(entry);
+      };
+    },
+    visibility: {
+      hidden: () => hidden,
+      listen: (onChange) => {
+        const entry = (value: boolean) => onChange(value);
+        listeners.add(entry);
+        return () => {
+          listeners.delete(entry);
+        };
+      },
+    },
   };
-  return { services, network, local, session, advance: (ms) => (time += ms) };
+  const tick = () => {
+    for (const onTick of [...tickers]) onTick();
+  };
+  return {
+    services,
+    network,
+    local,
+    session,
+    advance: (ms) => (time += ms),
+    tick,
+    run: (ms) => {
+      for (let passed = 100; passed <= ms; passed += 100) {
+        time += 100;
+        tick();
+      }
+    },
+    setHidden: (value) => {
+      hidden = value;
+      for (const onChange of [...listeners]) onChange(value);
+    },
+    ticking: () => tickers.size,
+  };
 }
 
 /** The pending round the start flow would hand over: the test deck's section (SEC unless given) in the mode. */

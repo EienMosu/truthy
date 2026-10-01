@@ -13,6 +13,17 @@ import { reduce, startRound, type RoundEvent, type RoundState } from "@/src/engi
 import { bestFor, pruneDeck } from "@/src/progress/progress";
 import { createLocalStore, type ProgressStore } from "@/src/progress/local";
 
+/** How often the Timed clock is told the time, in ms. The engine counts the time itself; this is only how often it hears. */
+export const TICK_MS = 100;
+
+/** Whether the page can be seen, and when that changes (the Timed clock pauses while it is hidden). */
+export interface PageVisibility {
+  /** Whether the page is hidden now. In the browser: document.visibilityState === "hidden". */
+  hidden: () => boolean;
+  /** Calls onChange when the page is hidden or shown. Returns the unsubscribe. In the browser: "visibilitychange". */
+  listen: (onChange: (hidden: boolean) => void) => () => void;
+}
+
 /** The play screen's window on the outside world: the app services plus the clock and the dice. Tests pass fakes; the app uses browserPlayServices. */
 export interface PlayServices extends AppServices {
   /** The clock in ms since the epoch: answer times (card history) and the swipe settle time. */
@@ -24,6 +35,9 @@ export interface PlayServices extends AppServices {
    * did. Left out (tests) or false: the screen replaces /play with / instead.
    */
   backToStart?: () => boolean;
+  /** Calls onTick about every TICK_MS while subscribed. Returns the unsubscribe. In the browser: setInterval. */
+  ticker: (onTick: () => void) => () => void;
+  visibility: PageVisibility;
 }
 
 /** The real services. A module constant, so it is stable across renders. */
@@ -32,6 +46,18 @@ export const browserPlayServices: PlayServices = {
   now: () => Date.now(),
   backToStart: browserBackToStart,
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
+  ticker: (onTick) => {
+    const id = window.setInterval(onTick, TICK_MS);
+    return () => window.clearInterval(id);
+  },
+  visibility: {
+    hidden: () => document.visibilityState === "hidden",
+    listen: (onChange) => {
+      const handler = () => onChange(document.visibilityState === "hidden");
+      document.addEventListener("visibilitychange", handler);
+      return () => document.removeEventListener("visibilitychange", handler);
+    },
+  },
 };
 
 /** What the ticket shows about the route, taken from the deck index. */
