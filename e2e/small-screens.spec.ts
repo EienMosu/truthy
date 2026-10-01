@@ -59,6 +59,38 @@ test.describe("on a 320 by 568 screen", () => {
   });
 });
 
+// A statement with one long word (a real Next.js card: "suppressHydrationWarning", 24 characters) wraps
+// inside its own paragraph; the pass keeps the width of the card, so SEC, Gate and the stub are not cut off
+// on the right. A sideways scroll check cannot see this: the card's scroller clips what sticks out.
+const LONG_WORD_STATEMENT = "suppressHydrationWarning repairs mismatched text during hydration.";
+
+for (const width of [320, 360]) {
+  test.describe(`on a ${width} px wide screen`, () => {
+    test.use({ viewport: { width, height: 640 } });
+
+    test("a statement with a long word does not widen the pass beyond the card", async ({ page }) => {
+      await openHome(page);
+      await chooseRoute(page, CLF_SECURITY);
+      await startRound(page);
+      await waitForCard(page, await deckAnswers(page, CLF_ID), 1);
+
+      await page.locator("[data-statement] > p").last().evaluate((p, text) => {
+        p.textContent = text;
+      }, LONG_WORD_STATEMENT);
+
+      const card = await page.locator("[data-swipe-card]").boundingBox();
+      const pass = await page.locator("[data-boarding-pass]").boundingBox();
+      if (card === null || pass === null) throw new Error("The card is not on screen");
+      expect(card.width).toBeLessThanOrEqual(width);
+      expect(pass.width).toBeLessThanOrEqual(card.width);
+      // The right-most field ends inside the card (half a pixel for subpixel layout).
+      const gate = await page.getByText("Gate", { exact: true }).boundingBox();
+      if (gate === null) throw new Error("The Gate field is not on screen");
+      expect(gate.x + gate.width).toBeLessThanOrEqual(card.x + card.width + 0.5);
+    });
+  });
+}
+
 // Turning the phone in the middle of a round: the round goes on where it was (no reload, no new deal).
 test.describe("turning the phone", () => {
   test.use({ viewport: { width: 390, height: 844 } });

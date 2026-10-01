@@ -103,7 +103,7 @@ function CardSlot({ animated, children }: { animated: boolean; children: ReactNo
   const present = useIsPresent();
   return (
     <motion.div
-      className="[grid-area:1/1]"
+      className="min-w-0 [grid-area:1/1]"
       style={animated ? { zIndex: present ? 0 : 1 } : undefined}
       variants={animated ? CARD_SWAP : undefined}
       initial={animated ? "dealt" : false}
@@ -431,7 +431,9 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
               ].join(" ")}
               style={CARD_TRANSFORM}
             >
-              <div className="grid">
+              {/* One column that may shrink below its content: a long word in the statement wraps inside its
+                  paragraph instead of widening the pass beyond the card. */}
+              <div className="grid grid-cols-[minmax(0,1fr)]">
                 <AnimatePresence initial={false} custom={side}>
                   <CardSlot key={timed ? `card-${round.index}` : "card"} animated={timed && !reduced}>
                     <BoardingPass
