@@ -351,3 +351,108 @@ describe("tokensToCss: fonts and type roles", () => {
     );
   });
 });
+
+describe("tokensToCss: elevation and motion", () => {
+  it("writes a day shadow as a CSS box-shadow list, layers in order", () => {
+    const tokens = base();
+    tokens.elevation.day.ticket = {
+      $type: "shadow",
+      $value: [
+        { color: srgb("#10233f", 0.06), offsetX: px(0), offsetY: px(1), blur: px(0), spread: px(0) },
+        { color: srgb("#10233f", 0.45), offsetX: px(0), offsetY: px(22), blur: px(36), spread: px(-18) },
+      ],
+    };
+    expect(vars(tokensToCss(tokens)).get("--elevation-ticket")).toBe(
+      "0px 1px 0px 0px rgb(16 35 63 / 0.06), 0px 22px 36px -18px rgb(16 35 63 / 0.45)",
+    );
+  });
+
+  it("accepts a single shadow object, an inset layer and a color reference", () => {
+    const tokens = base();
+    tokens.elevation.day.well = {
+      $type: "shadow",
+      $value: { color: "{color.primitive.navy-900}", offsetX: px(0), offsetY: px(2), blur: px(4), spread: px(0), inset: true },
+    };
+    expect(vars(tokensToCss(tokens)).get("--elevation-well")).toBe("inset 0px 2px 4px 0px #10233f");
+  });
+
+  it("leaves night elevation out", () => {
+    expect(tokensToCss(base())).not.toContain("#000000");
+    expect(tokensToCss(base())).not.toContain("rgb(0 0 0");
+  });
+
+  it("names a shadow layer that is missing a field", () => {
+    const tokens = base();
+    tokens.elevation.day.small.$value = [{ color: srgb("#10233f"), offsetX: px(0), offsetY: px(1), spread: px(0) }];
+    expect(() => tokensToCss(tokens)).toThrow(/elevation\.day\.small is missing blur/);
+  });
+
+  it("emits durations and easing curves", () => {
+    const tokens = base();
+    tokens.motion.duration.slow = { $type: "duration", $value: { value: 1.5, unit: "s" } };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--duration-t1")).toBe("120ms");
+    expect(out.get("--duration-slow")).toBe("1.5s");
+    expect(out.get("--easing-ease")).toBe("cubic-bezier(0.2, 0.7, 0.2, 1)");
+  });
+
+  it("allows an overshooting curve but rejects x values outside 0 to 1 and wrong lengths", () => {
+    const spring = base();
+    spring.motion.easing.spring = { $type: "cubicBezier", $value: [0.34, 1.56, 0.64, 1] };
+    expect(vars(tokensToCss(spring)).get("--easing-spring")).toBe("cubic-bezier(0.34, 1.56, 0.64, 1)");
+    const badX = base();
+    badX.motion.easing.bad = { $type: "cubicBezier", $value: [1.2, 0, 0.5, 1] };
+    expect(() => tokensToCss(badX)).toThrow(/motion\.easing\.bad/);
+    const short = base();
+    short.motion.easing.short = { $type: "cubicBezier", $value: [0.2, 0.7, 0.2] };
+    expect(() => tokensToCss(short)).toThrow(/motion\.easing\.short/);
+  });
+
+  it("names the required duration and easing groups when they are missing", () => {
+    const noDuration = base();
+    delete noDuration.motion.duration;
+    expect(() => tokensToCss(noDuration)).toThrow("motion.duration");
+    const noEasing = base();
+    delete noEasing.motion.easing;
+    expect(() => tokensToCss(noEasing)).toThrow("motion.easing");
+    const noElevation = base();
+    delete noElevation.elevation.day;
+    expect(() => tokensToCss(noElevation)).toThrow("elevation.day");
+  });
+
+  it("writes springs and transitions as duration, curve and delay with references resolved", () => {
+    const tokens = base();
+    tokens.motion.duration.hold = { $type: "duration", $value: ms(60) };
+    tokens.motion.spring = {
+      snap: { $type: "transition", $value: { duration: "{motion.duration.t1}", delay: ms(0), timingFunction: "{motion.easing.ease}" } },
+    };
+    tokens.motion.transition = {
+      travel: {
+        $type: "transition",
+        $value: { duration: ms(300), delay: "{motion.duration.hold}", timingFunction: [0, 0, 0.58, 1] },
+      },
+    };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--spring-snap")).toBe("120ms cubic-bezier(0.2, 0.7, 0.2, 1) 0ms");
+    expect(out.get("--transition-travel")).toBe("300ms cubic-bezier(0, 0, 0.58, 1) 60ms");
+  });
+
+  it("names a transition whose timing function reference does not exist", () => {
+    const tokens = base();
+    tokens.motion.transition = {
+      press: { $type: "transition", $value: { duration: ms(120), delay: ms(0), timingFunction: "{motion.easing.bounce}" } },
+    };
+    expect(() => tokensToCss(tokens)).toThrow("motion.transition.press refers to {motion.easing.bounce}, which does not exist");
+  });
+
+  it("emits gesture tokens of mixed types", () => {
+    const tokens = base();
+    tokens.motion.gesture = {
+      "commit-distance": { $type: "dimension", $value: px(90) },
+      "rotation-divisor": { $type: "number", $value: 18 },
+    };
+    const out = vars(tokensToCss(tokens));
+    expect(out.get("--gesture-commit-distance")).toBe("90px");
+    expect(out.get("--gesture-rotation-divisor")).toBe("18");
+  });
+});

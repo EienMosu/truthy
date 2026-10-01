@@ -42,6 +42,12 @@ const GROUPS: readonly Group[] = [
   { path: "radius", prefix: "radius", label: "Corner radii", required: true, kind: "plain" },
   { path: "stroke", prefix: "stroke", label: "Stroke widths", required: false, kind: "plain" },
   { path: "opacity", prefix: "opacity", label: "Opacities", required: false, kind: "plain" },
+  { path: "elevation.day", prefix: "elevation", label: "Elevation, day theme", required: true, kind: "plain" },
+  { path: "motion.duration", prefix: "duration", label: "Durations", required: true, kind: "plain" },
+  { path: "motion.easing", prefix: "easing", label: "Easing curves", required: true, kind: "plain" },
+  { path: "motion.spring", prefix: "spring", label: "Springs (duration, curve, delay)", required: false, kind: "plain" },
+  { path: "motion.transition", prefix: "transition", label: "Transitions (duration, curve, delay)", required: false, kind: "plain" },
+  { path: "motion.gesture", prefix: "gesture", label: "Gesture constants", required: false, kind: "plain" },
 ];
 
 type Dict = Record<string, unknown>;
@@ -150,6 +156,55 @@ function formatFontWeight(value: unknown, path: string): string {
   return fail(path, "has a font weight that is neither a number from 1 to 1000 nor a keyword");
 }
 
+function formatCubicBezier(value: unknown, path: string): string {
+  if (
+    !Array.isArray(value) ||
+    value.length !== 4 ||
+    !value.every((n) => typeof n === "number" && Number.isFinite(n)) ||
+    value[0] < 0 ||
+    value[0] > 1 ||
+    value[2] < 0 ||
+    value[2] > 1
+  ) {
+    fail(path, "has a cubic bezier that is not four numbers with x values from 0 to 1");
+  }
+  return `cubic-bezier(${value.join(", ")})`;
+}
+
+function field(value: Dict, name: string, path: string, all: ReadonlyMap<string, Token>): unknown {
+  if (value[name] === undefined) fail(path, `is missing ${name}`);
+  return deref(value[name], [path], all);
+}
+
+function formatShadow(value: unknown, path: string, all: ReadonlyMap<string, Token>): string {
+  const layers = Array.isArray(value) ? value : [value];
+  if (layers.length === 0) fail(path, "has a shadow with no layers");
+  return layers
+    .map((layer) => {
+      if (!isDict(layer)) fail(path, "has a shadow layer that is not an object");
+      const parts = [
+        formatMeasure("dimension", field(layer, "offsetX", path, all), path),
+        formatMeasure("dimension", field(layer, "offsetY", path, all), path),
+        formatMeasure("dimension", field(layer, "blur", path, all), path),
+        formatMeasure("dimension", field(layer, "spread", path, all), path),
+        formatColor(field(layer, "color", path, all), path),
+      ];
+      return (layer.inset === true ? "inset " : "") + parts.join(" ");
+    })
+    .join(", ");
+}
+
+// A transition token is written as "<duration> <timing function> <delay>", ready for
+// `transition: transform var(--transition-press)`.
+function formatTransition(value: unknown, path: string, all: ReadonlyMap<string, Token>): string {
+  if (!isDict(value)) fail(path, "has a transition value that is not an object");
+  return [
+    formatMeasure("duration", field(value, "duration", path, all), path),
+    formatCubicBezier(field(value, "timingFunction", path, all), path),
+    formatMeasure("duration", field(value, "delay", path, all), path),
+  ].join(" ");
+}
+
 function formatValue(type: string | undefined, raw: unknown, path: string, all: ReadonlyMap<string, Token>): string {
   const value = deref(raw, [path], all);
   switch (type) {
@@ -163,6 +218,14 @@ function formatValue(type: string | undefined, raw: unknown, path: string, all: 
       return formatFontWeight(value, path);
     case "fontFamily":
       return fontStack(value, path).join(", ");
+    case "duration":
+      return formatMeasure("duration", value, path);
+    case "cubicBezier":
+      return formatCubicBezier(value, path);
+    case "shadow":
+      return formatShadow(value, path, all);
+    case "transition":
+      return formatTransition(value, path, all);
     case undefined:
       return fail(path, "has no $type");
     default:
