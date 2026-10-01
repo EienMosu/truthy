@@ -169,9 +169,9 @@ The app fetches `index.json` on start and a deck file when a round on that deck 
 
 A reducer: `next(state, event) -> state`. Randomness comes from a seeded generator passed in at the start of a round; time comes in through events. The same seed and the same events always produce the same round.
 
-Events: `answer(true | false)`, `next`, `tick(now)`, `visibility(hidden | visible)`, `abandon`.
+Events: `answer(true | false, at)`, `next`, `tick(now)`, `visibility(hidden | visible, at)`, `abandon`. Every event that depends on time carries the time; the engine never reads a clock.
 
-Round phases: `question`, `answered` (verdict visible; Classic, Streak, Three lives), `stamped` (Timed only, about 700 ms, then the next question), `finished`.
+Round phases: `question`, `answered` (verdict visible; Classic, Streak, Three lives), `stamped` (Timed only: the verdict stamp for 700 ms, then the next question; also the state after time is up, until the result is opened), `finished`.
 
 ### Dealing
 
@@ -191,16 +191,20 @@ Constraints:
 
 If the constraints cannot all be met from the available cards, they are relaxed in this order: recency, then conflict groups, then answer balance. The unbounded modes deal in chunks of ten and, when every card of the route has been dealt in the round, continue with the cards seen longest ago.
 
+A chunk is ten cards, or as many as may be dealt. The cards the round has not shown come first; behind them stand the cards it showed longest ago, and a card never comes back within the last ten cards dealt (or all the other cards of a smaller route). Recency gives way first here too: a card comes back in place of an unshown card that would repeat a conflict group or tip the balance, and the chunk that uses up the route is filled with the cards shown longest ago. A chunk shares no conflict group with the ten cards dealt before it, and the run limit holds across the join of two chunks. On a route of twenty cards or fewer nothing can be chosen once the first ten are dealt: there conflict groups, the balance and the run limit give way where the forced cards break them, and the gap is kept. (On the 11 and 12 card sections of the built decks this gives runs of up to five equal answers where the route comes round again, and in theory up to seven.)
+
 ### Modes
 
 | Mode | Length | Ends | After an answer | Record per route |
 |---|---|---|---|---|
-| Classic | 10 cards | after card 10 | verdict, explanation, source, "Next card" | score out of 10 |
+| Classic | 10 cards | after card 10 | verdict, explanation, source, "Next card"; after the last card the action is "See results" | score out of 10 |
 | Streak | unbounded | first wrong answer | same; after the ending answer the action is "See results" | longest streak |
 | Three lives | unbounded | third wrong answer | same; after the ending answer the action is "See results" | cards answered |
 | Timed | 60 seconds | time up | stamp only, next card at once | correct answers |
 
 Timed: the clock starts when the first card is shown, pauses while the page is hidden and stops at zero. The card on screen at zero is neither counted nor recorded. Timed shows no explanations during play; missed cards are reviewed on the result screen.
+
+Timed: a tick counts at most one second, so a device that sleeps without reporting it does not lose the round. An answer given at or after zero does not count; if time runs out while the stamp of an answer is shown, that answer counts and the next card is the one that does not.
 
 ### Result
 
@@ -208,7 +212,7 @@ Every mode ends on a result screen with the mode's score, the comparison with th
 
 ### Leaving a round
 
-The close control asks for one confirmation once at least one card has been answered; before the first answer it leaves at once, because there is nothing to lose. A round that is left sets no record. Answers already given stay in the card history, also when the player leaves with the browser or system back gesture. A reload in the middle of a round starts a new round; answers given before the reload are not kept.
+The close control asks for one confirmation once at least one card has been answered; before the first answer it leaves at once, because there is nothing to lose. A round that is left sets no record. This holds in every state of a round: after the deciding answer or at time up the round is still left without a record, and only "See results" finishes it. Answers already given stay in the card history, also when the player leaves with the browser or system back gesture. A reload in the middle of a round starts a new round; answers given before the reload are not kept.
 
 ## 7. Progress
 
@@ -299,10 +303,10 @@ A web app manifest and icons ship in step 1 so the game can be added to the home
 
 | Gate | What it proves |
 |---|---|
-| `pnpm test` (Vitest) | Engine: dealing priority and constraints, the end rule and record of each mode, determinism under a seed, Timed pausing. Input: every swipe rule. Progress: history, records, deck changes, corrupt storage. Content: schemas, section mapping, conflict group integrity. |
+| `pnpm test` (Vitest) | Engine: dealing priority and constraints, the end rule and record of each mode, determinism under a seed, Timed pausing. Input: every swipe rule. Progress: history, records, deck changes, corrupt storage. Content: schemas, section mapping, conflict group integrity. The purity and import boundaries of the engine, the input rules and the progress rules; dealing in chunks. |
 | `pnpm typecheck` | Strict TypeScript across app, scripts and tests. |
 | `pnpm build` | The deck build and validation, then the Next.js build. |
-| `pnpm e2e` (Playwright) | At phone size in Chromium and WebKit: the start flow to a finished Classic round and its result; each mode's ending; answering by swipe, button and keyboard; an accidental-swipe case that must not answer; reduced motion; a returning player's "Continue"; a whole round in the dark colour scheme, drawn with the night colours. |
+| `pnpm e2e` (Playwright) | At phone size in Chromium and WebKit: the start flow to a finished Classic round and its result; each mode's ending; answering by swipe, button and keyboard; an accidental-swipe case that must not answer; reduced motion; a returning player's "Continue"; a whole round in the dark colour scheme, drawn with the night colours; the Timed clock pausing while the page is hidden; the back gesture in every mode. |
 
 The engine and the input module are written test first. GitHub Actions runs all gates on every pull request. After each screen is implemented it is compared side by side with its mockup at 390 by 844.
 

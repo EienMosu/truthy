@@ -24,6 +24,9 @@ Things to know when writing one:
 - The current step of the start flow is `[data-step]:not([inert]) h2`: during a transition the leaving step is still in the page, inert.
 - Swipes use the mouse (`dragCard`), which produces pointer events in both browsers. A real touch drag is only possible through the Chromium DevTools protocol, so that one spec is skipped in WebKit.
 - A spec that plays several rounds calls `test.slow()`.
+- The modes without a fixed length have no "Card n of total" in their header: wait for a card with `waitForQuestion` (True is there and takes presses, no action row, the settle time has passed; pass the previous statement so it waits for the next card) and answer it with `answerCard`. In Timed only the first card takes focus, so `waitForQuestion` does not wait for focus.
+- The Timed specs install the page clock (`page.clock.install()`) before `page.goto`, then run the minute with `page.clock.runFor(61_000)`, which fires the clock's ticks as it goes. `page.clock.fastForward(ms)` is a jump, as a phone that slept without telling the page; `setPageHidden(page, true)` is a hidden page (another app, a locked screen), which pauses the clock and holds a Timed stamp on screen while a spec looks at it.
+- Motion times its animations with `performance.now`, which the page clock fakes, while the browser runs them on its real timeline: once the page clock has been run ahead, a new animation starts that much later in real time, so an element that leaves with an exit animation stays in the page. Finish the page's animations (`document.getAnimations()`, `finish()`) before asserting that something has gone, as `e2e/timed.spec.ts` does.
 
 Run one file, or see the browser:
 

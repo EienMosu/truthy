@@ -110,7 +110,7 @@ Play screens:
 22. **"See results" at time up enters like every Next row** (220 ms, delay 360, DESIGN-SYSTEM.md 5.7), not with the mockup's delay 300 (task 10).
 23. **The clock reads `m:ss` from the seconds rounded up:** "1:00" at the start, "0:41", "0:00" (task 10).
 24. **The Timed header keeps the plane during the stamp** (it has no per-card marks); every header's accessible label is rewritten after each answer (tasks 8 to 10).
-25. **Focus:** "See results" takes focus like "Next card" (at 420 ms). At time up it takes focus only if True or False had it. In Timed the statement takes focus on the first card only; later cards are announced by its live region (tasks 7 and 10).
+25. **Focus:** "See results" takes focus like "Next card" (at 420 ms). At time up it takes focus only if True or False had it. In Timed the statement takes focus on the first card only; later cards are announced as "Card N. <statement>" by a polite, atomic live region that stays mounted outside the card (the statement itself is not live, since the card is replaced on every deal) (tasks 7 and 10).
 26. **Timed announces only "Correct." or "Not quite."** to screen readers, without the answer: Timed shows no explanations during play (task 10).
 27. **The tear direction stays as in Classic** (left when correct, right when wrong); only the Timed card leaves toward the answered side (task 10).
 28. **The explanation can be selected:** the card is `select-none` only while it can be dragged (task 7).

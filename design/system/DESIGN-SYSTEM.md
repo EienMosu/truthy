@@ -260,7 +260,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 
 ### 5.7 Primary pill button
 - 60 tall, radius 30, full width (or flex 1 in a pair), gap 10, label `button`, `elevation.button`.
-- **Ink variant:** fill `ink`, text `on-dark`. Used for "Next card →", "See results →" (Streak after a wrong answer, Three lives after the third wrong answer, Time is up), "Start round →" (start step 6) and "Play again" (with a leading replay icon, 18, stroke 2.2).
+- **Ink variant:** fill `ink`, text `on-dark`. Used for "Next card →", "See results →" (after every deciding answer, Classic's last card included: Classic after the last card, Streak after a wrong answer, Three lives after the third wrong answer, Time is up), "Start round →" (start step 6) and "Play again" (with a leading replay icon, 18, stroke 2.2).
 - **States:** pressed moves down 2px, scales to 0.98 and switches to `elevation.press` (t1, ease). Focus ring colour `accent` (`focus-on-fill`).
 - In the game answer state the Next row replaces the True/False row: it rises 12px and fades in after a 360ms delay. Focus moves to it at 420ms.
 - **Used by:** game-*, mode-select, result-*, start (Start round).
@@ -290,13 +290,15 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Variants:**
   - **Count** (Classic, night): 10 waypoints. Label "Card **4** of 10" and "2 correct · 1 wrong".
   - **Streak:** done dots are r6 (tick stroke 1.6), spaced 24 apart along the curve. The best target at the end is a ring (r7 paper with ink stroke, around an r3 ink centre). Label "Streak **8**" and "Best **12**". After a wrong answer it reads "Streak ended at **8**".
-  - **Lives:** three hearts at x 11, 39 and 67. A full heart is filled `ink`. A lost heart is an outline (1.6, `ink-muted`) with a slash. Then a straight mini path at y 17 starting at x 102: solid (1.2) dots of r2.6 spaced 9 apart, wrong cards as 9 × 9 squares (rx 1.5), the plane, then a dotted continuation. Label "**2** of 3 lives left" and "**14** answered".
+    - **Any best.** The mockup's 24 apart is the case best = 12. While the best is still ahead, slot i sits at t = i / (best − 1) and the ring ends the route. At or past the best the route runs on into open sky: slot i sits at t = i / (cards + 1.6). Done dots take radius min(6, 0.31 × gap), where gap is the distance between two slots along x; they carry ticks from radius 5 and are plain dots below it.
+    - **No best yet** (a first round, or a stored best of 0): the open-sky layout with no ring and no right label, only "Streak **3**".
+  - **Lives:** three hearts at x 11, 39 and 67. A full heart is filled `ink`. A lost heart is an outline (1.6, `ink-muted`) with a slash. Hearts are lost from the right, so the last life is the heart on the left. Then a straight mini path at y 17: solid (1.2) dots of r2.6 spaced 9 apart, wrong cards as 9 × 9 squares (rx 1.5), the plane at x 238, then a dotted continuation. Up to 14 marks keep the 9 apart with the newest at x 219 (14 marks start at x 102); from 15 on they are squeezed between x 100 and x 219 (dot radius min(2.2, 0.45 × step), square side min(8, 1.3 × step), the x only from side 6). With no mark yet only the plane and the dotted continuation are drawn. Label "**2** of 3 lives left" and "**14** answered".
   - **Timed:** an r5 ink start dot, quarter marks (r3.5, paper that turns ink once passed) and an r5 paper destination. The plane moves continuously: x = 6 + 264t, y = 24 − 60t(1 − t), angle = atan2(−60(1 − 2t), 264). Label "**0:41** left" (clock in Mono 600 13 with tabular figures) and "9 correct · 2 wrong".
   - **Streak at or past the best** (game-streak-record): the old best keeps its ring where it was reached (ring radius = dot + 3.5, stroke 1.4) and the line runs on past it. Labels "Streak **13**" and "Previous best **12**" once the best is beaten; "Best **12**" while it is only equalled.
-  - **Lives, last life lost** (game-lives-out): the third heart turns to the lost outline and its slash is drawn through as the stamp lands (300, delay 380). Labels "**No** lives left" and "**21** answered". The wrong square replaces the plane.
+  - **Lives, a life lost** (game-lives, game-lives-out): the heart turns to the lost outline and its slash is drawn through as the Not quite stamp lands (300, delay 380), for every life, the last included. After the last life: labels "**No** lives left" and "**21** answered". The wrong square replaces the plane.
   - **Timed, time up** (game-timed-up): the solid line reaches the destination, every quarter mark is ink, the plane sits on the destination. Label "**0:00** left" and the tally.
   - **Start round** (start step 7): ten open waypoints and the plane on the first, "Card **1** of 10" and "0 correct · 0 wrong". The mock draws this Classic header for every class; a real round shows its own class header at card 1 (see Open questions).
-  - **Completed** (results): the whole curve is solid (2.4), with every card resolved at t = i / (n − 1). Marks scale by k so they never touch: k = 1 up to 10 cards (r7 / 13), 6/7 for 14 to 17 cards (r6 / 11, tick stroke 1.6), 4.6/7 for 21 cards (r4.6 / 8.5). On Streak the best is ringed where it was reached. Labels "**Arrived** · 10 of 10", "**Time up** · 17 cards", "**Ended** · 14 cards", "**Out of lives**".
+  - **Completed** (results): the whole curve is solid (2.4), with every card resolved at t = i / (n − 1). Marks scale so they never touch: scale 1 up to 10 cards (r7 / 13), 6/7 up to 17 cards (r6 / 11, tick stroke 1.6), and from 18 cards a radius of min(6, 0.35 × 264 / (n − 1)) (21 cards: r4.6). Done marks carry their tick from radius 5, and a wrong square its x from side 6. On Streak the card where the previous best was reached is ringed. Labels "**Arrived** · 10 of 10", "**Ended** · 14 cards", "**Out of lives**", "**Time up** · 17 cards".
 - **Used by:** game-*, result-*, start step 7.
 
 ### 5.11 Stamp
@@ -306,8 +308,8 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Slip verdict:** 24px, check icon 22, X icon 18.
   - **New best on the slip** (game-streak-record): 24px, filled star (20), `correct`. It takes the place of "Correct" on the answer that beats the best; screen readers still hear "Correct. New best".
   - **Stub stamp** (no slip under it): 28px, padding 8 18 6, `surface-raised` fill so it reads over the barcode, centred at 96px from the top of the stub, announced as a status, lands with `land-fast` (300).
-    - **Timed verdict** (game-timed): Correct or Not quite.
-    - **Time is up** (game-timed-up): `ink`, clock icon (22, stroke 2.4), delay 120, then the ticket jolts (delay 240). The statement and Gate turn ink-muted, Gate reads "Closed", and the only action is "See results →".
+    - **Timed verdict** (game-timed): check 24 and "Correct", or X 20 and "Not quite". It lands from scale 1.9 and −14deg like every stamp. The line under the barcode says what happens next: "Next card coming up" after a right answer, "Missed, saved for review at the end" after a wrong one.
+    - **Time is up** (game-timed-up): `ink`, clock icon (22, stroke 2.4), delay 120, then the ticket jolts (delay 240). The statement and Gate turn ink-muted, Gate reads "Closed", the line under the barcode reads "This card doesn't count · 8 answered", and the only action is "See results →".
   - **New best on results** (result-timed, result-streak): 22px, filled star (18), `correct`. It replaces the comparison text and sits 10px above "Previous best 12".
 - Reserved for real verdicts only: Correct, Not quite, New best, Time is up. "Arrived", "Ended", "Out of lives" and "Equals your best" are not stamps.
 - **Used by:** game-*, result-timed, result-streak.
@@ -326,7 +328,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Used by:** mode-select only. The start flow picks the class with class cards (5.3) instead.
 
 ### 5.14 Score block
-- Padding 14 20 18, space between, bottom-aligned. Left: `field-label` ("Your score", "Correct", "Correct in a row") over `score` with its unit ("of 10", "of 17", "cards"; Streak has none). Right: `emphasis` comparison over `mono-data` ("2 short of your best / Best 9 / 10", "Equals your best / Best 21 cards"), or the New best stamp over "Previous best 12".
+- Padding 14 20 18, space between, bottom-aligned. Left: `field-label` ("Your score", "Correct", "Correct in a row") over `score` with its unit ("of 10", "of 17", "cards"; Streak has none). Right: `emphasis` comparison over `mono-data` ("2 short of your best / Best 9 / 10", "Equals your best / Best 21 cards"), or the New best stamp over "Previous best 12". Every mode uses the same three lines, "First round on this route" (no second line), "N short of your best" and "Equals your best", and a beaten record gets the New best stamp in every mode. The record reads by mode: "9 / 10" (Classic), "12" (Streak), "21 cards" (Three lives), "11" (Timed).
 - **Used by:** result-*.
 
 ### 5.15 Missed-card list with "Why" disclosure
@@ -413,7 +415,7 @@ Durations and curves come from `tokens.json` `motion`. On web, `--spring` is `cu
 | Jolt | Ticket main part moves 2px down at 40% and back | 260, delay 420, ease (Timed: delay 120) | None | `keyframeAnimator` | `keyframes { 2f at 104 }` |
 | Plane out | Plane opacity to 0, waypoint mark appears | 220, ease | Instant | `.opacity` | `animateFloatAsState` |
 | Next row in | True/False row out (moves 12px down, fades); Next row rises 12px and fades in | 220, delay 360, ease | Instant | `.transition(.move + .opacity)` | `AnimatedContent` |
-| Timed beat | Stamp on stub (`land-fast`, 300), pills dim to 0.45, hold **1000 from the tap**, card leaves ±120% x at ±8deg toward the answered side (220, `fall`), next card dealt from 14px below (280, ease) | as listed | Stamp at rest, instant card change | `.transition(.asymmetric(...))` on a keyed card | `AnimatedContent(targetState = cardIndex)` |
+| Timed beat | Stamp on stub (`land-fast`, 300, from scale 1.9 to 1 like every stamp), pills dim to 0.45, hold **700 from the tap**, card leaves ±120% x at ±8deg toward the answered side (220, `fall`), next card dealt from 14px below (280, ease) | as listed | Stamp at rest, instant card change | `.transition(.asymmetric(...))` on a keyed card | `AnimatedContent(targetState = cardIndex)` |
 | Start flow: step forward | Outgoing title (80) and cards (140) rise 10px and fade (ease-out). After a 60 hold the chosen **name travels** into its pass field (300, ease; translate and scale only, 26 → 16 or 30 → 16). Blank dashes fade out (100, delay 120); the value shows when the name lands. Incoming items rise from 24px (240, delay 110 + 25 per item, ease). Total 360 | Old step fades out (100), then the new one fades in (140, delay 90). Text never overlaps | `matchedGeometryEffect` with one `Namespace` id per field; steps as `.opacity.combined(with: .offset(y: ±24))` | `SharedTransitionLayout` + `Modifier.sharedElement(key = field)` inside `AnimatedContent(step)`; `fadeIn + slideInVertically` |
 | Start flow: back | The reverse: the value flies from the pass back to its card, current items sink 10px, previous items drop from −24px, dashes return (140, delay 220) | as above | as above | Same, direction from navigation | Compare `targetState` with `initialState` |
 | Top zone swap (step 1 ↔ 2, and step 1 → 6 on Continue) | Logo leaves (110, rises 12px) and the Back pill plus pass arrive (240, delay 120, from 12px below); the reverse on the way back | ease | Cross-fade as above | `.transition` on the top zone | `AnimatedContent` on the top zone |
@@ -423,7 +425,7 @@ Durations and curves come from `tokens.json` `motion`. On web, `--spring` is `cu
 | Jump back through a field | Tapping a filled field goes straight to its step: every later value fades out as a ghost (120) or flies back to its card if that card is on the target step | 360, ease | Cross-fade | as above | as above |
 | Continue (step 1 → 6) | Logo out, full pass in (the top-zone swap); the pass values fade in (220, delay 200); Start round comes in (240, delay 140) | as listed | Cross-fade | as above | as above |
 | Time is up | Stub stamp lands (`land-fast`, 300, delay 120); jolt (260, delay 240) | as listed | Stamp at rest | as Stamp lands | as Stamp lands |
-| Last life lost | The slash is drawn through the third heart (stroke dash 23 → 0, 300, delay 380, ease) as the Not quite stamp lands | as listed | Drawn at rest | `trim(from:to:)` | `PathMeasure.getSegment` |
+| Life lost | The slash is drawn through the heart that is lost (stroke dash 23 → 0, 300, delay 380, ease) as the Not quite stamp lands; every life, the last included | as listed | Drawn at rest | `trim(from:to:)` | `PathMeasure.getSegment` |
 | Sheet open (browse-c) | Sheet rises from 104%; scrim fades in; deck code travels into Deck | 420 `land`; scrim 360 ease | Instant | Custom overlay (not `.sheet`) with `.spring` | Custom `Box` overlay with `animateFloatAsState(spring)`; not `ModalBottomSheet` |
 | Sheet close (browse-c) | Sheet drops to 104%, scrim fades out, the code flies back to its card | 360 ease | Instant | as above | as above |
 | Why | Height 0 → content; chevron rotates 180deg | 360 / 220, ease | Instant; scroll without animation | `DisclosureGroup`-like custom view with `.animation` | `AnimatedVisibility(expandVertically)` |
@@ -453,12 +455,12 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 - **Focus:**
   - The ring is a 3px `ink` outline with a 3px offset. On filled pills it is `accent`; on option rows the offset is 2; on Why it is 0; on sheet rows it is −1 with radius 8.
   - Start-flow step titles take focus programmatically after each step, with no visible ring on purpose.
-  - Focus moves to Next card after the answer (420ms), to the first sheet row on open, and back to the opener on close or Back.
+  - Focus moves to Next card, or to See results after a deciding answer, 420ms after the answer, to the first sheet row on open, and back to the opener on close or Back. At time up See results takes focus only if True or False had it. In Timed only the first card's statement takes focus.
   - In the start flow, going forward focuses the new step title; going back (Back, a field, Leave round) focuses the card that was chosen before; starting the round focuses the statement.
   - Escape closes the sheet, or goes back a step (on step 7 it leaves the round).
 - **Screen reader:**
   - The flight path is one image with a full-sentence label.
-  - The answer slip and the fill-in pass fields are polite live regions. The Timed statement is also a live region, and the Timed stamp is a status.
+  - The answer slip and the fill-in pass fields are polite live regions. In Timed the status says only "Correct." or "Not quite." during the stamp (the answer is given away nowhere during play) and "Time is up. This card doesn't count." at time up, and each new card from card 2 on is announced as "Card N. <statement>" from a polite, atomic live region that stays mounted outside the card (the card itself is replaced on every deal, and a live region that arrives with its text is not reliably read). The Timed statement is not a live region.
   - Cards carry full labels ("CLF, Cloud Practitioner, 214 cards, 38 percent seen", "Classic. 10 cards, score at the end. Your best: 9 of 10."). Filled pass fields say what they change ("Change section, now SEC"). The Back pill names its destination ("Back to classes").
   - The sheet is a modal dialog. The class picker is a radio group with a visually hidden legend.
 - **Reduced motion:** see Motion. No information is carried by motion alone.
@@ -506,13 +508,13 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 2. **Night sheet (closed).** The "Leave round?" confirmation is a sheet over `scrim` with the sheet shadow. With the day values it did not stand off the dark pass, so `tokens.json` now has a night scrim (black at 60%) and a night sheet shadow (the night ticket recipe pointing up).
 3. **Two title sizes.** `screen-title` is 24 (mode-select) and `step-title` is 22 (browse-c, start). Unify them, or keep both? If the start flow replaces mode-select, only 22 remains.
 4. **Safe areas on native.** Use the system insets alone, or the insets plus the mock's 52/34 as a minimum?
-5. **Timed hold.** The file uses 1000ms from tap to leave; the builder suggested 700ms for the product.
-6. **Tear direction.** The reference drops the stub left when the answer was correct and right when it was wrong, whatever the swipe direction. Timed sends the card toward the side that was answered. Should the stub also fall the way the player swiped?
-7. **Where the result screens and Leave round go.** Close on a result is assumed to return to start step 1; "Choose another route" is assumed to open start step 6 with the pass filled (like Continue); Leave round on card 1 returns to step 6, but no screen shows Leave round later in a round (confirm, or end the round). "Play again" restarts the same route and class.
+5. **Timed hold (closed).** 700ms from the tap until the card leaves, as spec section 6 says; `motion.duration.hold-timed` is 700. The mockup's 1000 is not used.
+6. **Tear direction.** The reference drops the stub left when the answer was correct and right when it was wrong, whatever the swipe direction. Timed sends the card toward the side that was answered. Should the stub also fall the way the player swiped? **Answered: unchanged.** The stub falls left when the answer was correct and right when it was wrong; only the Timed card leaves toward the answered side.
+7. **Where the result screens and Leave round go.** What the app does: Close on a result and "Choose another route" both return to start step 1, where the continue line offers the route just played. Leave round before the first answer leaves at once; after it, it asks once ("Leave round?") and then returns to start step 1 without a record, at any point of the round. "Play again" restarts the same route and class.
 8. **Keyboard answering on the web.** The research suggests arrow keys or T/F. No approved screen implements them, so they are not specified here.
 9. **Content data, not design:** browse-c counts CLF sections as CON 45 / SEC 47 / TEC 88 / BIL 34, while mode-select shows SEC as 64 cards (the earlier standard was 52 / 64 / 70 / 28). Pick one source of truth.
 10. **Mode-select and the sheet versus the start flow.** start.html chooses the section and the class as steps, which makes the approved mode-select screen and the browse-c sheet redundant. Confirm with the client that start.html is the flow to build.
-11. **Round header on start step 7 for other classes.** The mock always draws the Classic header ("Card 1 of 10"). Streak, Three lives and Timed should hand over to their own header at card 1 (Streak 0 / Best, three full hearts / 0 answered, 1:00 left); the hand-over motion for those is not drawn.
+11. **Round header on start step 7 for other classes (closed).** Each class shows its own header from card 1: "Streak **0**" with its best, three full hearts and "**0** answered", "**1:00** left". The play screen draws the header of the mode, so the hand-over from the start flow needs no motion of its own.
 12. **Bests per route.** The class cards show the best for the chosen deck and section. Whether a whole-deck best and a section best are kept apart (they are in the mock) needs confirming.
 
 ### Where approved screens disagree (value chosen in bold)
