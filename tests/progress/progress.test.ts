@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Card, Route } from "@/src/content/schema";
-import type { Answered, RoundResult } from "@/src/engine/round";
+import {
+  currentCard,
+  reduce,
+  startRound,
+  summarise,
+  type Answered,
+  type Mode,
+  type RoundEvent,
+  type RoundResult,
+  type RoundState,
+} from "@/src/engine/round";
 import {
   applyResult,
   compareWithBest,
@@ -62,11 +72,14 @@ function answered(id: string, correct: boolean, at: number): Answered {
   return { card: card(id), given: correct, correct, at };
 }
 
-function result(answers: Answered[], options: { route?: Route; abandoned?: boolean } = {}): RoundResult {
+function result(
+  answers: Answered[],
+  options: { route?: Route; abandoned?: boolean; mode?: Mode; score?: number } = {},
+): RoundResult {
   return {
-    mode: "classic",
+    mode: options.mode ?? "classic",
     route: options.route ?? SEC,
-    score: answers.filter((a) => a.correct).length,
+    score: options.score ?? answers.filter((a) => a.correct).length,
     total: answers.length,
     answers,
     missed: answers.filter((a) => !a.correct),
@@ -520,5 +533,110 @@ describe("applyResult: review focus", () => {
     const outcome = applyResult(withRecord(SEC, 0), scored(0));
     expect(outcome.previousBest).toBe(0);
     expect(outcome.isNewBest).toBe(false);
+  });
+});
+
+// A round of `total` answers on SEC in the given mode, with the score the mode's record keeps.
+function modeResult(mode: Mode, score: number, total: number, options: { abandoned?: boolean } = {}): RoundResult {
+  const answers = Array.from({ length: total }, (_, i) => answered(`m${i}`, true, i + 1));
+  return result(answers, { mode, score, abandoned: options.abandoned ?? false });
+}
+
+function withModeRecord(mode: Mode, best: number): Progress {
+  return { ...emptyProgress(), records: { [recordKey(SEC, mode)]: best } };
+}
+
+// Plays a round on SEC with startRound and reduce: true for a right answer, false for a wrong one,
+// next after each but the last; then `end` (next or abandon).
+function playedRound(mode: Mode, rights: readonly boolean[], end: RoundEvent): RoundState {
+  const pool = Array.from({ length: 20 }, (_, i) => card(`p${i + 1}`, i % 2 === 0));
+  let state = startRound({ mode, route: SEC, pool, history: {}, seed: 7 });
+  rights.forEach((right, i) => {
+    const truth = currentCard(state)?.answer ?? true;
+    state = reduce(state, { type: "answer", value: right ? truth : !truth, at: 100 * (i + 1) });
+    if (i < rights.length - 1) state = reduce(state, { type: "next" });
+  });
+  return reduce(state, end);
+}
+
+describe("applyResult: records of the other modes", () => {
+  it("keeps one record per mode on the same route", () => {
+    let progress = emptyProgress();
+    progress = applyResult(progress, modeResult("classic", 7, 10)).progress;
+    progress = applyResult(progress, modeResult("streak", 12, 13)).progress;
+    progress = applyResult(progress, modeResult("lives", 21, 21)).progress;
+    progress = applyResult(progress, modeResult("timed", 14, 17)).progress;
+    expect(progress.records).toEqual({
+      "aws-clf-c02/SEC#classic": 7,
+      "aws-clf-c02/SEC#streak": 12,
+      "aws-clf-c02/SEC#lives": 21,
+      "aws-clf-c02/SEC#timed": 14,
+    });
+  });
+
+  it("equalling a Streak record is not a new best", () => {
+    const outcome = applyResult(withModeRecord("streak", 12), modeResult("streak", 12, 13));
+    expect(outcome.isNewBest).toBe(false);
+    expect(outcome.previousBest).toBe(12);
+    expect(outcome.progress.records["aws-clf-c02/SEC#streak"]).toBe(12);
+  });
+
+  it("a longer streak replaces the record", () => {
+    const outcome = applyResult(withModeRecord("streak", 12), modeResult("streak", 13, 14));
+    expect(outcome.isNewBest).toBe(true);
+    expect(outcome.progress.records["aws-clf-c02/SEC#streak"]).toBe(13);
+  });
+
+  it("a first Timed round with no correct answer sets the record 0", () => {
+    const outcome = applyResult(emptyProgress(), modeResult("timed", 0, 3));
+    expect(outcome.isNewBest).toBe(true);
+    expect(outcome.previousBest).toBeNull();
+    expect(outcome.progress.records).toEqual({ "aws-clf-c02/SEC#timed": 0 });
+  });
+
+  it.each(["streak", "lives", "timed"] as const)("a round that was left sets no record in any mode (%s)", (mode) => {
+    const before = withModeRecord(mode, 4);
+    const outcome = applyResult(before, modeResult(mode, 9, 9, { abandoned: true }));
+    expect(outcome.progress.records).toEqual(before.records);
+    expect(outcome.isNewBest).toBe(false);
+    expect(outcome.progress.last?.score).toBeNull();
+  });
+
+  it("remembers the last round with the mode's own score", () => {
+    const { progress } = applyResult(emptyProgress(), modeResult("lives", 21, 21));
+    expect(progress.last).toEqual({ route: SEC, mode: "lives", score: 21, total: 21 });
+  });
+
+  it("records what the engine summarises", () => {
+    const done = playedRound("streak", [true, true, true, false], { type: "next" });
+    expect(done).toMatchObject({ phase: "finished", abandoned: false });
+    const { progress } = applyResult(emptyProgress(), summarise(done));
+    expect(progress.records).toEqual({ "aws-clf-c02/SEC#streak": 3 });
+    expect(Object.keys(progress.cards)).toHaveLength(4);
+  });
+
+  it("a card answered twice in one round counts two sightings and keeps the later verdict", () => {
+    const answers = [answered("A", false, 100), answered("B", true, 200), answered("A", true, 300)];
+    const round = result(answers, { mode: "lives", score: 3 });
+    const { progress } = applyResult(emptyProgress(), round);
+    expect(progress.cards["A"]).toEqual({ seen: 2, lastCorrect: true, lastSeenAt: 300 });
+    expect(progress.cards["B"]).toEqual({ seen: 1, lastCorrect: true, lastSeenAt: 200 });
+
+    const stored: Progress = { ...emptyProgress(), cards: { A: { seen: 4, lastCorrect: true, lastSeenAt: 50 } } };
+    expect(applyResult(stored, round).progress.cards["A"]).toEqual({ seen: 6, lastCorrect: true, lastSeenAt: 300 });
+
+    const otherWay = result([answered("A", true, 100), answered("A", false, 200)], { mode: "lives", score: 2 });
+    expect(applyResult(emptyProgress(), otherWay).progress.cards["A"]?.lastCorrect).toBe(false);
+  });
+
+  it("a decided round that was left sets no record", () => {
+    const left = playedRound("streak", [true, true, true, true, true, false], { type: "abandon" });
+    const round = summarise(left);
+    expect(round.abandoned).toBe(true);
+    const before = withModeRecord("streak", 4);
+    const outcome = applyResult(before, round);
+    expect(outcome.progress.records).toEqual(before.records);
+    expect(Object.keys(outcome.progress.cards)).toHaveLength(6);
+    expect(outcome.progress.last?.score).toBeNull();
   });
 });

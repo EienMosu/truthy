@@ -95,7 +95,14 @@ describe("savePending and readPending", () => {
 
 describe("modes this build cannot play", () => {
   it("reads null for a mode that exists but is not available yet", () => {
-    const stored = JSON.stringify({ route: pending.route, mode: "streak" });
+    const stored = JSON.stringify({ route: pending.route, mode: "timed" });
     expect(readPending(memoryStorage({ [PENDING_KEY]: stored }))).toBeNull();
+  });
+
+  it("reads a Streak or Three lives round now that the engine can play them", () => {
+    for (const mode of ["streak", "lives"] as const) {
+      const round: PendingRound = { route: pending.route, mode };
+      expect(readPending(memoryStorage({ [PENDING_KEY]: JSON.stringify(round) }))).toEqual(round);
+    }
   });
 });

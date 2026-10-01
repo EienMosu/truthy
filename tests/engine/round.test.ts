@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Card, Route } from "@/src/content/schema";
-import type { History } from "@/src/engine/deal";
+import { deal, type History } from "@/src/engine/deal";
+import { createRng } from "@/src/engine/rng";
 import {
   AVAILABLE_MODES,
   CLASSIC_LENGTH,
@@ -39,8 +40,8 @@ function start(overrides: Partial<StartArgs> = {}) {
 }
 
 describe("round constants", () => {
-  it("offers only Classic in step 1, with ten cards", () => {
-    expect(AVAILABLE_MODES).toEqual(["classic"]);
+  it("plays Classic, Streak and Three lives; a Classic round has ten cards", () => {
+    expect(AVAILABLE_MODES).toEqual(["classic", "streak", "lives"]);
     expect(CLASSIC_LENGTH).toBe(10);
   });
 });
@@ -93,8 +94,22 @@ describe("startRound", () => {
     expect(frozen.map((c) => c.id)).toEqual(pool(20).map((c) => c.id));
   });
 
-  it.each(["streak", "lives", "timed"] as const)("rejects the %s mode, which is not available yet", (mode) => {
-    expect(() => start({ mode })).toThrow(/not available/);
+  it("rejects the timed mode, which is not available yet", () => {
+    expect(() => start({ mode: "timed" })).toThrow(/not available/);
+  });
+
+  it("deals a Classic round exactly as the ten-card deal of the same seed", () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const expected = deal(pool(40), {}, createRng(seed), { count: 10 }).map((c) => c.id);
+      expect(start({ seed }).cards.map((c) => c.id)).toEqual(expected);
+    }
+  });
+
+  it("keeps what it deals from", () => {
+    const cards = pool(40);
+    const state = start({ pool: cards });
+    expect(state.source).toEqual({ pool: cards, history: {}, seed: 1, chunks: 1 });
+    expect(state.source.pool).toBe(cards);
   });
 
   it("rejects a mode it does not know", () => {
