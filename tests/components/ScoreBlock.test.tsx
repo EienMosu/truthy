@@ -1,32 +1,13 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { ScoreBlock, compareWithBest } from "@/components/ScoreBlock";
+import { ScoreBlock } from "@/components/ScoreBlock";
 
 afterEach(cleanup);
 
 function comparisonText(container: HTMLElement): string | null | undefined {
   return container.querySelector("[data-comparison]")?.textContent;
 }
-
-describe("compareWithBest", () => {
-  it("is a first round when the route and mode had no record", () => {
-    expect(compareWithBest(7, null)).toEqual({ kind: "first" });
-  });
-
-  it("is a new best when the score beats the record", () => {
-    expect(compareWithBest(8, 7)).toEqual({ kind: "new-best", previousBest: 7 });
-  });
-
-  it("equals the best when the score matches the record", () => {
-    expect(compareWithBest(9, 9)).toEqual({ kind: "equal", best: 9 });
-  });
-
-  it("says how far short of the record the score is", () => {
-    expect(compareWithBest(7, 9)).toEqual({ kind: "short", best: 9, by: 2 });
-    expect(compareWithBest(0, 10)).toEqual({ kind: "short", best: 10, by: 10 });
-  });
-});
 
 describe("ScoreBlock", () => {
   it("shows Your score over the score and its total", () => {

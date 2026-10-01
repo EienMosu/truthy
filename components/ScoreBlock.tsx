@@ -5,23 +5,9 @@
 // is the one celebration: the New best stamp (5.11, "New best on results") lands over "Previous best".
 // "Equals your best" and the other lines are plain text, not stamps.
 import { motion, useReducedMotion } from "motion/react";
+import type { Comparison } from "@/src/progress/progress";
 import { SPRING_EASE } from "./Stamp";
 import { StarIcon } from "./icons";
-
-/** How a finished round compares with the record that stood before it. */
-export type Comparison =
-  | { kind: "first" }
-  | { kind: "new-best"; previousBest: number }
-  | { kind: "equal"; best: number }
-  | { kind: "short"; best: number; by: number };
-
-/** Compares a score with the record before the round (null when this route and mode had none). */
-export function compareWithBest(score: number, previousBest: number | null): Comparison {
-  if (previousBest === null) return { kind: "first" };
-  if (score > previousBest) return { kind: "new-best", previousBest };
-  if (score === previousBest) return { kind: "equal", best: previousBest };
-  return { kind: "short", best: previousBest, by: previousBest - score };
-}
 
 export interface ScoreBlockProps {
   /** Correct answers. */

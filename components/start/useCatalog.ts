@@ -5,10 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppServices } from "@/src/app-state/services";
 import { isOffered } from "@/src/app-state/modes";
 import { loadIndex } from "@/src/content/load";
-import { findRoute, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform, type RouteInIndex, type Route } from "@/src/content/schema";
+import { findRoute, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform, type Route, type RouteInIndex } from "@/src/content/schema";
 import type { Mode } from "@/src/content/play";
 import { createLocalStore } from "@/src/progress/local";
-import { recordKey, type Progress } from "@/src/progress/progress";
+import type { Progress } from "@/src/progress/progress";
 
 export type CatalogStatus = { kind: "loading" } | { kind: "error" } | { kind: "ready"; index: DeckIndex; progress: Progress };
 
@@ -72,12 +72,6 @@ export function seenPercent(progress: Progress, deck: Pick<IndexDeck, "id" | "ca
   const seen = Object.keys(progress.cards).filter((id) => id.startsWith(prefix)).length;
   if (seen === 0 || deck.cardCount <= 0) return 0;
   return Math.min(100, Math.max(1, Math.round((seen / deck.cardCount) * 100)));
-}
-
-/** The record for a route and mode, or null when it has not been played (to the end) yet. */
-export function bestFor(progress: Progress, route: Route, mode: Mode): number | null {
-  const key = recordKey(route, mode);
-  return Object.hasOwn(progress.records, key) ? (progress.records[key] ?? null) : null;
 }
 
 /** Where "Continue" leads: the last route and mode, when both can still be played. */

@@ -11,11 +11,11 @@ import { MissedCards, missedCards } from "@/components/MissedCards";
 import { PillButton } from "@/components/PillButton";
 import { QuietButton } from "@/components/QuietButton";
 import { RoundButton } from "@/components/RoundButton";
-import { ScoreBlock, compareWithBest } from "@/components/ScoreBlock";
+import { ScoreBlock } from "@/components/ScoreBlock";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { CloseIcon, ReplayIcon, RouteIcon } from "@/components/icons";
 import { summarise, type RoundState } from "@/src/engine/round";
-import { applyResult, type ApplyOutcome } from "@/src/progress/progress";
+import { applyResult, compareWithBest, type ApplyOutcome } from "@/src/progress/progress";
 import type { ProgressStore } from "@/src/progress/local";
 import type { TicketInfo } from "./useRound";
 

@@ -30,8 +30,9 @@ import { browserAppServices, browserStepHistory, markStartEntryBehind, type AppS
 import type { Mode } from "@/src/content/play";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { SWIPE } from "@/src/input/swipe";
+import { bestFor } from "@/src/progress/progress";
 import { ContinueLine } from "./ContinueLine";
-import { bestFor, continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "./useCatalog";
+import { continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "./useCatalog";
 
 // ---------- services ----------
 

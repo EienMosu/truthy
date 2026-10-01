@@ -3,6 +3,7 @@ import type { Card, Route } from "@/src/content/schema";
 import type { Answered, RoundResult } from "@/src/engine/round";
 import {
   applyResult,
+  compareWithBest,
   emptyProgress,
   parseProgress,
   pruneDeck,
@@ -220,6 +221,39 @@ describe("applyResult: records", () => {
     const outcome = applyResult(withRecord(CON, 9), scored(3, { route: SEC }));
     expect(outcome.previousBest).toBeNull();
     expect(outcome.isNewBest).toBe(true);
+  });
+});
+
+describe("compareWithBest", () => {
+  it("is a first round when the route and mode had no record", () => {
+    expect(compareWithBest(7, null)).toEqual({ kind: "first" });
+  });
+
+  it("is a new best when the score beats the record", () => {
+    expect(compareWithBest(8, 7)).toEqual({ kind: "new-best", previousBest: 7 });
+  });
+
+  it("equals the best when the score matches the record", () => {
+    expect(compareWithBest(9, 9)).toEqual({ kind: "equal", best: 9 });
+  });
+
+  it("says how far short of the record the score is", () => {
+    expect(compareWithBest(7, 9)).toEqual({ kind: "short", best: 9, by: 2 });
+    expect(compareWithBest(0, 10)).toEqual({ kind: "short", best: 10, by: 10 });
+  });
+});
+
+describe("applyResult and compareWithBest agree", () => {
+  it("makes a new best exactly when the comparison is first or new-best", () => {
+    for (const score of [0, 6, 7, 8]) {
+      for (const before of [emptyProgress(), withRecord(SEC, 7)]) {
+        const previousBest = Object.values(before.records)[0] ?? null;
+        const kind = compareWithBest(score, previousBest).kind;
+        const outcome = applyResult(before, scored(score));
+        expect(outcome.previousBest).toBe(previousBest);
+        expect(outcome.isNewBest).toBe(kind === "first" || kind === "new-best");
+      }
+    }
   });
 });
 

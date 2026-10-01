@@ -23,6 +23,27 @@ export function recordKey(route: Route, mode: Mode): string {
   return `${routeKey(route)}#${mode}`;
 }
 
+/** The record for a route and mode, or null when it has not been played (to the end) yet. */
+export function bestFor(progress: Progress, route: Route, mode: Mode): number | null {
+  const key = recordKey(route, mode);
+  return Object.hasOwn(progress.records, key) ? (progress.records[key] ?? null) : null;
+}
+
+/** How a finished round compares with the record that stood before it. */
+export type Comparison =
+  | { kind: "first" }
+  | { kind: "new-best"; previousBest: number }
+  | { kind: "equal"; best: number }
+  | { kind: "short"; best: number; by: number };
+
+/** Compares a score with the record before the round (null when this route and mode had none). */
+export function compareWithBest(score: number, previousBest: number | null): Comparison {
+  if (previousBest === null) return { kind: "first" };
+  if (score > previousBest) return { kind: "new-best", previousBest };
+  if (score === previousBest) return { kind: "equal", best: previousBest };
+  return { kind: "short", best: previousBest, by: previousBest - score };
+}
+
 export interface ApplyOutcome {
   progress: Progress;
   previousBest: number | null;
@@ -35,8 +56,9 @@ export interface ApplyOutcome {
 // An abandoned round keeps its answers in the history but never touches the record.
 export function applyResult(progress: Progress, result: RoundResult): ApplyOutcome {
   const key = recordKey(result.route, result.mode);
-  const previousBest = Object.hasOwn(progress.records, key) ? (progress.records[key] ?? null) : null;
-  const isNewBest = !result.abandoned && (previousBest === null || result.score > previousBest);
+  const previousBest = bestFor(progress, result.route, result.mode);
+  const comparison = compareWithBest(result.score, previousBest);
+  const isNewBest = !result.abandoned && (comparison.kind === "first" || comparison.kind === "new-best");
   const records = isNewBest ? { ...progress.records, [key]: result.score } : { ...progress.records };
   return {
     progress: {
