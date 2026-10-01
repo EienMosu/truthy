@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { createLocalStore, PROGRESS_KEY } from "@/src/progress/local";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { browserLocalStorage, createLocalStore, PROGRESS_KEY } from "@/src/progress/local";
 import { emptyProgress, type Progress } from "@/src/progress/progress";
 
 // A small stand-in for window.localStorage that behaves like the real one: strings in, strings out.
@@ -108,5 +108,43 @@ describe("createLocalStore without a usable storage", () => {
     };
     store.save(emptyProgress());
     expect(store.load()).toEqual(played);
+  });
+});
+
+describe("browserLocalStorage", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("is undefined where there is no window, as during prerendering", () => {
+    expect(typeof window).toBe("undefined");
+    expect(browserLocalStorage()).toBeUndefined();
+  });
+
+  it("is the window's localStorage when it can be reached", () => {
+    const storage = new MemoryStorage();
+    vi.stubGlobal("window", { localStorage: storage });
+    expect(browserLocalStorage()).toBe(storage);
+  });
+
+  it("is undefined when reading window.localStorage throws, as with blocked site data", () => {
+    vi.stubGlobal("window", {
+      get localStorage(): Storage {
+        throw new DOMException("The operation is insecure.", "SecurityError");
+      },
+    });
+    expect(() => browserLocalStorage()).not.toThrow();
+    expect(browserLocalStorage()).toBeUndefined();
+  });
+
+  it("gives a store that still works when the storage is blocked", () => {
+    vi.stubGlobal("window", {
+      get localStorage(): Storage {
+        throw new DOMException("The operation is insecure.", "SecurityError");
+      },
+    });
+    const store = createLocalStore(browserLocalStorage());
+    expect(store.load()).toEqual(emptyProgress());
+    expect(() => store.save(played)).not.toThrow();
   });
 });

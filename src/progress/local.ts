@@ -31,3 +31,13 @@ export function createLocalStore(storage: Pick<Storage, "getItem" | "setItem"> |
     },
   };
 }
+
+// window.localStorage, or undefined where it cannot be used: no window (prerendering), or a
+// browser that throws on reading the property because site data is blocked.
+export function browserLocalStorage(): Storage | undefined {
+  try {
+    return typeof window === "undefined" ? undefined : window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
