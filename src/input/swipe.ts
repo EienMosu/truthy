@@ -6,6 +6,9 @@ export const SWIPE = { commitPx: 90, flingPx: 40, flingVelocity: 0.5, settleMs: 
 // How far (px) a drag must go for the preview to show full intent.
 const INTENT_FULL_PX = 110;
 
+// The release velocity is measured over this many ms before the last sample.
+const VELOCITY_WINDOW_MS = 80;
+
 export interface SwipeSample {
   x: number;
   y: number;
@@ -40,6 +43,16 @@ function sideOf(dx: number): SwipeOutcome {
   return dx > 0 ? "true" : "false";
 }
 
+// Horizontal velocity in px per ms between the oldest sample inside the window and the last one.
+// No earlier sample inside the window, or no time between them, means the card was not moving fast: 0.
+function releaseVelocity(samples: readonly SwipeSample[], last: SwipeSample): number {
+  const reference = samples.slice(0, -1).find((sample) => last.t - sample.t <= VELOCITY_WINDOW_MS);
+  if (reference === undefined) return 0;
+  const dt = last.t - reference.t;
+  if (dt <= 0) return 0;
+  return (last.x - reference.x) / dt;
+}
+
 // Turns the samples of one gesture (first = pointer down, last = release) into an answer or "cancel".
 export function interpret(samples: readonly SwipeSample[], context: SwipeContext): SwipeOutcome {
   const first = samples[0];
@@ -52,5 +65,8 @@ export function interpret(samples: readonly SwipeSample[], context: SwipeContext
   if (Math.abs(dy) > Math.abs(dx)) return "cancel";
 
   if (Math.abs(dx) >= SWIPE.commitPx) return sideOf(dx);
+
+  const velocityTowardsSide = releaseVelocity(samples, last) * Math.sign(dx);
+  if (Math.abs(dx) >= SWIPE.flingPx && velocityTowardsSide >= SWIPE.flingVelocity) return sideOf(dx);
   return "cancel";
 }

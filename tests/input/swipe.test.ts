@@ -149,3 +149,79 @@ describe("interpret: a gesture more vertical than horizontal is not a swipe", ()
     expect(interpret(gesture([0, 0, 0], [60, 20, 300], [120, 40, 600]), context)).toBe("true");
   });
 });
+
+describe("interpret: fling (a fast release commits only after at least 40 px)", () => {
+  it("commits a fast fling that travelled 40 px", () => {
+    // 40 px in 40 ms: 1 px/ms, twice the fling velocity.
+    expect(interpret(gesture([0, 0, 0], [20, 0, 20], [40, 0, 40]), context)).toBe("true");
+  });
+
+  it("cancels a fast fling that travelled 39 px", () => {
+    expect(interpret(gesture([0, 0, 0], [20, 0, 20], [39, 0, 40]), context)).toBe("cancel");
+  });
+
+  it("commits a fast fling of 40 px to the left as false", () => {
+    expect(interpret(gesture([0, 0, 0], [-20, 0, 20], [-40, 0, 40]), context)).toBe("false");
+  });
+
+  it("cancels a slow release at 60 px (pointer moves sampled every 16 ms)", () => {
+    // 2 px every 16 ms is 0.125 px/ms, a quarter of the fling velocity.
+    const slow = Array.from({ length: 31 }, (_, i): [number, number, number] => [2 * i, 0, 16 * i]);
+    expect(slow.at(-1)).toEqual([60, 0, 480]);
+    expect(interpret(gesture(...slow), context)).toBe("cancel");
+  });
+
+  it("cancels a slow release at 60 px with sparse samples", () => {
+    expect(interpret(gesture([0, 0, 0], [30, 0, 200], [60, 0, 400]), context)).toBe("cancel");
+  });
+
+  it("uses only the last 80 ms: a fast start followed by a slow finish cancels", () => {
+    // 0 to 50 px in 50 ms, then 50 to 60 px over the last 100 ms (0.1 px/ms).
+    expect(interpret(gesture([0, 0, 0], [50, 0, 50], [55, 0, 100], [60, 0, 150]), context)).toBe("cancel");
+  });
+
+  it("cancels a fast flick back towards the start", () => {
+    // Out to 80 px slowly, then flicked back to 50 px at 0.75 px/ms against dx.
+    expect(interpret(gesture([0, 0, 0], [80, 0, 400], [65, 0, 420], [50, 0, 440]), context)).toBe("cancel");
+  });
+});
+
+describe("interpret: identical timestamps", () => {
+  it("cancels two samples with the same timestamp below the fling distance, without dividing by zero", () => {
+    expect(interpret(gesture([0, 0, 0], [50, 0, 0]), context)).toBe("cancel");
+  });
+
+  it("commits two samples with the same timestamp at 100 px by distance", () => {
+    expect(interpret(gesture([0, 0, 0], [100, 0, 0]), context)).toBe("true");
+  });
+
+  it("cancels when every sample in the last 80 ms shares the release timestamp", () => {
+    expect(interpret(gesture([0, 0, 0], [50, 0, 200], [60, 0, 200]), context)).toBe("cancel");
+  });
+});
+
+describe("interpret: zig-zag gestures", () => {
+  it("commits a zig-zag that is released 95 px to the right", () => {
+    expect(
+      interpret(gesture([0, 0, 0], [40, 0, 20], [-40, 0, 40], [40, 0, 60], [-40, 0, 80], [95, 0, 100]), context),
+    ).toBe("true");
+  });
+
+  it("cancels a fast zig-zag released near the start", () => {
+    expect(
+      interpret(gesture([0, 0, 0], [60, 0, 20], [-60, 0, 40], [60, 0, 60], [-60, 0, 80], [10, 0, 100]), context),
+    ).toBe("cancel");
+  });
+
+  it("cancels a zig-zag released at 50 px while moving back towards the start", () => {
+    expect(interpret(gesture([0, 0, 0], [100, 0, 100], [20, 0, 200], [90, 0, 300], [50, 0, 340]), context)).toBe(
+      "cancel",
+    );
+  });
+
+  it("commits a zig-zag released at 50 px while moving fast away from the start", () => {
+    expect(interpret(gesture([0, 0, 0], [100, 0, 100], [-20, 0, 200], [10, 0, 300], [50, 0, 340]), context)).toBe(
+      "true",
+    );
+  });
+});
