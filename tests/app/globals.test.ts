@@ -31,6 +31,12 @@ describe("app/globals.css", () => {
     expect(root).toContain("color-scheme: light dark;");
   });
 
+  it("draws the browser's own parts in the theme the player chose, when there is a choice", () => {
+    const rule = (selector: string) => new RegExp(`${selector.replace(/[[\]()]/g, "\\$&")} \\{\\s*color-scheme: (\\w+);\\s*\\}`).exec(css)?.[1];
+    expect(rule(":root[data-theme=light]")).toBe("light");
+    expect(rule(":root[data-theme=dark]")).toBe("dark");
+  });
+
   it("stops CSS movement when the player asks for reduced motion", () => {
     const block = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
     expect(block).toContain("animation: none !important;");
