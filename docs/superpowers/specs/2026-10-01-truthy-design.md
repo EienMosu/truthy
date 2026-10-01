@@ -24,7 +24,7 @@ Truthy is a mobile-first web game. The player picks what to study by filling in 
 | Decks | Static JSON built from the repository, no API key, no runtime server | approved recommendation |
 | Repository | One repository, public | user |
 | Accidental swipes | Prevention rules only in v1. A "Mis-swiped?" flag is reconsidered after the first play test | user |
-| Leaving a round | One confirmation; the round sets no record; card history is kept | approved recommendation |
+| Leaving a round | One confirmation once a card has been answered; the round sets no record; card history is kept | approved recommendation |
 | Timed mode and hidden tab | The clock pauses while the page is hidden | approved recommendation |
 | Timed mode, card on screen at time up | Not counted, not recorded as wrong | approved recommendation |
 | three.js | Only as an optional web-only signature moment, after the core ships | approved recommendation |
@@ -161,7 +161,7 @@ Card ids are stable for the life of a card. Pipeline-only fields (misconception,
 
 ### Loading
 
-The app fetches `index.json` on start and a deck file when the player picks that deck. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A failed fetch with a cached copy uses the copy; a failed fetch without one shows a plain message with a retry action on the step where the deck was chosen.
+The app fetches `index.json` on start and a deck file when a round on that deck starts. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A fetch that fails or does not answer within a few seconds falls back to the cached copy; without one, the screen that needed the data shows a plain message with a retry action.
 
 ## 6. Game engine
 
@@ -208,7 +208,7 @@ Every mode ends on a result screen with the mode's score, the comparison with th
 
 ### Leaving a round
 
-The close control asks for one confirmation. A round that is left sets no record. Answers already given stay in the card history.
+The close control asks for one confirmation once at least one card has been answered; before the first answer it leaves at once, because there is nothing to lose. A round that is left sets no record. Answers already given stay in the card history, also when the player leaves with the browser or system back gesture. A reload in the middle of a round starts a new round; answers given before the reload are not kept.
 
 ## 7. Progress
 
@@ -216,7 +216,7 @@ Stored on the device under one versioned key.
 
 - Per card: times seen, whether the last answer was correct, when it was last seen.
 - Per route and mode: the record. A route is a deck id plus a section id or "whole deck".
-- The last route and mode played, for the "Continue" line on the start screen.
+- The last route and mode played, with the score of that round when it was finished, for the "Continue" line on the start screen.
 
 Deck "seen" percentage is the share of the deck's current cards that have been seen at least once. When a deck file changes, history is kept by card id and entries for cards that no longer exist are removed. If storage is unavailable or corrupt, the game still runs with empty progress and does not crash.
 
@@ -258,7 +258,7 @@ Overpass and Overpass Mono (SIL OFL), static weights, loaded with `next/font` so
 
 ### Screens
 
-1. **Start**, the fill-in pass: step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. Options without content are shown as not available and cannot be chosen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
+1. **Start**, the fill-in pass: step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. An area or platform without decks, and a class that is not built yet, are shown as not available and cannot be chosen. A deck whose review is not finished is not listed. Option presses are ignored for 250 ms after a step appears, so a double tap cannot choose an option the player has not seen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
 2. **Play**: the flight-path header in the variant of the mode, the boarding pass card with the statement, the stub with the swipe hint, the True and False buttons; then the answer state, or the stamp in Timed. A card with a non-empty `appliesTo` shows it as one small line above the statement. The source link opens in a new tab.
 3. **Result**: as described in section 6.
 
