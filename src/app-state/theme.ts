@@ -88,10 +88,17 @@ export function visibleTheme(doc: Document, matchMedia: MatchMedia | undefined):
   return resolveTheme(chosenTheme(doc), systemPrefersDark(matchMedia));
 }
 
-/** Puts a choice on the page: the attribute on <html>, and the chosen theme's colour on both theme-color tags. */
+/**
+ * Puts a choice on the page: the attribute on <html>, and the chosen theme's colour in the browser bar.
+ * The two theme-color tags of app/layout.tsx keep their content, because React finds the tags it rendered
+ * by their content when it hydrates and adds a copy of a tag whose content has changed. Instead the tag
+ * with the chosen theme's colour applies everywhere (media "all") and the other one nowhere ("not all").
+ */
 export function applyTheme(doc: Document, theme: Theme): void {
   doc.documentElement.setAttribute(ATTRIBUTE, theme);
-  for (const meta of doc.querySelectorAll(THEME_COLOR_METAS)) meta.setAttribute("content", THEME_COLOR[theme]);
+  for (const meta of doc.querySelectorAll(THEME_COLOR_METAS)) {
+    meta.setAttribute("media", meta.getAttribute("content") === THEME_COLOR[theme] ? "all" : "not all");
+  }
 }
 
 /**
@@ -119,8 +126,8 @@ export function subscribeTheme(doc: Document, matchMedia: MatchMedia | undefined
 
 /**
  * The inline script app/layout.tsx puts in <head>: it applies a stored choice as the page is parsed, before
- * the first paint, the same way applyTheme does. The theme-color tags may come after it in <head>, so it
- * colours them again once the document is parsed. Wrapped in try/catch: blocked storage leaves the page
+ * the first paint, the same way applyTheme does. Should the theme-color tags come after it in <head>, it
+ * sets them again once the document is parsed. Wrapped in try/catch: blocked storage leaves the page
  * to the system setting.
  */
 export function themeScript(): string {
@@ -130,7 +137,7 @@ export function themeScript(): string {
   return (
     `(function(){try{var t=localStorage.getItem(${key});if(t!=="light"&&t!=="dark")return;` +
     `var d=document,c=${colors}[t];d.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},t);` +
-    `var m=function(){var l=d.querySelectorAll(${metas});for(var i=0;i<l.length;i++)l[i].setAttribute("content",c)};` +
+    `var m=function(){var l=d.querySelectorAll(${metas});for(var i=0;i<l.length;i++)l[i].setAttribute("media",l[i].getAttribute("content")===c?"all":"not all")};` +
     `m();if(d.readyState==="loading")d.addEventListener("DOMContentLoaded",m)}catch(e){}})()`
   );
 }

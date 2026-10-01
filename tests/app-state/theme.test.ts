@@ -57,15 +57,45 @@ function fakeMedia(dark: boolean) {
 function addThemeColorMetas() {
   for (const scheme of ["light", "dark"] as const) {
     const meta = document.createElement("meta");
-    meta.name = "theme-color";
-    meta.media = `(prefers-color-scheme: ${scheme})`;
-    meta.content = THEME_COLOR[scheme];
+    meta.setAttribute("name", "theme-color");
+    meta.setAttribute("media", `(prefers-color-scheme: ${scheme})`);
+    meta.setAttribute("content", THEME_COLOR[scheme]);
     document.head.append(meta);
   }
 }
 
-function metaColors(): string[] {
-  return [...document.querySelectorAll('meta[name="theme-color"]')].map((meta) => meta.getAttribute("content") ?? "");
+function metas(): HTMLMetaElement[] {
+  return [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')];
+}
+
+/** The colour the browser bar takes: that of the first theme-color tag, in document order, whose media matches. */
+function barColor(systemDark: boolean): string | undefined {
+  const matches = (media: string): boolean => {
+    if (media === "" || media === "all") return true;
+    if (media === "not all") return false;
+    if (media === "(prefers-color-scheme: dark)") return systemDark;
+    if (media === "(prefers-color-scheme: light)") return !systemDark;
+    throw new Error(`unexpected media ${media}`);
+  };
+  return metas().find((meta) => matches(meta.getAttribute("media") ?? ""))?.getAttribute("content") ?? undefined;
+}
+
+/**
+ * The bar shows the chosen theme's top sky colour whatever the system setting. The tags keep their
+ * content: React finds the tags it rendered by their content when it hydrates (it would add a copy of
+ * a tag whose content changed), so the choice moves their media instead.
+ */
+function expectBar(theme: "light" | "dark") {
+  expect(barColor(false)).toBe(THEME_COLOR[theme]);
+  expect(barColor(true)).toBe(THEME_COLOR[theme]);
+  expect(metas().map((meta) => meta.getAttribute("content"))).toEqual([THEME_COLOR.light, THEME_COLOR.dark]);
+}
+
+function expectBarFollowsSystem() {
+  expect(metas().map((meta) => [meta.getAttribute("content"), meta.getAttribute("media")])).toEqual([
+    [THEME_COLOR.light, "(prefers-color-scheme: light)"],
+    [THEME_COLOR.dark, "(prefers-color-scheme: dark)"],
+  ]);
 }
 
 afterEach(() => {
@@ -155,14 +185,14 @@ describe("the theme on the page", () => {
     expect(visibleTheme(document, fakeMedia(true).matchMedia)).toBe("light");
   });
 
-  it("applies a choice: the attribute on <html> and both browser bar colours", () => {
+  it("applies a choice: the attribute on <html>, and the browser bar in the chosen theme's colour", () => {
     addThemeColorMetas();
     applyTheme(document, "dark");
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    expect(metaColors()).toEqual([THEME_COLOR.dark, THEME_COLOR.dark]);
+    expectBar("dark");
     applyTheme(document, "light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-    expect(metaColors()).toEqual([THEME_COLOR.light, THEME_COLOR.light]);
+    expectBar("light");
   });
 });
 
@@ -173,7 +203,7 @@ describe("switchTheme", () => {
     expect(switchTheme(document, storage, fakeMedia(false).matchMedia)).toBe("dark");
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
     expect(storage.data.get("truthy.theme")).toBe("dark");
-    expect(metaColors()).toEqual([THEME_COLOR.dark, THEME_COLOR.dark]);
+    expectBar("dark");
     expect(switchTheme(document, storage, fakeMedia(false).matchMedia)).toBe("light");
     expect(storage.data.get("truthy.theme")).toBe("light");
   });
@@ -222,21 +252,21 @@ describe("themeScript, the inline script in <head>", () => {
     new Function(themeScript())();
   }
 
-  it("applies a stored choice before the page paints: the attribute and both browser bar colours", () => {
+  it("applies a stored choice before the page paints: the attribute and the browser bar colour", () => {
     addThemeColorMetas();
     run(memoryStorage({ "truthy.theme": "dark" }));
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    expect(metaColors()).toEqual([THEME_COLOR.dark, THEME_COLOR.dark]);
+    expectBar("dark");
   });
 
-  it("colours theme-color tags that come after the script once the document has been parsed", () => {
+  it("sets theme-color tags that come after the script once the document has been parsed", () => {
     Object.defineProperty(document, "readyState", { configurable: true, get: () => "loading" });
     try {
       run(memoryStorage({ "truthy.theme": "light" }));
       expect(document.documentElement.getAttribute("data-theme")).toBe("light");
       addThemeColorMetas();
       document.dispatchEvent(new Event("DOMContentLoaded"));
-      expect(metaColors()).toEqual([THEME_COLOR.light, THEME_COLOR.light]);
+      expectBar("light");
     } finally {
       delete (document as { readyState?: unknown }).readyState;
     }
@@ -248,7 +278,7 @@ describe("themeScript, the inline script in <head>", () => {
     for (const stored of cases) {
       run(memoryStorage(stored));
       expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
-      expect(metaColors()).toEqual([THEME_COLOR.light, THEME_COLOR.dark]);
+      expectBarFollowsSystem();
     }
   });
 
