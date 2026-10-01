@@ -342,3 +342,15 @@ describe("summarise", () => {
     expect(() => summarise(state)).not.toThrow();
   });
 });
+
+describe("round: review focus", () => {
+  it("plays a pool that lists a card twice as a round of its distinct cards, each answered once", () => {
+    const twice = [...pool(6), ...pool(6)];
+    let state = start({ pool: twice });
+    expect(state.cards).toHaveLength(6);
+    for (let i = 0; i < 6; i++) state = play(state, answerRight(state));
+    expect(state.phase).toBe("finished");
+    expect(new Set(state.answers.map((a) => a.card.id)).size).toBe(6);
+    expect(summarise(state)).toMatchObject({ score: 6, total: 6 });
+  });
+});
