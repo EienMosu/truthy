@@ -25,6 +25,9 @@ async function start(setup: Harness = harness()) {
   h = setup;
   const view = render(<PlayScreen services={h.services} />);
   await screen.findByRole("button", { name: "True" });
+  // findByRole can resolve before React has run the effects of that render (the keydown listener and the
+  // card's settle time start there). On a slow machine a key pressed right away then reached no listener.
+  await act(async () => {});
   h.advance(1000); // past the 250 ms settle time of the first card
   return view;
 }
@@ -58,6 +61,7 @@ async function answerAndNext(value: boolean) {
   fireEvent.click(screen.getByRole("button", { name: value ? "True" : "False" }));
   await pressNext();
   await screen.findByRole("button", { name: "True" });
+  await act(async () => {});
   h.advance(1000);
 }
 
@@ -143,6 +147,7 @@ describe("PlayScreen: answering", () => {
     expect(status()).toBe(`${right ? "Not quite" : "Correct"}. The answer is ${right ? "True" : "False"}.`);
     await pressNext();
     await screen.findByRole("button", { name: "True" });
+    await act(async () => {});
     h.advance(1000);
     const second = currentAnswer();
     fireEvent.keyDown(window, { key: "ArrowRight" });
