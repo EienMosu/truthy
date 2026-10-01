@@ -1,16 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  bestFor,
-  continueTarget,
-  deckCount,
-  decksLabel,
-  findRoute,
-  seenPercent,
-  useCatalog,
-} from "@/components/start/useCatalog";
+import { bestFor, continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "@/components/start/useCatalog";
 import { INDEX_CACHE_KEY } from "@/src/content/load";
+import { findRoute } from "@/src/content/schema";
 import { emptyProgress, type Progress } from "@/src/progress/progress";
 import { INDEX, harness, memoryStorage, storedProgress } from "./fixtures";
 

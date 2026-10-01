@@ -3,11 +3,12 @@
 // useReducer(reduce). Everything that touches the network, storage, the clock or randomness comes in
 // through PlayServices, so the play screen runs in tests without a browser.
 import { useCallback, useEffect, useReducer, useState } from "react";
-import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexDeck, type Route } from "@/src/content/schema";
+import { WHOLE_DECK, deckPassName, findRoute, type Route, type RouteInIndex } from "@/src/content/schema";
 import { createDeckCache, loadDeck, loadIndex, poolFor } from "@/src/content/load";
 import { modeInfo } from "@/src/app-state/modes";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
 import { browserAppServices, browserBackToStart, type AppServices } from "@/src/app-state/services";
+import type { Mode } from "@/src/content/play";
 import { reduce, startRound, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { pruneDeck } from "@/src/progress/progress";
 import { createLocalStore, type ProgressStore } from "@/src/progress/local";
@@ -62,29 +63,15 @@ export interface UseRoundResult {
 
 export const LOAD_FAILED_MESSAGE = "This deck didn't load. Check your connection and try again.";
 
-interface Located {
-  deck: IndexDeck;
-  ticket: TicketInfo;
-}
-
-// Finds the route in the index. Null when the deck or the section no longer exists.
-export function locateRoute(index: DeckIndex, pending: PendingRound): Located | null {
-  const { deckId, sectionId } = pending.route;
-  for (const area of index.areas) {
-    for (const platform of area.platforms) {
-      const deck = platform.decks.find((candidate) => candidate.id === deckId);
-      if (!deck) continue;
-      const deckName = deckPassName(platform, deck);
-      const modeLabel = modeInfo(pending.mode).name;
-      if (sectionId === WHOLE_DECK) {
-        return { deck, ticket: { deckCode: deck.code, deckName, sectionCode: WHOLE_DECK, sectionName: "Whole deck", modeLabel } };
-      }
-      const section = deck.sections.find((candidate) => candidate.id === sectionId);
-      if (!section) return null;
-      return { deck, ticket: { deckCode: deck.code, deckName, sectionCode: section.id, sectionName: section.title, modeLabel } };
-    }
-  }
-  return null;
+/** What the ticket shows about a route that was found in the index, for the mode played. */
+export function ticketFor(found: RouteInIndex, mode: Mode): TicketInfo {
+  return {
+    deckCode: found.deck.code,
+    deckName: deckPassName(found.platform, found.deck),
+    sectionCode: found.section?.id ?? WHOLE_DECK,
+    sectionName: found.section?.title ?? "Whole deck",
+    modeLabel: modeInfo(mode).name,
+  };
 }
 
 // Loads everything a round needs and deals it. Null means "this route cannot be played any more": go home.
@@ -92,9 +79,9 @@ export function locateRoute(index: DeckIndex, pending: PendingRound): Located | 
 export async function prepareRound(pending: PendingRound, services: PlayServices): Promise<{ round: RoundState; ticket: TicketInfo } | null> {
   const local = services.localStorage();
   const index = await loadIndex(services.fetcher, local);
-  const located = locateRoute(index, pending);
-  if (located === null) return null;
-  const deck = await loadDeck(located.deck, createDeckCache(local), services.fetcher);
+  const found = findRoute(index, pending.route);
+  if (found === null) return null;
+  const deck = await loadDeck(found.deck, createDeckCache(local), services.fetcher);
 
   const store = createLocalStore(local);
   const progress = pruneDeck(
@@ -108,7 +95,7 @@ export async function prepareRound(pending: PendingRound, services: PlayServices
   if (pool.length === 0) return null;
   const route: Route = { deckId: pending.route.deckId, sectionId: pending.route.sectionId };
   const round = startRound({ mode: pending.mode, route, pool, history: progress.cards, seed: services.randomSeed() });
-  return { round, ticket: located.ticket };
+  return { round, ticket: ticketFor(found, pending.mode) };
 }
 
 type Action = RoundEvent | { type: "start"; round: RoundState } | { type: "clear" };

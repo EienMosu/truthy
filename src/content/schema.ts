@@ -137,3 +137,25 @@ export function deckPassName(platform: { title: string }, deck: { title: string;
 export function routeKey(route: Route): string {
   return `${route.deckId}/${route.sectionId}`;
 }
+
+/** Everything the index says about one route. `section` is null for the whole deck. */
+export interface RouteInIndex {
+  area: IndexArea;
+  platform: IndexPlatform;
+  deck: IndexDeck;
+  section: IndexDeck["sections"][number] | null;
+}
+
+/** Finds a route in the index, or null when its deck or section is gone. */
+export function findRoute(index: DeckIndex, route: Route): RouteInIndex | null {
+  for (const area of index.areas) {
+    for (const platform of area.platforms) {
+      const deck = platform.decks.find((candidate) => candidate.id === route.deckId);
+      if (!deck) continue;
+      if (route.sectionId === WHOLE_DECK) return { area, platform, deck, section: null };
+      const section = deck.sections.find((candidate) => candidate.id === route.sectionId);
+      return section ? { area, platform, deck, section } : null;
+    }
+  }
+  return null;
+}

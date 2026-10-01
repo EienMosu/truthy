@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppServices } from "@/src/app-state/services";
 import { isOffered } from "@/src/app-state/modes";
 import { loadIndex } from "@/src/content/load";
-import { WHOLE_DECK, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform, type Route } from "@/src/content/schema";
+import { findRoute, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform, type RouteInIndex, type Route } from "@/src/content/schema";
 import type { Mode } from "@/src/content/play";
 import { createLocalStore } from "@/src/progress/local";
 import { recordKey, type Progress } from "@/src/progress/progress";
@@ -78,28 +78,6 @@ export function seenPercent(progress: Progress, deck: Pick<IndexDeck, "id" | "ca
 export function bestFor(progress: Progress, route: Route, mode: Mode): number | null {
   const key = recordKey(route, mode);
   return Object.hasOwn(progress.records, key) ? (progress.records[key] ?? null) : null;
-}
-
-/** Everything the index says about one route. `section` is null for the whole deck. */
-export interface RouteInIndex {
-  area: IndexArea;
-  platform: IndexPlatform;
-  deck: IndexDeck;
-  section: IndexDeck["sections"][number] | null;
-}
-
-/** Finds a route in the index, or null when its deck or section is gone. */
-export function findRoute(index: DeckIndex, route: Route): RouteInIndex | null {
-  for (const area of index.areas) {
-    for (const platform of area.platforms) {
-      const deck = platform.decks.find((candidate) => candidate.id === route.deckId);
-      if (!deck) continue;
-      if (route.sectionId === WHOLE_DECK) return { area, platform, deck, section: null };
-      const section = deck.sections.find((candidate) => candidate.id === route.sectionId);
-      return section ? { area, platform, deck, section } : null;
-    }
-  }
-  return null;
 }
 
 /** Where "Continue" leads: the last route and mode, when both can still be played. */
