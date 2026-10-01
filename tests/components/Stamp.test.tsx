@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { Stamp } from "@/components/Stamp";
+import { Stamp, StubStamp, type StubStampKind } from "@/components/Stamp";
 
 afterEach(cleanup);
 
@@ -56,5 +56,40 @@ describe("Stamp", () => {
     expect(stamp.querySelector(".sr-only")?.textContent).toBe("Correct. ");
     expect(stamp.querySelector("svg")?.getAttribute("width")).toBe("20");
     expect(stamp.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("StubStamp", () => {
+  it.each<[StubStampKind, string, string]>([
+    ["correct", "Correct", "text-(--color-correct)"],
+    ["wrong", "Not quite", "text-(--color-wrong)"],
+    ["time-up", "Time is up", "text-(--color-ink)"],
+  ])("StubStamp says Correct, Not quite or Time is up with its icon, at 28 px on raised paper (%s)", (kind, text, colour) => {
+    const { container } = render(<StubStamp kind={kind} />);
+    const stamp = container.querySelector<HTMLElement>(`[data-stub-stamp="${kind}"]`);
+    expect(stamp?.textContent).toBe(text);
+    expect(stamp?.className).toContain(colour);
+    expect(stamp?.className).toContain("text-[28px]");
+    expect(stamp?.className).toContain("bg-(--color-surface-raised)");
+    expect(stamp?.className).toContain("border-double");
+    expect(stamp?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("lands from 1.9 and -14 degrees, invisible", () => {
+    const { container } = render(<StubStamp kind="correct" />);
+    const stamp = container.querySelector<HTMLElement>("[data-stub-stamp]");
+    expect(stamp?.style.opacity).toBe("0");
+    expect(stamp?.style.transform).toContain("scale(1.9)");
+    expect(stamp?.style.transform).toContain("rotate(-14deg)");
+  });
+
+  it("uses the check at 24, the X at 20 and the clock at its own size", () => {
+    const width = (kind: StubStampKind) => {
+      const { container } = render(<StubStamp kind={kind} />);
+      const value = container.querySelector("svg")?.getAttribute("width");
+      cleanup();
+      return value;
+    };
+    expect([width("correct"), width("wrong"), width("time-up")]).toEqual(["24", "20", "22"]);
   });
 });

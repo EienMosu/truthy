@@ -33,6 +33,8 @@ export interface BoardingPassProps {
   lower: ReactNode;
   /** True when the main part should give its small jolt (the stamp landing). Ignored with reduced motion. */
   jolt?: boolean;
+  /** When the jolt starts, in seconds: as the stamp lands. 0.42 for the slip stamp (default), 0.12 and 0.24 in Timed. */
+  joltDelay?: number;
   className?: string;
 }
 
@@ -54,7 +56,7 @@ const PERFORATION: CSSProperties = {
 
 const JOLT: Variants = {
   rest: { y: 0 },
-  jolt: { y: [0, 2, 0], transition: { duration: 0.26, delay: 0.42, times: [0, 0.4, 1], ease: EASE } },
+  jolt: (delay: number | undefined) => ({ y: [0, 2, 0], transition: { duration: 0.26, delay: delay ?? 0.42, times: [0, 0.4, 1], ease: EASE } }),
 };
 
 const FIELD_LABEL =
@@ -70,7 +72,7 @@ const LEG_NAME =
   "mt-(--space-6) block font-(family-name:--type-leg-name-family) text-(length:--type-leg-name-size) " +
   "font-(--type-leg-name-weight) leading-(--type-leg-name-line-height) tracking-(--type-leg-name-letter-spacing) text-(--color-ink-muted)";
 
-export function BoardingPass({ from, to, fields, children, lower, jolt = false, className }: BoardingPassProps) {
+export function BoardingPass({ from, to, fields, children, lower, jolt = false, joltDelay = 0.42, className }: BoardingPassProps) {
   const reduced = useReducedMotion() ?? false;
   return (
     <div data-boarding-pass="" className={["relative text-(--color-ink)", className].filter(Boolean).join(" ")}>
@@ -79,6 +81,7 @@ export function BoardingPass({ from, to, fields, children, lower, jolt = false, 
         className="relative overflow-hidden rounded-t-(--radius-card)"
         style={MAIN_PAPER}
         variants={JOLT}
+        custom={joltDelay}
         initial={false}
         animate={jolt && !reduced ? "jolt" : "rest"}
       >
@@ -129,8 +132,9 @@ export function BoardingPass({ from, to, fields, children, lower, jolt = false, 
   );
 }
 
-/** The value of the Gate field: "F ← → T", read as "False left, True right". */
-export function GateValue() {
+/** The value of the Gate field: "F ← → T", read as "False left, True right"; "Closed" once the Timed clock is up. */
+export function GateValue({ closed = false }: { closed?: boolean }) {
+  if (closed) return <span className="text-(--color-ink-muted)">Closed</span>;
   return (
     <>
       <span aria-hidden="true" className="whitespace-nowrap">F ← → T</span>
@@ -147,16 +151,22 @@ export interface PassStatementProps {
   /** The statement receives focus when a new card is shown (no visible ring, on purpose). */
   ref?: Ref<HTMLDivElement>;
   id?: string;
+  /** The statement in the muted ink: a card that no longer counts (Timed, time up). */
+  muted?: boolean;
+  /** Announce the statement when it changes (aria-live="polite"): Timed, where focus stays on the pill. */
+  live?: boolean;
 }
 
 /** The statement area of the game: at least 188 tall, the text centred vertically. */
-export function PassStatement({ children, appliesTo, ref, id }: PassStatementProps) {
+export function PassStatement({ children, appliesTo, ref, id, muted = false, live = false }: PassStatementProps) {
   return (
     <div
       ref={ref}
       id={id}
       tabIndex={-1}
       data-statement=""
+      data-muted={muted ? "" : undefined}
+      aria-live={live ? "polite" : undefined}
       className="flex min-h-(--size-statement-min) flex-col justify-center px-(--size-ticket-inset) pt-(--space-18) pb-(--space-24) outline-none"
     >
       {appliesTo ? (
@@ -164,7 +174,7 @@ export function PassStatement({ children, appliesTo, ref, id }: PassStatementPro
           Applies to {appliesTo}
         </p>
       ) : null}
-      <p className="m-0 font-(family-name:--type-card-statement-family) text-(length:--type-card-statement-size) leading-(--type-card-statement-line-height) font-(--type-card-statement-weight) tracking-(--type-card-statement-letter-spacing) text-(--color-ink)">
+      <p className={`m-0 font-(family-name:--type-card-statement-family) text-(length:--type-card-statement-size) leading-(--type-card-statement-line-height) font-(--type-card-statement-weight) tracking-(--type-card-statement-letter-spacing) ${muted ? "text-(--color-ink-muted)" : "text-(--color-ink)"}`}>
         {children}
       </p>
     </div>
@@ -298,6 +308,10 @@ export interface PassStubProps {
   cardLabel: string;
   /** The data the barcode is drawn from (the card id). */
   barcode: string;
+  /** A stamp drawn on the stub, centred 96 px from its top (Timed: the verdict, Time is up). */
+  stamp?: ReactNode;
+  /** One centred line in place of "← False / swipe to board / True →"; the intent stamps are left out with it. */
+  hint?: string;
   className?: string;
 }
 
@@ -306,7 +320,7 @@ export interface PassStubProps {
  * while the card is dragged. Decorative (the buttons say the same), so it is hidden from screen readers.
  * Render it as a direct child of AnimatePresence with custom={TearSide}: it tears off when it leaves.
  */
-export function PassStub({ routeLine, cardLabel, barcode, className }: PassStubProps) {
+export function PassStub({ routeLine, cardLabel, barcode, stamp, hint, className }: PassStubProps) {
   const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
@@ -331,30 +345,48 @@ export function PassStub({ routeLine, cardLabel, barcode, className }: PassStubP
             <b className={`text-(--color-ink) ${MONO_STRONG}`}>{cardLabel}</b>
           </div>
           <Barcode data={barcode} />
-          <div className={`flex min-h-8 items-center justify-between gap-(--space-8) ${MONO_STRONG}`}>
-            <span className="flex items-center gap-(--space-4) text-(--color-false)">← False</span>
-            <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">swipe to board</span>
-            <span className="flex items-center gap-(--space-4) text-(--color-true)">True →</span>
-          </div>
+          {hint === undefined ? (
+            <div className={`flex min-h-8 items-center justify-between gap-(--space-8) ${MONO_STRONG}`}>
+              <span className="flex items-center gap-(--space-4) text-(--color-false)">← False</span>
+              <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">swipe to board</span>
+              <span className="flex items-center gap-(--space-4) text-(--color-true)">True →</span>
+            </div>
+          ) : (
+            <div data-hint="" className={`flex min-h-8 items-center justify-center text-center ${MONO_STRONG}`}>
+              <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">{hint}</span>
+            </div>
+          )}
         </PassLower>
-        <div
-          data-intent="true"
-          className={`${INTENT_STAMP} left-(--space-16) rotate-[-7deg] text-(--color-true)`}
-          style={{ opacity: "calc(var(--intent, 0) * var(--gesture-intent-opacity-gain))" }}
-        >
-          <CheckIcon size={18} />
-          True
-        </div>
-        <div
-          data-intent="false"
-          className={`${INTENT_STAMP} right-(--space-16) rotate-[7deg] text-(--color-false)`}
-          style={{ opacity: "calc(var(--intent, 0) * -1 * var(--gesture-intent-opacity-gain))" }}
-        >
-          <CrossIcon size={16} />
-          False
-        </div>
+        {stamp === undefined ? null : (
+          <div className="pointer-events-none absolute top-[96px] left-1/2 -translate-x-1/2 -translate-y-1/2">{stamp}</div>
+        )}
+        {hint === undefined ? <IntentStamps /> : null}
       </div>
     </motion.div>
+  );
+}
+
+/** The True and False stamps that fade in while the card is dragged, driven by --intent. */
+function IntentStamps() {
+  return (
+    <>
+      <div
+        data-intent="true"
+        className={`${INTENT_STAMP} left-(--space-16) rotate-[-7deg] text-(--color-true)`}
+        style={{ opacity: "calc(var(--intent, 0) * var(--gesture-intent-opacity-gain))" }}
+      >
+        <CheckIcon size={18} />
+        True
+      </div>
+      <div
+        data-intent="false"
+        className={`${INTENT_STAMP} right-(--space-16) rotate-[7deg] text-(--color-false)`}
+        style={{ opacity: "calc(var(--intent, 0) * -1 * var(--gesture-intent-opacity-gain))" }}
+      >
+        <CrossIcon size={16} />
+        False
+      </div>
+    </>
   );
 }
 

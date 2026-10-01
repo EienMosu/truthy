@@ -23,7 +23,7 @@ const BASE =
   "transition-[translate,scale,box-shadow] duration-(--duration-t1) ease-(--easing-ease) " +
   "active:translate-y-(--space-2) active:scale-[0.98] active:shadow-(--elevation-press) " +
   "disabled:cursor-default disabled:opacity-(--opacity-disabled) disabled:shadow-none " +
-  "aria-disabled:pointer-events-none aria-disabled:cursor-default aria-disabled:opacity-(--opacity-disabled) aria-disabled:shadow-none";
+  "aria-disabled:pointer-events-none aria-disabled:opacity-(--opacity-disabled) aria-disabled:shadow-none";
 
 const TONES: Record<PillTone, string> = {
   ink: "bg-(--color-ink)",
@@ -38,10 +38,23 @@ export function PillButton({
   tone = "ink",
   className,
   type = "button",
+  onClick,
   ...rest
 }: PillButtonProps) {
+  // aria-disabled keeps the pill focusable (it does not lose focus mid-round) but it takes no presses: the
+  // pointer cannot reach it (pointer-events) and Enter or Space do nothing either.
+  const disabled = rest["aria-disabled"] === true || rest["aria-disabled"] === "true";
   return (
-    <button {...rest} type={type} data-tone={tone} className={[BASE, TONES[tone], className].filter(Boolean).join(" ")}>
+    <button
+      {...rest}
+      onClick={(event) => {
+        if (disabled) return;
+        onClick?.(event);
+      }}
+      type={type}
+      data-tone={tone}
+      className={[BASE, TONES[tone], className].filter(Boolean).join(" ")}
+    >
       {leadingIcon === undefined ? null : (
         <span aria-hidden="true" className="flex flex-none">
           {leadingIcon}

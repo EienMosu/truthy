@@ -88,6 +88,36 @@ describe("PassStatement", () => {
     expect(container.querySelectorAll("[data-statement] p")).toHaveLength(1);
     expect(screen.queryByText(/Applies to/)).toBeNull();
   });
+
+  it("PassStatement can be muted and live", () => {
+    const plain = render(<PassStatement>The cache is opt-in.</PassStatement>).container.querySelector<HTMLElement>("[data-statement]");
+    expect(plain?.hasAttribute("data-muted")).toBe(false);
+    expect(plain?.hasAttribute("aria-live")).toBe(false);
+    expect(plain?.querySelector("p")?.className).toContain("text-(--color-ink)");
+    cleanup();
+    const muted = render(<PassStatement muted>The cache is opt-in.</PassStatement>).container.querySelector<HTMLElement>("[data-statement]");
+    expect(muted?.getAttribute("data-muted")).toBe("");
+    expect(muted?.querySelector("p")?.className).toContain("text-(--color-ink-muted)");
+    cleanup();
+    const live = render(<PassStatement live>The cache is opt-in.</PassStatement>).container.querySelector<HTMLElement>("[data-statement]");
+    expect(live?.getAttribute("aria-live")).toBe("polite");
+    expect(live?.hasAttribute("data-muted")).toBe(false);
+  });
+});
+
+describe("GateValue", () => {
+  it("GateValue reads Closed when the gate is closed", () => {
+    const { container } = render(
+      <dd>
+        <GateValue closed />
+      </dd>,
+    );
+    const gate = container.querySelector("dd");
+    expect(gate?.textContent).toBe("Closed");
+    expect(gate?.querySelector(".sr-only")).toBeNull();
+    expect(gate?.querySelector("span")?.className).toContain("text-(--color-ink-muted)");
+    expect(gate?.querySelector('[aria-hidden="true"]')).toBeNull();
+  });
 });
 
 describe("PassSlip", () => {
@@ -166,6 +196,30 @@ describe("PassStub", () => {
     expect(falseStamp?.textContent).toBe("False");
     expect(trueStamp?.style.opacity).toContain("var(--intent, 0)");
     expect(falseStamp?.style.opacity).toContain("-1");
+  });
+
+  it("PassStub shows a stamp and one hint line in place of the swipe hint", () => {
+    const { container } = render(
+      <AnimatePresence>
+        <PassStub
+          routeLine="CLF → SEC · Timed"
+          cardLabel="Card 12"
+          barcode="aws-clf-c02-t2.1-06"
+          stamp={<span data-test-stamp="">Correct</span>}
+          hint="Next card coming up"
+        />
+      </AnimatePresence>,
+    );
+    const stub = container.querySelector("[data-stub]");
+    expect(stub?.textContent).toContain("Next card coming up");
+    expect(stub?.textContent).toContain("Card 12");
+    expect(stub?.textContent).not.toContain("swipe to board");
+    expect(stub?.textContent).not.toContain("← False");
+    expect(container.querySelector("[data-intent]")).toBeNull();
+    const stamp = container.querySelector("[data-test-stamp]");
+    expect(stamp).not.toBeNull();
+    expect(stamp?.parentElement?.className).toContain("top-[96px]");
+    expect(stamp?.parentElement?.className).toContain("left-1/2");
   });
 });
 

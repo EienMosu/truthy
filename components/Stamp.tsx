@@ -6,9 +6,11 @@
 // (an answer that passes the record) is the correct colour with a star; screen readers hear "Correct. New best".
 // When it lands it scales from 1.9 and turns from -14 to -6 degrees (420 ms spring, 380 ms delay);
 // with reduced motion it is simply shown at rest.
+// StubStamp is the Timed variant (design system 5.11, "Stub stamp"): the same stamp at 28 px on raised paper,
+// stamped onto the stub of the card; it also says Time is up when the clock reaches zero.
 import { motion, useReducedMotion } from "motion/react";
 import { SPRING_EASE, STAMP_LANDING, STAMP_REST } from "./easing";
-import { CheckIcon, CrossIcon, StarIcon } from "./icons";
+import { CheckIcon, ClockIcon, CrossIcon, StarIcon } from "./icons";
 
 export type Verdict = "correct" | "wrong" | "new-best";
 
@@ -48,6 +50,42 @@ export function Stamp({ verdict, animate = false, className }: StampProps) {
       ) : (
         "Not quite"
       )}
+    </motion.div>
+  );
+}
+
+export type StubStampKind = "correct" | "wrong" | "time-up";
+
+// The stamp role at the documented stub size, 28 px, on raised paper so the barcode under it does not show through.
+const STUB_BASE =
+  "inline-flex flex-none items-center gap-(--space-8) px-(--space-18) pt-(--space-8) pb-(--space-6) " +
+  "rounded-(--radius-small) border-(length:--stroke-stamp) border-double border-current bg-(--color-surface-raised) " +
+  "font-(family-name:--type-stamp-family) text-[28px] font-(--type-stamp-weight) " +
+  "leading-(--type-stamp-line-height) tracking-(--type-stamp-letter-spacing) whitespace-nowrap";
+
+const STUB_KINDS: Record<StubStampKind, { colour: string; word: string }> = {
+  correct: { colour: "text-(--color-correct)", word: "Correct" },
+  wrong: { colour: "text-(--color-wrong)", word: "Not quite" },
+  "time-up": { colour: "text-(--color-ink)", word: "Time is up" },
+};
+
+/**
+ * The stamp on the stub of a Timed card. It lands as it appears (300 ms spring from 1.9 and -14 degrees, at
+ * once for a verdict, 120 ms late for Time is up); with reduced motion it is shown at rest.
+ */
+export function StubStamp({ kind }: { kind: StubStampKind }) {
+  const reduced = useReducedMotion() ?? false;
+  const { colour, word } = STUB_KINDS[kind];
+  return (
+    <motion.div
+      data-stub-stamp={kind}
+      className={`${STUB_BASE} ${colour}`}
+      initial={reduced ? false : STAMP_LANDING}
+      animate={STAMP_REST}
+      transition={{ duration: 0.3, delay: kind === "time-up" ? 0.12 : 0, ease: SPRING_EASE }}
+    >
+      {kind === "correct" ? <CheckIcon size={24} /> : kind === "wrong" ? <CrossIcon size={20} /> : <ClockIcon />}
+      {word}
     </motion.div>
   );
 }

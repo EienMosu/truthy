@@ -73,6 +73,24 @@ describe("PillButton", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it("does not call onClick while aria-disabled, by pointer or keyboard", () => {
+    const onClick = vi.fn();
+    render(
+      <>
+        <PillButton aria-disabled onClick={onClick}>
+          True
+        </PillButton>
+        <PillButton aria-disabled="true" onClick={onClick}>
+          False
+        </PillButton>
+      </>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "True" }));
+    fireEvent.click(screen.getByRole("button", { name: "False" }));
+    expect(onClick).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "True" }).className).not.toContain("aria-disabled:cursor-default");
+  });
+
   it("forwards a ref so focus can move to it after an answer", () => {
     const ref = createRef<HTMLButtonElement>();
     render(<PillButton ref={ref}>Next card</PillButton>);

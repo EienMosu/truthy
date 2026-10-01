@@ -74,6 +74,7 @@ const PAIRS: readonly [string, string, Kind, string][] = [
   ["correct", "surface-sunk", "large text", "Correct stamp on the slip, 24px ExtraBold"],
   ["correct", "surface-raised", "large text", "New best stamp, 22px ExtraBold"],
   ["wrong", "surface-sunk", "large text", "Not quite stamp, 24px ExtraBold"],
+  ["wrong", "surface-raised", "large text", "Not quite stamp on the stub, 28px ExtraBold"],
   ["false", "surface-raised", "large text", "False intent stamp, 26px"],
   ["focus", "sky-1", "non-text", "focus ring on the sky"],
   ["focus", "sky-2", "non-text", "focus ring on the sky"],
