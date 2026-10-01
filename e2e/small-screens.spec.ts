@@ -2,13 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
+  SETTLE_MS,
   chooseRoute,
   deckAnswers,
   openHome,
+  playRound,
   startRound,
+  statementOnScreen,
   verdict,
   verdictFor,
   waitForCard,
+  wrongOn,
 } from "./helpers";
 
 test.use({ reducedMotion: "no-preference" });
@@ -56,6 +60,110 @@ test.describe("on a 320 by 568 screen", () => {
     await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
     await expectNoSidewaysScroll(page);
     await expect(page.getByRole("button", { name: "Play again" })).toBeVisible();
+  });
+});
+
+// The New best moment of the result (spec section 6) on a 320 px phone: the stamp and the "Previous best"
+// line stay inside the pass when the score has a unit and two digits. The rounds are handed to /play the way
+// the start flow does (the pending round in sessionStorage), with a record one below the score already stored.
+// Reduced motion shows the stamp at rest, where it is measured.
+test.describe("the New best of a result on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+
+  async function openRound(page: Page, mode: "classic" | "lives" | "timed", record: number): Promise<void> {
+    await page.addInitScript(
+      ({ mode, record }) => {
+        const route = { deckId: "aws-clf-c02", sectionId: "SEC" };
+        sessionStorage.setItem("truthy.pending.v1", JSON.stringify({ route, mode }));
+        if (localStorage.getItem("truthy.progress.v1") === null) {
+          const records = { [`${route.deckId}/${route.sectionId}#${mode}`]: record };
+          localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records, last: null }));
+        }
+      },
+      { mode, record },
+    );
+    await page.goto("/play");
+  }
+
+  // A card in Three lives: its statement is on screen and focused, the answer row is back and it has settled.
+  async function livesCard(page: Page, answers: Map<string, boolean>, n: number): Promise<boolean> {
+    const answered = n === 1 ? "No cards answered yet" : `${n - 1} ${n === 2 ? "card" : "cards"} answered`;
+    await expect(page.getByRole("img", { name: new RegExp(`^\\d of 3 lives left\\. ${answered}`) })).toBeVisible();
+    await expect(page.getByRole("button", { name: "True", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Next card" })).toHaveCount(0);
+    await expect(page.locator("[data-statement]")).toBeFocused();
+    await page.waitForTimeout(SETTLE_MS);
+    const truth = answers.get(await statementOnScreen(page));
+    if (truth === undefined) throw new Error(`Card ${n} is not in the deck file`);
+    return truth;
+  }
+
+  // A card in Timed: the first is read through focus, the later ones through the card announcer.
+  async function timedCard(page: Page, answers: Map<string, boolean>, n: number): Promise<boolean> {
+    let statement: string;
+    if (n === 1) {
+      await expect(page.locator("[data-statement]")).toBeFocused();
+      statement = await statementOnScreen(page);
+    } else {
+      const announcer = page.locator("[data-card-announcer]");
+      await expect(announcer).toHaveText(new RegExp(`^Card ${n}\\. `));
+      statement = ((await announcer.textContent()) ?? "").replace(/^Card \d+\. /, "").trim();
+    }
+    await page.waitForTimeout(SETTLE_MS);
+    const truth = answers.get(statement);
+    if (truth === undefined) throw new Error(`Card ${n} is not in the deck file: "${statement}"`);
+    return truth;
+  }
+
+  async function expectNewBestInsidePass(page: Page, score: string): Promise<void> {
+    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+    await expect(page.locator("[data-score]")).toHaveText(score);
+    const pass = await page.locator("[data-boarding-pass]").boundingBox();
+    if (pass === null) throw new Error("The pass is not on screen");
+    for (const element of [page.locator("[data-new-best]"), page.getByText(/^Previous best /)]) {
+      await expect(element).toBeVisible();
+      const box = await element.boundingBox();
+      if (box === null) throw new Error("A part of the New best is not on screen");
+      // Half a pixel for subpixel layout.
+      expect(box.x).toBeGreaterThanOrEqual(pass.x - 0.5);
+      expect(box.x + box.width).toBeLessThanOrEqual(pass.x + pass.width + 0.5);
+    }
+    await expectNoSidewaysScroll(page);
+  }
+
+  test("Classic 10 of 10 over a record of 9", async ({ page }) => {
+    await openRound(page, "classic", 9);
+    await playRound(page, CLF_ID, wrongOn());
+    await expectNewBestInsidePass(page, "10 of 10");
+  });
+
+  test("Three lives 21 cards over a record of 20", async ({ page }) => {
+    test.setTimeout(120_000);
+    await openRound(page, "lives", 20);
+    const answers = await deckAnswers(page, CLF_ID);
+    // Three lives counts every card of the round, the third wrong one included.
+    for (let n = 1; n <= 21; n += 1) {
+      const truth = await livesCard(page, answers, n);
+      const given = [6, 15, 21].includes(n) ? !truth : truth;
+      await page.getByRole("button", { name: given ? "True" : "False", exact: true }).click();
+      await expect(verdict(page)).toHaveText(verdictFor(given, truth));
+      await page.getByRole("button", { name: n === 21 ? "See results" : "Next card" }).click();
+    }
+    await expectNewBestInsidePass(page, "21 cards");
+  });
+
+  test("Timed 14 of 17 over a record of 13", async ({ page }) => {
+    // The round runs its whole minute in real time.
+    test.setTimeout(150_000);
+    await openRound(page, "timed", 13);
+    const answers = await deckAnswers(page, CLF_ID);
+    for (let n = 1; n <= 17; n += 1) {
+      const truth = await timedCard(page, answers, n);
+      const given = [4, 9, 15].includes(n) ? !truth : truth;
+      await page.getByRole("button", { name: given ? "True" : "False", exact: true }).click();
+    }
+    await page.getByRole("button", { name: "See results" }).click({ timeout: 70_000 });
+    await expectNewBestInsidePass(page, "14 of 17");
   });
 });
 
