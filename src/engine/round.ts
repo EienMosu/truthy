@@ -1,20 +1,15 @@
 // The round: a pure reducer over the dealt cards (spec section 6, "Shape" and "Modes").
 // Randomness comes only from the seed given to startRound; time comes in on the events.
 
+import type { Answered, History, Mode, RoundResult } from "@/src/content/play";
 import type { Card, Route } from "@/src/content/schema";
-import { deal, type History } from "./deal";
+import { deal } from "./deal";
 import { createRng } from "./rng";
 
-export type Mode = "classic" | "streak" | "lives" | "timed";
+export type { Answered, Mode, RoundResult } from "@/src/content/play";
 export const AVAILABLE_MODES: readonly Mode[] = ["classic"]; // step 1
 export const CLASSIC_LENGTH = 10;
 
-export interface Answered {
-  card: Card;
-  given: boolean;
-  correct: boolean;
-  at: number;
-}
 export type Phase = "question" | "answered" | "finished";
 
 export interface RoundState {
@@ -84,16 +79,6 @@ function moveOn(state: RoundState): RoundState {
   const nextIndex = state.index + 1;
   if (nextIndex >= state.cards.length) return { ...state, phase: "finished" };
   return { ...state, index: nextIndex, phase: "question" };
-}
-
-export interface RoundResult {
-  mode: Mode;
-  route: Route;
-  score: number; // classic: correct answers
-  total: number; // classic: cards answered (10 when finished)
-  answers: readonly Answered[];
-  missed: readonly Answered[]; // answers with correct === false, in order
-  abandoned: boolean;
 }
 
 export function summarise(state: RoundState): RoundResult {

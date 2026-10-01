@@ -4,8 +4,7 @@
 
 import { z } from "zod";
 import { routeKey, type Route } from "@/src/content/schema";
-import type { CardHistory, History } from "@/src/engine/deal";
-import type { Mode, RoundResult } from "@/src/engine/round";
+import { MODES, type CardHistory, type History, type Mode, type RoundResult } from "@/src/content/play";
 
 export interface Progress {
   version: 1;
@@ -92,8 +91,6 @@ export function seenShare(history: History, cardIds: readonly string[]): number 
 }
 
 // The stored shape. Unknown fields are dropped; any other difference makes the whole value invalid.
-const MODES = ["classic", "streak", "lives", "timed"] as const satisfies readonly Mode[];
-
 const CardHistorySchema = z.object({
   seen: z.number().int().nonnegative(),
   lastCorrect: z.boolean(),

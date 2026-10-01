@@ -1,15 +1,11 @@
 // Dealing: which cards a round gets, and in which order (spec section 6, "Dealing").
 // Pure: the only source of randomness is the rng passed in.
 
+import type { History } from "@/src/content/play";
 import type { Card } from "@/src/content/schema";
 import { shuffle, type Rng } from "./rng";
 
-export interface CardHistory {
-  seen: number;
-  lastCorrect: boolean;
-  lastSeenAt: number;
-}
-export type History = Readonly<Record<string, CardHistory>>; // by card id
+export type { CardHistory, History } from "@/src/content/play";
 
 export const DEAL = { missedPerTen: 3, minTrue: 4, maxTrue: 6, maxRun: 3 } as const;
 
