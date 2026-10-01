@@ -27,3 +27,11 @@ function clamp(value: number, min: number, max: number): number {
 export function intent(dx: number): number {
   return clamp(dx / INTENT_FULL_PX, -1, 1);
 }
+
+// A gesture may start only after the settle time and outside the edge zones.
+// "Within 24 px of the edge" means x < 24 or x > viewportWidth - 24.
+export function canStart(sample: SwipeSample, context: SwipeContext): boolean {
+  const settled = sample.t - context.cardShownAt >= SWIPE.settleMs;
+  const awayFromEdges = sample.x >= SWIPE.edgePx && sample.x <= context.viewportWidth - SWIPE.edgePx;
+  return settled && awayFromEdges;
+}
