@@ -449,3 +449,24 @@ describe("parseProgress", () => {
     expect(parseProgress(null)).toEqual(empty);
   });
 });
+
+describe("applyResult: review focus", () => {
+  it("counts a card answered twice in one round twice, keeping the later answer", () => {
+    const round = result([answered("c1", true, 100), answered("c2", true, 150), answered("c1", false, 200)]);
+    const { progress } = applyResult(emptyProgress(), round);
+    expect(progress.cards["c1"]).toEqual({ seen: 2, lastCorrect: false, lastSeenAt: 200 });
+  });
+
+  it("sets a first record of 0 for a finished round with no correct answers", () => {
+    const outcome = applyResult(emptyProgress(), scored(0));
+    expect(outcome.progress.records).toEqual({ "aws-clf-c02/SEC#classic": 0 });
+    expect(outcome.previousBest).toBeNull();
+    expect(outcome.isNewBest).toBe(true);
+  });
+
+  it("does not let a later 0 replace a record of 0", () => {
+    const outcome = applyResult(withRecord(SEC, 0), scored(0));
+    expect(outcome.previousBest).toBe(0);
+    expect(outcome.isNewBest).toBe(false);
+  });
+});
