@@ -73,3 +73,23 @@ export function browserStepHistory(): StepHistory | undefined {
     },
   };
 }
+
+// Whether the entry right behind /play is the start flow's first entry. The start flow sets it when it
+// opens /play after taking its step entries out of the history; it lasts as long as the page (a reload of
+// /play starts without it). Only the browser sets it.
+let startEntryBehind = false;
+
+/** The start flow has moved back to its first entry and is opening /play on top of it. */
+export function markStartEntryBehind(): void {
+  if (typeof window !== "undefined") startEntryBehind = true;
+}
+
+/**
+ * Leaves /play for the start with the browser's back, when the start flow's first entry is right behind
+ * it, so the history does not grow a second start entry. False when it is not (the caller then opens /).
+ */
+export function browserBackToStart(): boolean {
+  if (typeof window === "undefined" || !startEntryBehind) return false;
+  window.history.back();
+  return true;
+}

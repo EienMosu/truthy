@@ -78,7 +78,11 @@ export function verdictText(correct: boolean, answer: boolean): string {
 
 export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) {
   const router = useRouter();
-  const goHome = useCallback(() => router.replace("/"), [router]);
+  // Home is the start at step 1. When the start flow's first entry is right behind /play, going back to it
+  // keeps the history clean; otherwise / replaces /play.
+  const goHome = useCallback(() => {
+    if (!services.backToStart?.()) router.replace("/");
+  }, [router, services]);
   const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome);
 
   // A round in progress with answers that are not in the card history yet. Leaving any other way than the

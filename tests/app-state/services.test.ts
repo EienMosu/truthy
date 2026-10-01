@@ -58,3 +58,18 @@ describe("browser storages", () => {
     expect(browserAppServices.sessionStorage()).toBe(window.sessionStorage);
   });
 });
+
+// Review finding F3: the start flow marks that it opened /play right on top of its own first entry; the
+// play screen then leaves with the browser's back instead of adding a new entry for the start.
+describe("the start's entry behind /play", () => {
+  it("goes back only once the start flow has marked its entry", async () => {
+    vi.resetModules();
+    const fresh = await import("@/src/app-state/services");
+    const back = vi.spyOn(window.history, "back").mockImplementation(() => undefined);
+    expect(fresh.browserBackToStart()).toBe(false);
+    expect(back).not.toHaveBeenCalled();
+    fresh.markStartEntryBehind();
+    expect(fresh.browserBackToStart()).toBe(true);
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+});

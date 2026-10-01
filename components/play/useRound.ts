@@ -6,6 +6,7 @@ import { useCallback, useEffect, useReducer, useState } from "react";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexDeck, type Route } from "@/src/content/schema";
 import { createDeckCache, loadDeck, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
+import { browserBackToStart } from "@/src/app-state/services";
 import { reduce, startRound, type Mode, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { pruneDeck } from "@/src/progress/progress";
 import { browserLocalStorage, createLocalStore, type ProgressStore } from "@/src/progress/local";
@@ -22,6 +23,11 @@ export interface PlayServices {
   now: () => number;
   /** A fresh 32-bit seed for dealing a round. */
   randomSeed: () => number;
+  /**
+   * Goes back to the start when the start flow's first entry is right behind /play, and says whether it
+   * did. Left out (tests) or false: the screen replaces /play with / instead.
+   */
+  backToStart?: () => boolean;
 }
 
 function browserSessionStorage(): Storage | undefined {
@@ -38,6 +44,7 @@ export const browserPlayServices: PlayServices = {
   localStorage: browserLocalStorage,
   sessionStorage: browserSessionStorage,
   now: () => Date.now(),
+  backToStart: browserBackToStart,
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
 };
 

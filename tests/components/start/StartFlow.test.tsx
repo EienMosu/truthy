@@ -227,6 +227,81 @@ describe("StartFlow: choosing a route", () => {
   });
 });
 
+// Review finding F3: once a round starts, the step entries are spent. The flow moves the browser back to
+// its first entry and opens /play from there, so back from /play is the start at step 1.
+describe("StartFlow: handing over to /play", () => {
+  function positionsAtPush(): number[] {
+    const positions: number[] = [];
+    router.push.mockImplementation(() => positions.push(h.history.position));
+    return positions;
+  }
+
+  it("takes the step entries out of the history before it opens /play", async () => {
+    await start();
+    const positions = positionsAtPush();
+    await toClasses();
+    await choose(/^Classic\./, "Your pass is ready");
+    expect(h.history.position).toBe(5);
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
+    expect(positions).toEqual([0]);
+    expect(h.history.state).toEqual({ truthyStart: { step: 1, choice: {} } });
+    expect(router.push).toHaveBeenCalledTimes(1);
+    // The move back is the flow's own: the screen stays on the ready pass while it boards.
+    expect(heading()).toBe("Your pass is ready");
+  });
+
+  it("does the same for a deck without sections and for the continue line", async () => {
+    await start(harness(storedProgress({ last: LAST_CLF_SEC })));
+    const positions = positionsAtPush();
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await waitFor(() => expect(heading()).toBe("Your pass is ready"));
+    expect(h.history.position).toBe(5);
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    cleanup();
+    router.push.mockReset();
+
+    await start();
+    const second = positionsAtPush();
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await choose("Google Cloud, 1 deck", "Choose a deck");
+    await choose(/^CDL, Cloud Digital Leader/, "Choose how to play");
+    await choose(/^Classic\./, "Your pass is ready");
+    expect(h.history.position).toBe(4);
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
+    expect([...positions, ...second]).toEqual([0, 0]);
+  });
+
+  it("still opens /play when the browser never reports the move back", async () => {
+    await start();
+    await toClasses();
+    await choose(/^Classic\./, "Your pass is ready");
+    h.history.go = () => undefined; // a browser that drops the move
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await act(async () => {});
+    expect(router.push).not.toHaveBeenCalled();
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"), { timeout: 2000 });
+  });
+
+  it("opens /play without moving when there is no history", async () => {
+    const setup = harness();
+    setup.services.history = () => undefined;
+    await start(setup);
+    await toClasses();
+    await choose(/^Classic\./, "Your pass is ready");
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
+  });
+});
+
 describe("StartFlow: going back", () => {
   it("steps back with the Back pill, clearing the choice of that step, and focuses the card chosen before", async () => {
     await start();

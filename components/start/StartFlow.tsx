@@ -8,6 +8,7 @@
 // Where things live:
 //   - the step and the choices: `view` state, mirrored into the browser history (one entry per step on
 //     the path, the URL never changes), so the browser's back and forward buttons move through the steps;
+//     "Start round" takes those entries out again before it opens /play (back from /play is step 1);
 //   - the index and the progress: useCatalog;
 //   - the settle time: for 250 ms after a step becomes current, presses on its options, the continue
 //     line and Start round are ignored (the next step's cards appear where the chosen card was);
@@ -23,7 +24,7 @@ import { PillButton } from "@/components/PillButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { BackArrowIcon } from "@/components/icons";
 import { savePending } from "@/src/app-state/pending";
-import { browserAppServices, browserStepHistory, type AppServices, type StepHistory } from "@/src/app-state/services";
+import { browserAppServices, browserStepHistory, markStartEntryBehind, type AppServices, type StepHistory } from "@/src/app-state/services";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
 import { SWIPE } from "@/src/input/swipe";
@@ -432,15 +433,48 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     }
   }
 
+  // Boarding: /play opens once the pass has unrolled (at once with reduced motion) and the browser is back
+  // on the flow's first entry. The step entries are spent once a round starts, so /play replaces them:
+  // back from /play is the start at step 1, and one more back leaves the site.
+  const boardingRef = useRef({ rewound: false, unrolled: false, opened: false, onFirstEntry: false });
+  const openPlay = useCallback(() => {
+    const state = boardingRef.current;
+    if (!state.rewound || !state.unrolled || state.opened) return;
+    state.opened = true;
+    if (state.onFirstEntry) markStartEntryBehind();
+    router.push("/play");
+  }, [router]);
+
   function startRound() {
     const { deckId, sectionId, mode } = view.choice;
     if (boarding || !deckId || !sectionId || !mode || !settled()) return;
     savePending({ route: { deckId, sectionId }, mode }, services.sessionStorage());
+    latest.current = { ...latest.current, boarding: true }; // the move back below is ours, not the player's
     setBoarding(true);
-    if (reduced) router.push("/play");
+    const history = services.history();
+    const distance = pathTo(view.step, hasSections).length - 1;
+    const state = { rewound: !history || distance <= 0, unrolled: reduced, opened: false, onFirstEntry: Boolean(history) && distance <= 0 };
+    boardingRef.current = state;
+    if (history && !state.rewound) {
+      const arrived = (moved: boolean) => {
+        stop();
+        clearTimeout(timer);
+        state.rewound = true;
+        state.onFirstEntry = moved;
+        openPlay();
+      };
+      const stop = history.listen(() => arrived(true));
+      // A browser that never reports the move must not keep the player on the pass.
+      const timer = setTimeout(() => arrived(false), 1000);
+      history.go(-distance);
+    }
+    openPlay();
   }
 
-  const onUnrolled = useCallback(() => router.push("/play"), [router]);
+  const onUnrolled = useCallback(() => {
+    boardingRef.current.unrolled = true;
+    openPlay();
+  }, [openPlay]);
 
   // The travelling name: once the pass shows its field, measure where the copy has to land.
   useLayoutEffect(() => {

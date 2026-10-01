@@ -330,6 +330,30 @@ describe("PlayScreen: leaving", () => {
   });
 });
 
+// Review finding F3: when the start flow opened /play on top of its own first entry, leaving goes back to
+// that entry instead of adding a new one, so nothing stale piles up in the history.
+describe("PlayScreen: leaving to the start's entry", () => {
+  it("goes back to the start's entry when the start flow is right behind /play", async () => {
+    const setup = harness();
+    const backToStart = vi.fn(() => true);
+    setup.services = { ...setup.services, backToStart };
+    await start(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("opens the start in place of /play when the start flow is not behind it", async () => {
+    const setup = harness();
+    const backToStart = vi.fn(() => false);
+    setup.services = { ...setup.services, backToStart };
+    await start(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).toHaveBeenCalledWith("/");
+  });
+});
+
 describe("PlayScreen: load failure", () => {
   it("says the deck did not load and tries again", async () => {
     h = harness();
