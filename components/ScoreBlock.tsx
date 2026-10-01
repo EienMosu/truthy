@@ -92,14 +92,16 @@ function ComparisonLines({ comparison, best, animate }: { comparison: Comparison
   }
 }
 
-// The score and the comparison share a row. When both do not fit (a 320 px phone with a unit and two digits:
-// "14 of 17" beside the New best stamp), the comparison moves under the score, still at the right, instead of
-// running out of the pass.
+// The score and the comparison share a row; the comparison's lines wrap inside their column. Only the New best
+// stamp, which cannot wrap, may need more room than the row has (a 320 px phone with a unit and two digits:
+// "14 of 17" beside the stamp): then, and only for it, the comparison moves under the score, still at the
+// right, instead of running out of the pass. The result screen scrolls it into view before the stamp lands.
 export function ScoreBlock({ score, unit, best, comparison, label = "Your score", animate = false }: ScoreBlockProps) {
+  const wraps = comparison.kind === "new-best";
   return (
     <div
       data-score-block=""
-      className="flex flex-wrap items-end justify-between gap-x-(--space-16) gap-y-(--space-10) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-18)"
+      className={`flex items-end justify-between gap-x-(--space-16) gap-y-(--space-10) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-18) ${wraps ? "flex-wrap" : "flex-nowrap"}`}
     >
       <dl className="m-0">
         <dt className={LABEL}>{label}</dt>
@@ -113,7 +115,10 @@ export function ScoreBlock({ score, unit, best, comparison, label = "Your score"
           )}
         </dd>
       </dl>
-      <p data-comparison={comparison.kind} className="m-0 ml-auto flex flex-col items-end pb-(--space-2) text-right">
+      <p
+        data-comparison={comparison.kind}
+        className={`m-0 flex flex-col items-end pb-(--space-2) text-right ${wraps ? "ml-auto" : "min-w-0"}`}
+      >
         <ComparisonLines comparison={comparison} best={best} animate={animate} />
       </p>
     </div>

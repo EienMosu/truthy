@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
@@ -63,27 +63,45 @@ test.describe("on a 320 by 568 screen", () => {
   });
 });
 
+// A round handed to /play the way the start flow does (the pending round in sessionStorage), with a record for
+// its route and mode already stored (null: none).
+async function openRound(page: Page, mode: "classic" | "lives" | "timed", record: number | null): Promise<void> {
+  await page.addInitScript(
+    ({ mode, record }) => {
+      const route = { deckId: "aws-clf-c02", sectionId: "SEC" };
+      sessionStorage.setItem("truthy.pending.v1", JSON.stringify({ route, mode }));
+      if (localStorage.getItem("truthy.progress.v1") === null) {
+        const records = record === null ? {} : { [`${route.deckId}/${route.sectionId}#${mode}`]: record };
+        localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records, last: null }));
+      }
+    },
+    { mode, record },
+  );
+  await page.goto("/play");
+}
+
+// Each part of the comparison lies inside the pass and above the opaque "Play again" pill, which hides what
+// scrolls under it. Half a pixel for subpixel layout.
+async function expectInPassAbovePill(page: Page, parts: readonly Locator[]): Promise<void> {
+  const pass = await page.locator("[data-boarding-pass]").boundingBox();
+  const pill = await page.getByRole("button", { name: "Play again" }).boundingBox();
+  if (pass === null || pill === null) throw new Error("The pass or the Play again pill is not on screen");
+  for (const element of parts) {
+    await expect(element).toBeVisible();
+    const box = await element.boundingBox();
+    if (box === null) throw new Error("A part of the comparison is not on screen");
+    expect(box.x).toBeGreaterThanOrEqual(pass.x - 0.5);
+    expect(box.x + box.width).toBeLessThanOrEqual(pass.x + pass.width + 0.5);
+    expect(box.y + box.height).toBeLessThanOrEqual(pill.y + 0.5);
+  }
+}
+
 // The New best moment of the result (spec section 6) on a 320 px phone: the stamp and the "Previous best"
-// line stay inside the pass when the score has a unit and two digits. The rounds are handed to /play the way
-// the start flow does (the pending round in sessionStorage), with a record one below the score already stored.
-// Reduced motion shows the stamp at rest, where it is measured.
+// line stay inside the pass when the score has a unit and two digits, and above "Play again" once the result
+// has brought them into view. The record stored is one below the score. Reduced motion shows the stamp at
+// rest, where it is measured.
 test.describe("the New best of a result on a 320 by 568 screen", () => {
   test.use({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
-
-  async function openRound(page: Page, mode: "classic" | "lives" | "timed", record: number): Promise<void> {
-    await page.addInitScript(
-      ({ mode, record }) => {
-        const route = { deckId: "aws-clf-c02", sectionId: "SEC" };
-        sessionStorage.setItem("truthy.pending.v1", JSON.stringify({ route, mode }));
-        if (localStorage.getItem("truthy.progress.v1") === null) {
-          const records = { [`${route.deckId}/${route.sectionId}#${mode}`]: record };
-          localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records, last: null }));
-        }
-      },
-      { mode, record },
-    );
-    await page.goto("/play");
-  }
 
   // A card in Three lives: its statement is on screen and focused, the answer row is back and it has settled.
   async function livesCard(page: Page, answers: Map<string, boolean>, n: number): Promise<boolean> {
@@ -118,16 +136,7 @@ test.describe("the New best of a result on a 320 by 568 screen", () => {
   async function expectNewBestInsidePass(page: Page, score: string): Promise<void> {
     await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
     await expect(page.locator("[data-score]")).toHaveText(score);
-    const pass = await page.locator("[data-boarding-pass]").boundingBox();
-    if (pass === null) throw new Error("The pass is not on screen");
-    for (const element of [page.locator("[data-new-best]"), page.getByText(/^Previous best /)]) {
-      await expect(element).toBeVisible();
-      const box = await element.boundingBox();
-      if (box === null) throw new Error("A part of the New best is not on screen");
-      // Half a pixel for subpixel layout.
-      expect(box.x).toBeGreaterThanOrEqual(pass.x - 0.5);
-      expect(box.x + box.width).toBeLessThanOrEqual(pass.x + pass.width + 0.5);
-    }
+    await expectInPassAbovePill(page, [page.locator("[data-new-best]"), page.getByText(/^Previous best /)]);
     await expectNoSidewaysScroll(page);
   }
 
@@ -164,6 +173,51 @@ test.describe("the New best of a result on a 320 by 568 screen", () => {
     }
     await page.getByRole("button", { name: "See results" }).click({ timeout: 70_000 });
     await expectNewBestInsidePass(page, "14 of 17");
+  });
+});
+
+// The other comparisons of a Classic result on a 320 px phone stay beside the score, whole and above "Play
+// again", without a scroll.
+test.describe("the comparison of a Classic result on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+
+  test("1 short of your best, with Best 10 / 10 under it", async ({ page }) => {
+    await openRound(page, "classic", 10);
+    await playRound(page, CLF_ID, wrongOn(4));
+    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+    await expect(page.locator("[data-score]")).toHaveText("9 of 10");
+    await expect(page.locator("[data-comparison]")).toHaveText(/^1 short of your best\s*Best 10 \/ 10$/);
+    await expectInPassAbovePill(page, [page.locator("[data-comparison]")]);
+    await expectNoSidewaysScroll(page);
+  });
+
+  test("First round on this route", async ({ page }) => {
+    await openRound(page, "classic", null);
+    await playRound(page, CLF_ID, wrongOn());
+    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+    await expect(page.locator("[data-comparison]")).toHaveText("First round on this route");
+    await expectInPassAbovePill(page, [page.locator("[data-comparison]")]);
+    await expectNoSidewaysScroll(page);
+  });
+});
+
+// The New best stamp lands where the player can see it: on a 320 by 568 phone the result scrolls the wrapped
+// comparison into view before the landing, and the stamp comes to rest above "Play again".
+test.describe("the New best landing on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test("Classic 10 of 10 over a record of 9", async ({ page }) => {
+    await openRound(page, "classic", 9);
+    await playRound(page, CLF_ID, wrongOn());
+    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+    const stamp = page.locator("[data-new-best]");
+    // At rest: the landing (380 ms delay, 420 ms) is over and the stamp is no longer scaled.
+    await expect
+      .poll(async () => (await stamp.boundingBox())?.height ?? 0, { timeout: 5_000 })
+      .toBeLessThan(80);
+    await page.waitForTimeout(SETTLE_MS);
+    await expectInPassAbovePill(page, [stamp, page.getByText(/^Previous best /)]);
+    await expectNoSidewaysScroll(page);
   });
 });
 

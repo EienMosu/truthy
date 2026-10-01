@@ -6,6 +6,7 @@
 // the same route and mode again, or choose another route. What follows the mode (the three fields, the score
 // and its unit, the header's words) comes from resultCopy. Showing it records the round in the progress on
 // the device, exactly once.
+import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { BoardingPass } from "@/components/BoardingPass";
 import { FlightPath, Num } from "@/components/FlightPath";
@@ -70,11 +71,13 @@ export function useRecordedRound(round: RoundState, progressStore: () => Progres
 // The ticket fills the stage and its missed-card list scrolls inside, as in the mockup. On a short phone,
 // where the score part and a 228 px list do not both fit, the stage scrolls instead. The scroller runs on
 // under "Play again" (opaque, like the play screen's pills), so the ticket's shadow still shows in the gap
-// above it; it stops above the quiet button, which has no background to hide the ticket.
+// above it; it stops above the quiet button, which has no background to hide the ticket. What lies under the
+// pill does not count as in view when the result scrolls something into view (scroll padding).
 const UNDER_PILL = "(var(--space-12) + var(--size-pill))";
 const SCROLLER: CSSProperties = {
   bottom: `calc(-1 * ${UNDER_PILL})`,
   paddingBottom: `calc${UNDER_PILL}`,
+  scrollPaddingBottom: `calc${UNDER_PILL}`,
   scrollbarWidth: "none",
 };
 
@@ -85,12 +88,23 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
   const copy = resultCopy(result, ticket.modeLabel, round.cards.length, outcome.previousBest);
   const headingId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion() ?? false;
   // The ticket jolts as the New best stamp lands, so the jolt starts after the first frame.
   const [landed, setLanded] = useState(false);
+  const newBest = comparison.kind === "new-best";
 
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
+    // On a short phone the New best can sit under "Play again" (a 320 by 568 screen, where the comparison has
+    // moved under the score). It is brought into view before the stamp lands (380 ms delay); "nearest" leaves
+    // the scroll alone when it is already in view.
+    if (newBest) {
+      const target = scrollerRef.current?.querySelector("[data-comparison]");
+      target?.scrollIntoView?.({ block: "nearest", behavior: reduced ? "instant" : "smooth" });
+    }
     setLanded(true);
+    // Once, as the result appears: a later change of the motion preference must not scroll the ticket.
   }, []);
 
   return (
@@ -118,7 +132,7 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
         <h1 id={headingId} ref={headingRef} tabIndex={-1} className="sr-only">
           Round complete
         </h1>
-        <div className="absolute inset-x-0 top-0 overflow-y-auto overscroll-contain" style={SCROLLER}>
+        <div ref={scrollerRef} className="absolute inset-x-0 top-0 overflow-y-auto overscroll-contain" style={SCROLLER}>
           <BoardingPass
             className="grid min-h-full grid-rows-[max-content_minmax(var(--size-lower),1fr)]"
             from={{ code: ticket.deckCode, name: ticket.deckName }}

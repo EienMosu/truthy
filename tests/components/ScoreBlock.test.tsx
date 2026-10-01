@@ -72,4 +72,26 @@ describe("ScoreBlock", () => {
     const { container } = render(<ScoreBlock score={7} unit="of 10" best={(n) => `${n} / 10`} comparison={{ kind: "short", best: 9, by: 2 }} />);
     expect(comparisonText(container)).toBe("2 short of your bestBest 9 / 10");
   });
+
+  // Only the stamp cannot wrap, so only a New best may move under the score (a 320 px phone); the other
+  // comparisons stay beside it and wrap their words inside their column.
+  it("lets only a New best move under the score", () => {
+    const kinds = [
+      { kind: "first" },
+      { kind: "equal", best: 9 },
+      { kind: "short", best: 9, by: 2 },
+      { kind: "new-best", previousBest: 7 },
+    ] as const;
+    for (const comparison of kinds) {
+      const { container, unmount } = render(<ScoreBlock score={9} unit="of 10" best={(n) => `${n} / 10`} comparison={comparison} />);
+      const row = container.querySelector<HTMLElement>("[data-score-block]");
+      const column = container.querySelector<HTMLElement>("[data-comparison]");
+      const wraps = comparison.kind === "new-best";
+      expect(row?.classList.contains("flex-wrap"), comparison.kind).toBe(wraps);
+      expect(row?.classList.contains("flex-nowrap"), comparison.kind).toBe(!wraps);
+      expect(column?.classList.contains("ml-auto"), comparison.kind).toBe(wraps);
+      expect(column?.classList.contains("min-w-0"), comparison.kind).toBe(!wraps);
+      unmount();
+    }
+  });
 });

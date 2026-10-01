@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { StrictMode } from "react";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { pointAt } from "@/components/FlightPath";
 import { ResultView, recordRound } from "@/components/play/ResultView";
 import type { TicketInfo } from "@/components/play/useRound";
@@ -13,10 +13,19 @@ import { PROGRESS_KEY, createLocalStore, type ProgressStore } from "@/src/progre
 import { emptyProgress, parseProgress, recordKey } from "@/src/progress/progress";
 import { DECK, DECK_ID, memoryStorage, type MemoryStorage } from "./fixtures";
 
+const motionPreference = vi.hoisted(() => ({ reduced: false }));
+vi.mock("motion/react", async (original) => ({
+  ...(await original<typeof import("motion/react")>()),
+  useReducedMotion: () => motionPreference.reduced,
+}));
+
 beforeAll(() => {
   MotionGlobalConfig.skipAnimations = true;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  motionPreference.reduced = false;
+});
 
 const ROUTE = { deckId: DECK_ID, sectionId: "SEC" };
 const KEY = recordKey(ROUTE, "classic");
@@ -168,6 +177,57 @@ describe("ResultView: the comparison with the record", () => {
     cleanup();
     renderResult(round, store);
     expect(comparison()).toBe("New bestPrevious best 6 / 10");
+  });
+});
+
+// jsdom has no layout and no scrollIntoView: the calls are recorded, the e2e spec small-screens measures.
+describe("ResultView: bringing the New best into view", () => {
+  const original = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView");
+  let calls: { element: Element; options: unknown }[] = [];
+  beforeEach(() => {
+    calls = [];
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      writable: true,
+      value(this: Element, options?: unknown) {
+        calls.push({ element: this, options });
+      },
+    });
+  });
+  afterEach(() => {
+    if (original) Object.defineProperty(Element.prototype, "scrollIntoView", original);
+    else delete (Element.prototype as Partial<Element>).scrollIntoView;
+  });
+
+  it("scrolls the comparison into view, smoothly, as the result appears", async () => {
+    renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith({ [KEY]: 6 }).store);
+    await act(async () => {});
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.element).toBe(document.querySelector("[data-comparison]"));
+    expect(calls[0]?.options).toEqual({ block: "nearest", behavior: "smooth" });
+  });
+
+  it("jumps there at once when the player asks for reduced motion", async () => {
+    motionPreference.reduced = true;
+    renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith({ [KEY]: 6 }).store);
+    await act(async () => {});
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.options).toEqual({ block: "nearest", behavior: "instant" });
+  });
+
+  it("leaves the scroll alone for the other comparisons", async () => {
+    for (const records of [{}, { [KEY]: 7 }, { [KEY]: 9 }]) {
+      renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith(records).store);
+      await act(async () => {});
+      cleanup();
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  it("keeps what scrolls under Play again out of the scroll target", () => {
+    renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith({ [KEY]: 6 }).store);
+    const scroller = document.querySelector("[data-comparison]")?.closest<HTMLElement>(".overflow-y-auto");
+    expect(scroller?.style.scrollPaddingBottom).toBe("calc(var(--space-12) + var(--size-pill))");
   });
 });
 
