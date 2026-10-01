@@ -24,3 +24,7 @@ Node 24 and pnpm 10.
 | `pnpm e2e` | End-to-end tests (Playwright) at phone size in Chromium and WebKit, against the production build |
 
 Before the first `pnpm e2e`, install the browsers once with `pnpm exec playwright install chromium webkit`.
+
+## License
+
+The code is licensed under [MIT](LICENSE). The card content in `content/` is licensed under [CC BY 4.0](content/LICENSE.md); the documentation pages the cards link to belong to their owners.
