@@ -57,3 +57,29 @@ export function currentCard(state: RoundState): Card | undefined {
 export function lastAnswer(state: RoundState): Answered | undefined {
   return state.answers[state.answers.length - 1];
 }
+
+// Pure: returns a new state, or the very same state when the event does not apply to the phase.
+export function reduce(state: RoundState, event: RoundEvent): RoundState {
+  switch (event.type) {
+    case "answer":
+      return state.phase === "question" ? recordAnswer(state, event.value, event.at) : state;
+    case "next":
+      return state.phase === "answered" ? moveOn(state) : state;
+    default:
+      return state;
+  }
+}
+
+function recordAnswer(state: RoundState, given: boolean, at: number): RoundState {
+  const card = currentCard(state);
+  if (card === undefined) return state;
+  const answered: Answered = { card, given, correct: given === card.answer, at };
+  return { ...state, answers: [...state.answers, answered], phase: "answered" };
+}
+
+// To the next card, or to the end after the last one. The index stays on the last card when finished.
+function moveOn(state: RoundState): RoundState {
+  const nextIndex = state.index + 1;
+  if (nextIndex >= state.cards.length) return { ...state, phase: "finished" };
+  return { ...state, index: nextIndex, phase: "question" };
+}

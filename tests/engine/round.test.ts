@@ -6,8 +6,11 @@ import {
   CLASSIC_LENGTH,
   currentCard,
   lastAnswer,
+  reduce,
   startRound,
   type Mode,
+  type RoundEvent,
+  type RoundState,
   type StartArgs,
 } from "@/src/engine/round";
 
@@ -107,5 +110,129 @@ describe("currentCard and lastAnswer at the start", () => {
     const state = start();
     expect(currentCard(state)).toBe(state.cards[0]);
     expect(lastAnswer(state)).toBeUndefined();
+  });
+});
+
+// Freezes the state and everything in it, so any mutation inside reduce throws (modules run in strict mode).
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const inner of Object.values(value)) deepFreeze(inner);
+  }
+  return value;
+}
+
+// Applies the events one by one, freezing every state before it is handed to reduce.
+function play(state: RoundState, events: readonly RoundEvent[]): RoundState {
+  return events.reduce((s, event) => reduce(deepFreeze(s), event), state);
+}
+
+const answer = (value: boolean, at = 1000): RoundEvent => ({ type: "answer", value, at });
+const NEXT: RoundEvent = { type: "next" };
+
+// Answers the current card correctly and moves on.
+function answerRight(state: RoundState, at = 1000): RoundEvent[] {
+  return [answer(currentCard(state)?.answer ?? true, at), NEXT];
+}
+
+describe("reduce: the question phase", () => {
+  it("records a right answer and shows the verdict", () => {
+    const state = deepFreeze(start());
+    const first = state.cards[0] as Card;
+    const after = reduce(state, answer(first.answer, 1234));
+    expect(after.phase).toBe("answered");
+    expect(after.index).toBe(0);
+    expect(after.answers).toEqual([{ card: first, given: first.answer, correct: true, at: 1234 }]);
+    expect(lastAnswer(after)).toEqual({ card: first, given: first.answer, correct: true, at: 1234 });
+  });
+
+  it("records a wrong answer as not correct", () => {
+    const state = deepFreeze(start());
+    const first = state.cards[0] as Card;
+    const after = reduce(state, answer(!first.answer, 50));
+    expect(after.answers).toEqual([{ card: first, given: !first.answer, correct: false, at: 50 }]);
+  });
+
+  it("keeps the card on screen while the verdict shows", () => {
+    const state = deepFreeze(start());
+    expect(currentCard(reduce(state, answer(true)))).toBe(state.cards[0]);
+  });
+
+  it("ignores next before the card is answered", () => {
+    const state = deepFreeze(start());
+    expect(reduce(state, NEXT)).toBe(state);
+  });
+
+  it("ignores an event it does not know", () => {
+    const state = deepFreeze(start());
+    expect(reduce(state, { type: "tick", now: 5 } as unknown as RoundEvent)).toBe(state);
+  });
+});
+
+describe("reduce: the answered phase", () => {
+  it("ignores a second answer to the same card (a double tap)", () => {
+    const answered = play(start(), [answer(true, 10)]);
+    const again = reduce(deepFreeze(answered), answer(false, 20));
+    expect(again).toBe(answered);
+    expect(again.answers).toHaveLength(1);
+  });
+
+  it("moves to the next card on next", () => {
+    const state = start();
+    const after = play(state, [answer(true), NEXT]);
+    expect(after.phase).toBe("question");
+    expect(after.index).toBe(1);
+    expect(currentCard(after)).toBe(state.cards[1]);
+  });
+});
+
+describe("reduce: a whole Classic round", () => {
+  it("finishes after the tenth card, not before", () => {
+    let state = start();
+    for (let i = 0; i < 9; i++) state = play(state, answerRight(state));
+    expect(state.phase).toBe("question");
+    expect(state.index).toBe(9);
+    state = play(state, [answer(true)]);
+    expect(state.phase).toBe("answered");
+    state = play(state, [NEXT]);
+    expect(state.phase).toBe("finished");
+    expect(state.answers).toHaveLength(10);
+    expect(state.abandoned).toBe(false);
+    expect(currentCard(state)).toBeUndefined();
+  });
+
+  it("finishes after the last card when the pool has fewer than ten", () => {
+    let state = start({ pool: pool(3) });
+    for (let i = 0; i < 3; i++) state = play(state, answerRight(state));
+    expect(state.phase).toBe("finished");
+    expect(state.answers).toHaveLength(3);
+  });
+
+  it("finishes a round of a single card", () => {
+    const state = play(start({ pool: pool(1) }), [answer(false), NEXT]);
+    expect(state.phase).toBe("finished");
+    expect(state.answers).toHaveLength(1);
+  });
+
+  it("records every card once, in the order dealt", () => {
+    let state = start();
+    for (let i = 0; i < 10; i++) state = play(state, [answer(i % 3 === 0, 100 + i), NEXT]);
+    expect(state.answers.map((a) => a.card)).toEqual(state.cards);
+    expect(state.answers.map((a) => a.at)).toEqual([100, 101, 102, 103, 104, 105, 106, 107, 108, 109]);
+  });
+
+  it("ignores answer and next once finished", () => {
+    let state = start({ pool: pool(2) });
+    state = play(state, [answer(true), NEXT, answer(true), NEXT]);
+    const finished = deepFreeze(state);
+    expect(reduce(finished, answer(true))).toBe(finished);
+    expect(reduce(finished, NEXT)).toBe(finished);
+  });
+
+  it("never mutates the state it is given (every state is frozen before reduce)", () => {
+    const state = start();
+    const snapshot = JSON.stringify(state);
+    expect(() => play(state, [answer(true), NEXT, answer(false), NEXT])).not.toThrow();
+    expect(JSON.stringify(state)).toBe(snapshot);
   });
 });
