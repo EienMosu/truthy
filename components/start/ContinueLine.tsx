@@ -15,15 +15,15 @@ export interface ContinueLineProps {
   sectionTitle: string;
   /** "Classic". */
   modeLabel: string;
-  /** The score of the last round, when it is known. */
-  lastScore?: { score: number; total: number };
+  /** The score of the last round, already worded ("7 of 10", "13 in a row"), when it is known. */
+  lastScore?: string;
   onContinue: () => void;
   ref?: Ref<HTMLButtonElement>;
 }
 
 /** "Continue: Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." */
 export function continueLabel({ deckTitle, sectionTitle, modeLabel, lastScore }: Omit<ContinueLineProps, "onContinue" | "ref" | "deckCode" | "sectionCode">): string {
-  const score = lastScore ? ` Last score ${lastScore.score} of ${lastScore.total}.` : "";
+  const score = lastScore ? ` Last score ${lastScore}.` : "";
   return `Continue: ${deckTitle}, ${sectionTitle}, ${modeLabel}.${score}`;
 }
 
@@ -47,15 +47,16 @@ export function ContinueLine(props: ContinueLineProps) {
         <span className="font-(family-name:--type-emphasis-family) text-(length:--type-emphasis-size) font-(--type-emphasis-weight) leading-[1.2] tracking-(--type-emphasis-letter-spacing)">
           Continue where you left off
         </span>
-        <span className="overflow-hidden text-ellipsis whitespace-nowrap font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) font-(--type-mono-data-weight) leading-(--type-mono-data-line-height) text-(--color-ink-muted)">
-          {deckCode} → {sectionCode} · {modeLabel}
+        <span className="flex min-w-0 whitespace-nowrap font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) font-(--type-mono-data-weight) leading-(--type-mono-data-line-height) text-(--color-ink-muted)">
+          <span className="min-w-0 shrink-[1000] overflow-hidden text-ellipsis">
+            {deckCode} → {sectionCode}
+          </span>
+          <span className="min-w-0 shrink overflow-hidden whitespace-pre">{` · ${modeLabel}`}</span>
           {lastScore ? (
-            <>
+            <span className="flex-none whitespace-pre">
               {" · last "}
-              <em className="font-(--font-weight-mono-semibold) text-(--color-ink) not-italic">
-                {lastScore.score} of {lastScore.total}
-              </em>
-            </>
+              <em className="font-(--font-weight-mono-semibold) text-(--color-ink) not-italic">{lastScore}</em>
+            </span>
           ) : null}
         </span>
       </span>

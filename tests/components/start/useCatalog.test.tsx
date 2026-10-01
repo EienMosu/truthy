@@ -80,7 +80,7 @@ describe("findRoute and continueTarget", () => {
     expect(continueTarget(INDEX, progressWith({ last }))?.found.deck.code).toBe("CLF");
     expect(continueTarget(INDEX, emptyProgress())).toBeNull();
     expect(continueTarget(INDEX, progressWith({ last: { ...last, route: { deckId: "aws-clf-c02", sectionId: "OLD" } } }))).toBeNull();
-    expect(continueTarget(INDEX, progressWith({ last: { ...last, mode: "streak" } }))).toBeNull();
+    expect(continueTarget(INDEX, progressWith({ last: { ...last, mode: "streak" } }))?.mode).toBe("streak");
   });
 
   it("brings the score of the last round, and none after a round that was left", () => {

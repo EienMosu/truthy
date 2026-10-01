@@ -81,7 +81,7 @@ describe("the steps (pure)", () => {
     expect(canShow(INDEX, 4, { areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" })).toBe(true);
     expect(canShow(INDEX, 4, { areaId: "cloud", platformId: "gcp", deckId: "gcp-cdl" })).toBe(false);
     expect(canShow(INDEX, 3, { areaId: "cloud", platformId: "gone" })).toBe(false);
-    expect(canShow(INDEX, 6, { areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02", sectionId: "SEC", mode: "streak" })).toBe(false);
+    expect(canShow(INDEX, 6, { areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02", sectionId: "SEC", mode: "streak" })).toBe(true);
   });
 });
 
@@ -196,17 +196,35 @@ describe("StartFlow: choosing a route", () => {
     expect(JSON.parse(h.session.data.get(PENDING_KEY) ?? "null")).toEqual({ route: { deckId: "gcp-cdl", sectionId: "ALL" }, mode: "classic" });
   });
 
-  it("shows the best for this route on Classic, and the other classes as not available", async () => {
-    await start(harness(storedProgress({ records: { "aws-clf-c02/SEC#classic": 9, "aws-clf-c02/CON#classic": 4 } })));
+  it("shows every class as a button with the best for this route", async () => {
+    await start(
+      harness(
+        storedProgress({
+          records: { "aws-clf-c02/SEC#classic": 9, "aws-clf-c02/SEC#streak": 12, "aws-clf-c02/SEC#lives": 21, "aws-clf-c02/CON#timed": 30 },
+        }),
+      ),
+    );
     await toClasses();
     expect(screen.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 9 of 10." })).toBeTruthy();
-    for (const name of ["Streak", "Three lives", "Timed"]) {
-      expect(screen.queryByRole("button", { name: new RegExp(`^${name}`) })).toBeNull();
-      const group = screen.getByRole("group", { name: `${name}, not available yet` });
-      expect(group.getAttribute("aria-disabled")).toBe("true");
-      fireEvent.click(group);
-    }
-    expect(heading()).toBe("Choose how to play");
+    expect(screen.getByRole("button", { name: "Streak. Keep going until the first wrong answer. Your best: 12 in a row." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Three lives. The round ends on the third wrong answer. Your best: 21 cards." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Timed. 60 seconds, as many cards as you can. Not played yet." })).toBeTruthy();
+    expect(screen.queryAllByRole("group", { name: /not available yet/ })).toHaveLength(0);
+  });
+
+  it.each([
+    ["streak", /^Streak\./, "Streak", "Keep going until the first wrong answer."],
+    ["lives", /^Three lives\./, "Three lives", "The round ends on the third wrong answer."],
+    ["timed", /^Timed\./, "Timed", "60 seconds, as many cards as you can."],
+  ] as const)("hands the chosen class to /play: %s", async (mode, buttonName, name, rule) => {
+    await start();
+    await toClasses();
+    await choose(buttonName, "Your pass is ready");
+    expect(passText()).toContain(`Class${name}`);
+    expect(document.body.textContent).toContain(`${rule} Swipe right for true, left for false.`);
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    expect(JSON.parse(h.session.data.get(PENDING_KEY) ?? "null")).toEqual({ route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode });
   });
 
   it("says Classic has not been played on a new route", async () => {
@@ -441,9 +459,13 @@ describe("StartFlow: continue", () => {
     expect(screen.queryByRole("button", { name: /^Continue/ })).toBeNull();
   });
 
-  it("is not shown when the last class cannot be played in this version", async () => {
-    await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, mode: "streak" } })));
-    expect(screen.queryByRole("button", { name: /^Continue/ })).toBeNull();
+  it("continues a round of another class with its own score", async () => {
+    await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, mode: "lives", score: 21, total: 21 } })));
+    const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Three lives. Last score 21 cards." });
+    expect(line.textContent).toBe("Continue where you left offCLF → SEC · Three lives · last 21 cards");
+    fireEvent.click(line);
+    await waitFor(() => expect(heading()).toBe("Your pass is ready"));
+    expect(passText()).toContain("ClassThree lives");
   });
 });
 

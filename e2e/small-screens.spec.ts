@@ -61,6 +61,34 @@ test.describe("on a 320 by 568 screen", () => {
     await expectNoSidewaysScroll(page);
     await expect(page.getByRole("button", { name: "Play again" })).toBeVisible();
   });
+
+  // The continue line says the last score in the words of the class ("21 cards" is the longest): the whole
+  // line, the arrow included, stays inside the page.
+  for (const [mode, score, total, name, text] of [
+    ["streak", 13, 14, "Streak", "13 in a row"],
+    ["lives", 21, 21, "Three lives", "21 cards"],
+    ["timed", 14, 17, "Timed", "14 correct"],
+  ] as const) {
+    test(`the continue line after a ${name} round fits the width`, async ({ page }) => {
+      await page.addInitScript(
+        (last) => localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records: {}, last })),
+        { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode, score, total },
+      );
+      await page.goto("/");
+      const line = page.getByRole("button", { name: `Continue: Cloud Practitioner, Security and compliance, ${name}. Last score ${text}.` });
+      await expect(line).toBeVisible();
+      await expectNoSidewaysScroll(page);
+      const box = await line.boundingBox();
+      if (box === null) throw new Error("The continue line is not on screen");
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(320);
+      // The route may be shortened with an ellipsis; the score never is, and it ends before the arrow.
+      const scoreBox = await line.locator("em").boundingBox();
+      if (scoreBox === null) throw new Error("The score is not on screen");
+      expect(scoreBox.x + scoreBox.width).toBeLessThanOrEqual(box.x + box.width - 24);
+      await expect(line.locator("em")).toHaveText(text);
+    });
+  }
 });
 
 // A round handed to /play the way the start flow does (the pending round in sessionStorage), with a record for

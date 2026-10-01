@@ -25,7 +25,7 @@ import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { EASE, EASE_OUT } from "@/components/easing";
 import { BackArrowIcon } from "@/components/icons";
-import { MODE_TABLE, modeInfo, type ModeInfo } from "@/src/app-state/modes";
+import { MODE_TABLE, lastScoreText, modeInfo, type ModeInfo } from "@/src/app-state/modes";
 import { savePending } from "@/src/app-state/pending";
 import { browserAppServices, browserStepHistory, markStartEntryBehind, type AppServices, type StepHistory } from "@/src/app-state/services";
 import type { Mode } from "@/src/content/play";
@@ -560,7 +560,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       </section>
 
       {/* Foot zone: where a game's action row sits. The continue line on step 1, Start round on step 6. */}
-      <div className="absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill)">
+      <div className="absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)]">
         <AnimatePresence initial={false}>
           {returning ? (
             <motion.div key="continue" className="[grid-area:1/1]" {...swapMotion(reduced, 12)}>
@@ -570,7 +570,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                 sectionCode={returning.found.section?.id ?? WHOLE_DECK}
                 sectionTitle={returning.found.section?.title ?? "Whole deck"}
                 modeLabel={modeInfo(returning.mode).name}
-                lastScore={returning.lastScore ?? undefined}
+                lastScore={returning.lastScore ? lastScoreText(returning.mode, returning.lastScore.score, returning.lastScore.total) : undefined}
                 onContinue={continueLast}
               />
             </motion.div>

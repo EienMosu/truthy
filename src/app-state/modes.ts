@@ -17,9 +17,9 @@ export interface ModeInfo {
 
 export const MODE_TABLE: readonly ModeInfo[] = [
   { id: "classic", name: "Classic", description: "10 cards, score at the end.", unit: "of 10", offered: true },
-  { id: "streak", name: "Streak", description: "Keep going until the first wrong answer.", unit: "in a row", offered: false },
-  { id: "lives", name: "Three lives", description: "The round ends on the third wrong answer.", unit: "cards", offered: false },
-  { id: "timed", name: "Timed", description: "60 seconds, as many cards as you can.", unit: "correct", offered: false },
+  { id: "streak", name: "Streak", description: "Keep going until the first wrong answer.", unit: "in a row", offered: true },
+  { id: "lives", name: "Three lives", description: "The round ends on the third wrong answer.", unit: "cards", offered: true },
+  { id: "timed", name: "Timed", description: "60 seconds, as many cards as you can.", unit: "correct", offered: true },
 ];
 
 /** The row of the mode. Throws for a mode the table does not know. */
@@ -32,4 +32,9 @@ export function modeInfo(mode: Mode): ModeInfo {
 /** Whether the class step offers the mode. */
 export function isOffered(mode: Mode): boolean {
   return modeInfo(mode).offered;
+}
+
+/** The score of a finished round as the continue line says it: "7 of 10", "13 in a row", "21 cards", "14 correct". */
+export function lastScoreText(mode: Mode, score: number, total: number): string {
+  return mode === "classic" ? `${score} of ${total}` : `${score} ${modeInfo(mode).unit}`;
 }

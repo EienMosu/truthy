@@ -18,10 +18,17 @@ describe("ContinueLine", () => {
   });
 
   it("adds the last score when it is known", () => {
-    render(<ContinueLine {...ROUTE} lastScore={{ score: 7, total: 10 }} onContinue={() => {}} />);
+    render(<ContinueLine {...ROUTE} lastScore="7 of 10" onContinue={() => {}} />);
     const button = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." });
     expect(button.textContent).toBe("Continue where you left offCLF → SEC · Classic · last 7 of 10");
     expect(button.querySelector("em")?.textContent).toBe("7 of 10");
+  });
+
+  it("says a Streak score in its own words", () => {
+    render(<ContinueLine {...ROUTE} modeLabel="Streak" lastScore="13 in a row" onContinue={() => {}} />);
+    const button = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Streak. Last score 13 in a row." });
+    expect(button.textContent).toBe("Continue where you left offCLF → SEC · Streak · last 13 in a row");
+    expect(button.querySelector("em")?.textContent).toBe("13 in a row");
   });
 
   it("is a 60 tall row, the same place and size as the pill it shares the foot with", () => {
