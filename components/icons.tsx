@@ -1,4 +1,6 @@
-// Inline line icons of the approved screens. Path data is copied from design/flow/screens (do not redraw).
+// Inline line icons of the approved screens. Path data is copied from design/flow/screens (do not redraw),
+// except the moon and the sun of the theme switch, which came later and are drawn in the same style
+// (18 box, round caps and joins, stroke 2).
 // Every icon draws with currentColor, so the control around it sets its colour. Icons are hidden from
 // screen readers unless a label is given: the control's own label carries the meaning.
 import type { ReactNode } from "react";
@@ -24,6 +26,8 @@ export const ICON_PATHS = {
   heart:
     "M0 6.2C-1.5 4.3-3 3.2-5.1 3.2c-3.7 0-5.9 3.9-4.5 7.3C-7.5 15.1 0 19.7 0 19.7s7.5-4.6 9.6-9.2c1.4-3.4-.8-7.3-4.5-7.3C3 3.2 1.5 4.3 0 6.2z",
   heartSlash: "M-8 18L8 3",
+  moon: "M15.8 9.6A6.8 6.8 0 1 1 8.4 2.2a5.3 5.3 0 0 0 7.4 7.4z",
+  sunRays: "M9 1.5v1.6M9 14.9v1.6M1.5 9h1.6M14.9 9h1.6M3.7 3.7l1.1 1.1M13.2 13.2l1.1 1.1M3.7 14.3l1.1-1.1M13.2 4.8l1.1-1.1",
 } as const;
 
 export interface IconProps {
@@ -230,6 +234,25 @@ export function HeartIcon({ size = 20, strokeWidth = 1.6, lost = false, classNam
       ) : (
         <path d={ICON_PATHS.heart} fill="currentColor" />
       )}
+    </Svg>
+  );
+}
+
+/** Moon, on the theme switch while the day theme is shown (pressing gives night). 18, stroke 2. */
+export function MoonIcon({ size = 18, strokeWidth = 2, className, label }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 18 18" className={className} label={label}>
+      <path d={ICON_PATHS.moon} {...strokeProps} strokeWidth={strokeWidth} />
+    </Svg>
+  );
+}
+
+/** Sun, on the theme switch while the night theme is shown (pressing gives day). 18, stroke 2. */
+export function SunIcon({ size = 18, strokeWidth = 2, className, label }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 18 18" className={className} label={label}>
+      <circle cx="9" cy="9" r="3.3" {...strokeProps} strokeWidth={strokeWidth} />
+      <path d={ICON_PATHS.sunRays} {...strokeProps} strokeWidth={strokeWidth} />
     </Svg>
   );
 }

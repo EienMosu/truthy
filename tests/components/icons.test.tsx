@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   BackArrowIcon,
+  ICON_PATHS,
   BookIcon,
   CheckIcon,
   ChevronIcon,
@@ -14,10 +15,12 @@ import {
   ForwardArrowIcon,
   HeartIcon,
   type IconProps,
+  MoonIcon,
   PlaneIcon,
   ReplayIcon,
   RouteIcon,
   StarIcon,
+  SunIcon,
 } from "@/components/icons";
 
 afterEach(cleanup);
@@ -38,6 +41,8 @@ const ICONS: ReadonlyArray<[string, ComponentType<IconProps>, number, number, st
   ["ClockIcon", ClockIcon, 22, 22, "0 0 22 22"],
   ["StarIcon", StarIcon, 18, 18, "0 0 18 18"],
   ["HeartIcon", HeartIcon, 20, 20, "-11 0 22 22"],
+  ["MoonIcon", MoonIcon, 18, 18, "0 0 18 18"],
+  ["SunIcon", SunIcon, 18, 18, "0 0 18 18"],
 ];
 
 function svgOf(container: HTMLElement): SVGSVGElement {
@@ -107,6 +112,21 @@ describe("icon variants", () => {
     expect(lost).toHaveLength(2);
     expect(lost[0]?.getAttribute("fill")).toBe("none");
     expect(lost[1]?.getAttribute("d")).toBe("M-8 18L8 3");
+  });
+
+  it("draws the theme switch's moon and sun as line icons in currentColor, at stroke 2", () => {
+    const moon = svgOf(render(<MoonIcon />).container);
+    expect(moon.querySelector("path")?.getAttribute("d")).toBe(ICON_PATHS.moon);
+    const sun = svgOf(render(<SunIcon />).container);
+    const disc = sun.querySelector("circle");
+    expect([disc?.getAttribute("cx"), disc?.getAttribute("cy"), disc?.getAttribute("r")]).toEqual(["9", "9", "3.3"]);
+    expect(sun.querySelector("path")?.getAttribute("d")).toBe(ICON_PATHS.sunRays);
+    for (const shape of [...moon.querySelectorAll("path"), ...sun.querySelectorAll("circle, path")]) {
+      expect(shape.getAttribute("fill")).toBe("none");
+      expect(shape.getAttribute("stroke")).toBe("currentColor");
+      expect(shape.getAttribute("stroke-width")).toBe("2");
+      expect(shape.getAttribute("stroke-linecap")).toBe("round");
+    }
   });
 
   it("colours the plane with the accent and on-accent tokens, not with raw colours", () => {
