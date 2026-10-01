@@ -43,7 +43,7 @@ async function answerAll(h: Harness, right: readonly boolean[]): Promise<string[
     statements.push(statement);
     const answer = cardByStatement(statement).answer;
     fireEvent.click(screen.getByRole("button", { name: (ok ? answer : !answer) ? "True" : "False" }));
-    const next = await screen.findByRole("button", { name: "Next card" });
+    const next = await screen.findByRole("button", { name: /^(Next card|See results)$/ });
     h.advance(NEXT_ARRIVES_MS); // "Next card" takes presses once it has arrived
     fireEvent.click(next);
   }

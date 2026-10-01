@@ -25,7 +25,7 @@ import { EASE } from "@/components/easing";
 import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
 import { SWIPE } from "@/src/input/swipe";
-import { currentCard, lastAnswer, type RoundEvent, type RoundState } from "@/src/engine/round";
+import { currentCard, isDecided, lastAnswer, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
 import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
@@ -39,8 +39,8 @@ export interface PlayScreenProps {
 
 
 /**
- * How long after an answer "Next card" counts as arrived and starts to accept presses. Before that it is
- * coming in where True and False were, so a double tap on an answer must not reach it. The time guards
+ * How long after an answer the action ("Next card", or "See results" after a deciding answer) counts as
+ * arrived and starts to accept presses. Before that it is coming in where True and False were, so a double tap on an answer must not reach it. The time guards
  * against the second tap, not the animation, so it is the same with reduced motion.
  */
 export const NEXT_ARRIVES_MS = 420;
@@ -191,6 +191,8 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
   const answered = round.phase === "answered";
   const last = answered ? lastAnswer(round) : undefined;
   const total = round.cards.length;
+  // The action after an answer: "See results" once the mode's end rule has been met, otherwise "Next card".
+  const actionLabel = isDecided(round) ? "See results" : "Next card";
 
   // A new card: start its settle time, scroll the ticket to the top, put focus on the statement.
   useEffect(() => {
@@ -200,7 +202,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
     statementRef.current?.focus({ preventScroll: true });
   }, [round.cards, round.index, round.phase, now]);
 
-  // After an answer, "Next card" arrives after 420 ms and starts to take taps. Focus moves to it then, or
+  // After an answer, the action row arrives after 420 ms and starts to take taps. Focus moves to it then, or
   // at once with reduced motion (Enter on it still waits for the arrival, see next below).
   useEffect(() => {
     if (!answered) return;
@@ -235,14 +237,14 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
     [round.phase, confirming, now, dispatch],
   );
 
-  // "Next card" (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer.
+  // The action (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer.
   const answeredAt = last?.at;
   const next = useCallback(() => {
     if (answeredAt === undefined || now() - answeredAt < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
   }, [answeredAt, now, dispatch]);
 
-  // Keyboard: left arrow answers False, right arrow True; Enter is "Next card" after an answer
+  // Keyboard: left arrow answers False, right arrow True; Enter is the action after an answer
   // (unless focus is on a link or a button, which handle Enter themselves).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -277,6 +279,10 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
 
   const tear: TearSide = last?.correct === false ? "right" : "left";
   const cardNumber = pad2(round.index + 1);
+  // Only Classic has a fixed length; the other modes show the card number alone.
+  const cardField = round.mode === "classic" ? `${cardNumber} / ${pad2(total)}` : cardNumber;
+  // The card can be dragged (and is being stamped) in these phases; in the answered phase the explanation can be selected.
+  const dragging = round.phase === "question" || round.phase === "stamped";
 
   return (
     <>
@@ -304,7 +310,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
               onPointerUp={swipe.onPointerUp}
               onPointerCancel={swipe.onPointerCancel}
               className={[
-                "group relative touch-pan-y select-none",
+                `group relative touch-pan-y ${dragging ? "select-none" : "select-text"}`,
                 "transition-transform duration-(--duration-t3) ease-(--easing-spring) data-dragging:transition-none",
                 answered ? "cursor-default" : "cursor-grab data-dragging:cursor-grabbing",
               ].join(" ")}
@@ -315,7 +321,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
                 to={{ code: ticket.sectionCode, name: ticket.sectionName }}
                 fields={[
                   { label: "Class", value: ticket.modeLabel },
-                  { label: "Card", value: `${cardNumber} / ${pad2(total)}` },
+                  { label: "Card", value: cardField },
                   { label: "Gate", value: <GateValue /> },
                 ]}
                 jolt={answered}
@@ -376,7 +382,7 @@ function RoundView({ round, ticket, now, dispatch, onLeave }: RoundViewProps) {
                 transition={{ duration: 0.22, ease: EASE }}
               >
                 <PillButton ref={nextRef} trailingIcon="→" onClick={next}>
-                  Next card
+                  {actionLabel}
                 </PillButton>
               </motion.div>
             )}

@@ -51,7 +51,7 @@ test.describe("on a 320 by 568 screen", () => {
     for (let n = 2; n <= 10; n += 1) {
       const { truth } = await waitForCard(page, answers, n);
       await page.getByRole("button", { name: truth ? "True" : "False", exact: true }).click();
-      await page.getByRole("button", { name: "Next card" }).click();
+      await page.getByRole("button", { name: n === 10 ? "See results" : "Next card" }).click();
     }
     await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
     await expectNoSidewaysScroll(page);

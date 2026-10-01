@@ -133,6 +133,7 @@ export async function waitForCard(
   await expect(page.getByRole("img", { name: new RegExp(`^Card ${n} of ${total}\\.`) })).toBeVisible();
   await expect(page.getByRole("button", { name: "True", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Next card" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "See results" })).toHaveCount(0);
   await expect(page.locator("[data-statement]")).toBeFocused();
   await page.waitForTimeout(SETTLE_MS);
   const statement = await statementOnScreen(page);
@@ -172,7 +173,7 @@ export async function playRound(
     if (method === "buttons") await page.getByRole("button", { name: given ? "True" : "False", exact: true }).click();
     else await page.keyboard.press(given ? "ArrowRight" : "ArrowLeft");
     await expect(verdict(page)).toHaveText(verdictFor(given, truth));
-    const next = page.getByRole("button", { name: "Next card" });
+    const next = page.getByRole("button", { name: number === total ? "See results" : "Next card" });
     await expect(next).toBeVisible();
     if (method === "buttons") await next.click();
     else {
@@ -234,12 +235,13 @@ export async function dragCard(page: Page, dx: number, dy: number, steps = 12): 
   await page.mouse.up();
 }
 
-/** The round is still waiting for an answer to card `n`: no verdict, the answer buttons, no "Next card". */
+/** The round is still waiting for an answer to card `n`: no verdict, the answer buttons, no "Next card" or "See results". */
 export async function expectUnanswered(page: Page, n: number, total = 10): Promise<void> {
   await expect(page.getByRole("img", { name: new RegExp(`^Card ${n} of ${total}\\.`) })).toBeVisible();
   await expect(verdict(page)).toHaveText("");
   await expect(page.getByRole("button", { name: "True", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Next card" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "See results" })).toHaveCount(0);
 }
 
 // ---------- colours ----------

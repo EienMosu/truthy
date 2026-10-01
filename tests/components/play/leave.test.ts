@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { saveLeftRound } from "@/components/play/leave";
 import { poolFor } from "@/src/content/load";
-import { reduce, startRound, type RoundState } from "@/src/engine/round";
+import { currentCard, isDecided, reduce, startRound, type RoundState } from "@/src/engine/round";
 import { PROGRESS_KEY, createLocalStore } from "@/src/progress/local";
 import { parseProgress } from "@/src/progress/progress";
 import { DECK, DECK_ID, memoryStorage } from "./fixtures";
@@ -27,6 +27,24 @@ describe("saveLeftRound", () => {
     expect(Object.keys(progress.cards)).toHaveLength(2);
     expect(progress.records).toEqual({});
     expect(progress.last).toEqual({ route: ROUTE, mode: "classic", score: null, total: null });
+  });
+
+  it("saves a decided round that is left as abandoned: the answers are kept, no record is set", () => {
+    const storage = memoryStorage();
+    let round = startRound({ mode: "streak", route: ROUTE, pool: poolFor(DECK, "SEC"), history: {}, seed: 12345 });
+    for (let i = 0; i < 3; i += 1) {
+      const answer = currentCard(round)?.answer ?? true;
+      round = reduce(round, { type: "answer", value: answer, at: 1000 * (i + 1) });
+      round = reduce(round, { type: "next" });
+    }
+    round = reduce(round, { type: "answer", value: !(currentCard(round)?.answer ?? true), at: 5000 });
+    expect(isDecided(round)).toBe(true);
+    saveLeftRound(round, createLocalStore(storage));
+    const progress = parseProgress(storage.getItem(PROGRESS_KEY));
+    expect(progress.records).toEqual({});
+    expect(Object.values(progress.cards)).toHaveLength(4);
+    for (const answer of round.answers) expect(progress.cards[answer.card.id]?.seen).toBe(1);
+    expect(progress.last).toEqual({ route: ROUTE, mode: "streak", score: null, total: null });
   });
 
   it("does not throw when the store cannot save", () => {

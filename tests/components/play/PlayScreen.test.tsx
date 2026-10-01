@@ -48,7 +48,7 @@ function swipeCard(): HTMLElement {
 
 /** Lets "Next card" arrive (420 ms after the answer on the test clock), then presses it. */
 async function pressNext() {
-  const next = await screen.findByRole("button", { name: "Next card" });
+  const next = await screen.findByRole("button", { name: /^(Next card|See results)$/ });
   h.advance(NEXT_ARRIVES_MS);
   fireEvent.click(next);
 }
@@ -283,6 +283,8 @@ describe("PlayScreen: moving on", () => {
     for (let i = 0; i < 9; i++) await answerAndNext(true);
     expect(screen.getByRole("img", { name: /^Card 10 of 10\./ })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "True" }));
+    expect(screen.getByRole("button", { name: "See results" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Next card" })).toBeNull();
     await pressNext();
     expect(await screen.findByRole("heading", { name: "Round complete" })).toBeTruthy();
     expect(screen.getByRole("img", { name: /^Round complete\. 10 of 10 cards\./ })).toBeTruthy();

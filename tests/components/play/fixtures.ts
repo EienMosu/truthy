@@ -2,6 +2,7 @@
 // a clock the test moves by hand. Everything goes in through PlayScreen's `services` prop.
 import type { PlayServices } from "@/components/play/useRound";
 import { PENDING_KEY, type PendingRound } from "@/src/app-state/pending";
+import type { Mode } from "@/src/content/play";
 import type { Card, DeckFile, DeckIndex } from "@/src/content/schema";
 
 export const DECK_ID = "test-deck";
@@ -131,4 +132,9 @@ export function harness(pending: PendingRound | null = { route: { deckId: DECK_I
     randomSeed: () => 12345,
   };
   return { services, network, local, session, advance: (ms) => (time += ms) };
+}
+
+/** The pending round the start flow would hand over: the test deck's section (SEC unless given) in the mode. */
+export function pendingFor(mode: Mode, sectionId = "SEC"): PendingRound {
+  return { route: { deckId: DECK_ID, sectionId }, mode };
 }
