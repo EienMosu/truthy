@@ -616,17 +616,18 @@ describe("tokensToCss: the real design/system/tokens.json", () => {
     expect(out.get("--font-mono")).toMatch(/^var\(--font-overpass-mono\), /);
   });
 
-  it("overrides every day color and shadow that has a night value, and keeps scrim and the sheet shadow from day", () => {
+  it("overrides every day color and shadow with its night value, the scrim and the sheet shadow included", () => {
     const night = nightVars(tokensToCss(realTokens));
     const keys = (group: Record<string, unknown>) => Object.keys(group).filter((key) => !key.startsWith("$"));
     expect([...night.keys()].sort()).toEqual(
       [...keys(realTokens.color.night).map((k) => `--color-${k}`), ...keys(realTokens.elevation.night).map((k) => `--elevation-${k}`)].sort(),
     );
     for (const name of night.keys()) expect(out.has(name), name).toBe(true);
-    for (const name of COLORS.filter((n) => n !== "scrim")) expect(night.has(`--color-${name}`), `--color-${name}`).toBe(true);
+    for (const name of COLORS) expect(night.has(`--color-${name}`), `--color-${name}`).toBe(true);
     for (const name of ["ticket", "small", "button", "press"]) expect(night.has(`--elevation-${name}`), `--elevation-${name}`).toBe(true);
-    expect(night.has("--color-scrim")).toBe(false);
-    expect(night.has("--elevation-sheet")).toBe(false);
+    // The Leave round dialog is a sheet: at night it needs a black scrim and a black shadow to stand off the dark pass.
+    expect(night.get("--color-scrim")).toBe("rgb(0 0 0 / 0.6)");
+    expect(night.get("--elevation-sheet")).toBe("0px -1px 0px 0px rgb(0 0 0 / 0.2), 0px -18px 36px -18px rgb(0 0 0 / 0.75)");
   });
 
   it("leaves no unresolved reference or broken value in the output", () => {

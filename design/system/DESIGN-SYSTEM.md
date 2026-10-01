@@ -54,7 +54,7 @@ Implement against these roles only. Primitives exist so tooling can alias them.
 Notes:
 - `on-accent` and the night shadow tokens were added by the night screens. In day they equal `ink` and the reference's hard-coded shadow literals, so adopting them changes nothing visually.
 - In night, `ink` is light, so the primary pill becomes a light warm pill with dark `on-dark` text. That is intended.
-- No night screen shows the sheet, so there is no night scrim or night sheet shadow in `tokens.json` (see Open questions). The start flow does not need them.
+- No night mockup shows the sheet, but the app's "Leave round?" confirmation is one. Its night values were decided at implementation: `scrim` is black at 60% and the sheet shadow is the night ticket shadow pointing up.
 
 ### 2.2 Contrast pairs checked (WCAG 2.x ratio)
 
@@ -500,7 +500,7 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 ## 10. Open questions
 
 1. **Day contrast failures.** The tagline is `ink-muted` on `sky-1` at 3.78:1, and the `accent` focus ring on pills is 1.6:1 against the sky. Possible fixes: make the tagline `ink`, or move it lower onto a lighter band; make the pill ring `ink` in day. Each fix changes an approved screen, so it needs the client's sign-off.
-2. **Night sheet.** No night screen shows the sheet, so there is no night scrim or night sheet shadow. The final start flow does not use the sheet, but the app's "Leave round?" confirmation is a sheet over `scrim` with the sheet shadow. At night it keeps their day values (the navy scrim and navy shadow), which barely show on the night sky, so the sheet stands apart from the pass behind it mostly by its own paper. Decide a night scrim and a night sheet shadow.
+2. **Night sheet (closed).** The "Leave round?" confirmation is a sheet over `scrim` with the sheet shadow. With the day values it did not stand off the dark pass, so `tokens.json` now has a night scrim (black at 60%) and a night sheet shadow (the night ticket recipe pointing up).
 3. **Two title sizes.** `screen-title` is 24 (mode-select) and `step-title` is 22 (browse-c, start). Unify them, or keep both? If the start flow replaces mode-select, only 22 remains.
 4. **Safe areas on native.** Use the system insets alone, or the insets plus the mock's 52/34 as a minimum?
 5. **Timed hold.** The file uses 1000ms from tap to leave; the builder suggested 700ms for the product.
