@@ -244,6 +244,14 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const [arrivedAt, setArrivedAt] = useState(-1);
   const shownAt = useRef(0);
   const statementRef = useRef<HTMLDivElement>(null);
+  // In Timed the answered card unmounts after the next card has mounted: only clear the ref when the
+  // statement that leaves is still the one it holds.
+  const attachStatement = useCallback((element: HTMLDivElement | null) => {
+    statementRef.current = element;
+    return () => {
+      if (statementRef.current === element) statementRef.current = null;
+    };
+  }, []);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -487,7 +495,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
                         </div>
                       }
                     >
-                      <PassStatement ref={statementRef} appliesTo={card.appliesTo} muted={timeUp}>
+                      <PassStatement ref={attachStatement} appliesTo={card.appliesTo} muted={timeUp}>
                         {card.text.en.statement}
                       </PassStatement>
                     </BoardingPass>
