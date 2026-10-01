@@ -182,7 +182,7 @@ describe("Classic keeps its rule", () => {
 });
 
 describe("leaving a round", () => {
-  it.each(["classic", "streak", "lives"] as const)("%s: a round that is left is abandoned and keeps its answers", (mode) => {
+  it.each(["classic", "streak", "lives", "timed"] as const)("%s: a round that is left is abandoned and keeps its answers", (mode) => {
     const left = play(give(start(mode), true), [ABANDON]);
     expect([left.phase, left.abandoned]).toEqual(["finished", true]);
     expect(summarise(left)).toMatchObject({ abandoned: true, total: 1 });

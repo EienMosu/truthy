@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { browserSessionStorage } from "@/src/app-state/services";
 import type { Route } from "@/src/content/schema";
-import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
+import { MODES, type Mode } from "@/src/content/play";
 
 export interface PendingRound {
   route: Route;
@@ -14,10 +14,10 @@ export interface PendingRound {
 
 export const PENDING_KEY = "truthy.pending.v1";
 
-// Only modes this build can play: a stored "streak" from a newer build must not reach startRound, which would throw.
+// Only a mode the game knows: anything else reads as no pending round.
 const PendingSchema = z.object({
   route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
-  mode: z.custom<Mode>((value) => typeof value === "string" && (AVAILABLE_MODES as readonly string[]).includes(value)),
+  mode: z.enum(MODES),
 });
 
 // The last round handed over on this page. The start flow and /play are one page (client-side navigation),
