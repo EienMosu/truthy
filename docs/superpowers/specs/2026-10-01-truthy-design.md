@@ -35,9 +35,9 @@ Truthy is a mobile-first web game. The player picks what to study by filling in 
 
 Each step leaves working, tested, deployed software.
 
-1. **One mode end to end.** Project skeleton, design tokens, deck build, the start flow, a Classic round, the result screen, progress storage, deploy to Vercel. Decks: AWS Cloud Practitioner and Next.js Rendering.
+1. **One mode end to end.** Project skeleton, design tokens, deck build, the start flow, a Classic round, the result screen, progress storage, deploy to Vercel. Decks: every deck whose review is finished when the step ships (AWS Cloud Practitioner, Next.js Rendering, Google Cloud Digital Leader).
 2. **The other three modes.** Streak, Three lives and Timed with their in-game states and result screens.
-3. **Polish.** Night theme, offline play, and the AWS Solutions Architect Associate and Google Cloud Digital Leader decks once their review is finished.
+3. **Polish.** Night theme, offline play, and the AWS Solutions Architect Associate deck once its review is finished.
 
 This document specifies all three. Implementation plans are written per step, starting with step 1.
 
@@ -126,7 +126,7 @@ Hand-written. It defines areas, platforms and decks, and for each deck its secti
 
 `match` lists the values of the reviewed card's `task` or `section` field that belong to the section. A deck with an empty `sections` array is played as a whole deck only. An area or platform with no decks is valid and is shown as not available yet.
 
-Initial catalog: Cloud > AWS > Cloud Practitioner (CLF: CON 45, SEC 47, TEC 88, BIL 34 cards) and Solutions Architect Associate (SAA, step 3); Cloud > Google Cloud > Cloud Digital Leader (CDL, step 3); Cloud > Azure (no decks); Frontend > Next.js > Rendering (RND, eight sections, 94 cards); DevOps (no decks).
+Initial catalog: Cloud > AWS > Cloud Practitioner (CLF: CON 45, SEC 47, TEC 88, BIL 34 cards) and Solutions Architect Associate (SAA, step 3); Cloud > Google Cloud > Cloud Digital Leader (CDL, no sections, 133 cards); Cloud > Azure (no decks); Frontend > Next.js > Rendering (RND, eight sections, 94 cards); DevOps (no decks).
 
 ### Build step
 
@@ -258,7 +258,7 @@ Overpass and Overpass Mono (SIL OFL), static weights, loaded with `next/font` so
 
 ### Screens
 
-1. **Start**, the fill-in pass: step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" starts a new round on the last route and class at once. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. Options without content are shown as not available and cannot be chosen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
+1. **Start**, the fill-in pass: step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. Options without content are shown as not available and cannot be chosen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
 2. **Play**: the flight-path header in the variant of the mode, the boarding pass card with the statement, the stub with the swipe hint, the True and False buttons; then the answer state, or the stamp in Timed. A card with a non-empty `appliesTo` shows it as one small line above the statement. The source link opens in a new tab.
 3. **Result**: as described in section 6.
 
