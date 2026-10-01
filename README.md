@@ -15,6 +15,7 @@ Node 24 and pnpm 10.
 | `pnpm install` | Install dependencies |
 | `pnpm dev` | Start the development server on http://localhost:3000 |
 | `pnpm build` | Production build |
+| `pnpm build:tokens` | Generate `app/tokens.css` from `design/system/tokens.json` (runs automatically before `pnpm dev` and `pnpm build`) |
 | `pnpm start` | Serve the production build |
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm test:watch` | Unit tests in watch mode |
