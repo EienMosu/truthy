@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DeckBuildError, buildDecks, hashDeck, type BuildOutput } from "@/src/content/build";
 import { DeckFileSchema, DeckIndexSchema, WHOLE_DECK, type Card } from "@/src/content/schema";
@@ -443,5 +444,80 @@ describe("buildDecks: conflict groups and empty sections", () => {
     const output = build([withBilling], { "aws-clf-c02": clfReviewed() });
     expect(firstDeck(output).sections.map((section) => section.id)).toEqual(["CON", "SEC"]);
     expect(DeckIndexSchema.safeParse(output.index).success).toBe(true);
+  });
+});
+
+describe("the real content", () => {
+  function readContent(path: string): unknown {
+    return JSON.parse(readFileSync(new URL(`../../content/${path}`, import.meta.url), "utf8"));
+  }
+
+  function buildReal(): BuildOutput {
+    return buildDecks({
+      catalog: readContent("catalog.json"),
+      reviewed: {
+        "aws-clf-c02": readContent("reviewed/aws-clf-c02.json"),
+        "nextjs-rendering": readContent("reviewed/nextjs-rendering.json"),
+      },
+      version: VERSION,
+    });
+  }
+
+  function indexDeck(output: BuildOutput, deckId: string) {
+    const deck = output.index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks)).find((entry) => entry.id === deckId);
+    if (!deck) throw new Error(`${deckId} is not in the index`);
+    return deck;
+  }
+
+  it("builds Cloud Practitioner with 214 cards in four sections", () => {
+    const deck = indexDeck(buildReal(), "aws-clf-c02");
+    expect([deck.code, deck.title, deck.cardCount]).toEqual(["CLF", "Cloud Practitioner", 214]);
+    expect(deck.sections.map((section) => [section.id, section.cardCount])).toEqual([
+      ["CON", 45],
+      ["SEC", 47],
+      ["TEC", 88],
+      ["BIL", 34],
+    ]);
+  });
+
+  it("builds Next.js Rendering with 94 cards in eight sections", () => {
+    const deck = indexDeck(buildReal(), "nextjs-rendering");
+    expect([deck.code, deck.title, deck.cardCount]).toEqual(["RND", "Rendering", 94]);
+    expect(deck.sections.map((section) => [section.id, section.cardCount])).toEqual([
+      ["RSC", 12],
+      ["REQ", 11],
+      ["STR", 12],
+      ["STA", 12],
+      ["DAT", 11],
+      ["CAC", 12],
+      ["CCM", 12],
+      ["REV", 12],
+    ]);
+  });
+
+  it("keeps every area and platform of the catalog, with or without decks", () => {
+    const output = buildReal();
+    expect(output.index.areas.map((area) => [area.id, area.title, area.platforms.map((platform) => [platform.id, platform.title, platform.decks.map((deck) => deck.id)])])).toEqual([
+      ["cloud", "Cloud", [["aws", "AWS", ["aws-clf-c02"]], ["gcp", "Google Cloud", []], ["azure", "Azure", []]]],
+      ["frontend", "Frontend", [["nextjs", "Next.js", ["nextjs-rendering"]]]],
+      ["devops", "DevOps", []],
+    ]);
+  });
+
+  it("writes deck files the client schema accepts, with a hash that matches the index", () => {
+    const output = buildReal();
+    expect(DeckIndexSchema.safeParse(output.index).success).toBe(true);
+    for (const deck of output.decks) {
+      expect(DeckFileSchema.safeParse(deck).success, deck.id).toBe(true);
+      expect(indexDeck(output, deck.id).hash).toBe(hashDeck(deck.cards));
+    }
+  });
+
+  it("ships only conflict groups that at least two cards share", () => {
+    for (const deck of buildReal().decks) {
+      const uses = new Map<string, number>();
+      for (const card of deck.cards) for (const group of card.conflictGroups) uses.set(group, (uses.get(group) ?? 0) + 1);
+      for (const [group, count] of uses) expect(count, `${deck.id} ${group}`).toBeGreaterThan(1);
+    }
   });
 });
