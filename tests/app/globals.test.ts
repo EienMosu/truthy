@@ -37,6 +37,14 @@ describe("app/globals.css", () => {
     expect(rule(":root[data-theme=dark]")).toBe("dark");
   });
 
+  it("has a night variant for markup that must match the theme before the page knows it, in the same three cases as the tokens", () => {
+    const variant = css.slice(css.indexOf("@custom-variant night {"));
+    expect(css.indexOf("@custom-variant night {")).toBeGreaterThan(0);
+    expect(variant).toMatch(
+      /^@custom-variant night \{\s*@media \(prefers-color-scheme: dark\) \{\s*&:where\(:root:not\(\[data-theme=light\]\) \*\) \{\s*@slot;\s*\}\s*\}\s*&:where\(:root\[data-theme=dark\] \*\) \{\s*@slot;\s*\}\s*\}/,
+    );
+  });
+
   it("stops CSS movement when the player asks for reduced motion", () => {
     const block = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
     expect(block).toContain("animation: none !important;");
