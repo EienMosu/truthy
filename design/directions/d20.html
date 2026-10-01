@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Split-Flap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=B612+Mono:wght@400;700&family=Saira+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface: #0b0b0c;
+  --surface-raised: #1c1c20;
+  --flap-top: #222227;
+  --flap-bottom: #1a1a1e;
+  --housing: #131315;
+  --ink: #f3f0e6;
+  --ink-muted: #8f8c84;
+  --accent: #ffc81f;
+  --on-accent: #0b0b0c;
+  --true: #ffc81f;
+  --false: #ffc81f;
+  --correct: #45d07c;
+  --wrong: #ff5b47;
+  --hinge: #050506;
+  --key-floor: #000000;
+  --rivet: #2c2c31;
+  --rule: #26262b;
+  --accent-deep: #8a6a00;
+  --glint: rgba(255,255,255,.08);
+  --glint-strong: rgba(255,255,255,.4);
+  --scan: rgba(255,255,255,.018);
+  --sink: rgba(0,0,0,.6);
+  --dim: rgba(0,0,0,.35);
+  --correct-halo: rgba(69,208,124,.18);
+  --wrong-halo: rgba(255,91,71,.18);
+
+  --flap: "Saira Condensed", "Arial Narrow", sans-serif;
+  --mono: "B612 Mono", ui-monospace, monospace;
+
+  --r-s: 3px;
+  --r-l: 10px;
+  --shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 18px 40px -16px rgba(0,0,0,.9);
+
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --half: 60ms;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background:
+    repeating-linear-gradient(180deg, var(--scan) 0 1px, transparent 1px 4px),
+    var(--surface);
+  color: var(--ink); font-family: var(--mono); -webkit-font-smoothing: antialiased;
+}
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* flap cell */
+.c { position: relative; height: var(--ch); font-family: var(--flap); font-weight: 600; font-size: var(--fs); color: var(--cc, var(--ink)); text-align: center; perspective: 260px; }
+.c > b { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; }
+.c > .u, .c > .fu { top: 0; background: var(--flap-top); border-radius: var(--r-s) var(--r-s) 0 0; }
+.c > .l, .c > .fl { bottom: 0; background: var(--flap-bottom); border-radius: 0 0 var(--r-s) var(--r-s); }
+.c > b > i { position: absolute; left: 0; right: 0; top: 0; height: var(--ch); line-height: var(--ch); font-style: normal; }
+.c > .l > i, .c > .fl > i { top: calc(var(--ch) / -2); }
+.c > .fu, .c > .fl { display: none; z-index: 2; backface-visibility: hidden; }
+.c > .fu { transform-origin: 50% 100%; }
+.c > .fl { transform-origin: 50% 0; transform: rotateX(90deg); }
+.c::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; margin-top: -.5px; background: var(--hinge); z-index: 3; }
+.c.go > .fu { display: block; animation: fu var(--half) ease-in forwards; }
+.c.go > .fl { display: block; animation: fl var(--half) ease-out var(--half) forwards; }
+@keyframes fu { from { transform: rotateX(0); } to { transform: rotateX(-90deg); } }
+@keyframes fl { from { transform: rotateX(90deg); } to { transform: rotateX(0); } }
+
+/* header */
+.top { position: absolute; top: 54px; left: 16px; right: 16px; height: 54px; display: flex; align-items: center; gap: 12px; }
+.key { border: 0; cursor: pointer; background: var(--surface-raised); color: var(--ink); border-radius: 6px; box-shadow: inset 0 1px 0 var(--glint), 0 4px 0 var(--key-floor); transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease); }
+.key:active { transform: translateY(3px); box-shadow: inset 0 1px 0 var(--glint), 0 1px 0 var(--key-floor); }
+.close { width: 48px; height: 48px; flex: none; display: grid; place-items: center; }
+.close svg { width: 16px; height: 16px; stroke: var(--ink); stroke-width: 2.2; }
+.deck { flex: 1; min-width: 0; line-height: 1.25; }
+.deck b { display: block; font-weight: 700; font-size: 13px; line-height: 18px; color: var(--ink); white-space: nowrap; }
+.deck span { display: block; font-size: 12px; line-height: 16px; color: var(--ink-muted); white-space: nowrap; }
+.deck span + span { color: var(--accent); }
+.count { display: grid; grid-template-columns: repeat(5, 18px); gap: 2px; --ch: 34px; --fs: 26px; --cc: var(--accent); }
+.count .c { font-weight: 700; }
+
+.lamps { position: absolute; top: 120px; left: 16px; right: 16px; height: 26px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.lamp { position: relative; border-radius: var(--r-s); background: var(--flap-bottom); display: grid; place-items: center; font-family: var(--mono); font-size: 11px; color: var(--ink-muted); }
+.lamp::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--hinge); }
+.lamp svg { width: 14px; height: 14px; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; position: relative; z-index: 1; }
+.lamp.ok svg { stroke: var(--correct); }
+.lamp.no svg { stroke: var(--wrong); }
+.lamp.now { background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.lamp.now::after { background: var(--dim); }
+
+/* the board (card) */
+.card {
+  position: absolute; top: 158px; left: 16px; width: 358px; padding: 10px 8px 12px;
+  background: var(--housing); border-radius: var(--r-l); box-shadow: var(--shadow), 0 0 0 1px var(--key-floor);
+  touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;
+  transform: translateX(var(--dx, 0px)) rotate(calc(var(--rot, 0deg) * .6));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+[data-state="answer"] .card { transform: none; cursor: default; }
+.card::before, .card::after { content: ""; position: absolute; top: 14px; width: 6px; height: 6px; border-radius: 50%; background: var(--rivet); box-shadow: inset 0 1px 0 var(--glint); }
+.card::before { left: 8px; } .card::after { right: 8px; }
+.strip { position: relative; height: 22px; margin: 0 10px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 700; color: var(--ink-muted); }
+.strip span { position: relative; display: flex; align-items: center; gap: 6px; }
+.strip svg { width: 8px; height: 10px; fill: currentColor; }
+.strip em { position: absolute; inset: 0; display: flex; align-items: center; gap: 6px; font-style: normal; color: var(--accent); }
+.strip .mid { position: absolute; left: 50%; top: 0; height: 22px; width: 160px; margin-left: -80px; justify-content: center; font-weight: 400; }
+.strip .mid i { font-style: normal; opacity: calc(1 - max(var(--intent, 0), var(--intent, 0) * -1) * 3); }
+.strip .mid em { justify-content: center; font-weight: 700; font-size: 14px; background: var(--housing); }
+.strip .mid .ef { opacity: calc(var(--intent, 0) * -3); }
+.strip .mid .et { opacity: calc(var(--intent, 0) * 3); }
+.strip .mid em b { display: inline-block; padding: 1px 8px; border-radius: var(--r-s); background: var(--accent); color: var(--on-accent); }
+
+.rows { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px 2px; --ch: 38px; --fs: 32px; }
+.rows .c { font-weight: 700; }
+.card[data-dragging] .rows { --cc: var(--ink); }
+
+.status { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule); display: grid; gap: 6px; }
+.srow { display: grid; grid-template-columns: 110px 1fr 26px; align-items: center; --ch: 34px; --fs: 26px; }
+.srow > span { font-size: 11.5px; color: var(--ink-muted); padding-left: 2px; white-space: nowrap; }
+.cells { display: grid; grid-template-columns: repeat(9, 20.9px); gap: 2px; }
+.srow .c { font-weight: 700; }
+.verdict { --cc: var(--accent); }
+[data-result="correct"] .verdict { --cc: var(--correct); }
+[data-result="wrong"] .verdict { --cc: var(--wrong); }
+.answer .c { --cc: var(--ink); }
+.bulb { justify-self: end; width: 24px; height: 24px; border-radius: 50%; background: var(--rule); box-shadow: inset 0 2px 3px var(--sink); display: grid; place-items: center; transition: background var(--t2) var(--ease) var(--t3); }
+.bulb svg { width: 14px; height: 14px; fill: none; stroke: var(--on-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; display: none; }
+[data-result="correct"] .bulb { background: var(--correct); box-shadow: 0 0 0 3px var(--correct-halo); }
+[data-result="wrong"] .bulb { background: var(--wrong); box-shadow: 0 0 0 3px var(--wrong-halo); }
+[data-result="correct"] .bulb .ok, [data-result="wrong"] .bulb .no { display: block; }
+
+/* below the board */
+.hint { position: absolute; top: 650px; left: 16px; right: 16px; text-align: center; font-size: 13px; color: var(--ink-muted); transition: opacity var(--t2); }
+.remarks { position: absolute; top: 568px; left: 16px; right: 16px; padding-left: 14px; border-left: 3px solid var(--accent); opacity: 0; transform: translateY(8px); transition: opacity var(--t2), transform var(--t2) var(--ease); }
+.explain { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.source { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; font-weight: 700; font-size: 14px; color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.source svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+.choices, .next-row { position: absolute; top: 714px; left: 16px; right: 16px; height: 68px; display: flex; gap: 12px; transition: opacity var(--t2), transform var(--t2) var(--ease); }
+.choice { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; font-family: var(--flap); font-weight: 700; font-size: 32px; }
+.choice svg { width: 14px; height: 18px; fill: var(--accent); }
+.next-row { opacity: 0; pointer-events: none; transform: translateY(8px); }
+.next { flex: 1; display: flex; align-items: center; justify-content: center; gap: 14px; background: var(--accent); color: var(--on-accent); font-family: var(--flap); font-weight: 700; font-size: 32px; box-shadow: inset 0 1px 0 var(--glint-strong), 0 4px 0 var(--accent-deep); }
+.next:active { box-shadow: inset 0 1px 0 var(--glint-strong), 0 1px 0 var(--accent-deep); }
+.next svg { width: 14px; height: 18px; fill: var(--on-accent); }
+[data-state="answer"] .choices, [data-state="answer"] .hint { opacity: 0; pointer-events: none; }
+[data-state="answer"] .next-row, [data-state="answer"] .remarks { opacity: 1; pointer-events: auto; transform: none; transition-delay: var(--t3); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; transition-delay: 0s !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <button class="key close" type="button" aria-label="Leave round">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"/></svg>
+    </button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Security and compliance</span><span>Classic</span></div>
+    <div class="count" id="count" role="img" aria-label="Card 4 of 10"></div>
+  </header>
+  <div class="lamps" role="img" aria-label="Cards 1 and 2 correct, card 3 wrong, card 4 now">
+    <span class="lamp ok"><svg viewBox="0 0 14 14"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+    <span class="lamp ok"><svg viewBox="0 0 14 14"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+    <span class="lamp no"><svg viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8"/></svg></span>
+    <span class="lamp now">04</span>
+    <span class="lamp">05</span><span class="lamp">06</span><span class="lamp">07</span><span class="lamp">08</span><span class="lamp">09</span><span class="lamp">10</span>
+  </div>
+
+  <article class="card" id="card" data-swipe aria-label="AWS is responsible for patching the guest operating system on your EC2 instances.">
+    <div class="strip" aria-hidden="true">
+      <span class="f"><svg viewBox="0 0 8 10"><path d="M8 0v10L0 5z"/></svg>False</span>
+      <span class="mid"><i>Swipe the board</i><em class="ef"><b>&#9664; False</b></em><em class="et"><b>True &#9654;</b></em></span>
+      <span class="t">True<svg viewBox="0 0 8 10"><path d="M0 0v10l8-5z"/></svg></span>
+    </div>
+    <div class="rows" id="rows" aria-hidden="true"></div>
+    <div class="status" aria-live="polite">
+      <div class="srow"><span>Status</span><div class="cells verdict" id="verdict" aria-hidden="true"></div>
+        <span class="bulb" aria-hidden="true"><svg class="ok" viewBox="0 0 14 14"><path d="M2.5 7.5l3 3 6-7"/></svg><svg class="no" viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8"/></svg></span></div>
+      <div class="srow"><span>The answer is</span><div class="cells answer" id="ans" aria-hidden="true"></div><span></span></div>
+      <p id="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)"></p>
+    </div>
+  </article>
+
+  <p class="hint">Drag left for false, right for true</p>
+  <section class="remarks">
+    <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+    <a class="source" href="#" onclick="return false">Shared responsibility model<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4 3h5v5"/></svg></a>
+  </section>
+
+  <div class="choices">
+    <button class="key choice" type="button" data-answer="false"><svg viewBox="0 0 14 18" aria-hidden="true"><path d="M14 0v18L0 9z"/></svg>False</button>
+    <button class="key choice" type="button" data-answer="true">True<svg viewBox="0 0 14 18" aria-hidden="true"><path d="M0 0v18l14-9z"/></svg></button>
+  </div>
+  <div class="next-row">
+    <button class="key next" type="button">Next card<svg viewBox="0 0 14 18" aria-hidden="true"><path d="M0 0v18l14-9z"/></svg></button>
+  </div>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// split-flap engine
+const HALF = 60, FLIP = HALF * 2, GLYPHS = 'ABCDEFGHIJKLMNOPRSTUVWXYZ0123456789'
+const still = matchMedia('(prefers-reduced-motion: reduce)')
+function makeCell(ch = ' ') {
+  const c = document.createElement('div')
+  c.className = 'c'
+  c.innerHTML = '<b class="u"><i></i></b><b class="l"><i></i></b><b class="fu"><i></i></b><b class="fl"><i></i></b>'
+  c._ch = ch; c._n = 0
+  c.querySelectorAll('i').forEach(i => (i.textContent = ch))
+  return c
+}
+function step(c, ch) {
+  const [u, l, fu, fl] = c.querySelectorAll('i'), old = c._ch
+  if (old === ch) return
+  c._ch = ch
+  if (still.matches) { u.textContent = l.textContent = fu.textContent = fl.textContent = ch; return }
+  const n = ++c._n
+  fu.textContent = old; l.textContent = old; u.textContent = ch; fl.textContent = ch
+  c.classList.remove('go'); void c.offsetWidth; c.classList.add('go')
+  setTimeout(() => { if (c._n === n) { l.textContent = ch; c.classList.remove('go') } }, FLIP + 10)
+}
+function flipTo(c, ch, delay, spins) {
+  if (c._ch === ch) return
+  const seq = []
+  for (let k = 0; k < spins; k++) seq.push(GLYPHS[(Math.random() * GLYPHS.length) | 0])
+  seq.push(ch)
+  seq.forEach((g, k) => setTimeout(() => step(c, g), delay + k * FLIP))
+}
+function fill(el, n) { const cells = []; for (let i = 0; i < n; i++) { const c = makeCell(); el.appendChild(c); cells.push(c) } return cells }
+function pad(text, n) { return text.padEnd(n, ' ').slice(0, n).split('') }
+function wrap(text, cols) {
+  const lines = [], words = text.split(' ')
+  let line = ''
+  for (const w of words) {
+    if (!line) line = w
+    else if ((line + ' ' + w).length <= cols) line += ' ' + w
+    else { lines.push(line); line = w }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+function show(cells, text, opts = {}) {
+  const chars = pad(text, cells.length)
+  cells.forEach((c, i) => {
+    if (opts.instant) { step(c, chars[i]); return }
+    flipTo(c, chars[i], (opts.delay || 0) + i * (opts.stagger ?? 28), chars[i] === ' ' && c._ch === ' ' ? 0 : 1 + ((Math.random() * 2) | 0))
+  })
+}
+
+const COLS = 15, ROWS = 6
+const STATEMENT = 'AWS is responsible for patching the guest operating system on your EC2 instances.'
+const rowCells = fill(document.getElementById('rows'), COLS * ROWS)
+const verdictCells = fill(document.getElementById('verdict'), 9)
+const ansCells = fill(document.getElementById('ans'), 9)
+const countCells = fill(document.getElementById('count'), 5)
+function showStatement(instant) {
+  const lines = wrap(STATEMENT, COLS)
+  const text = lines.map(l => l.padEnd(COLS, ' ')).join('').padEnd(COLS * ROWS, ' ')
+  rowCells.forEach((c, i) => {
+    const r = (i / COLS) | 0, col = i % COLS
+    if (instant) step(c, text[i])
+    else flipTo(c, text[i], r * 45 + col * 14, text[i] === ' ' ? 0 : 1 + ((Math.random() * 2) | 0))
+  })
+}
+showStatement(true)
+show(countCells, '04/10', { instant: true })
+show(verdictCells, 'Your call', { instant: true })
+show(ansCells, '', { instant: true })
+
+const root = document.documentElement
+const card = document.getElementById('card')
+const sr = document.getElementById('sr')
+function answer(choice) {
+  if (root.dataset.state !== 'question') return
+  const ok = choice === 'false'
+  root.dataset.result = ok ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  show(verdictCells, ok ? 'Correct' : 'Not quite', { stagger: 30 })
+  show(ansCells, 'False', { delay: 160, stagger: 30 })
+  sr.textContent = (ok ? 'Correct. ' : 'Not quite. ') + 'The answer is False.'
+  setTimeout(() => document.querySelector('.next').focus({ preventScroll: true }), 500)
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+  sr.textContent = ''
+  rowCells.forEach(c => step(c, ' '))
+  showStatement(false)
+  show(verdictCells, 'Your call', { stagger: 30 })
+  show(ansCells, '', { stagger: 20 })
+}
+attachSwipe(card, answer)
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.querySelector('.next').addEventListener('click', reset)
+</script>
+</body>
+</html>

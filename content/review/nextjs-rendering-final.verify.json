@@ -1,0 +1,249 @@
+{
+ "deck": "nextjs-rendering",
+ "facts": {
+  "cards": [
+   {
+    "id": "nextjs-rendering-sr5-07",
+    "verdict": "ok",
+    "urlStatus": "200, live (Fetching Data, version 16.3.8, lastUpdated 2026-09-07)",
+    "evidence": "Section 'Parallel data fetching': \"By default, layouts and pages are rendered in parallel. So each segment starts fetching data as soon as possible.\" and \"However, within *any* component, multiple `async`/`await` requests can still be sequential if placed after the other. For example, `getAlbums` will be blocked until `getArtist` is resolved\" and \"Start multiple requests by calling `fetch`, then await them with `Promise.all`. Requests begin as soon as `fetch` is called.\" Answer false is supported, and every sentence of the explanation matches the page. Nothing on the page changes with cacheComponents on or off, so 'Next.js 16' is correct for appliesTo.",
+    "problem": "The card is correct. I tried to argue the opposite: 'awaited back to back' could also describe `const a = fetch(x); const b = fetch(y); await a; await b;`, where both requests are already in flight and do overlap. The natural reading is `await fetch(x); await fetch(y);`, so the answer holds. The explanation's 'await them together' is a little stronger than needed, because awaiting promises that have already started also overlaps them.",
+    "suggestedFix": "Optional tightening, not required. Statement: \"Since layouts and pages render in parallel, two calls written as `await fetch(a)` then `await fetch(b)` in one component also run in parallel.\" Explanation: \"Parallel rendering applies across route segments. Inside one component, `await fetch(a)` pauses before `fetch(b)` is even called. Start both requests first, then await them (for example with Promise.all) so they overlap.\""
+   },
+   {
+    "id": "nextjs-rendering-sr6-08",
+    "verdict": "ambiguous",
+    "urlStatus": "200, live (Caching and Revalidating (Previous Model), version 16.3.8, lastUpdated 2026-08-25; page states it assumes you are not using Cache Components)",
+    "evidence": "Section 'Revalidation frequency': \"The lowest `revalidate` across each layout and page of a single route will determine the revalidation frequency of the *entire* route. This ensures that child pages are revalidated as frequently as their parent layouts.\" The very next bullet: \"Individual `fetch` requests can set a lower `revalidate` than the route's default `revalidate` to increase the revalidation frequency of the entire route.\" Also, under 'Route segment config revalidate': \"This option does not override the `revalidate` value set by individual `fetch` requests.\" Also: \"In Development, Pages are *always* rendered on-demand and are never cached.\"",
+    "problem": "The answer 'true' copies the docs, but the same page gives a direct counterexample. If the page exports revalidate = 3600 and a fetch inside it uses next: { revalidate: 60 }, the route revalidates every 60 s. So the smallest value among the layouts and page does not set the route's frequency. A well-informed player can correctly answer false. The phrase 'sets its frequency' sounds final, but the segment exports only set the route's default, and a lower fetch-level value can still lower it. The explanation leaves out this exception and also does not say that development mode never caches.",
+    "suggestedFix": "Statement: \"In Next.js 16 with cacheComponents: false, if a layout exports revalidate = 3600 and its page exports revalidate = 60, the route is revalidated every 60 seconds.\" Answer: true. Explanation: \"In the previous caching model, the lowest revalidate exported by any layout or page sets the default revalidation frequency for the whole route, so a child page refreshes at least as often as its parent layouts. A fetch with a lower next.revalidate can raise the frequency further. In development, pages are always rendered on demand.\" Keep the source URL and appliesTo as they are."
+   }
+  ]
+ },
+ "quality": {
+  "cards": [
+   {
+    "id": "nextjs-rendering-sr5-07",
+    "verdict": "ambiguous",
+    "urlStatus": "200 OK, nextjs.org/docs/app/getting-started/fetching-data opened this session (Version 16.3.8, last updated September 7)",
+    "evidence": "\"By default, layouts and pages are rendered in parallel. So each segment starts fetching data as soon as possible. However, within any component, multiple async / await requests can still be sequential if placed after the other. For example, getAlbums will be blocked until getArtist is resolved ... Start multiple requests by calling fetch, then await them with Promise.all. Requests begin as soon as fetch is called.\"",
+    "problem": "The answer (false) matches the source for the intended code, `const a = await getArtist(); const b = await getAlbums();`. But \"two fetches awaited back to back\" has a second sensible reading: `const p1 = fetch(x); const p2 = fetch(y); await p1; await p2;`. Those awaits are also back to back, yet both requests overlap because, per the source, \"Requests begin as soon as fetch is called\". Under that reading the statement is true, so a player who knows the material can be marked wrong. The explanation repeats the overgeneralisation: \"each await blocks the next request\" holds only for a request that is started after the await. The misconception itself is plausible and the 114/173 lengths pass, but the wording has to pin down that each fetch is started only after the previous one resolves.",
+    "suggestedFix": "Statement (118 chars): \"As layouts and pages render in parallel, two fetches in one component overlap even if each is awaited before the next.\" Answer: false. Explanation (188 chars): \"Route segments render in parallel, but inside one component an awaited fetch delays any fetch started after it. Start both requests first, then await them with Promise.all so they overlap.\""
+   },
+   {
+    "id": "nextjs-rendering-sr6-08",
+    "verdict": "ok",
+    "urlStatus": "200 OK, nextjs.org/docs/app/guides/caching-without-cache-components opened this session (Version 16.3.8, last updated August 25, 2026)",
+    "evidence": "\"This guide assumes you are not using Cache Components which was introduced in version 16 under the cacheComponents flag.\" and \"Revalidation frequency: The lowest revalidate across each layout and page of a single route will determine the revalidation frequency of the entire route. This ensures that child pages are revalidated as frequently as their parent layouts.\"",
+    "problem": "The answer (true) is correct, and the statement names the configuration as required (Next.js 16, cacheComponents: false). The distractor is plausible: many developers expect the page, as the most specific segment, to override its layout. There is no negation, and the lengths are 119/106. Two minor polish points, neither of which makes the card wrong. (1) \"sets its frequency\" is a little vague; \"revalidation frequency\" or \"how often the route revalidates\" would read better for a non-native reader, but the full phrase does not fit in 120 characters. (2) The explanation mostly restates the statement and uses the in-house phrase \"the previous model\". Saying \"Without Cache Components\" and adding the reason (child pages refresh at least as often as their parent layouts) would teach more.",
+    "suggestedFix": "Optional polish, keeping answer true. Statement (117 chars): \"In Next.js 16 with cacheComponents: false, the lowest revalidate among a route's layouts and page sets its frequency.\" Explanation (195 chars): \"Without Cache Components, the lowest revalidate across a route's layouts and page decides how often the whole route revalidates, so a child page refreshes at least as often as its parent layouts.\""
+   }
+  ]
+ },
+ "dups": {
+  "duplicates": [
+   {
+    "ids": [
+     "nextjs-rendering-sr5-07",
+     "nextjs-rendering-sr5-09"
+    ],
+    "kind": "answer_leak",
+    "severity": "never_same_round",
+    "why": "The rewritten sr5-07 opens with 'Since layouts and pages render in parallel', which is sr5-09's true answer stated as a premise. Its explanation repeats it ('Parallel rendering applies across route segments'). Both cards are in conflictGroup fetch-scheduling.",
+    "recommendation": "Keep them out of the same round. Better still, rewrite sr5-07 without the premise, e.g. 'Two fetches awaited back to back in one Server Component run in parallel.'"
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr3-11",
+     "nextjs-rendering-sr3-12"
+    ],
+    "kind": "answer_leak",
+    "severity": "never_same_round",
+    "why": "sr3-12 says the shared layout stays interactive while loading.js shows feedback, which places the loading boundary below the layout and gives away sr3-11 (F). sr3-11's explanation ('sits inside its segment's layout') in turn confirms sr3-12.",
+    "recommendation": "Never show both in one round."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr2-03",
+     "nextjs-rendering-sr2-04"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both test where Client Components render: on the server for the initial HTML (sr2-03 T) versus only in the browser on later client navigations (sr2-04 F). This is one distinction tested from both sides.",
+    "recommendation": "Keep both and schedule them in separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr3-02",
+     "nextjs-rendering-sr3-03"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both test how Suspense boundaries group reveals: nested boundaries reveal independently (sr3-02) and a shared nearest boundary reveals together (sr3-03).",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr3-01",
+     "nextjs-rendering-sr3-04"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both ask what activates a Suspense fallback: use() on a pending Promise does (T), a fetch started in useEffect does not (F). sr3-04's explanation ('suspension requires a supported render-time resource') points straight at sr3-01.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr5-02",
+     "nextjs-rendering-sr5-04"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both test the scope of automatic GET fetch memoization: it applies during component render (sr5-02 T) but not inside Route Handlers (sr5-04 F). sr5-04's explanation names the render-tree scope.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr6-08",
+     "nextjs-rendering-sr7-12"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both are about the route-level revalidate export. The rewritten sr6-08 has it working with cacheComponents off (T), and sr7-12 asks whether it still works with cacheComponents on (F). Read together, sr6-08 shows the export exists and sr7-12's explanation shows it is the previous model's API.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr8-10",
+     "nextjs-rendering-sr8-11"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both test the Next.js 16 split between revalidateTag(tag,'max'), which serves stale data during a background refresh, and updateTag, whose next read waits for fresh data. They use the same 'posts' tag and are framed as a contrast.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr4-10",
+     "nextjs-rendering-sr6-06"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both cover cookies() with cacheComponents off: under the default route config it makes the page dynamic (sr4-10 T), and under dynamic='force-static' it returns empty values instead of reading the request (sr6-06 F). sr4-10's 'default route config' qualifier sets up the contrast directly.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr8-01",
+     "nextjs-rendering-sr8-09"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both rest on regeneration being lazy, triggered by the next request rather than run eagerly. sr8-01 shows this for time-based ISR, and sr8-09's explanation ('marks the path for revalidation on its next visit') says the same for on-demand revalidatePath.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr1-04",
+     "nextjs-rendering-sr1-10"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both test which object types can cross the server-to-client prop boundary: a built-in class instance (Date) is supported (T) and an application-defined class instance is not (F). sr1-04's explanation ('built-in types') points to the answer for sr1-10.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr6-01",
+     "nextjs-rendering-sr6-02"
+    ],
+    "kind": "answer_leak",
+    "severity": "never_same_round",
+    "why": "sr6-01's explanation says Next.js 15 made server fetch uncached by default and an upgrade 'can require explicit cache configuration', which confirms sr6-02 (opt in with force-cache). The other way round, sr6-02's 'opt into caching' hints that the default changed.",
+    "recommendation": "Separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr2-06",
+     "nextjs-rendering-sr2-07"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr2-07 (the initial browser render must match the server-rendered content) and its explanation ('agree with the existing server markup') imply that hydration adopts the existing DOM, which hints that sr2-06 is false.",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr2-11",
+     "nextjs-rendering-sr3-12"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr3-12 has a shared layout staying interactive across a navigation, which implies it stays mounted, and that is the fact sr2-11 tests (layout state preserved).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr4-10",
+     "nextjs-rendering-sr6-05"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr6-05 calls cookies() 'request-time cookies() access', which tells the learner that cookies() is request-time data and so makes the page dynamic (sr4-10).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr5-01",
+     "nextjs-rendering-sr5-05"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr5-05 takes for granted that Server Components share a database loader and run queries, which answers sr5-01 (direct database access from a Server Component).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr3-01",
+     "nextjs-rendering-sr5-11"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr3-01 shows use() reading a pending Promise, which hints that a Client Component can read a passed Promise with use (sr5-11).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr8-01",
+     "nextjs-rendering-sr8-02"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr8-02's explanation ('retries regeneration on a later request') restates that regeneration is triggered by requests, which is sr8-01's fact.",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr1-09",
+     "nextjs-rendering-sr8-06"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "sr8-06 puts 'use server' on an async function to define a Server Action, which tells the learner the directive marks functions, not components, and so answers sr1-09 (F).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "nextjs-rendering-sr7-01",
+     "nextjs-rendering-sr4-09",
+     "nextjs-rendering-sr7-02"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "Many statements carry the prefix 'In Next.js 16 with cacheComponents: false/true', which shows that Cache Components is a config flag that can be off in Next.js 16. That weakly gives away sr7-01 (an upgrade does not turn it on automatically). The leak is deck-wide; sr4-09 and sr7-02 are examples.",
+    "recommendation": "No pairing fix is practical. If this matters, reword sr7-01 so it tests something the qualifier does not already show, such as the config key name or that the opt-in lives in next.config."
+   }
+  ],
+  "notes": "I compared all 94 cards concept by concept, using the statements and the JSON explanations. I found no same_fact duplicates: every pair of overlapping cards tests a distinct fact. The most serious problem is in the rewritten card sr5-07, whose own premise ('Since layouts and pages render in parallel') states sr5-09's answer. Rewriting sr5-07 is better than just keeping the two cards in separate rounds. The other rewritten card, sr6-08, mirrors sr7-12 across cacheComponents off and on, but it is otherwise clean. sr4-09 (source-fixed) has no overlaps. I checked these clusters and left them unreported: sr1-03 vs sr7-09 (both pass children through as an opaque slot, but in different API contexts), sr5-02 vs sr5-05 (automatic fetch memoization vs React.cache), sr5-10 vs sr5-12 (separate SWR fallback facts), sr4-05 vs sr4-06 (different fallback modes), sr3-07/sr3-09/sr3-10 (streaming sub-facts), sr7-06 vs sr7-11 (different effects of expire), and sr8-12 vs sr8-09. No files were edited."
+ }
+}

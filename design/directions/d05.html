@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Pixel Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --felt: #0f3d31;
+  --felt-deep: #072019;
+  --felt-raised: #16503f;
+  --surface-raised: #f4ead3;
+  --surface-sunk: #e2d4b4;
+  --ink: #1c1625;
+  --ink-muted: #574c62;
+  --on-felt: #f4ead3;
+  --on-felt-muted: #a9cbbb;
+  --accent: #f6b73c;
+  --true: #45a2ff;
+  --false: #ff5f4c;
+  --correct: #f6b73c;
+  --wrong: #ff5f4c;
+  --shadow: #04130e;
+  --true-ink: #1f5fa8;
+  --false-ink: #b0321f;
+  --highlight: #fffaf0;
+  --stack: #b9ab8b;
+  --px: 4px;
+  --radius: 0px;
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --pixel: 'Pixelify Sans', ui-monospace, monospace;
+  --mono: 'DM Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background: var(--felt-deep);
+  color: var(--on-felt);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg.pi { shape-rendering: crispEdges; display: block; fill: currentColor; fill-rule: evenodd; }
+
+#app {
+  position: relative;
+  width: 100%; max-width: 390px; height: 100%; margin: 0 auto;
+  display: flex; flex-direction: column;
+  padding: 52px 16px 34px;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 2px, transparent 2px 4px),
+    radial-gradient(120% 70% at 50% 42%, var(--felt-raised) 0%, var(--felt) 45%, var(--felt-deep) 100%);
+  overflow: hidden;
+}
+/* pixel frame: notched 4px outline with a hard drop */
+.frame {
+  box-shadow:
+    calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
+    0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
+    0 calc(var(--px) * 3) 0 0 var(--shadow);
+}
+
+/* header */
+.top { display: flex; align-items: center; gap: 12px; height: 56px; }
+.close {
+  width: 48px; height: 48px; display: grid; place-items: center;
+  background: var(--felt-raised); color: var(--on-felt);
+  box-shadow: -4px 0 0 0 var(--shadow), 4px 0 0 0 var(--shadow), 0 -4px 0 0 var(--shadow), 0 4px 0 0 var(--shadow);
+  transition: transform var(--t1) var(--ease);
+}
+.close:active { transform: translateY(2px); }
+.deck { flex: 1; min-width: 0; line-height: 1.15; }
+.deck b { display: block; font-family: var(--pixel); font-weight: 500; font-size: 17px; color: var(--on-felt); }
+.deck span { font-size: 12px; color: var(--on-felt-muted); letter-spacing: .02em; }
+.deck span i { font-style: normal; color: var(--accent); }
+.score {
+  min-width: 76px; height: 48px; padding: 0 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--felt-deep);
+  box-shadow: -4px 0 0 0 var(--accent), 4px 0 0 0 var(--accent), 0 -4px 0 0 var(--accent), 0 4px 0 0 var(--accent);
+  position: relative;
+}
+.score small { font-size: 11px; color: var(--on-felt-muted); line-height: 1.1; }
+.score output { font-family: var(--pixel); font-weight: 700; font-size: 30px; color: var(--accent); line-height: 1; display: inline-block; }
+.plus {
+  position: absolute; right: 6px; top: -30px;
+  font-family: var(--pixel); font-weight: 700; font-size: 20px; color: var(--accent);
+  text-shadow: 0 3px 0 var(--shadow); opacity: 0; pointer-events: none;
+}
+
+/* progress */
+.run { display: flex; align-items: center; gap: 12px; margin-top: 18px; height: 28px; }
+.pips { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.pip {
+  width: 22px; height: 22px; display: grid; place-items: center;
+  background: var(--felt-deep); color: var(--ink);
+  box-shadow: inset 0 3px 0 0 rgba(0,0,0,.35);
+}
+.pip.ok { background: var(--correct); box-shadow: inset 0 -3px 0 0 rgba(0,0,0,.25); }
+.pip.no { background: var(--wrong); box-shadow: inset 0 -3px 0 0 rgba(0,0,0,.25); }
+.pip.now { background: var(--surface-raised); box-shadow: 0 0 0 2px var(--felt-deep), 0 0 0 4px var(--on-felt); font-family: var(--pixel); font-weight: 700; font-size: 13px; animation: blink 1s steps(2) infinite; }
+.pip .ico-ok, .pip .ico-no { display: none; }
+[data-state="answer"][data-result="correct"] .pip.now { background: var(--correct); animation: none; box-shadow: inset 0 -3px 0 0 rgba(0,0,0,.25); }
+[data-state="answer"][data-result="wrong"] .pip.now { background: var(--wrong); animation: none; box-shadow: inset 0 -3px 0 0 rgba(0,0,0,.25); }
+[data-state="answer"] .pip.now .n { display: none; }
+[data-state="answer"][data-result="correct"] .pip.now .ico-ok,
+[data-state="answer"][data-result="wrong"] .pip.now .ico-no { display: block; }
+.count { margin-left: auto; font-size: 12px; color: var(--on-felt-muted); white-space: nowrap; }
+.count b { font-family: var(--pixel); font-weight: 700; font-size: 16px; color: var(--on-felt); }
+@keyframes blink { 50% { box-shadow: 0 0 0 2px var(--felt-deep), 0 0 0 4px var(--accent); } }
+
+/* card */
+.stage { flex: 1; position: relative; margin-top: 20px; perspective: 1400px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  position: absolute; left: 8px; right: 8px; top: 8px; bottom: 44px; z-index: 2;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+.card[data-dragging] .flip { transform: translateY(-8px) scale(1.02); }
+[data-state="answer"] .card { transform: none; cursor: default; }
+.deckstack { position: absolute; left: 8px; right: 8px; top: 8px; bottom: 44px; pointer-events: none; }
+.deckstack i { position: absolute; inset: 0; background: var(--surface-sunk);
+  box-shadow: -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink), 0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink), 0 12px 0 0 var(--shadow); }
+.deckstack i:nth-child(1) { transform: translateY(28px) scaleX(.9); background: var(--stack); }
+.deckstack i:nth-child(2) { transform: translateY(14px) scaleX(.95); }
+.flip {
+  position: absolute; inset: 0; transform-style: preserve-3d;
+  transition: transform 520ms var(--spring);
+}
+[data-state="answer"] .flip { transform: rotateY(180deg); }
+.face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: var(--surface-raised); color: var(--ink);
+  box-shadow:
+    -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink), 0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink),
+    inset 0 -6px 0 0 var(--surface-sunk), inset 4px 4px 0 0 var(--highlight),
+    0 10px 0 0 rgba(4,19,14,.55);
+  display: flex; flex-direction: column;
+}
+.back { transform: rotateY(180deg); }
+
+.plate {
+  margin: 12px 12px 0; height: 40px; padding: 0 12px;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--ink); color: var(--surface-raised);
+  font-family: var(--pixel); font-weight: 500; font-size: 15px;
+}
+.plate > svg { color: var(--accent); }
+.plate .idx { margin-left: auto; color: var(--accent); font-weight: 700; }
+.statement {
+  flex: 1; display: flex; align-items: center;
+  margin: 0; padding: 8px 24px;
+  font-family: var(--pixel); font-weight: 500; font-size: 31px; line-height: 1.2; letter-spacing: .005em;
+  color: var(--ink);
+}
+.hint {
+  height: 52px; margin: 0 12px 16px; padding: 0 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 4px dotted var(--surface-sunk);
+  font-size: 12px; color: var(--ink-muted);
+}
+.hint .dir { display: flex; align-items: center; gap: 6px; font-family: var(--pixel); font-weight: 700; font-size: 15px; }
+.hint .dir.f { color: var(--false-ink); }
+.hint .dir.t { color: var(--true-ink); }
+.hint .mid { display: flex; align-items: center; gap: 6px; }
+.hint .mid svg { animation: nudge 1.6s steps(4) infinite; }
+@keyframes nudge { 0%,100% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
+
+/* drag stamps */
+.stamp {
+  position: absolute; top: 72px; padding: 8px 12px;
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--pixel); font-weight: 700; font-size: 30px; line-height: 1;
+  background: var(--surface-raised); pointer-events: none;
+}
+.stamp.t { left: 20px; color: var(--true-ink); transform: rotate(-10deg); opacity: calc(var(--intent) * 1.6);
+  box-shadow: -4px 0 0 0 var(--true), 4px 0 0 0 var(--true), 0 -4px 0 0 var(--true), 0 4px 0 0 var(--true); }
+.stamp.f { right: 20px; color: var(--false-ink); transform: rotate(10deg); opacity: calc(var(--intent) * -1.6);
+  box-shadow: -4px 0 0 0 var(--false), 4px 0 0 0 var(--false), 0 -4px 0 0 var(--false), 0 4px 0 0 var(--false); }
+
+/* back face */
+.verdict {
+  margin: 12px 12px 0; padding: 16px 16px 14px;
+  background: var(--correct); color: var(--ink);
+}
+[data-result="wrong"] .verdict { background: var(--wrong); }
+.verdict h2 {
+  margin: 0; display: flex; align-items: center; gap: 12px;
+  font-family: var(--pixel); font-weight: 700; font-size: 44px; line-height: 1; letter-spacing: .01em;
+}
+.verdict h2 .word { display: inline-flex; }
+.verdict h2 .word span { display: inline-block; }
+.verdict p { margin: 10px 0 0; font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px;
+  background: var(--ink); color: var(--surface-raised);
+  font-family: var(--pixel); font-weight: 700; font-size: 17px;
+}
+.verdict h2.v-ok, .verdict h2.v-no { display: none; }
+[data-result="correct"] .verdict h2.v-ok, [data-result="wrong"] .verdict h2.v-no { display: flex; }
+.explain { margin: 0; padding: 20px 24px 0; font-size: 17px; line-height: 1.6; color: var(--ink); flex: 1; }
+.source {
+  margin: 0 12px 16px; min-height: 52px; padding: 0 12px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 4px dotted var(--surface-sunk);
+  font-size: 14px; font-weight: 500; color: var(--true-ink); text-decoration: none;
+}
+.source u { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.source .arr { margin-left: auto; }
+
+/* buttons */
+.actions { height: 84px; position: relative; margin-bottom: 4px; }
+.row { position: absolute; inset: 0; display: flex; gap: 20px; padding: 8px 4px 12px;
+  transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn {
+  flex: 1; height: 60px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--pixel); font-weight: 700; font-size: 24px; color: var(--ink);
+  position: relative;
+  box-shadow:
+    -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink), 0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink),
+    inset 0 -6px 0 0 rgba(0,0,0,.22), inset 0 4px 0 0 rgba(255,255,255,.35),
+    0 10px 0 0 var(--shadow);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.btn:active {
+  transform: translateY(6px);
+  box-shadow:
+    -4px 0 0 0 var(--ink), 4px 0 0 0 var(--ink), 0 -4px 0 0 var(--ink), 0 4px 0 0 var(--ink),
+    inset 0 6px 0 0 rgba(0,0,0,.18), 0 4px 0 0 var(--shadow);
+}
+.btn.f { background: var(--false); }
+.btn.t { background: var(--true); }
+.btn.next { background: var(--accent); }
+.q-row { opacity: 1; }
+.a-row { opacity: 0; transform: translateY(16px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .q-row { opacity: 0; transform: translateY(16px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .a-row { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition-delay: 260ms; }
+
+:focus-visible { outline: 3px dashed var(--accent); outline-offset: 8px; }
+.source:focus-visible { outline-color: var(--true-ink); outline-offset: 2px; }
+
+/* the beat: bouncing verdict letters + score pop */
+[data-state="answer"] .verdict .word span { animation: hop 520ms var(--spring) both; animation-delay: calc(300ms + var(--i) * 45ms); }
+@keyframes hop { 0% { transform: translateY(18px); opacity: 0; } 60% { transform: translateY(-8px); opacity: 1; } 100% { transform: none; opacity: 1; } }
+[data-state="answer"][data-result="correct"] .score output { animation: pop 520ms var(--spring) 420ms both; }
+[data-state="answer"][data-result="correct"] .plus { animation: rise 900ms var(--ease) 420ms both; }
+[data-state="answer"][data-result="wrong"] .score { animation: shake 360ms steps(6) 420ms; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.6) translateY(-4px); } 100% { transform: scale(1); } }
+@keyframes rise { 0% { opacity: 0; transform: translateY(12px); } 25% { opacity: 1; } 70% { opacity: 1; transform: translateY(-6px); } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes shake { 0%,100% { transform: none; } 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-4px); } }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-x" viewBox="0 0 7 7"><path d="M0 0h2v1h1v1h1V1h1V0h2v1H6v1H5v1H4v1h1v1h1v1h1v1H5V6H4V5H3v1H2v1H0V6h1V5h1V4h1V3H2V2H1V1H0z"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 7 7"><path d="M6 1h1v2H6v1H5v1H4v1H3v1H2V6H1V5H0V3h1v1h1v1h1V4h1V3h1V2h1z"/></symbol>
+    <symbol id="i-l" viewBox="0 0 5 7"><path d="M3 0h2v1H4v1H3v1H2v1h1v1h1v1h1v1H3V6H2V5H1V4H0V3h1V2h1V1h1z"/></symbol>
+    <symbol id="i-r" viewBox="0 0 5 7"><path d="M0 0h2v1h1v1h1v1h1v1H4v1H3v1H2v1H0V6h1V5h1V4h1V3H2V2H1V1H0z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 7 8"><path d="M1 0h5v1h1v4H6v1H5v1H4v1H3V7H2V6H1V5H0V1h1zM3 2v3h1V2z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 9 9"><path d="M4 0h1v2h1v1h3v1H8v1H7v1h1v3H7V8H6V7H3v1H2v1H1V6h1V5H1V4H0V3h3V2h1z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 6 8"><path d="M0 0h5v1h1v7H0zM1 1v6h4V2H4V1zM2 3h2v1H2zM2 5h2v1H2z"/></symbol>
+  </defs>
+</svg>
+
+<main id="app" data-state="question">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg class="pi" width="18" height="18"><use href="#i-x"/></svg></button>
+    <div class="deck">
+      <b>AWS Cloud Practitioner</b>
+      <span>Mode <i>Classic</i></span>
+    </div>
+    <div class="score" aria-live="polite">
+      <small>Score</small>
+      <output id="score">2</output>
+      <span class="plus" aria-hidden="true">+1</span>
+    </div>
+  </header>
+
+  <div class="run">
+    <ol class="pips" aria-label="Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.">
+      <li class="pip ok"><svg class="pi" width="14" height="14"><use href="#i-ok"/></svg></li>
+      <li class="pip ok"><svg class="pi" width="14" height="14"><use href="#i-ok"/></svg></li>
+      <li class="pip no"><svg class="pi" width="12" height="12"><use href="#i-x"/></svg></li>
+      <li class="pip now"><span class="n">4</span><svg class="pi ico-ok" width="14" height="14"><use href="#i-ok"/></svg><svg class="pi ico-no" width="12" height="12"><use href="#i-x"/></svg></li>
+      <li class="pip"></li><li class="pip"></li><li class="pip"></li><li class="pip"></li><li class="pip"></li><li class="pip"></li>
+    </ol>
+    <span class="count" aria-hidden="true"><b>4</b> / 10</span>
+  </div>
+
+  <section class="stage">
+    <div class="deckstack" aria-hidden="true"><i></i><i></i></div>
+    <div class="card" id="card">
+      <div class="flip">
+        <article class="face front">
+          <div class="plate"><svg class="pi" width="14" height="16"><use href="#i-shield"/></svg>Security and compliance<span class="idx">#4</span></div>
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="hint" aria-hidden="true">
+            <span class="dir f"><svg class="pi" width="10" height="14"><use href="#i-l"/></svg>False</span>
+            <span class="mid">swipe or tap</span>
+            <span class="dir t">True<svg class="pi" width="10" height="14"><use href="#i-r"/></svg></span>
+          </div>
+          <div class="stamp t" aria-hidden="true"><svg class="pi" width="22" height="22"><use href="#i-ok"/></svg>True</div>
+          <div class="stamp f" aria-hidden="true"><svg class="pi" width="20" height="20"><use href="#i-x"/></svg>False</div>
+        </article>
+        <article class="face back" aria-live="polite">
+          <div class="plate"><svg class="pi" width="14" height="16"><use href="#i-shield"/></svg>Security and compliance<span class="idx">#4</span></div>
+          <div class="verdict">
+            <h2 class="v-ok"><svg class="pi" width="36" height="36"><use href="#i-star"/></svg><span class="word" data-word="Correct"></span></h2>
+            <h2 class="v-no"><svg class="pi" width="30" height="30"><use href="#i-x"/></svg><span class="word" data-word="Not quite"></span></h2>
+            <p>The answer is <span class="chip">False</span></p>
+          </div>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" id="source"><svg class="pi" width="15" height="20"><use href="#i-book"/></svg><u>Shared responsibility model</u><svg class="pi arr" width="10" height="14"><use href="#i-r"/></svg></a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <div class="row q-row">
+      <button class="btn f" type="button" data-answer="false"><svg class="pi" width="18" height="18"><use href="#i-x"/></svg>False</button>
+      <button class="btn t" type="button" data-answer="true"><svg class="pi" width="20" height="20"><use href="#i-ok"/></svg>True</button>
+    </div>
+    <div class="row a-row">
+      <button class="btn next" type="button" id="next">Next card<svg class="pi" width="12" height="16"><use href="#i-r"/></svg></button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+const score = document.getElementById('score')
+document.querySelectorAll('.word').forEach(w => {
+  w.innerHTML = [...w.dataset.word].map((c, i) => `<span style="--i:${i}">${c === ' ' ? '&nbsp;' : c}</span>`).join('')
+})
+function answer(choice) {
+  if (app.dataset.state !== 'question') return
+  const ok = choice === 'false'
+  app.dataset.result = ok ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  score.textContent = ok ? '3' : '2'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 400)
+}
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'
+  delete app.dataset.result
+  score.textContent = '2'
+})
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+attachSwipe(card, answer)
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Wallet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600&family=Overpass:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky-1: #a9d6f0;
+  --sky-2: #c4e3f5;
+  --sky-3: #ddeff8;
+  --sky-4: #f3f0e6;
+  --surface: var(--sky-2);
+  --surface-raised: #fdfbf5;
+  --surface-sunk: #eef3f5;
+  --ink: #10233f;
+  --ink-muted: #56667c;
+  --rule: #c9d3dc;
+  --accent: #f5b400;
+  --true: #1d5cc0;
+  --false: #b3321c;
+  --correct: #0d7250;
+  --wrong: #b3321c;
+  --on-dark: #fdfbf5;
+  --cloud: #ffffff;
+  --r: 16px; --r-sm: 8px;
+  --shadow: 0 1px 0 rgba(16,35,63,.06), 0 22px 36px -18px rgba(16,35,63,.45);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Overpass', system-ui, sans-serif;
+  --mono: 'Overpass Mono', ui-monospace, monospace;
+  --notch: 12px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+h1, p { margin: 0; }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto;
+  display: flex; flex-direction: column; padding: 52px 16px 34px; overflow: hidden;
+  background: linear-gradient(180deg,
+    var(--sky-1) 0 22%, var(--sky-2) 22% 48%, var(--sky-3) 48% 76%, var(--sky-4) 76% 100%);
+}
+.cloud { position: absolute; fill: var(--cloud); opacity: .7; pointer-events: none; }
+
+/* header */
+.top { position: relative; z-index: 1; height: 56px; display: flex; flex-direction: column; justify-content: center; }
+.top h1 { font-weight: 800; font-size: 24px; line-height: 1.1; letter-spacing: -.015em; }
+.top p { margin-top: 4px; font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.top p b { font-weight: 600; }
+
+/* area filter: scrolls sideways when there are more areas than fit */
+.areas {
+  position: relative; z-index: 1; display: flex; gap: 8px; margin: 8px -16px 0; padding: 0 16px;
+  overflow-x: auto; scrollbar-width: none; scroll-padding: 0 16px;
+}
+.areas::-webkit-scrollbar { display: none; }
+.chip {
+  position: relative; isolation: isolate; flex: none; height: 48px; padding: 0 16px;
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 800; font-size: 15px; letter-spacing: -.005em; color: var(--ink);
+  transition: transform var(--t1) var(--ease);
+}
+.chip::before {
+  content: ''; position: absolute; inset: 4px 0; z-index: -1; border-radius: 20px;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 0 rgba(16,35,63,.1), 0 6px 12px -6px rgba(16,35,63,.4);
+  transition: background var(--t2) var(--ease);
+}
+.chip small { font-family: var(--mono); font-weight: 600; font-size: 12px; color: var(--ink-muted); }
+.chip[aria-pressed="true"] { color: var(--on-dark); }
+.chip[aria-pressed="true"]::before { background: var(--ink); }
+.chip[aria-pressed="true"] small { color: var(--on-dark); opacity: .75; }
+.chip:active { transform: scale(.96); }
+.chip:focus-visible { outline: none; }
+.chip:focus-visible::before { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* wallet */
+.wallet { position: relative; z-index: 1; flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: flex-start; margin-top: 4px; }
+.peeks { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; padding-top: 20px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+.peeks::-webkit-scrollbar { display: none; }
+.front-slot { flex: none; }
+
+.pass { position: relative; border-radius: var(--r); will-change: transform; }
+.pass .shadowbox { position: absolute; inset: 0; border-radius: var(--r); box-shadow: var(--shadow); pointer-events: none; }
+
+/* a pass waiting behind: only its carrier band and a sliver of paper show */
+.peeks .pass { height: 64px; margin-bottom: -12px; border-radius: var(--r) var(--r) 0 0; overflow: hidden;
+  background: var(--surface-raised);
+  box-shadow: 0 -1px 0 rgba(16,35,63,.06), 0 -10px 18px -14px rgba(16,35,63,.5); }
+.peeks .pass .shadowbox, .peeks .pass .body { display: none; }
+
+.band {
+  width: 100%; height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 10px;
+  background: var(--accent); color: var(--ink); text-align: left;
+  border-radius: var(--r) var(--r) 0 0;
+  font-weight: 800; font-size: 16px; letter-spacing: -.01em;
+}
+.band .glyph { flex: none; }
+.band .pf { flex: none; }
+.band .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 600; font-size: 14px; letter-spacing: 0; }
+.band .nm::before { content: '·'; margin-right: 8px; }
+.band code { margin-left: auto; flex: none; font-family: var(--mono); font-weight: 600; font-size: 13px; letter-spacing: .06em; }
+.front-slot .band .nm { visibility: hidden; }
+.tile { flex: none; width: 32px; height: 24px; margin-left: -4px; border-radius: 6px; display: grid; place-items: center; }
+.peeks .band { height: 52px; background: var(--surface-raised); }
+.peeks .tile { background: var(--accent); }
+.peeks .band .nm { color: var(--ink); }
+button.band { cursor: pointer; }
+button.band:focus-visible { outline: 3px solid var(--ink); outline-offset: -3px; }
+
+/* the front pass */
+.front-slot .pass { margin-top: -12px; }
+.main {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 0 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+}
+.legs { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 8px; padding: 16px 20px 14px; }
+.leg code { display: block; font-family: var(--mono); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: .02em; }
+.leg span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-muted); line-height: 1.25; min-height: 30px; }
+.leg.to { text-align: right; }
+.leg.to .blank { display: flex; justify-content: flex-end; gap: 6px; height: 34px; align-items: flex-end; padding-bottom: 4px; }
+.leg.to .blank i { width: 18px; height: 3px; border-radius: 2px; background: var(--rule); }
+.meta { display: grid; grid-template-columns: 1.1fr 1fr 1.2fr; margin: 0 20px; border-top: 1.5px solid var(--rule); border-bottom: 1.5px solid var(--rule); }
+.meta div { padding: 8px 0 7px; }
+.meta div + div { padding-left: 12px; border-left: 1.5px solid var(--rule); }
+.meta dt { font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); letter-spacing: .04em; }
+.meta dd { margin: 2px 0 0; font-family: var(--mono); font-weight: 600; font-size: 15px; }
+.seen { margin: 0; padding: 16px 20px 22px; }
+.seen .hd { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); }
+.seen .hd span { font-size: 10.5px; color: var(--ink-muted); letter-spacing: .04em; }
+.seen .hd b { font-weight: 600; font-size: 15px; }
+.seen .hd b small { font-weight: 400; font-size: 12px; color: var(--ink-muted); margin-right: 8px; }
+.seen svg { width: 100%; height: 30px; margin-top: 6px; overflow: visible; }
+.seen .ends { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--mono); font-size: 11px; color: var(--ink-muted); }
+.perf {
+  position: absolute; left: calc(var(--notch) + 6px); right: calc(var(--notch) + 6px); bottom: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 7px, transparent 7px 12px);
+}
+.stub {
+  position: relative; border-radius: 0 0 var(--r) var(--r);
+  background:
+    radial-gradient(circle at 0 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+  padding: 20px 20px 20px;
+}
+.stub .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.stub .row b { color: var(--ink); font-weight: 600; font-size: 13px; }
+
+.btn {
+  width: 100%; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 800; font-size: 20px; letter-spacing: -.01em;
+  box-shadow: 0 1px 0 rgba(16,35,63,.1), 0 10px 18px -10px rgba(16,35,63,.55);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.btn:active { transform: translateY(2px) scale(.98); box-shadow: 0 1px 0 rgba(16,35,63,.1); }
+.btn.go { background: var(--ink); color: var(--on-dark); }
+.btn.go:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.s-ink { stroke: var(--ink); } .f-ink { fill: var(--ink); } .s-paper { stroke: var(--surface-raised); } .f-paper { fill: var(--surface-raised); } .f-acc { fill: var(--accent); }
+
+.front-slot .body { animation: settle var(--t3) var(--ease) both; }
+@keyframes settle { from { opacity: 0; } to { opacity: 1; } }
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<main id="app">
+  <svg class="cloud" style="left:-30px;top:196px" width="150" height="46" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+  <svg class="cloud" style="right:-40px;top:620px" width="170" height="50" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+
+  <header class="top">
+    <h1>Choose a deck</h1>
+    <p id="count" aria-live="polite"></p>
+  </header>
+
+  <nav class="areas" id="areas" aria-label="Filter by area"></nav>
+
+  <section class="wallet" aria-label="Decks">
+    <div class="peeks" id="peeks"></div>
+    <div class="front-slot" id="front"></div>
+  </section>
+</main>
+
+<script>
+const AREAS = ['Cloud', 'Frontend']
+const DECKS = [
+  { code: 'CLF', name: 'Cloud Practitioner', platform: 'AWS', area: 'Cloud', cards: 214, seen: 38, streak: 12, sections: 4 },
+  { code: 'SAA', name: 'Solutions Architect Associate', platform: 'AWS', area: 'Cloud', cards: 168, seen: 0, streak: null, sections: 4 },
+  { code: 'CDL', name: 'Cloud Digital Leader', platform: 'Google Cloud', area: 'Cloud', cards: 140, seen: 0, streak: null, sections: 0 },
+  { code: 'RND', name: 'Rendering', platform: 'Next.js', area: 'Frontend', cards: 96, seen: 12, streak: 5, sections: 4 }
+]
+// wallet order, front pass last; the pass directly behind the front one is second to last
+let order = ['RND', 'CDL', 'SAA', 'CLF']
+let area = 'All'
+
+const GLYPH = {
+  Cloud: '<svg class="glyph" width="22" height="16" viewBox="0 0 22 16" aria-hidden="true"><path d="M5 15h13a4 4 0 0 0 .6-8A6 6 0 0 0 7.2 5.5 4.8 4.8 0 0 0 5 15z" class="f-ink"/></svg>',
+  Frontend: '<svg class="glyph" width="22" height="16" viewBox="0 0 22 16" aria-hidden="true"><path d="M7 3L2 8l5 5M15 3l5 5-5 5M12.5 2l-3 12" fill="none" class="s-ink" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+}
+const byCode = Object.fromEntries(DECKS.map(d => [d.code, d]))
+const nodes = {}
+
+function bandHTML(d, behind) {
+  const inner = `<span class="tile">${GLYPH[d.area] || GLYPH.Cloud}</span><span class="pf">${d.platform}</span><span class="nm">${d.name}</span><code>${d.code}</code>`
+  return behind
+    ? `<button class="band" type="button" data-bring="${d.code}" aria-label="${d.code}, ${d.platform} ${d.name}. Bring to front"${d.code === 'SAA' ? ' data-demo' : ''}>${inner}</button>`
+    : `<div class="band">${inner}</div>`
+}
+
+function bodyHTML(d) {
+  const started = d.seen > 0
+  return `
+  <div class="shadowbox"></div>
+  <div class="body">
+    <div class="main">
+      <div class="legs">
+        <div class="leg"><code>${d.code}</code><span>${d.name}</span></div>
+        <div class="leg to"><div class="blank" aria-hidden="true"><i></i><i></i><i></i></div><span>${d.sections ? 'Section and<br>class next' : 'Whole deck,<br>class next'}</span></div>
+      </div>
+      <dl class="meta">
+        <div><dt>Area</dt><dd>${d.area}</dd></div>
+        <div><dt>Cards</dt><dd>${d.cards}</dd></div>
+        <div><dt>Best streak</dt><dd>${d.streak == null ? 'None yet' : d.streak}</dd></div>
+      </dl>
+      <div class="seen" role="img" aria-label="${started ? d.seen + ' percent of cards seen' : 'Not started'}">
+        <div class="hd" aria-hidden="true"><span>Seen</span><b>${started ? `<small>${Math.round(d.cards * d.seen / 100)} of ${d.cards}</small>${d.seen}%` : 'Not started'}</b></div>
+        <svg viewBox="0 0 278 30" aria-hidden="true" data-seen="${d.seen}">
+          <path class="trk s-ink" d="M6 22 Q139 0 272 22" fill="none" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round"/>
+          <path class="done s-ink" d="M6 22 Q139 0 272 22" fill="none" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="6" cy="22" r="5" class="f-ink"/>
+          <circle cx="272" cy="22" r="5" class="f-paper s-ink" stroke-width="1.6"/>
+          <g class="plane"><circle r="11" class="f-acc"/><path d="M-6 0h12M1-5l4 5-4 5M-5-2.5l1.7 2.5-1.7 2.5" class="s-ink" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+        </svg>
+      </div>
+      <div class="perf"></div>
+    </div>
+    <div class="stub">
+      <button class="btn go" type="button">${d.sections ? 'Choose a section' : 'Choose how to play'} <span aria-hidden="true">→</span></button>
+    </div>
+  </div>`
+}
+
+function drawSeen(svg) {
+  const pct = +svg.dataset.seen / 100
+  const done = svg.querySelector('.done'), plane = svg.querySelector('.plane')
+  const len = done.getTotalLength()
+  const at = len * pct
+  done.setAttribute('stroke-dasharray', `${at} ${len}`)
+  if (pct === 0) done.style.display = 'none'
+  const p = done.getPointAtLength(at), q = done.getPointAtLength(Math.min(len, at + 1))
+  const ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI
+  plane.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${ang})`)
+}
+
+function renderPass(code, behind) {
+  let el = nodes[code]
+  if (!el) { el = nodes[code] = document.createElement('article'); el.className = 'pass' }
+  const d = byCode[code]
+  el.setAttribute('aria-label', `${d.code}, ${d.platform} ${d.name}`)
+  el.innerHTML = bandHTML(d, behind) + (behind ? '' : bodyHTML(d))
+  if (!behind) el.querySelectorAll('svg[data-seen]').forEach(drawSeen)
+  return el
+}
+
+function renderAreas() {
+  const box = document.getElementById('areas')
+  const count = a => a === 'All' ? DECKS.length : DECKS.filter(d => d.area === a).length
+  box.innerHTML = ['All', ...AREAS].map(a =>
+    `<button class="chip" type="button" data-area="${a}" aria-pressed="${a === area}">${a}<small>${count(a)}</small></button>`).join('')
+}
+
+function render(animate) {
+  const visible = order.filter(c => area === 'All' || byCode[c].area === area)
+  const before = {}
+  if (animate) for (const c of visible) if (nodes[c] && nodes[c].isConnected) before[c] = nodes[c].getBoundingClientRect().top
+
+  const peeks = document.getElementById('peeks'), front = document.getElementById('front')
+  peeks.replaceChildren(...visible.slice(0, -1).map(c => renderPass(c, true)))
+  front.replaceChildren(...visible.slice(-1).map(c => renderPass(c, false)))
+  peeks.scrollTop = peeks.scrollHeight
+
+  const n = visible.length
+  document.getElementById('count').innerHTML = `<b>${n}</b> ${n === 1 ? 'deck' : 'decks'}${n > 1 ? ' · tap a pass to bring it forward' : ''}`
+
+  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    for (const c of visible) {
+      if (before[c] == null) continue
+      const el = nodes[c], dy = before[c] - el.getBoundingClientRect().top
+      if (!dy) continue
+      el.style.transition = 'none'; el.style.transform = `translateY(${dy}px)`
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        el.style.transition = 'transform 420ms var(--spring)'; el.style.transform = ''
+      }))
+    }
+  }
+}
+
+function bring(code) {
+  const visible = order.filter(c => area === 'All' || byCode[c].area === area)
+  const cur = visible[visible.length - 1]
+  const i = order.indexOf(code), j = order.indexOf(cur)
+  order[i] = cur; order[j] = code
+  render(true)
+  const go = nodes[code].querySelector('.btn.go')
+  if (go) go.focus({ preventScroll: true })
+}
+
+document.getElementById('peeks').addEventListener('click', e => {
+  const b = e.target.closest('[data-bring]')
+  if (b) bring(b.dataset.bring)
+})
+document.getElementById('areas').addEventListener('click', e => {
+  const b = e.target.closest('[data-area]')
+  if (!b || b.dataset.area === area) return
+  area = b.dataset.area
+  renderAreas(); render(false)
+  b.scrollIntoView({ inline: 'nearest', block: 'nearest' })
+  document.querySelector(`[data-area="${area}"]`).focus({ preventScroll: true })
+})
+
+renderAreas()
+render(false)
+</script>
+</body>
+</html>

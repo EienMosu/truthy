@@ -1,0 +1,63 @@
+{
+ "file": "content/raw/aws-saa-c03-b1.json",
+ "checked": 48,
+ "flagged": [
+  {
+   "id": "aws-saa-c03-s1.1-01",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded (docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) and supports the claim.",
+   "evidence": "id_roles.html, Trust policy: \"A JSON policy document in which you define the principals that you trust to assume the role. A role trust policy is a required resource-based policy that is attached to a role in IAM.\"",
+   "problem": "The fact is correct (answer true is right) and the explanation is accurate, but the statement nearly restates the term itself: a 'trust policy' identifies the principals 'trusted' to assume the role. A player can get it right from the name alone, so it teaches nothing about the design distinction that matters (trust policy = who can assume, permissions policy = what the role can do, and cross-account assumption also needs an identity-based allow in the caller's account).",
+   "suggestedFix": "Rewrite to test the distinction, e.g. statement: \"An IAM role's permissions policy determines which principals are allowed to assume the role.\" answer: false. Explanation: \"The role's trust policy, a resource-based policy, specifies who can assume the role. The permissions policy specifies what the role session can do. For cross-account access, the caller also needs an identity-based policy that allows sts:AssumeRole on that role.\""
+  },
+  {
+   "id": "aws-saa-c03-s1.1-10",
+   "verdict": "out_of_scope",
+   "urlStatus": "Loaded (docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html) and supports the claim.",
+   "evidence": "reference_policies_condition-keys.html, aws:MultiFactorAuthPresent: \"The aws:MultiFactorAuthPresent key is not present when an API or CLI command is called with long-term credentials, such as user access key pairs. Therefore we recommend that when you check for this key that you use the ...IfExists versions of the condition operators.\"",
+   "problem": "The answer (false) and explanation are correct, but the whole card hinges on whether a specific global condition key appears in the request context for long-term-key requests. That is policy-authoring detail an architect looks up (BoolIfExists vs Bool), not an associate-level design decision. The task brief explicitly names condition keys as too deep.",
+   "suggestedFix": "drop (or, to keep the MFA topic at design level, replace with a card about requiring MFA before assuming a sensitive role through the role's trust policy, without naming the condition key)"
+  },
+  {
+   "id": "aws-saa-c03-s1.2-07",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded; supports the claim (ALB listed as protected resource; SQL injection listed as match criterion). Page title matches the card's source title.",
+   "evidence": "WAF protected resource types include \"Application Load Balancer\"; criteria include \"Presence of SQL code that is likely to be malicious (known as SQL injection).\" https://docs.aws.amazon.com/waf/latest/developerguide/what-is-aws-waf.html",
+   "problem": "Factually correct, but it only restates the textbook purpose of AWS WAF (SQL injection filtering) at difficulty 1; it does not test a design boundary. The architecture-relevant point is which resources WAF can attach to (ALB, CloudFront, API Gateway, AppSync, Cognito, App Runner, Verified Access, Amplify) and which it cannot (Network Load Balancer, EC2 directly).",
+   "suggestedFix": "Statement: \"AWS WAF web ACLs can be associated directly with a Network Load Balancer to block SQL injection.\" Answer: false. Explanation: \"AWS WAF protects Layer 7 resources such as Application Load Balancers, CloudFront distributions, API Gateway REST APIs and AppSync APIs. A Network Load Balancer is not a supported resource type; put an ALB or CloudFront in front of the application to use WAF.\" Source: https://docs.aws.amazon.com/waf/latest/developerguide/what-is-aws-waf.html"
+  },
+  {
+   "id": "aws-saa-c03-s2.1-08",
+   "verdict": "out_of_scope",
+   "urlStatus": "Loaded and supports the fact.",
+   "evidence": "\"When you enable caching for a stage, only GET methods have caching enabled by default... You can enable caching for other methods by overriding method settings.\" (https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-caching.html)",
+   "problem": "The fact and the explanation are correct, but the card turns on a default method-level cache setting: which HTTP methods get caching when stage caching is turned on. This is a configuration default that a solutions architect would look up, not an architecture-deciding capability. Also, the page's own CloudFormation example sets HttpMethod '*' with CachingEnabled, so 'default' depends on how caching is configured.",
+   "suggestedFix": "drop, or reframe at design level: 'Amazon API Gateway REST APIs can cache endpoint responses at the stage level to reduce calls to the backend and improve latency.' (true; a stronger version would contrast this with HTTP APIs, which have no built-in cache, after checking that against current docs)"
+  },
+  {
+   "id": "aws-saa-c03-s2.1-09",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded and supports the claim.",
+   "evidence": "\"You can use an Amazon ECS service to run and maintain a specified number of instances of a task definition... If one of your tasks fails or stops, the Amazon ECS service scheduler launches another instance of your task definition to replace it.\" (https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs_services.html)",
+   "problem": "The statement is true, but it only restates the definition of an ECS service (keep the desired count running), so it teaches little at associate level. The useful design distinction, a service versus standalone tasks, is missing.",
+   "suggestedFix": "Contrast it with standalone tasks, for example: 'Standalone Amazon ECS tasks started outside a service are automatically replaced by the service scheduler when they fail.' (answer false; the replacement behaviour belongs to the service scheduler, which keeps a service's desired count. Check this against current ECS docs before publishing.)"
+  }
+ ],
+ "okWithNotes": [
+  {
+   "id": "aws-saa-c03-s1.1-06",
+   "problem": "No factual problem. The phrase \"its attached role\" reads awkwardly (the boundary is set on the role) but is not wrong. The card is correctly limited to identity-based grants, so the exception for same-account resource-based grants to a role session does not undermine it.",
+   "suggestedFix": ""
+  },
+  {
+   "id": "aws-saa-c03-s1.3-04",
+   "problem": "The statement is true. Small nitpick: the request header name in the explanation is an implementation detail beyond SAA depth, but it is accurate and the card's core concept (governance mode can be overridden, compliance mode cannot) is in scope.",
+   "suggestedFix": ""
+  },
+  {
+   "id": "aws-saa-c03-s1.3-09",
+   "problem": "The card names a condition key, which is normally too deep. aws:SecureTransport is an exception: it is the standard, widely tested way to enforce encryption in transit for S3, so the card stays in scope.",
+   "suggestedFix": ""
+  }
+ ]
+}

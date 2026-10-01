@@ -1,0 +1,1036 @@
+{
+  "deck": "aws-saa-c03",
+  "block": "b3",
+  "generatedOn": "2026-10-01",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Plan corrections: In 3.4, replaced application-load-balancer-host-routing with application-load-balancer-tls-passthrough to test a stronger architectural boundary, and route53-resolver-inbound-outbound-direction with route53-resolver-shared-outbound-rules to avoid a name-based direction giveaway. In 3.5, replaced kinesis-stream-partition-key-shard-routing with kinesis-stream-retention-replay to avoid repeating the earlier partition-distribution lesson; the SPICE fact tests incremental refresh boundaries rather than generic cache staleness. In 4.1, replaced s3-intelligent-tiering-optional-archive-tiers with tape-gateway-used-storage-billing to avoid an optional-configuration fact and broaden hybrid-storage coverage. In 4.2, replaced lambda-duration-memory-billing with lambda-billed-duration-includes-io-wait to avoid repeating resource-allocation lessons, and compute-optimizer-memory-metric-agent-requirement with ec2-auto-scaling-stopped-warm-pool to replace metric-collection trivia with a compute-capacity trade-off.",
+  "cards": [
+    {
+      "id": "aws-saa-c03-s3.4-01",
+      "section": "3.4",
+      "statement": "Replacing an AWS Global Accelerator endpoint changes the accelerator's public IP addresses.",
+      "answer": false,
+      "explanation": "Global Accelerator's static IP addresses remain assigned for the accelerator's lifetime. Changing its endpoints preserves the entry addresses used by clients.",
+      "misconception": "Changing backend endpoints also changes the accelerator's client-facing IP addresses.",
+      "factKey": "global-accelerator-static-anycast-addresses",
+      "topic": "Global application entry",
+      "tags": [
+        "AWS Global Accelerator"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How AWS Global Accelerator works",
+        "url": "https://docs.aws.amazon.com/global-accelerator/latest/dg/introduction-how-it-works.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-02",
+      "section": "3.4",
+      "statement": "Amazon CloudFront Origin Shield can combine simultaneous requests for the same uncached object.",
+      "answer": true,
+      "explanation": "Origin Shield consolidates requests at an additional cache layer before they reach the origin. Concurrent cache misses for the same object can therefore require fewer origin fetches.",
+      "misconception": "",
+      "factKey": "cloudfront-origin-shield-request-coalescing",
+      "topic": "CloudFront origin caching",
+      "tags": [
+        "Amazon CloudFront"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use Amazon CloudFront Origin Shield",
+        "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-03",
+      "section": "3.4",
+      "statement": "Amazon Route 53 latency-based routing selects the AWS Region geographically closest to the user.",
+      "answer": false,
+      "explanation": "Route 53 latency-based routing uses latency measurements between users and AWS Regions. Geographic proximity alone does not determine which Region receives the request.",
+      "misconception": "Geographic distance is the selection criterion used by latency-based routing.",
+      "factKey": "route53-latency-routing-versus-geolocation",
+      "topic": "DNS routing decisions",
+      "tags": [
+        "Amazon Route 53"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Latency-based routing",
+        "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-latency.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-04",
+      "section": "3.4",
+      "statement": "VPC peering natively routes traffic between two VPCs through a third VPC that is peered with both.",
+      "answer": false,
+      "explanation": "VPC peering is nontransitive. Two VPCs cannot communicate through a mutual peer merely because each has a peering connection to it.",
+      "misconception": "Peering relationships can be chained to carry traffic through an intermediate VPC.",
+      "factKey": "vpc-peering-transitive-routing",
+      "topic": "VPC routing boundaries",
+      "tags": [
+        "Amazon VPC"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How VPC peering connections work",
+        "url": "https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-basics.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-05",
+      "section": "3.4",
+      "statement": "AWS Transit Gateway directly routes between VPCs that use identical CIDR blocks.",
+      "answer": false,
+      "explanation": "Transit Gateway does not support routing between overlapping VPC address ranges. Identical CIDR blocks need an addressing solution rather than a direct transit-gateway route.",
+      "misconception": "Transit Gateway attachment resolves conflicting VPC address ranges automatically.",
+      "factKey": "transit-gateway-overlapping-cidr-routing",
+      "topic": "VPC routing boundaries",
+      "tags": [
+        "AWS Transit Gateway"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon VPC attachments in AWS Transit Gateway",
+        "url": "https://docs.aws.amazon.com/vpc/latest/tgw/tgw-vpc-attachments.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-06",
+      "section": "3.4",
+      "statement": "An AWS Direct Connect gateway can connect an on-premises network to VPCs in multiple AWS Regions.",
+      "answer": true,
+      "explanation": "A Direct Connect gateway can associate with gateways serving VPCs in different Regions. A single Direct Connect connection can therefore provide access to those VPCs.",
+      "misconception": "",
+      "factKey": "direct-connect-gateway-multi-region-vpcs",
+      "topic": "Hybrid network reach",
+      "tags": [
+        "AWS Direct Connect"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Direct Connect gateways",
+        "url": "https://docs.aws.amazon.com/directconnect/latest/UserGuide/direct-connect-gateways-intro.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-07",
+      "section": "3.4",
+      "statement": "An AWS Site-to-Site VPN connection provides redundant tunnels to the same customer gateway device.",
+      "answer": true,
+      "explanation": "The VPN tunnels terminate at separate AWS endpoints. Configuring both on the customer gateway preserves a usable path when a tunnel is unavailable.",
+      "misconception": "",
+      "factKey": "site-to-site-vpn-redundant-tunnels",
+      "topic": "Hybrid tunnel redundancy",
+      "tags": [
+        "AWS Site-to-Site VPN"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Tunnel options for your AWS Site-to-Site VPN connection",
+        "url": "https://docs.aws.amazon.com/vpn/latest/s2svpn/VPNTunnels.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-08",
+      "section": "3.4",
+      "statement": "A Network Load Balancer can distribute UDP traffic across its registered application targets.",
+      "answer": true,
+      "explanation": "Network Load Balancers support UDP listeners and target groups. UDP-based applications can use managed load balancing rather than adding a TCP-only proxy layer.",
+      "misconception": "",
+      "factKey": "network-load-balancer-udp-support",
+      "topic": "Load balancer protocols",
+      "tags": [
+        "Network Load Balancer"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Listeners for your Network Load Balancers",
+        "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/network/load-balancer-listeners.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-09",
+      "section": "3.4",
+      "statement": "An Application Load Balancer can pass a client's encrypted TLS session through to targets for decryption.",
+      "answer": false,
+      "explanation": "An Application Load Balancer terminates client TLS on its HTTPS listener. HTTPS connections to targets are separate connections rather than the original client TLS session.",
+      "misconception": "Using HTTPS targets makes an Application Load Balancer a transparent TLS passthrough device.",
+      "factKey": "application-load-balancer-tls-passthrough",
+      "topic": "Load balancer protocols",
+      "tags": [
+        "Application Load Balancer"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Listeners for your Application Load Balancers",
+        "url": "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-listeners.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-10",
+      "section": "3.4",
+      "statement": "AWS Transit Gateway ECMP can combine the bandwidth of multiple VPN tunnels for one TCP flow.",
+      "answer": false,
+      "explanation": "Transit Gateway distributes VPN traffic across equal-cost paths by flow. One TCP flow uses one tunnel, so aggregate tunnel bandwidth requires multiple flows.",
+      "misconception": "Equal-cost multipath routing stripes a single TCP flow across several VPN tunnels.",
+      "factKey": "transit-gateway-ecmp-flow-distribution",
+      "topic": "Hybrid network throughput",
+      "tags": [
+        "AWS Transit Gateway",
+        "AWS Site-to-Site VPN"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scaling VPN throughput using AWS Transit Gateway",
+        "url": "https://aws.amazon.com/blogs/networking-and-content-delivery/scaling-vpn-throughput-using-aws-transit-gateway/"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-11",
+      "section": "3.4",
+      "statement": "Shared Amazon Route 53 VPC Resolver forwarding rules let multiple VPCs use the same outbound endpoint.",
+      "answer": true,
+      "explanation": "Sharing a Resolver forwarding rule also shares the outbound endpoint associated with it. VPCs in the same Region can reuse that endpoint for the rule's DNS queries.",
+      "misconception": "",
+      "factKey": "route53-resolver-shared-outbound-rules",
+      "topic": "Hybrid DNS forwarding",
+      "tags": [
+        "Amazon Route 53 VPC Resolver"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Considerations when creating inbound and outbound endpoints",
+        "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-choose-vpc.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.4-12",
+      "section": "3.4",
+      "statement": "Amazon CloudFront can forward more request headers to an origin than it includes in the cache key.",
+      "answer": true,
+      "explanation": "CloudFront separates origin-request forwarding from cache-key composition. A header needed for origin-side analytics can be forwarded without creating extra cache variants.",
+      "misconception": "",
+      "factKey": "cloudfront-origin-request-policy-cache-key",
+      "topic": "CloudFront origin caching",
+      "tags": [
+        "Amazon CloudFront"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Control origin requests with a policy",
+        "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/controlling-origin-requests.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-01",
+      "section": "3.5",
+      "statement": "Amazon Kinesis Data Streams lets consumers replay records that remain within the stream's retention period.",
+      "answer": true,
+      "explanation": "Kinesis Data Streams retains records after consumers read them. A consumer can revisit retained data, for example to reprocess it after correcting application logic.",
+      "misconception": "",
+      "factKey": "kinesis-stream-retention-replay",
+      "topic": "Stream replay capability",
+      "tags": [
+        "Amazon Kinesis Data Streams"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon Kinesis Data Streams FAQs",
+        "url": "https://aws.amazon.com/kinesis/data-streams/faqs/"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-02",
+      "section": "3.5",
+      "statement": "Amazon Kinesis Data Streams enhanced fan-out gives registered consumers dedicated read throughput per shard.",
+      "answer": true,
+      "explanation": "Enhanced fan-out consumers receive their own per-shard read throughput. Adding another such consumer does not divide an existing consumer's read allocation.",
+      "misconception": "",
+      "factKey": "kinesis-enhanced-fan-out-consumer-throughput",
+      "topic": "Stream consumer throughput",
+      "tags": [
+        "Amazon Kinesis Data Streams"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Develop enhanced fan-out consumers with dedicated throughput",
+        "url": "https://docs.aws.amazon.com/streams/latest/dev/enhanced-consumers.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-03",
+      "section": "3.5",
+      "statement": "Amazon Data Firehose can combine incoming records into larger Amazon S3 objects using buffering.",
+      "answer": true,
+      "explanation": "Firehose buffers incoming records before writing S3 objects. This aggregates records into delivery batches rather than requiring a separate object for each input record.",
+      "misconception": "",
+      "factKey": "firehose-buffered-s3-delivery",
+      "topic": "Stream delivery buffering",
+      "tags": [
+        "Amazon Data Firehose",
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand data delivery in Amazon Data Firehose",
+        "url": "https://docs.aws.amazon.com/firehose/latest/dev/basic-deliver.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-04",
+      "section": "3.5",
+      "statement": "Amazon Data Firehose's built-in format converter can accept CSV input directly for Parquet delivery.",
+      "answer": false,
+      "explanation": "Firehose's built-in format converter takes JSON input and produces Parquet or ORC. CSV input needs a separate transformation to JSON before using that converter.",
+      "misconception": "Firehose's native columnar converter accepts CSV as an input format.",
+      "factKey": "firehose-json-columnar-format-conversion",
+      "topic": "Stream format conversion",
+      "tags": [
+        "Amazon Data Firehose"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Supported input formats for the built-in converter could expand.",
+      "source": {
+        "title": "Convert input data format in Amazon Data Firehose",
+        "url": "https://docs.aws.amazon.com/firehose/latest/dev/record-format-conversion.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-05",
+      "section": "3.5",
+      "statement": "Resetting an AWS Glue job bookmark also removes the output files written by previous job runs.",
+      "answer": false,
+      "explanation": "Glue job bookmarks track processing progress rather than target-file ownership. Resetting a bookmark does not clean previous output, so replaying data can require duplicate-handling measures.",
+      "misconception": "Resetting source-processing progress also clears previously generated target data.",
+      "factKey": "glue-job-bookmark-source-state",
+      "topic": "ETL reprocessing behavior",
+      "tags": [
+        "AWS Glue"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Tracking processed data using job bookmarks",
+        "url": "https://docs.aws.amazon.com/glue/latest/dg/monitor-continuations.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-06",
+      "section": "3.5",
+      "statement": "An AWS Glue crawler can apply detected schema changes to the physical layout of existing source files.",
+      "answer": false,
+      "explanation": "Glue crawlers infer schemas and update Data Catalog metadata. Changing the underlying source-file contents requires a separate data transformation.",
+      "misconception": "Updating a catalog schema also transforms the physical files described by that schema.",
+      "factKey": "glue-crawler-versus-data-transformation",
+      "topic": "Catalog transformation boundaries",
+      "tags": [
+        "AWS Glue",
+        "AWS Glue Data Catalog"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using crawlers to populate the Data Catalog",
+        "url": "https://docs.aws.amazon.com/glue/latest/dg/add-crawler.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-07",
+      "section": "3.5",
+      "statement": "An Amazon Athena query can reduce scanned data by filtering on a table's partition key.",
+      "answer": true,
+      "explanation": "Athena can restrict a query to the S3 partitions selected by a partition-key filter. Data in unrelated partitions is skipped instead of scanned.",
+      "misconception": "",
+      "factKey": "athena-partition-pruning",
+      "topic": "Data lake query pruning",
+      "tags": [
+        "Amazon Athena"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Partition your data",
+        "url": "https://docs.aws.amazon.com/athena/latest/ug/partitions.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-08",
+      "section": "3.5",
+      "statement": "An Amazon Quick Sight incremental SPICE refresh captures updates to rows outside its look-back window.",
+      "answer": false,
+      "explanation": "An incremental SPICE refresh queries and replaces data within its look-back window. Changes to rows outside that window require a wider window or a full refresh.",
+      "misconception": "An incremental SPICE refresh detects changed rows throughout the source, regardless of the look-back range.",
+      "factKey": "spice-dataset-source-refresh",
+      "topic": "Analytics refresh boundaries",
+      "tags": [
+        "Amazon Quick Sight",
+        "SPICE"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Refreshing SPICE data",
+        "url": "https://docs.aws.amazon.com/quick/latest/userguide/refreshing-imported-data.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-09",
+      "section": "3.5",
+      "statement": "Adding task nodes to an Amazon EMR cluster increases the cluster's HDFS storage capacity.",
+      "answer": false,
+      "explanation": "EMR task nodes contribute processing capacity but do not store HDFS data. Core nodes provide the cluster's HDFS storage.",
+      "misconception": "Task nodes contribute distributed storage in the same way as core nodes.",
+      "factKey": "emr-task-node-hdfs-storage",
+      "topic": "Cluster node responsibilities",
+      "tags": [
+        "Amazon EMR"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand node types in Amazon EMR: primary, core, and task nodes",
+        "url": "https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-master-core-task-nodes.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-10",
+      "section": "3.5",
+      "statement": "AWS DataSync keeps source and destination files continuously synchronized between task executions.",
+      "answer": false,
+      "explanation": "DataSync transfers data during discrete task executions, started on demand or on a schedule. Changes made after a run need another execution to be transferred.",
+      "misconception": "Defining a DataSync task establishes continuous per-change replication between executions.",
+      "factKey": "datasync-task-runs-versus-live-mount",
+      "topic": "Data transfer cadence",
+      "tags": [
+        "AWS DataSync"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scheduling when your AWS DataSync task runs",
+        "url": "https://docs.aws.amazon.com/datasync/latest/userguide/task-scheduling.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-11",
+      "section": "3.5",
+      "statement": "AWS Lake Formation can restrict queries through integrated engines to selected columns of a data lake table.",
+      "answer": true,
+      "explanation": "Lake Formation column-level permissions govern which table columns an integrated query engine can return. Analysts can receive access to a subset of a table's data.",
+      "misconception": "",
+      "factKey": "lake-formation-column-level-access",
+      "topic": "Data lake query permissions",
+      "tags": [
+        "AWS Lake Formation"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data filtering and cell-level security in Lake Formation",
+        "url": "https://docs.aws.amazon.com/lake-formation/latest/dg/data-filtering.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.5-12",
+      "section": "3.5",
+      "statement": "An AWS Transfer Family SFTP server can write uploaded files directly into an Amazon EFS file system.",
+      "answer": true,
+      "explanation": "Transfer Family supports EFS as storage for SFTP servers. Existing file-processing applications can work with uploaded data in the associated file system.",
+      "misconception": "",
+      "factKey": "transfer-family-server-storage-backend",
+      "topic": "Managed file ingestion",
+      "tags": [
+        "AWS Transfer Family",
+        "Amazon EFS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "What is AWS Transfer Family?",
+        "url": "https://docs.aws.amazon.com/transfer/latest/userguide/what-is-aws-transfer-family.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-01",
+      "section": "4.1",
+      "statement": "S3 Intelligent-Tiering can move eligible objects to lower-cost tiers based on their observed access patterns.",
+      "answer": true,
+      "explanation": "S3 Intelligent-Tiering monitors object access and automatically adjusts eligible objects' tiers. This reduces the need to predict which objects will become infrequently accessed.",
+      "misconception": "",
+      "factKey": "s3-intelligent-tiering-access-monitoring",
+      "topic": "Object tiering behavior",
+      "tags": [
+        "Amazon S3",
+        "S3 Intelligent-Tiering"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How S3 Intelligent-Tiering works",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/intelligent-tiering-overview.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-02",
+      "section": "4.1",
+      "statement": "S3 Standard-IA includes the cost of retrieving object data in its monthly storage charge.",
+      "answer": false,
+      "explanation": "S3 Standard-IA has a separate data retrieval charge. Frequent access can therefore erode the savings from its lower storage rate.",
+      "misconception": "The lower Standard-IA storage rate includes data retrieval rather than charging for it separately.",
+      "factKey": "s3-standard-ia-data-retrieval-charges",
+      "topic": "Object access economics",
+      "tags": [
+        "Amazon S3",
+        "S3 Standard-IA"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "The separate retrieval-charge policy is part of S3 pricing and could change.",
+      "source": {
+        "title": "Understanding and managing Amazon S3 storage classes",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-03",
+      "section": "4.1",
+      "statement": "S3 Glacier Flexible Retrieval automatically restores archived data as part of a normal object download request.",
+      "answer": false,
+      "explanation": "S3 Glacier Flexible Retrieval needs a separate restore operation before an archived object's data can be downloaded. The application needs to allow for that retrieval delay.",
+      "misconception": "A normal download request automatically restores archived data instead of requiring a separate restore operation.",
+      "factKey": "s3-glacier-flexible-retrieval-restore-required",
+      "topic": "Archive access tradeoffs",
+      "tags": [
+        "Amazon S3",
+        "S3 Glacier Flexible Retrieval"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding and managing Amazon S3 storage classes",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-04",
+      "section": "4.1",
+      "statement": "Amazon S3 lifecycle transitions incur request charges based on the number of objects transitioned.",
+      "answer": true,
+      "explanation": "S3 charges a transition request per object. For many small objects, transition-request costs can outweigh the storage savings from changing classes.",
+      "misconception": "",
+      "factKey": "s3-lifecycle-transition-request-charges",
+      "topic": "Object transition economics",
+      "tags": [
+        "Amazon S3",
+        "S3 Lifecycle"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "The per-object transition charging model is part of S3 pricing and could change.",
+      "source": {
+        "title": "Transitioning objects using Amazon S3 Lifecycle",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-05",
+      "section": "4.1",
+      "statement": "Enabling Requester Pays on an Amazon S3 bucket transfers its object storage charges to the requester.",
+      "answer": false,
+      "explanation": "With S3 Requester Pays, the bucket owner still pays for stored data. The requester pays the applicable request and download costs instead.",
+      "misconception": "Requester Pays shifts storage ownership costs along with request and download costs.",
+      "factKey": "s3-requester-pays-storage-owner",
+      "topic": "Shared data billing",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using Requester Pays general purpose buckets for storage transfers and usage",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/RequesterPaysBuckets.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-06",
+      "section": "4.1",
+      "statement": "Successive Amazon EBS snapshots in the standard tier store new and changed blocks incrementally.",
+      "answer": true,
+      "explanation": "After the first EBS snapshot, subsequent standard-tier snapshots store the blocks changed since the previous snapshot. Unchanged blocks are referenced instead of copied again.",
+      "misconception": "",
+      "factKey": "ebs-snapshot-incremental-storage",
+      "topic": "Block backup efficiency",
+      "tags": [
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How Amazon EBS snapshots work",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/how_snapshots_work.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-07",
+      "section": "4.1",
+      "statement": "Detaching an Amazon EBS volume pauses its storage charges until it is attached again.",
+      "answer": false,
+      "explanation": "An EBS volume continues to incur storage charges after detachment. The allocated volume still exists even when an instance is not using it.",
+      "misconception": "An unattached EBS volume is free because no instance is actively using it.",
+      "factKey": "ebs-detached-volume-billing",
+      "topic": "Idle storage billing",
+      "tags": [
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Detach an Amazon EBS volume from an Amazon EC2 instance",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-detaching-volume.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-08",
+      "section": "4.1",
+      "statement": "A file transitioned to Amazon EFS Infrequent Access remains reachable through the same file system path.",
+      "answer": true,
+      "explanation": "EFS lifecycle management changes a file's storage class while preserving its name and directory structure. Applications keep addressing the file through the existing file system.",
+      "misconception": "",
+      "factKey": "efs-lifecycle-infrequent-access",
+      "topic": "File tiering transparency",
+      "tags": [
+        "Amazon EFS"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managing storage lifecycle",
+        "url": "https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-09",
+      "section": "4.1",
+      "statement": "An Amazon EBS sc1 volume can serve as the boot volume for an Amazon EC2 instance.",
+      "answer": false,
+      "explanation": "EBS sc1 volumes do not support boot volumes. A design using sc1 for low-cost data storage still needs a supported root-volume type for the operating system.",
+      "misconception": "Cold HDD volumes can replace the root volume as well as data volumes.",
+      "factKey": "ebs-hdd-boot-volume-support",
+      "topic": "Block storage compatibility",
+      "tags": [
+        "Amazon EBS",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "The EBS volume types supported as boot volumes could expand.",
+      "source": {
+        "title": "Amazon EBS Throughput Optimized HDD and Cold HDD volumes",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/hdd-vols.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-10",
+      "section": "4.1",
+      "statement": "An Amazon FSx for Lustre scratch file system can lose file data when a file server fails.",
+      "answer": true,
+      "explanation": "FSx for Lustre scratch deployments do not replicate file data. They trade persistent protection for temporary processing storage suited to data that can be recreated.",
+      "misconception": "",
+      "factKey": "fsx-lustre-scratch-data-replication",
+      "topic": "Scratch storage tradeoffs",
+      "tags": [
+        "Amazon FSx for Lustre"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Deployment and storage class options for FSx for Lustre file systems",
+        "url": "https://docs.aws.amazon.com/fsx/latest/LustreGuide/using-fsx-lustre.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-11",
+      "section": "4.1",
+      "statement": "Restoring an S3 Glacier Flexible Retrieval object replaces its archive storage charge with an S3 Standard charge.",
+      "answer": false,
+      "explanation": "Archive storage charges continue while a restored copy incurs S3 Standard storage charges. Keeping that restored copy longer extends the additional storage billing.",
+      "misconception": "Restoration substitutes Standard storage billing for archive billing rather than adding a second charge.",
+      "factKey": "s3-glacier-restored-copy-storage-billing",
+      "topic": "Archive restoration billing",
+      "tags": [
+        "Amazon S3",
+        "S3 Glacier Flexible Retrieval",
+        "S3 Standard"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Billing for archived data and restored copies is governed by S3 pricing and could change.",
+      "source": {
+        "title": "Transitioning objects using Amazon S3 Lifecycle",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.1-12",
+      "section": "4.1",
+      "statement": "AWS Storage Gateway bills virtual tape storage by stored data volume rather than the tape's configured size.",
+      "answer": true,
+      "explanation": "Tape Gateway storage billing follows the used portion of a virtual tape. Provisioning a larger virtual tape does not itself charge for its unused capacity.",
+      "misconception": "",
+      "factKey": "tape-gateway-used-storage-billing",
+      "topic": "Virtual tape billing",
+      "tags": [
+        "AWS Storage Gateway",
+        "Tape Gateway"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Storage Gateway FAQs",
+        "url": "https://aws.amazon.com/storagegateway/faqs/"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-01",
+      "section": "4.2",
+      "statement": "A Compute Savings Plan can cover eligible Amazon EC2, AWS Fargate, and AWS Lambda usage.",
+      "answer": true,
+      "explanation": "Compute Savings Plans apply a shared hourly spending commitment across eligible usage of these compute services. A workload can move between them while continuing to use that commitment.",
+      "misconception": "",
+      "factKey": "compute-savings-plans-cross-service-flexibility",
+      "topic": "Compute commitment scope",
+      "tags": [
+        "Compute Savings Plans",
+        "Amazon EC2",
+        "AWS Fargate",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "What are Savings Plans?",
+        "url": "https://docs.aws.amazon.com/savingsplans/latest/userguide/what-is-savings-plans.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-02",
+      "section": "4.2",
+      "statement": "An EC2 Instance Savings Plan can follow a workload to the same instance family in another AWS Region.",
+      "answer": false,
+      "explanation": "An EC2 Instance Savings Plan is tied to a selected instance family and Region. Usage in another Region falls outside that plan's coverage.",
+      "misconception": "An EC2 Instance Savings Plan is portable between Regions when the instance family stays the same.",
+      "factKey": "ec2-instance-savings-plans-region-family-scope",
+      "topic": "Compute commitment scope",
+      "tags": [
+        "EC2 Instance Savings Plans"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Savings Plans types",
+        "url": "https://docs.aws.amazon.com/savingsplans/latest/userguide/plan-types.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-03",
+      "section": "4.2",
+      "statement": "A zonal Amazon EC2 Reserved Instance reserves matching instance capacity in its selected Availability Zone.",
+      "answer": true,
+      "explanation": "A zonal Reserved Instance includes capacity reservation in its chosen Availability Zone. A regional Reserved Instance provides a billing benefit rather than that capacity reservation.",
+      "misconception": "",
+      "factKey": "zonal-reserved-instance-capacity-reservation",
+      "topic": "Reservation capacity guarantees",
+      "tags": [
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Regional and zonal Reserved Instances (scope)",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/reserved-instances-scope.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-04",
+      "section": "4.2",
+      "statement": "Amazon EC2 waits for a running batch job to finish before reclaiming its Spot Instance.",
+      "answer": false,
+      "explanation": "EC2 can interrupt a Spot Instance while a job is running. Checkpointing progress lets interruption-tolerant jobs resume work instead of starting again from the beginning.",
+      "misconception": "Running application work protects a Spot Instance from reclamation until the job completes.",
+      "factKey": "spot-instance-interruption-checkpointing",
+      "topic": "Spot interruption tradeoffs",
+      "tags": [
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best practices for Amazon EC2 Spot",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-best-practices.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-05",
+      "section": "4.2",
+      "statement": "An unused portion of an AWS Savings Plans hourly commitment carries forward to cover usage in a later hour.",
+      "answer": false,
+      "explanation": "Savings Plans commitments apply within each individual hour. An unused amount does not become a credit for a later hour's usage.",
+      "misconception": "Hourly Savings Plans commitments accumulate as transferable credit when usage is low.",
+      "factKey": "savings-plans-unused-hourly-commitment",
+      "topic": "Compute commitment utilization",
+      "tags": [
+        "AWS Savings Plans"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding how Savings Plans apply to your usage",
+        "url": "https://docs.aws.amazon.com/savingsplans/latest/userguide/sp-applying.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-06",
+      "section": "4.2",
+      "statement": "AWS Fargate calculates a running task's CPU charges from actual CPU utilization rather than allocated vCPUs.",
+      "answer": false,
+      "explanation": "Fargate compute charges use the task's requested vCPU and memory resources over its billed runtime. Underused allocated CPU still contributes to the bill.",
+      "misconception": "Fargate meters consumed CPU cycles instead of the CPU resources requested for a task.",
+      "factKey": "fargate-billing-requested-resources",
+      "topic": "Container resource billing",
+      "tags": [
+        "AWS Fargate"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Fargate's resource-based billing model is part of its pricing policy and could change.",
+      "source": {
+        "title": "AWS Fargate Pricing",
+        "url": "https://aws.amazon.com/fargate/pricing/"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-07",
+      "section": "4.2",
+      "statement": "On-demand AWS Lambda invocation duration includes time spent waiting for a synchronous database call.",
+      "answer": true,
+      "explanation": "An on-demand Lambda invocation accrues duration while its code blocks on a database response. Reducing synchronous waiting can lower the invocation's compute cost.",
+      "misconception": "",
+      "factKey": "lambda-billed-duration-includes-io-wait",
+      "topic": "Function execution billing",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "The statement concerns on-demand invocation billing; Lambda offers other execution models with different pricing.",
+      "source": {
+        "title": "Operating Lambda: Anti-patterns in event-driven architectures – Part 3",
+        "url": "https://aws.amazon.com/blogs/compute/operating-lambda-anti-patterns-in-event-driven-architectures-part-3/"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-08",
+      "section": "4.2",
+      "statement": "Amazon EC2 Dedicated Hosts support bringing eligible software licenses tied to physical sockets or cores.",
+      "answer": true,
+      "explanation": "Dedicated Hosts expose physical host information needed for per-socket or per-core licensing. Reusing a license remains subject to its vendor's license terms.",
+      "misconception": "",
+      "factKey": "ec2-dedicated-host-license-byol",
+      "topic": "Host software licensing",
+      "tags": [
+        "Amazon EC2 Dedicated Hosts"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon EC2 Dedicated Hosts",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-hosts-overview.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-09",
+      "section": "4.2",
+      "statement": "Hibernating an Amazon EC2 instance saves its memory contents to the Amazon EBS root volume.",
+      "answer": true,
+      "explanation": "EC2 hibernation stores RAM contents on the root volume and reloads them when the instance resumes. This can avoid rebuilding an expensive in-memory application state.",
+      "misconception": "",
+      "factKey": "ec2-hibernation-ram-ebs-storage",
+      "topic": "Compute suspension tradeoffs",
+      "tags": [
+        "Amazon EC2",
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Hibernate your Amazon EC2 instance",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Hibernate.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-10",
+      "section": "4.2",
+      "statement": "An Amazon EC2 Auto Scaling warm pool can keep pre-initialized instances stopped until they are needed.",
+      "answer": true,
+      "explanation": "A stopped warm pool preserves prepared instances for later scale-out. It reduces the need to keep spare instances running just to avoid lengthy first-time initialization.",
+      "misconception": "",
+      "factKey": "ec2-auto-scaling-stopped-warm-pool",
+      "topic": "Prepared compute capacity",
+      "tags": [
+        "Amazon EC2 Auto Scaling"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Decrease latency for applications with long boot times using warm pools",
+        "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-warm-pools.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-11",
+      "section": "4.2",
+      "statement": "EC2 Fleet's price capacity optimized strategy ranks Spot pools by price before evaluating capacity availability.",
+      "answer": false,
+      "explanation": "EC2 Fleet first identifies pools with high capacity availability, then selects lower-priced pools from that set. Price is evaluated within the capacity-aware selection.",
+      "misconception": "Price capacity optimized picks the cheapest pools first and considers capacity availability afterward.",
+      "factKey": "spot-price-capacity-optimized-selection",
+      "topic": "Spot allocation tradeoffs",
+      "tags": [
+        "Amazon EC2",
+        "EC2 Fleet"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use allocation strategies to determine how EC2 Fleet or Spot Fleet fulfills Spot and On-Demand capacity",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-fleet-allocation-strategy.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s4.2-12",
+      "section": "4.2",
+      "statement": "Configuring an AWS Budgets cost alert imposes a hard spending cap at the alert's threshold.",
+      "answer": false,
+      "explanation": "AWS Budgets alerts notify you about spending rather than capping it. Charges can continue after a notification, so an alert alone does not enforce a spending ceiling.",
+      "misconception": "Setting a cost alert also prevents the account from accumulating charges beyond its threshold.",
+      "factKey": "aws-budgets-alerts-versus-spending-cap",
+      "topic": "Budget enforcement boundaries",
+      "tags": [
+        "AWS Budgets"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managing your costs with AWS Budgets",
+        "url": "https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html"
+      }
+    }
+  ]
+}

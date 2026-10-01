@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Departures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600&family=Overpass:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky-1: #a9d6f0;
+  --sky-2: #c4e3f5;
+  --sky-3: #ddeff8;
+  --sky-4: #f3f0e6;
+  --surface: var(--sky-2);
+  --surface-raised: #fdfbf5;
+  --surface-sunk: #eef3f5;
+  --ink: #10233f;
+  --ink-muted: #56667c;
+  --rule: #c9d3dc;
+  --accent: #f5b400;
+  --true: #1d5cc0;
+  --false: #b3321c;
+  --correct: #0d7250;
+  --wrong: #b3321c;
+  --on-dark: #fdfbf5;
+  --cloud: #ffffff;
+  --r: 16px; --r-sm: 8px;
+  --shadow: 0 1px 0 rgba(16,35,63,.06), 0 22px 36px -18px rgba(16,35,63,.45);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Overpass', system-ui, sans-serif;
+  --mono: 'Overpass Mono', ui-monospace, monospace;
+  --notch: 12px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; text-align: inherit; }
+svg { display: block; }
+h1, h2, p { margin: 0; }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto;
+  display: flex; flex-direction: column; padding: 52px 16px 34px; overflow: hidden;
+  background: linear-gradient(180deg,
+    var(--sky-1) 0 22%, var(--sky-2) 22% 48%, var(--sky-3) 48% 76%, var(--sky-4) 76% 100%);
+}
+.cloud { position: absolute; fill: var(--cloud); opacity: .7; pointer-events: none; }
+
+/* header */
+.top { display: flex; align-items: center; height: 56px; position: relative; z-index: 1; }
+.top h1 { font-weight: 800; font-size: 24px; line-height: 1.1; letter-spacing: -.015em; }
+
+/* area filter: scrolls sideways once there are many areas */
+.areas {
+  position: relative; z-index: 1; display: flex; gap: 8px; margin: 8px -16px 0; padding: 0 16px;
+  overflow-x: auto; scrollbar-width: none; scroll-padding: 0 16px; flex: none;
+}
+.areas::-webkit-scrollbar { display: none; }
+.chip {
+  position: relative; isolation: isolate; flex: none; height: 48px; padding: 0 16px;
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 800; font-size: 15px; letter-spacing: -.01em; color: var(--ink);
+  transition: transform var(--t1) var(--ease);
+}
+.chip::before {
+  content: ''; position: absolute; inset: 4px 0; z-index: -1; border-radius: 20px;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 0 rgba(16,35,63,.1), 0 6px 12px -6px rgba(16,35,63,.4);
+  transition: background var(--t2) var(--ease);
+}
+.chip:active { transform: scale(.96); }
+.chip small { font-family: var(--mono); font-weight: 600; font-size: 12px; color: var(--ink-muted); }
+.chip[aria-pressed="true"] { color: var(--on-dark); }
+.chip[aria-pressed="true"]::before { background: var(--ink); }
+.chip[aria-pressed="true"] small { color: var(--on-dark); opacity: .75; }
+.chip:focus-visible { outline: none; }
+.chip:focus-visible::before { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+/* the departures pass */
+.board { flex: 1; min-height: 0; position: relative; margin-top: 12px; display: flex; flex-direction: column; }
+.pass { position: relative; display: flex; flex-direction: column; max-height: 100%; min-height: 0; }
+.shadowbox { position: absolute; inset: 0; border-radius: var(--r); box-shadow: var(--shadow); pointer-events: none; }
+.main {
+  position: relative; border-radius: var(--r) var(--r) 0 0; overflow: hidden; min-height: 0;
+  display: flex; flex-direction: column;
+  background:
+    radial-gradient(circle at 0 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+}
+.carrier {
+  flex: none; height: 44px; padding: 0 16px; display: flex; align-items: center; gap: 10px;
+  background: var(--accent); color: var(--ink);
+  font-weight: 800; font-size: 16px; letter-spacing: -.01em;
+}
+.carrier small { margin-left: auto; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .06em; }
+.f-ink { fill: var(--ink); }
+
+.meta { flex: none; display: grid; grid-template-columns: 1fr 1fr 1.25fr; margin: 12px 20px 0; border-top: 1.5px solid var(--rule); border-bottom: 1.5px solid var(--rule); }
+.meta div { padding: 8px 0 7px; min-width: 0; }
+.meta div + div { padding-left: 12px; border-left: 1.5px solid var(--rule); }
+.meta dt { font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); letter-spacing: .04em; }
+.meta dd { margin: 2px 0 0; font-family: var(--mono); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 16px; overscroll-behavior: contain; scrollbar-width: none; }
+.list::-webkit-scrollbar { display: none; }
+.group[hidden] { display: none; }
+.group h2 {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 16px 0 6px; font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--ink);
+}
+.group h2 span { font-weight: 400; color: var(--ink-muted); }
+
+.deck {
+  width: 100%; display: grid; grid-template-columns: 52px 1fr 16px; column-gap: 12px; align-items: start;
+  padding: 14px 0 14px; border-top: 1.5px solid var(--rule); border-radius: 0;
+  transition: background var(--t1) var(--ease);
+}
+.deck:active { background: var(--surface-sunk); }
+.deck code { font-family: var(--mono); font-weight: 600; font-size: 22px; line-height: 1; letter-spacing: .02em; padding-top: 2px; }
+.deck .name { display: block; font-weight: 600; font-size: 16px; line-height: 1.2; letter-spacing: -.01em; }
+.deck .sub { display: block; margin-top: 3px; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.deck .go { color: var(--ink-muted); padding-top: 4px; }
+.deck .status { grid-column: 2 / 4; display: flex; align-items: center; gap: 12px; margin-top: 10px;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.deck .status b { font-weight: 600; color: var(--ink); }
+.deck .status .streak { margin-left: auto; }
+
+/* progress track: a short flight path, solid where seen */
+.track { position: relative; flex: none; width: 56px; height: 8px; }
+.track::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 3px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 4px, transparent 4px 8px);
+}
+.track i { position: absolute; left: 0; top: 3px; height: 2px; width: var(--p); background: var(--ink); border-radius: 1px; }
+.track i::after {
+  content: ''; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 1.5px var(--ink);
+}
+.deck.new .status { color: var(--ink-muted); }
+
+.perf {
+  position: absolute; left: calc(var(--notch) + 6px); right: calc(var(--notch) + 6px); bottom: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 7px, transparent 7px 12px);
+}
+.stub {
+  flex: none; height: 52px; padding: 2px 20px 0; border-radius: 0 0 var(--r) var(--r);
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(circle at 0 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-muted);
+}
+.stub b { color: var(--ink); font-weight: 600; }
+
+/* deck sheet */
+.scrim {
+  position: absolute; inset: 0; z-index: 5; background: rgba(16,35,63,.32);
+  opacity: 0; visibility: hidden; transition: opacity var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--surface-raised); border-radius: var(--r) var(--r) 0 0;
+  box-shadow: 0 -1px 0 rgba(16,35,63,.06), 0 -18px 36px -18px rgba(16,35,63,.45);
+  padding: 0 0 34px; transform: translateY(104%); visibility: hidden;
+  transition: transform var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+[data-sheet="open"] .scrim { opacity: 1; visibility: visible; transition: opacity var(--t3) var(--ease); }
+[data-sheet="open"] .sheet { transform: none; visibility: visible; transition: transform 420ms var(--spring); }
+.s-bar { position: relative; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 0 20px; }
+.s-bar h2 { font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--ink); }
+.grab { position: absolute; left: 50%; top: 8px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); }
+.s-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; padding: 0 20px 16px; }
+.leg code { display: block; font-family: var(--mono); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: .02em; }
+.leg span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-muted); line-height: 1.25; }
+.leg.to { text-align: right; }
+.blank { display: flex; justify-content: flex-end; gap: 6px; height: 34px; align-items: flex-end; }
+.blank i { width: 18px; height: 3px; border-radius: 2px; background: var(--rule); }
+.s-head .fly { padding-bottom: 26px; color: var(--ink); }
+.s-close {
+  width: 48px; height: 48px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: var(--ink); background: var(--surface-sunk);
+  transition: transform var(--t1) var(--ease);
+}
+.s-close:active { transform: scale(.92); }
+.s-perf { height: 2px; margin: 0 20px; background: repeating-linear-gradient(90deg, var(--rule) 0 7px, transparent 7px 12px); }
+.s-label { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 20px 4px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-muted); }
+.dests { list-style: none; margin: 0; padding: 0 20px; }
+.dest {
+  width: 100%; min-height: 56px; display: grid; grid-template-columns: 52px 1fr auto 16px; column-gap: 12px; align-items: center;
+  padding: 8px 0 6px; border-bottom: 1.5px solid var(--rule);
+  transition: background var(--t1) var(--ease);
+}
+.dests li:last-child .dest { border-bottom: 0; }
+.dest:active { background: var(--surface-sunk); }
+.dest code { font-family: var(--mono); font-weight: 600; font-size: 18px; letter-spacing: .02em; }
+.dest .name { font-weight: 600; font-size: 16px; line-height: 1.2; letter-spacing: -.01em; }
+.dest .n { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.dest .go { color: var(--ink-muted); }
+.dest.whole .name { font-weight: 800; }
+.dest.whole { border-bottom-color: var(--ink); }
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.deck:focus-visible, .dest:focus-visible { outline-offset: -1px; border-radius: var(--r-sm); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<main id="app">
+  <svg class="cloud" style="left:-30px;top:196px" width="150" height="46" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+  <svg class="cloud" style="right:-40px;top:620px" width="170" height="50" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+
+  <header class="top"><h1>Choose a deck</h1></header>
+
+  <nav class="areas" id="areas" aria-label="Filter by area"></nav>
+
+  <section class="board">
+    <div class="pass">
+      <div class="shadowbox"></div>
+      <div class="main">
+        <div class="carrier">
+          <svg width="22" height="16" viewBox="0 0 22 16" aria-hidden="true"><path d="M5 15h13a4 4 0 0 0 .6-8A6 6 0 0 0 7.2 5.5 4.8 4.8 0 0 0 5 15z" class="f-ink"/></svg>
+          Truthy <small>DEPARTURES</small>
+        </div>
+        <dl class="meta" aria-live="polite">
+          <div><dt>Decks</dt><dd id="m-decks">4</dd></div>
+          <div><dt>Cards</dt><dd id="m-cards">618</dd></div>
+          <div><dt>In progress</dt><dd id="m-prog">1</dd></div>
+        </dl>
+        <div class="list" id="list"></div>
+        <div class="perf"></div>
+      </div>
+      <div class="stub"><span>Tap a deck to choose a section</span></div>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-code sh-title">
+    <div class="s-bar">
+      <div class="grab" aria-hidden="true"></div>
+      <h2 id="sh-label">New boarding pass</h2>
+      <button class="s-close" type="button" id="s-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="s-head">
+      <div class="leg"><code id="sh-code">CLF</code><span id="sh-title">AWS Cloud<br>Practitioner</span></div>
+      <svg class="fly" width="40" height="16" viewBox="0 0 40 16" aria-hidden="true"><path d="M1 8h36M30 2l7 6-7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="leg to" aria-hidden="true"><div class="blank"><i></i><i></i><i></i></div><span>Choose a<br>section</span></div>
+    </div>
+    <div class="s-perf" aria-hidden="true"></div>
+    <div class="s-label"><span>Section</span><span>Cards</span></div>
+    <ul class="dests" id="dests"></ul>
+  </div>
+</main>
+
+<script>
+const AREAS = [
+  { name: 'Cloud', decks: [
+    { code: 'CLF', name: 'Cloud Practitioner', platform: 'AWS', cards: 214, seen: 38, streak: 12,
+      sections: [['CON', 'Cloud concepts', 52], ['SEC', 'Security and compliance', 64], ['TEC', 'Cloud technology and services', 70], ['BIL', 'Billing, pricing and support', 28]] },
+    { code: 'SAA', name: 'Solutions Architect Associate', platform: 'AWS', cards: 168, seen: 0,
+      sections: [['SEC', 'Secure architectures', 46], ['RES', 'Resilient architectures', 44], ['PRF', 'High-performing architectures', 42], ['CST', 'Cost-optimized architectures', 36]] },
+    { code: 'CDL', name: 'Cloud Digital Leader', platform: 'Google Cloud', cards: 140, seen: 0, sections: [] },
+  ]},
+  { name: 'Frontend', decks: [
+    { code: 'RND', name: 'Rendering', platform: 'Next.js', cards: 96, seen: 12, streak: 5,
+      sections: [['SCC', 'Server and Client Components', 28], ['STR', 'Streaming and Suspense', 22], ['CCH', 'Caching', 26], ['REV', 'Revalidation', 20]] },
+  ]},
+]
+const all = AREAS.flatMap(a => a.decks)
+const sum = (ds, k) => ds.reduce((n, d) => n + d[k], 0)
+const arrow = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+
+// area chips
+const areasEl = document.getElementById('areas')
+const chip = (label, n, key) => `<button class="chip" type="button" data-area="${key}" aria-pressed="${key === 'all'}">${label}<small>${n}</small></button>`
+areasEl.innerHTML = chip('All', all.length, 'all') + AREAS.map(a => chip(a.name, a.decks.length, a.name)).join('')
+
+// departures list
+const listEl = document.getElementById('list')
+listEl.innerHTML = AREAS.map(a => `
+  <section class="group" data-group="${a.name}">
+    <h2>${a.name}<span>${a.decks.length} ${a.decks.length === 1 ? 'deck' : 'decks'}</span></h2>
+    ${a.decks.map(d => `
+      <button class="deck${d.seen ? '' : ' new'}" type="button" data-deck="${d.code}"${d.code === 'CLF' ? ' data-demo' : ''}
+        aria-label="${d.code}, ${d.platform} ${d.name}, ${d.cards} cards, ${d.seen ? d.seen + ' percent seen, best streak ' + d.streak : 'not started'}">
+        <code>${d.code}</code>
+        <span><span class="name">${d.name}</span><span class="sub">${d.platform} · ${d.cards} cards</span></span>
+        <span class="go">${arrow}</span>
+        <span class="status" aria-hidden="true">
+          <span class="track">${d.seen ? `<i style="--p:${d.seen}%"></i>` : ''}</span>
+          ${d.seen ? `<span><b>${d.seen}%</b> seen</span><span class="streak">Best streak <b>${d.streak}</b></span>` : '<span>Not started</span>'}
+        </span>
+      </button>`).join('')}
+  </section>`).join('')
+
+function setArea(key) {
+  areasEl.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.area === key))
+  listEl.querySelectorAll('.group').forEach(g => { g.hidden = key !== 'all' && g.dataset.group !== key })
+  const ds = key === 'all' ? all : AREAS.find(a => a.name === key).decks
+  document.getElementById('m-decks').textContent = ds.length
+  document.getElementById('m-cards').textContent = sum(ds, 'cards')
+  document.getElementById('m-prog').textContent = ds.filter(d => d.seen).length
+  listEl.scrollTop = 0
+}
+areasEl.addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) setArea(c.dataset.area) })
+
+// deck sheet
+const app = document.getElementById('app')
+const sheet = document.getElementById('sheet')
+let opener = null
+function openSheet(code, from) {
+  const d = all.find(x => x.code === code)
+  opener = from
+  document.getElementById('sh-code').textContent = d.code
+  document.getElementById('sh-title').innerHTML = `${d.platform} ${d.name}`.replace(/^(\S+ \S+) /, '$1<br>')
+  const rows = [['ALL', 'Whole deck', d.cards, true], ...d.sections]
+  document.getElementById('dests').innerHTML = rows.map(([c, n, k, whole]) => `
+    <li><button class="dest${whole ? ' whole' : ''}" type="button" aria-label="${d.code} to ${n}, ${k} cards">
+      <code>${c}</code><span class="name">${n}</span><span class="n">${k}</span><span class="go">${arrow}</span>
+    </button></li>`).join('')
+  app.dataset.sheet = 'open'
+  setTimeout(() => sheet.querySelector('.dest').focus({ preventScroll: true }), 60)
+}
+function closeSheet() {
+  delete app.dataset.sheet
+  if (opener) opener.focus({ preventScroll: true })
+}
+listEl.addEventListener('click', e => { const b = e.target.closest('.deck'); if (b) openSheet(b.dataset.deck, b) })
+document.getElementById('scrim').addEventListener('click', closeSheet)
+document.getElementById('s-close').addEventListener('click', closeSheet)
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && app.dataset.sheet) closeSheet() })
+</script>
+</body>
+</html>

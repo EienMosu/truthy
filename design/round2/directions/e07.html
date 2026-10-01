@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Astrolabe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Onest:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* palette: midnight plum + rose gold lines + ivory */
+  --surface: #1b1021;
+  --surface-raised: #2a1932;
+  --surface-sunk: #21132a;
+  --ink: #f6eddf;
+  --ink-muted: #cbb9cb;
+  --accent: #e4ab90;
+  --accent-ink: #1b1021;
+  --true: #e4ab90;
+  --false: #d9c8e0;
+  --correct: #a3dcc1;
+  --wrong: #f3a28d;
+  --line: rgba(228, 171, 144, .5);
+  --hair: rgba(228, 171, 144, .28);
+  --glow: #3e1f4a99;
+
+  --display: "Instrument Serif", Georgia, serif;
+  --text: "Onest", system-ui, sans-serif;
+
+  --r-s: 6px;
+  --r-l: 16px;
+  --shadow: 0 2px 0 rgba(0,0,0,.35), 0 18px 36px -12px rgba(0,0,0,.65);
+  --shadow-lift: 0 2px 0 rgba(0,0,0,.35), 0 32px 56px -14px rgba(0,0,0,.8);
+
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 44%, var(--glow) 0%, transparent 70%),
+    radial-gradient(circle at 12px 14px, rgba(228,171,144,.28) 0 1px, transparent 1.5px) 0 0 / 48px 48px,
+    var(--surface);
+  color: var(--ink);
+  font-family: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* header */
+.top { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
+.close { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; cursor: pointer; transition: transform var(--t1) var(--ease), background var(--t1); }
+.close:active { transform: scale(.92); background: var(--surface-raised); }
+.close svg { width: 16px; height: 16px; stroke: var(--accent); stroke-width: 1.6; }
+.deck { text-align: center; line-height: 1.25; }
+.deck b { display: block; font-weight: 600; font-size: 16px; color: var(--ink); }
+.deck span { font-size: 14px; color: var(--ink-muted); }
+.count { justify-self: end; font-family: var(--display); font-size: 20px; color: var(--accent); }
+
+/* card */
+.stage { position: absolute; top: 124px; left: 0; right: 0; height: 536px; display: flex; justify-content: center; }
+.card { user-select: none; -webkit-user-select: none;
+  width: 304px; height: 536px; position: relative; touch-action: none; cursor: grab;
+  perspective: 1400px;
+  transform: translateX(var(--dx, 0px)) rotate(var(--rot, 0deg));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+.flipper { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform var(--t3) var(--spring); }
+[data-state="answer"] .flipper { transform: rotateY(180deg); }
+[data-state="answer"] .card { cursor: default; transform: none; }
+.face {
+  position: absolute; inset: 0; border-radius: var(--r-l); background: var(--surface-raised);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow); transition: box-shadow var(--t2) var(--ease);
+  display: flex; flex-direction: column; align-items: center; padding: 26px 28px 26px; overflow: hidden;
+}
+.card[data-dragging] .face { box-shadow: var(--shadow-lift); }
+.back { transform: rotateY(180deg); }
+.face::before { content: ""; position: absolute; pointer-events: none; inset: 10px; border: 1px solid var(--line); border-radius: 10px; }
+
+.numeral { position: relative; display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 28px; line-height: 1; color: var(--accent); }
+.fl { width: 40px; height: 8px; fill: none; stroke: var(--line); stroke-width: 1; }
+.fl circle { fill: var(--accent); stroke: none; }
+
+/* the dial */
+.dial { position: relative; width: 184px; height: 184px; margin-top: 14px; flex: none; }
+.dial svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.dial * { stroke-linecap: butt; }
+.ticks { fill: none; stroke: var(--accent); stroke-width: .8; transform-origin: 92px 92px; transform: rotate(calc(var(--intent, 0) * 14deg)); transition: transform var(--t3) var(--spring); }
+.card[data-dragging] .ticks { transition: none; }
+.bound { fill: none; stroke: var(--accent); stroke-width: 1.3; }
+.index { fill: var(--ink); stroke: none; }
+.rim { fill: none; stroke: var(--line); stroke-width: .8; }
+.seg { fill: none; }
+.seg.todo { stroke: var(--hair); stroke-width: 1.2; }
+.seg.ok { stroke: var(--accent); stroke-width: 6; opacity: .9; }
+.seg.no-edge { stroke: var(--wrong); stroke-width: .9; }
+.seg.no-hatch { stroke: var(--wrong); stroke-width: 1.2; }
+.seg.now-edge { stroke: var(--ink); stroke-width: 1; }
+.seg.fill { stroke: var(--accent); stroke-width: 6; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.seg.hatch { stroke: var(--wrong); stroke-width: 1.2; opacity: 0; }
+
+.core { fill: none; stroke: var(--accent); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.core .fine { stroke-width: .7; opacity: .7; }
+.core .mask { fill: var(--surface-raised); }
+.core .solid { fill: var(--accent); stroke: none; }
+.emblem { transition: opacity var(--t2) var(--ease); opacity: calc(1 - max(var(--intent, 0), var(--intent, 0) * -1) * 1.6); }
+.card[data-dragging] .emblem { transition: none; }
+
+/* drag readout inside the dial */
+.read { position: absolute; left: 50%; top: 50%; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%;
+  display: grid; place-content: center; justify-items: center; gap: 4px; pointer-events: none;
+  font-family: var(--display); font-size: 27px; line-height: 1; opacity: 0; }
+.read svg { position: static; width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+.read.t { color: var(--true); opacity: calc(var(--intent, 0) * 1.6); }
+.read.f { color: var(--false); opacity: calc(var(--intent, 0) * -1.6); }
+
+.statement { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0; padding: 4px 0; font-family: var(--display); font-weight: 400; font-size: 31px; line-height: 1.16; color: var(--ink); text-wrap: balance; }
+
+.banner { position: relative; flex: none; height: 38px; padding: 0 22px; display: grid; place-items: center; font-weight: 500; font-size: 15px; color: var(--ink); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.banner::before, .banner::after { content: ""; position: absolute; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--accent); }
+.banner::before { left: -3px; } .banner::after { right: -3px; }
+
+/* back face */
+.back .dial { width: 132px; height: 132px; margin-top: 14px; }
+.back .ticks { transform-origin: 92px 92px; }
+.vg { fill: none; stroke: var(--verdict); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform-origin: 92px 92px; transform: scale(.7); transition: opacity var(--t2) var(--ease), transform var(--t3) var(--spring); }
+[data-state="answer"] .vg { opacity: 1; transform: none; transition-delay: 620ms; }
+.verdict { margin: 12px 0 0; font-family: var(--display); font-weight: 400; font-size: 48px; line-height: 1.05; color: var(--verdict); }
+.answer-is { margin: 6px 0 0; font-size: 17px; color: var(--ink); }
+.answer-is b { font-weight: 600; color: var(--accent); }
+.explain { margin: 16px 0 0; font-size: 16px; line-height: 1.5; text-align: center; color: var(--ink); }
+.source { margin-top: 4px; min-height: 48px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px; font-weight: 500; font-size: 15px; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.source svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.back .banner { margin-top: auto; }
+.v-ok, .v-no { display: none; }
+[data-result="correct"] .v-ok { display: block; }
+[data-result="wrong"] .v-no { display: block; }
+[data-result="correct"] .back { --verdict: var(--correct); }
+[data-result="wrong"] .back { --verdict: var(--wrong); }
+
+/* the beat: segment four completes as the verdict lands */
+[data-state="answer"][data-result="correct"] .back .seg.fill { stroke-dashoffset: 0; transition: stroke-dashoffset 520ms var(--ease) 380ms; }
+[data-state="answer"][data-result="wrong"] .back .seg.hatch { opacity: 1; transition: opacity var(--t1) linear calc(380ms + var(--i) * 45ms); }
+[data-state="answer"][data-result="wrong"] .back .seg.now-edge { stroke: var(--wrong); transition: stroke var(--t2) 380ms; }
+[data-state="answer"][data-result="correct"] .back .seg.now-edge { stroke: var(--accent); transition: stroke var(--t2) 380ms; }
+
+/* controls */
+.hint { position: absolute; top: 672px; left: 0; right: 0; text-align: center; font-size: 15px; color: var(--ink-muted); display: flex; justify-content: center; align-items: center; gap: 10px; transition: opacity var(--t2); }
+.hint svg { width: 18px; height: 10px; fill: none; stroke: var(--ink-muted); stroke-width: 1.3; }
+.choices, .next-row { position: absolute; top: 704px; left: 43px; right: 43px; height: 64px; display: flex; gap: 16px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.choice {
+  flex: 1; height: 64px; border: 0; border-radius: var(--r-s); cursor: pointer;
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--accent), var(--shadow);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--display); font-size: 25px; color: var(--ink);
+  transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.choice svg { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; }
+.choice:active { transform: translateY(2px) scale(.97); background: var(--surface-sunk); }
+.next-row { opacity: 0; pointer-events: none; transform: translateY(8px); }
+.next {
+  flex: 1; height: 64px; border: 0; border-radius: var(--r-s); cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: var(--shadow);
+  font-family: var(--display); font-size: 25px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  transition: transform var(--t1) var(--ease);
+}
+.next svg { width: 22px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.next:active { transform: translateY(2px) scale(.97); }
+[data-state="answer"] .choices, [data-state="answer"] .hint { opacity: 0; pointer-events: none; }
+[data-state="answer"] .next-row { opacity: 1; pointer-events: auto; transform: none; transition-delay: var(--t2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .flipper, .choices, .next-row, .hint, .ticks, .vg, .seg { transition-duration: 1ms !important; transition-delay: 0s !important; }
+  [data-state="answer"] .front { opacity: 0; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"/></svg>
+    </button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Classic</span></div>
+    <div class="count" aria-label="Card 4 of 10">4/10</div>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="flipper">
+        <article class="face front" aria-label="Statement card">
+          <div class="numeral" aria-hidden="true"><svg class="fl" viewBox="0 0 40 8"><path d="M0 4h32"/><circle cx="36" cy="4" r="2"/></svg>IV<svg class="fl" viewBox="0 0 40 8" style="transform:scaleX(-1)"><path d="M0 4h32"/><circle cx="36" cy="4" r="2"/></svg></div>
+          <div class="dial" role="img" aria-label="Progress: cards 1 and 2 correct, card 3 wrong, card 4 of 10 now">
+            <svg viewBox="0 0 184 184" data-dial="front" aria-hidden="true"></svg>
+            <div class="read t" aria-hidden="true"><svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="5"/><path d="M13 1v4M13 21v4M1 13h4M21 13h4M4.5 4.5l2.8 2.8M18.7 18.7l2.8 2.8M4.5 21.5l2.8-2.8M18.7 7.3l2.8-2.8"/></svg>True</div>
+            <div class="read f" aria-hidden="true"><svg viewBox="0 0 26 26"><path d="M17 3a10 10 0 1 0 6 16A8 8 0 0 1 17 3z"/></svg>False</div>
+          </div>
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="banner">Security and compliance</div>
+        </article>
+
+        <article class="face back" aria-live="polite">
+          <div class="numeral" aria-hidden="true"><svg class="fl" viewBox="0 0 40 8"><path d="M0 4h32"/><circle cx="36" cy="4" r="2"/></svg>IV<svg class="fl" viewBox="0 0 40 8" style="transform:scaleX(-1)"><path d="M0 4h32"/><circle cx="36" cy="4" r="2"/></svg></div>
+          <div class="dial" aria-hidden="true">
+            <svg viewBox="0 0 184 184" data-dial="back">
+              <g class="vg v-ok"><circle cx="92" cy="92" r="30" stroke-width="1.2"/><path d="M78 93l9 9 19-21"/></g>
+              <g class="vg v-no"><circle cx="92" cy="92" r="30" stroke-width="1.2" stroke-dasharray="2 5"/><path d="M80 80l24 24M104 80l-24 24"/></g>
+            </svg>
+          </div>
+          <h2 class="verdict"><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+          <p class="answer-is">The answer is <b>False</b></p>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" onclick="return false">Shared responsibility model
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4 3h5v5"/></svg></a>
+          <div class="banner">Security and compliance</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="hint" aria-hidden="true">
+    <svg viewBox="0 0 18 10"><path d="M17 5H2M6 1L2 5l4 4"/></svg>
+    Swipe the card, or choose
+    <svg viewBox="0 0 18 10"><path d="M1 5h15M12 1l4 4-4 4"/></svg>
+  </div>
+  <div class="choices">
+    <button class="choice" type="button" data-answer="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3a9.5 9.5 0 1 0 6 15.5A7.5 7.5 0 0 1 15 3z"/></svg>False
+    </button>
+    <button class="choice" type="button" data-answer="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>True
+    </button>
+  </div>
+  <div class="next-row">
+    <button class="next" type="button">Next card
+      <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M1 6h19M15 1l5 5-5 5"/></svg></button>
+  </div>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// the dial: ten segments on a ticked ring, drawn from the round's results
+;(function () {
+  const C = 92, rad = a => a * Math.PI / 180
+  const P = (r, a) => (C + r * Math.sin(rad(a))).toFixed(2) + ' ' + (C - r * Math.cos(rad(a))).toFixed(2)
+  const arc = (r, a0, a1) => `M${P(r, a0)}A${r} ${r} 0 0 1 ${P(r, a1)}`
+  const line = (r0, r1, a) => `M${P(r0, a)}L${P(r1, a)}`
+  const results = ['ok', 'ok', 'no', 'now', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo']
+  const R = 70, W = 3
+  const emblem = `
+    <g class="core emblem">
+      <path class="fine" d="M30 92h124M92 30v124"/>
+      <path class="mask" d="M92 56l24 9v20c0 19-10 31-24 39-14-8-24-20-24-39V65z"/>
+      <path class="fine" d="M92 62l18 7v16c0 15-7 25-18 32-11-7-18-17-18-32V69z"/>
+      <circle class="solid" cx="92" cy="84" r="5"/>
+      <path class="solid" d="M89.5 86h5l2 14h-9z"/>
+      <path class="solid" d="M92 27l2.4 5-2.4 1.6-2.4-1.6zM92 157l2.4-5-2.4-1.6-2.4 1.6zM27 92l5-2.4 1.6 2.4-1.6 2.4zM157 92l-5-2.4-1.6 2.4 1.6 2.4z"/>
+    </g>`
+  document.querySelectorAll('[data-dial]').forEach(svg => {
+    const back = svg.dataset.dial === 'back'
+    let t = ''
+    for (let i = 0; i < 72; i++) t += `<path d="${line(80, i % 2 ? 83 : 85, i * 5 + 2.5)}"/>`
+    let b = ''
+    for (let k = 0; k < 10; k++) b += line(77, 88, k * 36)
+    const mid = 3 * 36 + 18
+    let s = `<circle class="rim" cx="92" cy="92" r="88"/><circle class="rim" cx="92" cy="92" r="${R - W - 3}"/><g class="ticks">${t}</g>`
+      + `<path class="bound" d="${b}"/><path class="index" d="M${P(91, mid)}L${P(97, mid - 2.6)}L${P(97, mid + 2.6)}z"/>`
+    results.forEach((res, k) => {
+      const a0 = k * 36 + 3, a1 = k * 36 + 33
+      if (res === 'ok') s += `<path class="seg ok" d="${arc(R, a0, a1)}"/>`
+      else if (res === 'todo') s += `<path class="seg todo" d="${arc(R, a0, a1)}"/>`
+      else {
+        const edge = res === 'no' ? 'no-edge' : 'now-edge'
+        s += `<path class="seg ${edge}" d="${arc(R - W, a0, a1)}${arc(R + W, a0, a1)}${line(R - W, R + W, a0)}${line(R - W, R + W, a1)}"/>`
+        const hatch = res === 'no' ? 'no-hatch' : 'hatch'
+        if (res === 'no' || back) for (let j = 0, a = a0 + 3; a < a1; a += 3, j++)
+          s += `<path class="seg ${hatch}" style="--i:${j}" d="M${P(R - W, a - 1.6)}L${P(R + W, a + 1.6)}"/>`
+        if (res === 'now' && back) s += `<path class="seg fill" pathLength="1" d="${arc(R, a0, a1)}"/>`
+      }
+    })
+    svg.insertAdjacentHTML('afterbegin', s + (back ? `<circle class="rim" cx="92" cy="92" r="46"/>` : emblem))
+  })
+})()
+
+const root = document.documentElement
+const card = document.getElementById('card')
+function answer(choice) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  void root.offsetWidth
+  root.dataset.state = 'answer'
+  setTimeout(() => document.querySelector('.next').focus({ preventScroll: true }), 400)
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+}
+attachSwipe(card, answer)
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.querySelector('.next').addEventListener('click', reset)
+</script>
+</body>
+</html>

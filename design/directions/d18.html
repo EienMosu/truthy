@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truthy, quiet premium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;600&family=Newsreader:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* edge-painted card stock on warm stone: ivory faces, oxblood edges, nothing loud */
+  --surface:#E8E2D6;
+  --surface-low:#DED6C7;
+  --surface-raised:#FBF8F1;
+  --surface-sunk:#F3EEE4;
+  --hairline:#DDD4C4;
+  --hairline-strong:#C6BBA8;
+  --ink:#1F1B16;
+  --ink-muted:#665D52;
+  --on-ink:#FBF8F1;
+  --accent:#8A3A2C;
+  --accent-deep:#5E2419;
+  --true:#2E4D3C;
+  --false:#8A3A2C;
+  --correct:#2E5A43;
+  --wrong:#8A3A2C;
+  --emboss-hi:rgba(255,255,255,.9);
+  --emboss-lo:rgba(94,36,25,.16);
+  --shade:rgba(46,34,20,.22);
+  --shade-soft:rgba(46,34,20,.10);
+  --r-s:10px;--r-m:14px;
+  --shadow:0 3px 0 var(--accent),0 4px 0 var(--accent-deep),0 22px 36px -18px var(--shade);
+  --t1:120ms;--t2:220ms;--t3:360ms;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --sans:"Albert Sans",system-ui,sans-serif;
+  --serif:"Newsreader",Georgia,serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:radial-gradient(120% 70% at 50% 38%,var(--surface) 0%,var(--surface-low) 100%);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+button,a{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.app{position:relative;height:100%;max-width:390px;margin:0 auto}
+
+/* header */
+.top{position:absolute;top:56px;left:24px;right:24px;height:48px;display:flex;align-items:center;gap:10px}
+.close{width:48px;height:48px;margin-left:-12px;border-radius:50%;border:0;background:none;display:grid;place-items:center;cursor:pointer;transition:background var(--t1),transform var(--t1)}
+.close:active{background:var(--surface-low);transform:scale(.94)}
+.close svg{width:14px;height:14px;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round}
+.deck{flex:1;min-width:0;line-height:1.25}
+.deck b{display:block;font-weight:600;font-size:15px;letter-spacing:-.005em}
+.deck span{font-family:var(--serif);font-style:italic;font-size:16px;color:var(--ink-muted)}
+.count{font-family:var(--serif);font-size:16px;color:var(--ink-muted);white-space:nowrap}
+.count b{font-weight:400;font-size:30px;color:var(--ink);vertical-align:-3px;margin-right:2px}
+
+/* progress: ten slips, one per card */
+.prog{position:absolute;top:116px;left:24px;right:24px;display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.slip{height:22px;border-radius:3px;border:1px solid var(--hairline-strong);display:grid;place-items:center}
+.slip svg{width:10px;height:10px;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:none}
+.slip.c{background:var(--ink);border-color:var(--ink)}
+.slip.c svg.ic{display:block;stroke:var(--on-ink)}
+.slip.w{border-color:var(--wrong);background:var(--surface-raised)}
+.slip.w svg.ix{display:block;stroke:var(--wrong)}
+.slip.now{border:1.5px solid var(--accent);background:var(--surface-raised);box-shadow:0 2px 0 var(--accent)}
+.slip.now::after{content:"";width:4px;height:4px;border-radius:50%;background:var(--accent)}
+[data-state="answer"] .slip.now::after{display:none}
+[data-state="answer"][data-result="correct"] .slip.now{background:var(--ink);border-color:var(--ink);box-shadow:none}
+[data-state="answer"][data-result="correct"] .slip.now svg.ic{display:block;stroke:var(--on-ink)}
+[data-state="answer"][data-result="wrong"] .slip.now{border-color:var(--wrong);box-shadow:none}
+[data-state="answer"][data-result="wrong"] .slip.now svg.ix{display:block;stroke:var(--wrong)}
+
+/* the deck: edge-painted stock, stacked */
+.stage{position:absolute;left:24px;right:24px;top:160px;height:476px}
+.under{position:absolute;left:0;right:0;top:0;bottom:0;border-radius:var(--r-m);background:var(--surface-sunk);border:1px solid var(--hairline);box-shadow:var(--shadow)}
+.under.u1{transform:translateY(8px) scale(.975)}
+.under.u2{transform:translateY(16px) scale(.95)}
+.card{position:absolute;inset:0;border-radius:var(--r-m);background:var(--surface-raised);border:1px solid var(--hairline);box-shadow:var(--shadow);
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+  transform:translateX(var(--dx,0px)) rotate(calc(var(--rot,0deg) * .5));transition:transform var(--t3) var(--spring)}
+.card[data-dragging]{transition:none;cursor:grabbing}
+
+.q,.a{position:absolute;inset:0;padding:26px 28px 0;display:flex;flex-direction:column;transition:opacity var(--t2) var(--ease),transform var(--t3) var(--ease)}
+.kicker{display:flex;align-items:center;justify-content:space-between;height:32px;transition:opacity var(--t1)}
+.kicker .dom{font-family:var(--serif);font-style:italic;font-size:17px;color:var(--ink-muted)}
+.kicker .no{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:18px;color:var(--accent);
+  box-shadow:inset 1px 1px 0 var(--emboss-lo),inset -1px -1px 0 var(--emboss-hi),0 0 0 1px var(--hairline)}
+.card[data-dragging] .kicker{opacity:calc(1 - max(var(--intent,0),var(--intent,0) * -1) * 1.6)}
+.rule{width:40px;height:2px;background:var(--accent);margin:18px 0 0}
+.stmt{margin:auto 0;padding-bottom:16px;font-family:var(--serif);font-weight:400;font-size:35px;line-height:1.16;letter-spacing:-.015em;color:var(--ink);text-wrap:pretty}
+.swipe{flex:none;height:60px;border-top:1px solid var(--hairline);display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--ink-muted)}
+.swipe span{display:flex;align-items:center;gap:6px}
+.swipe b{font-weight:600;color:var(--ink)}
+.swipe svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.swipe .mid{font-family:var(--serif);font-style:italic;font-size:15px}
+
+/* drag intent: the word is pressed into the top of the card */
+.lean{position:absolute;top:22px;display:flex;align-items:center;gap:8px;font-family:var(--serif);font-style:italic;font-size:30px;pointer-events:none;line-height:1}
+.lean i{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;border:1.5px solid currentColor}
+.lean svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lean.t{left:28px;color:var(--true);opacity:clamp(0,calc(var(--intent,0) * 1.7 - .25),1);transform:translateY(calc(6px - clamp(0,var(--intent,0),1) * 6px))}
+.lean.f{right:28px;color:var(--false);opacity:clamp(0,calc(var(--intent,0) * -1.7 - .25),1);transform:translateY(calc(6px - clamp(0,calc(var(--intent,0) * -1),1) * 6px))}
+
+/* answer face */
+.a{opacity:0;transform:translateY(8px);pointer-events:none}
+.verdict{display:flex;align-items:center;gap:16px;margin-top:4px}
+.seal{width:60px;height:60px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--surface-sunk);
+  box-shadow:inset 2px 2px 0 var(--emboss-lo),inset -2px -2px 0 var(--emboss-hi),0 0 0 1px var(--hairline),0 0 0 6px var(--surface-raised),0 0 0 7px var(--hairline)}
+.seal svg{width:24px;height:24px;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.seal .ic{stroke:var(--correct)}
+.seal .ix{stroke:var(--wrong);display:none}
+.verdict h2{margin:0;font-family:var(--serif);font-weight:400;font-size:42px;letter-spacing:-.02em;line-height:1;color:var(--correct)}
+.truth{margin:20px 0 0;display:flex;align-items:baseline;gap:8px;font-size:15px;color:var(--ink-muted)}
+.truth b{font-family:var(--serif);font-style:italic;font-weight:400;font-size:24px;color:var(--ink);border-bottom:2px solid var(--accent);line-height:1.1}
+.recap{margin:18px 0 0;padding:16px 0 0;border-top:1px solid var(--hairline);font-family:var(--serif);font-size:16px;line-height:1.4;color:var(--ink-muted)}
+.exp{margin:12px 0 0;font-size:18px;line-height:1.5;color:var(--ink)}
+.src{margin-top:auto;min-height:60px;border-top:1px solid var(--hairline);display:flex;align-items:center;justify-content:space-between;text-decoration:none;color:var(--ink);font-weight:600;font-size:15px}
+.src span{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:1.5px;text-underline-offset:4px}
+.src svg{width:14px;height:14px;stroke:var(--accent);fill:none;stroke-width:1.6;stroke-linecap:round}
+[data-result="wrong"] .seal .ic{display:none}
+[data-result="wrong"] .seal .ix{display:block}
+[data-result="wrong"] .verdict h2{color:var(--wrong)}
+
+/* actions */
+.actions{position:absolute;top:676px;left:24px;right:24px;display:flex;gap:12px}
+.btn{flex:1;height:62px;border-radius:var(--r-s);border:1px solid var(--hairline-strong);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;gap:10px;
+  font-size:17px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--hairline-strong),0 10px 18px -12px var(--shade);transition:transform var(--t1) var(--ease),box-shadow var(--t1) var(--ease)}
+.btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.btn em{font-family:var(--serif);font-style:italic;font-weight:400;font-size:22px}
+.btn[data-answer="false"] svg{stroke:var(--false)}
+.btn[data-answer="true"] svg{stroke:var(--true)}
+.btn:active,.btn.down{transform:translateY(2px);box-shadow:0 1px 0 var(--hairline-strong),0 4px 8px -6px var(--shade)}
+.next{display:none;background:var(--ink);border-color:var(--ink);color:var(--on-ink);box-shadow:0 3px 0 var(--accent),0 4px 0 var(--accent-deep),0 12px 20px -12px var(--shade)}
+.next:active{box-shadow:0 1px 0 var(--accent),0 2px 0 var(--accent-deep)}
+.next svg{stroke:var(--on-ink)}
+
+/* answer state */
+[data-state="answer"] .q{opacity:0;transform:translateY(-8px);pointer-events:none}
+[data-state="answer"] .a{opacity:1;transform:none;pointer-events:auto;transition-delay:90ms}
+[data-state="answer"] .lean{display:none}
+[data-state="answer"] .card{cursor:default;animation:settle var(--t3) var(--spring)}
+[data-state="answer"] .seal{animation:press var(--t3) var(--spring) 160ms both}
+[data-state="answer"] .btn[data-answer]{display:none}
+[data-state="answer"] .next{display:flex}
+@keyframes settle{0%{transform:translateY(0)}40%{transform:translateY(-8px)}100%{transform:none}}
+@keyframes press{0%{transform:scale(1.25);opacity:0}100%{transform:none;opacity:1}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:1ms!important;animation-duration:1ms!important;transition-delay:0ms!important;animation-delay:0ms!important}
+  .q,.a{transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Classic</span></div>
+    <span class="count" aria-label="Card 4 of 10"><b>4</b> of 10</span>
+  </header>
+
+  <div class="prog" role="img" aria-label="Progress: cards 1 and 2 correct, card 3 wrong, card 4 in play">
+    <span class="slip c"><svg class="ic" viewBox="0 0 10 10"><path d="M1.8 5.2l2.2 2.2L8.4 2.8"/></svg></span>
+    <span class="slip c"><svg class="ic" viewBox="0 0 10 10"><path d="M1.8 5.2l2.2 2.2L8.4 2.8"/></svg></span>
+    <span class="slip w"><svg class="ix" viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span>
+    <span class="slip now"><svg class="ic" viewBox="0 0 10 10"><path d="M1.8 5.2l2.2 2.2L8.4 2.8"/></svg><svg class="ix" viewBox="0 0 10 10"><path d="M2.5 2.5l5 5M7.5 2.5l-5 5"/></svg></span>
+    <span class="slip"></span><span class="slip"></span><span class="slip"></span><span class="slip"></span><span class="slip"></span><span class="slip"></span>
+  </div>
+
+  <main class="stage">
+    <div class="under u2" aria-hidden="true"></div>
+    <div class="under u1" aria-hidden="true"></div>
+    <article class="card" id="card">
+      <section class="q">
+        <div class="kicker"><span class="dom">Security and compliance</span><span class="no" aria-hidden="true">4</span></div>
+        <div class="rule" aria-hidden="true"></div>
+        <p class="stmt">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+        <div class="swipe" aria-hidden="true">
+          <span><svg viewBox="0 0 14 14"><path d="M9 3L5 7l4 4"/></svg><b>False</b></span>
+          <span class="mid">Swipe or tap</span>
+          <span><b>True</b><svg viewBox="0 0 14 14"><path d="M5 3l4 4-4 4"/></svg></span>
+        </div>
+      </section>
+
+      <span class="lean t" aria-hidden="true"><i><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 5"/></svg></i>True</span>
+      <span class="lean f" aria-hidden="true">False<i><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg></i></span>
+
+      <section class="a" role="status">
+        <div class="verdict">
+          <span class="seal"><svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg><svg class="ix" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          <h2 class="vt">Correct</h2>
+        </div>
+        <p class="truth">The answer is <b>False</b></p>
+        <p class="recap">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+        <p class="exp">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+        <a class="src" href="#" onclick="return false"><span>Shared responsibility model</span><svg viewBox="0 0 14 14"><path d="M4 2.5h7.5V10M11.5 2.5L2.5 11.5"/></svg></a>
+      </section>
+    </article>
+  </main>
+
+  <div class="actions">
+    <button class="btn" type="button" data-answer="false"><svg viewBox="0 0 16 16"><path d="M13 8H3M7 4L3 8l4 4"/></svg><em>False</em></button>
+    <button class="btn" type="button" data-answer="true"><em>True</em><svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+    <button class="btn next" type="button" id="next">Next card<svg viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button>
+  </div>
+</div>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.getElementById('card')
+
+function answer(a) {
+  if (root.dataset.state !== 'question') return
+  const ok = a === 'false'
+  root.dataset.result = ok ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  card.querySelector('.vt').textContent = ok ? 'Correct' : 'Not quite'
+  document.getElementById('next').focus({preventScroll: true})
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+  document.querySelector('[data-answer="false"]').focus({preventScroll: true})
+}
+
+card.addEventListener('pointerdown', e => { if (root.dataset.state !== 'question') e.stopImmediatePropagation() })
+attachSwipe(card, answer)
+
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => {
+  b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120)
+  answer(b.dataset.answer)
+}))
+document.getElementById('next').addEventListener('click', reset)
+document.querySelector('.close').addEventListener('click', reset)
+document.addEventListener('keydown', e => {
+  if (root.dataset.state !== 'question') return
+  if (e.key === 'ArrowLeft') answer('false')
+  if (e.key === 'ArrowRight') answer('true')
+})
+</script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Certificate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface: #dfece3;
+  --surface-raised: #f0f6f0;
+  --guilloche: #a6c9b4;
+  --guilloche-fine: #c3dccc;
+  --ink: #12352a;
+  --ink-muted: #44655a;
+  --accent: #8e2c3b;
+  --true: #12352a;
+  --false: #8e2c3b;
+  --correct: #1d5c45;
+  --correct-hi: #2f7c60;
+  --wrong: #8e2c3b;
+  --wrong-hi: #ad4757;
+  --shade: 18 53 42;
+  --emboss-hi: 255 255 255;
+  --r: 4px;
+  --shadow: 0 1px 0 rgb(var(--shade) / .12), 0 10px 24px rgb(var(--shade) / .14);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --display: 'Libre Caslon Display', Georgia, serif;
+  --text: 'Libre Caslon Text', Georgia, serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; touch-action: none; user-select: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; overflow: hidden; }
+#paper { position: absolute; inset: 0; width: 100%; height: 100%; }
+#paper path { fill: none; stroke: var(--guilloche-fine); stroke-width: .8; }
+
+/* header */
+.head { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: flex; align-items: center; gap: 10px; }
+.close { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: none; border: 1px solid var(--ink); box-shadow: inset 0 0 0 3px var(--surface), inset 0 0 0 4px var(--ink-muted); background: var(--surface-raised); transition: transform var(--t1) var(--ease); }
+.close:active { transform: scale(.92); }
+.close svg { width: 14px; height: 14px; }
+.marks { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 9px; list-style: none; margin: 0; padding: 0; }
+.mk { width: 21px; height: 21px; flex: none; border-radius: 50%; border: 1px dashed var(--ink-muted); display: grid; place-items: center; font: 400 12px/1 var(--text); color: var(--ink-muted); }
+.mk svg { width: 11px; height: 11px; }
+.mk.ok { border: 0; background: var(--correct); color: var(--surface-raised); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--correct); }
+.mk.no { border: 0; background: var(--wrong); color: var(--surface-raised); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--wrong); }
+.mk.now { border: 1.5px solid var(--accent); color: var(--accent); font-weight: 700; width: 25px; height: 25px; }
+.mk .m { display: none; }
+html[data-state="answer"] .mk.now .n { display: none; }
+html[data-state="answer"][data-result="correct"] .mk.now { border: 0; background: var(--correct); color: var(--surface-raised); }
+html[data-state="answer"][data-result="wrong"] .mk.now { border: 0; background: var(--wrong); color: var(--surface-raised); }
+html[data-result="correct"] .mk.now .m-ok, html[data-result="wrong"] .mk.now .m-no { display: block; }
+
+/* certificate = card */
+.card { --dx: 0px; --rot: 0deg; --intent: 0;
+  position: absolute; left: 20px; right: 20px; top: 118px; height: 536px;
+  background: var(--surface-raised); border-radius: var(--r); box-shadow: var(--shadow);
+  transform: translateX(var(--dx)) rotate(var(--rot)); transition: transform var(--t3) var(--spring), box-shadow var(--t2) var(--ease);
+  touch-action: none; cursor: grab; }
+.card[data-dragging] { transition: none; cursor: grabbing; box-shadow: 0 2px 0 rgb(var(--shade) / .12), 0 24px 40px rgb(var(--shade) / .22); }
+#band { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#band path { fill: none; stroke: var(--guilloche); stroke-width: .7; }
+#band rect { fill: none; stroke: var(--ink); }
+.inside { position: absolute; inset: 26px; }
+.face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 14px 12px 10px; transition: opacity var(--t2) var(--ease); }
+.crest { width: 92px; height: 92px; flex: none; }
+.crest .spin { transform: rotate(calc(var(--rot) * 9)); }
+.card:not([data-dragging]) .crest .spin { transition: transform var(--t3) var(--spring); }
+.crest path { fill: none; stroke: var(--ink-muted); stroke-width: .4; }
+.crest .c-core { fill: var(--surface-raised); stroke: var(--ink); stroke-width: 1; }
+.crest text { fill: var(--ink); font: 400 22px var(--display); }
+.deck { margin: 10px 0 0; font: 400 25px/1.05 var(--display); letter-spacing: .01em; }
+.dom { margin: 6px 0 0; font: 400 14px/1.2 var(--text); color: var(--ink-muted); display: flex; align-items: center; gap: 8px; }
+.dom i { width: 4px; height: 4px; transform: rotate(45deg); background: var(--accent); display: inline-block; }
+.statement { margin: auto 0; font: 400 32px/1.15 var(--display); color: var(--ink); text-wrap: balance; }
+.foot { width: 100%; display: flex; justify-content: space-between; align-items: flex-end; font: 400 12px/1.2 var(--text); color: var(--ink-muted); }
+.serial { font: 700 13px/1 var(--text); letter-spacing: .14em; color: var(--accent); font-variant-numeric: lining-nums tabular-nums; }
+.foot .drag { display: flex; align-items: center; gap: 6px; }
+.foot .drag svg { width: 44px; height: 10px; }
+
+/* drag overprint */
+.over { position: absolute; top: 200px; padding: 6px 14px 2px; font: 400 40px/1 var(--display); border-top: 2px solid; border-bottom: 2px solid; pointer-events: none; display: flex; align-items: center; gap: 10px; background: var(--surface-raised); }
+.over::after { content: ''; position: absolute; left: 0; right: 0; bottom: -6px; border-bottom: 1px solid; }
+.over svg { width: 24px; height: 24px; margin-top: -6px; }
+.over.t { left: 10px; color: var(--true); transform: rotate(-9deg); opacity: clamp(0, calc(var(--intent) * 1.6), 1); }
+.over.f { right: 10px; color: var(--false); transform: rotate(9deg); opacity: clamp(0, calc(var(--intent) * -1.6), 1); }
+html[data-state="answer"] .over { display: none; }
+
+/* answer face */
+.a-face { opacity: 0; visibility: hidden; padding-top: 4px; }
+html[data-state="answer"] .q-face { opacity: 0; visibility: hidden; }
+html[data-state="answer"] .a-face { opacity: 1; visibility: visible; }
+.seal { position: relative; width: 140px; height: 140px; flex: none; color: var(--correct); margin-bottom: 26px; }
+html[data-result="wrong"] .seal { color: var(--wrong); }
+.seal svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 1px 0 rgb(var(--emboss-hi) / .6)) drop-shadow(0 3px 3px rgb(var(--shade) / .35)); }
+.seal .disc { fill: currentColor; }
+.seal .ring path { fill: none; stroke: var(--surface-raised); stroke-width: .4; opacity: .7; }
+.seal .lip { fill: none; stroke: var(--surface-raised); stroke-width: 1; opacity: .7; }
+.seal .core { fill: currentColor; stroke: var(--surface-raised); stroke-width: 1.2; }
+.seal .glyph { stroke: var(--surface-raised); stroke-width: 4.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.seal text { fill: var(--surface-raised); font: 700 8.4px var(--text); }
+.seal .ribbon { fill: currentColor; }
+.seal .ribbon-hi { fill: none; stroke: var(--surface-raised); stroke-width: .8; opacity: .6; }
+.seal { transform: scale(0); }
+html[data-state="answer"] .seal { animation: press 520ms var(--spring) var(--t1) both; }
+@keyframes press { 0% { transform: scale(1.9) rotate(-24deg); opacity: 0; } 55% { transform: scale(.94) rotate(2deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.ripple { position: absolute; left: 50%; top: 74px; width: 140px; height: 140px; margin-left: -70px; margin-top: -70px; border-radius: 50%; border: 1px solid var(--ink-muted); opacity: 0; pointer-events: none; }
+html[data-state="answer"] .ripple { animation: ripple 600ms var(--ease) 300ms both; }
+@keyframes ripple { from { transform: scale(.9); opacity: .7; } to { transform: scale(1.6); opacity: 0; } }
+.verdict { margin: 8px 0 0; font: 400 40px/1 var(--display); }
+.was { margin: 8px 0 0; font: 700 14px/1.2 var(--text); display: flex; align-items: center; gap: 8px; letter-spacing: .02em; }
+.was b { display: inline-block; padding: 3px 9px 2px; border: 1px solid var(--accent); color: var(--accent); }
+.explain { margin: 14px 0 0; font: 400 17px/1.5 var(--text); text-wrap: pretty; }
+.src { margin-top: 2px; min-height: 48px; display: inline-flex; align-items: center; gap: 8px; font: 700 14px/1 var(--text); color: var(--accent); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.src svg { width: 14px; height: 14px; }
+.v-no, .i-no { display: none; }
+html[data-result="wrong"] .v-ok, html[data-result="wrong"] .i-ok { display: none; }
+html[data-result="wrong"] .v-no { display: inline; }
+html[data-result="wrong"] .i-no { display: block; }
+
+/* controls: engraved plaques */
+.controls { position: absolute; left: 20px; right: 20px; top: 682px; height: 72px; }
+.pair { position: absolute; inset: 0; display: flex; gap: 12px; transition: opacity var(--t2) var(--ease); }
+.plaque { position: relative; flex: 1; height: 72px; background: var(--surface-raised); border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; gap: 10px; font: 400 28px/1 var(--display); box-shadow: 0 3px 0 currentColor; transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease); }
+.plaque::before { content: ''; position: absolute; inset: 4px; border: 1px solid currentColor; opacity: .45; pointer-events: none; }
+.plaque::after { content: ''; position: absolute; inset: 7px; border: 1px dotted currentColor; opacity: .3; pointer-events: none; }
+.plaque .ic { width: 30px; height: 30px; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; margin-top: -2px; }
+.plaque .ic svg { width: 14px; height: 14px; }
+.plaque.f { color: var(--false); }
+.plaque.t { color: var(--true); }
+.plaque:active { transform: translateY(3px); box-shadow: 0 0 0 currentColor; }
+.next { position: absolute; inset: 0; width: 100%; color: var(--surface-raised); background: var(--ink); border-color: var(--ink); box-shadow: 0 3px 0 rgb(var(--shade) / .5); opacity: 0; visibility: hidden; transition: opacity var(--t2) var(--ease), transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease); }
+.next::before, .next::after { border-color: var(--surface-raised); }
+.next:active { box-shadow: 0 0 0 rgb(var(--shade) / .5); }
+.next svg { width: 26px; height: 14px; }
+html[data-state="answer"] .pair { opacity: 0; visibility: hidden; }
+html[data-state="answer"] .next { opacity: 1; visibility: visible; transition-delay: 360ms, 360ms, 0ms, 0ms; }
+html[data-state="answer"] .next:active { transform: translateY(3px); }
+.hint { position: absolute; left: 0; right: 0; top: 730px; text-align: center; font: 400 14px/1.3 var(--text); color: var(--ink-muted); transition: opacity var(--t2); }
+html[data-state="answer"] .hint { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+  .crest .spin { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <svg id="paper" aria-hidden="true"></svg>
+
+  <header class="head">
+    <button class="close" aria-label="Leave round"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    <ol class="marks" aria-label="Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.">
+      <li class="mk ok"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.3l2.6 2.6L10 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></li>
+      <li class="mk ok"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.3l2.6 2.6L10 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></li>
+      <li class="mk no"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3L3 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></li>
+      <li class="mk now" aria-current="step"><span class="n">4</span><svg class="m m-ok" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.3l2.6 2.6L10 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg class="m m-no" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3l6 6M9 3L3 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></li>
+      <li class="mk">5</li><li class="mk">6</li><li class="mk">7</li><li class="mk">8</li><li class="mk">9</li><li class="mk">10</li>
+    </ol>
+  </header>
+
+  <article class="card" data-card>
+    <svg id="band" aria-hidden="true"></svg>
+    <div class="inside">
+      <section class="face q-face">
+        <svg class="crest" viewBox="0 0 92 92" aria-hidden="true"><g id="crestLines"></g><circle class="c-core" cx="46" cy="46" r="17"/><text x="46" y="53.5" text-anchor="middle">4</text></svg>
+        <h1 class="deck">AWS Cloud Practitioner</h1>
+        <p class="dom">Security and compliance <i></i> Classic</p>
+        <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+        <div class="foot">
+          <span class="serial">N&ordm; 04&middot;10</span>
+          <span class="drag" aria-hidden="true"><svg viewBox="0 0 44 10"><path d="M1 5h42M5 1L1 5l4 4M39 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1"/></svg>Slide to decide</span>
+        </div>
+      </section>
+
+      <section class="face a-face" aria-hidden="true" aria-live="polite">
+        <div class="seal" aria-hidden="true">
+          <svg viewBox="-66 -66 132 132">
+            <defs><path id="sealArc" d="M0 -42.5 A42.5 42.5 0 1 1 -0.01 -42.5"/></defs>
+            <g transform="translate(0 30)">
+              <path class="ribbon" d="M-30 0 L-46 62 L-34 54 L-26 68 L-12 6 Z"/>
+              <path class="ribbon" d="M30 0 L46 62 L34 54 L26 68 L12 6 Z"/>
+              <path class="ribbon-hi" d="M-28 6 L-41 56M28 6 L41 56"/>
+            </g>
+            <path class="disc" id="scallop"/>
+            <circle class="lip" r="51"/><circle class="lip" r="37"/>
+            <g class="ring" id="sealRing"></g>
+            <text><textPath href="#sealArc" startOffset="0" textLength="262" lengthAdjust="spacing">Security and compliance &middot; card 4 of 10 &middot;</textPath></text>
+            <circle class="core" r="25"/>
+            <path class="glyph i-ok" d="M-11 1 L-3 9 L12 -8"/>
+            <path class="glyph i-no" d="M-9 -9 L9 9 M9 -9 L-9 9"/>
+          </svg>
+        </div>
+        <div class="ripple" aria-hidden="true"></div>
+        <h2 class="verdict"><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+        <p class="was">The answer is <b>False</b></p>
+        <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+        <a class="src" href="#" onclick="return false"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2h8v8M12 2L2 12" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Shared responsibility model</a>
+        <div class="foot" style="margin-top:auto"><span class="serial">N&ordm; 04&middot;10</span><span>AWS Cloud Practitioner</span></div>
+      </section>
+    </div>
+    <div class="over t" aria-hidden="true">True<svg viewBox="0 0 24 24"><path d="M3 12.5l6 6L21 5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></div>
+    <div class="over f" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>False</div>
+  </article>
+
+  <div class="controls">
+    <div class="pair">
+      <button class="plaque f" data-answer="false"><span class="ic" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M3 3l8 8M11 3l-8 8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>False</button>
+      <button class="plaque t" data-answer="true">True<span class="ic" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M2 7.3l3.3 3.3L12 3.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+    </div>
+    <button class="plaque next" id="next" tabindex="-1">Next card<svg viewBox="0 0 26 14" aria-hidden="true"><path d="M1 7h23M18 1l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+  </div>
+</div>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+/* guilloche generators: every pattern is a closed curve family, so a native port can pre-render them as image tiles */
+const NS = 'http://www.w3.org/2000/svg'
+const f = n => n.toFixed(2)
+function polar(rf, steps = 360) {
+  let d = ''
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * Math.PI * 2, r = rf(t)
+    d += (i ? 'L' : 'M') + f(Math.cos(t) * r) + ' ' + f(Math.sin(t) * r)
+  }
+  return d + 'Z'
+}
+function addPath(g, d, attrs) { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); if (attrs) for (const k in attrs) p.setAttribute(k, attrs[k]); g.appendChild(p); return p }
+
+// crest rosette
+const crest = document.getElementById('crestLines')
+crest.setAttribute('transform', 'translate(46 46)')
+const spin = document.createElementNS(NS, 'g'); spin.setAttribute('class', 'spin'); crest.appendChild(spin)
+for (let j = 0; j < 20; j++) {
+  const ph = (j / 20) * Math.PI * 2
+  addPath(spin, polar(t => 30 + 8 * Math.sin(7 * t + ph), 600))
+}
+for (let j = 0; j < 8; j++) {
+  const ph = (j / 8) * Math.PI * 2
+  addPath(spin, polar(t => 43 + 2.2 * Math.sin(24 * t + ph), 720))
+}
+
+// seal: scalloped disc + engraved ring
+document.getElementById('scallop').setAttribute('d', polar(t => 60 + 2.6 * Math.cos(40 * t), 720))
+const ring = document.getElementById('sealRing')
+for (let j = 0; j < 10; j++) {
+  const ph = (j / 10) * Math.PI * 2
+  addPath(ring, polar(t => 31 + 4 * Math.sin(9 * t + ph), 540))
+}
+
+// certificate border band: waves running along the inset rectangle
+function band(svg) {
+  const W = svg.clientWidth, H = svg.clientHeight
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
+  const inset = 13, w = W - inset * 2, h = H - inset * 2, per = 2 * (w + h)
+  const pt = s => {
+    s = ((s % per) + per) % per
+    if (s < w) return [inset + s, inset, 0, 1]
+    if (s < w + h) return [inset + w, inset + s - w, -1, 0]
+    if (s < 2 * w + h) return [inset + w - (s - w - h), inset + h, 0, -1]
+    return [inset, inset + h - (s - 2 * w - h), 1, 0]
+  }
+  const waves = Math.round(per / 22)
+  for (let k = 0; k < 5; k++) {
+    let d = ''
+    const N = 1400
+    for (let i = 0; i <= N; i++) {
+      const s = (i / N) * per, [x, y, nx, ny] = pt(s)
+      const o = 4.4 * Math.sin((s / per) * waves * Math.PI * 2 + (k * Math.PI * 2) / 5)
+      d += (i ? 'L' : 'M') + f(x + nx * o) + ' ' + f(y + ny * o)
+    }
+    addPath(svg, d)
+  }
+  const r1 = document.createElementNS(NS, 'rect')
+  Object.entries({ x: 5, y: 5, width: W - 10, height: H - 10, 'stroke-width': 1 }).forEach(([k, v]) => r1.setAttribute(k, v))
+  const r2 = document.createElementNS(NS, 'rect')
+  Object.entries({ x: 21, y: 21, width: W - 42, height: H - 42, 'stroke-width': .6 }).forEach(([k, v]) => r2.setAttribute(k, v))
+  svg.append(r1, r2)
+}
+band(document.getElementById('band'))
+
+// security paper: interlaced sine lines across the whole sheet
+;(function paper() {
+  const svg = document.getElementById('paper')
+  svg.setAttribute('viewBox', '0 0 390 844')
+  for (let row = -1; row < 72; row++) {
+    const y0 = row * 12
+    for (const ph of [0, Math.PI]) {
+      let d = ''
+      for (let x = 0; x <= 390; x += 6) {
+        const y = y0 + 4 * Math.sin(x / 15 + ph + row * .35)
+        d += (x ? 'L' : 'M') + x + ' ' + f(y)
+      }
+      addPath(svg, d)
+    }
+  }
+})()
+
+const root = document.documentElement
+const card = document.querySelector('[data-card]')
+const qFace = document.querySelector('.q-face'), aFace = document.querySelector('.a-face')
+const next = document.getElementById('next')
+const btns = document.querySelectorAll('[data-answer]')
+function answer(a) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = a === 'false' ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  qFace.setAttribute('aria-hidden', 'true'); aFace.removeAttribute('aria-hidden')
+  btns.forEach(b => b.tabIndex = -1); next.tabIndex = 0
+  setTimeout(() => next.focus({ preventScroll: true }), 500)
+}
+function reset() {
+  root.dataset.state = 'question'; delete root.dataset.result
+  aFace.setAttribute('aria-hidden', 'true'); qFace.removeAttribute('aria-hidden')
+  btns.forEach(b => b.tabIndex = 0); next.tabIndex = -1
+  btns[1].focus({ preventScroll: true })
+}
+btns.forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+next.addEventListener('click', reset)
+attachSwipe(card, a => answer(a))
+document.addEventListener('keydown', e => {
+  if (root.dataset.state !== 'question') return
+  if (e.key === 'ArrowLeft') answer('false')
+  if (e.key === 'ArrowRight') answer('true')
+})
+</script>
+</body>
+</html>

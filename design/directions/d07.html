@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truthy, terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --surface:#0F0C08;
+  --surface-raised:#18130D;
+  --surface-lit:#1B150C;
+  --line:#5A4527;
+  --ink:#FFBE5C;
+  --ink-bright:#FFD48C;
+  --ink-muted:#B08A52;
+  --ink-faint:#6B5330;
+  --on-ink:#150F07;
+  --accent:#FFD48C;
+  --true:#FFBE5C;
+  --false:#FFBE5C;
+  --correct:#FFD48C;
+  --wrong:#FF7F5E;
+  --glow:0 0 8px rgba(255,170,60,.35);
+  --r:2px;
+  --shadow:0 0 0 1px var(--line),0 18px 40px -16px rgba(0,0,0,.8);
+  --t1:120ms;--t2:220ms;--t3:360ms;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--surface);color:var(--ink);font-family:var(--mono);font-size:15px;line-height:24px;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(90% 60% at 50% 45%,var(--surface-lit) 0%,var(--surface) 70%)}
+button,a{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.app{position:relative;height:100%;max-width:390px;margin:0 auto}
+
+.top{position:absolute;top:56px;left:16px;right:16px;height:48px;display:flex;align-items:center;justify-content:space-between}
+.quit{height:48px;min-width:48px;padding:0 12px 0 0;background:none;border:0;display:flex;align-items:center;gap:10px;cursor:pointer;color:var(--ink-muted)}
+.quit kbd{font:inherit;font-size:12px;height:28px;padding:0 8px;display:grid;place-items:center;border:1px solid var(--line);border-radius:var(--r);color:var(--ink)}
+.quit:active kbd{background:var(--ink);color:var(--on-ink)}
+.where{font-size:13px;color:var(--ink-muted)}
+.where b{color:var(--ink);font-weight:700}
+
+/* pane = card */
+.stage{position:absolute;left:16px;right:16px;top:112px;height:592px}
+.card{position:absolute;inset:0;background:var(--surface-raised);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;
+  touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+  transform:translateX(var(--dx,0px)) rotate(calc(var(--rot,0deg) * .5));transition:transform var(--t3) var(--spring)}
+.card[data-dragging]{transition:none;cursor:grabbing}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(180deg,rgba(255,190,92,.035) 0 1px,transparent 1px 3px)}
+.bar{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-muted)}
+.dots{display:flex;gap:6px}
+.dots i{width:8px;height:8px;border:1px solid var(--ink-faint);border-radius:50%}
+
+.screen{position:absolute;top:33px;left:0;right:0;bottom:30px;overflow:hidden}
+.log{padding:12px 16px;transition:transform var(--t3) steps(4,end)}
+.log p{margin:0}
+.p1{color:var(--ink-muted)}
+.p1 b{color:var(--ink);font-weight:400}
+.kv{display:grid;grid-template-columns:72px 1fr;color:var(--ink)}
+.kv span:first-child{color:var(--ink-muted)}
+.gap{height:12px}
+.lbl{color:var(--ink-muted);margin-top:4px}
+.stmt{font-size:28px;line-height:38px;font-weight:700;color:var(--ink-bright);text-shadow:var(--glow);margin:6px 0 12px!important;letter-spacing:-.01em}
+.ask{position:relative;white-space:nowrap}
+.ask .pr{color:var(--ink-muted)}
+.cur{display:inline-block;width:10px;height:20px;vertical-align:-4px;background:var(--ink);margin-left:2px;animation:blink 1.05s steps(1,end) infinite}
+@keyframes blink{50%{opacity:0}}
+.pv{position:absolute;left:14ch;top:0;font-weight:700}
+.pv.f{color:var(--false);opacity:clamp(0,calc(var(--intent,0) * -1.6 - .25),1)}
+.pv.t{color:var(--true);opacity:clamp(0,calc(var(--intent,0) * 1.6 - .25),1)}
+.cw{display:inline-block;opacity:clamp(0,calc(1 - max(var(--intent,0),var(--intent,0) * -1) * 5),1)}
+.pv .cur{animation:none}
+.hint{position:absolute;left:16px;right:16px;bottom:10px;color:var(--ink-muted);font-size:14px}
+
+/* side tags while dragging */
+.tag{position:absolute;left:50%;bottom:72px;padding:8px 16px;font-weight:700;font-size:24px;line-height:32px;white-space:nowrap;background:var(--ink);color:var(--on-ink);border-radius:var(--r);pointer-events:none;box-shadow:var(--glow)}
+.tag.f{transform:translateX(-50%) scale(calc(.8 + max(0,var(--intent,0) * -1) * .2));opacity:clamp(0,calc(var(--intent,0) * -1.4 - .2),1)}
+.tag.t{transform:translateX(-50%) scale(calc(.8 + max(0,var(--intent,0)) * .2));opacity:clamp(0,calc(var(--intent,0) * 1.4 - .2),1)}
+
+/* answer output */
+.out{display:none}
+.out > *{opacity:0}
+.echo{color:var(--ink-muted)}
+.echo b{color:var(--ink);font-weight:700}
+.verdict{display:flex;align-items:center;justify-content:space-between;margin:8px 0 4px;padding:6px 10px;background:var(--correct);color:var(--on-ink);border-radius:var(--r);font-weight:700;font-size:20px;line-height:28px}
+.verdict .code{font-size:13px;font-weight:400}
+.verdict svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:3;vertical-align:-2px;margin-right:8px}
+.ix{display:none}
+[data-result="wrong"] .verdict{background:none;color:var(--wrong);box-shadow:inset 0 0 0 2px var(--wrong)}
+[data-result="wrong"] .ic{display:none}
+[data-result="wrong"] .ix{display:inline}
+.truth{color:var(--ink)}
+.truth b{font-weight:700;color:var(--ink-bright)}
+.man{margin-top:12px!important;display:flex;justify-content:space-between;color:var(--ink-muted)}
+.man b{color:var(--ink);font-weight:700}
+.exp{padding-left:2ch;color:var(--ink)}
+.see{margin-top:4px!important;color:var(--ink-muted);font-size:14px;white-space:nowrap}
+.see a{color:var(--ink-bright);text-decoration:underline;text-underline-offset:4px;min-height:48px;display:inline-flex;align-items:center}
+
+/* status line = progress */
+.status{position:absolute;left:0;right:0;bottom:0;height:30px;display:flex;align-items:center;background:var(--ink);color:var(--on-ink);font-size:13px;padding:0 10px;gap:10px}
+.status .mode{font-weight:700}
+.prog{display:flex;gap:4px;flex:1;justify-content:center}
+.prog i{font-style:normal;width:16px;text-align:center}
+.prog i.now{background:var(--on-ink);color:var(--ink);border-radius:1px}
+.prog i.q{display:none}
+.status .n{font-weight:700}
+
+/* keys */
+.keys{position:absolute;left:16px;right:16px;top:720px;height:64px;display:flex;gap:12px}
+.key{flex:1;height:64px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;gap:12px;
+  cursor:pointer;font-size:18px;color:var(--ink);box-shadow:inset 0 -3px 0 rgba(0,0,0,.4);transition:background var(--t1),color var(--t1),transform var(--t1)}
+.key kbd{font:inherit;font-weight:700;font-size:15px;width:30px;height:30px;display:grid;place-items:center;background:var(--ink);color:var(--on-ink);border-radius:var(--r)}
+.key:active,.key.down{background:var(--ink);color:var(--on-ink);transform:translateY(2px)}
+.key:active kbd,.key.down kbd{background:var(--on-ink);color:var(--ink)}
+.next{display:none;border-color:var(--ink);color:var(--ink-bright)}
+.next kbd{width:auto;padding:0 8px}
+
+/* answer state */
+[data-state="answer"] .log{transform:translateY(-84px)}
+[data-state="answer"] .ask,[data-state="answer"] .hint,[data-state="answer"] .tag{display:none}
+[data-state="answer"] .stmt{color:var(--ink);text-shadow:none;font-size:22px;line-height:31px;font-weight:400}
+[data-state="answer"] .out{display:block}
+[data-state="answer"] .out > *{animation:line 1ms linear forwards}
+[data-state="answer"] .out > :nth-child(1){animation-delay:60ms}
+[data-state="answer"] .out > :nth-child(2){animation-delay:260ms}
+[data-state="answer"] .out > :nth-child(3){animation-delay:380ms}
+[data-state="answer"] .out > :nth-child(4){animation-delay:470ms}
+[data-state="answer"] .out > :nth-child(5){animation-delay:540ms}
+[data-state="answer"] .out > :nth-child(6){animation-delay:610ms}
+[data-state="answer"] .verdict{animation:line 1ms linear 260ms forwards,flash var(--t2) steps(2,end) 260ms}
+[data-state="answer"] .prog i.q{display:inline}
+[data-state="answer"] .prog i.now{display:none}
+[data-state="answer"] .keys .key[data-answer]{display:none}
+[data-state="answer"] .next{display:flex}
+[data-state="answer"] .card{cursor:default}
+@keyframes line{to{opacity:1}}
+@keyframes flash{0%{transform:scaleY(1.25)}100%{transform:none}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:1ms!important;animation-delay:0ms!important}
+  .cur{animation:none}
+  .card{transform:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="quit" type="button" aria-label="Leave round"><kbd>esc</kbd>quit</button>
+    <div class="where">card <b>4</b>/10</div>
+  </header>
+
+  <main class="stage">
+    <article class="card" id="card">
+      <div class="bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>truthy: AWS Cloud Practitioner</span></div>
+      <div class="screen">
+        <div class="log" id="log">
+          <p class="p1">~ $ <b>truthy play</b></p>
+          <div class="kv"><span>deck</span><span>AWS Cloud Practitioner</span></div>
+          <div class="kv"><span>domain</span><span>Security and compliance</span></div>
+          <div class="gap"></div>
+          <p class="lbl">card 04 · true or false?</p>
+          <p class="stmt">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <p class="ask"><span class="pr">answer [f/t]: </span><span class="pv f" aria-hidden="true">false<span class="cur"></span></span><span class="pv t" aria-hidden="true">true<span class="cur"></span></span><span class="cw" aria-hidden="true"><span class="cur"></span></span></p>
+          <div class="out" role="status">
+            <p class="echo">answer [f/t]: <b class="picked">false</b></p>
+            <div class="verdict"><span><svg class="ic" viewBox="0 0 18 18"><path d="M2 10l5 5L16 3"/></svg><svg class="ix" viewBox="0 0 18 18"><path d="M3 3l12 12M15 3L3 15"/></svg><span class="vt">Correct</span></span><span class="code">exit 0</span></div>
+            <p class="truth">The answer is <b>False</b></p>
+            <p class="man"><b>explain(7)</b><span>card 04</span></p>
+            <p class="exp">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+            <p class="see">see also: <a href="#" onclick="return false">Shared responsibility model</a></p>
+          </div>
+        </div>
+        <p class="hint"># swipe the pane: ← false · true →</p>
+        <span class="tag f" aria-hidden="true">← [f] false</span>
+        <span class="tag t" aria-hidden="true">[t] true →</span>
+      </div>
+      <div class="status" aria-label="Mode Classic. Progress: correct, correct, wrong, card 4 of 10">
+        <span class="mode">[Classic]</span>
+        <span class="prog" aria-hidden="true"><i>✓</i><i>✓</i><i>✗</i><i class="now">▸</i><i class="q" id="q4">✓</i><i>·</i><i>·</i><i>·</i><i>·</i><i>·</i><i>·</i></span>
+        <span class="n">4/10</span>
+      </div>
+    </article>
+  </main>
+
+  <div class="keys">
+    <button class="key" type="button" data-answer="false"><kbd>f</kbd>False</button>
+    <button class="key" type="button" data-answer="true"><kbd>t</kbd>True</button>
+    <button class="key next" type="button" id="next"><kbd>enter</kbd>Next card</button>
+  </div>
+</div>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.getElementById('card')
+
+function answer(a) {
+  if (root.dataset.state !== 'question') return
+  const ok = a === 'false'
+  root.dataset.result = ok ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  card.querySelector('.picked').textContent = a
+  card.querySelector('.vt').textContent = ok ? 'Correct' : 'Not quite'
+  card.querySelector('.code').textContent = ok ? 'exit 0' : 'exit 1'
+  document.getElementById('q4').textContent = ok ? '✓' : '✗'
+  document.getElementById('next').focus({preventScroll: true})
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+  document.querySelector('[data-answer="false"]').focus({preventScroll: true})
+}
+
+card.addEventListener('pointerdown', e => { if (root.dataset.state !== 'question') e.stopImmediatePropagation() })
+attachSwipe(card, answer)
+
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => {
+  b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120)
+  answer(b.dataset.answer)
+}))
+document.getElementById('next').addEventListener('click', reset)
+document.querySelector('.quit').addEventListener('click', reset)
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('button') && e.key === 'Enter') return
+  if (root.dataset.state === 'question') {
+    if (e.key === 'f') answer('false')
+    if (e.key === 't') answer('true')
+  } else if (e.key === 'Enter') reset()
+  if (e.key === 'Escape') reset()
+})
+</script>
+</body>
+</html>

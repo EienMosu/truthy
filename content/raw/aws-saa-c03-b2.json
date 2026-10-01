@@ -1,0 +1,1030 @@
+{
+  "deck": "aws-saa-c03",
+  "block": "b2",
+  "generatedOn": "2026-10-01",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Plan changes: in 2.2, replaced s3-one-zone-ia-zone-loss with aws-backup-cross-account-copy to avoid a name giveaway and broaden backup coverage; replaced ec2-auto-scaling-elb-health-check-opt-in with ec2-auto-scaling-availability-zone-replacement to test failure recovery rather than a configuration default. In 3.1, replaced efs-concurrent-nfs-clients with fsx-windows-self-managed-active-directory to broaden workload compatibility coverage and avoid overlap. In 3.2, replaced ec2-enhanced-networking-sriov with ec2-efa-os-bypass-communication to test communication behavior rather than implementation terminology. The Aurora scaling card retains its planned factKey and uses the current documentation name, Amazon Aurora serverless.",
+  "cards": [
+    {
+      "id": "aws-saa-c03-s2.2-01",
+      "section": "2.2",
+      "statement": "An Amazon RDS Multi-AZ DB instance deployment can serve read queries from its standby.",
+      "answer": false,
+      "explanation": "The standby in an RDS Multi-AZ DB instance deployment is reserved for failover and does not serve application reads.",
+      "misconception": "A Multi-AZ DB instance standby also provides read-scaling capacity.",
+      "factKey": "rds-multi-az-instance-standby-read-traffic",
+      "topic": "Database failover design",
+      "tags": [
+        "Amazon RDS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-AZ DB instance deployments for Amazon RDS",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZSingleStandby.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-02",
+      "section": "2.2",
+      "statement": "Amazon Aurora's tier-based failover ranking places replica size ahead of configured promotion priority.",
+      "answer": false,
+      "explanation": "Aurora's tier-based selection favors the highest-priority eligible replica. Instance size breaks ties between replicas with the same priority.",
+      "misconception": "Aurora ranks replica size ahead of configured promotion priority.",
+      "factKey": "aurora-replica-promotion-priority",
+      "topic": "Database failover design",
+      "tags": [
+        "Amazon Aurora"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "High availability for Amazon Aurora",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Concepts.AuroraHighAvailability.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-03",
+      "section": "2.2",
+      "statement": "Cached DNS answers can delay client switchover during Amazon Route 53 failover.",
+      "answer": true,
+      "explanation": "DNS resolvers can retain an earlier Route 53 answer until its time to live expires. Failover routing changes do not immediately replace those cached answers.",
+      "misconception": "",
+      "factKey": "route53-failover-dns-cache-delay",
+      "topic": "DNS failover behavior",
+      "tags": [
+        "Amazon Route 53"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best practices for Amazon Route 53 DNS",
+        "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/best-practices-dns.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-04",
+      "section": "2.2",
+      "statement": "A subnet-based NAT gateway can maintain egress for other zones during an outage of its own Availability Zone.",
+      "answer": false,
+      "explanation": "A subnet-based NAT gateway is redundant within its Availability Zone. If that zone fails, other zones relying on that gateway lose their egress path.",
+      "misconception": "A subnet-based NAT gateway's managed redundancy extends across Availability Zones.",
+      "factKey": "zonal-nat-gateway-failure-scope",
+      "topic": "Zonal failure dependencies",
+      "tags": [
+        "Amazon VPC"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "NAT gateway basics",
+        "url": "https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-basics.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-05",
+      "section": "2.2",
+      "statement": "AWS Backup supports copying backups into another AWS account within the same AWS Organizations organization.",
+      "answer": true,
+      "explanation": "For supported resources, AWS Backup can place a backup copy in another account's vault. The separate copy remains available if the original backup is accidentally deleted.",
+      "misconception": "",
+      "factKey": "aws-backup-cross-account-copy",
+      "topic": "Backup account isolation",
+      "tags": [
+        "AWS Backup",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Creating backup copies across AWS accounts",
+        "url": "https://docs.aws.amazon.com/aws-backup/latest/devguide/create-cross-account-backup.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-06",
+      "section": "2.2",
+      "statement": "An Amazon EFS Regional file system supports mount targets in multiple Availability Zones.",
+      "answer": true,
+      "explanation": "An EFS Regional file system can expose a mount target in each Availability Zone of its VPC, providing separate zonal network access points to the same file system.",
+      "misconception": "",
+      "factKey": "efs-regional-multi-az-mount-targets",
+      "topic": "File system availability",
+      "tags": [
+        "Amazon EFS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managing mount targets",
+        "url": "https://docs.aws.amazon.com/efs/latest/ug/accessing-fs.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-07",
+      "section": "2.2",
+      "statement": "A pilot light recovery environment keeps a scaled-down, fully functional application ready to serve traffic.",
+      "answer": false,
+      "explanation": "Pilot light keeps core services running but requires application resources to be started or deployed during recovery. Warm standby keeps a scaled-down, functional application running.",
+      "misconception": "Pilot light has the same immediately functional application footprint as warm standby.",
+      "factKey": "pilot-light-core-services",
+      "topic": "Disaster recovery strategies",
+      "tags": [
+        "AWS Well-Architected Framework"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Disaster recovery options in the cloud",
+        "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-08",
+      "section": "2.2",
+      "statement": "A recovery point objective defines the acceptable time needed to restore service after a disaster.",
+      "answer": false,
+      "explanation": "A recovery point objective specifies acceptable data loss expressed as time. A recovery time objective specifies acceptable service-restoration delay.",
+      "misconception": "The recovery point objective measures restoration downtime rather than potential data loss.",
+      "factKey": "recovery-point-versus-recovery-time-objective",
+      "topic": "Disaster recovery objectives",
+      "tags": [
+        "AWS Well-Architected Framework"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "REL13-BP01 Define recovery objectives for downtime and data loss",
+        "url": "https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/rel_planning_for_recovery_objective_defined_recovery.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-09",
+      "section": "2.2",
+      "statement": "A disaster recovery Region can need higher service quotas before a standby scales to production capacity.",
+      "answer": true,
+      "explanation": "Recovery Region quotas need to accommodate the workload after failover. Quotas sufficient for a small standby can still prevent it from expanding to production size.",
+      "misconception": "",
+      "factKey": "dr-standby-service-quota-planning",
+      "topic": "Recovery capacity planning",
+      "tags": [
+        "Service Quotas"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Disaster recovery options in the cloud",
+        "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-10",
+      "section": "2.2",
+      "statement": "Amazon EC2 Auto Scaling can replace capacity in other configured zones when an Availability Zone becomes unavailable.",
+      "answer": true,
+      "explanation": "A multi-zone Auto Scaling group can launch replacement instances in its healthy configured zones, subject to available capacity, when launches fail in an impaired zone.",
+      "misconception": "",
+      "factKey": "ec2-auto-scaling-availability-zone-replacement",
+      "topic": "Compute failure recovery",
+      "tags": [
+        "Amazon EC2 Auto Scaling"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Auto Scaling benefits for application architecture",
+        "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/auto-scaling-benefits.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-11",
+      "section": "2.2",
+      "statement": "AWS CloudFormation supports returning a stack to its pre-update configuration after an update fails.",
+      "answer": true,
+      "explanation": "CloudFormation rollback attempts to return resources to their pre-update configuration. A resource that cannot be restored can interrupt rollback and require intervention.",
+      "misconception": "",
+      "factKey": "cloudformation-stack-rollback-failure-recovery",
+      "topic": "Deployment failure recovery",
+      "tags": [
+        "AWS CloudFormation"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Continue rolling back an update",
+        "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-continueupdaterollback.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s2.2-12",
+      "section": "2.2",
+      "statement": "Amazon RDS Proxy drops idle application connections when switching to a replacement writer during failover.",
+      "answer": false,
+      "explanation": "RDS Proxy preserves idle client connections while reconnecting to the replacement writer. Statements or transactions in progress can still fail.",
+      "misconception": "Database failover through RDS Proxy requires idle clients to establish new connections.",
+      "factKey": "rds-proxy-failover-client-connections",
+      "topic": "Database connection resilience",
+      "tags": [
+        "Amazon RDS Proxy"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "RDS Proxy concepts and terminology",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy.howitworks.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-01",
+      "section": "3.1",
+      "statement": "An Amazon EBS volume can attach directly to an Amazon EC2 instance in another Availability Zone.",
+      "answer": false,
+      "explanation": "An EBS volume and the EC2 instance using it must be in the same Availability Zone. Direct volume attachment does not cross that zonal boundary.",
+      "misconception": "EBS volumes support direct attachment to instances across Availability Zones.",
+      "factKey": "ebs-volume-single-az",
+      "topic": "Block storage attachment",
+      "tags": [
+        "Amazon EBS",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon EBS volumes",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volumes.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-02",
+      "section": "3.1",
+      "statement": "Amazon EBS gp3 volumes support simultaneous attachment to several EC2 instances in the same Availability Zone.",
+      "answer": false,
+      "explanation": "EBS Multi-Attach supports Provisioned IOPS SSD io1 and io2 volumes, rather than gp3 volumes. Choosing gp3 rules out that shared-block-device configuration.",
+      "misconception": "The gp3 volume type supports EBS Multi-Attach.",
+      "factKey": "ebs-gp3-multi-attach-eligibility",
+      "topic": "Block storage attachment",
+      "tags": [
+        "Amazon EBS",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "The volume types eligible for EBS Multi-Attach could expand.",
+      "source": {
+        "title": "Attach an EBS volume to multiple EC2 instances using Multi-Attach",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-volumes-multi.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-03",
+      "section": "3.1",
+      "statement": "Amazon EBS gp3 permits IOPS increases independently of storage-capacity increases.",
+      "answer": true,
+      "explanation": "With gp3, provisioned performance can be increased separately from storage size, within the volume's supported performance limits.",
+      "misconception": "",
+      "factKey": "ebs-gp3-independent-iops-throughput",
+      "topic": "Block storage performance",
+      "tags": [
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon EBS General Purpose SSD volumes",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/general-purpose.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-04",
+      "section": "3.1",
+      "statement": "Amazon EBS st1 volumes are tuned for frequent small, random database operations.",
+      "answer": false,
+      "explanation": "The st1 volume type is designed for large, sequential I/O such as log processing. Small, random database operations are a poor match for this HDD access pattern.",
+      "misconception": "Throughput-oriented HDD storage suits small, random database I/O.",
+      "factKey": "ebs-st1-sequential-versus-random-io",
+      "topic": "Block storage performance",
+      "tags": [
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon EBS Throughput Optimized HDD and Cold HDD volumes",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/hdd-vols.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-05",
+      "section": "3.1",
+      "statement": "Amazon EC2 instance store can preserve its data through a stop-and-start cycle of the instance.",
+      "answer": false,
+      "explanation": "Stopping an EC2 instance discards its instance store data. Data that needs to survive a stop-and-start cycle requires persistent storage elsewhere.",
+      "misconception": "Instance store data survives an instance stop as long as the instance is later restarted.",
+      "factKey": "ec2-instance-store-stop-data-loss",
+      "topic": "Local storage persistence",
+      "tags": [
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data persistence for Amazon EC2 instance store volumes",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-store-lifetime.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-06",
+      "section": "3.1",
+      "statement": "Amazon FSx for Windows File Server can join an existing self-managed Microsoft Active Directory domain.",
+      "answer": true,
+      "explanation": "An FSx for Windows File Server file system can join a self-managed domain during creation. This supports integration with existing directory identities and resources.",
+      "misconception": "",
+      "factKey": "fsx-windows-self-managed-active-directory",
+      "topic": "File system integration",
+      "tags": [
+        "Amazon FSx for Windows File Server"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using a self-managed Microsoft Active Directory",
+        "url": "https://docs.aws.amazon.com/fsx/latest/WindowsGuide/self-managed-AD.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-07",
+      "section": "3.1",
+      "statement": "An Amazon FSx for Lustre file system linked to Amazon S3 can load file contents on first access.",
+      "answer": true,
+      "explanation": "FSx for Lustre can retrieve a file's contents from its linked S3 repository when first accessed. Preloading needed files avoids that initial retrieval latency.",
+      "misconception": "",
+      "factKey": "fsx-lustre-linked-s3-file-loading",
+      "topic": "File system data loading",
+      "tags": [
+        "Amazon FSx for Lustre",
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Preloading files into your file system",
+        "url": "https://docs.aws.amazon.com/fsx/latest/LustreGuide/preload-file-contents-hsm-dra.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-08",
+      "section": "3.1",
+      "statement": "AWS Storage Gateway cached volumes keep their primary data copy on premises.",
+      "answer": false,
+      "explanation": "Cached volumes keep the primary data in Amazon S3 and retain frequently accessed data locally. The on-premises disks provide a working cache rather than the primary full dataset.",
+      "misconception": "Cached volumes store the authoritative full dataset locally instead of in Amazon S3.",
+      "factKey": "storage-gateway-cached-volume-working-set",
+      "topic": "Hybrid volume storage",
+      "tags": [
+        "AWS Storage Gateway",
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How Volume Gateway works",
+        "url": "https://docs.aws.amazon.com/storagegateway/latest/vgw/StorageGatewayConcepts.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-09",
+      "section": "3.1",
+      "statement": "Amazon S3 multipart uploads let an application send different parts of one object in parallel.",
+      "answer": true,
+      "explanation": "Multipart upload permits concurrent transfers of independent object parts. This lets an application use available bandwidth more effectively for a large upload.",
+      "misconception": "",
+      "factKey": "s3-multipart-parallel-parts",
+      "topic": "Object transfer performance",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Uploading and copying objects using multipart upload in Amazon S3",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-10",
+      "section": "3.1",
+      "statement": "Amazon S3 can return a selected byte range from an object instead of transferring the complete object.",
+      "answer": true,
+      "explanation": "Byte-range retrieval lets an application fetch the portion of an S3 object it needs. This avoids transferring the remainder when processing part of a large object.",
+      "misconception": "",
+      "factKey": "s3-range-get-partial-object-transfer",
+      "topic": "Object transfer performance",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Performance guidelines for Amazon S3",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance-guidelines.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-11",
+      "section": "3.1",
+      "statement": "Amazon EFS Provisioned throughput supports high transfer rates even for file systems storing little data.",
+      "answer": true,
+      "explanation": "EFS Provisioned throughput is independent of the amount of data stored. A small file system can therefore have throughput provisioned for a demanding workload.",
+      "misconception": "",
+      "factKey": "efs-provisioned-throughput-storage-independence",
+      "topic": "File system throughput",
+      "tags": [
+        "Amazon EFS"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon EFS performance specifications",
+        "url": "https://docs.aws.amazon.com/efs/latest/ug/performance.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.1-12",
+      "section": "3.1",
+      "statement": "Amazon S3 object overwrites use eventual consistency for subsequent reads of the current object.",
+      "answer": false,
+      "explanation": "S3 provides strong read-after-write consistency for successful object overwrites. A subsequent read reflects a completed overwrite rather than an older value awaiting propagation.",
+      "misconception": "Overwriting an existing S3 object leaves a period of eventual consistency for subsequent reads.",
+      "factKey": "s3-strong-read-after-write-consistency",
+      "topic": "Object read consistency",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "What is Amazon S3?",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-01",
+      "section": "3.2",
+      "statement": "Increasing an AWS Lambda function's memory allocation also increases its available CPU power.",
+      "answer": true,
+      "explanation": "Lambda allocates CPU power in proportion to configured memory. A CPU-bound function can benefit from a memory increase even when its RAM usage is modest.",
+      "misconception": "",
+      "factKey": "lambda-memory-cpu-allocation",
+      "topic": "Function resource allocation",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure Lambda function memory",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-memory.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-02",
+      "section": "3.2",
+      "statement": "AWS Lambda reserved concurrency can reduce cold-start latency by pre-initializing execution environments.",
+      "answer": false,
+      "explanation": "Provisioned concurrency prepares Lambda execution environments ahead of requests. Reserved concurrency reserves and caps concurrency but does not pre-initialize environments.",
+      "misconception": "Reserving concurrent Lambda executions also keeps execution environments initialized.",
+      "factKey": "lambda-reserved-versus-provisioned-concurrency",
+      "topic": "Function concurrency controls",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configuring reserved concurrency for a function",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-03",
+      "section": "3.2",
+      "statement": "Amazon EC2 Auto Scaling target tracking scales CPU capacity by resizing running instances.",
+      "answer": false,
+      "explanation": "Target tracking adjusts an Auto Scaling group's instance capacity toward a utilization target. It launches or terminates instances instead of resizing running instances.",
+      "misconception": "EC2 Auto Scaling target tracking changes individual instance sizes to meet a CPU utilization target.",
+      "factKey": "auto-scaling-target-tracking-utilization",
+      "topic": "Compute scaling policies",
+      "tags": [
+        "Amazon EC2 Auto Scaling"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Target tracking scaling policies for Amazon EC2 Auto Scaling",
+        "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-scaling-target-tracking.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-04",
+      "section": "3.2",
+      "statement": "Amazon EC2 Auto Scaling can use SQS backlog per instance to scale a queue-processing worker fleet.",
+      "answer": true,
+      "explanation": "Backlog per instance relates queued work to the workers available to process it. An Auto Scaling policy can use this metric to keep each worker's pending workload near a target.",
+      "misconception": "",
+      "factKey": "auto-scaling-queue-backlog-per-instance",
+      "topic": "Compute scaling policies",
+      "tags": [
+        "Amazon EC2 Auto Scaling",
+        "Amazon SQS"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scaling policy based on Amazon SQS",
+        "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/as-using-sqs-queue.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-05",
+      "section": "3.2",
+      "statement": "Amazon EC2 Auto Scaling can schedule extra capacity before a recurring daily traffic peak.",
+      "answer": true,
+      "explanation": "Scheduled scaling adjusts an Auto Scaling group's capacity at specified times. Predictable demand can be met in advance rather than after a utilization alarm.",
+      "misconception": "",
+      "factKey": "auto-scaling-scheduled-predictable-load",
+      "topic": "Compute scaling policies",
+      "tags": [
+        "Amazon EC2 Auto Scaling"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scheduled scaling for Amazon EC2 Auto Scaling",
+        "url": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-scheduled-scaling.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-06",
+      "section": "3.2",
+      "statement": "Amazon ECS Service Auto Scaling directly increases the EC2 instance count to provide room for extra tasks.",
+      "answer": false,
+      "explanation": "ECS Service Auto Scaling changes the desired task count. If container instances lack resources, extra tasks remain pending until host capacity becomes available.",
+      "misconception": "Scaling an ECS service directly scales its underlying EC2 host fleet.",
+      "factKey": "ecs-service-scaling-versus-host-capacity",
+      "topic": "Container scaling layers",
+      "tags": [
+        "Amazon ECS",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Automatically scale your Amazon ECS service",
+        "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-auto-scaling.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-07",
+      "section": "3.2",
+      "statement": "An Amazon EC2 cluster placement group packs instances into one Availability Zone to reduce inter-instance latency.",
+      "answer": true,
+      "explanation": "Cluster placement keeps EC2 instances close together within an Availability Zone. This favors tightly coupled workloads that depend on fast communication between instances.",
+      "misconception": "",
+      "factKey": "ec2-cluster-placement-single-az",
+      "topic": "Compute placement tradeoffs",
+      "tags": [
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Placement strategies for your placement groups",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-strategies.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-08",
+      "section": "3.2",
+      "statement": "An AWS Graviton-based EC2 instance can execute x86-64 application binaries natively.",
+      "answer": false,
+      "explanation": "Graviton uses the Arm architecture. Native machine-code applications and dependencies need Arm-compatible builds rather than their x86-64 binaries.",
+      "misconception": "An x86-64 binary can run natively on a Graviton processor unchanged.",
+      "factKey": "ec2-graviton-arm-binary-compatibility",
+      "topic": "Processor architecture compatibility",
+      "tags": [
+        "AWS Graviton",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Mixing AWS Graviton with x86 CPUs to optimize cost and resiliency using Amazon EKS",
+        "url": "https://aws.amazon.com/blogs/compute/mixing-aws-graviton-with-x86-cpus-to-optimize-cost-and-resilience-using-amazon-eks/"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-09",
+      "section": "3.2",
+      "statement": "An Elastic Fabric Adapter can bypass the operating system for supported inter-instance communication.",
+      "answer": true,
+      "explanation": "EFA's operating-system bypass reduces communication overhead for compatible HPC and machine learning libraries, helping tightly coupled workloads exchange data efficiently.",
+      "misconception": "",
+      "factKey": "ec2-efa-os-bypass-communication",
+      "topic": "HPC communication performance",
+      "tags": [
+        "Elastic Fabric Adapter",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Elastic Fabric Adapter for AI/ML and HPC workloads on Amazon EC2",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/efa.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-10",
+      "section": "3.2",
+      "statement": "A VPC-connected AWS Lambda function can reach the IPv4 internet directly from a public subnet.",
+      "answer": false,
+      "explanation": "Placing a Lambda function in a public subnet does not give it internet access. IPv4 connectivity needs a suitable egress path, such as a private-subnet route through a NAT gateway.",
+      "misconception": "A Lambda function acquires direct internet connectivity from a public subnet's internet gateway route.",
+      "factKey": "lambda-vpc-public-subnet-internet-access",
+      "topic": "Function network connectivity",
+      "tags": [
+        "AWS Lambda",
+        "Amazon VPC"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Enable internet access for VPC-connected Lambda functions",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-vpc-internet.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-11",
+      "section": "3.2",
+      "statement": "An Amazon EC2 T3 instance in Standard mode sustains full CPU performance after its CPU credits run out.",
+      "answer": false,
+      "explanation": "A T3 instance in Standard mode gradually returns to baseline CPU utilization when its accrued credits run out. Sustained bursting requires additional credits.",
+      "misconception": "Standard-mode T3 instances retain burst-level CPU performance after exhausting their credits.",
+      "factKey": "ec2-burstable-cpu-credit-baseline",
+      "topic": "Burstable compute behavior",
+      "tags": [
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Key concepts for burstable performance instances",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.2-12",
+      "section": "3.2",
+      "statement": "An AWS Batch array job can run the same containerized workload against many independent input items.",
+      "answer": true,
+      "explanation": "An array job creates related child jobs from a shared job definition. Each child can process a different input, allowing one submission to coordinate a parallel workload.",
+      "misconception": "",
+      "factKey": "batch-array-jobs-shared-definition",
+      "topic": "Parallel batch execution",
+      "tags": [
+        "AWS Batch"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Array jobs",
+        "url": "https://docs.aws.amazon.com/batch/latest/userguide/array_jobs.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-01",
+      "section": "3.3",
+      "statement": "An Amazon RDS read replica can return older data than its source because replication is asynchronous.",
+      "answer": true,
+      "explanation": "RDS copies source changes to a read replica asynchronously. Applications that read a replica need to tolerate replication lag after a write to the source.",
+      "misconception": "",
+      "factKey": "rds-read-replica-asynchronous-lag",
+      "topic": "Database replica consistency",
+      "tags": [
+        "Amazon RDS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Working with DB instance read replicas",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-02",
+      "section": "3.3",
+      "statement": "The Amazon Aurora reader endpoint can spread queries from one connection across multiple reader instances.",
+      "answer": false,
+      "explanation": "Aurora's reader endpoint balances new connections, not individual queries. Queries sent through an established connection remain on the instance serving that connection.",
+      "misconception": "The Aurora reader endpoint distributes individual queries rather than database connections.",
+      "factKey": "aurora-reader-endpoint-connection-balancing",
+      "topic": "Database connection balancing",
+      "tags": [
+        "Amazon Aurora"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Reader endpoints for Amazon Aurora",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Endpoints.Reader.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-03",
+      "section": "3.3",
+      "statement": "Distributing Amazon DynamoDB requests evenly across many partition key values helps avoid hot partitions.",
+      "answer": true,
+      "explanation": "A DynamoDB partition has finite throughput. Spreading activity across partition keys reduces concentrated demand that can overload a partition despite spare table-wide capacity.",
+      "misconception": "",
+      "factKey": "dynamodb-partition-key-cardinality",
+      "topic": "Database partition design",
+      "tags": [
+        "Amazon DynamoDB"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best practices for designing and using partition keys effectively in DynamoDB",
+        "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-04",
+      "section": "3.3",
+      "statement": "An Amazon DynamoDB global secondary index can serve strongly consistent reads.",
+      "answer": false,
+      "explanation": "DynamoDB global secondary indexes support eventually consistent reads. Their query results can lag behind recent changes to the underlying table.",
+      "misconception": "Strong read consistency can be requested from a global secondary index.",
+      "factKey": "dynamodb-gsi-strong-consistency",
+      "topic": "Database index consistency",
+      "tags": [
+        "Amazon DynamoDB"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Supported consistency models for global secondary indexes could expand.",
+      "source": {
+        "title": "DynamoDB read consistency",
+        "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-05",
+      "section": "3.3",
+      "statement": "A direct write to Amazon DynamoDB can leave an item cached in DynamoDB Accelerator stale.",
+      "answer": true,
+      "explanation": "A write that bypasses DAX does not refresh its item cache. Cached data can remain stale until the entry expires, is evicted, or is updated through DAX.",
+      "misconception": "",
+      "factKey": "dynamodb-dax-eventually-consistent-cache",
+      "topic": "Database cache consistency",
+      "tags": [
+        "Amazon DynamoDB",
+        "Amazon DynamoDB Accelerator (DAX)"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "DAX and DynamoDB consistency models",
+        "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-06",
+      "section": "3.3",
+      "statement": "A result filter on an Amazon DynamoDB query reduces the read capacity consumed by that query.",
+      "answer": false,
+      "explanation": "DynamoDB applies query filters after reading the matching items. Discarding items from the response does not reduce the capacity consumed to read them.",
+      "misconception": "A DynamoDB query is charged read capacity based on the items retained after filtering.",
+      "factKey": "dynamodb-query-filter-read-capacity",
+      "topic": "Database query efficiency",
+      "tags": [
+        "Amazon DynamoDB"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Filter expressions for the Query operation in DynamoDB",
+        "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-07",
+      "section": "3.3",
+      "statement": "Lazy loading with Amazon ElastiCache adds a database read when the requested item is absent from the cache.",
+      "answer": true,
+      "explanation": "With lazy loading, an ElastiCache miss sends the application to the database before the result is cached. The first request for uncached data pays this extra retrieval latency.",
+      "misconception": "",
+      "factKey": "elasticache-lazy-loading-cache-misses",
+      "topic": "Database cache population",
+      "tags": [
+        "Amazon ElastiCache"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Caching strategies for Memcached",
+        "url": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-08",
+      "section": "3.3",
+      "statement": "Amazon Aurora serverless can scale an existing DB instance while database transactions are in progress.",
+      "answer": true,
+      "explanation": "Aurora serverless adjusts compute capacity within its configured range during active database work. Scaling does not require waiting for transactions to finish.",
+      "misconception": "",
+      "factKey": "aurora-serverless-v2-in-place-scaling",
+      "topic": "Database compute elasticity",
+      "tags": [
+        "Amazon Aurora serverless"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How Aurora serverless works",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/aurora-serverless-v2.how-it-works.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-09",
+      "section": "3.3",
+      "statement": "Amazon RDS storage autoscaling reduces allocated storage after large tables are deleted.",
+      "answer": false,
+      "explanation": "RDS storage autoscaling increases allocated storage but does not shrink it. Deleting table data can free space within the existing allocation rather than reduce that allocation.",
+      "misconception": "RDS storage autoscaling reverses earlier storage increases when database usage falls.",
+      "factKey": "rds-storage-autoscaling-shrink",
+      "topic": "Database storage elasticity",
+      "tags": [
+        "Amazon RDS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Automatic storage scale-down support could change as RDS storage capabilities evolve.",
+      "source": {
+        "title": "Managing capacity automatically with Amazon RDS storage autoscaling",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIOPS.Autoscaling.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-10",
+      "section": "3.3",
+      "statement": "AWS DMS data migration tasks can translate stored procedure code for a different database engine.",
+      "answer": false,
+      "explanation": "DMS replication tasks move data between databases. Converting database code for a different engine is a separate step handled by DMS Schema Conversion.",
+      "misconception": "The data migration task also converts database procedural code between engines.",
+      "factKey": "dms-schema-conversion-task-separation",
+      "topic": "Database migration boundaries",
+      "tags": [
+        "AWS Database Migration Service (AWS DMS)",
+        "DMS Schema Conversion"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Components of AWS DMS",
+        "url": "https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Introduction.Components.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-11",
+      "section": "3.3",
+      "statement": "Amazon Redshift can skip storage blocks when a query filters on a table's sort key.",
+      "answer": true,
+      "explanation": "Redshift records minimum and maximum column values for storage blocks. Sorting data lets range filters exclude blocks whose values fall outside the requested range.",
+      "misconception": "",
+      "factKey": "redshift-sort-key-block-pruning",
+      "topic": "Warehouse query pruning",
+      "tags": [
+        "Amazon Redshift"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Sort keys",
+        "url": "https://docs.aws.amazon.com/redshift/latest/dg/t_Sorting_data.html"
+      }
+    },
+    {
+      "id": "aws-saa-c03-s3.3-12",
+      "section": "3.3",
+      "statement": "A promoted Amazon RDS read replica continues receiving replication updates from its former source.",
+      "answer": false,
+      "explanation": "Promoting an RDS read replica stops its replication relationship with the source. The promoted database becomes an independent DB instance.",
+      "misconception": "Read replica promotion preserves incoming replication from the original source.",
+      "factKey": "rds-read-replica-promotion-independence",
+      "topic": "Database replica lifecycle",
+      "tags": [
+        "Amazon RDS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Promoting a read replica to be a standalone DB instance",
+        "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.Promote.html"
+      }
+    }
+  ]
+}

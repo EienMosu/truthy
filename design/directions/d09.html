@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chunky Toy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface: #fff3e3;
+  --surface-sunk: #f7dfc2;
+  --surface-raised: #ffffff;
+  --ink: #1b2a4a;
+  --ink-muted: #56637f;
+  --ink-inverse: #fff8ee;
+  --lip: #0f1a33;
+  --accent: #ff7a1a;
+  --accent-lip: #c95300;
+  --sky: #5bc2f5;
+  --sky-lip: #2a8cc4;
+  --sky-soft: #d9f0fc;
+  --true: var(--sky);
+  --true-lip: var(--sky-lip);
+  --false: var(--accent);
+  --false-lip: var(--accent-lip);
+  --correct: #ffc83d;
+  --correct-lip: #d99a00;
+  --wrong: #1b2a4a;
+  --r-s: 12px; --r-m: 20px; --r-l: 28px; --r-pill: 999px;
+  --lip-h: 6px;
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --round: 'Baloo 2', ui-rounded, system-ui, sans-serif;
+  --body: 'Nunito', ui-rounded, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--body); -webkit-font-smoothing: antialiased; touch-action: none; user-select: none; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; border-radius: var(--r-m); }
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; overflow: hidden; }
+
+/* background toy shapes */
+.bg { position: absolute; inset: 0; pointer-events: none; }
+.bg i { position: absolute; border-radius: 50%; }
+.bg .b1 { width: 260px; height: 260px; background: var(--surface-sunk); left: -120px; top: 420px; }
+.bg .b2 { width: 180px; height: 180px; background: var(--sky-soft); right: -70px; top: 120px; }
+
+/* chunky button recipe */
+.chunk { position: relative; border-radius: var(--r-m); box-shadow: 0 var(--lip-h) 0 var(--c-lip, var(--lip)); transform: translateY(0); transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease); }
+.chunk:active { transform: translateY(var(--lip-h)); box-shadow: 0 0 0 var(--c-lip, var(--lip)); }
+
+/* header */
+.head { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: flex; align-items: center; gap: 12px; z-index: 3; }
+.close { --c-lip: var(--ink); width: 48px; height: 44px; flex: none; border-radius: var(--r-s); background: var(--surface-raised); border: 3px solid var(--ink); display: grid; place-items: center; --lip-h: 4px; margin-top: -4px; }
+.close svg { width: 18px; height: 18px; }
+.dots { flex: 1; display: flex; justify-content: space-between; align-items: center; list-style: none; margin: 0; padding: 0; }
+.dot { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-sunk); display: grid; place-items: center; }
+.dot svg { width: 13px; height: 13px; }
+.dot.ok { background: var(--correct); box-shadow: 0 3px 0 var(--correct-lip); color: var(--ink); }
+.dot.no { background: var(--wrong); box-shadow: 0 3px 0 var(--lip); color: var(--ink-inverse); }
+.dot.now { width: 32px; height: 32px; background: var(--accent); box-shadow: 0 3px 0 var(--accent-lip); color: var(--ink); font: 800 16px/1 var(--round); padding-top: 2px; }
+.dot .mk { display: none; }
+html[data-state="answer"][data-result="correct"] .dot.now { background: var(--correct); box-shadow: 0 3px 0 var(--correct-lip); }
+html[data-state="answer"][data-result="wrong"] .dot.now { background: var(--wrong); box-shadow: 0 3px 0 var(--lip); color: var(--ink-inverse); }
+html[data-state="answer"] .dot.now .n { display: none; }
+html[data-result="correct"] .dot.now .mk-ok, html[data-result="wrong"] .dot.now .mk-no { display: block; }
+
+/* meta */
+.meta { position: absolute; top: 116px; left: 24px; right: 24px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; z-index: 1; transition: opacity var(--t2) var(--ease); }
+.meta h1 { margin: 0; font: 800 22px/1.05 var(--round); letter-spacing: -.01em; }
+.meta p { margin: 2px 0 0; font: 600 15px/1.2 var(--body); color: var(--ink-muted); }
+.mode { flex: none; padding: 6px 12px 5px; border-radius: var(--r-pill); background: var(--ink); color: var(--ink-inverse); font: 800 13px/1 var(--body); margin-bottom: 2px; }
+
+/* card stack */
+.stack { position: absolute; left: 24px; right: 24px; top: 180px; height: 424px; z-index: 2; transition: transform var(--t3) var(--spring); }
+.ghost { position: absolute; inset: 0; border-radius: var(--r-l); border: 3px solid var(--ink); }
+.ghost.g1 { background: var(--sky); transform: rotate(4.5deg) translate(6px, 10px); }
+.ghost.g2 { background: var(--accent); transform: rotate(-3deg) translate(-4px, 6px); }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  position: absolute; inset: 0; border-radius: var(--r-l); background: var(--surface-raised); border: 3px solid var(--ink);
+  box-shadow: 0 8px 0 var(--ink);
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring);
+  padding: 22px 24px 20px; display: flex; flex-direction: column; cursor: grab; touch-action: none;
+}
+.card[data-dragging] { transition: none; cursor: grabbing; transform: translateX(var(--dx)) translateY(-6px) rotate(var(--rot)) scale(1.02); box-shadow: 0 14px 0 var(--ink); }
+.card-top { display: flex; align-items: center; justify-content: space-between; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 5px 8px; border-radius: var(--r-pill); background: var(--sky-soft); color: var(--ink); font: 800 13px/1 var(--body); }
+.chip svg { width: 18px; height: 18px; }
+.num { font: 800 15px/1 var(--round); color: var(--ink-muted); }
+.statement { margin: 18px 0 0; font: 700 31px/1.14 var(--round); letter-spacing: -.01em; color: var(--ink); text-wrap: pretty; }
+.art { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; }
+.art svg.stackart { width: 128px; height: 92px; }
+.swipe { display: flex; align-items: center; gap: 6px; font: 800 13px/1 var(--body); color: var(--ink-muted); padding-bottom: 4px; }
+.swipe b { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface); }
+.swipe b svg { width: 14px; height: 14px; }
+.swipe b:first-child { animation: nudgeL 1.8s var(--ease) infinite; }
+.swipe b:last-child { animation: nudgeR 1.8s var(--ease) infinite; }
+@keyframes nudgeL { 0%, 60%, 100% { transform: none; } 30% { transform: translateX(-4px); } }
+@keyframes nudgeR { 0%, 60%, 100% { transform: none; } 30% { transform: translateX(4px); } }
+
+/* drag stickers, on the trailing side */
+.sticker { position: absolute; top: 262px; padding: 8px 16px 6px; border-radius: var(--r-m); border: 3px solid var(--ink); font: 800 30px/1 var(--round); display: flex; align-items: center; gap: 8px; pointer-events: none; box-shadow: 0 5px 0 var(--ink); }
+.sticker svg { width: 24px; height: 24px; }
+.sticker.t { left: -10px; background: var(--true); transform: rotate(-10deg) scale(calc(.6 + var(--intent) * .4)); opacity: clamp(0, calc(var(--intent) * 1.6), 1); }
+.sticker.f { right: -10px; background: var(--false); transform: rotate(10deg) scale(calc(.6 - var(--intent) * .4)); opacity: clamp(0, calc(var(--intent) * -1.6), 1); }
+
+/* answer buttons */
+.pair { position: absolute; left: 24px; right: 24px; top: 648px; height: 84px; display: flex; gap: 16px; z-index: 2; transition: transform var(--t2) var(--ease), opacity var(--t2) var(--ease); }
+.big { flex: 1; height: 76px; border-radius: var(--r-m); border: 3px solid var(--ink); display: flex; align-items: center; justify-content: center; gap: 10px; font: 800 26px/1 var(--round); color: var(--ink); padding-top: 3px; --lip-h: 8px; --c-lip: var(--ink); }
+.big .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-raised); border: 3px solid var(--ink); display: grid; place-items: center; margin-top: -3px; }
+.big .ic svg { width: 16px; height: 16px; }
+.big.f { background: var(--false); transform: scale(calc(1 - var(--lean, 0) * .08)); }
+.big.t { background: var(--true); transform: scale(calc(1 + var(--lean, 0) * .08)); }
+.big:active { transform: translateY(8px); }
+.hint { position: absolute; left: 0; right: 0; top: 756px; text-align: center; font: 600 14px/1 var(--body); color: var(--ink-muted); z-index: 1; transition: opacity var(--t2); }
+
+/* result sheet */
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 396px; z-index: 4; border-radius: 32px 32px 0 0; border-top: 3px solid var(--ink); padding: 28px 24px 38px; display: flex; flex-direction: column; transform: translateY(105%); transition: transform var(--t3) var(--spring); background: var(--correct); color: var(--ink); visibility: hidden; }
+html[data-result="wrong"] .sheet { background: var(--wrong); color: var(--ink-inverse); }
+html[data-state="answer"] .sheet { transform: translateY(0); visibility: visible; }
+html[data-state="answer"] .pair { transform: translateY(40px); opacity: 0; visibility: hidden; }
+html[data-state="answer"] .hint { opacity: 0; }
+html[data-state="answer"] .stack { transform: translateY(-14px) scale(.94); }
+.verdict { display: flex; align-items: center; gap: 14px; }
+.badge { width: 60px; height: 60px; flex: none; border-radius: 50%; display: grid; place-items: center; border: 3px solid var(--ink); background: var(--surface-raised); box-shadow: 0 5px 0 var(--ink); transform: scale(0) rotate(-40deg); }
+html[data-result="wrong"] .badge { background: var(--accent); border-color: var(--lip); box-shadow: 0 5px 0 var(--lip); }
+html[data-state="answer"] .badge { animation: pop var(--t3) var(--spring) var(--t2) forwards; }
+@keyframes pop { to { transform: scale(1) rotate(0); } }
+.badge svg { width: 30px; height: 30px; }
+.verdict h2 { margin: 0; font: 800 38px/1 var(--round); letter-spacing: -.015em; padding-top: 4px; }
+.verdict p { margin: 2px 0 0; font: 800 16px/1.2 var(--body); }
+.verdict p b { display: inline-block; padding: 2px 8px 1px; border-radius: var(--r-s); background: var(--ink); color: var(--ink-inverse); font-weight: 800; }
+html[data-result="wrong"] .verdict p b { background: var(--accent); color: var(--ink); }
+.explain { margin: 18px 0 0; font: 600 19px/1.4 var(--body); text-wrap: pretty; }
+.src { margin-top: 8px; align-self: flex-start; min-height: 48px; display: inline-flex; align-items: center; gap: 8px; font: 800 16px/1 var(--body); color: inherit; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.src svg { width: 20px; height: 20px; }
+.next { margin-top: auto; height: 68px; width: 100%; border-radius: var(--r-m); border: 3px solid var(--ink); background: var(--accent); color: var(--ink); font: 800 24px/1 var(--round); display: flex; align-items: center; justify-content: center; gap: 10px; padding-top: 3px; --lip-h: 7px; --c-lip: var(--ink); }
+html[data-result="wrong"] .next { border-color: var(--lip); --c-lip: var(--lip); background: var(--sky); }
+.next svg { width: 22px; height: 22px; margin-top: -3px; }
+.v-no, .i-no { display: none; }
+html[data-result="wrong"] .v-ok, html[data-result="wrong"] .i-ok { display: none; }
+html[data-result="wrong"] .v-no { display: inline; }
+html[data-result="wrong"] .i-no { display: block; }
+html[data-result="wrong"] :focus-visible { outline-color: var(--correct); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bg" aria-hidden="true"><i class="b1"></i><i class="b2"></i></div>
+
+  <header class="head">
+    <button class="close chunk" aria-label="Leave round"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3l12 12M15 3L3 15" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg></button>
+    <ol class="dots" aria-label="Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.">
+      <li class="dot ok"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+      <li class="dot ok"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></li>
+      <li class="dot no"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></li>
+      <li class="dot now" aria-current="step"><span class="n">4</span><svg class="mk mk-ok" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="mk mk-no" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></li>
+      <li class="dot"></li><li class="dot"></li><li class="dot"></li><li class="dot"></li><li class="dot"></li><li class="dot"></li>
+    </ol>
+  </header>
+
+  <div class="meta">
+    <div><h1>AWS Cloud Practitioner</h1><p>Security and compliance</p></div>
+    <span class="mode">Classic</span>
+  </div>
+
+  <div class="stack">
+    <div class="ghost g1" aria-hidden="true"></div>
+    <div class="ghost g2" aria-hidden="true"></div>
+    <article class="card" data-card>
+      <div class="card-top">
+        <span class="chip"><svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 1.5l6 2.4v4.4c0 3.7-2.6 6.6-6 8-3.4-1.4-6-4.3-6-8V3.9z" fill="var(--sky)" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round"/><path d="M6.2 9l2 2 3.6-4" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Security</span>
+        <span class="num">4 of 10</span>
+      </div>
+      <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+      <div class="art">
+        <svg class="stackart" viewBox="0 0 128 92" aria-hidden="true">
+          <rect x="6" y="62" width="116" height="24" rx="8" fill="var(--surface-sunk)" stroke="var(--ink)" stroke-width="3"/>
+          <rect x="16" y="36" width="96" height="24" rx="8" fill="var(--sky)" stroke="var(--ink)" stroke-width="3"/>
+          <rect x="26" y="8" width="76" height="26" rx="8" fill="var(--accent)" stroke="var(--ink)" stroke-width="3"/>
+          <circle cx="40" cy="21" r="4" fill="var(--ink)"/><circle cx="54" cy="21" r="4" fill="var(--surface-raised)" stroke="var(--ink)" stroke-width="2"/>
+          <path d="M28 48h24M22 74h40" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>
+          <text x="108" y="16" font-family="Baloo 2" font-weight="800" font-size="20" fill="var(--ink)">?</text>
+        </svg>
+        <div class="swipe" aria-hidden="true"><b><svg viewBox="0 0 14 14"><path d="M9 2L4 7l5 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></b>swipe<b><svg viewBox="0 0 14 14"><path d="M5 2l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></b></div>
+      </div>
+      <div class="sticker t" aria-hidden="true">True<svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sticker f" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>False</div>
+    </article>
+  </div>
+
+  <div class="pair">
+    <button class="big f chunk" data-answer="false"><span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/></svg></span>False</button>
+    <button class="big t chunk" data-answer="true">True<span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3.2L13 4.5" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
+  </div>
+  <p class="hint">Swipe the card or tap a button</p>
+
+  <section class="sheet" aria-live="polite" aria-hidden="true">
+    <div class="verdict">
+      <div class="badge" aria-hidden="true">
+        <svg class="i-ok" viewBox="0 0 30 30"><path d="M6 15.5l6 6L24.5 9" fill="none" stroke="var(--ink)" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="i-no" viewBox="0 0 30 30"><path d="M8 8l14 14M22 8L8 22" fill="none" stroke="var(--ink)" stroke-width="4.4" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <h2><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+        <p>The answer is <b>False</b></p>
+      </div>
+    </div>
+    <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+    <a class="src" href="#" onclick="return false"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 4.5c2.5-1 4.8-.8 7 .8 2.2-1.6 4.5-1.8 7-.8v11c-2.5-1-4.8-.8-7 .8-2.2-1.6-4.5-1.8-7-.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 5.3v11" stroke="currentColor" stroke-width="2"/></svg>Shared responsibility model</a>
+    <button class="next chunk" id="next" tabindex="-1">Next card<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M4 11h13M12 5l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </section>
+</div>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.querySelector('[data-card]')
+const sheet = document.querySelector('.sheet')
+const next = document.getElementById('next')
+const btns = document.querySelectorAll('[data-answer]')
+const pair = document.querySelector('.pair')
+
+function answer(a) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = a === 'false' ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  sheet.removeAttribute('aria-hidden')
+  btns.forEach(b => b.tabIndex = -1); next.tabIndex = 0
+  setTimeout(() => next.focus({ preventScroll: true }), 400)
+}
+function reset() {
+  root.dataset.state = 'question'; delete root.dataset.result
+  sheet.setAttribute('aria-hidden', 'true')
+  btns.forEach(b => b.tabIndex = 0); next.tabIndex = -1
+  btns[1].focus({ preventScroll: true })
+}
+btns.forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+next.addEventListener('click', reset)
+attachSwipe(card, a => answer(a))
+// mirror drag intent onto the buttons so the target one swells
+const lean = () => pair.style.setProperty('--lean', card.style.getPropertyValue('--intent') || 0)
+card.addEventListener('pointermove', lean)
+card.addEventListener('pointerup', () => pair.style.setProperty('--lean', 0))
+card.addEventListener('pointercancel', () => pair.style.setProperty('--lean', 0))
+document.addEventListener('keydown', e => {
+  if (root.dataset.state !== 'question') return
+  if (e.key === 'ArrowLeft') answer('false')
+  if (e.key === 'ArrowRight') answer('true')
+})
+</script>
+</body>
+</html>

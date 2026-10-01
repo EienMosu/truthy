@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rail Ticket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* palette: pale platform ground, soft green card stock, printer's ink, dating-press violet, brick */
+  --surface: #eeebe3;
+  --surface-raised: #d3e5cf;
+  --surface-sunk: #c6dcc2;
+  --paper: #f8f6f0;
+  --ink: #183326;
+  --ink-muted: #465f50;
+  --rule: rgba(24, 51, 38, .32);
+  --accent: #3c4a8c;
+  --true: #3c4a8c;
+  --false: #3c4a8c;
+  --correct: #3c4a8c;
+  --wrong: #9b3a26;
+  --hole-edge: rgba(24, 51, 38, .38);
+
+  --text: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  --mono: "DM Mono", ui-monospace, monospace;
+
+  --r-s: 4px;
+  --r-l: 10px;
+  --shadow: 0 1px 0 rgba(24,51,38,.10), 0 18px 34px -16px rgba(24,51,38,.40);
+  --shadow-lift: 0 1px 0 rgba(24,51,38,.10), 0 30px 48px -18px rgba(24,51,38,.48);
+
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; padding: 0; background: none; cursor: pointer; }
+svg { display: block; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* header */
+.top { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
+.close { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--rule); display: grid; place-items: center; transition: transform var(--t1) var(--ease), background var(--t1); }
+.close:active { transform: scale(.92); background: var(--paper); }
+.close svg { width: 14px; height: 14px; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.deck { text-align: center; line-height: 1.2; }
+.deck b { display: block; font-weight: 600; font-size: 17px; }
+.deck span { font-weight: 500; font-size: 15px; color: var(--ink-muted); }
+.count { justify-self: end; font-family: var(--mono); font-size: 14px; color: var(--ink); }
+.count i { font-style: normal; color: var(--ink-muted); }
+
+/* ticket */
+.stage { position: absolute; top: 124px; left: 0; right: 0; height: 568px; display: flex; justify-content: center; }
+.card { user-select: none; -webkit-user-select: none;
+  width: 326px; height: 568px; position: relative; touch-action: none; cursor: grab; perspective: 1500px;
+  transform: translateX(var(--dx, 0px)) rotate(var(--rot, 0deg));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+.flipper { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform var(--t3) var(--ease); }
+[data-state="answer"] .card { cursor: default; transform: none; }
+[data-state="answer"] .flipper { transform: rotateY(180deg); }
+.face {
+  position: absolute; inset: 0; border-radius: var(--r-l); background: var(--surface-raised);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow); transition: box-shadow var(--t2) var(--ease);
+  display: flex; flex-direction: column; padding: 18px 24px 16px; overflow: hidden;
+}
+.face::before { content: ""; position: absolute; inset: 8px; border: 1px solid var(--rule); border-radius: 5px; pointer-events: none; }
+.card[data-dragging] .face { box-shadow: var(--shadow-lift); }
+.back { transform: rotateY(180deg); }
+
+.serial { position: relative; display: flex; justify-content: space-between; align-items: baseline; height: 24px; font-family: var(--mono); font-size: 13px; color: var(--ink-muted); }
+.serial b { font-family: var(--text); font-weight: 600; font-size: 17px; color: var(--ink); letter-spacing: .01em; }
+.double { flex: none; height: 4px; margin: 8px 0 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+.rule { flex: none; height: 0; border-top: 1px solid var(--rule); }
+
+.route { display: grid; grid-template-columns: 40px 1fr; row-gap: 4px; align-items: baseline; padding: 14px 0 14px; }
+.route dt { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.route dd { margin: 0; font-weight: 600; font-size: 18px; line-height: 1.25; }
+
+.statement { flex: 1; display: flex; align-items: center; justify-content: center; margin: 0; padding: 8px 4px; text-align: center; font-weight: 500; font-size: 26px; line-height: 1.26; text-wrap: balance; }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 10px 0; }
+.fields div + div { padding-left: 12px; border-left: 1px solid var(--rule); }
+.fields dt { font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); }
+.fields dd { margin: 2px 0 0; font-family: var(--mono); font-weight: 500; font-size: 14px; }
+
+/* punch row: the progress */
+.punch { list-style: none; margin: 0; padding: 10px 0 4px; display: grid; grid-template-columns: repeat(10, 1fr); }
+.punch li { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.punch li + li { border-left: 1px dotted var(--rule); }
+.punch span { font-family: var(--mono); font-size: 11px; line-height: 1; color: var(--ink-muted); }
+.punch svg { width: 16px; height: 16px; overflow: visible; }
+.hole { fill: var(--surface); stroke: var(--hole-edge); stroke-width: 1.2; }
+.hole-g { transform-origin: 8px 8px; transform-box: view-box; }
+.slot { fill: none; stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 2.4; }
+.now span { color: var(--ink); font-weight: 500; }
+.now .slot { stroke: var(--ink); stroke-dasharray: none; }
+.now .hole-g { display: none; }
+[data-result="correct"] .back .now .h-ok, [data-result="wrong"] .back .now .h-no { display: inline; animation: punch var(--t2) var(--ease) calc(var(--t3) + 60ms) both; }
+[data-state="answer"] .back .now span { color: var(--verdict); }
+[data-state="answer"] .back .now .slot { stroke: var(--rule); }
+@keyframes punch { 0% { transform: scale(.2); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+
+.fine { white-space: nowrap; display: flex; justify-content: space-between; align-items: center; height: 30px; margin-top: 4px; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.fine .f, .fine .t { display: flex; align-items: center; gap: 6px; color: var(--ink); font-weight: 500; transition: color var(--t1); }
+.fine svg { width: 14px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* drag: the dating press shows where the ticket is bound */
+.press { position: absolute; top: 58px; left: 20px; right: 20px; height: 80px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--surface-raised); border: 3px double currentColor; border-radius: var(--r-s);
+  font-weight: 600; font-size: 26px; pointer-events: none; opacity: 0; }
+.press svg { width: 22px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.press small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--ink-muted); margin-right: 4px; }
+.press.t { color: var(--true); opacity: calc(var(--intent, 0) * 2); transform: scale(calc(.96 + max(var(--intent, 0), 0) * .04)); }
+.press.f { color: var(--false); opacity: calc(var(--intent, 0) * -2); transform: scale(calc(.96 - min(var(--intent, 0), 0) * .04)); }
+.fine .t { opacity: calc(.55 + max(var(--intent, 0), 0) * 1.2 + .45 * (1 - max(var(--intent, 0), var(--intent, 0) * -1))); }
+.fine .f { opacity: calc(.55 - min(var(--intent, 0), 0) * 1.2 + .45 * (1 - max(var(--intent, 0), var(--intent, 0) * -1))); }
+
+/* back */
+.back-body { flex: 1; display: flex; flex-direction: column; }
+.recap { margin: 0; padding: 14px 0; display: grid; grid-template-columns: 40px 1fr; align-items: baseline; }
+.recap dt { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.recap dd { margin: 0; font-weight: 500; font-size: 16px; line-height: 1.35; color: var(--ink-muted); }
+.verdict-row { display: flex; align-items: center; gap: 14px; padding: 22px 0 8px; margin-top: auto; }
+.verdict-row svg { width: 44px; height: 44px; flex: none; }
+.verdict-row svg * { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.verdict-row svg .v-in { stroke-width: 2.2; }
+.verdict { margin: 0; font-weight: 600; font-size: 40px; line-height: 1; }
+.answer-is { margin: 0 0 16px; font-size: 18px; font-weight: 500; color: var(--ink); }
+.answer-is b { font-weight: 600; }
+.explain { margin: 16px 0 0; font-weight: 500; font-size: 18px; line-height: 1.42; }
+.back-body .source { margin-bottom: auto; }
+.source { align-self: flex-start; margin-top: 6px; min-height: 48px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 13.5px; color: var(--accent); text-decoration: none; }
+.source u { text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.source svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.v-ok, .v-no, .t1, .t2 { display: none; }
+[data-result="correct"] .v-ok, [data-result="wrong"] .v-no { display: block; }
+[data-result="correct"] .t1, [data-result="wrong"] .t2 { display: inline; }
+[data-result="correct"] .back { --verdict: var(--correct); }
+[data-result="wrong"] .back { --verdict: var(--wrong); }
+.verdict, .verdict-row svg { color: var(--verdict); }
+
+/* controls */
+.choices, .next-row { position: absolute; top: 712px; left: 32px; right: 32px; height: 60px; display: flex; gap: 14px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.choice, .next {
+  flex: 1; height: 60px; border-radius: var(--r-l); display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 600; font-size: 22px; transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.choice { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule), var(--shadow); }
+.choice:active { transform: translateY(2px) scale(.97); background: var(--surface-raised); }
+.choice svg, .next svg { width: 20px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.next { background: var(--ink); color: var(--paper); box-shadow: var(--shadow); }
+.next:active { transform: translateY(2px) scale(.97); }
+.next-row { opacity: 0; pointer-events: none; transform: translateY(8px); }
+[data-state="answer"] .choices { opacity: 0; pointer-events: none; }
+[data-state="answer"] .next-row { opacity: 1; pointer-events: auto; transform: none; transition-delay: var(--t2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .flipper, .choices, .next-row { transition-duration: 1ms !important; transition-delay: 0s !important; }
+  .flipper { transition: none; }
+  [data-state="answer"] .front { opacity: 0; }
+  .now .hole-g { animation: none !important; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round">
+      <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13"/></svg>
+    </button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Classic</span></div>
+    <div class="count" aria-label="Card 4 of 10">04<i>/10</i></div>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="flipper">
+        <article class="face front" aria-label="Statement card">
+          <div class="serial"><span>Nº 0004</span><b>Truthy</b><span>Single</span></div>
+          <div class="double"></div>
+          <dl class="route">
+            <dt>From</dt><dd>AWS Cloud Practitioner</dd>
+            <dt>To</dt><dd>Security and compliance</dd>
+          </dl>
+          <div class="rule"></div>
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="rule"></div>
+          <dl class="fields">
+            <div><dt>Class</dt><dd>Classic</dd></div>
+            <div><dt>Card</dt><dd>04 of 10</dd></div>
+            <div><dt>Route</dt><dd>CLF–SEC</dd></div>
+          </dl>
+          <div class="rule"></div>
+          <ol class="punch" data-punch role="img" aria-label="Cards 1 and 2 correct, card 3 wrong, card 4 of 10 now"></ol>
+          <div class="fine" aria-hidden="true">
+            <span class="f"><svg viewBox="0 0 14 10"><path d="M13 5H1.5M5 1L1 5l4 4"/></svg>False</span>
+            <span>swipe the ticket</span>
+            <span class="t">True<svg viewBox="0 0 14 10"><path d="M1 5h11.5M9 1l4 4-4 4"/></svg></span>
+          </div>
+
+          <div class="press t" aria-hidden="true"><small>Bound for</small>True<svg viewBox="0 0 22 14"><path d="M1 7h19M14 1l6 6-6 6"/></svg></div>
+          <div class="press f" aria-hidden="true"><svg viewBox="0 0 22 14"><path d="M21 7H2M8 1L2 7l6 6"/></svg><small>Bound for</small>False</div>
+        </article>
+
+        <article class="face back" aria-live="polite">
+          <div class="serial"><span>Nº 0004</span><b>Truthy</b><span>Single</span></div>
+          <div class="double"></div>
+          <div class="back-body">
+          <dl class="recap"><dt>Card</dt><dd>AWS is responsible for patching the guest operating system on your EC2 instances.</dd></dl>
+          <div class="rule"></div>
+          <div class="verdict-row">
+            <svg viewBox="0 0 44 44" aria-hidden="true">
+              <circle cx="22" cy="22" r="20.5"/>
+              <path class="v-ok v-in" d="M13.5 22.5l6 6 11-12"/>
+              <path class="v-no v-in" d="M15 15l14 14M29 15L15 29"/>
+            </svg>
+            <h2 class="verdict"><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+          </div>
+          <p class="answer-is">The answer is <b>False</b></p>
+          <div class="rule"></div>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" id="source"><u>Shared responsibility model</u>
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4 3h5v5"/></svg></a>
+          </div>
+          <div class="rule"></div>
+          <ol class="punch" data-punch aria-hidden="true"></ol>
+          <div class="fine"><span><span class="t1">3 correct · 1 wrong</span><span class="t2">2 correct · 2 wrong</span></span><span>Card 04 of 10</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="choices">
+    <button class="choice" type="button" data-answer="false">
+      <svg viewBox="0 0 20 12" aria-hidden="true"><path d="M19 6H2M7 1L2 6l5 5"/></svg>False
+    </button>
+    <button class="choice" type="button" data-answer="true">True
+      <svg viewBox="0 0 20 12" aria-hidden="true"><path d="M1 6h17M13 1l5 5-5 5"/></svg>
+    </button>
+  </div>
+  <div class="next-row">
+    <button class="next" type="button">Next card
+      <svg viewBox="0 0 20 12" aria-hidden="true"><path d="M1 6h17M13 1l5 5-5 5"/></svg></button>
+  </div>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// punch rows: correct cards are round holes, wrong cards are cross-shaped holes
+const done = ['ok', 'ok', 'no']
+const HOLE = {
+  ok: '<circle class="hole" cx="8" cy="8" r="6.5"/>',
+  no: '<path class="hole" d="M4 1.8L8 5.8l4-4 2.2 2.2-4 4 4 4-2.2 2.2-4-4-4 4-2.2-2.2 4-4-4-4z"/>'
+}
+document.querySelectorAll('[data-punch]').forEach(ol => {
+  let html = ''
+  for (let i = 1; i <= 10; i++) {
+    const r = done[i - 1]
+    const mark = r ? `<g class="hole-g">${HOLE[r]}</g>`
+      : i === 4 ? `<circle class="slot" cx="8" cy="8" r="7.5"/><g class="hole-g h-ok">${HOLE.ok}</g><g class="hole-g h-no">${HOLE.no}</g>`
+      : `<circle class="slot" cx="8" cy="8" r="6"/>`
+    html += `<li class="${i === 4 ? 'now' : ''}"><span>${i}</span><svg viewBox="0 0 16 16">${mark}</svg></li>`
+  }
+  ol.innerHTML = html
+})
+
+const root = document.documentElement
+const card = document.getElementById('card')
+function answer(choice) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  void root.offsetWidth
+  root.dataset.state = 'answer'
+  setTimeout(() => document.querySelector('.next').focus({ preventScroll: true }), 400)
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+}
+attachSwipe(card, answer)
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.querySelector('.next').addEventListener('click', reset)
+</script>
+</body>
+</html>

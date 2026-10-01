@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Route</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600&family=Overpass:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky-1: #a9d6f0;
+  --sky-2: #c4e3f5;
+  --sky-3: #ddeff8;
+  --sky-4: #f3f0e6;
+  --surface: var(--sky-2);
+  --surface-raised: #fdfbf5;
+  --surface-sunk: #eef3f5;
+  --ink: #10233f;
+  --ink-muted: #56667c;
+  --rule: #c9d3dc;
+  --accent: #f5b400;
+  --true: #1d5cc0;
+  --false: #b3321c;
+  --correct: #0d7250;
+  --wrong: #b3321c;
+  --on-dark: #fdfbf5;
+  --cloud: #ffffff;
+  --r: 16px; --r-sm: 8px;
+  --shadow: 0 1px 0 rgba(16,35,63,.06), 0 22px 36px -18px rgba(16,35,63,.45);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Overpass', system-ui, sans-serif;
+  --mono: 'Overpass Mono', ui-monospace, monospace;
+  --notch: 12px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; text-align: inherit; }
+svg { display: block; }
+h1, h2, p { margin: 0; }
+
+#app {
+  --at: 0;
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; overflow: hidden; overflow: clip;
+  background: linear-gradient(180deg,
+    var(--sky-1) 0 22%, var(--sky-2) 22% 48%, var(--sky-3) 48% 76%, var(--sky-4) 76% 100%);
+}
+.cloud { position: absolute; fill: var(--cloud); opacity: .7; pointer-events: none; }
+
+/* ── route header: back + the journey so far ───────────────────────── */
+.top {
+  position: absolute; z-index: 3; left: 16px; right: 16px; top: 52px; height: 56px;
+  display: flex; align-items: flex-start; gap: 8px;
+  transition: opacity var(--t2) var(--ease), visibility 0s linear 0s;
+}
+/* the route stays lit above the sheet's scrim: the new deck waypoint lands in plain view and stays tappable */
+[data-sheet="open"] .top { z-index: 7; }
+[data-step="1"] .top { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--t2) var(--ease), visibility 0s linear var(--t2); }
+.back {
+  width: 48px; height: 48px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface-raised); color: var(--ink);
+  box-shadow: 0 1px 0 rgba(16,35,63,.1), 0 6px 12px -6px rgba(16,35,63,.4);
+  transition: transform var(--t1) var(--ease);
+}
+.back:active { transform: scale(.92); }
+
+.route { flex: 1; min-width: 0; height: 56px; position: relative; }
+/* the four stops sit on a track inset by half a touch target on each side */
+.track { position: absolute; top: 0; bottom: 0; left: 26px; right: 26px; }
+.line { position: absolute; left: 0; right: 0; top: 23px; height: 2px; }
+.line.dash { background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 7px); opacity: .55; }
+.line.seg {
+  top: 22.8px; height: 2.4px; border-radius: 2px; background: var(--ink);
+  transform-origin: 0 50%; transform: scaleX(calc(var(--at) / 3));
+  transition: transform var(--t3) var(--ease);
+}
+.wp {
+  position: absolute; top: 0; left: calc(var(--k) * 100% / 3); width: 48px; height: 48px; margin-left: -24px;
+  border-radius: var(--r-sm);
+}
+.wp:disabled { cursor: default; }
+.wp .ring, .wp .dot { position: absolute; left: 50%; top: 24px; border-radius: 50%; }
+.wp .ring { width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; background: var(--surface-raised); box-shadow: inset 0 0 0 1.6px var(--ink);
+  transition: opacity var(--t2) var(--ease); }
+.wp .dot { width: 12px; height: 12px; margin: -6px 0 0 -6px; background: var(--ink);
+  transform: scale(0); transition: transform var(--t2) var(--ease); }
+.wp .lbl {
+  position: absolute; left: 50%; top: 36px; white-space: nowrap;
+  font-family: var(--mono); font-size: 11px; line-height: 14px; color: var(--ink);
+  opacity: 0; transform: translate(-50%, 5px);
+  transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease);
+}
+.wp[data-state="past"] .dot, .wp[data-state="here"] .dot { transform: scale(1); transition: transform 300ms var(--spring) 120ms; }
+.wp[data-state="past"] .ring, .wp[data-state="here"] .ring { opacity: 0; }
+.wp[data-state="past"] .lbl, .wp[data-state="here"] .lbl { opacity: 1; transform: translate(-50%, 0); transition-delay: 140ms; }
+.wp[data-state="here"] .lbl { font-weight: 600; }
+.wp[data-state="past"] .lbl { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; text-decoration-color: rgba(16,35,63,.45); }
+.wp[data-state="past"]:active .dot { transform: scale(.8); }
+/* the plane: where you are now */
+.run { position: absolute; left: 0; right: 0; top: 0; height: 48px; pointer-events: none;
+  transform: translateX(calc(var(--at) * 100% / 3)); transition: transform var(--t3) var(--spring); }
+.plane { position: absolute; left: -13px; top: 11px; width: 26px; height: 26px; }
+.s-ink { stroke: var(--ink); } .f-ink { fill: var(--ink); } .f-acc { fill: var(--accent); }
+
+/* ── steps: three screens on one horizontal strip ─────────────────── */
+.step {
+  position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column;
+  padding: 124px 16px 34px;
+  transform: translateX(100%); visibility: hidden;
+  transition: transform var(--t3) var(--ease), opacity var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+.step.is-past { transform: translateX(-100%); opacity: .2; }
+.step.is-here { transform: none; opacity: 1; visibility: visible; transition: transform var(--t3) var(--ease), opacity var(--t3) var(--ease), visibility 0s linear 0s; }
+.step.jump { transition: none !important; }
+
+.step[data-n="1"] { padding-top: 140px; }
+.step[data-n="1"] .choices { margin-top: 72px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand h1 { font-weight: 800; font-size: 38px; line-height: 1; letter-spacing: -.025em; padding-top: 4px; }
+.tagline { margin-top: 14px; max-width: 300px; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--ink-muted); }
+.tagline, .place p { color: var(--ink); opacity: .78; }
+
+.place .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--ink); }
+.place h2 { margin-top: 6px; font-weight: 800; font-size: 34px; line-height: 1.05; letter-spacing: -.02em; outline: none; }
+.step h2:focus, .brand h1:focus { outline: none; }
+
+.choices { margin-top: 36px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.ask { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; color: var(--ink); margin-bottom: 12px; }
+.list { display: flex; flex-direction: column; gap: 14px; }
+/* the list scrolls on its own when a level holds more cards than fit */
+.list { flex: 1; min-height: 0; overflow-y: auto; margin: -6px -8px 0; padding: 6px 8px 24px; scrollbar-width: none; }
+.list::-webkit-scrollbar { display: none; }
+.list > * { flex: none; }
+/* a second tap during the push must not land on the card sliding in underneath */
+[data-moving] .step { pointer-events: none; }
+
+/* ── destination card: body, perforation, arrow stub ──────────────── */
+.card {
+  --n: 9px;
+  position: relative; width: 100%; min-height: 92px; display: flex; border-radius: var(--r);
+  transition: transform var(--t1) var(--ease);
+}
+button.card:active { transform: scale(.985); }
+.card .sb { position: absolute; inset: 0; border-radius: var(--r); pointer-events: none;
+  box-shadow: 0 1px 0 rgba(16,35,63,.08), 0 14px 24px -16px rgba(16,35,63,.45); }
+.card .body {
+  position: relative; flex: 1; min-width: 0; padding: 20px 8px 18px 22px; border-radius: var(--r) 0 0 var(--r);
+  display: flex; flex-direction: column; justify-content: center;
+  background:
+    radial-gradient(circle at 100% 0, transparent var(--n), var(--surface-raised) calc(var(--n) + .5px)) top / 100% 51% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent var(--n), var(--surface-raised) calc(var(--n) + .5px)) bottom / 100% 51% no-repeat;
+}
+.card .tail {
+  position: relative; flex: none; width: 68px; border-radius: 0 var(--r) var(--r) 0;
+  display: grid; place-items: center; color: var(--ink);
+  background:
+    radial-gradient(circle at 0 0, transparent var(--n), var(--surface-raised) calc(var(--n) + .5px)) top / 100% 51% no-repeat,
+    radial-gradient(circle at 0 100%, transparent var(--n), var(--surface-raised) calc(var(--n) + .5px)) bottom / 100% 51% no-repeat;
+}
+.card .tail::before {
+  content: ''; position: absolute; left: -1px; top: calc(var(--n) + 6px); bottom: calc(var(--n) + 6px); width: 2px;
+  background: repeating-linear-gradient(180deg, var(--rule) 0 6px, transparent 6px 11px);
+}
+.card .name { display: block; font-weight: 800; font-size: 25px; line-height: 1.1; letter-spacing: -.015em; }
+.card .sub { display: block; margin-top: 6px; font-family: var(--mono); font-size: 13px; color: var(--ink-muted); }
+
+/* not available yet: an outline of a card, no paper, no arrow */
+.card.off { min-height: 76px; border: 1.5px dashed rgba(16,35,63,.32); background: rgba(253,251,245,.42); }
+.card.off .body { background: none; padding: 16px 20px 14px 21px; }
+.card.off .name { font-size: 20px; color: var(--ink-muted); font-weight: 800; }
+.card.off .sub { margin-top: 4px; color: var(--ink-muted); }
+
+/* deck card: a little more ticket */
+.card.deck { min-height: 132px; }
+.card.deck .body { padding: 18px 8px 16px 22px; justify-content: flex-start; }
+.deck code { display: block; font-family: var(--mono); font-weight: 600; font-size: 30px; line-height: 1; letter-spacing: .02em; }
+.deck .dname { display: block; margin-top: 8px; font-weight: 600; font-size: 16px; line-height: 1.25; letter-spacing: -.01em; }
+.deck .status { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.deck .status b { color: var(--ink); font-weight: 600; }
+.deck .status .n { margin-left: auto; }
+.track-p { position: relative; flex: none; width: 48px; height: 8px; }
+.track-p::before { content: ''; position: absolute; left: 0; right: 0; top: 3px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 4px, transparent 4px 8px); }
+.track-p i { position: absolute; left: 0; top: 3px; height: 2px; width: var(--p); background: var(--ink); border-radius: 1px; }
+.track-p i::after { content: ''; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 1.5px var(--ink); }
+
+/* ── section sheet (from home-a) ──────────────────────────────────── */
+.scrim {
+  position: absolute; inset: 0; z-index: 5; background: rgba(16,35,63,.32);
+  opacity: 0; visibility: hidden; transition: opacity var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+/* the sheet runs 72px past the bottom edge so its spring overshoot never shows a gap */
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: -72px; z-index: 6;
+  background: var(--surface-raised); border-radius: var(--r) var(--r) 0 0;
+  box-shadow: 0 -1px 0 rgba(16,35,63,.06), 0 -18px 36px -18px rgba(16,35,63,.45);
+  padding: 0 0 106px; transform: translateY(104%); visibility: hidden;
+  transition: transform var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+[data-sheet="open"] .scrim { opacity: 1; visibility: visible; transition: opacity var(--t3) var(--ease); }
+[data-sheet="open"] .sheet { transform: none; visibility: visible; transition: transform 420ms var(--spring); }
+.s-bar { position: relative; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 0 20px; }
+.s-bar h2 { font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--ink); }
+.grab { position: absolute; left: 50%; top: 8px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); }
+.s-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; padding: 0 20px 16px; }
+.leg code { display: block; font-family: var(--mono); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: .02em; }
+.leg span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-muted); line-height: 1.25; }
+.leg.to { text-align: right; }
+.blank { display: flex; justify-content: flex-end; gap: 6px; height: 34px; align-items: flex-end; }
+.blank i { width: 18px; height: 3px; border-radius: 2px; background: var(--rule); }
+.s-head .fly { padding-bottom: 26px; color: var(--ink); }
+.s-close {
+  width: 48px; height: 48px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: var(--ink); background: var(--surface-sunk);
+  transition: transform var(--t1) var(--ease);
+}
+.s-close:active { transform: scale(.92); }
+.s-perf { height: 2px; margin: 0 20px; background: repeating-linear-gradient(90deg, var(--rule) 0 7px, transparent 7px 12px); }
+.s-label { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 20px 4px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-muted); }
+.dests { list-style: none; margin: 0; padding: 0 20px; }
+.dest {
+  width: 100%; min-height: 56px; display: grid; grid-template-columns: 52px 1fr auto 16px; column-gap: 12px; align-items: center;
+  padding: 8px 0 6px; border-bottom: 1.5px solid var(--rule);
+  transition: background var(--t1) var(--ease);
+}
+.dests li:last-child .dest { border-bottom: 0; }
+.dest:active { background: var(--surface-sunk); }
+.dest code { font-family: var(--mono); font-weight: 600; font-size: 18px; letter-spacing: .02em; }
+.dest .name { font-weight: 600; font-size: 16px; line-height: 1.2; letter-spacing: -.01em; }
+.dest .n { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.dest .go { color: var(--ink-muted); }
+.dest.whole .name { font-weight: 800; }
+.dest.whole { border-bottom-color: var(--ink); }
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.dest:focus-visible { outline-offset: -1px; border-radius: var(--r-sm); }
+.wp:focus-visible { outline-offset: -2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+  /* steps cross-fade in place instead of pushing */
+  .step, .step.is-past { transform: none; opacity: 0; }
+  .step.is-here { opacity: 1; }
+  /* sequential, so the two screens never overlap: out in 120ms, then in */
+  .step { transition-property: opacity, visibility !important; transition-duration: var(--t1), 0s !important; transition-delay: 0s, var(--t1) !important; }
+  .step.is-here { transition-duration: 180ms, 0s !important; transition-delay: var(--t1), 0s !important; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-step="1">
+  <svg class="cloud" style="right:-24px;top:0" width="150" height="46" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+  <svg class="cloud" style="right:-40px;top:748px" width="170" height="50" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+
+  <header class="top">
+    <button class="back" type="button" id="back" aria-label="Back"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M11 3.5L5.5 9l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <nav class="route" aria-label="Your route">
+      <div class="track">
+        <div class="line dash" aria-hidden="true"></div>
+        <div class="line seg" aria-hidden="true"></div>
+        <button class="wp" type="button" style="--k:0" data-k="0"><span class="ring"></span><span class="dot"></span><span class="lbl">Start</span></button>
+        <button class="wp" type="button" style="--k:1" data-k="1"><span class="ring"></span><span class="dot"></span><span class="lbl"></span></button>
+        <button class="wp" type="button" style="--k:2" data-k="2"><span class="ring"></span><span class="dot"></span><span class="lbl"></span></button>
+        <button class="wp" type="button" style="--k:3" data-k="3"><span class="ring"></span><span class="dot"></span><span class="lbl"></span></button>
+        <div class="run" aria-hidden="true">
+          <svg class="plane" viewBox="-13 -13 26 26"><circle r="12" class="f-acc"/><path d="M-7 0h14M1-6l4 6-4 6M-6-3l2 3-2 3" class="s-ink" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <section class="step is-here" data-n="1" aria-labelledby="t1">
+    <div class="brand">
+      <svg width="46" height="34" viewBox="0 0 46 34" aria-hidden="true">
+        <path d="M7 1h32a6 6 0 0 1 6 6v5a5 5 0 0 0 0 10v5a6 6 0 0 1-6 6H7a6 6 0 0 1-6-6v-5a5 5 0 0 0 0-10V7a6 6 0 0 1 6-6z" class="f-acc"/>
+        <path d="M32.5 6v22" class="s-ink" stroke-width="1.6" stroke-dasharray="2.4 2.6" opacity=".7"/>
+        <path d="M10 17.5l4.5 4.5 9-10" fill="none" class="s-ink" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1 id="t1" tabindex="-1">Truthy</h1>
+    </div>
+    <p class="tagline">True or false cards that teach you IT, one swipe at a time.</p>
+    <div class="choices" role="group" aria-labelledby="a1">
+      <p class="ask" id="a1">Choose an area</p>
+      <div class="list" id="list1"></div>
+    </div>
+  </section>
+
+  <section class="step" data-n="2" aria-labelledby="t2">
+    <div class="place"><p class="kicker">Area</p><h2 id="t2" tabindex="-1">Cloud</h2></div>
+    <div class="choices" role="group" aria-labelledby="a2">
+      <p class="ask" id="a2">Choose a platform</p>
+      <div class="list" id="list2"></div>
+    </div>
+  </section>
+
+  <section class="step" data-n="3" aria-labelledby="t3">
+    <div class="place"><p class="kicker">Platform</p><h2 id="t3" tabindex="-1">AWS</h2></div>
+    <div class="choices" role="group" aria-labelledby="a3">
+      <p class="ask" id="a3">Choose a deck</p>
+      <div class="list" id="list3"></div>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-code sh-title">
+    <div class="s-bar">
+      <div class="grab" aria-hidden="true"></div>
+      <h2>New boarding pass</h2>
+      <button class="s-close" type="button" id="s-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="s-head">
+      <div class="leg"><code id="sh-code">CLF</code><span id="sh-title">AWS Cloud<br>Practitioner</span></div>
+      <svg class="fly" width="40" height="16" viewBox="0 0 40 16" aria-hidden="true"><path d="M1 8h36M30 2l7 6-7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="leg to" aria-hidden="true"><div class="blank"><i></i><i></i><i></i></div><span>Choose a<br>section</span></div>
+    </div>
+    <div class="s-perf" aria-hidden="true"></div>
+    <div class="s-label"><span>Section</span><span>Cards</span></div>
+    <ul class="dests" id="dests"></ul>
+  </div>
+</main>
+
+<script>
+// All content in one place: area > platform > deck > section.
+const AREAS = [
+  { id: 'cloud', name: 'Cloud', platforms: [
+    { id: 'aws', name: 'AWS', decks: [
+      { code: 'CLF', name: 'Cloud Practitioner', cards: 214, seen: 38,
+        sections: [['CON', 'Cloud concepts', 45], ['SEC', 'Security and compliance', 47], ['TEC', 'Cloud technology and services', 88], ['BIL', 'Billing, pricing and support', 34]] },
+      { code: 'SAA', name: 'Solutions Architect Associate', cards: 168, seen: 0,
+        sections: [['SEC', 'Secure architectures', 46], ['RES', 'Resilient architectures', 44], ['PRF', 'High-performing architectures', 42], ['CST', 'Cost-optimized architectures', 36]] },
+    ]},
+    { id: 'gcp', name: 'Google Cloud', decks: [
+      { code: 'CDL', name: 'Cloud Digital Leader', cards: 140, seen: 0, sections: [] },
+    ]},
+    { id: 'azure', name: 'Azure', decks: [] },
+  ]},
+  { id: 'frontend', name: 'Frontend', platforms: [
+    { id: 'next', name: 'Next.js', decks: [
+      { code: 'RND', name: 'Rendering', cards: 96, seen: 12,
+        sections: [['SCC', 'Server and Client Components', 28], ['STR', 'Streaming and Suspense', 22], ['CCH', 'Caching', 26], ['REV', 'Revalidation', 20]] },
+    ]},
+  ]},
+  { id: 'devops', name: 'DevOps', platforms: [] },
+]
+// The screenshot tool follows this path: Cloud, then AWS, then CLF.
+const DEMO = new Set(['cloud', 'aws', 'CLF'])
+
+const deckCount = p => p.decks.length
+const areaDecks = a => a.platforms.reduce((n, p) => n + deckCount(p), 0)
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`
+const arrow = '<svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true"><path d="M1 8h22M17 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const chev = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+
+function placeCard(id, name, n, kind) {
+  if (!n) return `<div class="card off" role="note" aria-label="${name}, not available yet"><div class="body"><span class="name">${name}</span><span class="sub">No decks yet</span></div></div>`
+  return `<button class="card" type="button" data-${kind}="${id}"${DEMO.has(id) ? ' data-demo' : ''} aria-label="${name}, ${plural(n, 'deck')}">
+    <span class="sb"></span>
+    <span class="body"><span class="name">${name}</span><span class="sub">${plural(n, 'deck')}</span></span>
+    <span class="tail">${arrow}</span></button>`
+}
+function deckCard(d) {
+  return `<button class="card deck" type="button" data-deck="${d.code}"${DEMO.has(d.code) ? ' data-demo' : ''}
+    aria-label="${d.code}, ${d.name}, ${d.cards} cards, ${d.seen ? d.seen + ' percent seen' : 'not started'}">
+    <span class="sb"></span>
+    <span class="body">
+      <code>${d.code}</code><span class="dname">${d.name}</span>
+      <span class="status" aria-hidden="true"><span class="track-p">${d.seen ? `<i style="--p:${d.seen}%"></i>` : ''}</span>
+        <span>${d.seen ? `<b>${d.seen}%</b> seen` : 'Not started'}</span><span class="n">${d.cards} cards</span></span>
+    </span>
+    <span class="tail">${arrow}</span></button>`
+}
+
+const $ = id => document.getElementById(id)
+const app = $('app')
+const steps = [...document.querySelectorAll('.step')]
+const wps = [...document.querySelectorAll('.wp')]
+const sel = { area: AREAS[0], platform: AREAS[0].platforms[0], deck: null }
+
+function renderAreas() {
+  $('list1').innerHTML = AREAS.map(a => placeCard(a.id, a.name, areaDecks(a), 'area')).join('')
+}
+function renderPlatforms(a) {
+  sel.area = a
+  $('t2').textContent = a.name
+  $('list2').innerHTML = a.platforms.map(p => placeCard(p.id, p.name, deckCount(p), 'platform')).join('')
+  wps[1].querySelector('.lbl').textContent = a.name
+}
+function renderDecks(p) {
+  sel.platform = p
+  $('t3').textContent = p.name
+  $('list3').innerHTML = p.decks.map(deckCard).join('')
+  wps[2].querySelector('.lbl').textContent = p.name
+}
+
+// where the plane is: 0 start, 1 area chosen, 2 platform chosen, 3 deck chosen
+function syncRoute() {
+  const step = +app.dataset.step
+  const at = app.dataset.sheet ? 3 : step - 1
+  app.style.setProperty('--at', at)
+  wps.forEach((w, k) => {
+    const state = k < at ? 'past' : k === at ? 'here' : 'future'
+    w.dataset.state = state
+    w.disabled = state !== 'past'
+    if (state === 'here') w.setAttribute('aria-current', 'step'); else w.removeAttribute('aria-current')
+    const lbl = w.querySelector('.lbl').textContent
+    w.setAttribute('aria-label', state === 'past' ? `Back to ${lbl}` : state === 'here' ? `${lbl}, you are here` : 'Not chosen yet')
+  })
+  const back = $('back')
+  back.setAttribute('aria-label', app.dataset.sheet ? 'Close sections' : step === 3 ? `Back to ${sel.area.name} platforms` : 'Back to areas')
+}
+
+function go(n) {
+  const from = +app.dataset.step
+  if (n === from) return
+  steps.forEach(s => {
+    const k = +s.dataset.n
+    // a step that is skipped over (3 straight back to 1) moves without sweeping across the screen
+    if (k !== from && k !== n) s.classList.add('jump')
+    s.classList.toggle('is-here', k === n)
+    s.classList.toggle('is-past', k < n)
+    s.inert = k !== n
+  })
+  app.dataset.step = n
+  app.dataset.moving = ''
+  clearTimeout(go.t); go.t = setTimeout(() => delete app.dataset.moving, 360)
+  void app.offsetWidth
+  steps.forEach(s => s.classList.remove('jump'))
+  syncRoute()
+  const h = steps[n - 1].querySelector('h1, h2')
+  h.focus({ preventScroll: true })
+}
+
+// sheet
+let opener = null
+function openSheet(code, from) {
+  const d = sel.platform.decks.find(x => x.code === code)
+  sel.deck = d; opener = from
+  $('sh-code').textContent = d.code
+  $('sh-title').innerHTML = `${sel.platform.name} ${d.name}`.replace(/^(\S+ \S+) /, '$1<br>')
+  const rows = [['ALL', 'Whole deck', d.cards, true], ...d.sections]
+  $('dests').innerHTML = rows.map(([c, n, k, whole]) => `
+    <li><button class="dest${whole ? ' whole' : ''}" type="button" aria-label="${d.code} to ${n}, ${k} cards">
+      <code>${c}</code><span class="name">${n}</span><span class="n">${k}</span><span class="go">${chev}</span>
+    </button></li>`).join('')
+  wps[3].querySelector('.lbl').textContent = d.code
+  app.dataset.sheet = 'open'
+  steps[2].inert = true
+  syncRoute()
+  setTimeout(() => $('sheet').querySelector('.dest').focus({ preventScroll: true }), 60)
+}
+function closeSheet(restore = true) {
+  if (!app.dataset.sheet) return
+  delete app.dataset.sheet
+  steps[2].inert = +app.dataset.step !== 3
+  syncRoute()
+  if (restore && opener) opener.focus({ preventScroll: true })
+}
+
+$('list1').addEventListener('click', e => {
+  const b = e.target.closest('[data-area]'); if (!b) return
+  renderPlatforms(AREAS.find(a => a.id === b.dataset.area)); go(2)
+})
+$('list2').addEventListener('click', e => {
+  const b = e.target.closest('[data-platform]'); if (!b) return
+  renderDecks(sel.area.platforms.find(p => p.id === b.dataset.platform)); go(3)
+})
+$('list3').addEventListener('click', e => {
+  const b = e.target.closest('[data-deck]'); if (b) openSheet(b.dataset.deck, b)
+})
+wps.forEach((w, k) => w.addEventListener('click', () => {
+  if (w.dataset.state !== 'past') return
+  closeSheet(false); go(k + 1)
+}))
+$('back').addEventListener('click', () => {
+  if (app.dataset.sheet) return closeSheet()
+  go(+app.dataset.step - 1)
+})
+$('scrim').addEventListener('click', () => closeSheet())
+$('s-close').addEventListener('click', () => closeSheet())
+document.addEventListener('keydown', e => { if (e.key === 'Escape') app.dataset.sheet ? closeSheet() : +app.dataset.step > 1 && go(+app.dataset.step - 1) })
+
+// Every step is rendered up front (Cloud > AWS as the waiting path) so each demo card already exists.
+renderAreas(); renderPlatforms(AREAS[0]); renderDecks(AREAS[0].platforms[0])
+steps.forEach(s => { s.inert = s.dataset.n !== '1' })
+syncRoute()
+</script>
+</body>
+</html>

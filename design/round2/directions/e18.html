@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Transit Line</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* a line ticket: warm platform ground, card stock, signage ink, one line colour */
+  --surface: #ecebe6;
+  --surface-raised: #fbfaf6;
+  --surface-sunk: #f2f0ea;
+  --ink: #1c1e24;
+  --ink-muted: #5d6068;
+  --rule: #dddad1;
+  --track: #d6d3ca;
+  --accent: #5a45a0;
+  --on-ink: #fbfaf6;
+  --true: #1c1e24;
+  --false: #1c1e24;
+  --correct: #1d6a4e;
+  --wrong: #a8432c;
+  --sans: 'Hanken Grotesk', system-ui, sans-serif;
+  --r: 14px; --r-s: 10px;
+  --shadow: 0 1px 0 rgba(28,30,36,.06), 0 20px 34px -20px rgba(28,30,36,.42);
+  --shadow-lift: 0 1px 0 rgba(28,30,36,.06), 0 30px 46px -20px rgba(28,30,36,.5);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; }
+
+#app { position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; }
+
+/* header */
+.top { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
+.close { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 1.5px var(--rule); background: var(--surface-raised); transition: transform var(--t1) var(--ease), background var(--t1); }
+.close:active { transform: scale(.92); background: var(--surface-sunk); }
+.deck { text-align: center; line-height: 1.25; }
+.deck b { display: block; font-weight: 700; font-size: 17px; }
+.deck span { font-size: 15px; color: var(--ink-muted); }
+
+/* the ticket */
+.stage { position: absolute; top: 122px; left: 16px; right: 16px; height: 590px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  --pull: max(var(--intent), calc(var(--intent) * -1));
+  position: absolute; inset: 0; border-radius: var(--r); background: var(--surface-raised); overflow: hidden;
+  box-shadow: var(--shadow); display: flex; flex-direction: column;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring), box-shadow var(--t2) var(--ease);
+}
+.card[data-dragging] { transition: box-shadow var(--t2) var(--ease); cursor: grabbing; box-shadow: var(--shadow-lift); }
+[data-state="answer"] .card { transform: none; cursor: default; }
+
+.band { height: 6px; background: var(--accent); flex: none; }
+.head { height: 54px; margin: 0 22px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--rule); flex: none; }
+.head b { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+.head b i { width: 22px; height: 22px; border-radius: 50%; border: 5px solid var(--accent); }
+.head span { font-size: 15px; color: var(--ink-muted); }
+.head span strong { color: var(--ink); font-weight: 700; }
+
+.body { position: relative; flex: 1; display: grid; grid-template-columns: 64px 1fr; }
+.map { width: 64px; height: 100%; overflow: visible; }
+.map .trk { stroke: var(--track); stroke-width: 4; stroke-linecap: round; }
+.map .ran { stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
+.map .n { font-family: var(--sans); font-size: 12px; fill: var(--ink-muted); text-anchor: end; }
+.map .n.now { font-weight: 700; font-size: 14px; fill: var(--ink); }
+.map .stop { fill: var(--surface-raised); stroke: var(--track); stroke-width: 2.5; }
+.map .ok circle { fill: var(--surface-raised); stroke: var(--accent); stroke-width: 2.5; }
+.map .ok path, .map .ok-now path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.map .no rect { fill: var(--surface-raised); stroke: var(--wrong); stroke-width: 2.2; }
+.map .no path, .map .no-now path { stroke: var(--wrong); stroke-width: 2; stroke-linecap: round; }
+.map .here circle.ring { fill: var(--surface-raised); stroke: var(--accent); stroke-width: 3; }
+.map .here circle.dot { fill: var(--ink); }
+.map .ok-now circle { fill: var(--surface-raised); stroke: var(--correct); stroke-width: 2.5; }
+.map .ok-now path { stroke: var(--correct); }
+.map .no-now rect { fill: var(--surface-raised); stroke: var(--wrong); stroke-width: 2.2; }
+.map .ok-now, .map .no-now { opacity: 0; transform-box: fill-box; transform-origin: center; }
+[data-state="answer"] .map .here { opacity: 0; transition: opacity var(--t1) var(--ease) var(--t2); }
+[data-state="answer"][data-result="correct"] .map .ok-now, [data-state="answer"][data-result="wrong"] .map .no-now { animation: pop var(--t3) var(--spring) var(--t2) both; }
+@keyframes pop { 0% { opacity: 0; transform: scale(.4); } 100% { opacity: 1; transform: scale(1); } }
+
+.col { position: relative; padding: 18px 22px 0 4px; }
+.q, .a { position: absolute; inset: 18px 22px 16px 4px; display: flex; flex-direction: column; }
+.fields { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 0 16px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.fields dt { font-size: 13px; color: var(--ink-muted); }
+.fields dd { margin: 2px 0 0; font-weight: 700; font-size: 16px; line-height: 1.25; }
+.statement { flex: 1; margin: 0; display: flex; align-items: center; font-size: 26px; line-height: 1.3; letter-spacing: -.005em; color: var(--ink); transition: opacity var(--t2) var(--ease); opacity: calc(1 - var(--pull) * .3); }
+
+/* drag: a platform sign shows the direction */
+.sign { position: absolute; top: 74px; left: 0; height: 44px; padding: 0 16px; border-radius: 22px; display: flex; align-items: center; gap: 10px; background: var(--ink); color: var(--on-ink); font-weight: 700; font-size: 19px; pointer-events: none; opacity: 0; }
+.sign svg { width: 20px; height: 14px; color: var(--surface-raised); }
+.sign.t { opacity: calc(var(--intent) * 1.8); }
+.sign.f { left: auto; right: 0; opacity: calc(var(--intent) * -1.8); }
+
+.a { opacity: 0; transform: translateY(16px); pointer-events: none; }
+.q { transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+[data-state="answer"] .q { opacity: 0; transform: translateY(-16px); pointer-events: none; }
+[data-state="answer"] .a { opacity: 1; transform: none; pointer-events: auto; transition: opacity var(--t2) var(--ease) var(--t2), transform var(--t3) var(--ease) var(--t2); }
+.verdict { display: flex; align-items: center; gap: 12px; }
+.vicon { width: 40px; height: 40px; flex: none; }
+.verdict h2 { margin: 0; font-weight: 700; font-size: 30px; line-height: 1; }
+.v-ok, .v-no { display: none; }
+[data-result="correct"] .v-ok, [data-result="wrong"] .v-no { display: block; }
+[data-result="correct"] .verdict { color: var(--correct); }
+[data-result="wrong"] .verdict { color: var(--wrong); }
+.answer-is { margin: 10px 0 0; font-size: 17px; color: var(--ink-muted); }
+.answer-is b { color: var(--ink); }
+.explain { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 17px; line-height: 1.5; }
+.source { margin-top: 10px; min-height: 48px; display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; color: var(--accent); text-decoration: none; }
+.source u { text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+
+.foot { height: 56px; margin: 0 22px; flex: none; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--rule); font-size: 15px; }
+.foot .f, .foot .t { font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.foot .m { color: var(--ink-muted); }
+.foot .tally { color: var(--ink-muted); }
+.foot .q-only { transition: opacity var(--t2); }
+.foot .a-only { display: none; }
+[data-state="answer"] .foot .q-only { display: none; }
+[data-state="answer"] .foot .a-only { display: inline; }
+.tally .t1, .tally .t2 { display: none; }
+[data-result="correct"] .tally .t1, [data-result="wrong"] .tally .t2 { display: inline; }
+
+/* actions */
+.actions { position: absolute; top: 730px; left: 16px; right: 16px; height: 60px; }
+.row { position: absolute; inset: 0; display: flex; gap: 12px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn {
+  flex: 1; height: 60px; border-radius: var(--r-s); display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 700; font-size: 20px; background: var(--surface-raised); color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--ink), 0 10px 18px -14px rgba(28,30,36,.6);
+  transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.btn svg { width: 20px; height: 14px; }
+.btn:active { transform: translateY(2px) scale(.98); background: var(--surface-sunk); }
+.btn.next { background: var(--ink); color: var(--on-ink); box-shadow: 0 10px 18px -12px rgba(28,30,36,.6); }
+.a-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .q-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .a-row { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition-delay: var(--t3); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+  [data-state="answer"][data-result="correct"] .map .ok-now, [data-state="answer"][data-result="wrong"] .map .no-now { opacity: 1; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-state="question">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Classic</span></div>
+    <span></span>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="band"></div>
+      <div class="head"><b><i aria-hidden="true"></i>Truthy</b><span>Stop <strong>4</strong> of 10</span></div>
+      <div class="body">
+        <svg class="map" viewBox="0 0 64 470" preserveAspectRatio="xMidYMin meet" role="img" aria-label="Stops 1 and 2 correct, stop 3 wrong, now at stop 4 of 10.">
+          <path class="trk" d="M40 26V440"/>
+          <path class="ran" d="M40 26V164"/>
+          <g class="ok"><circle cx="40" cy="26" r="8"/><path d="M36.4 26.2l2.4 2.4 4.6-4.8"/></g>
+          <g class="ok"><circle cx="40" cy="72" r="8"/><path d="M36.4 72.2l2.4 2.4 4.6-4.8"/></g>
+          <g class="no"><rect x="33.5" y="111.5" width="13" height="13" rx="1.5" transform="rotate(45 40 118)"/><path d="M37 115l6 6M43 115l-6 6"/></g>
+          <g class="here"><circle class="ring" cx="40" cy="164" r="11"/><circle class="dot" cx="40" cy="164" r="4"/></g>
+          <g class="ok-now"><circle cx="40" cy="164" r="11"/><path d="M35 164.4l3.4 3.4 6.4-6.8"/></g>
+          <g class="no-now"><rect x="31" y="155" width="18" height="18" rx="2" transform="rotate(45 40 164)"/><path d="M36 160l8 8M44 160l-8 8"/></g>
+          <circle class="stop" cx="40" cy="210" r="6"/><circle class="stop" cx="40" cy="256" r="6"/><circle class="stop" cx="40" cy="302" r="6"/>
+          <circle class="stop" cx="40" cy="348" r="6"/><circle class="stop" cx="40" cy="394" r="6"/><circle class="stop" cx="40" cy="440" r="6"/>
+          <g aria-hidden="true"><text class="n" x="22" y="30">1</text><text class="n" x="22" y="76">2</text><text class="n" x="22" y="122">3</text><text class="n now" x="22" y="169">4</text><text class="n" x="22" y="214">5</text><text class="n" x="22" y="260">6</text><text class="n" x="22" y="306">7</text><text class="n" x="22" y="352">8</text><text class="n" x="22" y="398">9</text><text class="n" x="22" y="444">10</text></g>
+        </svg>
+        <div class="col">
+          <div class="q">
+            <dl class="fields">
+              <div><dt>Line</dt><dd>Security and compliance</dd></div>
+              <div><dt>Fare</dt><dd>Classic</dd></div>
+            </dl>
+            <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+            <div class="sign t" aria-hidden="true">True<svg viewBox="0 0 20 14"><path d="M1 7h17M12 1.5L17.5 7 12 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="sign f" aria-hidden="true"><svg viewBox="0 0 20 14"><path d="M19 7H2M8 1.5L2.5 7 8 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>False</div>
+          </div>
+          <div class="a" aria-live="polite">
+            <div class="verdict">
+              <svg class="vicon v-ok" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M12.5 20.5l5 5 10-11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="vicon v-no" viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="8" width="24" height="24" rx="2.5" transform="rotate(45 20 20)" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M15 15l10 10M25 15L15 25" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+              <h2><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+            </div>
+            <p class="answer-is">The answer is <b>False</b></p>
+            <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+            <a class="source" href="#" id="source"><u>Shared responsibility model</u><span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <span class="f q-only" aria-hidden="true"><svg width="16" height="12" viewBox="0 0 20 14"><path d="M19 7H2M8 1.5L2.5 7 8 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>False</span>
+        <span class="m q-only" aria-hidden="true">swipe to ride</span>
+        <span class="t q-only" aria-hidden="true">True<svg width="16" height="12" viewBox="0 0 20 14"><path d="M1 7h17M12 1.5L17.5 7 12 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="tally a-only"><span class="t1">3 correct · 1 wrong</span><span class="t2">2 correct · 2 wrong</span></span>
+        <span class="m a-only">Next stop 5</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <div class="row q-row">
+      <button class="btn f" type="button" data-answer="false"><svg viewBox="0 0 20 14" aria-hidden="true"><path d="M19 7H2M8 1.5L2.5 7 8 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>False</button>
+      <button class="btn t" type="button" data-answer="true">True<svg viewBox="0 0 20 14" aria-hidden="true"><path d="M1 7h17M12 1.5L17.5 7 12 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="row a-row">
+      <button class="btn next" type="button" id="next">Next card<svg viewBox="0 0 20 14" aria-hidden="true"><path d="M1 7h17M12 1.5L17.5 7 12 12.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+function answer(choice) {
+  if (app.dataset.state !== 'question') return
+  app.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 420)
+}
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'
+  delete app.dataset.result
+})
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+attachSwipe(card, answer)
+</script>
+</body>
+</html>

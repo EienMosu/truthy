@@ -1,0 +1,1051 @@
+{
+  "deck": "nextjs-rendering",
+  "block": "b2",
+  "generatedOn": "2026-10-01",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced preloading-starts-data-work-early with swr-fallback-key-matching to avoid duplicating parallel request initiation; router-cache-browser-memory-location with client-cache-cleared-on-reload to test reload behavior rather than storage location; and swr-client-revalidation-before-reload with swr-fallback-revalidates-after-hydration to target a realistic SWR misconception. Card wording uses the current documentation's Client Cache terminology.",
+  "cards": [
+    {
+      "id": "nextjs-rendering-sr5-01",
+      "section": "r5",
+      "statement": "A Server Component can load its data by querying a database directly through a server-side database client.",
+      "answer": true,
+      "explanation": "Server Components can call an ORM or database client directly when rendering their UI.",
+      "misconception": "",
+      "factKey": "server-components-direct-database-access",
+      "topic": "Server data fetching",
+      "tags": [
+        "Server Components"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Fetching Data",
+        "url": "https://nextjs.org/docs/app/getting-started/fetching-data"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-02",
+      "section": "r5",
+      "statement": "Server Components making matching GET fetch calls can share a result during the same render.",
+      "answer": true,
+      "explanation": "Next.js deduplicates GET fetch calls with matching URLs and options within the component render.",
+      "misconception": "",
+      "factKey": "identical-get-fetch-render-memoization",
+      "topic": "Request memoization",
+      "tags": [
+        "Server Components",
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Next.js Glossary",
+        "url": "https://nextjs.org/docs/app/glossary"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-03",
+      "section": "r5",
+      "statement": "A data loader wrapped in React.cache retains its memoized result across separate server requests.",
+      "answer": false,
+      "explanation": "React.cache memoization resets for each server request rather than persisting results between requests.",
+      "misconception": "React.cache provides persistent caching between requests.",
+      "factKey": "request-memoization-render-lifetime",
+      "topic": "Request memoization",
+      "tags": [
+        "React",
+        "cache"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "cache",
+        "url": "https://react.dev/reference/react/cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-04",
+      "section": "r5",
+      "statement": "A Route Handler automatically memoizes repeated GET fetch calls made while executing the handler.",
+      "answer": false,
+      "explanation": "Route Handlers sit outside the React component tree, so its automatic fetch memoization does not apply.",
+      "misconception": "Component render memoization also covers Route Handler execution.",
+      "factKey": "route-handlers-outside-react-memoization",
+      "topic": "Request memoization",
+      "tags": [
+        "Route Handlers",
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Next.js Glossary",
+        "url": "https://nextjs.org/docs/app/glossary"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-05",
+      "section": "r5",
+      "statement": "Server Components can share one React.cache-wrapped database loader to deduplicate matching queries.",
+      "answer": true,
+      "explanation": "Reusing the same cache-wrapped database function lets its callers share results for matching arguments.",
+      "misconception": "",
+      "factKey": "react-cache-database-query-deduplication",
+      "topic": "Request memoization",
+      "tags": [
+        "React",
+        "cache",
+        "Server Components"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "cache",
+        "url": "https://react.dev/reference/react/cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-06",
+      "section": "r5",
+      "statement": "React.cache treats newly created object arguments with identical field values as the same cache key.",
+      "answer": false,
+      "explanation": "Object arguments to React.cache must share the same reference to match; equal field values alone do not produce a cache hit.",
+      "misconception": "React.cache compares object arguments by their contents.",
+      "factKey": "react-cache-object-argument-identity",
+      "topic": "Request memoization",
+      "tags": [
+        "React",
+        "cache"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "cache",
+        "url": "https://react.dev/reference/react/cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-07",
+      "section": "r5",
+      "statement": "In a Server Component, awaiting one fetch before starting the next makes the requests run in parallel.",
+      "answer": false,
+      "explanation": "Awaiting the first fetch before initiating the second makes the requests sequential; start both before awaiting to overlap them.",
+      "misconception": "Using async and await automatically makes successive fetches parallel.",
+      "factKey": "parallel-fetch-start-before-await",
+      "topic": "Fetch scheduling",
+      "tags": [
+        "Server Components",
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Fetching Data",
+        "url": "https://nextjs.org/docs/app/getting-started/fetching-data"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-08",
+      "section": "r5",
+      "statement": "A fetch call made in the browser can configure Next.js server cache revalidation through next.revalidate.",
+      "answer": false,
+      "explanation": "Next.js implements next.revalidate for server-side fetch calls, rather than as a browser fetch feature.",
+      "misconception": "The Next.js fetch extensions configure server caching from browser-side requests.",
+      "factKey": "browser-fetch-next-options-scope",
+      "topic": "Client data fetching",
+      "tags": [
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "fetch",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/fetch"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-09",
+      "section": "r5",
+      "statement": "A page and its layouts can start their independent data fetching in parallel during route rendering.",
+      "answer": true,
+      "explanation": "Next.js renders route segments in parallel, allowing separate page and layout loaders to begin independently.",
+      "misconception": "",
+      "factKey": "route-layouts-pages-fetch-in-parallel",
+      "topic": "Fetch scheduling",
+      "tags": [
+        "App Router",
+        "Server Components"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Fetching Data",
+        "url": "https://nextjs.org/docs/app/getting-started/fetching-data"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-10",
+      "section": "r5",
+      "statement": "SWR can use server-provided fallback data when its key matches the Client Component's useSWR key.",
+      "answer": true,
+      "explanation": "The SWR fallback key must match the useSWR key exactly for that data to seed the client hook.",
+      "misconception": "",
+      "factKey": "swr-fallback-key-matching",
+      "topic": "Client data fetching",
+      "tags": [
+        "SWR",
+        "useSWR",
+        "Client Components"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SWR",
+        "url": "https://nextjs.org/docs/app/guides/client-side-data-fetching/swr"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-11",
+      "section": "r5",
+      "statement": "A Client Component can read a data Promise passed from a Server Component through React's use API.",
+      "answer": true,
+      "explanation": "A Server Component can pass its data Promise as a prop, and use reads the resolved value in the Client Component.",
+      "misconception": "",
+      "factKey": "server-created-promise-consumed-with-use",
+      "topic": "Server client data",
+      "tags": [
+        "Server Components",
+        "Client Components",
+        "use"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "use",
+        "url": "https://react.dev/reference/react/use"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr5-12",
+      "section": "r5",
+      "statement": "By default, SWR treats server-provided fallback data as fresh enough to suppress revalidation after hydration.",
+      "answer": false,
+      "explanation": "SWR considers fallback data stale by default and revalidates it on the client after hydration.",
+      "misconception": "Supplying fallback data automatically prevents SWR's initial client revalidation.",
+      "factKey": "swr-fallback-revalidates-after-hydration",
+      "topic": "Client data fetching",
+      "tags": [
+        "SWR",
+        "Client Components"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SWR",
+        "url": "https://nextjs.org/docs/app/guides/client-side-data-fetching/swr"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-01",
+      "section": "r6",
+      "statement": "Upgrading from Next.js 14 to Next.js 15 preserves the default server fetch caching behavior.",
+      "answer": false,
+      "explanation": "Next.js 15 changes server fetch requests to uncached by default, so an upgrade can require explicit cache configuration.",
+      "misconception": "The Next.js 14 server fetch caching defaults carry over unchanged into Next.js 15.",
+      "factKey": "fetch-default-change-from-fourteen-to-fifteen",
+      "topic": "Fetch cache settings",
+      "tags": [
+        "fetch"
+      ],
+      "appliesTo": "Next.js 14 compared with Next.js 15",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Version 15",
+        "url": "https://nextjs.org/docs/app/guides/upgrading/version-15"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-02",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, server fetch calls can opt into caching with cache: 'force-cache'.",
+      "answer": true,
+      "explanation": "Server fetch calls using cache: 'force-cache' opt into the persistent data cache in the previous model.",
+      "misconception": "",
+      "factKey": "legacy-fetch-force-cache-opt-in",
+      "topic": "Fetch cache settings",
+      "tags": [
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "fetch",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/fetch"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-03",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, a GET Route Handler can opt into caching with dynamic = 'force-static'.",
+      "answer": true,
+      "explanation": "A GET Route Handler can use force-static to cache its response.",
+      "misconception": "",
+      "factKey": "legacy-get-route-handler-cache-opt-in",
+      "topic": "Route cache settings",
+      "tags": [
+        "Route Handlers",
+        "dynamic"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Route Handlers",
+        "url": "https://nextjs.org/docs/app/getting-started/route-handlers"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-04",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, dynamic = 'force-dynamic' preserves persistent fetch caching.",
+      "answer": false,
+      "explanation": "In the previous model, dynamic = 'force-dynamic' bypasses persistent fetch caching for the route.",
+      "misconception": "The force-dynamic setting preserves persistent fetch caching.",
+      "factKey": "legacy-force-dynamic-bypasses-server-caches",
+      "topic": "Route cache settings",
+      "tags": [
+        "dynamic",
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Caching and Revalidating (Previous Model)",
+        "url": "https://nextjs.org/docs/app/guides/caching-without-cache-components"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-05",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, dynamic = 'error' rejects request-time cookies() access.",
+      "answer": true,
+      "explanation": "In the previous model, dynamic = 'error' rejects request-time data access during rendering.",
+      "misconception": "",
+      "factKey": "legacy-dynamic-error-rejects-runtime-data",
+      "topic": "Route cache settings",
+      "tags": [
+        "dynamic",
+        "cookies"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Caching and Revalidating (Previous Model)",
+        "url": "https://nextjs.org/docs/app/guides/caching-without-cache-components"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-06",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, dynamic = 'force-static' lets cookies() read incoming cookies.",
+      "answer": false,
+      "explanation": "In the previous model, dynamic = 'force-static' makes cookies() return empty values.",
+      "misconception": "The force-static setting exposes incoming request cookies.",
+      "factKey": "legacy-force-static-empties-request-values",
+      "topic": "Route cache settings",
+      "tags": [
+        "dynamic",
+        "cookies"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Caching and Revalidating (Previous Model)",
+        "url": "https://nextjs.org/docs/app/guides/caching-without-cache-components"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-07",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, fetchCache = 'default-cache' permits per-fetch overrides.",
+      "answer": true,
+      "explanation": "fetchCache = 'default-cache' supplies a default while respecting explicit fetch cache options.",
+      "misconception": "",
+      "factKey": "legacy-default-cache-per-fetch-override",
+      "topic": "Fetch cache settings",
+      "tags": [
+        "fetchCache",
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Caching and Revalidating (Previous Model)",
+        "url": "https://nextjs.org/docs/app/guides/caching-without-cache-components"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-08",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, the lowest segment revalidate sets the route's default interval.",
+      "answer": true,
+      "explanation": "In the previous model, a route inherits the shortest revalidate interval specified by its layouts or page.",
+      "misconception": "",
+      "factKey": "legacy-lowest-segment-revalidation-interval",
+      "topic": "Route cache settings",
+      "tags": [
+        "revalidate"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Caching and Revalidating (Previous Model)",
+        "url": "https://nextjs.org/docs/app/guides/caching-without-cache-components"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-09",
+      "section": "r6",
+      "statement": "The Client Cache retains its stored route payloads across a full page reload in the same browser tab.",
+      "answer": false,
+      "explanation": "A full page reload clears the Client Cache; its previously stored route payloads do not survive the reload.",
+      "misconception": "The Client Cache persists across full page reloads.",
+      "factKey": "client-cache-cleared-on-reload",
+      "topic": "Client route cache",
+      "tags": [
+        "Client Cache"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Next.js Glossary",
+        "url": "https://nextjs.org/docs/app/glossary"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-10",
+      "section": "r6",
+      "statement": "Calling router.refresh() invalidates server-cached fetch results used by the current route.",
+      "answer": false,
+      "explanation": "router.refresh() requests fresh rendering but leaves server data caches intact, so cached data can produce the same result.",
+      "misconception": "Refreshing the client route also invalidates its server data cache.",
+      "factKey": "router-refresh-retains-server-data-cache",
+      "topic": "Client route cache",
+      "tags": [
+        "useRouter",
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "useRouter",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/use-router"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-11",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, back and forward navigation can reuse cached page segments.",
+      "answer": true,
+      "explanation": "History navigation can restore cached page segments rather than rebuilding the destination from a new server response.",
+      "misconception": "",
+      "factKey": "router-history-navigation-page-reuse",
+      "topic": "Client route cache",
+      "tags": [
+        "Client Cache",
+        "App Router"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Client navigation caching policies may change.",
+      "source": {
+        "title": "Next.js Glossary",
+        "url": "https://nextjs.org/docs/app/glossary"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr6-12",
+      "section": "r6",
+      "statement": "In Next.js 16 with cacheComponents: false, server fetch supports cache: 'no-store' with positive next.revalidate.",
+      "answer": false,
+      "explanation": "Combining no-store with a positive next.revalidate is conflicting configuration; Next.js ignores both options.",
+      "misconception": "A fetch can simultaneously opt out of caching and configure a positive cached lifetime.",
+      "factKey": "conflicting-fetch-cache-and-revalidate-options",
+      "topic": "Fetch cache settings",
+      "tags": [
+        "fetch"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "fetch",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/fetch"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-01",
+      "section": "r7",
+      "statement": "In Next.js 16, upgrading an application's Next.js dependency automatically activates Cache Components.",
+      "answer": false,
+      "explanation": "Cache Components requires explicitly enabling cacheComponents in the Next.js configuration.",
+      "misconception": "Upgrading to Next.js 16 automatically enables Cache Components.",
+      "factKey": "cache-components-explicit-opt-in",
+      "topic": "Cache Components setup",
+      "tags": [
+        "Cache Components",
+        "cacheComponents"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components enablement defaults may change.",
+      "source": {
+        "title": "cacheComponents",
+        "url": "https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-02",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, 'use cache' can cache a component's rendered UI.",
+      "answer": true,
+      "explanation": "Placing use cache in an async component caches its returned UI, rather than merely caching individual data requests.",
+      "misconception": "",
+      "factKey": "use-cache-component-output",
+      "topic": "Cached component output",
+      "tags": [
+        "use cache",
+        "Cache Components"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "Caching",
+        "url": "https://nextjs.org/docs/app/getting-started/caching"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-03",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, different product ID arguments give a 'use cache' function separate entries.",
+      "answer": true,
+      "explanation": "A cached function's serialized arguments contribute to its cache key, separating results for different product IDs.",
+      "misconception": "",
+      "factKey": "use-cache-arguments-determine-entries",
+      "topic": "Cache entry identity",
+      "tags": [
+        "use cache"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "use cache",
+        "url": "https://nextjs.org/docs/app/api-reference/directives/use-cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-04",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, a 'use cache' function can read cookies() directly.",
+      "answer": false,
+      "explanation": "Read request cookies outside the cached function, then pass the required values into it; direct cookies() access inside use cache is unsupported.",
+      "misconception": "A shared cached function can directly read the incoming request's cookies.",
+      "factKey": "use-cache-request-api-access-restriction",
+      "topic": "Cached request data",
+      "tags": [
+        "use cache",
+        "cookies"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "Cannot access request data in `use cache`",
+        "url": "https://nextjs.org/docs/messages/next-request-in-use-cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-05",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, cacheLife can select a custom named lifetime profile from app configuration.",
+      "answer": true,
+      "explanation": "Define a named profile in the cacheLife configuration object, then reuse that name in cacheLife calls.",
+      "misconception": "",
+      "factKey": "cache-life-custom-named-profiles",
+      "topic": "Cache lifetime control",
+      "tags": [
+        "cacheLife"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "cacheLife",
+        "url": "https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheLife"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-06",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, a cacheLife entry past its expire limit serves stale data during regeneration.",
+      "answer": false,
+      "explanation": "After the expire limit, the next request waits for fresh computation rather than receiving the expired cached value.",
+      "misconception": "Hard expiration continues serving the old value during a background refresh.",
+      "factKey": "cache-life-expiration-blocking-refresh",
+      "topic": "Cache lifetime control",
+      "tags": [
+        "cacheLife"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "cacheLife",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/cacheLife"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-07",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, assigning one cacheTag to two cached functions merges their results.",
+      "answer": false,
+      "explanation": "A shared tag groups separate cache entries for invalidation; tagging entries does not merge their contents.",
+      "misconception": "A cache tag identifies one shared result rather than a group of entries.",
+      "factKey": "cache-tags-group-independent-entries",
+      "topic": "Cache invalidation groups",
+      "tags": [
+        "cacheTag"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "cacheTag",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/cacheTag"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-08",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, a file-level 'use cache' also caches its named async function exports.",
+      "answer": true,
+      "explanation": "The file-level directive applies to exported functions throughout that module, including named exports.",
+      "misconception": "",
+      "factKey": "file-use-cache-export-scope",
+      "topic": "Cache directive scope",
+      "tags": [
+        "use cache"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "use cache",
+        "url": "https://nextjs.org/docs/app/api-reference/directives/use-cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-09",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, passing dynamic children through a 'use cache' wrapper caches those children.",
+      "answer": false,
+      "explanation": "Children passed through a cached wrapper as an opaque slot can remain dynamic; the wrapper does not cache their rendered content.",
+      "misconception": "Caching a wrapper also caches the dynamic children passed into its slot.",
+      "factKey": "use-cache-opaque-children-passthrough",
+      "topic": "Cached component output",
+      "tags": [
+        "use cache",
+        "Cache Components"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "use cache",
+        "url": "https://nextjs.org/docs/app/api-reference/directives/use-cache"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-10",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, one page can combine build-time HTML with request-time personalized content.",
+      "answer": true,
+      "explanation": "Partial Prerendering allows a build-time shell alongside personalized sections completed after a request arrives.",
+      "misconception": "",
+      "factKey": "ppr-mixes-prerendered-and-request-time-content",
+      "topic": "Partial Prerendering",
+      "tags": [
+        "Cache Components",
+        "Partial Prerendering"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "Caching",
+        "url": "https://nextjs.org/docs/app/getting-started/caching"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-11",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, a short cacheLife expire can move cached content to request-time rendering.",
+      "answer": true,
+      "explanation": "Very short expiration settings can exclude cached content from prerendering, even though it still uses use cache.",
+      "misconception": "",
+      "factKey": "short-lived-cache-prerender-exclusion",
+      "topic": "Prerendering eligibility",
+      "tags": [
+        "cacheLife",
+        "use cache"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Prerendering eligibility depends on Cache Components lifetime rules.",
+      "source": {
+        "title": "cacheLife",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/cacheLife"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr7-12",
+      "section": "r7",
+      "statement": "In Next.js 16 with cacheComponents: true, a route's revalidate export remains supported for setting cache lifetimes.",
+      "answer": false,
+      "explanation": "With Cache Components enabled, configure lifetimes through cacheLife instead of the unsupported route-level revalidate export.",
+      "misconception": "The previous model's route-level revalidate setting still controls Cache Components lifetimes.",
+      "factKey": "cache-components-route-revalidate-config-unsupported",
+      "topic": "Cache Components migration",
+      "tags": [
+        "Cache Components",
+        "revalidate"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: true",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Cache Components APIs may evolve.",
+      "source": {
+        "title": "Migrating to Cache Components",
+        "url": "https://nextjs.org/docs/app/guides/migrating-to-cache-components"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-01",
+      "section": "r8",
+      "statement": "In Next.js 16 with cacheComponents: false, a visit after the ISR interval elapses can trigger page regeneration.",
+      "answer": true,
+      "explanation": "Time-based ISR starts regeneration when an expired page is requested, rather than running as an independent timer.",
+      "misconception": "",
+      "factKey": "isr-regeneration-triggered-by-visits",
+      "topic": "Time-based ISR",
+      "tags": [
+        "Incremental Static Regeneration",
+        "revalidate"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Incremental Static Regeneration (ISR)",
+        "url": "https://nextjs.org/docs/app/guides/incremental-static-regeneration"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-02",
+      "section": "r8",
+      "statement": "In Next.js 16 with cacheComponents: false, failed ISR regeneration discards the last successfully generated page.",
+      "answer": false,
+      "explanation": "When ISR regeneration fails, Next.js continues serving the last successful page and retries regeneration on a later request.",
+      "misconception": "An unsuccessful regeneration removes the previously working cached page.",
+      "factKey": "failed-isr-retains-last-successful-output",
+      "topic": "Time-based ISR",
+      "tags": [
+        "Incremental Static Regeneration"
+      ],
+      "appliesTo": "Next.js 16 with cacheComponents: false",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Scoped to the previous caching model.",
+      "source": {
+        "title": "Incremental Static Regeneration (ISR)",
+        "url": "https://nextjs.org/docs/app/guides/incremental-static-regeneration"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-03",
+      "section": "r8",
+      "statement": "A browser invokes a Server Action through an HTTP POST request when calling back to the Next.js server.",
+      "answer": true,
+      "explanation": "Next.js uses POST requests for Server Action invocations from the client.",
+      "misconception": "",
+      "factKey": "server-actions-post-transport",
+      "topic": "Server Action execution",
+      "tags": [
+        "Server Actions"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Mutating Data",
+        "url": "https://nextjs.org/docs/app/getting-started/mutating-data"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-04",
+      "section": "r8",
+      "statement": "An authorization check in an admin page automatically protects that page's Server Actions from direct invocation.",
+      "answer": false,
+      "explanation": "Server Actions need authorization checks in the action or its data access layer; a page-level check does not protect direct calls.",
+      "misconception": "Page authorization automatically applies to separately invoked Server Actions.",
+      "factKey": "server-function-authorization-is-explicit",
+      "topic": "Server Action security",
+      "tags": [
+        "Server Actions"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data Security",
+        "url": "https://nextjs.org/docs/app/guides/data-security"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-05",
+      "section": "r8",
+      "statement": "A form can use bind to supply a Server Action with an extra argument such as the ID of the record being edited.",
+      "answer": true,
+      "explanation": "Binding a value to a Server Action supplies it as an argument before the submitted FormData.",
+      "misconception": "",
+      "factKey": "server-action-bind-additional-arguments",
+      "topic": "Server Action forms",
+      "tags": [
+        "Server Actions"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Forms",
+        "url": "https://nextjs.org/docs/app/guides/forms"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-06",
+      "section": "r8",
+      "statement": "A Client Component can define a Server Action locally by placing 'use server' inside its nested async function.",
+      "answer": false,
+      "explanation": "Define the Server Action in a server module marked use server, then import it into the Client Component instead of defining it there.",
+      "misconception": "An inline use server directive can create a Server Action inside a Client Component.",
+      "factKey": "client-server-action-import-module-scope",
+      "topic": "Server Action boundaries",
+      "tags": [
+        "Server Actions",
+        "Client Components",
+        "use server"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Mutating Data",
+        "url": "https://nextjs.org/docs/app/getting-started/mutating-data"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-07",
+      "section": "r8",
+      "statement": "A Server Component form using a Server Action waits for client JavaScript to load before its submission can work.",
+      "answer": false,
+      "explanation": "Server Component forms with Server Actions support submission before JavaScript loads or when JavaScript is disabled.",
+      "misconception": "Submitting a Server Component's action form requires loaded client JavaScript.",
+      "factKey": "server-action-form-progressive-enhancement",
+      "topic": "Server Action forms",
+      "tags": [
+        "Server Actions",
+        "Server Components"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Mutating Data",
+        "url": "https://nextjs.org/docs/app/getting-started/mutating-data"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-08",
+      "section": "r8",
+      "statement": "A Server Action can return its mutation result and the updated page UI together in the response to its invocation.",
+      "answer": true,
+      "explanation": "When an action requests updated rendering, Next.js can include the resulting UI alongside the action's return value in one roundtrip.",
+      "misconception": "",
+      "factKey": "server-action-updated-ui-single-roundtrip",
+      "topic": "Server Action execution",
+      "tags": [
+        "Server Actions"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Server Actions",
+        "url": "https://nextjs.org/docs/app/guides/server-actions"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-09",
+      "section": "r8",
+      "statement": "Calling revalidatePath in a webhook Route Handler regenerates the page while that webhook request is executing.",
+      "answer": false,
+      "explanation": "revalidatePath in a Route Handler marks the path for revalidation on its next visit rather than regenerating it during the handler call.",
+      "misconception": "A webhook's revalidatePath call eagerly regenerates the affected page before returning.",
+      "factKey": "revalidate-path-route-handler-next-visit",
+      "topic": "On-demand revalidation",
+      "tags": [
+        "revalidatePath",
+        "Route Handlers"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "revalidatePath",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/revalidatePath"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-10",
+      "section": "r8",
+      "statement": "In Next.js 16, revalidateTag('posts', 'max') lets a subsequent read serve stale tagged data during background refresh.",
+      "answer": true,
+      "explanation": "The max profile marks tagged data stale; a later read can receive the cached value while fresh data is fetched.",
+      "misconception": "",
+      "factKey": "revalidate-tag-max-stale-while-revalidate",
+      "topic": "On-demand revalidation",
+      "tags": [
+        "revalidateTag"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Profile-based tag revalidation semantics may evolve.",
+      "source": {
+        "title": "revalidateTag",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/revalidateTag"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-11",
+      "section": "r8",
+      "statement": "In Next.js 16, updateTag('posts') makes the next read of that tagged data wait for a fresh result.",
+      "answer": true,
+      "explanation": "updateTag immediately expires matching entries, allowing a user to read newly written data rather than an older cached result.",
+      "misconception": "",
+      "factKey": "update-tag-read-your-own-writes",
+      "topic": "On-demand revalidation",
+      "tags": [
+        "updateTag"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "The updateTag freshness contract may evolve.",
+      "source": {
+        "title": "updateTag",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/updateTag"
+      }
+    },
+    {
+      "id": "nextjs-rendering-sr8-12",
+      "section": "r8",
+      "statement": "In Next.js 16, a Route Handler can call updateTag to invalidate cached data after receiving a webhook.",
+      "answer": false,
+      "explanation": "updateTag is restricted to Server Actions; invoking it in a Route Handler is unsupported.",
+      "misconception": "updateTag is supported inside webhook Route Handlers.",
+      "factKey": "update-tag-server-action-call-site",
+      "topic": "On-demand revalidation",
+      "tags": [
+        "updateTag",
+        "Route Handlers"
+      ],
+      "appliesTo": "Next.js 16",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Supported updateTag call sites may evolve.",
+      "source": {
+        "title": "updateTag",
+        "url": "https://nextjs.org/docs/app/api-reference/functions/updateTag"
+      }
+    }
+  ]
+}

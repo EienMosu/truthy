@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface: #1c4c8c;
+  --surface-deep: #173f77;
+  --surface-raised: #1f559b;
+  --grid-minor: #255897;
+  --grid-major: #3165a6;
+  --ink: #f4f8ff;
+  --ink-muted: #b6cae9;
+  --line: #d9e5f7;
+  --accent: #ffd54a;
+  --accent-ink: #1a2f55;
+  --true: #f4f8ff;
+  --false: #ffb4a6;
+  --correct: #ffd54a;
+  --wrong: #ffb4a6;
+  --r: 0px;
+  --hair: 1px;
+  --rule: 2px;
+  --shadow: 6px 6px 0 0 var(--surface-deep);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --display: 'Archivo Narrow', 'Arial Narrow', sans-serif;
+  --mono: 'DM Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+  background-position: -1px 3px, 3px -1px, -1px 3px, 3px -1px;
+  color: var(--ink);
+  font-family: var(--display);
+  -webkit-font-smoothing: antialiased;
+  touch-action: none;
+  user-select: none;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px dashed var(--accent); outline-offset: 4px; }
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* sheet border: the drawing frame bleeding from the status zone */
+.frame { position: absolute; inset: 44px 8px 22px 8px; border: var(--hair) solid var(--line); pointer-events: none; opacity: .55; }
+.frame::before { content: ''; position: absolute; inset: 4px; border: var(--hair) solid var(--line); opacity: .6; }
+
+/* header */
+.head { position: absolute; top: 56px; left: 20px; right: 20px; height: 48px; display: flex; align-items: center; gap: 14px; }
+.close { width: 48px; height: 48px; display: grid; place-items: center; flex: none; transition: transform var(--t1) var(--ease); }
+.close:active { transform: scale(.92); }
+.close svg { width: 30px; height: 30px; }
+.revs { display: flex; gap: 4px; flex: 1; justify-content: flex-end; }
+.rev { width: 25px; height: 30px; border: var(--hair) solid var(--ink-muted); display: grid; place-items: center; font: 500 11px/1 var(--mono); color: var(--ink-muted); position: relative; }
+.rev svg { width: 14px; height: 14px; }
+.rev.ok { border-color: var(--ink); color: var(--ink); }
+.rev.no { border-color: var(--wrong); color: var(--wrong); }
+.rev.now { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.rev.now::after { content: ''; position: absolute; left: 50%; bottom: -7px; border: 4px solid transparent; border-top-color: var(--accent); transform: translateX(-50%); }
+html[data-state="answer"] .rev.now { background: transparent; color: var(--ink); border-color: var(--ink); }
+html[data-state="answer"][data-result="wrong"] .rev.now { color: var(--wrong); border-color: var(--wrong); }
+.rev .mk { display: none; }
+html[data-state="answer"] .rev.now .n { display: none; }
+html[data-state="answer"][data-result="correct"] .rev.now .mk-ok,
+html[data-state="answer"][data-result="wrong"] .rev.now .mk-no { display: block; }
+
+/* dimension line above card */
+.dim { position: absolute; left: 32px; right: 32px; top: 118px; height: 16px; font: 400 11px/16px var(--mono); color: var(--ink-muted); text-align: center; }
+.dim::before, .dim::after { content: ''; position: absolute; top: 7px; height: 1px; width: calc(50% - 44px); background: var(--ink-muted); }
+.dim::before { left: 0; } .dim::after { right: 0; }
+.dim i { position: absolute; top: 2px; width: 1px; height: 12px; background: var(--ink-muted); }
+.dim i:first-child { left: 0; } .dim i:last-child { right: 0; }
+
+/* card = detail sheet */
+.stage { position: absolute; left: 32px; right: 32px; top: 142px; height: 452px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  position: absolute; inset: 0;
+  background: var(--surface-raised);
+  border: var(--rule) solid var(--ink);
+  box-shadow: var(--shadow);
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring), box-shadow var(--t2) var(--ease);
+  cursor: grab; touch-action: none;
+}
+.card[data-dragging] { transition: none; cursor: grabbing; box-shadow: 10px 12px 0 0 var(--surface-deep); }
+.card::before { content: ''; position: absolute; inset: 5px; border: var(--hair) solid var(--line); opacity: .5; pointer-events: none; }
+.tick { position: absolute; width: 14px; height: 14px; border-color: var(--accent); border-style: solid; border-width: 0; pointer-events: none; }
+.tick.a { top: -8px; left: -8px; border-top-width: 2px; border-left-width: 2px; }
+.tick.b { top: -8px; right: -8px; border-top-width: 2px; border-right-width: 2px; }
+.tick.c { bottom: -8px; left: -8px; border-bottom-width: 2px; border-left-width: 2px; }
+.tick.d { bottom: -8px; right: -8px; border-bottom-width: 2px; border-right-width: 2px; }
+
+.face { position: absolute; inset: 0; padding: 18px 22px 16px; display: flex; flex-direction: column; }
+.label { display: flex; justify-content: space-between; align-items: baseline; font: 400 11px/1.2 var(--mono); color: var(--ink-muted); letter-spacing: .02em; }
+.label b { font-weight: 500; color: var(--ink); }
+.drawing { margin: 14px -2px 0; height: 172px; }
+.drawing svg { width: 100%; height: 100%; overflow: visible; }
+.ln { fill: none; stroke: var(--ink); stroke-width: 1.4; }
+.ln-thin { fill: none; stroke: var(--ink-muted); stroke-width: 1; }
+.hl { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 5 3; }
+.tx { fill: var(--ink); font: 400 12px var(--mono); }
+.tx-m { fill: var(--ink-muted); font: 400 10px var(--mono); }
+.tx-a { fill: var(--accent); font: 500 12px var(--mono); }
+.q-note { transition: opacity var(--t2) var(--ease); }
+.brk { opacity: 0; transition: opacity var(--t2) var(--ease) var(--t3); }
+html[data-state="answer"] .brk { opacity: 1; }
+html[data-state="answer"] .q-note { opacity: 0; }
+.statement { margin: auto 0 0; font: 700 33px/1.08 var(--display); letter-spacing: -.005em; color: var(--ink); text-wrap: pretty; }
+.statement .hi { box-shadow: inset 0 -3px 0 var(--accent); }
+.hint { margin-top: 18px; display: flex; align-items: center; gap: 8px; font: 400 11px/1 var(--mono); color: var(--ink-muted); }
+.hint span.rl { flex: 1; height: 1px; background: var(--ink-muted); position: relative; }
+.hint span.rl::before { content: ''; position: absolute; top: -4px; border: 4px solid transparent; }
+.hint span.rl.l::before { left: -2px; border-right: 7px solid var(--ink-muted); border-left: 0; }
+.hint span.rl.r::before { right: -2px; border-left: 7px solid var(--ink-muted); border-right: 0; }
+
+/* drag intent tags */
+.tag { position: absolute; top: 118px; padding: 8px 12px 7px; border: var(--rule) solid; font: 700 34px/1 var(--display); display: flex; align-items: center; gap: 10px; pointer-events: none; background: var(--surface-raised); }
+.tag::after { content: ''; position: absolute; inset: 3px; border: var(--hair) solid; opacity: .6; }
+.tag svg { width: 26px; height: 26px; }
+.tag.t { left: 18px; color: var(--true); border-color: var(--true); transform: rotate(4deg); opacity: clamp(0, calc(var(--intent) * 1.6), 1); }
+.tag.f { right: 18px; color: var(--false); border-color: var(--false); transform: rotate(-4deg); opacity: clamp(0, calc(var(--intent) * -1.6), 1); }
+html[data-state="answer"] .tag { display: none; }
+
+/* offset readout */
+.readout { position: absolute; left: 32px; right: 32px; top: 604px; height: 14px; font: 400 11px/14px var(--mono); color: var(--accent); text-align: center; opacity: 0; transition: opacity var(--t1); }
+.readout.on { opacity: 1; }
+
+/* answer face */
+.q-face { transition: opacity var(--t2) var(--ease); }
+.a-face { opacity: 0; visibility: hidden; transition: opacity var(--t2) var(--ease); padding-top: 16px; }
+html[data-state="answer"] .q-face { opacity: 0; visibility: hidden; }
+html[data-state="answer"] .a-face { opacity: 1; visibility: visible; }
+.stamp { position: relative; align-self: flex-start; margin: 6px 0 0 2px; padding: 12px 18px 11px 16px; color: var(--correct); transform: rotate(-3deg); transform-origin: 30% 50%; }
+html[data-result="wrong"] .stamp { color: var(--wrong); }
+.stamp svg.box { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.stamp svg.box rect { fill: none; stroke: currentColor; }
+.stamp .r1 { x: 1px; y: 1px; width: calc(100% - 2px); height: calc(100% - 2px); stroke-width: 2.5; stroke-dasharray: 100; stroke-dashoffset: 100; }
+.stamp .r2 { x: 6px; y: 6px; width: calc(100% - 12px); height: calc(100% - 12px); stroke-width: 1; stroke-dasharray: 100; stroke-dashoffset: 100; }
+html[data-state="answer"] .stamp .r1 { animation: draw var(--t3) var(--ease) forwards; }
+html[data-state="answer"] .stamp .r2 { animation: draw var(--t3) var(--ease) var(--t1) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+html[data-state="answer"] .stamp { animation: slam var(--t2) var(--spring) both; }
+@keyframes slam { from { transform: rotate(-9deg) scale(1.5); opacity: 0; } to { transform: rotate(-3deg) scale(1); opacity: 1; } }
+.stamp .kicker { font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 18px; opacity: .9; }
+.stamp .verdict { display: flex; align-items: center; gap: 10px; margin-top: 6px; font: 700 42px/1 var(--display); letter-spacing: -.01em; }
+.stamp .verdict svg { width: 32px; height: 32px; flex: none; }
+.stamp .was { margin-top: 6px; font: 500 13px/1 var(--mono); color: var(--ink); }
+.v-no, .i-no, .k-no { display: none; }
+html[data-result="wrong"] .v-ok, html[data-result="wrong"] .i-ok, html[data-result="wrong"] .k-ok { display: none; }
+html[data-result="wrong"] .v-no, html[data-result="wrong"] .k-no { display: inline; }
+html[data-result="wrong"] .i-no { display: block; }
+.a-drawing { margin: 18px -2px 0; height: 112px; }
+.a-drawing svg { width: 100%; height: 100%; overflow: visible; }
+.explain { margin: auto 0 0; font: 500 20px/1.3 var(--display); color: var(--ink); text-wrap: pretty; }
+.src { margin-top: 12px; align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; font: 500 13px/1 var(--mono); color: var(--accent); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.src svg { width: 14px; height: 14px; }
+
+/* controls */
+.controls { position: absolute; left: 32px; right: 32px; top: 626px; height: 64px; }
+.pair { position: absolute; inset: 0; display: flex; gap: 14px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn { position: relative; flex: 1; height: 64px; border: var(--rule) solid; display: flex; align-items: center; justify-content: center; gap: 10px; font: 700 24px/1 var(--display); background: var(--surface); box-shadow: 4px 4px 0 0 var(--surface-deep); transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease), background var(--t1), color var(--t1); }
+.btn::after { content: ''; position: absolute; inset: 3px; border: var(--hair) solid; opacity: .45; pointer-events: none; }
+.btn svg { width: 22px; height: 22px; }
+.btn .k { position: absolute; top: 6px; font: 400 10px/1 var(--mono); opacity: .8; }
+.btn.f { color: var(--false); border-color: var(--false); }
+.btn.f .k { left: 9px; } .btn.t .k { right: 9px; }
+.btn.t { color: var(--true); border-color: var(--true); }
+.btn:active { transform: translate(4px, 4px); box-shadow: 0 0 0 0 var(--surface-deep); }
+.btn.f:active { background: var(--false); color: var(--surface-deep); }
+.btn.t:active { background: var(--true); color: var(--surface-deep); }
+.next { position: absolute; inset: 0; width: 100%; color: var(--accent-ink); background: var(--accent); border-color: var(--accent); opacity: 0; visibility: hidden; }
+.next::after { border-color: var(--accent-ink); }
+.next:active { background: var(--accent); }
+html[data-state="answer"] .pair { opacity: 0; visibility: hidden; transform: translateY(8px); }
+html[data-state="answer"] .next { opacity: 1; visibility: visible; transition: opacity var(--t2) var(--ease) var(--t2), transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease); }
+
+/* title block */
+.tb { position: absolute; left: 20px; right: 20px; top: 708px; height: 98px; border: var(--rule) solid var(--line); display: grid; grid-template-columns: 1fr 84px 88px; grid-template-rows: 48px 1fr; background: var(--surface); }
+.tb > div { border-right: var(--hair) solid var(--line); border-bottom: var(--hair) solid var(--line); padding: 7px 10px 0; min-width: 0; }
+.tb .c-deck { grid-column: 1 / 3; }
+.tb .c-sheet { grid-row: 1 / 3; grid-column: 3; border-right: 0; border-bottom: 0; display: flex; flex-direction: column; }
+.tb .c-dom { border-bottom: 0; }
+.tb .c-mode { border-bottom: 0; }
+.tb small { display: block; font: 400 9px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-muted); }
+.tb strong { display: block; margin-top: 7px; font: 700 18px/1.05 var(--display); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb .c-dom strong, .tb .c-mode strong { font-size: 16px; font-weight: 500; }
+.tb .sheetno { margin-top: auto; margin-bottom: 8px; font: 700 34px/1 var(--display); color: var(--ink); }
+.tb .sheetno em { font: 400 12px/1 var(--mono); font-style: normal; color: var(--ink-muted); margin-left: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+  .card { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="frame" aria-hidden="true"></div>
+
+  <header class="head">
+    <button class="close" aria-label="Leave round">
+      <svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="13" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9.5 9.5l11 11M20.5 9.5l-11 11" stroke="currentColor" stroke-width="1.6"/><path d="M15 0v4M15 26v4M0 15h4M26 15h4" stroke="currentColor" stroke-width="1"/></svg>
+    </button>
+    <ol class="revs" aria-label="Progress: card 4 of 10. Cards 1 and 2 correct, card 3 wrong." style="list-style:none;margin:0;padding:0">
+      <li class="rev ok" title="Card 1, correct"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5l3.2 3.2L12 3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></li>
+      <li class="rev ok" title="Card 2, correct"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5l3.2 3.2L12 3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></li>
+      <li class="rev no" title="Card 3, wrong"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></li>
+      <li class="rev now" aria-current="step"><span class="n">04</span><svg class="mk mk-ok" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7.5l3.2 3.2L12 3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><svg class="mk mk-no" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></li>
+      <li class="rev">05</li><li class="rev">06</li><li class="rev">07</li><li class="rev">08</li><li class="rev">09</li><li class="rev">10</li>
+    </ol>
+  </header>
+
+  <div class="dim" aria-hidden="true"><i></i>detail 4<i></i></div>
+
+  <div class="stage">
+    <article class="card" data-card aria-live="polite">
+      <span class="tick a"></span><span class="tick b"></span><span class="tick c"></span><span class="tick d"></span>
+
+      <section class="face q-face">
+        <div class="label"><span>Detail 4 &middot; <b>EC2 instance</b></span><span>scale 1:1</span></div>
+        <div class="drawing" aria-hidden="true">
+          <svg viewBox="0 0 300 176">
+            <rect class="ln-thin" x="16" y="14" width="176" height="80" stroke-dasharray="8 3 2 3"/>
+            <text class="tx-m" x="20" y="8">instance</text>
+            <rect class="ln" x="26" y="22" width="156" height="28"/><text class="tx" x="36" y="40">application</text>
+            <rect class="ln" x="26" y="58" width="156" height="28"/><text class="tx" x="36" y="76">guest OS</text>
+            <rect class="hl" x="22" y="54" width="164" height="36"/>
+            <rect class="ln" x="16" y="102" width="176" height="28"/><text class="tx" x="26" y="120">hypervisor</text>
+            <rect class="ln" x="6" y="138" width="196" height="28"/><text class="tx" x="16" y="156">physical host</text>
+            <path class="ln-thin" d="M0 172h208M212 22v144M208 22h8M208 166h8"/>
+            
+            <g class="q-note">
+              <path d="M186 72h30l12-18" class="hl" stroke-dasharray="none"/>
+              <circle cx="186" cy="72" r="2.5" fill="var(--accent)"/>
+              <text class="tx-a" x="226" y="36">patched</text>
+              <text class="tx-a" x="226" y="50">by whom?</text>
+            </g>
+          </svg>
+        </div>
+        <p class="statement" id="stmt">AWS is responsible for patching the <span class="hi">guest operating system</span> on your EC2 instances.</p>
+        <div class="hint" aria-hidden="true"><span class="rl l"></span>drag the sheet<span class="rl r"></span></div>
+      </section>
+
+      <section class="face a-face" aria-hidden="true">
+        <div class="stamp">
+          <svg class="box" aria-hidden="true" preserveAspectRatio="none"><rect class="r1" pathLength="100"/><rect class="r2" pathLength="100"/></svg>
+          <div class="kicker"><span class="k-ok">Checked</span><span class="k-no">Revise</span><span>Detail 4</span></div>
+          <div class="verdict">
+            <svg class="i-ok" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 16.5l5 5L23.5 11" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>
+            <svg class="i-no" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 10.5l11 11M21.5 10.5l-11 11" fill="none" stroke="currentColor" stroke-width="2.6"/></svg>
+            <span class="v-ok">Correct</span><span class="v-no">Not quite</span>
+          </div>
+          <div class="was">The answer is False</div>
+        </div>
+        <div class="a-drawing" aria-hidden="true">
+          <svg viewBox="0 0 300 104">
+            <rect class="ln" x="8" y="2" width="170" height="20"/><text class="tx" x="18" y="16">application</text>
+            <rect class="ln" x="8" y="26" width="170" height="20"/><text class="tx" x="18" y="40">guest OS</text>
+            <rect class="hl" x="4" y="23" width="178" height="26"/>
+            <rect class="ln" x="8" y="56" width="170" height="20"/><text class="tx" x="18" y="70">hypervisor</text>
+            <rect class="ln" x="8" y="80" width="170" height="20"/><text class="tx" x="18" y="94">host, data centre</text>
+            <g class="brk">
+              <path class="ln" d="M190 3h8v42h-8M198 24h10"/>
+              <text class="tx-a" x="214" y="28">you patch</text>
+              <path class="ln-thin" d="M190 57h8v42h-8M198 78h10"/>
+              <text class="tx" x="214" y="82">AWS</text>
+            </g>
+          </svg>
+        </div>
+        <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+        <a class="src" href="#" onclick="return false">
+          <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M4 2h8v8M12 2L2 12" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          Shared responsibility model
+        </a>
+      </section>
+
+      <div class="tag f" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>False</div>
+      <div class="tag t" aria-hidden="true">True<svg viewBox="0 0 20 20"><path d="M3 10.5l4.5 4.5L17 5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></div>
+    </article>
+  </div>
+
+  <div class="readout" aria-hidden="true" id="readout"></div>
+
+  <div class="controls">
+    <div class="pair">
+      <button class="btn f" data-answer="false"><span class="k">&larr;</span><svg viewBox="0 0 22 22" aria-hidden="true"><path d="M5 5l12 12M17 5L5 17" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>False</button>
+      <button class="btn t" data-answer="true"><span class="k">&rarr;</span>True<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3.5 11.5l5 5L19 6" fill="none" stroke="currentColor" stroke-width="2.4"/></svg></button>
+    </div>
+    <button class="btn next" id="next" tabindex="-1">Next card<svg viewBox="0 0 22 22" aria-hidden="true"><path d="M3 11h15M12 5l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2"/></svg></button>
+  </div>
+
+  <footer class="tb" aria-label="Title block">
+    <div class="c-deck"><small>Deck</small><strong>AWS Cloud Practitioner</strong></div>
+    <div class="c-sheet"><small>Sheet</small><div class="sheetno">4<em>of 10</em></div></div>
+    <div class="c-dom"><small>Domain</small><strong>Security and compliance</strong></div>
+    <div class="c-mode"><small>Mode</small><strong>Classic</strong></div>
+  </footer>
+</div>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.querySelector('[data-card]')
+const qFace = document.querySelector('.q-face'), aFace = document.querySelector('.a-face')
+const next = document.getElementById('next')
+const readout = document.getElementById('readout')
+const pairBtns = document.querySelectorAll('[data-answer]')
+
+function answer(a) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = a === 'false' ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  qFace.setAttribute('aria-hidden', 'true'); aFace.removeAttribute('aria-hidden')
+  pairBtns.forEach(b => b.tabIndex = -1); next.tabIndex = 0
+  setTimeout(() => next.focus({ preventScroll: true }), 380)
+}
+function reset() {
+  root.dataset.state = 'question'; delete root.dataset.result
+  aFace.setAttribute('aria-hidden', 'true'); qFace.removeAttribute('aria-hidden')
+  pairBtns.forEach(b => b.tabIndex = 0); next.tabIndex = -1
+  pairBtns[1].focus({ preventScroll: true })
+}
+pairBtns.forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+next.addEventListener('click', reset)
+attachSwipe(card, a => { if (root.dataset.state === 'question') answer(a) })
+
+card.addEventListener('pointermove', () => {
+  if (!('dragging' in card.dataset) || root.dataset.state !== 'question') return
+  const v = parseFloat(card.style.getPropertyValue('--dx')) || 0
+  readout.textContent = (v < 0 ? '◁ ' : '') + 'offset ' + (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(Math.round(v)) + ' / 90' + (v > 0 ? ' ▷' : '')
+  readout.classList.add('on')
+})
+const off = () => readout.classList.remove('on')
+card.addEventListener('pointerup', off); card.addEventListener('pointercancel', off)
+document.addEventListener('keydown', e => {
+  if (root.dataset.state !== 'question') return
+  if (e.key === 'ArrowLeft') answer('false')
+  if (e.key === 'ArrowRight') answer('true')
+})
+</script>
+</body>
+</html>

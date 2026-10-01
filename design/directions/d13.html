@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swiss Type</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* red, black, white. nothing else. */
+  --surface: #eceae5;
+  --surface-raised: #fdfdfb;
+  --ink: #111111;
+  --ink-muted: #555555;
+  --accent: #d8140f;
+  --on-accent: #fdfdfb;
+  --on-ink: #fdfdfb;
+  --true: #d8140f;
+  --false: #111111;
+  --correct: #d8140f;
+  --wrong: #111111;
+  --hair: rgba(17,17,17,.22);
+
+  --type: "Archivo", "Helvetica Neue", Arial, sans-serif;
+
+  --r: 0px;
+  --shadow: 0 1px 0 rgba(17,17,17,.10), 0 14px 28px -16px rgba(17,17,17,.35);
+  --shadow-lift: 0 1px 0 rgba(17,17,17,.10), 0 28px 44px -18px rgba(17,17,17,.45);
+
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --cut: cubic-bezier(.7, 0, .2, 1);
+  --m: 16px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--type); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* header: deck + close on a 6-col grid */
+.top { position: absolute; top: 54px; left: var(--m); right: var(--m); height: 48px; display: flex; align-items: center; justify-content: space-between; border-top: 3px solid var(--ink); padding-top: 4px; height: 56px; }
+.deck { font-weight: 900; font-size: 18px; letter-spacing: -.02em; line-height: 1; }
+.close { width: 48px; height: 48px; border: 0; background: var(--ink); cursor: pointer; position: relative; transition: background var(--t1), transform var(--t1); }
+.close::before, .close::after { content: ""; position: absolute; left: 13px; top: 22.5px; width: 22px; height: 3px; background: var(--on-ink); transform: rotate(45deg); }
+.close::after { transform: rotate(-45deg); }
+.close:active { background: var(--accent); transform: scale(.94); }
+
+.progress { position: absolute; top: 118px; left: var(--m); right: var(--m); display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; height: 14px; }
+.seg { position: relative; border: 1.5px solid var(--hair); }
+.seg.ok { background: var(--ink); border-color: var(--ink); }
+.seg.no { border-color: var(--ink); }
+.seg.no::before, .seg.no::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 2px; margin: -1px 0 0 -6px; background: var(--accent); transform: rotate(45deg); }
+.seg.no::after { transform: rotate(-45deg); }
+.seg.now { background: var(--accent); border-color: var(--accent); }
+[data-state="answer"][data-result="correct"] .seg.now { background: var(--ink); border-color: var(--ink); }
+[data-state="answer"][data-result="wrong"] .seg.now { background: transparent; border-color: var(--ink); }
+[data-state="answer"][data-result="wrong"] .seg.now::before, [data-state="answer"][data-result="wrong"] .seg.now::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 2px; margin: -1px 0 0 -6px; background: var(--accent); transform: rotate(45deg); }
+[data-state="answer"][data-result="wrong"] .seg.now::after { transform: rotate(-45deg); }
+
+/* the sheet */
+.card {
+  position: absolute; top: 148px; left: var(--m); width: 358px; height: 528px;
+  background: var(--surface-raised); box-shadow: var(--shadow); border-radius: var(--r);
+  padding: 16px 20px 0; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none;
+  transform: translateX(var(--dx, 0px)) rotate(var(--rot, 0deg));
+  transition: transform var(--t3) var(--spring), box-shadow var(--t2);
+  display: flex; flex-direction: column;
+}
+.card[data-dragging] { transition: box-shadow var(--t2); box-shadow: var(--shadow-lift); cursor: grabbing; }
+[data-state="answer"] .card { transform: none; cursor: default; }
+
+.meta { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; line-height: 1.2; padding-bottom: 10px; border-bottom: 1.5px solid var(--ink); }
+.meta b { font-weight: 800; }
+.meta span { color: var(--ink-muted); }
+
+.hero { position: relative; height: 180px; overflow: hidden; flex: none; margin: 4px -20px 0; }
+.hero > * { position: absolute; left: 14px; bottom: 0; margin: 0; font-weight: 900; line-height: .8; letter-spacing: -.05em; transition: transform var(--t3) var(--cut), opacity var(--t2); }
+.num { font-size: 212px; color: var(--accent); bottom: -2px; left: 8px; display: flex; align-items: flex-end; }
+.num small { font-size: 28px; letter-spacing: -.02em; color: var(--ink); margin: 0 0 8px 10px; line-height: 1; }
+.pull { font-size: 104px; opacity: 0; bottom: 14px; }
+.pull.t { color: var(--true); left: auto; right: 16px; transform: translateX(calc(30px - var(--intent, 0) * 30px)); opacity: calc(var(--intent, 0) * 1.6); }
+.pull.f { color: var(--false); transform: translateX(calc(-30px - var(--intent, 0) * 30px)); opacity: calc(var(--intent, 0) * -1.6); }
+.num { opacity: calc(1 - max(var(--intent, 0), var(--intent, 0) * -1) * 1.8); }
+
+.verdict { font-size: 82px; line-height: .86; transform: translateY(105%); bottom: 6px; }
+.verdict.no { font-size: 92px; }
+.mark { position: absolute; right: 20px; top: 14px; left: auto; bottom: auto; width: 56px; height: 56px; transform: scale(0); transition: transform var(--t3) var(--spring); }
+.mark.ok { width: 72px; height: 72px; border-radius: 50%; background: var(--correct); }
+.mark.ok::after { content: ""; position: absolute; left: 22px; top: 18px; width: 26px; height: 14px; border-left: 7px solid var(--on-accent); border-bottom: 7px solid var(--on-accent); transform: rotate(-45deg); }
+.mark.no::before, .mark.no::after { content: ""; position: absolute; left: -6px; top: 24px; width: 68px; height: 9px; background: var(--accent); transform: rotate(45deg); }
+.mark.no::after { transform: rotate(-45deg); }
+.verdict.ok, .mark.ok, .verdict.no, .mark.no { display: none; }
+[data-result="correct"] .verdict.ok, [data-result="correct"] .mark.ok,
+[data-result="wrong"] .verdict.no, [data-result="wrong"] .mark.no { display: block; }
+
+.body { position: relative; flex: 1; overflow: hidden; margin-top: 18px; }
+.q { padding-bottom: 56px; }
+.q, .a { position: absolute; inset: 0; transition: transform var(--t3) var(--cut), opacity var(--t2); }
+.statement { margin: 0; font-weight: 800; font-size: 34px; line-height: 1.04; letter-spacing: -.025em; color: var(--ink); }
+.a { transform: translateY(100%); opacity: 0; display: flex; flex-direction: column; }
+.answer-is { margin: 0; font-weight: 900; font-size: 26px; letter-spacing: -.02em; line-height: 1.05; padding-bottom: 14px; border-bottom: 1.5px solid var(--ink); }
+.answer-is em { font-style: normal; color: var(--on-ink); background: var(--false); padding: 0 8px 2px; margin-left: 2px; }
+.explain { margin: 16px 0 0; font-size: 21px; line-height: 1.34; letter-spacing: -.01em; color: var(--ink); }
+.source { margin-top: auto; margin-bottom: 4px; min-height: 48px; display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 16px; text-decoration: none; border-top: 1.5px solid var(--ink); }
+.source span { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.source svg { width: 18px; height: 18px; stroke: var(--accent); stroke-width: 3; fill: none; }
+
+.foot { position: absolute; left: 20px; right: 20px; bottom: 0; height: 48px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; border-top: 1.5px solid var(--ink); font-size: 14px; font-weight: 800; transition: opacity var(--t2); }
+.foot span:nth-child(2) { font-weight: 400; color: var(--ink-muted); }
+.foot span:last-child { text-align: right; }
+.foot .ar { display: inline-block; width: 18px; height: 10px; vertical-align: 1px; fill: none; stroke: currentColor; stroke-width: 2.4; }
+
+/* answer choreography: a typographic cut */
+[data-state="answer"] .num { transform: translateY(-105%); opacity: 1; }
+[data-state="answer"] .verdict { transform: none; transition-delay: var(--t1); }
+[data-state="answer"] .mark { transform: scale(1); transition-delay: var(--t3); }
+[data-state="answer"] .q { transform: translateY(-40px); opacity: 0; }
+[data-state="answer"] .a { transform: none; opacity: 1; transition-delay: var(--t1); }
+[data-state="answer"] .foot { opacity: 0; }
+
+/* controls */
+.row { position: absolute; top: 692px; left: var(--m); right: var(--m); height: 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: opacity var(--t2), transform var(--t2); }
+.btn { border: 0; border-radius: var(--r); cursor: pointer; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 14px 14px; font-weight: 900; font-size: 30px; letter-spacing: -.03em; line-height: 1; transition: transform var(--t1), background var(--t1), color var(--t1); }
+.btn svg { width: 26px; height: 16px; fill: none; stroke: currentColor; stroke-width: 3.2; margin-bottom: 5px; }
+.btn.f { background: var(--ink); color: var(--on-ink); }
+.btn.t { background: var(--surface-raised); color: var(--ink); box-shadow: inset 0 0 0 3px var(--ink); }
+.btn.t svg { stroke: var(--accent); }
+.btn:active { transform: translateY(2px); background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.btn:active svg { stroke: currentColor; }
+.next-row { grid-template-columns: 1fr; opacity: 0; pointer-events: none; transform: translateY(12px); }
+.btn.next { background: var(--accent); color: var(--on-accent); }
+.btn.next:active { background: var(--ink); }
+[data-state="answer"] .choices { opacity: 0; pointer-events: none; }
+[data-state="answer"] .next-row { opacity: 1; pointer-events: auto; transform: none; transition-delay: var(--t2); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; transition-delay: 0s !important; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div class="deck">AWS Cloud Practitioner</div>
+    <button class="close" type="button" aria-label="Leave round"></button>
+  </header>
+  <div class="progress" role="img" aria-label="Card 4 of 10. Cards 1 and 2 correct, card 3 wrong">
+    <span class="seg ok"></span><span class="seg ok"></span><span class="seg no"></span><span class="seg now"></span>
+    <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+  </div>
+
+  <article class="card" id="card" data-swipe aria-live="polite">
+    <div class="meta"><b>Security and compliance</b><span>Classic</span></div>
+    <div class="hero">
+      <p class="num" aria-label="Card 4 of 10">04<small>/10</small></p>
+      <p class="pull f" aria-hidden="true">False</p>
+      <p class="pull t" aria-hidden="true">True</p>
+      <h2 class="verdict ok">Correct</h2>
+      <h2 class="verdict no">Not<br>quite</h2>
+      <span class="mark ok" aria-hidden="true"></span>
+      <span class="mark no" aria-hidden="true"></span>
+    </div>
+    <div class="body">
+      <div class="q">
+        <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+      </div>
+      <div class="a">
+        <p class="answer-is">The answer is <em>False</em></p>
+        <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+        <a class="source" href="#" onclick="return false"><span>Shared responsibility model</span>
+          <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 14L14 4M6 4h8v8"/></svg></a>
+      </div>
+    </div>
+    <div class="foot" aria-hidden="true">
+      <span><svg class="ar" viewBox="0 0 18 10"><path d="M17 5H2M6 1L2 5l4 4"/></svg> False</span>
+      <span>Swipe</span>
+      <span>True <svg class="ar" viewBox="0 0 18 10"><path d="M1 5h15M12 1l4 4-4 4"/></svg></span>
+    </div>
+  </article>
+
+  <div class="row choices">
+    <button class="btn f" type="button" data-answer="false">
+      <svg viewBox="0 0 26 16" aria-hidden="true"><path d="M25 8H3M9 2L3 8l6 6"/></svg>False
+    </button>
+    <button class="btn t" type="button" data-answer="true">True
+      <svg viewBox="0 0 26 16" aria-hidden="true"><path d="M1 8h22M17 2l6 6-6 6"/></svg>
+    </button>
+  </div>
+  <div class="row next-row">
+    <button class="btn next" type="button">Next card
+      <svg viewBox="0 0 26 16" aria-hidden="true"><path d="M1 8h22M17 2l6 6-6 6"/></svg></button>
+  </div>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.getElementById('card')
+function answer(choice) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  void root.offsetWidth
+  root.dataset.state = 'answer'
+  setTimeout(() => document.querySelector('.next').focus({ preventScroll: true }), 400)
+}
+attachSwipe(card, answer)
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.querySelector('.next').addEventListener('click', () => { root.dataset.state = 'question'; delete root.dataset.result })
+</script>
+</body>
+</html>

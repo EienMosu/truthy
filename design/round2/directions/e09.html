@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Emblem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* palette: deep forest + brass lines + warm off-white */
+  --surface: #0e231b;
+  --surface-raised: #173428;
+  --surface-sunk: #122b21;
+  --ink: #f4ebd8;
+  --ink-muted: #bccab9;
+  --accent: #cda65e;
+  --accent-ink: #0e231b;
+  --true: #cda65e;
+  --false: #d6dccb;
+  --correct: #bfe3b4;
+  --wrong: #f1a68e;
+  --line: rgba(205, 166, 94, .55);
+  --hair: rgba(205, 166, 94, .3);
+  --glow: #1f4a3a88;
+
+  --display: "Libre Caslon Display", Georgia, serif;
+  --text: "Libre Caslon Text", Georgia, serif;
+
+  --r-s: 4px;
+  --r-l: 12px;
+  --shadow: 0 2px 0 rgba(0,0,0,.3), 0 18px 36px -12px rgba(0,0,0,.6);
+  --shadow-lift: 0 2px 0 rgba(0,0,0,.3), 0 32px 56px -14px rgba(0,0,0,.75);
+
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 46%, var(--glow) 0%, transparent 70%),
+    radial-gradient(circle at 12px 14px, rgba(205,166,94,.26) 0 1px, transparent 1.5px) 0 0 / 48px 48px,
+    var(--surface);
+  color: var(--ink);
+  font-family: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* header */
+.top { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
+.close { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; cursor: pointer; transition: transform var(--t1) var(--ease), background var(--t1); }
+.close:active { transform: scale(.92); background: var(--surface-raised); }
+.close svg { width: 16px; height: 16px; stroke: var(--accent); stroke-width: 1.6; }
+.deck { text-align: center; line-height: 1.25; }
+.deck b { display: block; font-weight: 700; font-size: 15px; color: var(--ink); }
+.deck i { font-size: 14px; color: var(--ink-muted); }
+.count { justify-self: end; font-family: var(--display); font-size: 19px; color: var(--accent); }
+
+.pips { position: absolute; top: 114px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 12px; height: 22px; }
+.pip { width: 12px; height: 12px; fill: none; stroke: var(--line); stroke-width: 1.2; }
+.pip.ok { fill: var(--accent); stroke: var(--accent); }
+.pip.no { stroke: var(--wrong); stroke-width: 1.3; }
+.pip.now { width: 20px; height: 20px; stroke: var(--accent); }
+.pip.now .dot { fill: var(--accent); stroke: none; }
+.pip .nx { display: none; }
+[data-result="correct"] .pip.now { fill: var(--accent); }
+[data-result="wrong"] .pip.now { stroke: var(--wrong); }
+[data-result="wrong"] .pip.now .dot { display: none; }
+[data-result="wrong"] .pip.now .nx { display: inline; stroke-width: 1.5; }
+
+/* card */
+.stage { position: absolute; top: 146px; left: 0; right: 0; height: 516px; display: flex; justify-content: center; }
+.card { user-select: none; -webkit-user-select: none;
+  width: 304px; height: 516px; position: relative; touch-action: none; cursor: grab;
+  perspective: 1400px;
+  transform: translateX(var(--dx, 0px)) rotate(var(--rot, 0deg));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+.flipper { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform var(--t3) var(--spring); }
+[data-state="answer"] .flipper { transform: rotateY(180deg); }
+[data-state="answer"] .card { cursor: default; transform: none; }
+.face {
+  position: absolute; inset: 0; border-radius: var(--r-l); background: var(--surface-raised);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow); transition: box-shadow var(--t2) var(--ease);
+  display: flex; flex-direction: column; align-items: center; padding: 26px 28px 22px; overflow: hidden;
+}
+.card[data-dragging] .face { box-shadow: var(--shadow-lift); }
+.back { transform: rotateY(180deg); }
+.face::before, .face::after { content: ""; position: absolute; pointer-events: none; }
+.face::before { inset: 9px; border: 1.2px solid var(--accent); border-radius: 4px; }
+.face::after { inset: 13px; border: .8px solid var(--hair); border-radius: 2px; }
+
+/* motto band: the domain carried on a ribbon */
+.motto { position: relative; width: 252px; height: 38px; flex: none; display: grid; place-items: center; }
+.motto svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: var(--surface-raised); stroke: var(--accent); stroke-width: 1; stroke-linejoin: round; }
+.motto svg .fold { fill: var(--surface-sunk); }
+.motto span { position: relative; margin-top: -2px; font-style: italic; font-size: 15px; color: var(--ink); }
+
+/* pictura */
+.plate { width: 212px; height: 170px; margin-top: 14px; flex: none; opacity: calc(1 - max(var(--intent, 0), var(--intent, 0) * -1) * 1.6); }
+.plate * { fill: none; stroke: var(--accent); stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; }
+.plate .hair { stroke-width: .6; }
+.plate .rim { stroke: var(--line); stroke-width: .8; }
+.plate .mask { fill: var(--surface-raised); }
+.plate .solid { fill: var(--accent); stroke: none; }
+
+.statement { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0; padding: 4px 0; font-family: var(--text); font-weight: 400; font-size: 22px; line-height: 1.36; color: var(--ink); text-wrap: balance; }
+
+.folio { flex: none; display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 22px; line-height: 1; color: var(--accent); }
+.folio svg { width: 36px; height: 6px; fill: none; stroke: var(--line); stroke-width: 1; }
+.folio svg circle { fill: var(--accent); stroke: none; }
+
+/* drag seals */
+.seal { position: absolute; top: 92px; left: 50%; margin-left: -62px; width: 124px; height: 124px; border-radius: 50%; border: 1.5px solid; display: grid; place-content: center; justify-items: center; gap: 4px; background: var(--surface-sunk); font-family: var(--display); font-size: 27px; line-height: 1; pointer-events: none; opacity: 0; box-shadow: 0 0 0 4px var(--surface-raised), 0 0 0 5px currentColor; }
+.seal svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+.seal.t { color: var(--true); transform: scale(calc(.8 + var(--intent, 0) * .2)); opacity: calc(var(--intent, 0) * 1.5); }
+.seal.f { color: var(--false); transform: scale(calc(.8 - var(--intent, 0) * .2)); opacity: calc(var(--intent, 0) * -1.5); }
+
+/* back face */
+.verdict-glyph { width: 76px; height: 76px; margin-top: auto; flex: none; }
+.verdict-glyph * { fill: none; stroke: var(--verdict); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.verdict-glyph .leaf { fill: var(--verdict); stroke: none; }
+.verdict { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 46px; line-height: 1.05; color: var(--verdict); }
+.answer-is { margin: 6px 0 0; font-style: italic; font-size: 17px; color: var(--ink); }
+.answer-is b { font-style: normal; font-weight: 700; color: var(--accent); }
+.rule { width: 120px; height: 8px; margin: 14px 0 12px; flex: none; fill: none; stroke: var(--line); stroke-width: 1; }
+.rule path.d { fill: var(--accent); stroke: none; }
+.explain { margin: 0; font-size: 16px; line-height: 1.5; text-align: center; color: var(--ink); }
+.source { margin-top: 2px; min-height: 48px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px; font-style: italic; font-size: 15px; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.source svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.back .folio { margin-top: auto; }
+.back .source { margin-bottom: 8px; }
+.v-ok, .v-no { display: none; }
+[data-result="correct"] .v-ok { display: block; }
+[data-result="wrong"] .v-no { display: block; }
+[data-result="correct"] .back { --verdict: var(--correct); }
+[data-result="wrong"] .back { --verdict: var(--wrong); }
+.verdict-glyph, .verdict { opacity: 0; transform: translateY(6px); }
+[data-state="answer"] .verdict-glyph, [data-state="answer"] .verdict { opacity: 1; transform: none; transition: opacity var(--t2) var(--ease) 300ms, transform var(--t3) var(--ease) 300ms; }
+
+/* controls */
+.hint { position: absolute; top: 672px; left: 0; right: 0; text-align: center; font-style: italic; font-size: 15px; color: var(--ink-muted); display: flex; justify-content: center; align-items: center; gap: 10px; transition: opacity var(--t2); }
+.hint svg { width: 18px; height: 10px; fill: none; stroke: var(--ink-muted); stroke-width: 1.3; }
+.choices, .next-row { position: absolute; top: 704px; left: 43px; right: 43px; height: 64px; display: flex; gap: 16px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.choice {
+  flex: 1; height: 64px; border: 0; border-radius: var(--r-s); cursor: pointer;
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1.2px var(--accent), inset 0 0 0 4px var(--surface-raised), inset 0 0 0 4.8px var(--hair), var(--shadow);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--display); font-size: 23px; color: var(--ink);
+  transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.choice svg { width: 22px; height: 22px; fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; }
+.choice:active { transform: translateY(2px) scale(.97); background: var(--surface-sunk); }
+.next-row { opacity: 0; pointer-events: none; transform: translateY(8px); }
+.next {
+  flex: 1; height: 64px; border: 0; border-radius: var(--r-s); cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: inset 0 0 0 4px var(--accent), inset 0 0 0 4.8px rgba(14,35,27,.45), var(--shadow);
+  font-family: var(--display); font-size: 23px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  transition: transform var(--t1) var(--ease);
+}
+.next svg { width: 22px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.next:active { transform: translateY(2px) scale(.97); }
+[data-state="answer"] .choices, [data-state="answer"] .hint { opacity: 0; pointer-events: none; }
+[data-state="answer"] .next-row { opacity: 1; pointer-events: auto; transform: none; transition-delay: var(--t2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .flipper, .choices, .next-row, .hint, .verdict-glyph, .verdict { transition-duration: 1ms !important; transition-delay: 0s !important; }
+  [data-state="answer"] .front { opacity: 0; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"/></svg>
+    </button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><i>Classic</i></div>
+    <div class="count" aria-label="Card 4 of 10">4/10</div>
+  </header>
+  <div class="pips" role="img" aria-label="Cards 1 and 2 correct, card 3 wrong, card 4 of 10 now">
+    <svg class="pip ok" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip ok" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip no" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/><path d="M4.2 4.2l3.6 3.6M7.8 4.2L4.2 7.8"/></svg><svg class="pip now" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9"/><circle class="dot" cx="10" cy="10" r="4"/><path class="nx" d="M7 7l6 6M13 7l-6 6"/></svg><svg class="pip" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg><svg class="pip" viewBox="0 0 12 12"><circle cx="6" cy="6" r="5"/></svg>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="ribbon" viewBox="0 0 252 38">
+        <path class="fold" d="M2 10h26v22H2l8-11z"/>
+        <path class="fold" d="M250 10h-26v22h26l-8-11z"/>
+        <path d="M20 4h212v26H20z"/>
+        <path d="M20 30l8 4v-4M232 30l-8 4v-4"/>
+      </symbol>
+      <symbol id="folio" viewBox="0 0 36 6"><path d="M0 3h28"/><circle cx="32" cy="3" r="2"/></symbol>
+    </defs>
+  </svg>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="flipper">
+        <article class="face front" aria-label="Statement card">
+          <div class="motto"><svg aria-hidden="true"><use href="#ribbon"/></svg><span>Security and compliance</span></div>
+          <svg class="plate" viewBox="0 0 204 164" aria-hidden="true">
+            <defs>
+              <clipPath id="shieldLeft"><path d="M102 54l-30 9v26c0 23 13 37 30 45z"/></clipPath>
+              <g id="key">
+                <circle cx="0" cy="0" r="9"/><circle cx="0" cy="0" r="4" class="hair"/>
+                <path d="M9 0h122M14 -3.5v7M18 -3.5v7"/>
+                <path d="M113 0v12h5v-5h4v5h9V0"/>
+              </g>
+            </defs>
+            <rect class="rim" x="1" y="1" width="202" height="162" rx="2"/>
+            <rect class="rim hair" x="5" y="5" width="194" height="154"/>
+            <g transform="translate(0 6)">
+            <g class="hair">
+              <path d="M102 9v7M86 12l3 6M118 12l-3 6M73 20l5 4M131 20l-5 4M64 31l6 2M140 31l-6 2"/>
+            </g>
+            <path d="M85 36c5-7 11-10 17-10s12 3 17 10c-5 7-11 10-17 10s-12-3-17-10z"/>
+            <circle cx="102" cy="36" r="5"/><circle class="solid" cx="102" cy="36" r="2"/>
+            <use href="#key" transform="translate(34 50) rotate(41)"/>
+            <use href="#key" transform="translate(204 0) scale(-1 1) translate(34 50) rotate(41)"/>
+            <path class="mask" d="M102 54l30 9v26c0 23-13 37-30 45-17-8-30-22-30-45V63z"/>
+            <g clip-path="url(#shieldLeft)" class="hair" opacity=".85">
+              <path d="M60 74l50-50M60 81l50-50M60 88l50-50M60 95l50-50M60 102l50-50M60 109l50-50M60 116l50-50M60 123l50-50M60 130l50-50M60 137l50-50M60 144l50-50"/>
+            </g>
+            <path d="M102 54l30 9v26c0 23-13 37-30 45-17-8-30-22-30-45V63z"/>
+            <path class="hair" d="M102 60.5l24 7.2v21.3c0 19-10.5 30.5-24 37.6-13.5-7.1-24-18.6-24-37.6V67.7z"/>
+            <circle class="mask" cx="102" cy="87" r="8"/>
+            <path class="solid" d="M102 80a6 6 0 0 1 3 11.2l2 12.8h-10l2-12.8A6 6 0 0 1 102 80z"/>
+            </g>
+          </svg>
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="folio" aria-hidden="true"><svg><use href="#folio"/></svg>IV<svg style="transform:scaleX(-1)"><use href="#folio"/></svg></div>
+
+          <div class="seal t" aria-hidden="true">
+            <svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="5"/><path d="M13 1v4M13 21v4M1 13h4M21 13h4M4.5 4.5l2.8 2.8M18.7 18.7l2.8 2.8M4.5 21.5l2.8-2.8M18.7 7.3l2.8-2.8"/></svg>True
+          </div>
+          <div class="seal f" aria-hidden="true">
+            <svg viewBox="0 0 26 26"><path d="M17 3a10 10 0 1 0 6 16A8 8 0 0 1 17 3z"/></svg>False
+          </div>
+        </article>
+
+        <article class="face back" aria-live="polite">
+          <div class="motto"><svg aria-hidden="true"><use href="#ribbon"/></svg><span>Security and compliance</span></div>
+          <svg class="verdict-glyph" viewBox="0 0 76 76" aria-hidden="true">
+            <g class="v-ok" id="wreath"></g>
+            <path class="v-ok" d="M28 38.5l7 7 13-14"/>
+            <circle class="v-no" cx="38" cy="38" r="26" stroke-dasharray="1.5 5" stroke-width="1.4"/>
+            <path class="v-no" d="M29 29l18 18M47 29L29 47"/>
+          </svg>
+          <h2 class="verdict"><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+          <p class="answer-is">The answer is <b>False</b></p>
+          <svg class="rule" viewBox="0 0 120 8" aria-hidden="true"><path d="M0 4h50M70 4h50"/><path class="d" d="M60 0l4 4-4 4-4-4z"/></svg>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" onclick="return false">Shared responsibility model
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4 3h5v5"/></svg></a>
+          <div class="folio" aria-hidden="true"><svg><use href="#folio"/></svg>IV<svg style="transform:scaleX(-1)"><use href="#folio"/></svg></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="hint" aria-hidden="true">
+    <svg viewBox="0 0 18 10"><path d="M17 5H2M6 1L2 5l4 4"/></svg>
+    Swipe the card, or choose
+    <svg viewBox="0 0 18 10"><path d="M1 5h15M12 1l4 4-4 4"/></svg>
+  </div>
+  <div class="choices">
+    <button class="choice" type="button" data-answer="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3a9.5 9.5 0 1 0 6 15.5A7.5 7.5 0 0 1 15 3z"/></svg>False
+    </button>
+    <button class="choice" type="button" data-answer="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>True
+    </button>
+  </div>
+  <div class="next-row">
+    <button class="next" type="button">Next card
+      <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M1 6h19M15 1l5 5-5 5"/></svg></button>
+  </div>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// laurel wreath for the correct verdict: two sprigs of leaves along an arc
+;(function () {
+  const C = 38, R = 30
+  let s = `<path d="M${C - R * Math.sin(.35)} ${C + R * Math.cos(.35)}A${R} ${R} 0 0 1 ${C - R * Math.sin(2.7)} ${C + R * Math.cos(2.7)}"/>`
+  s += `<path d="M${C + R * Math.sin(.35)} ${C + R * Math.cos(.35)}A${R} ${R} 0 0 0 ${C + R * Math.sin(2.7)} ${C + R * Math.cos(2.7)}"/>`
+  for (let side of [-1, 1]) for (let i = 0; i < 7; i++) {
+    const a = .5 + i * .32, x = C + side * R * Math.sin(a), y = C + R * Math.cos(a)
+    const deg = (side < 0 ? 90 - a * 57.3 : a * 57.3 - 90)
+    for (const off of [-38, 38]) s += `<ellipse class="leaf" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="4.4" ry="1.7" transform="rotate(${(deg + side * off).toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}) translate(${side * -3.6} 0)"/>`
+  }
+  document.getElementById('wreath').innerHTML = s
+})()
+
+const root = document.documentElement
+const card = document.getElementById('card')
+function answer(choice) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  void root.offsetWidth
+  root.dataset.state = 'answer'
+  setTimeout(() => document.querySelector('.next').focus({ preventScroll: true }), 400)
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+}
+attachSwipe(card, answer)
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.querySelector('.next').addEventListener('click', reset)
+</script>
+</body>
+</html>

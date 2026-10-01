@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rack Unit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@500;700&family=Martian+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --surface:#15171a;
+  --surface-sunk:#0a0b0d;
+  --surface-raised:#2c3036;
+  --metal-hi:#3b4047;
+  --metal-lo:#25282d;
+  --line:#474c54;
+  --plate:#c8ccd1;
+  --plate-ink:#17191c;
+  --ink:#e8eaec;
+  --ink-muted:#a3a9b0;
+  --ink-faint:#6c727a;
+  --accent:#ffb347;
+  --accent-ink:#1d1405;
+  --true:var(--accent);
+  --false:var(--accent);
+  --correct:var(--accent);
+  --wrong:#ff7466;
+  --led-off:#33373d;
+  --hi:rgba(255,255,255,.08);
+  --shade:rgba(0,0,0,.55);
+  --r-1:2px;--r-2:4px;--r-3:6px;
+  --lip:0 4px 0 var(--surface-sunk);
+  --shadow:0 1px 0 var(--hi) inset,0 8px 16px var(--shade);
+  --t1:120ms;--t2:220ms;--t3:360ms;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --mono:'Martian Mono',ui-monospace,monospace;
+  --sans:'Geologica',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--surface);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;touch-action:none}
+button,a{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.app{position:relative;width:100%;height:100%;max-width:390px;margin:0 auto;overflow:hidden;
+  background:
+    radial-gradient(120% 60% at 50% 38%,var(--metal-lo) 0%,transparent 70%),
+    var(--surface)}
+
+/* header */
+.top{position:absolute;top:56px;left:16px;right:16px;height:48px;display:flex;align-items:center;gap:12px}
+.close{width:48px;height:48px;flex:none;border:1px solid var(--line);border-radius:var(--r-2);
+  background:linear-gradient(var(--metal-hi),var(--surface-raised));box-shadow:0 1px 0 var(--hi) inset,var(--lip);
+  display:grid;place-items:center;cursor:pointer;transition:transform var(--t1) var(--ease),box-shadow var(--t1) var(--ease)}
+.close:active{transform:translateY(3px);box-shadow:0 1px 0 var(--hi) inset,0 1px 0 var(--surface-sunk)}
+.close svg{width:18px;height:18px;stroke:var(--ink-muted);stroke-width:2.2;fill:none;stroke-linecap:round}
+.deck{flex:1;min-width:0}
+.deck b{display:block;font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deck span{font-family:var(--mono);font-size:11px;color:var(--ink-muted)}
+.count{font-family:var(--mono);text-align:right;line-height:1.1}
+.count b{display:block;font-weight:600;font-size:20px;color:var(--ink)}
+.count b i{font-style:normal;color:var(--ink-faint)}
+.count span{font-size:10px;color:var(--ink-muted)}
+
+/* rack */
+.rack{position:absolute;top:116px;bottom:116px;left:10px;right:10px;display:grid;grid-template-columns:18px 1fr 18px;gap:6px}
+.rail{border-radius:var(--r-1);box-shadow:0 0 0 1px var(--surface-sunk);
+  background:repeating-linear-gradient(180deg,var(--surface-sunk) 0 7px,transparent 7px 14px) center 4px/7px 100% no-repeat,
+    linear-gradient(90deg,var(--metal-lo),var(--metal-hi) 45%,var(--metal-lo))}
+.bays{display:flex;flex-direction:column;gap:4px;min-height:0}
+.u{height:24px;flex:none;border-radius:var(--r-1);display:flex;align-items:center;gap:8px;padding:0 10px;
+  background:
+    repeating-linear-gradient(90deg,var(--surface-sunk) 0 3px,transparent 3px 7px) right 64px center/112px 8px no-repeat,
+    linear-gradient(var(--metal-hi),var(--surface-raised) 40%,var(--metal-lo));
+  box-shadow:0 1px 0 var(--hi) inset,0 0 0 1px var(--surface-sunk);
+  font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+.led{width:8px;height:8px;border-radius:50%;flex:none;background:var(--led-off);box-shadow:0 0 0 1.5px var(--surface-sunk) inset}
+.led.ok{background:var(--correct);box-shadow:0 0 0 1.5px var(--shade) inset,0 0 8px var(--correct)}
+.led.miss{background:var(--wrong);box-shadow:0 0 0 1.5px var(--shade) inset,0 0 8px var(--wrong)}
+.u .tag{margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--ink-muted)}
+.u .tag svg{width:10px;height:10px;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.u .tag.ok svg{stroke:var(--correct)}
+.u .tag.miss svg{stroke:var(--wrong)}
+.u.done{color:var(--ink-muted)}
+
+/* the blade bay */
+.bay{--intent:0;flex:1;min-height:0;position:relative;border-radius:var(--r-2);
+  background:linear-gradient(var(--surface-sunk),var(--surface) 60%,var(--surface-sunk));
+  box-shadow:0 0 0 1px var(--surface-sunk),inset 0 12px 20px var(--shade);
+  perspective:760px;perspective-origin:50% -30%}
+.blade{--dx:0px;--rot:0deg;--intent:0;position:absolute;inset:2px 4px 28px;user-select:none;-webkit-user-select:none;transform-style:preserve-3d;cursor:grab;
+  transform:translateZ(34px) translateX(var(--dx)) rotateY(calc(var(--rot) * 2.4)) rotateZ(calc(var(--rot) * .2));
+  transition:transform var(--t3) var(--spring)}
+.blade[data-dragging]{cursor:grabbing;transition:none}
+.chassis{position:absolute;left:10px;right:10px;top:0;height:120px;transform-origin:top;transform:rotateX(-90deg);
+  background:repeating-linear-gradient(90deg,var(--surface-sunk) 0 2px,var(--metal-lo) 2px 9px);opacity:.9}
+.slab{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 560ms var(--spring)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:var(--r-3);
+  transform:translateZ(9px);padding:14px 22px 14px;display:flex;flex-direction:column;
+  background:
+    radial-gradient(circle at 1px 1px,var(--hi) 1px,transparent 1.5px) 0 0/5px 5px,
+    linear-gradient(175deg,var(--metal-hi),var(--surface-raised) 30%,var(--metal-lo));
+  border:1px solid var(--line);box-shadow:var(--shadow)}
+.face.back{transform:rotateX(180deg) translateZ(9px)}
+.edge{position:absolute;background:linear-gradient(90deg,var(--metal-lo),var(--line),var(--metal-lo))}
+.edge.t,.edge.b{left:4px;right:4px;height:18px;transform:rotateX(90deg)}
+.edge.t{top:-9px}.edge.b{bottom:-9px}
+.edge.l,.edge.r{top:4px;bottom:4px;width:18px;transform:rotateY(90deg);background:linear-gradient(var(--metal-lo),var(--line),var(--metal-lo))}
+.edge.l{left:-9px}.edge.r{right:-9px}
+/* grips on the blade sides, they light with drag intent */
+.grip{position:absolute;top:56px;bottom:56px;width:6px;border-radius:3px;
+  background:repeating-linear-gradient(180deg,var(--surface-sunk) 0 2px,var(--metal-hi) 2px 5px)}
+.grip.l{left:7px}.grip.r{right:7px}
+.grip::after{content:"";position:absolute;inset:-2px;border-radius:4px;background:var(--accent);opacity:0;transition:opacity var(--t1)}
+.grip.l::after{opacity:calc(var(--intent) * -1)}
+.grip.r::after{opacity:var(--intent)}
+
+.strip{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--ink-muted);
+  padding-bottom:12px;border-bottom:1px solid var(--surface-sunk);box-shadow:0 1px 0 var(--hi)}
+.strip .led.now{background:var(--accent);animation:blink 1.1s steps(2,jump-none) infinite}
+.strip b{font-weight:600;color:var(--ink)}
+.strip .vent{margin-left:auto;width:44px;height:8px;background:repeating-linear-gradient(90deg,var(--surface-sunk) 0 3px,transparent 3px 6px)}
+@keyframes blink{0%{opacity:1;box-shadow:0 0 8px var(--accent)}100%{opacity:.25;box-shadow:none}}
+
+.statement{flex:1;display:flex;align-items:center;margin:0;padding:8px 2px;
+  font-weight:500;font-size:27px;line-height:1.24;letter-spacing:-.012em;color:var(--ink);text-wrap:pretty}
+
+.hint{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink-muted);
+  padding-top:12px;border-top:1px solid var(--surface-sunk);box-shadow:0 -1px 0 var(--hi) inset}
+.hint .side{display:flex;align-items:center;gap:6px;transition:color var(--t1)}
+.hint .side .led{transition:background var(--t1)}
+.hint .mid{color:var(--ink-faint)}
+.hint svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none}
+.blade[data-dragging] .hint .f{color:color-mix(in srgb,var(--accent) calc(max(0,var(--intent) * -1) * 100%),var(--ink-muted))}
+.blade[data-dragging] .hint .t{color:color-mix(in srgb,var(--accent) calc(max(0,var(--intent)) * 100%),var(--ink-muted))}
+.hint .f .led{background:color-mix(in srgb,var(--accent) calc(max(0,var(--intent) * -1) * 100%),var(--led-off))}
+.hint .t .led{background:color-mix(in srgb,var(--accent) calc(max(0,var(--intent)) * 100%),var(--led-off))}
+
+/* labels on the bay's back wall, revealed as the blade slides */
+.wall{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;
+  font-weight:700;font-size:26px;letter-spacing:-.01em;color:var(--accent);opacity:0}
+.wall svg{width:20px;height:20px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.wall.t{left:14px;opacity:var(--intent)}
+.wall.f{right:14px;opacity:calc(var(--intent) * -1)}
+/* back face: diagnostic readout */
+.plate{align-self:stretch;margin:16px 0 14px;display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:14px;align-items:center;
+  padding:14px 18px 14px 16px;border-radius:var(--r-2);position:relative;transform-origin:left center;
+  background:repeating-linear-gradient(180deg,var(--hi) 0 1px,transparent 1px 4px),var(--surface-sunk);
+  border:1px solid var(--surface-sunk);box-shadow:inset 0 6px 14px var(--shade),0 1px 0 var(--hi)}
+.plate .big{grid-row:1/3;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  background:var(--correct);box-shadow:0 0 0 3px var(--metal-lo),0 0 22px var(--correct)}
+[data-result="wrong"] .plate .big{background:var(--wrong);box-shadow:0 0 0 3px var(--metal-lo),0 0 22px var(--wrong)}
+.plate svg{width:22px;height:22px;fill:none;stroke:var(--accent-ink);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.plate b{font-weight:700;font-size:30px;line-height:1.05;letter-spacing:-.015em;color:var(--correct)}
+[data-result="wrong"] .plate b{color:var(--wrong)}
+.plate .truth{margin:6px 0 0;font-family:var(--mono);font-size:12px;color:var(--ink);white-space:nowrap}
+.plate .truth b{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);letter-spacing:0;padding:1px 6px;border:1px solid var(--line);border-radius:var(--r-1)}
+.explain{margin:0 0 4px;font-weight:500;font-size:17px;line-height:1.45;color:var(--ink)}
+.src{margin-bottom:auto;margin-top:4px;align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:48px;font-family:var(--mono);font-size:12px;
+  color:var(--accent);text-decoration:none;border-bottom:0}
+.src span{border-bottom:1px solid var(--accent)}
+.src svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none}
+.back .strip .led{background:var(--correct);box-shadow:0 0 8px var(--correct)}
+[data-result="wrong"] .back .strip .led{background:var(--wrong);box-shadow:0 0 8px var(--wrong)}
+.back .v-miss,[data-result="wrong"] .back .v-ok{display:none}
+[data-result="wrong"] .back .v-miss{display:inline}
+[data-result="wrong"] .back .plate b.v-miss{display:block}
+
+/* controls */
+.deckctl{position:absolute;left:16px;right:16px;bottom:38px;height:64px;display:flex;gap:12px}
+.key{flex:1;min-height:56px;border:1px solid var(--line);border-radius:var(--r-2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.01em;
+  background:linear-gradient(var(--metal-hi),var(--surface-raised) 50%,var(--metal-lo));color:var(--ink);
+  box-shadow:0 1px 0 var(--hi) inset,var(--lip),0 10px 18px var(--shade);
+  transition:transform var(--t1) var(--ease),box-shadow var(--t1) var(--ease)}
+.key:active,.key.pressed{transform:translateY(3px);box-shadow:0 1px 0 var(--hi) inset,0 1px 0 var(--surface-sunk)}
+.key svg{width:18px;height:18px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.key .glyph{font-family:var(--mono);font-weight:600;font-size:11px;color:var(--ink-muted);border:1px solid var(--line);border-radius:var(--r-1);padding:2px 5px}
+.key.next{display:none;background:linear-gradient(var(--accent),var(--accent));color:var(--accent-ink);border-color:var(--accent);
+  box-shadow:0 1px 0 var(--hi) inset,0 4px 0 var(--metal-lo),0 10px 18px var(--shade)}
+[data-state="answer"] .key[data-answer]{display:none}
+[data-state="answer"] .key.next{display:flex}
+
+/* state: answer */
+[data-state="answer"] .slab{transform:rotateX(180deg)}
+[data-state="answer"] .blade{cursor:default}
+[data-state="answer"] .plate .big{animation:seat var(--t3) var(--spring) 420ms both}
+[data-state="answer"] .plate > b{animation:on var(--t2) steps(3,jump-none) 520ms both}
+@keyframes seat{0%{transform:scale(.3);opacity:0}100%{transform:none;opacity:1}}
+@keyframes on{0%{opacity:0}50%{opacity:.4}100%{opacity:1}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+@media (prefers-reduced-motion:reduce){
+  .blade,.slab,.key,.close,.grip::after{transition:none!important}
+  .strip .led.now{animation:none}
+  [data-state="answer"] .plate .big,[data-state="answer"] .plate > b{animation:none}
+  .blade{transform:translateZ(34px) translateX(var(--dx))}
+}
+</style>
+</head>
+<body>
+<main class="app" id="app" data-state="question">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16"/></svg></button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Classic mode</span></div>
+    <div class="count" aria-label="Card 4 of 10"><b>04<i>/10</i></b><span>card</span></div>
+  </header>
+
+  <section class="rack" aria-label="Progress and current card">
+    <div class="rail"></div>
+    <div class="bays">
+      <div class="u done"><span class="led ok"></span>U01<span class="tag ok"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3"/></svg>ok</span></div>
+      <div class="u done"><span class="led ok"></span>U02<span class="tag ok"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3"/></svg>ok</span></div>
+      <div class="u done"><span class="led miss"></span>U03<span class="tag miss"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3L3 9"/></svg>miss</span></div>
+
+      <div class="bay" id="bay">
+        <span class="wall t" aria-hidden="true">True<svg viewBox="0 0 20 20"><path d="M4 10h11M11 5l5 5-5 5"/></svg></span>
+        <span class="wall f" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M16 10H5M9 5l-5 5 5 5"/></svg>False</span>
+        <div class="blade" id="card" data-card>
+          <div class="chassis"></div>
+          <div class="slab">
+            <div class="edge t"></div><div class="edge b"></div><div class="edge l"></div><div class="edge r"></div>
+            <article class="face front">
+              <div class="strip"><span class="led now"></span><b>U04</b>Security and compliance</div>
+              <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+              <div class="hint" aria-hidden="true">
+                <span class="side f"><svg viewBox="0 0 12 12"><path d="M8 2L4 6l4 4"/></svg><span class="led"></span>False</span>
+                <span class="mid">slide the blade</span>
+                <span class="side t">True<span class="led"></span><svg viewBox="0 0 12 12"><path d="M4 2l4 4-4 4"/></svg></span>
+              </div>
+              <span class="grip l"></span><span class="grip r"></span>
+            </article>
+            <article class="face back" id="back" aria-live="polite">
+              <div class="strip"><span class="led"></span><b>U04</b><span class="v-ok">Status ok</span><span class="v-miss">Status fault</span><span class="vent"></span></div>
+              <div class="plate">
+                <span class="big"><svg class="v-ok" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6"/></svg><svg class="v-miss" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                <b class="v-ok">Correct</b><b class="v-miss">Not quite</b>
+                <p class="truth">The answer is <b>False</b></p>
+              </div>
+              <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+              <a class="src" href="#" onclick="return false"><span>Shared responsibility model</span><svg viewBox="0 0 12 12"><path d="M4 2h6v6M10 2L3 9"/></svg></a>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="u"><span class="led"></span>U05</div>
+      <div class="u"><span class="led"></span>U06</div>
+      <div class="u"><span class="led"></span>U07</div>
+      <div class="u"><span class="led"></span>U08</div>
+      <div class="u"><span class="led"></span>U09</div>
+      <div class="u"><span class="led"></span>U10</div>
+    </div>
+    <div class="rail"></div>
+  </section>
+
+  <nav class="deckctl">
+    <button class="key" type="button" data-answer="false"><svg viewBox="0 0 20 20"><path d="M12 4l-6 6 6 6"/></svg>False</button>
+    <button class="key" type="button" data-answer="true">True<svg viewBox="0 0 20 20"><path d="M8 4l6 6-6 6"/></svg></button>
+    <button class="key next" type="button" id="next">Next card<svg viewBox="0 0 20 20"><path d="M4 10h11M11 5l5 5-5 5"/></svg></button>
+  </nav>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+const back = document.getElementById('back')
+function answer(a) {
+  if (app.dataset.state !== 'question') return
+  app.dataset.result = a === 'false' ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 400)
+}
+back.addEventListener('pointerdown', e => e.stopPropagation())
+attachSwipe(card, answer)
+const bay = document.getElementById('bay')
+new MutationObserver(() => bay.style.setProperty('--intent', card.style.getPropertyValue('--intent') || 0)).observe(card, { attributes: true, attributeFilter: ['style'] })
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'; delete app.dataset.result
+  document.querySelector('[data-answer="false"]').focus({ preventScroll: true })
+})
+addEventListener('keydown', e => {
+  if (app.dataset.state !== 'question') return
+  if (e.key === 'ArrowLeft') answer('false')
+  if (e.key === 'ArrowRight') answer('true')
+})
+</script>
+</body>
+</html>

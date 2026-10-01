@@ -1,0 +1,132 @@
+{
+ "deck": "gcp-cdl",
+ "facts": {
+  "cards": [
+   {
+    "id": "gcp-cdl-s6.2-06",
+    "verdict": "source_problem",
+    "urlStatus": "200 OK, https://docs.cloud.google.com/spanner/docs/backup (title 'Backups overview | Spanner'). It supports only the backup half of the card and never mentions live replicas copying corruption.",
+    "evidence": "Spanner source page: \"You can restore the backups when operator or application errors cause logical data corruption.\" It has nothing on replicas failing to protect against corruption. The replica half is supported by Compute Engine 'Data protection options for disks and instances' (https://docs.cloud.google.com/compute/docs/disks/data-protection, 200): \"Replication protects against infrastructure failure by maintaining a continuously updated copy of your data in another location. However, replication doesn't protect against data corruption, user error, or malicious attacks.\" Cloud Architecture Center 'Disaster recovery scenarios for data' (https://docs.cloud.google.com/architecture/dr-scenarios-for-data) adds: \"BigQuery is replicated to two zones in a single region, but this won't help with corruption in your tables.\" and \"Backups are made as part of a recovery plan either to recover from a corruption of data so that you can restore to a known good state\". I tried to argue the opposite. Cloud SQL 'About replication' says \"a replica could be promoted if the original instance becomes corrupted\", but that is about the instance itself failing, not records corrupted by an application error that has already replicated. Point-in-time recovery is a separate backup or log-retention feature, not a live replica. So the answer FALSE holds.",
+    "problem": "The answer (false) and the explanation are factually correct. The cited source is a Spanner-specific backups page. It supports only the backup sentence and says nothing about live replicas copying corruption, which is the claim the card tests. A player who opens the source cannot check the key point. The wording 'copies changes as they happen' is also slightly loose, because many replicas are asynchronous. The docs' term 'continuously updated copy' is more accurate.",
+    "suggestedFix": "Keep answer=false. Statement: \"A live replica lets a business restore records to their state before an application error corrupted them.\" Explanation: \"A live replica is a continuously updated copy of the data, so records corrupted by an application or operator error are soon copied to the replica too. Replication protects against infrastructure failure, not data corruption or user error. A backup keeps an earlier known good state that can be restored.\" Replace the source with title \"Data protection options for disks and instances\", url \"https://docs.cloud.google.com/compute/docs/disks/data-protection\" (it quotes: \"replication doesn't protect against data corruption, user error, or malicious attacks\"). Optionally keep the Spanner backups page as a secondary source for the backup half."
+   }
+  ]
+ },
+ "quality": {
+  "cards": [
+   {
+    "id": "gcp-cdl-s6.2-06",
+    "verdict": "source_problem",
+    "urlStatus": "200 OK, docs.cloud.google.com/spanner/docs/backup opened (title 'Backups overview | Spanner'). It supports only the backup half of the card. It says nothing about live replicas copying corruption; its only 'replic' text is about where backups are stored.",
+    "evidence": "Cited page: \"You can restore the backups when operator or application errors cause logical data corruption.\" The replica half is not on it. It does appear on https://docs.cloud.google.com/architecture/dr-scenarios-for-data: \"BigQuery is replicated to two zones in a single region, but this won't help with corruption in your tables.\" and \"Backups are made as part of a recovery plan either to recover from a corruption of data so that you can restore to a known good state directly in the production environment...\" A possible counter-reading is on https://cloud.google.com/sql/docs/mysql/replication: \"You can also promote a replica to replace an instance that's corrupted.\" That refers to instance-level failure, not records corrupted by application writes, but it shows why the statement must name logical or application-caused corruption clearly.",
+    "problem": "The answer (false) is correct and the misconception is real, not a strawman. Statement is 107 characters, has no negation, and the explanation does not start with a verdict word. Problems: (1) The cited Spanner backups page does not support the key claim that a replica copies the corruption too. The card's reasoning relies on a fact its source never states. (2) 'Live replica' is not a defined Google Cloud term. A non-native reader may not know what 'live' means here, and Cloud SQL docs say a replica can replace a corrupted instance, which a learner could mistake as proof the statement is true. The statement should define the replica by its behaviour (copies every change as it happens). (3) The explanation leaves out point-in-time recovery, which the official DR guide names next to backups as the fix for operator or application corruption.",
+    "suggestedFix": "Statement: \"A replica that copies every change as it happens lets a business restore data to its state before an application error.\" (119 chars). Explanation: \"Replication copies corrupted or wrongly written data to the replica too. Backups or point-in-time recovery keep an earlier known good state that can be restored after an application or operator error.\" (200 chars). Answer stays false. Change source to {\"title\": \"Disaster recovery scenarios for data\", \"url\": \"https://docs.cloud.google.com/architecture/dr-scenarios-for-data\"}, which states both that replication does not help with corruption and that backups restore a known good state."
+   }
+  ]
+ },
+ "dups": {
+  "duplicates": [
+   {
+    "ids": [
+     "gcp-cdl-s4.2-05",
+     "gcp-cdl-s4.2-06"
+    ],
+    "kind": "mirror_pair",
+    "severity": "never_same_round",
+    "why": "Both cards test which workloads Cloud Run serves. s4.2-05 (T) says Cloud Run suits a custom web application. s4.2-06 (F) says it is for web requests rather than batch. The s4.2-06 explanation ('Cloud Run also supports jobs') confirms the web-serving role that s4.2-05 tests, and seeing s4.2-05 first pushes the reader toward a wrong 'True' on s4.2-06. Together they cover services and jobs, one from each side.",
+    "recommendation": "Keep both, because services and jobs are separate facts, but never schedule them in the same round."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s2.3-03",
+     "gcp-cdl-s4.2-04"
+    ],
+    "kind": "answer_leak",
+    "severity": "never_same_round",
+    "why": "Both answers rest on one fact: Looker queries the customer's existing warehouse in place. s2.3-03 (source-fixed) explains that Looker connects to BigQuery and queries the data there. The s4.2-04 explanation says Looker connects to Snowflake so the company keeps its warehouse, which directly tells you Looker does not need its own copy of the data.",
+    "recommendation": "Keep them in separate rounds. If you want to trim, s4.2-04 could focus on the multicloud or Snowflake connector angle only."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s2.2-04",
+     "gcp-cdl-s4.2-08"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "The product name 'AlloyDB for PostgreSQL' in s2.2-04 tells the reader that AlloyDB is PostgreSQL-based. That largely answers s4.2-08 (F), which claims AlloyDB Omni needs a proprietary rewrite of PostgreSQL applications.",
+    "recommendation": "Avoid putting them in the same round if possible. The hint comes from the official product name, so it cannot be fully removed."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s5.2-05",
+     "gcp-cdl-s5.1-02"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "s5.2-05 says Cloud Armor helps a shop 'withstand' DDoS attacks, and its explanation talks about filtering malicious traffic before it reaches the application. Both describe DDoS as a flood that hits availability, which hints at the answer to s5.1-02 (F: DDoS primarily aims to steal records).",
+    "recommendation": "Prefer separate rounds, with s5.1-02 shown before s5.2-05."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s5.2-07",
+     "gcp-cdl-s5.1-07"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "The s5.2-07 explanation says IAP grants access based on identity and policy instead of a VPN connection to the corporate network. That is the zero-trust principle (network location does not establish trust) behind s5.1-07 (F).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s4.1-06",
+     "gcp-cdl-s4.2-05"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "s4.2-05 (statement and explanation) says Cloud Run means Google operates the serving infrastructure while the team supplies its own application. That restates the serverless definition tested in s4.1-06 (T: the provider operates the servers that run the code). Both are True, so seeing one reinforces the other.",
+    "recommendation": "Prefer separate rounds. No need to drop either card."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s3.1-04",
+     "gcp-cdl-s3.1-01"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "The s3.1-04 explanation ('AI also encompasses approaches that do not learn from training examples') implies that ML is the part of AI that learns from examples. That is the fact s3.1-01 tests (ML learns patterns from examples instead of hand-written rules).",
+    "recommendation": "Prefer separate rounds, or reword the s3.1-04 explanation so it does not describe how ML learns."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s3.2-09",
+     "gcp-cdl-s1.1-06"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "The s3.2-09 explanation names the TPU as Google's ML-specialized accelerator. Once the reader knows Google's AI chip is the TPU, it is easier to reject s1.1-06 (F: AI Hypercomputer is Google's processor architecture). The facts are different, but the hint is real.",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s2.1-06",
+     "gcp-cdl-s4.2-09"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "The s4.2-09 explanation contrasts BigQuery Omni with 'an application's transactional order database'. This confirms that recording orders is a transactional workload, which is the answer to s2.1-06 (T).",
+    "recommendation": "Prefer separate rounds."
+   },
+   {
+    "ids": [
+     "gcp-cdl-s4.3-06",
+     "gcp-cdl-s4.3-04"
+    ],
+    "kind": "answer_leak",
+    "severity": "minor",
+    "why": "s4.3-06 describes partners who build client applications as the people using Apigee's developer portal. That hints the API consumer is the app developer, not the shopper, which is the answer to s4.3-04 (F).",
+    "recommendation": "Prefer separate rounds."
+   }
+  ],
+  "notes": "I compared the cards concept by concept across all 132. I found no same_fact duplicates: each factKey maps to a distinct fact, and no two cards rest on the same single fact. The strongest overlaps are Cloud Run services vs jobs (s4.2-05/s4.2-06) and Looker querying the existing warehouse in place (s2.3-03/s4.2-04). Rewritten card s6.2-06 (live replica vs backup) has no real overlap. The only faint link is the s2.2-10 explanation ('replicates ongoing changes'), which hints that a replica copies changes as they happen, too weak to flag. The source-fixed cards s1.1-09, s2.3-03 and s4.3-01 were checked. Only s2.3-03 has an overlap (listed above), and s4.3-01's link to s4.3-04 is too weak to report. I checked these neighboring pairs and found them distinct: public vs private cloud (s1.1-02/s1.2-01), hybrid vs multicloud (s1.2-02/s1.2-03), IaaS/PaaS/SaaS (s1.2-08/09/10), data quality dimensions (s3.1-05/06/07), AutoML vs custom training (s3.2-01/s3.2-08), SLI/SLO (s6.2-07/s6.2-08), Spot VMs/CUD/DWS (s4.1-10/s6.1-06/s6.1-10), shared responsibility vs shared fate (s5.1-01/s5.2-09), Apigee API hub vs API products/monetization (s4.3-09/s4.3-05/s4.3-10), the two Compute Engine cards (s4.2-01/s4.2-02), Cloud Trace vs bandwidth (s6.2-03/s1.2-05), and FinOps vs DevOps shared responsibility (s6.1-03/s6.2-09). No files were edited."
+ }
+}

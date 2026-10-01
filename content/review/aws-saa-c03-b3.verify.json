@@ -1,0 +1,76 @@
+{
+ "file": "content/raw/aws-saa-c03-b3.json",
+ "checked": 48,
+ "flagged": [
+  {
+   "id": "aws-saa-c03-s3.4-10",
+   "verdict": "source_problem",
+   "urlStatus": "Loaded, but it is an AWS blog post, not documentation. It does support the claim: \"Single flow is mapped to single tunnel, so it cannot get more than 1.25Gbps throughput.\" The VPN quotas and TGW quotas doc pages say ECMP aggregates tunnels but do not state the per-flow limit.",
+   "evidence": "The AWS Hybrid Connectivity whitepaper on docs.aws.amazon.com says: \"Up 50 Gbps of bandwidth with multiple IPsec tunnels and ECMP configured (each traffic flow will be limited to the maximum bandwidth per VPN tunnel).\" https://docs.aws.amazon.com/whitepapers/latest/hybrid-connectivity/aws-accelerated-site-to-site-vpn-aws-transit-gateway-single-aws-region.html",
+   "problem": "The fact and the explanation are correct, but the cited source is a blog post. Documentation that supports the per-flow limit exists on docs.aws.amazon.com (whitepaper). Also, Large Bandwidth Tunnels (up to 5 Gbps per tunnel on TGW/Cloud WAN) now raise the per-tunnel ceiling, so do not add a hard 1.25 Gbps figure to the card.",
+   "suggestedFix": "Replace the source with https://docs.aws.amazon.com/whitepapers/latest/hybrid-connectivity/aws-accelerated-site-to-site-vpn-aws-transit-gateway-single-aws-region.html (title: 'AWS Accelerated Site-to-Site VPN - AWS Transit Gateway, Single AWS Region'). Optionally also cite https://docs.aws.amazon.com/vpn/latest/s2svpn/vpn-limits.html for the 'ECMP aggregates multiple VPN tunnels, dynamic routing required' part."
+  },
+  {
+   "id": "aws-saa-c03-s3.5-05",
+   "verdict": "out_of_scope",
+   "urlStatus": "Loaded and supports the fact.",
+   "evidence": "\"When you rewind or reset a bookmark, AWS Glue does not clean the target files because there could be multiple targets and targets are not tracked with job bookmarks. Only source files are tracked with job bookmarks.\" https://docs.aws.amazon.com/glue/latest/dg/monitor-continuations.html",
+   "problem": "The answer and explanation are correct, but what a bookmark reset does to earlier output is an operational detail of running Glue ETL (Data Engineer level) that an architect would look up, not a design trade-off. SAA-C03 needs to know only that job bookmarks let reruns process just the new data.",
+   "suggestedFix": "drop, or recast at design level: \"AWS Glue job bookmarks let a scheduled ETL job process only data that arrived since its last successful run.\" (true; bookmarks persist state from previous runs to prevent reprocessing old data)"
+  },
+  {
+   "id": "aws-saa-c03-s3.5-08",
+   "verdict": "out_of_scope",
+   "urlStatus": "Loaded and supports the fact. The page uses the name \"Amazon Quick Sight\", so the product name is current.",
+   "evidence": "\"An incremental refresh queries only data defined by the dataset within a specified look-back window... The data currently in SPICE that's within that window is deleted and replaced with the updates.\" (Enterprise Edition, SQL-based sources only) https://docs.aws.amazon.com/quick/latest/userguide/refreshing-imported-data.html",
+   "problem": "The answer and explanation are accurate, but how the SPICE incremental refresh look-back window behaves is a dataset-configuration detail of the Enterprise edition. An SAA-C03 architect would look it up, not use it to choose between architectures.",
+   "suggestedFix": "drop"
+  },
+  {
+   "id": "aws-saa-c03-s3.5-10",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded and supports the fact. The page describes scheduled, discrete task runs with a minimum interval of 1 hour.",
+   "evidence": "\"A scheduled DataSync task runs at a frequency that you specify, with a minimum interval of 1 hour.\" and \"You can't schedule a task to run at an interval faster than 1 hour.\" https://docs.aws.amazon.com/datasync/latest/userguide/task-scheduling.html",
+   "problem": "The words \"between task executions\" give the answer away: anything that happens only between executions is plainly not done by a task execution, so a player can rule the statement out without knowing DataSync. The real misconception, that DataSync is continuous per-change replication like S3 Replication, is not what gets tested. The explanation should also give the hard fact (1-hour minimum schedule interval).",
+   "suggestedFix": "Statement: \"AWS DataSync can replicate each file change to the destination continuously, within seconds of it occurring.\" Answer: false. Explanation: \"DataSync moves data in discrete task executions, started manually or on a schedule whose minimum interval is 1 hour. Changes made after a run wait for the next execution.\""
+  },
+  {
+   "id": "aws-saa-c03-s4.1-01",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded; supports the claim.",
+   "evidence": "\"S3 Intelligent-Tiering monitors access patterns and automatically moves objects to the Infrequent Access tier when they haven't been accessed for 30 consecutive days.\" Also: \"If the size of an object is less than 128 KB, it is not monitored and is not eligible for automatic tiering.\" https://docs.aws.amazon.com/AmazonS3/latest/userguide/intelligent-tiering-overview.html",
+   "problem": "The statement and explanation are accurate, but the card only says what the service is for. The product name already gives away the answer ('Intelligent-Tiering' moves objects between tiers), so it tests no trade-off.",
+   "suggestedFix": "Test a design-relevant detail instead, for example: 'Accessing an object in the S3 Intelligent-Tiering Infrequent Access tier incurs a per-GB retrieval fee.' (false: Intelligent-Tiering has no retrieval fees. It charges a per-object monitoring and automation fee, and the object moves back to the Frequent Access tier.) Another option: 'S3 Intelligent-Tiering automatically tiers objects smaller than 128 KB.' (false: they are not monitored and always stay in Frequent Access.)"
+  },
+  {
+   "id": "aws-saa-c03-s4.2-07",
+   "verdict": "source_problem",
+   "urlStatus": "Loaded (AWS Compute Blog). It supports the idea: \"With Lambda, you pay for the duration of an invocation... two other functions are also running in a wait state\". But it is a blog post, not documentation.",
+   "evidence": "Lambda pricing page: \"Duration is calculated from the time your code begins executing until it returns or otherwise terminates, rounded up to the nearest 1ms\". Time spent blocked on a synchronous call therefore counts as duration. The same page lists Lambda Managed Instances, which are billed on EC2 instance charges rather than per-invocation duration, so the card's \"on-demand\" qualifier is correct and needed. (https://aws.amazon.com/lambda/pricing/)",
+   "problem": "The fact and the answer are correct, but the cited source is a blog post. The pricing documentation states the billing rule directly and should be the source.",
+   "suggestedFix": "Keep the statement and explanation. Change the source to \"AWS Lambda Pricing\", https://aws.amazon.com/lambda/pricing/ (duration runs from the time code begins executing until it returns or otherwise terminates)."
+  }
+ ],
+ "okWithNotes": [
+  {
+   "id": "aws-saa-c03-s3.4-07",
+   "problem": "",
+   "suggestedFix": "Optional improvement: add to the explanation that the single customer gateway device itself is still a single point of failure, which is the design trade-off the exam tests."
+  },
+  {
+   "id": "aws-saa-c03-s3.4-09",
+   "problem": "",
+   "suggestedFix": "Optional: the ALB mTLS 'passthrough' mode passes only the client certificate chain in an HTTP header, not the TLS session. Mentioning this would head off the obvious counter-argument."
+  },
+  {
+   "id": "aws-saa-c03-s4.2-04",
+   "problem": "The card is close to weak: anyone who has studied Spot knows it can be interrupted. It is still a core SAA trade-off, and the explanation adds the useful checkpointing angle. The old Spot blocks (defined-duration Spot) are retired, so they cannot be used to defend the opposite answer.",
+   "suggestedFix": ""
+  },
+  {
+   "id": "aws-saa-c03-s4.2-12",
+   "problem": "Minor: Budgets is a general cost-management tool, not a compute-specific topic, so it sits loosely in 4.2. It is still in domain 4 scope. The explanation's \"an alert alone\" wording correctly leaves room for budget actions.",
+   "suggestedFix": ""
+  }
+ ]
+}

@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Destinations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600&family=Overpass:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky-1: #a9d6f0;
+  --sky-2: #c4e3f5;
+  --sky-3: #ddeff8;
+  --sky-4: #f3f0e6;
+  --surface: var(--sky-2);
+  --surface-raised: #fdfbf5;
+  --surface-sunk: #eef3f5;
+  --ink: #10233f;
+  --ink-muted: #56667c;
+  --rule: #c9d3dc;
+  --accent: #f5b400;
+  --true: #1d5cc0;
+  --false: #b3321c;
+  --correct: #0d7250;
+  --wrong: #b3321c;
+  --on-dark: #fdfbf5;
+  --cloud: #ffffff;
+  --r: 16px; --r-sm: 8px;
+  --shadow: 0 1px 0 rgba(16,35,63,.06), 0 22px 36px -18px rgba(16,35,63,.45);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Overpass', system-ui, sans-serif;
+  --mono: 'Overpass Mono', ui-monospace, monospace;
+  --notch: 12px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; text-align: inherit; }
+svg { display: block; }
+h1, h2, p, ul { margin: 0; }
+ul { list-style: none; padding: 0; }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; overflow: hidden;
+  background: linear-gradient(180deg,
+    var(--sky-1) 0 22%, var(--sky-2) 22% 48%, var(--sky-3) 48% 76%, var(--sky-4) 76% 100%);
+}
+.cloud { position: absolute; fill: var(--cloud); opacity: .7; pointer-events: none; }
+
+/* steps: all three are laid out up front, only the current one is visible */
+.step {
+  position: absolute; inset: 52px 16px 34px; display: flex; flex-direction: column;
+  visibility: hidden; z-index: 1;
+}
+.step.on { visibility: visible; z-index: 2; }
+.step.out { visibility: visible; z-index: 1; pointer-events: none; }
+[data-k] { transform-origin: 0 0; }
+
+/* step 1: brand */
+.brand { margin-top: 148px; padding: 0 4px; }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo h1 { font-weight: 800; font-size: 38px; line-height: 1; letter-spacing: -.02em; padding-top: 4px; }
+.tagline { margin-top: 14px; max-width: 290px; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--ink-muted); }
+
+.ask { margin: 48px 4px 14px; font-weight: 800; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; }
+.ask:focus { outline: none; }
+.crumb + .ask { margin-top: 36px; }
+
+/* scrolls only if a level ever holds more cards than fit */
+.scroll { flex: 1; min-height: 0; overflow-y: auto; margin: -6px -8px 0; padding: 6px 8px 24px; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+[data-moving] .scroll { overflow: visible; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+
+/* destination card */
+.card {
+  position: relative; isolation: isolate; width: 100%; min-height: 96px;
+  display: grid; grid-template-columns: 80px 1fr 20px; column-gap: 16px; align-items: center;
+  padding: 0 18px 0 0; text-align: left;
+  transition: transform var(--t1) var(--ease);
+}
+button.card:active { transform: scale(.985); }
+.paper {
+  position: absolute; inset: 0; z-index: -1; border-radius: var(--r); background: var(--surface-raised);
+  box-shadow: 0 1px 0 rgba(16,35,63,.08), 0 12px 22px -14px rgba(16,35,63,.5);
+}
+.perf {
+  position: absolute; left: 80px; top: 16px; bottom: 16px; width: 2px;
+  background: repeating-linear-gradient(180deg, var(--rule) 0 6px, transparent 6px 11px);
+}
+.card code {
+  justify-self: center; font-family: var(--mono); font-weight: 600; font-size: 28px; line-height: 1;
+  letter-spacing: .02em; padding-top: 3px;
+}
+.txt { min-width: 0; padding: 18px 0 16px; }
+.card .name { display: block; width: max-content; max-width: 100%; font-weight: 800; font-size: 20px; line-height: 1.2; letter-spacing: -.012em; }
+.detail { display: block; margin-top: 5px; font-family: var(--mono); font-size: 12.5px; color: var(--ink-muted); }
+.chev { color: var(--ink-muted); }
+/* areas have no code of their own: just the word */
+.card.plain { grid-template-columns: 1fr 20px; padding-left: 22px; }
+.card.plain .name { font-size: 24px; }
+
+/* not available yet: flat, outlined, no chevron */
+.card.soon .paper { background: var(--surface-sunk); box-shadow: none; border: 1.5px dashed var(--rule); }
+.card.soon code, .card.soon .name { color: var(--ink-muted); }
+.card.soon .name { font-weight: 600; }
+
+/* deck card: a little more information */
+.card.deck { grid-template-columns: 80px 1fr 20px; align-items: start; }
+.card.deck code { padding-top: 24px; }
+.card.deck .name { width: auto; font-size: 18px; line-height: 1.25; }
+.card.deck .chev { padding-top: 22px; }
+.status { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.status b { font-weight: 600; color: var(--ink); }
+.track { position: relative; flex: none; width: 56px; height: 8px; }
+.track::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 3px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 4px, transparent 4px 8px);
+}
+.track i { position: absolute; left: 0; top: 3px; height: 2px; width: var(--p); background: var(--ink); border-radius: 1px; }
+.track i::after {
+  content: ''; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 1.5px var(--ink);
+}
+
+/* compact header: the place the player is in */
+.crumb { position: relative; z-index: 3; display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.back {
+  width: 48px; height: 48px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface-raised); color: var(--ink);
+  box-shadow: 0 1px 0 rgba(16,35,63,.1), 0 6px 12px -6px rgba(16,35,63,.4);
+  transition: transform var(--t1) var(--ease);
+}
+.back:active { transform: scale(.92); }
+.here {
+  position: relative; isolation: isolate; flex: 1; min-width: 0; height: 64px;
+  display: grid; grid-template-columns: 64px 1fr; column-gap: 14px; align-items: center; padding-right: 14px;
+}
+.here .paper { box-shadow: var(--shadow); }
+.here.plain { grid-template-columns: 1fr; padding-left: 20px; }
+.here .perf { left: 64px; top: 12px; bottom: 12px; }
+.here code { justify-self: center; font-family: var(--mono); font-weight: 600; font-size: 20px; line-height: 1; letter-spacing: .02em; padding-top: 2px; }
+.here .txt { padding: 0; }
+.here .lbl { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-muted); }
+.here .name { display: block; width: max-content; max-width: 100%; margin-top: 1px; font-weight: 800; font-size: 17px; line-height: 1.2; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* deck sheet (from home-a) */
+.scrim {
+  position: absolute; inset: 0; z-index: 5; background: rgba(16,35,63,.32);
+  opacity: 0; visibility: hidden; transition: opacity var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+/* the sheet runs 72px past the bottom edge so its spring overshoot never shows a gap */
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: -72px; z-index: 6;
+  background: var(--surface-raised); border-radius: var(--r) var(--r) 0 0;
+  box-shadow: 0 -1px 0 rgba(16,35,63,.06), 0 -18px 36px -18px rgba(16,35,63,.45);
+  padding: 0 0 106px; transform: translateY(104%); visibility: hidden;
+  transition: transform var(--t3) var(--ease), visibility 0s linear var(--t3);
+}
+[data-sheet="open"] .scrim { opacity: 1; visibility: visible; transition: opacity var(--t3) var(--ease); }
+[data-sheet="open"] .sheet { transform: none; visibility: visible; transition: transform 420ms var(--spring); }
+.s-bar { position: relative; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 0 20px; }
+.s-bar h2 { font-family: var(--mono); font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--ink); }
+.grab { position: absolute; left: 50%; top: 8px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); }
+.s-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; padding: 0 20px 16px; }
+.leg code { display: block; font-family: var(--mono); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: .02em; }
+.leg span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-muted); line-height: 1.25; }
+.leg.to { text-align: right; }
+.blank { display: flex; justify-content: flex-end; gap: 6px; height: 34px; align-items: flex-end; }
+.blank i { width: 18px; height: 3px; border-radius: 2px; background: var(--rule); }
+.s-head .fly { padding-bottom: 26px; color: var(--ink); }
+.s-close {
+  width: 48px; height: 48px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; color: var(--ink); background: var(--surface-sunk);
+  transition: transform var(--t1) var(--ease);
+}
+.s-close:active { transform: scale(.92); }
+.s-perf { height: 2px; margin: 0 20px; background: repeating-linear-gradient(90deg, var(--rule) 0 7px, transparent 7px 12px); }
+.s-label { display: flex; justify-content: space-between; align-items: baseline; padding: 14px 20px 4px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-muted); }
+.dests { padding: 0 20px; }
+.dest {
+  width: 100%; min-height: 56px; display: grid; grid-template-columns: 52px 1fr auto 16px; column-gap: 12px; align-items: center;
+  padding: 8px 0 6px; border-bottom: 1.5px solid var(--rule);
+  transition: background var(--t1) var(--ease);
+}
+.dests li:last-child .dest { border-bottom: 0; }
+.dest:active { background: var(--surface-sunk); }
+.dest code { font-family: var(--mono); font-weight: 600; font-size: 18px; letter-spacing: .02em; }
+.dest .name { font-weight: 600; font-size: 16px; line-height: 1.2; letter-spacing: -.01em; }
+.dest .n { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.dest .go { color: var(--ink-muted); }
+.dest.whole .name { font-weight: 800; }
+.dest.whole { border-bottom-color: var(--ink); }
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.card:focus-visible { outline-offset: 2px; border-radius: var(--r); }
+.dest:focus-visible { outline-offset: -1px; border-radius: var(--r-sm); }
+
+/* reduced motion: no movement at all; steps and the sheet fade instead
+   (transition: none rather than a 1ms duration, which would turn inherited visibility changes into transitions) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .sheet { transform: none; opacity: 0; }
+  [data-sheet="open"] .sheet { transform: none; opacity: 1; }
+  .scrim, .sheet { transition: opacity 200ms linear, visibility 0s linear 200ms !important; }
+  [data-sheet="open"] .scrim, [data-sheet="open"] .sheet { transition: opacity 200ms linear !important; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-step="1">
+  <svg class="cloud" style="right:-24px;top:0" width="150" height="46" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+  <svg class="cloud" style="right:-40px;top:748px" width="170" height="50" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+
+  <section class="step on" data-s="1" aria-labelledby="ask-1">
+    <header class="brand" data-a>
+      <div class="logo">
+        <svg width="46" height="34" viewBox="0 0 46 34" aria-hidden="true">
+          <path d="M7 1h32a6 6 0 0 1 6 6v6a4 4 0 0 0 0 8v6a6 6 0 0 1-6 6H7a6 6 0 0 1-6-6v-6a4 4 0 0 0 0-8V7a6 6 0 0 1 6-6z" fill="var(--accent)"/>
+          <path d="M31 6v22" stroke="var(--ink)" stroke-width="1.6" stroke-dasharray="2.5 2.5" opacity=".55"/>
+          <path d="M9.5 17.5l4.5 4.5 9-10" fill="none" stroke="var(--ink)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>Truthy</h1>
+      </div>
+      <p class="tagline">True or false cards that teach IT, one short round at a time.</p>
+    </header>
+    <h2 class="ask" id="ask-1" tabindex="-1" data-a>Choose an area</h2>
+    <div class="scroll"><ul class="list" id="list-1"></ul></div>
+  </section>
+
+  <section class="step" data-s="2" aria-labelledby="ask-2"></section>
+  <section class="step" data-s="3" aria-labelledby="ask-3"></section>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-code sh-title">
+    <div class="s-bar">
+      <div class="grab" aria-hidden="true"></div>
+      <h2>New boarding pass</h2>
+      <button class="s-close" type="button" id="s-close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    </div>
+    <div class="s-head">
+      <div class="leg"><code id="sh-code">CLF</code><span id="sh-title">AWS<br>Cloud Practitioner</span></div>
+      <svg class="fly" width="40" height="16" viewBox="0 0 40 16" aria-hidden="true"><path d="M1 8h36M30 2l7 6-7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="leg to" aria-hidden="true"><div class="blank"><i></i><i></i><i></i></div><span>Choose a<br>section</span></div>
+    </div>
+    <div class="s-perf" aria-hidden="true"></div>
+    <div class="s-label"><span>Section</span><span>Cards</span></div>
+    <ul class="dests" id="dests"></ul>
+  </div>
+</main>
+
+<script>
+// All content lives here. More areas, platforms and decks can be added without touching the rest.
+const AREAS = [
+  { id: 'cloud', name: 'Cloud', platforms: [
+    { id: 'aws', code: 'AWS', name: 'Amazon Web Services', short: 'AWS', decks: [
+      { code: 'CLF', name: 'Cloud Practitioner', cards: 214, seen: 38,
+        sections: [['CON', 'Cloud concepts', 45], ['SEC', 'Security and compliance', 47], ['TEC', 'Cloud technology and services', 88], ['BIL', 'Billing, pricing and support', 34]] },
+      { code: 'SAA', name: 'Solutions Architect Associate', cards: 168, seen: 0,
+        sections: [['SEC', 'Secure architectures', 46], ['RES', 'Resilient architectures', 44], ['PRF', 'High-performing architectures', 42], ['CST', 'Cost-optimized architectures', 36]] },
+    ]},
+    { id: 'gcp', code: 'GCP', name: 'Google Cloud', short: 'Google Cloud', decks: [
+      { code: 'CDL', name: 'Cloud Digital Leader', cards: 140, seen: 0, sections: [] },
+    ]},
+    { id: 'azure', code: 'AZR', name: 'Azure', short: 'Azure', decks: [] },
+  ]},
+  { id: 'frontend', name: 'Frontend', platforms: [
+    { id: 'next', code: 'NXT', name: 'Next.js', short: 'Next.js', decks: [
+      { code: 'RND', name: 'Rendering', cards: 96, seen: 12,
+        sections: [['SCC', 'Server and Client Components', 28], ['STR', 'Streaming and Suspense', 22], ['CCH', 'Caching', 26], ['REV', 'Revalidation', 20]] },
+    ]},
+  ]},
+  { id: 'devops', name: 'DevOps', platforms: [] },
+]
+// The screenshot tool clicks these in order: Cloud, then AWS, then CLF.
+const DEMO = { area: 'cloud', platform: 'aws', deck: 'CLF' }
+
+const deckCount = a => a.platforms.reduce((n, p) => n + p.decks.length, 0)
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`
+const chev = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const backIcon = '<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H3.5M8 3.5L2.5 9 8 14.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+
+const app = document.getElementById('app')
+const stepEl = n => app.querySelector(`.step[data-s="${n}"]`)
+const sel = { area: 'cloud', platform: 'aws' }
+const area = () => AREAS.find(a => a.id === sel.area)
+const platform = () => area().platforms.find(p => p.id === sel.platform)
+
+// one destination card; cards with nothing behind them yet are shown but not tappable
+function card({ kind, id, code, name, n, demo }) {
+  const inner = `<span class="paper" data-k="paper"></span>${code ? `<span class="perf" data-k="perf"></span>
+    <code data-k="code">${code}</code>` : ''}
+    <span class="txt"><span class="name" data-k="name">${name}</span><span class="detail" data-x>${n ? plural(n, 'deck') : 'No decks yet'}</span></span>`
+  if (!n) return `<li data-a><div class="card soon${code ? '' : ' plain'}" role="group" aria-label="${name}, no decks yet">${inner}<span></span></div></li>`
+  return `<li data-a><button class="card${code ? '' : ' plain'}" type="button" data-${kind}="${id}"${demo ? ' data-demo' : ''} aria-label="${name}, ${plural(n, 'deck')}">${inner}<span class="chev" data-x>${chev}</span></button></li>`
+}
+function crumb({ backTo, label, code, name }) {
+  return `<div class="crumb" data-a>
+    <button class="back" type="button" data-x aria-label="Back to ${backTo}">${backIcon}</button>
+    <div class="here${code ? '' : ' plain'}"><span class="paper" data-k="paper"></span>${code ? `<span class="perf" data-k="perf"></span>
+      <code data-k="code">${code}</code>` : ''}
+      <span class="txt"><span class="lbl" data-x>${label}</span><span class="name" data-k="name">${name}</span></span>
+    </div>
+  </div>`
+}
+function deckCard(d) {
+  return `<li data-a><button class="card deck" type="button" data-deck="${d.code}"${d.code === DEMO.deck ? ' data-demo' : ''}
+      aria-label="${d.code}, ${d.name}, ${d.cards} cards, ${d.seen ? d.seen + ' percent seen' : 'not started'}">
+    <span class="paper"></span><span class="perf"></span>
+    <code>${d.code}</code>
+    <span class="txt"><span class="name">${d.name}</span><span class="detail">${d.cards} cards</span>
+      <span class="status"><span class="track">${d.seen ? `<i style="--p:${d.seen}%"></i>` : ''}</span>${d.seen ? `<span><b>${d.seen}%</b> seen</span>` : '<span>Not started</span>'}</span>
+    </span>
+    <span class="chev">${chev}</span>
+  </button></li>`
+}
+
+function render1() {
+  document.getElementById('list-1').innerHTML = AREAS.map(a =>
+    card({ kind: 'area', id: a.id, code: null, name: a.name, n: deckCount(a), demo: a.id === DEMO.area })).join('')
+}
+function render2() {
+  const a = area()
+  stepEl(2).innerHTML = crumb({ backTo: 'all areas', label: 'Area', code: null, name: a.name }) +
+    `<h2 class="ask" id="ask-2" tabindex="-1" data-a>Choose a platform</h2>
+     <div class="scroll"><ul class="list">${a.platforms.map(p =>
+       card({ kind: 'platform', id: p.id, code: p.code, name: p.name, n: p.decks.length, demo: p.id === DEMO.platform })).join('')}</ul></div>`
+}
+function render3() {
+  const a = area(), p = platform()
+  stepEl(3).innerHTML = crumb({ backTo: `${a.name} platforms`, label: 'Platform', code: p.code, name: p.name }) +
+    `<h2 class="ask" id="ask-3" tabindex="-1" data-a>Choose a deck</h2>
+     <div class="scroll"><ul class="list">${p.decks.map(deckCard).join('')}</ul></div>`
+}
+
+// ---------- motion ----------
+// One orchestrated movement per step change. The tapped card's paper, perforation, code and name travel to the
+// header of the next step (shared elements); the rest of the old step recedes, the new cards rise in with a stagger.
+// Back runs the same thing in reverse. Only transform and opacity are animated.
+const D = 360, EASE = 'cubic-bezier(0.2, 0.7, 0.2, 1)'
+const reduce = matchMedia('(prefers-reduced-motion: reduce)')
+let cur = 1, busy = false
+
+function go(next, fromHost, toHost) {
+  const from = stepEl(cur), to = stepEl(next), forward = next > cur
+  const pairs = []
+  if (fromHost && toHost && !reduce.matches) {
+    for (const b of toHost.querySelectorAll('[data-k]')) {
+      const a = fromHost.querySelector(`[data-k="${b.dataset.k}"]`)
+      if (a) pairs.push([a, b, a.getBoundingClientRect(), b.getBoundingClientRect()])
+    }
+  }
+  busy = true
+  app.dataset.moving = ''
+  from.classList.replace('on', 'out')
+  to.classList.add('on')
+  app.dataset.step = next
+  cur = next
+  const anims = [], restore = []
+  const run = (el, kf, opt) => anims.push(el.animate(kf, { duration: D, easing: EASE, fill: 'both', ...opt }))
+
+  if (!pairs.length) {
+    // reduced motion, or a jump: the steps fade through (out, then in, so text never overlaps)
+    run(from, [{ opacity: 1 }, { opacity: 0 }], { duration: 100, easing: 'linear' })
+    run(to, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: 100, easing: 'linear' })
+  } else {
+    const paper = pairs.find(p => p[1].dataset.k === 'paper')
+    const dx = paper[2].left - paper[3].left, dy = paper[2].top - paper[3].top
+    toHost.style.zIndex = 5; toHost.style.position = 'relative'
+    restore.push(() => { toHost.style.zIndex = ''; toHost.style.position = '' })
+    for (const [a, b, ra, rb] of pairs) {
+      const k = b.dataset.k
+      let sx, sy
+      if (k === 'paper') { sx = ra.width / rb.width; sy = ra.height / rb.height }
+      else if (k === 'perf') { sx = 1; sy = ra.height / rb.height }
+      else { sx = sy = parseFloat(getComputedStyle(a).fontSize) / parseFloat(getComputedStyle(b).fontSize) }
+      run(b, [{ transform: `translate(${ra.left - rb.left}px, ${ra.top - rb.top}px) scale(${sx}, ${sy})` }, { transform: 'none' }])
+      a.style.opacity = 0
+      restore.push(() => { a.style.opacity = '' })
+    }
+    // details that only one of the two shapes has: the old ones ride along and fade early, the new ones fade in late
+    // (opacity runs on linear time so its offsets mean real time; position follows the paper on the shared easing)
+    // (the back button sits outside the paper, so it only fades)
+    const onPaper = x => !x.classList.contains('back')
+    for (const x of fromHost.querySelectorAll('[data-x]')) {
+      if (onPaper(x)) run(x, [{ transform: 'none' }, { transform: `translate(${-dx}px, ${-dy}px)` }])
+      run(x, [{ opacity: 1 }, { opacity: 0 }], { duration: 80, easing: 'linear' })
+    }
+    for (const x of toHost.querySelectorAll('[data-x]')) {
+      if (onPaper(x)) run(x, [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }])
+      run(x, [{ opacity: 0 }, { opacity: 0, offset: .6 }, { opacity: 1 }], { easing: 'linear' })
+    }
+
+    // everything else on both steps
+    const outs = [...from.querySelectorAll('[data-a]')].filter(el => !el.contains(fromHost))
+    const ins = [...to.querySelectorAll('[data-a]')].filter(el => !el.contains(toHost))
+    outs.forEach(el => run(el, forward
+      ? [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.96)' }]
+      : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(24px)' }], { duration: 110, easing: 'ease-in' }))
+    ins.forEach((el, i) => run(el, forward
+      ? [{ opacity: 0, transform: 'translateY(32px)' }, { opacity: 1, transform: 'none' }]
+      : [{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: (forward ? 130 : 70) + Math.min(i, 4) * 40 }))
+  }
+
+  Promise.all(anims.map(an => an.finished)).then(() => {
+    anims.forEach(an => an.cancel())
+    restore.forEach(f => f())
+    from.classList.remove('out')
+    delete app.dataset.moving
+    busy = false
+    const focusEl = forward ? to.querySelector('.ask') : toHost
+    if (focusEl) focusEl.focus({ preventScroll: true })
+  })
+}
+
+const stepOf = el => +el.closest('.step').dataset.s
+
+function chooseArea(btn) {
+  const jump = stepOf(btn) !== cur
+  sel.area = btn.dataset.area
+  render2()
+  go(2, jump ? null : btn, jump ? null : stepEl(2).querySelector('.crumb'))
+}
+function choosePlatform(btn) {
+  const jump = stepOf(btn) !== cur
+  sel.platform = btn.dataset.platform
+  render3()
+  go(3, jump ? null : btn, jump ? null : stepEl(3).querySelector('.crumb'))
+}
+function back() {
+  if (cur === 1) return
+  const fromHost = stepEl(cur).querySelector('.crumb')
+  const toHost = cur === 2
+    ? stepEl(1).querySelector(`[data-area="${sel.area}"]`)
+    : stepEl(2).querySelector(`[data-platform="${sel.platform}"]`)
+  go(cur - 1, fromHost, toHost)
+}
+
+// ---------- section sheet (from home-a) ----------
+const sheet = document.getElementById('sheet')
+let opener = null
+function openSheet(btn) {
+  if (stepOf(btn) !== cur) go(3)
+  const p = platform(), d = p.decks.find(x => x.code === btn.dataset.deck)
+  opener = btn
+  document.getElementById('sh-code').textContent = d.code
+  document.getElementById('sh-title').innerHTML = `${p.short}<br>${d.name}`
+  const rows = [['ALL', 'Whole deck', d.cards, true], ...d.sections]
+  document.getElementById('dests').innerHTML = rows.map(([c, n, k, whole]) => `
+    <li><button class="dest${whole ? ' whole' : ''}" type="button" aria-label="${d.code} to ${n}, ${k} cards">
+      <code>${c}</code><span class="name">${n}</span><span class="n">${k}</span><span class="go">${chev}</span>
+    </button></li>`).join('')
+  app.dataset.sheet = 'open'
+  setTimeout(() => sheet.querySelector('.dest').focus({ preventScroll: true }), 60)
+}
+function closeSheet() {
+  delete app.dataset.sheet
+  if (opener) opener.focus({ preventScroll: true })
+}
+
+app.addEventListener('click', e => {
+  const t = e.target.closest('[data-area], [data-platform], [data-deck], .back')
+  if (!t || busy) return
+  if (t.dataset.area) chooseArea(t)
+  else if (t.dataset.platform) choosePlatform(t)
+  else if (t.dataset.deck) openSheet(t)
+  else back()
+})
+document.getElementById('scrim').addEventListener('click', closeSheet)
+document.getElementById('s-close').addEventListener('click', closeSheet)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return
+  if (app.dataset.sheet) closeSheet()
+  else if (!busy) back()
+})
+
+render1(); render2(); render3()
+</script>
+</body>
+</html>

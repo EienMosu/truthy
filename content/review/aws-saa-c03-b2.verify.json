@@ -1,0 +1,60 @@
+{
+ "file": "content/raw/aws-saa-c03-b2.json",
+ "checked": 48,
+ "flagged": [
+  {
+   "id": "aws-saa-c03-s2.2-04",
+   "verdict": "explanation_error",
+   "urlStatus": "Loaded and supports the fact. I also opened https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateways-regional.html to check the current naming.",
+   "evidence": "\"If you have resources in multiple Availability Zones and they share one NAT gateway, and if the NAT gateway's Availability Zone is down, resources in the other Availability Zones lose internet access.\" (nat-gateway-basics.html). The regional page says: \"Unlike standard NAT gateways (referred to as zonal NAT gateways), which operate in a single Availability Zone, regional NAT gateways follow your workloads\", and the availability mode is \"Zonal\" or \"Regional\".",
+   "problem": "The answer (false) is correct, but the statement and the explanation both say \"subnet-based NAT gateway\", which is not an AWS term. Since regional NAT gateways launched in November 2025, AWS calls the classic type a \"zonal NAT gateway\". Players need the official zonal vs regional terms for this trade-off. The card also ignores the regional NAT gateway, which is the design answer to this exact failure mode.",
+   "suggestedFix": "Statement: \"A zonal NAT gateway can maintain egress for other Availability Zones during an outage of its own Availability Zone.\" (false). Explanation: \"A zonal NAT gateway is redundant only within its Availability Zone. If that zone fails, resources in other zones that route through it lose internet access. To avoid this, deploy one zonal NAT gateway per AZ, or use a regional NAT gateway, which expands across AZs automatically.\""
+  },
+  {
+   "id": "aws-saa-c03-s2.2-06",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded and supports the claim.",
+   "evidence": "\"For EFS file systems that use Regional storage classes, you can create a mount target in each Availability Zone in an AWS Region. For One Zone file systems, you can only create a single mount target in the same Availability Zone as the file system.\" (https://docs.aws.amazon.com/efs/latest/ug/accessing-fs.html)",
+   "problem": "True and accurate, but the answer can be read from the word \"Regional\": anyone would guess a Regional file system spans multiple AZs. The design point a solutions architect needs is the One Zone limitation (one mount target, in one AZ only, so it does not survive an AZ outage), and the card never tests it.",
+   "suggestedFix": "Statement: \"An Amazon EFS One Zone file system can have mount targets in multiple Availability Zones.\" (false). Explanation: \"A One Zone file system supports only a single mount target, in the file system's own Availability Zone. Clients in other AZs reach it across zones and lose access if that AZ fails. Regional file systems support one mount target per AZ.\""
+  },
+  {
+   "id": "aws-saa-c03-s3.3-03",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded; supports the claim. The page tells you to design for uniform activity across partition keys and gives per-partition limits.",
+   "evidence": "\"You should design your application for uniform activity across all partition keys in the table and its secondary indexes.\" \"Every partition in a DynamoDB table is designed to deliver a maximum capacity of 3,000 read units per second and 1,000 write units per second.\" (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html)",
+   "problem": "The statement is close to a tautology: a hot partition is concentrated access, so 'spreading requests evenly avoids hot partitions' is true by definition, and nobody who studied would answer false. The point worth teaching is the explanation's part about a partition throttling while the table still has spare capacity, and the statement leaves that out.",
+   "suggestedFix": "Statement: \"Amazon DynamoDB can throttle requests to a single partition even when the table as a whole has unused capacity.\" (true). Explanation: \"Each partition can deliver at most 3,000 read units and 1,000 write units per second. Traffic concentrated on a few partition key values can hit that limit before table-level capacity runs out, so high-cardinality, evenly accessed partition keys matter.\""
+  },
+  {
+   "id": "aws-saa-c03-s3.3-07",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded (the page title is now 'Caching strategies for Memcached', matching the card's source title); supports the claim.",
+   "evidence": "\"A cache miss occurs when data isn't in the cache or is expired: ... Your application requests and receives the data from the database. Your application updates the cache with the new data.\" \"There is a cache miss penalty. Each cache miss results in three trips\" (https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html)",
+   "problem": "The statement just restates what lazy loading means (load from the database only when the cache misses), so the answer follows from the strategy's name and nobody would answer false. The SAA-relevant trade-offs of lazy loading are stale data and tolerance of empty replacement nodes, versus write-through, and the card tests neither.",
+   "suggestedFix": "Statement: \"With lazy loading alone, an item cached in Amazon ElastiCache can stay stale after the database record changes.\" (true). Explanation: \"Lazy loading writes data to the cache only on a cache miss, so updates to the database do not refresh cached entries. Adding a TTL or a write-through strategy limits how stale cached data can get.\" (Same source URL.)"
+  }
+ ],
+ "okWithNotes": [
+  {
+   "id": "aws-saa-c03-s2.2-02",
+   "problem": "Fact and answer are correct. Minor wording: the docs never say \"tier-based failover ranking\"; they say priorities 0-15 form \"promotion tiers\". The page also notes that after five unsuccessful failover attempts promotion tiers are no longer considered, which does not change the answer.",
+   "suggestedFix": "Optional rewording: \"When choosing an Aurora Replica to promote during failover, Aurora ranks replica size ahead of its promotion tier (priority).\""
+  },
+  {
+   "id": "aws-saa-c03-s2.2-11",
+   "problem": "Correct but close to a generic IaC truism. Being able to disable rollback (preserve successfully provisioned resources) does not falsify \"supports\". Low design value for 2.2, but acceptable.",
+   "suggestedFix": ""
+  },
+  {
+   "id": "aws-saa-c03-s3.1-03",
+   "problem": "An expert could point out that the 500 IOPS/GiB ratio means a small volume (for example 10 GiB, capped at 5,000 IOPS) has to grow before it can take more IOPS. The statement is still true as a capability, and the explanation already notes the limits, so this does not make it ambiguous.",
+   "suggestedFix": ""
+  },
+  {
+   "id": "aws-saa-c03-s3.3-10",
+   "problem": "Minor: the card says 'data migration tasks', the cited page says 'replication tasks', and the explanation uses 'replication tasks'. The meaning is the same. The High-level view URL would be a more direct source.",
+   "suggestedFix": ""
+  }
+ ]
+}

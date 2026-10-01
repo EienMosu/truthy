@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Start a round, night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600&family=Overpass:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* night flight: the same components after dark. Sky deepens toward the top, the pass is a
+     dim slate card lit from within, inks are warm off-white, accents lifted so they read on the dark ground. */
+  --sky-1: #0b1528;
+  --sky-2: #101c33;
+  --sky-3: #15233d;
+  --sky-4: #1c2538;
+  --surface: var(--sky-2);
+  --surface-raised: #252f41;
+  --surface-sunk: #1d2636;
+  --ink: #e6e3da;
+  --ink-muted: #9ba4b3;
+  --rule: #3c4759;
+  --accent: #e0a52c;
+  --true: #6f9ae0;
+  --false: #e2836f;
+  --correct: #55b88e;
+  --wrong: #e2836f;
+  --on-dark: #0f1a2c;
+  --on-accent: #141c2b; /* NEW: ink on the amber band and the plane; day value var(--ink) */
+  --cloud: #2c3a55;
+  --r: 16px; --r-sm: 8px;
+  --shadow: 0 1px 0 rgba(0,0,0,.2), 0 22px 36px -18px rgba(0,0,0,.75);
+  --shadow-sm: 0 1px 0 rgba(0,0,0,.2), 0 6px 12px -6px rgba(0,0,0,.6); /* NEW: was hard-coded on .close */
+  --shadow-btn: 0 1px 0 rgba(0,0,0,.2), 0 10px 18px -10px rgba(0,0,0,.7); /* NEW: was hard-coded on .btn */
+  --shadow-press: 0 1px 0 rgba(0,0,0,.2); /* NEW: was hard-coded on .btn:active */
+  --press: rgba(230,227,218,.06); /* NEW (start flow): pressed tint on pass fields and the continue row; day value rgba(16,35,63,.05) */
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Overpass', system-ui, sans-serif;
+  --mono: 'Overpass Mono', ui-monospace, monospace;
+  --notch: 12px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; text-align: inherit; }
+svg { display: block; }
+h1, h2, p, dl, dd { margin: 0; }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto;
+  display: flex; flex-direction: column; padding: 52px 16px 34px; overflow: hidden;
+  background: linear-gradient(180deg,
+    var(--sky-1) 0 22%, var(--sky-2) 22% 48%, var(--sky-3) 48% 76%, var(--sky-4) 76% 100%);
+}
+.cloud { position: absolute; fill: var(--cloud); opacity: .7; pointer-events: none; }
+.f-ink { fill: var(--ink); } .f-acc { fill: var(--accent); } .s-ink { stroke: var(--ink); } .f-paper { fill: var(--surface-raised); }
+.f-on-acc { fill: var(--on-accent); } .s-on-acc { stroke: var(--on-accent); }
+.soft { box-shadow: var(--shadow-sm); }
+
+/* top zone: the logo on step 1, back + the pass from step 2 on (same place) */
+.top { position: relative; z-index: 7; flex: none; height: 176px; display: grid; }
+.top > * { grid-area: 1 / 1; visibility: hidden; }
+[data-step="1"] .brand, #app:not([data-step="1"]) .trip, .top > .leaving { visibility: visible; }
+
+.brand { padding-top: 36px; }
+.logo { display: flex; align-items: center; gap: 12px; }
+.logo b { font-weight: 800; font-size: 36px; line-height: 1; letter-spacing: -.025em; padding-top: 4px; }
+.tag { margin-top: 14px; max-width: 300px; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--ink-muted); }
+
+.trip { display: flex; flex-direction: column; gap: 12px; align-self: start; }
+.back {
+  align-self: flex-start; height: 48px; padding: 0 20px 0 14px; border-radius: 24px;
+  display: flex; align-items: center; gap: 8px; background: var(--surface-raised);
+  font-weight: 800; font-size: 15px; letter-spacing: -.01em;
+  transition: transform var(--t1) var(--ease);
+}
+.back:active { transform: scale(.96); }
+[data-step="7"] .back:not(.leaving) { visibility: hidden; }
+
+/* the round's header, shown once the pass has become the first card */
+.game-top { position: absolute; left: 0; right: 0; top: 0; height: 56px; display: none; align-items: center; gap: 12px; }
+[data-step="7"] .game-top, .game-top.leaving { display: flex; }
+.close {
+  width: 48px; height: 48px; flex: none; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface-raised); color: var(--ink);
+  transition: transform var(--t1) var(--ease);
+}
+.close:active { transform: scale(.92); }
+.route { flex: 1; min-width: 0; }
+.route svg { width: 100%; height: 34px; overflow: visible; }
+.route .lbl { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--ink); margin-top: 2px; }
+.route .lbl b { font-weight: 600; }
+
+/* ---------- the pass that gets filled in ---------- */
+.pass { position: relative; z-index: 7; border-radius: var(--r); overflow: hidden; transition: box-shadow var(--t3) var(--ease); }
+.pass.big { margin-top: 8px; box-shadow: var(--shadow); }
+.p-car {
+  height: 30px; padding: 0 14px; display: flex; align-items: center; gap: 8px;
+  background: var(--accent); color: var(--on-accent); font-weight: 800; font-size: 14px; letter-spacing: -.01em;
+}
+.pass.big .p-car { height: 44px; padding: 0 16px; gap: 10px; font-size: 16px; }
+.p-ico { position: relative; width: 22px; height: 16px; flex: none; display: grid; place-items: center; }
+.p-ico svg { grid-area: 1 / 1; transition: opacity var(--t2) var(--ease); }
+.p-car small { margin-left: auto; display: grid; justify-items: end; font-family: var(--mono); font-weight: 600; letter-spacing: .06em; }
+.p-car small span { grid-area: 1 / 1; transition: opacity var(--t2) var(--ease); }
+.lab-s { font-size: 11px; } .lab-b { font-size: 12px; }
+.pass.big .ico-s, .pass:not(.big) .ico-b, .pass.big .lab-s, .pass:not(.big) .lab-b { opacity: 0; }
+
+.p-body { position: relative; background: var(--surface-raised); }
+.blk { display: none; }
+.blk.on { display: block; }
+.blk.leaving { display: block; position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
+.blk.leaving [data-k] { visibility: hidden; }
+
+.p-f { display: grid; grid-template-columns: 1fr 1.35fr .8fr; padding: 0 16px; }
+.p-f.f-route { grid-template-columns: .75fr 1.1fr 1.15fr; }
+.p-f > div { position: relative; min-width: 0; padding: 9px 0 11px; }
+.p-f > div + div { padding-left: 12px; border-left: 1.5px solid var(--rule); }
+.p-f dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-muted); }
+.p-f dd { position: relative; height: 20px; margin-top: 3px; }
+.val { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: top;
+  font-weight: 800; font-size: 16px; line-height: 1.2; letter-spacing: -.01em; }
+.val.code { font-family: var(--mono); font-weight: 600; letter-spacing: .02em; }
+.blank { position: absolute; left: 0; top: 0; height: 20px; display: flex; align-items: center; gap: 5px; transition: opacity 140ms var(--ease) 220ms; }
+.blank i { width: 14px; height: 3px; border-radius: 2px; background: var(--rule); }
+[data-filled] .blank { opacity: 0; transition: opacity 100ms ease 120ms; }
+/* the field being chosen now: dark dashes and a darker label */
+.p-f > div.now .blank i { background: var(--ink); }
+.p-f > div.now dt { color: var(--ink); font-weight: 600; }
+/* a filled field is a way back to its step */
+.hit { position: absolute; inset: 0; display: none; border-radius: 6px; }
+[data-filled]:not(.now) > .hit { display: block; }
+.hit:active, .lv:active, .leg:active { background: var(--press); }
+
+/* route pass: area and platform fold into one quiet line above deck, section, class */
+.p-line { display: flex; align-items: center; gap: 2px; height: 30px; padding: 8px 10px 0; }
+.lv { position: relative; height: 22px; padding: 0 6px; border-radius: 6px; font-weight: 600; font-size: 13px; color: var(--ink-muted); white-space: nowrap; }
+.lv span { display: inline-block; line-height: 22px; padding-top: 1px; }
+.lv::after { content: ''; position: absolute; left: -2px; right: -2px; top: -13px; bottom: -13px; }
+.p-line .sep { font-weight: 600; font-size: 13px; color: var(--rule); }
+
+/* ticket pass: identical to the round's boarding pass */
+.legs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; padding: 14px 20px 12px; }
+.leg { display: block; min-width: 0; border-radius: var(--r-sm); }
+.leg code { display: block; font-family: var(--mono); font-weight: 600; font-size: 34px; line-height: 1; letter-spacing: .02em; }
+.leg span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--ink-muted); line-height: 1.25; }
+.leg.to { text-align: right; }
+.legs .fly { padding-bottom: 26px; color: var(--ink); }
+.meta { display: grid; grid-template-columns: 1.1fr 1fr 1fr; margin: 0 20px; border-top: 1.5px solid var(--rule); border-bottom: 1.5px solid var(--rule); }
+.meta div { position: relative; padding: 8px 0 7px; }
+.meta div + div { padding-left: 12px; border-left: 1.5px solid var(--rule); }
+.meta dt { font-family: var(--mono); font-size: 10.5px; color: var(--ink-muted); letter-spacing: .04em; }
+.meta dd { margin: 2px 0 0; font-family: var(--mono); font-weight: 600; font-size: 15px; white-space: nowrap; }
+.meta dd > span { display: inline-block; }
+.l3-pad { height: 18px; }
+[data-step="7"] .leg, [data-step="7"] .meta .hit { pointer-events: none; }
+
+/* the rest of the first card, grown out of the pass when the round starts */
+.ext { display: none; }
+.pass.board .ext, .ext.leaving { display: block; }
+.ext-main {
+  position: relative;
+  background:
+    radial-gradient(circle at 0 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+}
+.statement {
+  margin: 0; padding: 0 20px 24px; outline: none;
+  font-weight: 600; font-size: 25px; line-height: 1.28; letter-spacing: -.012em; color: var(--ink);
+  min-height: 170px; display: flex; align-items: center;
+}
+.perf {
+  position: absolute; left: calc(var(--notch) + 6px); right: calc(var(--notch) + 6px); bottom: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 7px, transparent 7px 12px);
+}
+.stub {
+  height: 228px;
+  background:
+    radial-gradient(circle at 0 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+  padding: 22px 20px 14px; display: flex; flex-direction: column; justify-content: space-between;
+}
+.stub .row { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.stub .row b { color: var(--ink); font-weight: 600; font-size: 13px; }
+.barcode { height: 76px; width: 100%; color: var(--ink); }
+.hint { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; font-family: var(--mono); font-weight: 600; font-size: 13px; }
+.hint .f { color: var(--false); } .hint .t { color: var(--true); } .hint .m { color: var(--ink-muted); font-weight: 400; }
+
+/* ---------- main zone: one step at a time, all stacked in one place ---------- */
+.main { position: relative; flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr); margin-top: 20px; }
+[data-player="returning"][data-step="1"] .main { margin-bottom: 76px; }
+.step { grid-area: 1 / 1; min-height: 0; display: flex; flex-direction: column; visibility: hidden; }
+.step > :not(.st-h) { flex: 1; min-height: 0; overflow-y: auto; margin: 8px -8px 0; padding: 6px 8px 24px; scrollbar-width: none; }
+.step > :not(.st-h) > .group { margin-top: 0; }
+.step > :not(.st-h)::-webkit-scrollbar { display: none; }
+.group > * { flex: none; }
+[data-step="1"] .step[data-for="1"], [data-step="2"] .step[data-for="2"], [data-step="3"] .step[data-for="3"],
+[data-step="4"] .step[data-for="4"], [data-step="5"] .step[data-for="5"], [data-step="6"] .step[data-for="6"], .step.leaving { visibility: visible; }
+.st-h { height: 36px; display: flex; align-items: center; font-weight: 800; font-size: 22px; letter-spacing: -.015em; outline: none; }
+.group { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.group[hidden] { display: none; }
+.step[data-for="6"] { padding-top: 112px; }
+.ready-t { margin: 0; max-width: 320px; font-weight: 600; font-size: 17px; line-height: 1.4; color: var(--ink-muted); }
+
+/* destination cards: a calm ticket with a stub */
+.c {
+  --stub: 64px; --bg: var(--surface-raised);
+  position: relative; width: 100%; min-height: 104px; display: grid; grid-template-columns: 1fr var(--stub);
+  border-radius: var(--r);
+  background:
+    radial-gradient(circle at calc(100% - var(--stub)) 0, transparent 7px, var(--bg) 7.5px) top / 100% 51% no-repeat,
+    radial-gradient(circle at calc(100% - var(--stub)) 100%, transparent 7px, var(--bg) 7.5px) bottom / 100% 51% no-repeat;
+  transition: transform var(--t1) var(--ease);
+}
+button.c:active { transform: scale(.98); }
+.c-main { min-width: 0; padding: 18px 12px 18px 20px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.nm { display: inline-block; align-self: flex-start; white-space: nowrap; font-weight: 800; font-size: 26px; line-height: 1.2; letter-spacing: -.015em; }
+.sub { font-family: var(--mono); font-size: 12.5px; color: var(--ink-muted); }
+.c-stub { position: relative; display: grid; place-items: center; color: var(--ink); }
+.c-stub::before {
+  content: ''; position: absolute; left: -.75px; top: 12px; bottom: 12px; width: 1.5px;
+  background: repeating-linear-gradient(180deg, var(--rule) 0 5px, transparent 5px 10px);
+}
+.c.off { min-height: 84px; grid-template-columns: 1fr; background: var(--surface-sunk); cursor: default; box-shadow: none; }
+.c.off .nm { color: var(--ink-muted); }
+
+.c.deck { --stub: 80px; min-height: 128px; }
+.c.deck .c-main, .c.sec .c-main { gap: 2px; }
+.nm.code { font-family: var(--mono); font-weight: 600; font-size: 30px; letter-spacing: .02em; }
+.dname { font-weight: 600; font-size: 16px; line-height: 1.25; letter-spacing: -.01em; }
+.status { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.status b { font-weight: 600; color: var(--ink); }
+.track { position: relative; flex: none; width: 56px; height: 8px; }
+.track::before { content: ''; position: absolute; left: 0; right: 0; top: 3px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--rule) 0 4px, transparent 4px 8px); }
+.track i { position: absolute; left: 0; top: 3px; height: 2px; width: var(--p); background: var(--ink); border-radius: 1px; }
+.track i::after { content: ''; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 1.5px var(--ink); }
+.c.deck .c-stub, .c.sec .c-stub, .c.cls .c-stub { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.c-stub .l { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; color: var(--ink-muted); }
+.c-stub .v { font-family: var(--mono); font-weight: 600; font-size: 16px; }
+.c-stub .go { margin-top: 8px; }
+
+/* sections and classes: the same plain card, a little shorter */
+.c.sec { --stub: 80px; min-height: 90px; }
+.c.sec .c-main { padding-top: 14px; padding-bottom: 14px; }
+.c.cls { --stub: 80px; min-height: 108px; }
+.c.cls .c-main { padding-top: 16px; padding-bottom: 16px; }
+.c.cls .dname { color: var(--ink-muted); }
+.c.cls .v.none { color: var(--ink-muted); }
+
+/* the travelling value */
+.ghost { position: absolute; left: 0; top: 0; z-index: 9; margin: 0; pointer-events: none; transform-origin: 0 0; white-space: nowrap; will-change: transform, opacity; }
+
+/* ---------- bottom zone ---------- */
+.foot { position: absolute; left: 16px; right: 16px; bottom: 38px; height: 60px; z-index: 6; }
+.foot > * { position: absolute; inset: 0; visibility: hidden; }
+.foot > .on, .foot > .leaving { visibility: visible; }
+.foot > .leaving { pointer-events: none; }
+
+.cont {
+  display: flex; align-items: center; gap: 14px; padding: 0 12px 0 4px; border-radius: var(--r);
+  transition: transform var(--t1) var(--ease), background var(--t1) var(--ease);
+}
+.cont:active { transform: scale(.98); background: var(--press); }
+.cont .ci { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--surface-raised); }
+.cont .ct { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.cont .ct b { font-weight: 800; font-size: 16px; letter-spacing: -.01em; line-height: 1.2; }
+.cont .ct span { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cont .ct span em { font-style: normal; color: var(--ink); font-weight: 600; }
+
+.btn {
+  height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 800; font-size: 20px; letter-spacing: -.01em;
+  box-shadow: var(--shadow-btn);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.btn:active { transform: translateY(2px) scale(.98); box-shadow: var(--shadow-press); }
+.btn.next { width: 100%; background: var(--ink); color: var(--on-dark); }
+.answers { display: flex; gap: 12px; }
+.answers .btn { flex: 1; }
+.btn.f { background: var(--false); color: var(--on-dark); }
+.btn.t { background: var(--true); color: var(--on-dark); }
+
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.hit:focus-visible, .lv:focus-visible { outline-offset: -2px; }
+.btn:focus-visible { outline-color: var(--accent); }
+.st-h:focus-visible, .statement:focus-visible { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<!-- data-player="returning" shows the one-tap continue line on step 1; set it to "new" (or open with #first-run) for a first run -->
+<main id="app" data-step="1" data-player="returning">
+  <svg class="cloud" style="left:-30px;top:196px" width="150" height="46" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+  <svg class="cloud" style="right:-40px;top:660px" width="170" height="50" viewBox="0 0 150 46" aria-hidden="true"><path d="M0 46h150c0-12-10-20-22-20-2-14-14-24-29-24-12 0-22 6-26 16-4-3-9-5-15-5-12 0-21 8-23 19C24 28 20 26 15 26 6 26 0 34 0 46z"/></svg>
+
+  <header class="top">
+    <div class="brand" id="brand">
+      <h1 class="logo">
+        <svg width="44" height="30" viewBox="0 0 44 30" aria-hidden="true">
+          <path class="f-acc" d="M6 0H38A6 6 0 0 1 44 6V10.5A4.5 4.5 0 0 0 44 19.5V24A6 6 0 0 1 38 30H6A6 6 0 0 1 0 24V19.5A4.5 4.5 0 0 0 0 10.5V6A6 6 0 0 1 6 0Z"/>
+          <path d="M33 5v20" stroke="var(--on-accent)" stroke-width="1.6" stroke-dasharray="2.5 3" stroke-linecap="round"/>
+          <path d="M9 15.5l4.5 4.5 9-10" fill="none" stroke="var(--on-accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <b>Truthy</b>
+      </h1>
+      <p class="tag">True or false cards that teach you IT, one swipe at a time.</p>
+    </div>
+
+    <div class="trip" id="trip">
+      <button class="back soft" type="button" id="back" aria-label="Back to areas">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M15 9H4M8.5 4L3.5 9l5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back
+      </button>
+      <div class="game-top" id="game-top">
+        <button class="close soft" type="button" id="close" aria-label="Leave round"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+        <div class="route" role="img" id="route" aria-label="Card 1 of 10">
+          <svg viewBox="0 0 276 34" aria-hidden="true" id="route-svg"></svg>
+          <div class="lbl" aria-hidden="true"><span id="route-l">Card <b>1</b> of 10</span><span>0 correct · 0 wrong</span></div>
+        </div>
+      </div>
+
+      <div class="pass soft" id="pass">
+        <div class="p-car" id="band">
+          <span class="p-ico" aria-hidden="true">
+            <svg class="ico-s" width="20" height="14" viewBox="0 0 44 30"><path class="f-on-acc" d="M6 0H38A6 6 0 0 1 44 6V10.5A4.5 4.5 0 0 0 44 19.5V24A6 6 0 0 1 38 30H6A6 6 0 0 1 0 24V19.5A4.5 4.5 0 0 0 0 10.5V6A6 6 0 0 1 6 0Z"/><path d="M9 15.5l4.5 4.5 9-10" fill="none" stroke="var(--accent)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="ico-b" width="22" height="16" viewBox="0 0 22 16"><path d="M5 15h13a4 4 0 0 0 .6-8A6 6 0 0 0 7.2 5.5 4.8 4.8 0 0 0 5 15z" class="f-on-acc"/></svg>
+          </span>
+          Truthy <small><span class="lab-s">YOUR PASS</span><span class="lab-b">BOARDING PASS</span></small>
+        </div>
+        <div class="p-body" id="pbody" aria-live="polite">
+          <!-- steps 2 and 3: area, platform, deck -->
+          <div class="blk l1">
+            <dl class="p-f">
+              <div class="fld" data-field="area"><dt>Area</dt><dd><span class="val" data-k="area"></span><span class="blank" aria-label="not chosen"><i></i><i></i><i></i></span></dd><button class="hit" type="button" data-jump="1"></button></div>
+              <div class="fld" data-field="platform"><dt>Platform</dt><dd><span class="val" data-k="platform"></span><span class="blank" aria-label="not chosen"><i></i><i></i><i></i></span></dd><button class="hit" type="button" data-jump="2"></button></div>
+              <div class="fld" data-field="deck"><dt>Deck</dt><dd><span class="val code" data-k="deck"></span><span class="blank" aria-label="not chosen"><i></i><i></i><i></i></span></dd><button class="hit" type="button" data-jump="3"></button></div>
+            </dl>
+          </div>
+          <!-- steps 4 and 5: area and platform fold into one quiet line -->
+          <div class="blk l2">
+            <div class="p-line">
+              <button class="lv" type="button" data-jump="1"><span data-k="area"></span></button><span class="sep" aria-hidden="true">·</span><button class="lv" type="button" data-jump="2"><span data-k="platform"></span></button>
+            </div>
+            <dl class="p-f f-route">
+              <div class="fld" data-field="deck"><dt>Deck</dt><dd><span class="val code" data-k="deck"></span><span class="blank" aria-label="not chosen"><i></i><i></i><i></i></span></dd><button class="hit" type="button" data-jump="3"></button></div>
+              <div class="fld" data-field="section"><dt>Section</dt><dd><span class="val" data-k="section"></span><span class="blank" aria-label="not chosen"><i></i><i></i><i></i></span></dd><button class="hit" type="button" data-jump="4"></button></div>
+              <div class="fld" data-field="mode"><dt>Class</dt><dd><span class="val" data-k="mode"></span><span class="blank" aria-label="not chosen"><i></i><i></i><i></i></span></dd><button class="hit" type="button" data-jump="5"></button></div>
+            </dl>
+          </div>
+          <!-- complete: the round's boarding pass -->
+          <div class="blk l3">
+            <div class="legs">
+              <button class="leg" type="button" data-jump="3" id="leg-from-b"><code data-k="deck"></code><span id="leg-from"></span></button>
+              <svg class="fly" width="40" height="16" viewBox="0 0 40 16" aria-hidden="true"><path d="M1 8h36M30 2l7 6-7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <button class="leg to" type="button" data-jump="4" id="leg-to-b"><code data-k="section"></code><span id="leg-to"></span></button>
+            </div>
+            <dl class="meta">
+              <div class="fld" data-filled><dt>Class</dt><dd><span data-k="mode"></span></dd><button class="hit" type="button" data-jump="5" id="mode-hit"></button></div>
+              <div><dt id="m2l">Cards</dt><dd id="m2v"></dd></div>
+              <div><dt>Gate</dt><dd>F ← → T</dd></div>
+            </dl>
+            <div class="l3-pad"></div>
+          </div>
+        </div>
+        <div class="ext" id="ext">
+          <div class="ext-main"><p class="statement" id="stmt" tabindex="-1"></p><div class="perf"></div></div>
+          <div class="stub" aria-hidden="true">
+            <div class="row"><span id="stub-route"></span><b>Card 01</b></div>
+            <svg class="barcode" id="barcode" preserveAspectRatio="none"></svg>
+            <div class="hint"><span class="f">← False</span><span class="m">swipe to board</span><span class="t">True →</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="main" id="main">
+    <div class="step" data-for="1"><h2 class="st-h" tabindex="-1">Choose an area</h2><div class="group" id="g1"></div></div>
+    <div class="step" data-for="2"><h2 class="st-h" tabindex="-1">Choose a platform</h2><div id="g2"></div></div>
+    <div class="step" data-for="3"><h2 class="st-h" tabindex="-1">Choose a deck</h2><div id="g3"></div></div>
+    <div class="step" data-for="4"><h2 class="st-h" tabindex="-1">Choose a section</h2><div id="g4"></div></div>
+    <div class="step" data-for="5"><h2 class="st-h" tabindex="-1">Choose how to play</h2><div id="g5"></div></div>
+    <div class="step" data-for="6"><h2 class="st-h" tabindex="-1">Your pass is ready</h2><div><p class="ready-t" id="ready-t"></p></div></div>
+  </section>
+
+  <div class="foot" id="foot">
+    <button class="cont" type="button" id="cont">
+      <span class="ci" aria-hidden="true"><svg width="26" height="18" viewBox="0 0 44 30"><path class="f-acc" d="M6 0H38A6 6 0 0 1 44 6V10.5A4.5 4.5 0 0 0 44 19.5V24A6 6 0 0 1 38 30H6A6 6 0 0 1 0 24V19.5A4.5 4.5 0 0 0 0 10.5V6A6 6 0 0 1 6 0Z"/><path d="M33 5v20" stroke="var(--on-accent)" stroke-width="1.6" stroke-dasharray="2.5 3" stroke-linecap="round"/><path d="M9 15.5l4.5 4.5 9-10" fill="none" stroke="var(--on-accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="ct"><b>Continue where you left off</b><span id="cont-route"></span></span>
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="btn next" type="button" id="start">Start round <span aria-hidden="true">→</span></button>
+    <div class="answers" id="answers">
+      <button class="btn f" type="button"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>False</button>
+      <button class="btn t" type="button"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>True</button>
+    </div>
+  </div>
+</main>
+
+<script>
+// One source of truth. Add an area, platform, deck or section here and every step picks it up.
+const AREAS = [
+  { id: 'cloud', name: 'Cloud', platforms: [
+    { id: 'aws', name: 'AWS', decks: [
+      { code: 'CLF', name: 'Cloud Practitioner', cards: 214, seen: 38,
+        sections: [['CON', 'Cloud concepts', 45], ['SEC', 'Security and compliance', 47], ['TEC', 'Cloud technology and services', 88], ['BIL', 'Billing, pricing and support', 34]] },
+      { code: 'SAA', name: 'Solutions Architect Associate', cards: 168, seen: 0,
+        sections: [['SEC', 'Secure architectures', 46], ['RES', 'Resilient architectures', 44], ['PRF', 'High-performing architectures', 42], ['CST', 'Cost-optimized architectures', 36]] },
+    ]},
+    { id: 'gcp', name: 'Google Cloud', decks: [
+      { code: 'CDL', name: 'Cloud Digital Leader', cards: 140, seen: 0, sections: [] },
+    ]},
+    { id: 'azure', name: 'Azure', decks: [] },
+  ]},
+  { id: 'frontend', name: 'Frontend', platforms: [
+    { id: 'nextjs', name: 'Next.js', decks: [
+      { code: 'RND', name: 'Rendering', cards: 96, seen: 12,
+        sections: [['SCC', 'Server and Client Components', 28], ['STR', 'Streaming and Suspense', 22], ['CCH', 'Caching', 26], ['REV', 'Revalidation', 20]] },
+    ]},
+  ]},
+  { id: 'devops', name: 'DevOps', platforms: [] },
+]
+const MODES = [
+  { id: 'classic', name: 'Classic', desc: '10 cards, score at the end.', of: 10 },
+  { id: 'streak', name: 'Streak', desc: 'Keep going until the first wrong answer.' },
+  { id: 'lives', name: 'Three lives', desc: 'The round ends on the third wrong answer.' },
+  { id: 'timed', name: 'Timed', desc: '60 seconds, as many cards as you can.' },
+]
+// The player's bests per route (deck/section), kept on the device.
+const BEST = { 'CLF/SEC': { classic: ['9', 'of 10', '9 of 10'], streak: ['12', 'in a row', '12 in a row'], lives: ['21', 'cards', '21 cards'] } }
+// The last route played, offered on step 1 to a returning player.
+const LAST = { area: 'cloud', platform: 'aws', deck: 'CLF', section: 'SEC', mode: 'classic', score: '7 of 10' }
+// The four cards the screenshot tool taps, in order.
+const DEMO = { area: 'cloud', platform: 'aws', deck: 'CLF', section: 'SEC' }
+const FIRST_CARD = {
+  'CLF/SEC': 'In the shared responsibility model, AWS is responsible for security of the cloud.',
+  CLF: 'With the AWS Cloud you trade fixed up-front costs for variable costs.',
+  SAA: 'An Auto Scaling group can launch instances across several Availability Zones.',
+  CDL: 'A Google Cloud region is made up of several zones.',
+  RND: 'Server Components can use the useState hook.',
+}
+
+const STEP_OF = { area: 1, platform: 2, deck: 3, section: 4, mode: 5 }
+const NOW_KEY = { 2: 'platform', 3: 'deck', 4: 'section', 5: 'mode' }
+const deckCount = a => a.platforms ? a.platforms.reduce((n, p) => n + p.decks.length, 0) : a.decks.length
+const decksLabel = n => n ? `${n} ${n === 1 ? 'deck' : 'decks'}` : 'No decks yet'
+const chev = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+const two = s => s.replace(/^(\S+ \S+) /, '$1<br>')
+const whole = d => ({ code: 'ALL', name: 'Whole deck', cards: d.cards, whole: true })
+const routeKey = () => sel.deck && sel.section ? `${sel.deck.code}/${sel.section.code}` : ''
+const bestOf = m => (BEST[routeKey()] || {})[m.id]
+
+function placeCard(kind, item, demo) {
+  const n = deckCount(item)
+  if (!n) return `
+    <div class="c off" role="group" aria-label="${item.name}, no decks yet">
+      <div class="c-main"><span class="nm">${item.name}</span><span class="sub">No decks yet</span></div>
+    </div>`
+  return `
+    <button class="c soft" type="button" data-${kind}="${item.id}"${demo ? ' data-demo' : ''} aria-label="${item.name}, ${decksLabel(n)}">
+      <span class="c-main"><span class="nm">${item.name}</span><span class="sub">${decksLabel(n)}</span></span>
+      <span class="c-stub">${chev}</span>
+    </button>`
+}
+function deckCard(d, demo) {
+  return `
+    <button class="c deck soft" type="button" data-deck="${d.code}"${demo ? ' data-demo' : ''}
+      aria-label="${d.code}, ${d.name}, ${d.cards} cards, ${d.seen ? d.seen + ' percent seen' : 'not started'}">
+      <span class="c-main">
+        <span class="nm code">${d.code}</span>
+        <span class="dname">${d.name}</span>
+        <span class="status" aria-hidden="true"><span class="track">${d.seen ? `<i style="--p:${d.seen}%"></i>` : ''}</span>${d.seen ? `<span><b>${d.seen}%</b> seen</span>` : '<span>Not started</span>'}</span>
+      </span>
+      <span class="c-stub" aria-hidden="true"><span class="l">Cards</span><span class="v">${d.cards}</span><span class="go">${chev}</span></span>
+    </button>`
+}
+function sectionCard(d, s, demo) {
+  const w = s.whole
+  return `
+    <button class="c sec soft" type="button" data-section="${s.code}"${demo ? ' data-demo' : ''} aria-label="${w ? 'Whole deck, all ' + d.sections.length + ' sections' : s.code + ', ' + s.name}, ${s.cards} cards">
+      <span class="c-main">
+        <span class="nm${w ? '' : ' code'}">${w ? 'Whole deck' : s.code}</span>
+        <span class="dname">${w ? `All ${d.sections.length} sections` : s.name}</span>
+      </span>
+      <span class="c-stub" aria-hidden="true"><span class="l">Cards</span><span class="v">${s.cards}</span><span class="go">${chev}</span></span>
+    </button>`
+}
+function modeCard(m) {
+  return `
+    <button class="c cls soft" type="button" data-mode="${m.id}">
+      <span class="c-main"><span class="nm">${m.name}</span><span class="dname">${m.desc}</span></span>
+      <span class="c-stub" aria-hidden="true"><span class="l">Best</span><span class="v"></span><span class="l u"></span></span>
+    </button>`
+}
+
+// Every step is rendered up front; only the chosen group of steps 2 to 4 is shown.
+document.getElementById('g1').innerHTML = AREAS.map(a => placeCard('area', a, a.id === DEMO.area)).join('')
+document.getElementById('g2').innerHTML = AREAS.filter(a => a.platforms.length).map(a => `
+  <div class="group" data-of="${a.id}" hidden>${a.platforms.map(p => placeCard('platform', p, p.id === DEMO.platform)).join('')}</div>`).join('')
+document.getElementById('g3').innerHTML = AREAS.flatMap(a => a.platforms).filter(p => p.decks.length).map(p => `
+  <div class="group" data-of="${p.id}" hidden>${p.decks.map(d => deckCard(d, d.code === DEMO.deck)).join('')}</div>`).join('')
+document.getElementById('g4').innerHTML = AREAS.flatMap(a => a.platforms).flatMap(p => p.decks).filter(d => d.sections.length).map(d => `
+  <div class="group" data-of="${d.code}" hidden>${[whole(d), ...d.sections.map(([code, name, cards]) => ({ code, name, cards }))]
+    .map(s => sectionCard(d, s, d.code === DEMO.deck && s.code === DEMO.section)).join('')}</div>`).join('')
+document.getElementById('g5').innerHTML = `<div class="group">${MODES.map(modeCard).join('')}</div>`
+
+const app = document.getElementById('app')
+if (location.hash === '#first-run') app.dataset.player = 'new'
+const $ = s => app.querySelector(s)
+const pass = $('#pass'), band = $('#band'), ext = $('#ext')
+const stepEl = n => $(`.step[data-for="${n}"]`)
+const sel = { area: null, platform: null, deck: null, section: null, mode: null }
+let step = 1, busy = false
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+const EASE = 'cubic-bezier(0.2, 0.7, 0.2, 1)'
+const D = 360, HOLD = 60
+
+// ---------- static pieces ----------
+function setGroups() {
+  $('#g2').querySelectorAll('.group').forEach(g => { g.hidden = !sel.area || g.dataset.of !== sel.area.id })
+  $('#g3').querySelectorAll('.group').forEach(g => { g.hidden = !sel.platform || g.dataset.of !== sel.platform.id })
+  $('#g4').querySelectorAll('.group').forEach(g => { g.hidden = !sel.deck || g.dataset.of !== sel.deck.code })
+}
+function setBest() {
+  $('#g5').querySelectorAll('[data-mode]').forEach(b => {
+    const m = MODES.find(x => x.id === b.dataset.mode), best = bestOf(m)
+    b.querySelector('.v').textContent = best ? best[0] : '–'
+    b.querySelector('.v').classList.toggle('none', !best)
+    b.querySelector('.u').textContent = best ? best[1] : 'not played'
+    b.setAttribute('aria-label', `${m.name}. ${m.desc} ${best ? 'Your best: ' + best[2] : 'Not played yet'}.`)
+  })
+}
+function drawBarcode(data) {
+  let x = 0, out = ''
+  const bar = (w, on) => { if (on) out += `<rect x="${x}" y="0" width="${w}" height="56"/>`; x += w }
+  bar(2, 1); bar(1, 0); bar(1, 1); bar(2, 0)
+  for (const ch of data) {
+    const c = ch.charCodeAt(0)
+    for (let b = 0; b < 7; b++) bar((c >> b) & 1 ? 2 : 1, b % 2 === 0)
+    bar(1, 0)
+  }
+  bar(1, 1); bar(1, 0); bar(2, 1)
+  const svg = $('#barcode')
+  svg.setAttribute('viewBox', `0 0 ${x} 56`)
+  svg.innerHTML = `<g fill="currentColor">${out}</g>`
+}
+// flight path of a round that has not begun: ten open waypoints, the plane on the first
+;(function () {
+  const pt = t => [6 + 264 * t, 24 * (1 - t) ** 2 - 12 * t * (1 - t) + 24 * t * t]
+  let s = '<path d="M6 24 Q138 -6 270 24" fill="none" class="s-ink" stroke-width="1.6" stroke-dasharray="2 5" stroke-linecap="round"/><g class="f-paper s-ink" stroke-width="1.6">'
+  for (let k = 1; k <= 9; k++) { const [x, y] = pt(k / 9); s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${k === 9 ? 5 : 4}"/>` }
+  s += '</g><g transform="translate(6 24) rotate(-12)"><circle r="12" class="f-acc"/><path d="M-7 0h14M1-6l4 6-4 6M-6-3l2 3-2 3" class="s-on-acc" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'
+  $('#route-svg').innerHTML = s
+})()
+;(function () {
+  const d = AREAS.find(a => a.id === LAST.area).platforms.find(p => p.id === LAST.platform).decks.find(x => x.code === LAST.deck)
+  const s = d.sections.find(x => x[0] === LAST.section), m = MODES.find(x => x.id === LAST.mode)
+  $('#cont-route').innerHTML = `${LAST.deck} → ${LAST.section} · ${m.name} · last <em>${LAST.score}</em>`
+  $('#cont').setAttribute('aria-label', `Continue: ${d.name}, ${s[1]}, ${m.name}. Last score ${LAST.score}.`)
+})()
+
+// ---------- the whole screen for one step, without motion ----------
+function text(k, el) {
+  const v = sel[k]
+  if (k === 'deck') return v.code
+  if (k === 'section') return el.closest('.l3') || !v.whole ? v.code : v.name
+  return v.name
+}
+function render(to) {
+  step = to; app.dataset.step = to
+  const lay = to <= 3 ? 'l1' : to <= 5 ? 'l2' : 'l3'
+  pass.querySelectorAll('.blk').forEach(b => b.classList.toggle('on', b.classList.contains(lay)))
+  pass.classList.toggle('big', to >= 6); pass.classList.toggle('board', to === 7)
+  pass.classList.toggle('soft', to < 6)
+  pass.querySelectorAll('[data-k]').forEach(el => {
+    const k = el.dataset.k, filled = to > STEP_OF[k] && sel[k]
+    el.textContent = filled ? text(k, el) : ''
+    if (k === 'section' && el.classList.contains('val')) el.classList.toggle('code', !!filled && !sel.section.whole)
+    const f = el.closest('.fld'); if (f && !el.closest('.l3')) f.toggleAttribute('data-filled', !!filled)
+  })
+  pass.querySelectorAll('.p-f > .fld').forEach(f => f.classList.toggle('now', f.dataset.field === NOW_KEY[to]))
+  // labels for the ways back
+  const lbl = { 1: 'area', 2: 'platform', 3: 'deck', 4: 'section', 5: 'class' }
+  pass.querySelectorAll('[data-jump]').forEach(b => {
+    const k = Object.keys(STEP_OF).find(x => STEP_OF[x] === +b.dataset.jump)
+    if (sel[k]) b.setAttribute('aria-label', `Change ${lbl[b.dataset.jump]}, now ${text(k, b)}`)
+  })
+  const prev = to === 5 && sel.deck && !sel.deck.sections.length ? 3 : to - 1
+  $('#back').setAttribute('aria-label', `Back to ${['', 'areas', 'platforms', 'decks', 'sections', 'classes'][prev] || 'areas'}`)
+  if (to >= 6) {
+    const d = sel.deck, s = sel.section
+    $('#leg-from').innerHTML = two(`${sel.platform.name} ${d.name}`)
+    $('#leg-to').innerHTML = two(s.name)
+    $('#leg-to-b').toggleAttribute('disabled', !d.sections.length)
+    $('#m2l').textContent = to === 7 ? 'Card' : 'Cards'
+    $('#m2v').textContent = to === 7 ? (sel.mode.of ? `01 / ${sel.mode.of}` : '01') : s.cards
+    $('#ready-t').textContent = `${sel.mode.desc} Swipe right for true, left for false.`
+    $('#stmt').textContent = FIRST_CARD[routeKey()] || FIRST_CARD[d.code]
+    $('#stub-route').textContent = `${d.code} → ${s.code} · ${sel.mode.name}`
+    $('#route-l').innerHTML = sel.mode.of ? `Card <b>1</b> of ${sel.mode.of}` : `Card <b>1</b> · ${sel.mode.name}`
+    $('#route').setAttribute('aria-label', sel.mode.of ? `Card 1 of ${sel.mode.of}` : 'Card 1')
+    drawBarcode(`${d.code}|${s.code}|${sel.mode.name.toUpperCase()}|01`)
+  }
+  const foot = { cont: to === 1 && app.dataset.player === 'returning', start: to === 6, answers: to === 7 }
+  for (const id in foot) $('#' + id).classList.toggle('on', foot[id])
+}
+
+// ---------- motion ----------
+const itemsOf = n => n >= 1 && n <= 6 ? [...stepEl(n).querySelectorAll('.st-h, .group:not([hidden]) > .c, .ready-t')] : []
+// what a value looks like and where it is, so a copy of it can travel after the page has changed
+function look(el) {
+  const a = app.getBoundingClientRect(), r = el.getBoundingClientRect(), cs = getComputedStyle(el)
+  return { el, text: el.textContent, left: r.left - a.left, top: r.top - a.top, h: r.height, fs: parseFloat(cs.fontSize),
+    css: { fontFamily: cs.fontFamily, fontSize: cs.fontSize, fontWeight: cs.fontWeight, letterSpacing: cs.letterSpacing, lineHeight: cs.lineHeight, color: cs.color } }
+}
+function onPass() {
+  const m = {}
+  if (step === 1) return m
+  pass.querySelectorAll('.blk.on [data-k]').forEach(el => { if (el.textContent) m[el.dataset.k] = look(el) })
+  return m
+}
+function spawn(L) {
+  const g = document.createElement('span')
+  g.className = 'ghost'; g.textContent = L.text
+  Object.assign(g.style, L.css, { left: L.left + 'px', top: L.top + 'px', lineHeight: L.h + 'px' })
+  app.appendChild(g)
+  return g
+}
+// path from one look to another: left edges meet, vertical centres meet, size follows the font
+function path(A, B) {
+  const s = B.fs / A.fs
+  return `translate(${B.left - A.left}px, ${B.top + B.h / 2 - A.top - A.h * s / 2}px) scale(${s})`
+}
+function fly(A, B, hide) {
+  hide.forEach(e => { e.style.visibility = 'hidden' })
+  const opt = { duration: D - HOLD, delay: HOLD, easing: EASE, fill: 'both' }
+  const same = A.text === B.text && A.css.fontFamily === B.css.fontFamily && A.css.fontWeight === B.css.fontWeight
+  const gb = spawn(B), list = []
+  if (same) {
+    if (A.css.color !== B.css.color) gb.style.color = A.css.color
+    list.push(gb.animate([{ transform: path(B, A), color: A.css.color }, { transform: 'none', color: B.css.color }], opt))
+  } else {
+    // the shape follows the eased path; the two looks swap halfway, on a linear clock
+    const ga = spawn(A), lin = { ...opt, easing: 'linear' }
+    list.push(ga.animate([{ transform: 'none' }, { transform: path(A, B) }], opt))
+    list.push(ga.animate([{ opacity: 1 }, { opacity: 1, offset: .3 }, { opacity: 0, offset: .6 }, { opacity: 0 }], lin))
+    list.push(gb.animate([{ transform: path(B, A) }, { transform: 'none' }], opt))
+    list.push(gb.animate([{ opacity: 0 }, { opacity: 0, offset: .4 }, { opacity: 1, offset: .7 }, { opacity: 1 }], lin))
+    list[1].finished.then(() => ga.remove())
+  }
+  return { finished: Promise.all(list.map(x => x.finished)).then(() => { gb.remove(); hide.forEach(e => { e.style.visibility = '' }) }) }
+}
+function fadeGhost(A) {
+  const g = spawn(A)
+  const a = g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-out', fill: 'both' })
+  return { finished: a.finished.then(() => g.remove()) }
+}
+const ATTR = { area: 'area', platform: 'platform', deck: 'deck', section: 'section', mode: 'mode' }
+const ID = { area: v => v.id, platform: v => v.id, deck: v => v.code, section: v => v.code, mode: v => v.id }
+const cardIn = (n, k, v) => stepEl(n).querySelector(`.group:not([hidden]) > [data-${ATTR[k]}="${ID[k](v)}"] .nm`)
+
+// One orchestrated move between any two steps.
+function go(to, card) {
+  if (busy || to === step) return
+  busy = true
+  const from = step, dir = to > from ? 1 : -1, rm = reduced(), anims = []
+  const old = { ...sel }
+  const before = onPass()
+  const src = dir > 0 && card ? card.querySelector('.nm') : null
+  const srcLook = src ? look(src) : null
+  const passR = pass.getBoundingClientRect(), bandH = band.offsetHeight, bandFs = getComputedStyle(band).fontSize
+  const bandPad = getComputedStyle(band).paddingLeft, bandGap = getComputedStyle(band).gap
+  const oldBlk = pass.querySelector('.blk.on'), wasBoard = pass.classList.contains('board')
+  const leaving = itemsOf(from)
+  const footOld = [...$('#foot').children].filter(x => x.classList.contains('on'))
+
+  // going back clears every choice made on or after the step we return to
+  if (dir < 0) for (const k in STEP_OF) if (STEP_OF[k] >= to) sel[k] = null
+  render(to)
+  const after = onPass()
+  const passR2 = pass.getBoundingClientRect()
+
+  stepEl(from) && stepEl(from).classList.add('leaving')
+  const topSwap = from === 1 || to === 1
+  if (topSwap) $(from === 1 ? '#brand' : '#trip').classList.add('leaving')
+  const newBlk = pass.querySelector('.blk.on')
+  if (oldBlk !== newBlk && !topSwap) oldBlk.classList.add('leaving')
+  if (wasBoard && to !== 7) ext.classList.add('leaving')
+  if (from === 7) $('#game-top').classList.add('leaving')
+  if (to === 7) $('#back').classList.add('leaving')
+  footOld.forEach(x => { if (!x.classList.contains('on')) x.classList.add('leaving') })
+  const footNew = [...$('#foot').children].filter(x => x.classList.contains('on') && !footOld.includes(x))
+  const entering = itemsOf(to)
+  const fadeIO = (el, show, o = {}) => anims.push(el.animate(show
+    ? [{ opacity: 0, transform: `translateY(${o.y ?? 12}px)` }, { opacity: 1, transform: 'none' }]
+    : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${o.y ?? 12}px)` }],
+    { duration: show ? 240 : 110, delay: show ? (o.delay ?? 120) : 0, easing: EASE, fill: 'both' }))
+
+  if (rm) {
+    // reduced motion: out, then in, so old and new text never share a frame
+    const OUT = { duration: 100, fill: 'both' }, IN = { duration: 140, delay: 90, fill: 'both' }
+    const f = (el, a, b, o) => anims.push(el.animate([{ opacity: a }, { opacity: b }], o))
+    leaving.forEach(el => f(el, 1, 0, OUT)); entering.forEach(el => f(el, 0, 1, IN))
+    if (topSwap) { f($(from === 1 ? '#brand' : '#trip'), 1, 0, OUT); f($(to === 1 ? '#brand' : '#trip'), 0, 1, IN) }
+    else { f(pass, 0, 1, IN) }
+    footOld.filter(x => x.classList.contains('leaving')).forEach(x => f(x, 1, 0, OUT)); footNew.forEach(x => f(x, 0, 1, IN))
+    if (from === 7) f($('#game-top'), 1, 0, OUT)
+    if (to === 7) { f($('#back'), 1, 0, OUT); f($('#game-top'), 0, 1, IN) }
+    if (from === 7) f($('#back'), 0, 1, IN)
+  } else {
+    const out = dir > 0 ? -10 : 10, inn = dir > 0 ? 24 : -24
+    // the values on the pass: each one travels to where it now belongs (the first choice travels from its card too)
+    {
+      for (const k of Object.keys(STEP_OF)) {
+        const A = before[k], B = after[k]
+        if (A && B) {
+          if (A.left !== B.left || A.top !== B.top || A.text !== B.text || A.fs !== B.fs) anims.push(fly(A, B, [B.el]))
+        } else if (!A && B) {
+          if (srcLook && STEP_OF[k] === from) anims.push(fly(srcLook, B, [B.el, src]))
+          else anims.push(B.el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 200, easing: EASE, fill: 'backwards' }))
+        } else if (A && !B) {
+          const dest = STEP_OF[k] === to && old[k] ? cardIn(to, k, old[k]) : null
+          anims.push(dest ? fly(A, look(dest), [dest]) : fadeGhost(A))
+        }
+      }
+    }
+    // the cards: headings clear first (a travelling name crosses them), cards right after
+    leaving.forEach(el => anims.push(el.animate(
+      [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${out}px)` }],
+      { duration: el.classList.contains('st-h') ? 80 : 140, easing: 'ease-out', fill: 'both' })))
+    entering.forEach((el, i) => anims.push(el.animate(
+      [{ opacity: 0, transform: `translateY(${inn}px)` }, { opacity: 1, transform: 'none' }],
+      // coming back from the round, the text waits until the paper has rolled up past it
+      { duration: 240, delay: (from === 7 ? 320 : 110) + i * 25, easing: EASE, fill: 'both' })))
+    if (topSwap) {
+      const goingIn = from === 1
+      anims.push($('#brand').animate(goingIn
+        ? [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-12px)' }]
+        : [{ opacity: 0, transform: 'translateY(-12px)' }, { opacity: 1, transform: 'none' }],
+        { duration: goingIn ? 110 : 240, delay: goingIn ? 0 : 120, easing: EASE, fill: 'both' }))
+      anims.push($('#trip').animate(goingIn
+        ? [{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }]
+        : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(12px)' }],
+        { duration: goingIn ? 240 : 110, delay: goingIn ? 120 : 0, easing: EASE, fill: 'both' }))
+    } else {
+      // the pass itself: one paper that changes size, never a new one
+      if (oldBlk !== newBlk) {
+        anims.push(oldBlk.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-out', fill: 'both' }))
+        anims.push(newBlk.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, delay: 90, easing: EASE, fill: 'both' }))
+      }
+      const bandH2 = band.offsetHeight
+      if (bandH2 !== bandH) {
+        const cs = getComputedStyle(band)
+        anims.push(band.animate([{ height: bandH + 'px', fontSize: bandFs, paddingLeft: bandPad, gap: bandGap },
+          { height: bandH2 + 'px', fontSize: cs.fontSize, paddingLeft: cs.paddingLeft, gap: cs.gap }], { duration: D, easing: EASE }))
+      }
+      if (passR.height !== passR2.height || passR.top !== passR2.top) {
+        anims.push(pass.animate([{ height: passR.height + 'px', transform: `translateY(${passR.top - passR2.top}px)` },
+          { height: passR2.height + 'px', transform: 'none' }], { duration: to === 7 || from === 7 ? 460 : D, easing: EASE }))
+      }
+      // the first card grows out of the pass: statement, then the stub
+      if (to === 7) {
+        anims.push($('#stmt').animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: 220, easing: EASE, fill: 'both' }))
+        $('.stub').querySelectorAll(':scope > *').forEach(el => anims.push(el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: 260, easing: EASE, fill: 'both' })))
+        anims.push($('#m2v').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 160, fill: 'both' }))
+        fadeIO($('#back'), false, { y: 0 }); fadeIO($('#game-top'), true, { y: -8, delay: 160 })
+      }
+      if (from === 7) {
+        // the paper rolls back up; only its print fades
+        ;[$('#stmt'), ...$('.stub').children].forEach(el => anims.push(el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-out', fill: 'both' })))
+        fadeIO($('#game-top'), false, { y: -8 }); fadeIO($('#back'), true, { y: 0, delay: 160 })
+      }
+    }
+    footOld.filter(x => x.classList.contains('leaving')).forEach(x => fadeIO(x, false))
+    footNew.forEach(x => fadeIO(x, true, { delay: to === 7 ? 200 : 140 }))
+  }
+
+  Promise.all(anims.map(x => x.finished)).then(() => {
+    app.querySelectorAll('.leaving').forEach(el => el.classList.remove('leaving'))
+    anims.forEach(x => x.cancel && x.cancel())
+    if (dir < 0) setGroups()
+    busy = false
+    const back = dir < 0 && old[Object.keys(STEP_OF).find(k => STEP_OF[k] === to)]
+    const k = Object.keys(STEP_OF).find(k => STEP_OF[k] === to)
+    const target = to === 7 ? $('#stmt') : back && k ? cardIn(to, k, old[k])?.closest('button') : stepEl(to).querySelector('.st-h')
+    ;(target || stepEl(to)?.querySelector('.st-h'))?.focus({ preventScroll: true })
+  })
+}
+
+// ---------- input ----------
+$('#main').addEventListener('click', e => {
+  if (busy) return
+  const c = e.target.closest('button.c'); if (!c) return
+  if (c.dataset.area) {
+    sel.area = AREAS.find(a => a.id === c.dataset.area); setGroups(); go(2, c)
+  } else if (c.dataset.platform) {
+    sel.platform = sel.area.platforms.find(p => p.id === c.dataset.platform); setGroups(); go(3, c)
+  } else if (c.dataset.deck) {
+    sel.deck = sel.platform.decks.find(d => d.code === c.dataset.deck); setGroups()
+    // a deck without sections skips the section step: the pass reads "Whole deck"
+    if (sel.deck.sections.length) go(4, c)
+    else { sel.section = whole(sel.deck); setBest(); go(5, c) }
+  } else if (c.dataset.section) {
+    const s = c.dataset.section === 'ALL' ? null : sel.deck.sections.find(x => x[0] === c.dataset.section)
+    sel.section = s ? { code: s[0], name: s[1], cards: s[2] } : whole(sel.deck); setBest(); go(5, c)
+  } else if (c.dataset.mode) {
+    sel.mode = MODES.find(m => m.id === c.dataset.mode); go(6, c)
+  }
+})
+function back() {
+  if (busy || step === 1) return
+  if (step === 7) return go(6)
+  go(step === 5 && !sel.deck.sections.length ? 3 : step - 1)
+}
+$('#back').addEventListener('click', back)
+$('#close').addEventListener('click', back)
+pass.addEventListener('click', e => {
+  const j = e.target.closest('[data-jump]')
+  if (!j || busy || step === 7) return
+  const to = +j.dataset.jump
+  if (to < step) go(to)
+})
+$('#start').addEventListener('click', () => go(7))
+$('#cont').addEventListener('click', () => {
+  if (busy) return
+  sel.area = AREAS.find(a => a.id === LAST.area)
+  sel.platform = sel.area.platforms.find(p => p.id === LAST.platform)
+  sel.deck = sel.platform.decks.find(d => d.code === LAST.deck)
+  const s = sel.deck.sections.find(x => x[0] === LAST.section)
+  sel.section = { code: s[0], name: s[1], cards: s[2] }
+  sel.mode = MODES.find(m => m.id === LAST.mode)
+  setGroups(); setBest(); go(6)
+})
+document.addEventListener('keydown', e => { if (e.key === 'Escape') back() })
+render(1)
+</script>
+</body>
+</html>

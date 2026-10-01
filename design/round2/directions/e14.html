@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Luggage Tag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sky-top: #b9dbef;
+  --sky-low: #e8f0f0;
+  --surface: #d3e7f1;
+  --surface-raised: #fbf8f1;
+  --surface-sunk: #efeadf;
+  --ink: #142030;
+  --ink-muted: #586474;
+  --rule: #d4d0c4;
+  --accent: #2552a8;
+  --on-accent: #fbf8f1;
+  --true: #142030;
+  --false: #142030;
+  --correct: #0e6e4c;
+  --wrong: #b23a22;
+  --r: 14px; --r-sm: 6px;
+  --shadow: drop-shadow(0 1px 0 rgba(20,32,48,.08)) drop-shadow(0 18px 18px rgba(20,32,48,.22));
+  --shadow-lift: drop-shadow(0 1px 0 rgba(20,32,48,.08)) drop-shadow(0 28px 26px rgba(20,32,48,.3));
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Barlow', system-ui, sans-serif;
+  --cond: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; overflow: hidden;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--surface) 46%, var(--sky-low) 100%);
+}
+
+/* header */
+.top { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: flex; align-items: center; gap: 16px; }
+.close {
+  width: 48px; height: 48px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-raised); color: var(--ink);
+  box-shadow: 0 1px 0 rgba(20,32,48,.08), 0 6px 12px -6px rgba(20,32,48,.35);
+  transition: transform var(--t1) var(--ease);
+}
+.close:active { transform: scale(.92); }
+.progress { flex: 1; min-width: 0; }
+.ticks { display: flex; justify-content: space-between; height: 18px; }
+.tick { width: 12px; height: 18px; }
+.tick .body { fill: none; stroke: var(--ink-muted); stroke-width: 1.2; opacity: .55; }
+.tick .eye { fill: var(--surface); }
+.tick .mk { fill: none; stroke: var(--surface-raised); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tick.ok .body { fill: var(--ink); stroke: var(--ink); opacity: 1; }
+.tick.no .body { fill: var(--wrong); stroke: var(--wrong); opacity: 1; }
+.tick.now .body { fill: var(--accent); stroke: var(--accent); opacity: 1; }
+.tick.now .mk { display: none; }
+[data-result="correct"] .tick.now .body { fill: var(--correct); stroke: var(--correct); }
+[data-result="wrong"] .tick.now .body { fill: var(--wrong); stroke: var(--wrong); }
+[data-result="correct"] .tick.now .mk.c, [data-result="wrong"] .tick.now .mk.x { display: inline; }
+.plabel { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--cond); font-weight: 600; font-size: 14px; line-height: 1; color: var(--ink-muted); }
+.plabel b { color: var(--ink); font-weight: 600; }
+.tally .t1, .tally .t2 { display: none; }
+[data-result="correct"] .tally .t0, [data-result="wrong"] .tally .t0 { display: none; }
+[data-result="correct"] .tally .t1, [data-result="wrong"] .tally .t2 { display: inline; }
+
+/* the tag */
+.stage { position: absolute; top: 132px; left: 0; right: 0; height: 588px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  --lean-t: max(0, var(--intent)); --lean-f: max(0, calc(var(--intent) * -1));
+  position: absolute; top: 0; left: 45px; width: 300px; height: 588px;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  transform-origin: 150px 30px;
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring), filter var(--t2) var(--ease);
+  filter: var(--shadow);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; filter: var(--shadow-lift); }
+[data-state="answer"] .card { transform: none; cursor: default; }
+
+.tag {
+  position: absolute; inset: 0; overflow: hidden;
+  border-radius: 0 0 var(--r) var(--r);
+  clip-path: polygon(34px 0, 266px 0, 300px 34px, 300px 100%, 0 100%, 0 34px);
+  background: radial-gradient(circle at 150px 30px, transparent 9px, var(--surface-raised) 9.5px);
+}
+.ring { position: absolute; left: 132px; top: 12px; width: 36px; height: 36px; border-radius: 50%; border: 6px solid var(--surface-sunk); box-shadow: inset 0 0 0 1px var(--rule), 0 0 0 1px var(--rule); pointer-events: none; }
+.strap { position: absolute; left: 140px; top: -22px; width: 20px; height: 56px; overflow: visible; pointer-events: none; }
+.strap path { fill: none; stroke: var(--ink-muted); stroke-width: 2; stroke-linecap: round; opacity: .8; }
+
+.headrow { position: absolute; top: 20px; left: 22px; right: 22px; height: 20px; display: flex; justify-content: space-between; align-items: center; font-family: var(--cond); font-weight: 600; font-size: 15px; line-height: 1; }
+.headrow .brand { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 17px; }
+.headrow .mode { color: var(--ink-muted); }
+
+.code { position: absolute; top: 62px; left: 20px; right: 20px; display: flex; align-items: flex-end; gap: 14px; }
+.code b { font-family: var(--cond); font-weight: 600; font-size: 58px; line-height: .8; letter-spacing: -.01em; color: var(--ink); }
+.code .dom { padding-bottom: 2px; }
+.lbl { display: block; font-family: var(--cond); font-weight: 600; font-size: 13px; line-height: 1; color: var(--ink-muted); }
+.code .dom span:last-child { display: block; margin-top: 4px; font-weight: 600; font-size: 15px; line-height: 1.2; }
+.dest { position: absolute; top: 122px; left: 20px; right: 20px; padding-top: 10px; border-top: 1.5px solid var(--rule); display: flex; align-items: baseline; gap: 10px; }
+.dest span:last-child { font-weight: 600; font-size: 17px; }
+
+.band { position: absolute; top: 166px; left: 0; right: 0; height: 32px; padding: 0 20px; background: var(--accent); color: var(--on-accent); display: flex; justify-content: space-between; align-items: center; font-family: var(--cond); font-weight: 600; font-size: 16px; letter-spacing: .02em; }
+.band .route { display: flex; align-items: center; gap: 8px; }
+
+/* question panel */
+.panel { position: absolute; top: 198px; left: 0; right: 0; height: 308px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.statement { margin: 0; padding: 0 22px; height: 254px; display: flex; align-items: center; font-weight: 600; font-size: 24px; line-height: 1.32; letter-spacing: -.005em; color: var(--ink); }
+.perf { position: absolute; top: 506px; left: 0; right: 0; height: 0; border-top: 1.5px dashed var(--rule); }
+.perf::before, .perf::after { content: ""; position: absolute; top: -7px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
+.perf::before { left: -6px; } .perf::after { right: -6px; }
+.stub { position: absolute; top: 520px; left: 20px; right: 20px; }
+.barcode { width: 100%; height: 30px; color: var(--ink); }
+.stub .num { display: flex; justify-content: space-between; margin-top: 6px; font-family: var(--cond); font-weight: 600; font-size: 13px; letter-spacing: .08em; color: var(--ink-muted); }
+.hint { position: absolute; left: 20px; right: 20px; bottom: 6px; display: flex; align-items: center; justify-content: space-between; height: 40px; font-family: var(--cond); font-weight: 600; font-size: 15px; color: var(--ink-muted); }
+.hint .f, .hint .t { color: var(--ink); display: flex; align-items: center; gap: 6px; transition: color var(--t1); }
+.q-only { transition: opacity var(--t2) var(--ease); }
+[data-state="answer"] .q-only { opacity: 0; }
+.hint .f { opacity: calc(1 - var(--lean-t) * .7); }
+.hint .t { opacity: calc(1 - var(--lean-f) * .7); }
+
+/* drag preview: an unapplied routing sticker */
+.preview { position: absolute; top: 12px; right: 16px; height: 34px; padding: 0 12px; border-radius: var(--r-sm); border: 1.5px dashed var(--ink); display: flex; align-items: center; gap: 6px; font-family: var(--cond); font-weight: 700; font-size: 18px; color: var(--ink); background: var(--surface-raised); pointer-events: none; opacity: 0; }
+.preview.t { left: 16px; right: auto; opacity: calc(var(--lean-t) * 1.6); transform: translateY(calc((1 - var(--lean-t)) * -6px)); }
+.preview.f { opacity: calc(var(--lean-f) * 1.6); transform: translateY(calc((1 - var(--lean-f)) * -6px)); }
+
+/* answer panel */
+.answer { position: absolute; top: 198px; left: 0; right: 0; height: 308px; padding: 26px 22px 0; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transform: translateY(8px); }
+.answer .lbl { font-size: 14px; }
+.answer .is { margin: 4px 0 0; font-family: var(--cond); font-weight: 700; font-size: 30px; line-height: 1; }
+.explain { margin: 14px 0 4px; font-size: 16.5px; line-height: 1.45; color: var(--ink); }
+.source { margin-top: 0; min-height: 48px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--accent); text-decoration: none; }
+.source u { text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+
+.sticker { position: absolute; top: 226px; right: 18px; height: 46px; padding: 0 14px 0 12px; border-radius: var(--r-sm); display: none; align-items: center; gap: 8px; color: var(--v); background: var(--surface-raised); font-family: var(--cond); font-weight: 700; font-size: 22px; line-height: 1; box-shadow: inset 0 0 0 2px currentColor; }
+.sticker::after { content: ""; position: absolute; inset: 4px; border: 1px solid currentColor; opacity: .45; border-radius: 3px; pointer-events: none; }
+.sticker.ok { --v: var(--correct); }
+.sticker.no { --v: var(--wrong); }
+.sticker svg { flex: none; }
+
+[data-state="answer"] .panel { opacity: 0; transform: translateY(8px); visibility: hidden; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease), visibility 0s var(--t2); }
+[data-state="answer"] .answer { opacity: 1; visibility: visible; transform: none; transition: opacity var(--t3) var(--ease) 160ms, transform var(--t3) var(--ease) 160ms; }
+[data-state="answer"][data-result="correct"] .sticker.ok,
+[data-state="answer"][data-result="wrong"] .sticker.no { display: flex; animation: apply var(--t3) var(--spring) 300ms both; }
+@keyframes apply { 0% { opacity: 0; transform: translateY(-10px) scale(1.12); } 100% { opacity: 1; transform: none; } }
+
+/* actions */
+.actions { position: absolute; top: 736px; left: 16px; right: 16px; height: 60px; }
+.row2 { position: absolute; inset: 0; display: flex; gap: 12px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn {
+  flex: 1; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 600; font-size: 19px; color: var(--ink); background: var(--surface-raised);
+  box-shadow: 0 1px 0 rgba(20,32,48,.08), 0 10px 18px -12px rgba(20,32,48,.55);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease), background var(--t1);
+}
+.btn:active { transform: translateY(2px) scale(.98); box-shadow: 0 1px 0 rgba(20,32,48,.1); background: var(--surface-sunk); }
+.btn.next { background: var(--ink); color: var(--on-accent); }
+.btn.next:active { background: var(--ink); }
+.a-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .q-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .a-row { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition-delay: var(--t3); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-state="question">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+    <div class="progress" role="img" aria-label="Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.">
+      <div class="ticks" aria-hidden="true">
+        <svg class="tick ok" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/><circle class="eye" cx="6" cy="4" r="1.4"/><path class="mk" d="M3.5 11l1.8 1.8L8.6 9.4"/></svg>
+        <svg class="tick ok" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/><circle class="eye" cx="6" cy="4" r="1.4"/><path class="mk" d="M3.5 11l1.8 1.8L8.6 9.4"/></svg>
+        <svg class="tick no" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/><circle class="eye" cx="6" cy="4" r="1.4"/><path class="mk" d="M4 9.2l4 4M8 9.2l-4 4"/></svg>
+        <svg class="tick now" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/><circle class="eye" cx="6" cy="4" r="1.4"/><path class="mk c" d="M3.5 11l1.8 1.8L8.6 9.4"/><path class="mk x" d="M4 9.2l4 4M8 9.2l-4 4"/></svg>
+        <svg class="tick" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/></svg>
+        <svg class="tick" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/></svg>
+        <svg class="tick" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/></svg>
+        <svg class="tick" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/></svg>
+        <svg class="tick" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/></svg>
+        <svg class="tick" viewBox="0 0 12 18"><path class="body" d="M3.5.6h5L11.4 3.5V15.4a2 2 0 0 1-2 2H2.6a2 2 0 0 1-2-2V3.5z"/></svg>
+      </div>
+      <div class="plabel" aria-hidden="true"><span>Card <b>4</b> of 10</span><span class="tally"><span class="t0">2 correct · 1 wrong</span><span class="t1">3 correct · 1 wrong</span><span class="t2">2 correct · 2 wrong</span></span></div>
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="tag">
+        <div class="headrow">
+          <span class="brand"><svg width="20" height="14" viewBox="0 0 22 16" aria-hidden="true"><path d="M5 15h13a4 4 0 0 0 .6-8A6 6 0 0 0 7.2 5.5 4.8 4.8 0 0 0 5 15z" fill="currentColor"/></svg>Truthy</span>
+          <span class="mode">Classic</span>
+        </div>
+        <div class="code">
+          <b>SEC</b>
+          <div class="dom"><span class="lbl">Domain</span><span>Security and<br>compliance</span></div>
+        </div>
+        <div class="dest"><span class="lbl">To</span><span>AWS Cloud Practitioner</span></div>
+        <div class="band"><span class="route">CLF <svg width="18" height="10" viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h15M12 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> SEC</span><span>Card 04 / 10</span></div>
+
+        <div class="panel">
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="hint q-only" aria-hidden="true"><span class="f">← False</span><span>swipe the tag</span><span class="t">True →</span></div>
+          <div class="preview t" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 18 18"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>True</div>
+          <div class="preview f" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>False</div>
+        </div>
+
+        <div class="perf"></div>
+        <div class="stub" aria-hidden="true">
+          <svg class="barcode" id="barcode" preserveAspectRatio="none"></svg>
+          <div class="num"><span>0 0410 CLF SEC</span><span>Claim check</span></div>
+        </div>
+
+        <div class="answer" aria-live="polite">
+          <span class="lbl">The answer is</span>
+          <p class="is">False</p>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" id="source"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3h5l1 1 1-1h5v12h-5l-1 1-1-1H3zM9 4v11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><u>Shared responsibility model</u><span aria-hidden="true">→</span></a>
+        </div>
+        <div class="sticker ok"><svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Correct</div>
+        <div class="sticker no"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Not quite</div>
+      </div>
+      <div class="ring" aria-hidden="true"></div>
+      <svg class="strap" viewBox="0 0 20 56" aria-hidden="true"><path d="M6 52C4 32 6 10 10 2c4 8 6 30 4 50"/></svg>
+    </div>
+  </section>
+
+  <div class="actions">
+    <div class="row2 q-row">
+      <button class="btn f" type="button" data-answer="false"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>False</button>
+      <button class="btn t" type="button" data-answer="true"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>True</button>
+    </div>
+    <div class="row2 a-row">
+      <button class="btn next" type="button" id="next">Next card <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// slim barcode drawn from the tag's own data
+;(function () {
+  const data = 'SEC|CLF|04'
+  let x = 0, out = ''
+  const bar = (w, on) => { if (on) out += `<rect x="${x}" y="0" width="${w}" height="30"/>`; x += w }
+  bar(2, 1); bar(1, 0); bar(1, 1); bar(2, 0)
+  for (const ch of data) {
+    const c = ch.charCodeAt(0)
+    for (let b = 0; b < 7; b++) bar((c >> b) & 1 ? 2 : 1, b % 2 === 0)
+    bar(1, 0)
+  }
+  bar(1, 1); bar(1, 0); bar(2, 1)
+  const svg = document.getElementById('barcode')
+  svg.setAttribute('viewBox', `0 0 ${x} 30`)
+  svg.innerHTML = `<g fill="currentColor">${out}</g>`
+})()
+
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+function answer(choice) {
+  if (app.dataset.state !== 'question') return
+  app.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 500)
+}
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'
+  delete app.dataset.result
+})
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+attachSwipe(card, answer)
+</script>
+</body>
+</html>

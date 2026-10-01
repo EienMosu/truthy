@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* palette: midnight indigo + flat gold */
+  --surface: #0f1030;
+  --surface-raised: #1b1c4a;
+  --surface-sunk: #14153a;
+  --ink: #f1e8d2;
+  --ink-muted: #b4b0d6;
+  --accent: #d9ae5a;
+  --accent-ink: #0f1030;
+  --true: #d9ae5a;
+  --false: #c9c6ea;
+  --correct: #86d4b2;
+  --wrong: #f0907a;
+  --line: rgba(217, 174, 90, .55);
+  --glow: #25276099;
+
+  --display: "Gloock", Georgia, serif;
+  --text: "Spectral", Georgia, serif;
+
+  --r-s: 6px;
+  --r-l: 16px;
+  --shadow: 0 2px 0 rgba(0,0,0,.35), 0 18px 36px -12px rgba(0,0,0,.65);
+  --shadow-lift: 0 2px 0 rgba(0,0,0,.35), 0 32px 56px -14px rgba(0,0,0,.8);
+
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 46%, var(--glow) 0%, transparent 70%),
+    radial-gradient(circle at 12px 14px, rgba(217,174,90,.35) 0 1px, transparent 1.5px) 0 0 / 44px 44px,
+    radial-gradient(circle at 32px 34px, rgba(241,232,210,.18) 0 .8px, transparent 1.2px) 0 0 / 44px 44px,
+    var(--surface);
+  color: var(--ink);
+  font-family: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.app { position: relative; width: 390px; height: 844px; margin: 0 auto; }
+
+/* header */
+.top { position: absolute; top: 56px; left: 16px; right: 16px; height: 48px; display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; }
+.close { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; cursor: pointer; transition: transform var(--t1) var(--ease), background var(--t1); }
+.close:active { transform: scale(.92); background: var(--surface-raised); }
+.close svg { width: 16px; height: 16px; stroke: var(--accent); stroke-width: 1.6; }
+.deck { text-align: center; line-height: 1.2; }
+.deck b { display: block; font-weight: 600; font-size: 16px; color: var(--ink); }
+.deck i { font-size: 14px; color: var(--ink-muted); }
+.count { justify-self: end; font-family: var(--display); font-size: 17px; color: var(--accent); }
+
+.pips { position: absolute; top: 114px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 12px; height: 22px; }
+.pip { width: 14px; height: 14px; fill: none; stroke: var(--line); stroke-width: 1.2; }
+.pip.ok { fill: var(--accent); stroke: var(--accent); }
+.pip.no { stroke: var(--wrong); stroke-width: 1.4; }
+.pip.now { width: 22px; height: 22px; stroke: var(--accent); }
+.pip.now .dot { fill: var(--accent); stroke: none; }
+[data-result="correct"] .pip.now { fill: var(--accent); }
+[data-result="wrong"] .pip.now { stroke: var(--wrong); }
+.pip .nx { display: none; }
+[data-result="wrong"] .pip.now .dot { display: none; }
+[data-result="wrong"] .pip.now .nx { display: inline; stroke-width: 1.6; }
+
+/* card */
+.stage { position: absolute; top: 146px; left: 0; right: 0; height: 516px; display: flex; justify-content: center; }
+.card { user-select: none; -webkit-user-select: none;
+  width: 304px; height: 516px; position: relative; touch-action: none; cursor: grab;
+  perspective: 1400px;
+  transform: translateX(var(--dx, 0px)) rotate(var(--rot, 0deg));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+.flipper { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform var(--t3) var(--spring); }
+[data-state="answer"] .flipper { transform: rotateY(180deg); }
+[data-state="answer"] .card { cursor: default; transform: none; }
+.face {
+  position: absolute; inset: 0; border-radius: var(--r-l); background: var(--surface-raised);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow); transition: box-shadow var(--t2) var(--ease);
+  display: flex; flex-direction: column; align-items: center; padding: 22px 28px 26px; overflow: hidden;
+}
+.card[data-dragging] .face { box-shadow: var(--shadow-lift); }
+.back { transform: rotateY(180deg); }
+.face::before, .face::after { content: ""; position: absolute; pointer-events: none; }
+.face::before { inset: 9px; border: 1.5px solid var(--accent); border-radius: 10px; }
+.face::after { inset: 14px; border: 1px solid var(--line); border-radius: 6px; }
+.corner { position: absolute; width: 26px; height: 26px; fill: none; stroke: var(--accent); stroke-width: 1.3; }
+.corner.tl { top: 17px; left: 17px; }
+.corner.tr { top: 17px; right: 17px; transform: scaleX(-1); }
+.corner.bl { bottom: 17px; left: 17px; transform: scaleY(-1); }
+.corner.br { bottom: 17px; right: 17px; transform: scale(-1, -1); }
+
+.numeral { position: relative; display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 30px; line-height: 1; color: var(--accent); margin-top: 6px; }
+.fl { width: 44px; height: 10px; fill: var(--accent); stroke: var(--accent); stroke-width: 1; }
+.fl.r { transform: scaleX(-1); }
+
+.emblem { width: 140px; height: 140px; margin-top: 14px; flex: none; opacity: calc(1 - max(var(--intent, 0), var(--intent, 0) * -1) * 1.6); }
+.emblem * { fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.emblem .fill { fill: var(--accent); stroke: none; }
+
+.statement { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; margin: 0; padding: 4px 0; font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1.24; color: var(--ink); text-wrap: balance; }
+
+.banner { position: relative; flex: none; height: 38px; padding: 0 22px; display: grid; place-items: center; font-style: italic; font-size: 15px; color: var(--ink); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.banner::before, .banner::after { content: ""; position: absolute; top: 50%; width: 8px; height: 8px; margin-top: -4px; background: var(--accent); transform: rotate(45deg); }
+.banner::before { left: -4px; } .banner::after { right: -4px; }
+
+/* drag seals */
+.seal { position: absolute; top: 96px; left: 50%; margin-left: -60px; width: 120px; height: 120px; border-radius: 50%; border: 2px solid; display: grid; place-content: center; justify-items: center; gap: 2px; background: var(--surface-sunk); font-family: var(--display); font-size: 26px; line-height: 1; pointer-events: none; opacity: 0; box-shadow: 0 0 0 4px var(--surface-raised), 0 0 0 5px currentColor; }
+.seal svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.seal.t { color: var(--true); transform: rotate(calc(var(--intent, 0) * 8deg)) scale(calc(.7 + var(--intent, 0) * .3)); opacity: calc(var(--intent, 0) * 1.5); }
+.seal.f { color: var(--false); transform: rotate(calc(var(--intent, 0) * 8deg)) scale(calc(.7 - var(--intent, 0) * .3)); opacity: calc(var(--intent, 0) * -1.5); }
+
+/* back face */
+.back .numeral { margin-top: 6px; }
+.verdict-glyph { width: 64px; height: 64px; margin-top: 18px; flex: none; }
+.verdict-glyph * { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.verdict { margin: 8px 0 0; font-family: var(--display); font-weight: 400; font-size: 46px; line-height: 1.05; }
+.answer-is { margin: 6px 0 0; font-style: italic; font-size: 18px; color: var(--ink); }
+.answer-is b { font-style: normal; font-weight: 600; color: var(--accent); }
+.rule { width: 132px; height: 10px; margin: 16px 0 14px; flex: none; fill: var(--accent); stroke: var(--line); }
+.explain { margin: 0; font-size: 17px; line-height: 1.45; text-align: center; color: var(--ink); }
+.source { margin-top: 6px; min-height: 48px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.source svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.back .banner { margin-top: auto; }
+.v-ok, .v-no { display: none; }
+[data-result="correct"] .v-ok { display: block; }
+[data-result="wrong"] .v-no { display: block; }
+[data-result="correct"] .back { --verdict: var(--correct); }
+[data-result="wrong"] .back { --verdict: var(--wrong); }
+.verdict, .verdict-glyph { color: var(--verdict); }
+.verdict-glyph * { stroke: var(--verdict); }
+
+/* controls */
+.hint { position: absolute; top: 672px; left: 0; right: 0; text-align: center; font-style: italic; font-size: 15px; color: var(--ink-muted); display: flex; justify-content: center; align-items: center; gap: 10px; transition: opacity var(--t2); }
+.hint svg { width: 18px; height: 10px; fill: none; stroke: var(--ink-muted); stroke-width: 1.3; }
+.choices, .next-row { position: absolute; top: 704px; left: 43px; right: 43px; height: 64px; display: flex; gap: 16px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.choice {
+  flex: 1; height: 64px; border: 0; border-radius: var(--r-s); cursor: pointer;
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1.5px var(--accent), inset 0 0 0 5px var(--surface-raised), inset 0 0 0 6px var(--line), var(--shadow);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-family: var(--display); font-size: 22px; color: var(--ink);
+  transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.choice svg { width: 24px; height: 24px; fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; }
+.choice:active { transform: translateY(2px) scale(.97); background: var(--surface-sunk); }
+.next-row { opacity: 0; pointer-events: none; transform: translateY(8px); }
+.next {
+  flex: 1; height: 64px; border: 0; border-radius: var(--r-s); cursor: pointer;
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: inset 0 0 0 5px var(--accent), inset 0 0 0 6px rgba(15,16,48,.45), var(--shadow);
+  font-family: var(--display); font-size: 22px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  transition: transform var(--t1) var(--ease);
+}
+.next svg { width: 22px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.next:active { transform: translateY(2px) scale(.97); }
+[data-state="answer"] .choices, [data-state="answer"] .hint { opacity: 0; pointer-events: none; }
+[data-state="answer"] .next-row { opacity: 1; pointer-events: auto; transform: none; transition-delay: var(--t2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .card, .flipper, .choices, .next-row, .hint { transition-duration: 1ms !important; transition-delay: 0s !important; }
+  .flipper { transition: none; }
+  [data-state="answer"] .front { opacity: 0; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2l12 12M14 2L2 14"/></svg>
+    </button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><i>Classic</i></div>
+    <div class="count" aria-label="Card 4 of 10">4/10</div>
+  </header>
+  <div class="pips" role="img" aria-label="Cards 1 and 2 correct, card 3 wrong, card 4 of 10 now">
+    <svg class="pip ok" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip ok" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip no" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/><path d="M5.2 5.2l3.6 3.6M8.8 5.2L5.2 8.8"/></svg><svg class="pip now" viewBox="0 0 22 22"><path d="M11 1l10 10-10 10L1 11z"/><path class="dot" d="M11 6l5 5-5 5-5-5z"/><path class="nx" d="M8 8l6 6M14 8l-6 6"/></svg><svg class="pip" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg><svg class="pip" viewBox="0 0 14 14"><path d="M7 1l6 6-6 6-6-6z"/></svg>
+  </div>
+
+  <section class="stage">
+    <div class="card" id="card" data-swipe>
+      <div class="flipper">
+        <article class="face front" aria-label="Statement card">
+          <svg class="corner tl" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/><path d="M11 11l2-2 2 2-2 2z" fill="currentColor"/></svg>
+          <svg class="corner tr" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/><path d="M11 11l2-2 2 2-2 2z"/></svg>
+          <svg class="corner bl" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/><path d="M11 11l2-2 2 2-2 2z"/></svg>
+          <svg class="corner br" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/><path d="M11 11l2-2 2 2-2 2z"/></svg>
+
+          <div class="numeral" aria-label="Card four"><svg class="fl" viewBox="0 0 44 10" aria-hidden="true"><path d="M2 5h30" fill="none"/><circle cx="2" cy="5" r="1.5" stroke="none"/><path d="M37 1l4 4-4 4-4-4z" stroke="none"/></svg>IV<svg class="fl r" viewBox="0 0 44 10" aria-hidden="true"><path d="M2 5h30" fill="none"/><circle cx="2" cy="5" r="1.5" stroke="none"/><path d="M37 1l4 4-4 4-4-4z" stroke="none"/></svg></div>
+          <svg class="emblem" viewBox="0 0 140 140" aria-hidden="true">
+            <circle cx="70" cy="70" r="64"/>
+            <circle cx="70" cy="70" r="58" stroke-width=".8" opacity=".6"/>
+            <circle cx="70" cy="70" r="51" stroke-width="7" stroke-dasharray="1.2 12.15" opacity=".8"/>
+            <path d="M70 26l26 10v24c0 22-11 36-26 46-15-10-26-24-26-46V36z"/>
+            <path d="M70 32l20 8v20c0 18-8 30-20 38-12-8-20-20-20-38V40z" stroke-width=".8" opacity=".6"/>
+            <path d="M58 55c4-6 8-8 12-8s8 2 12 8c-4 6-8 8-12 8s-8-2-12-8z"/>
+            <circle class="fill" cx="70" cy="55" r="3"/>
+            <path d="M70 63v29M70 80h7M70 86h5"/>
+            <path class="fill" d="M70 2l2 5-2 1-2-1zM70 138l2-5-2-1-2 1zM2 70l5-2 1 2-1 2zM138 70l-5-2-1 2 1 2z"/>
+            <path class="fill" d="M22 22l1.6 4.4L28 28l-4.4 1.6L22 34l-1.6-4.4L16 28l4.4-1.6zM118 22l1.6 4.4L124 28l-4.4 1.6L118 34l-1.6-4.4L112 28l4.4-1.6zM22 106l1.2 3.3 3.3 1.2-3.3 1.2L22 115l-1.2-3.3-3.3-1.2 3.3-1.2zM118 106l1.2 3.3 3.3 1.2-3.3 1.2L118 115l-1.2-3.3-3.3-1.2 3.3-1.2z"/>
+          </svg>
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="banner">Security and compliance</div>
+
+          <div class="seal t" aria-hidden="true">
+            <svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="5"/><path d="M13 1v4M13 21v4M1 13h4M21 13h4M4.5 4.5l2.8 2.8M18.7 18.7l2.8 2.8M4.5 21.5l2.8-2.8M18.7 7.3l2.8-2.8"/></svg>True
+          </div>
+          <div class="seal f" aria-hidden="true">
+            <svg viewBox="0 0 26 26"><path d="M17 3a10 10 0 1 0 6 16A8 8 0 0 1 17 3z"/></svg>False
+          </div>
+        </article>
+
+        <article class="face back" aria-live="polite">
+          <svg class="corner tl" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/></svg>
+          <svg class="corner tr" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/></svg>
+          <svg class="corner bl" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/></svg>
+          <svg class="corner br" viewBox="0 0 26 26" aria-hidden="true"><path d="M1 25V12A11 11 0 0 1 12 1h13"/><path d="M6 25V14A8 8 0 0 1 14 6h11"/></svg>
+
+          <div class="numeral" aria-hidden="true"><svg class="fl" viewBox="0 0 44 10" aria-hidden="true"><path d="M2 5h30" fill="none"/><circle cx="2" cy="5" r="1.5" stroke="none"/><path d="M37 1l4 4-4 4-4-4z" stroke="none"/></svg>IV<svg class="fl r" viewBox="0 0 44 10" aria-hidden="true"><path d="M2 5h30" fill="none"/><circle cx="2" cy="5" r="1.5" stroke="none"/><path d="M37 1l4 4-4 4-4-4z" stroke="none"/></svg></div>
+          <svg class="verdict-glyph" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="18"/>
+            <path d="M32 4v7M32 53v7M4 32h7M53 32h7M12 12l5 5M47 47l5 5M12 52l5-5M47 17l5-5" class="v-ok"/>
+            <path d="M24 32.5l5.5 5.5L41 26.5" class="v-ok"/>
+            <path d="M25 25l14 14M39 25L25 39" class="v-no"/>
+            <path d="M32 6a26 26 0 0 1 0 52" class="v-no" stroke-dasharray="2 5"/>
+            <path d="M32 58a26 26 0 0 1 0-52" class="v-no" stroke-dasharray="2 5"/>
+          </svg>
+          <h2 class="verdict"><span class="v-ok">Correct</span><span class="v-no">Not quite</span></h2>
+          <p class="answer-is">The answer is <b>False</b></p>
+          <svg class="rule" viewBox="0 0 132 10" aria-hidden="true"><path d="M0 5h54M78 5h54" fill="none"/><path d="M66 0l5 5-5 5-5-5z" stroke="none"/><circle cx="56" cy="5" r="1.5" stroke="none"/><circle cx="76" cy="5" r="1.5" stroke="none"/></svg>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" onclick="return false">Shared responsibility model
+            <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 9l6-6M4 3h5v5"/></svg></a>
+          <div class="banner">Security and compliance</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="hint" aria-hidden="true">
+    <svg viewBox="0 0 18 10"><path d="M17 5H2M6 1L2 5l4 4"/></svg>
+    Swipe the card, or choose
+    <svg viewBox="0 0 18 10"><path d="M1 5h15M12 1l4 4-4 4"/></svg>
+  </div>
+  <div class="choices">
+    <button class="choice" type="button" data-answer="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3a9.5 9.5 0 1 0 6 15.5A7.5 7.5 0 0 1 15 3z"/></svg>False
+    </button>
+    <button class="choice" type="button" data-answer="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>True
+    </button>
+  </div>
+  <div class="next-row">
+    <button class="next" type="button">Next card
+      <svg viewBox="0 0 22 12" aria-hidden="true"><path d="M1 6h19M15 1l5 5-5 5"/></svg></button>
+  </div>
+</main>
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.getElementById('card')
+function answer(choice) {
+  if (root.dataset.state !== 'question') return
+  root.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  void root.offsetWidth
+  root.dataset.state = 'answer'
+  setTimeout(() => document.querySelector('.next').focus({ preventScroll: true }), 400)
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+}
+attachSwipe(card, answer)
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.querySelector('.next').addEventListener('click', reset)
+</script>
+</body>
+</html>

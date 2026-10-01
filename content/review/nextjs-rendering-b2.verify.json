@@ -1,0 +1,49 @@
+{
+ "file": "content/raw/nextjs-rendering-b2.json",
+ "checked": 48,
+ "flagged": [
+  {
+   "id": "nextjs-rendering-sr5-07",
+   "verdict": "weak_card",
+   "urlStatus": "Loaded (HTTP 200) and supports the underlying fact.",
+   "evidence": "\"However, within any component, multiple async/await requests can still be sequential if placed after the other. For example, getAlbums will be blocked until getArtist is resolved.\" https://nextjs.org/docs/app/getting-started/fetching-data",
+   "problem": "The statement gives itself away. 'Awaiting one fetch before starting the next' describes sequential execution by definition, so no developer who knows what await does would answer true. The real trap in the docs is different: layouts and pages render in parallel, but awaits inside one component are still sequential. The card does not test that.",
+   "suggestedFix": "Rewrite: 'Because Next.js renders layouts and pages in parallel, two fetches awaited one after the other inside the same page component also run in parallel.' (answer: false). Explanation: 'Parallel rendering applies across route segments; within one component, each await blocks the next request, so start both requests and await them together with Promise.all.'"
+  },
+  {
+   "id": "nextjs-rendering-sr6-08",
+   "verdict": "ambiguous",
+   "urlStatus": "Loaded (https://nextjs.org/docs/app/guides/caching-without-cache-components) and it supports the intended fact (the minimum revalidate across the route's segments wins).",
+   "evidence": "Previous-model guide, Revalidation frequency: \"The lowest revalidate across each layout and page of a single route will determine the revalidation frequency of the entire route. This ensures that child pages are revalidated as frequently as their parent layouts.\"",
+   "problem": "\"the lowest segment revalidate\" reads two ways. It can mean the smallest revalidate value across segments, which is true. It can also mean the revalidate of the lowest (deepest) segment in the tree, usually the page, which is false: the docs pick the minimum value across all layouts and the page, and a parent layout with a smaller value overrides the page. A careful player could defend False. The explanation (\"shortest revalidate interval specified by its layouts or page\") is accurate.",
+   "suggestedFix": "Rewrite the statement: \"In Next.js 16 with cacheComponents: false, the smallest revalidate value exported by any layout or page in a route sets that route's revalidation frequency.\" (answer: true). Keep the explanation."
+  }
+ ],
+ "okWithNotes": [
+  {
+   "id": "nextjs-rendering-sr5-05",
+   "problem": "",
+   "suggestedFix": "Optional: add 'within the same request' to the explanation to reinforce its scope, e.g. 'Reusing the same cache-wrapped database function lets its callers share results for matching arguments within one server request.'"
+  },
+  {
+   "id": "nextjs-rendering-sr5-06",
+   "problem": "",
+   "suggestedFix": "No change required. Note: the same page also says 'React will use shallow equality of the arguments', which a reader could misread as content comparison. The example and the Object.is sentence settle it, so the card stands."
+  },
+  {
+   "id": "nextjs-rendering-sr5-10",
+   "problem": "",
+   "suggestedFix": "Optional wording polish: 'SWR uses server-provided fallback data only when the fallback key matches the Client Component's useSWR key.'"
+  },
+  {
+   "id": "nextjs-rendering-sr5-11",
+   "problem": "",
+   "suggestedFix": "Optional: add to the explanation that the resolved value must be serializable and that the reading component suspends, so it should sit inside a Suspense boundary."
+  },
+  {
+   "id": "nextjs-rendering-sr5-12",
+   "problem": "",
+   "suggestedFix": "Optional: add to the explanation that revalidateIfStale: false is the opt-out."
+  }
+ ]
+}

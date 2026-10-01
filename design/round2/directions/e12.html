@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Night Flight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;700&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* a cabin at night: deep sky, a cream pass under the reading light, one amber lamp */
+  --sky-1: #0c1630;
+  --sky-2: #15224a;
+  --sky-3: #22305a;
+  --surface: var(--sky-1);
+  --surface-raised: #f5f0e5;
+  --surface-sunk: #ece5d5;
+  --ink: #18223a;
+  --ink-muted: #5d6475;
+  --rule: #d8cfbd;
+  --accent: #e3a53c;
+  --sky-ink: #e9e4d6;
+  --sky-muted: #a9b2c9;
+  --window: #1d2a52;
+  --window-edge: #3a4772;
+  --true: #2d58a6;
+  --false: #a5432c;
+  --correct: #1c6a4e;
+  --wrong: #a5432c;
+  --r: 14px; --r-sm: 8px;
+  --shadow: 0 1px 0 rgba(0,0,0,.25), 0 26px 40px -20px rgba(0,0,0,.8);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Red Hat Display', system-ui, sans-serif;
+  --mono: 'Red Hat Mono', ui-monospace, monospace;
+  --notch: 11px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+:focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; }
+.card :focus-visible { outline-color: var(--ink); }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; overflow: hidden;
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 58%, var(--sky-3) 100%);
+}
+.stars { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; fill: var(--sky-ink); }
+
+/* header: close + a row of cabin windows */
+.top { position: absolute; top: 54px; left: 16px; right: 16px; height: 52px; display: flex; align-items: center; gap: 16px; }
+.close {
+  width: 48px; height: 48px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  color: var(--sky-ink); box-shadow: inset 0 0 0 1px var(--window-edge);
+  transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.close:active { transform: scale(.92); background: var(--window); }
+.prog { flex: 1; min-width: 0; }
+.windows { display: flex; justify-content: space-between; }
+.win { width: 18px; height: 24px; }
+.win .pane { fill: var(--window); stroke: var(--window-edge); stroke-width: 1; }
+.win .mk { fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.win.ok .pane { fill: var(--sky-ink); stroke: var(--sky-ink); }
+.win.ok .mk { stroke: var(--sky-1); }
+.win.no .pane { fill: var(--window); stroke: var(--sky-ink); }
+.win.no .mk { stroke: var(--sky-ink); }
+.win.now .pane { fill: var(--accent); stroke: var(--accent); }
+.win.now .moon { fill: var(--sky-1); }
+.win .r-ok, .win .r-no { display: none; }
+[data-state="answer"][data-result="correct"] .win.now .pane { fill: var(--sky-ink); stroke: var(--sky-ink); }
+[data-state="answer"][data-result="wrong"] .win.now .pane { fill: var(--window); stroke: var(--sky-ink); }
+[data-state="answer"] .win.now .moon { display: none; }
+[data-state="answer"][data-result="correct"] .win.now .r-ok, [data-state="answer"][data-result="wrong"] .win.now .r-no { display: inline; }
+[data-result="correct"] .win.now .r-ok { stroke: var(--sky-1); }
+[data-result="wrong"] .win.now .r-no { stroke: var(--sky-ink); }
+.win.now .pane { transition: fill var(--t2) var(--ease) var(--t3), stroke var(--t2) var(--ease) var(--t3); }
+.cap { display: flex; justify-content: space-between; margin-top: 7px; font-family: var(--mono); font-size: 12px; line-height: 1; color: var(--sky-muted); }
+.cap b { font-weight: 500; color: var(--sky-ink); }
+.tally .t1, .tally .t2 { display: none; }
+[data-result="correct"] .tally .t0, [data-result="wrong"] .tally .t0 { display: none; }
+[data-result="correct"] .tally .t1, [data-result="wrong"] .tally .t2 { display: inline; }
+
+/* the pass */
+.stage { position: absolute; top: 128px; left: 16px; right: 16px; height: 584px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  --pull: max(var(--intent), calc(var(--intent) * -1));
+  position: absolute; inset: 0;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+[data-state="answer"] .card { transform: none; cursor: default; }
+.shadowbox { position: absolute; inset: 0; border-radius: var(--r); box-shadow: var(--shadow); pointer-events: none; }
+
+.main {
+  position: relative; height: 382px; border-radius: var(--r) var(--r) 0 0; display: flex; flex-direction: column;
+  background:
+    radial-gradient(circle at 0 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 100%, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+}
+.head { height: 52px; margin: 0 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--rule); flex: none; }
+.head b { font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+.head small { margin-left: auto; font-family: var(--mono); font-size: 12.5px; color: var(--ink-muted); }
+.head svg { color: var(--accent); }
+
+/* itinerary: two stops joined by a dotted leg */
+.trip { position: relative; margin: 14px 20px 0; flex: none; }
+.trip::before { content: ""; position: absolute; left: 4px; top: 13px; bottom: 13px; border-left: 1.5px dotted var(--ink-muted); opacity: .7; }
+.stop { position: relative; display: grid; grid-template-columns: 22px 54px 1fr; align-items: center; height: 40px; }
+.stop i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--surface-raised); position: relative; z-index: 1; }
+.stop.to i { background: var(--ink); }
+.stop code { font-family: var(--mono); font-weight: 500; font-size: 18px; letter-spacing: .04em; }
+.stop span { font-weight: 500; font-size: 16px; line-height: 1.2; }
+
+.fields { display: grid; grid-template-columns: 1fr 1fr; margin: 12px 20px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); flex: none; }
+.fields div { padding: 8px 0 9px; }
+.fields div + div { padding-left: 14px; border-left: 1px solid var(--rule); }
+.fields dt { font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); }
+.fields dd { margin: 3px 0 0; font-weight: 700; font-size: 15px; }
+
+.statement { flex: 1; margin: 0; padding: 4px 20px 10px; display: flex; align-items: center; font-weight: 500; font-size: 25px; line-height: 1.32; letter-spacing: -.01em; color: var(--ink); }
+.perf { position: absolute; left: calc(var(--notch) + 6px); right: calc(var(--notch) + 6px); bottom: 0; height: 1.5px; background: repeating-linear-gradient(90deg, var(--rule) 0 6px, transparent 6px 11px); }
+
+/* lower: stub on top of the answer slip */
+.lower { position: relative; height: 202px; }
+.slip, .stub {
+  position: absolute; inset: 0; border-radius: 0 0 var(--r) var(--r);
+}
+.slip {
+  background:
+    radial-gradient(circle at 0 0, transparent var(--notch), var(--surface-sunk) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 0, transparent var(--notch), var(--surface-sunk) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+  padding: 18px 20px 6px; display: flex; flex-direction: column;
+}
+.res { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.res .ans { font-size: 14px; font-weight: 500; color: var(--ink-muted); line-height: 1.2; }
+.res .ans b { display: block; margin-top: 2px; font-size: 26px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+.chip {
+  display: none; align-items: center; gap: 8px; height: 46px; padding: 0 16px 0 12px; border-radius: 23px;
+  box-shadow: inset 0 0 0 1.5px currentColor; background: var(--surface-raised);
+  font-weight: 700; font-size: 19px; color: var(--v);
+}
+.chip svg { width: 24px; height: 24px; flex: none; }
+.chip.ok { --v: var(--correct); } .chip.no { --v: var(--wrong); }
+[data-result="correct"] .chip.ok, [data-result="wrong"] .chip.no { display: flex; }
+.explain { margin: 12px 0 0; font-weight: 500; font-size: 16px; line-height: 1.45; color: var(--ink); }
+.source { margin-top: auto; min-height: 48px; display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font-weight: 700; font-size: 15px; color: var(--true); text-decoration: none; }
+.source u { text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+.slip > * { opacity: 0; }
+
+.stub {
+  background:
+    radial-gradient(circle at 0 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 0, transparent var(--notch), var(--surface-raised) calc(var(--notch) + .5px)) right / 51% 100% no-repeat;
+  padding: 20px 20px 10px; display: flex; flex-direction: column; justify-content: space-between;
+  transform: translateY(calc(var(--pull) * 6px));
+  transition: transform var(--t3) var(--spring), opacity var(--t3) var(--ease);
+}
+.card[data-dragging] .stub { transition: none; }
+.stub .row { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.stub .row b { color: var(--ink); font-weight: 500; font-size: 13px; }
+.barcode { height: 44px; width: 100%; color: var(--ink); opacity: calc(1 - var(--pull) * .8); }
+.hint { display: flex; align-items: center; justify-content: space-between; min-height: 40px; font-family: var(--mono); font-weight: 500; font-size: 13px; }
+.hint .f { color: var(--false); } .hint .t { color: var(--true); }
+.hint .m { color: var(--ink-muted); font-weight: 400; }
+
+/* drag: the pass shows where it is heading, written under the reading light */
+.intent {
+  position: absolute; top: 448px; height: 44px; padding: 0 16px; border-radius: 22px; display: flex; align-items: center; gap: 8px;
+  background: var(--surface-raised); box-shadow: inset 0 0 0 1.5px currentColor;
+  font-weight: 700; font-size: 19px; pointer-events: none; opacity: 0;
+}
+.intent svg { width: 18px; height: 18px; }
+.intent.t { left: 20px; color: var(--true); opacity: calc(var(--intent) * 1.8); }
+.intent.f { right: 20px; color: var(--false); opacity: calc(var(--intent) * -1.8); }
+
+/* the beat: the stub slides away and the verdict settles in its place */
+[data-state="answer"] .stub { transition: transform 380ms cubic-bezier(.5,0,.8,.3), opacity 300ms ease-in; transform: translateY(70px); opacity: 0; pointer-events: none; }
+[data-state="answer"] .slip > * { opacity: 1; transition: opacity var(--t2) var(--ease) 280ms; }
+[data-state="answer"] .chip { animation: settle var(--t3) var(--ease) 320ms both; }
+@keyframes settle { 0% { opacity: 0; transform: scale(1.12); } 100% { opacity: 1; transform: none; } }
+
+/* actions */
+.actions { position: absolute; top: 730px; left: 16px; right: 16px; height: 60px; }
+.row2 { position: absolute; inset: 0; display: flex; gap: 12px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn {
+  flex: 1; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 700; font-size: 19px; background: var(--surface-raised); color: var(--ink);
+  box-shadow: 0 1px 0 rgba(0,0,0,.2), 0 12px 20px -12px rgba(0,0,0,.8);
+  transition: transform var(--t1) var(--ease), background var(--t1);
+}
+.btn:active { transform: translateY(2px) scale(.98); background: var(--surface-sunk); }
+.btn.f svg { color: var(--false); } .btn.t svg { color: var(--true); }
+.btn.next { background: var(--accent); color: var(--sky-1); }
+.btn.next:active { background: var(--accent); }
+.btn:focus-visible { outline-color: var(--accent); }
+.a-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .q-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .a-row { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition-delay: var(--t3); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-state="question">
+  <svg class="stars" viewBox="0 0 390 844" preserveAspectRatio="none" aria-hidden="true">
+    <circle cx="34" cy="26" r="1" opacity=".7"/><circle cx="118" cy="40" r=".8" opacity=".5"/><circle cx="208" cy="22" r="1.1" opacity=".7"/>
+    <circle cx="290" cy="38" r=".8" opacity=".5"/><circle cx="356" cy="20" r="1" opacity=".7"/><circle cx="8" cy="400" r=".8" opacity=".4"/>
+    <circle cx="384" cy="520" r=".9" opacity=".4"/><circle cx="12" cy="820" r=".8" opacity=".4"/><circle cx="376" cy="826" r="1" opacity=".5"/>
+  </svg>
+
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1.5 1.5l11 11M12.5 1.5l-11 11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <div class="prog" role="img" aria-label="Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.">
+      <div class="windows" aria-hidden="true">
+        <svg class="win ok" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/><path class="mk" d="M5.2 12.4l2.6 2.6 5-5.4"/></svg>
+        <svg class="win ok" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/><path class="mk" d="M5.2 12.4l2.6 2.6 5-5.4"/></svg>
+        <svg class="win no" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/><path class="mk" d="M6 9l6 6M12 9l-6 6"/></svg>
+        <svg class="win now" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/><path class="moon" d="M10.6 7.2a5 5 0 1 0 2.6 8.9 4 4 0 0 1-2.6-8.9z"/><path class="mk r-ok" d="M5.2 12.4l2.6 2.6 5-5.4"/><path class="mk r-no" d="M6 9l6 6M12 9l-6 6"/></svg>
+        <svg class="win" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/></svg>
+        <svg class="win" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/></svg>
+        <svg class="win" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/></svg>
+        <svg class="win" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/></svg>
+        <svg class="win" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/></svg>
+        <svg class="win" viewBox="0 0 18 24"><rect class="pane" x=".5" y=".5" width="17" height="23" rx="8.5"/></svg>
+      </div>
+      <div class="cap" aria-hidden="true"><span>Card <b>4</b> of 10</span><span class="tally"><span class="t0">2 correct · 1 wrong</span><span class="t1">3 correct · 1 wrong</span><span class="t2">2 correct · 2 wrong</span></span></div>
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="shadowbox"></div>
+      <div class="main">
+        <div class="head">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M11.5 2.2a7 7 0 1 0 4.3 11.6A5.6 5.6 0 0 1 11.5 2.2z" fill="currentColor"/></svg>
+          <b>Truthy</b><small>Night flight</small>
+        </div>
+        <div class="trip">
+          <div class="stop"><i></i><code>CLF</code><span>AWS Cloud Practitioner</span></div>
+          <div class="stop to"><i></i><code>SEC</code><span>Security and compliance</span></div>
+        </div>
+        <dl class="fields">
+          <div><dt>Class</dt><dd>Classic</dd></div>
+          <div><dt>Card</dt><dd>04 of 10</dd></div>
+        </dl>
+        <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+        <div class="perf"></div>
+      </div>
+      <div class="lower">
+        <div class="slip" aria-live="polite">
+          <div class="res">
+            <div class="ans">The answer is<b>False</b></div>
+            <div class="chip ok"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 12.4l3 3 6-6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Correct</div>
+            <div class="chip no"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Not quite</div>
+          </div>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" id="source"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3h5l1 1 1-1h5v12h-5l-1 1-1-1H3zM9 4v11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><u>Shared responsibility model</u><span aria-hidden="true">→</span></a>
+        </div>
+        <div class="stub" aria-hidden="true">
+          <div class="row"><span>Boarding · CLF → SEC</span><b>Card 04</b></div>
+          <svg class="barcode" id="barcode" preserveAspectRatio="none"></svg>
+          <div class="hint"><span class="f">← False</span><span class="m">swipe to board</span><span class="t">True →</span></div>
+        </div>
+      </div>
+      <div class="intent t" aria-hidden="true"><svg viewBox="0 0 18 18"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>True</div>
+      <div class="intent f" aria-hidden="true"><svg viewBox="0 0 18 18"><path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>False</div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <div class="row2 q-row">
+      <button class="btn f" type="button" data-answer="false"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>False</button>
+      <button class="btn t" type="button" data-answer="true"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>True</button>
+    </div>
+    <div class="row2 a-row">
+      <button class="btn next" type="button" id="next">Next card <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// a slim barcode drawn from the card's own data
+;(function () {
+  const data = 'CLF|SEC|04/10'
+  let x = 0, out = ''
+  const bar = (w, on) => { if (on) out += `<rect x="${x}" y="0" width="${w}" height="44"/>`; x += w }
+  bar(2, 1); bar(1, 0); bar(1, 1); bar(2, 0)
+  for (const ch of data) {
+    const c = ch.charCodeAt(0)
+    for (let b = 0; b < 7; b++) bar((c >> b) & 1 ? 2 : 1, b % 2 === 0)
+    bar(2, 0)
+  }
+  bar(1, 1); bar(1, 0); bar(2, 1)
+  const svg = document.getElementById('barcode')
+  svg.setAttribute('viewBox', `0 0 ${x} 44`)
+  svg.innerHTML = `<g fill="currentColor">${out}</g>`
+})()
+
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+function answer(choice) {
+  if (app.dataset.state !== 'question') return
+  app.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 420)
+}
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'
+  delete app.dataset.result
+})
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+attachSwipe(card, answer)
+</script>
+</body>
+</html>

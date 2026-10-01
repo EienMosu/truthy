@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Passport Stamp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface: #cdd8df;
+  --surface-raised: #eff3f4;
+  --surface-sunk: #e2e9ec;
+  --ink: #14263a;
+  --ink-muted: #536274;
+  --rule: #c3cfd6;
+  --accent: #1f4f96;
+  --true: #1f4f96;
+  --false: #a83a2c;
+  --correct: #1b6a4a;
+  --wrong: #a83a2c;
+  --on-dark: #f6f8f8;
+  --r: 10px; --r-sm: 6px;
+  --shadow: 0 1px 0 rgba(20,38,58,.06), 0 22px 36px -20px rgba(20,38,58,.5);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Figtree', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+#app { position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; display: flex; flex-direction: column; padding: 54px 16px 34px; }
+
+/* header */
+.top { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; height: 48px; }
+.close { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-raised); color: var(--ink); box-shadow: 0 1px 0 rgba(20,38,58,.08), 0 6px 12px -6px rgba(20,38,58,.4); transition: transform var(--t1) var(--ease); }
+.close:active { transform: scale(.92); }
+.deck { text-align: center; line-height: 1.25; }
+.deck b { display: block; font-weight: 700; font-size: 16px; }
+.deck span { font-size: 14px; color: var(--ink-muted); }
+.count { justify-self: end; font-family: var(--mono); font-size: 14px; color: var(--ink); }
+
+.trail { display: flex; justify-content: center; align-items: center; gap: 6px; height: 34px; margin-top: 8px; }
+.mini { width: 26px; height: 26px; color: var(--ink-muted); }
+.mini * { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.mini.ok { color: var(--correct); opacity: .8; }
+.mini.no { color: var(--wrong); opacity: .8; }
+.mini.todo { opacity: .45; }
+.mini.now text { fill: var(--ink); stroke: none; font-family: var(--mono); font-size: 11px; }
+.mini.now { color: var(--ink); }
+.mini .r-ok, .mini .r-no { display: none; }
+[data-result="correct"] .mini.now { color: var(--correct); opacity: .9; }
+[data-result="wrong"] .mini.now { color: var(--wrong); opacity: .9; }
+[data-result] .mini.now .r-q { display: none; }
+[data-result="correct"] .mini.now .r-ok, [data-result="wrong"] .mini.now .r-no { display: inline; }
+.mini.now { transition: transform var(--t3) var(--ease), color var(--t2); }
+
+/* page */
+.stage { flex: 1; position: relative; margin-top: 10px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  position: absolute; inset: 0 0 12px;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  transform: translateX(var(--dx)) rotate(var(--rot));
+  transition: transform var(--t3) var(--spring);
+}
+.card[data-dragging] { transition: none; cursor: grabbing; }
+[data-state="answer"] .card { transform: none; cursor: default; }
+.page {
+  position: absolute; inset: 0; border-radius: var(--r); overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(20,38,58,.07), transparent 14px),
+    var(--surface-raised);
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; padding: 0 20px 16px 24px;
+}
+.head { display: flex; align-items: center; justify-content: space-between; height: 46px; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.head .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.head .brand svg { color: var(--accent); }
+.head .pg { font-family: var(--mono); font-size: 13px; color: var(--ink-muted); }
+.fields { display: grid; grid-template-columns: 1.55fr 1fr; gap: 0 16px; padding: 12px 0 12px; border-bottom: 1px solid var(--rule); }
+.fields dt { font-size: 12px; color: var(--ink-muted); }
+.fields dd { margin: 2px 0 0; font-size: 15px; font-weight: 600; }
+.statement { margin: 0; padding: 20px 0 22px; font-weight: 600; font-size: 25px; line-height: 1.3; letter-spacing: -.01em; color: var(--ink); }
+
+/* visa area */
+.visa { position: relative; flex: 1; min-height: 0; }
+.slot {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  transition: opacity var(--t2) var(--ease);
+}
+.slot .ring { width: 156px; height: 86px; margin-bottom: 10px; color: var(--rule); }
+.slot .ring * { fill: none; stroke: currentColor; stroke-width: 1.5; }
+.slot .ring text { fill: var(--ink-muted); stroke: none; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; }
+.slot p { margin: 0; font-size: 15px; color: var(--ink-muted); }
+.slot .dir { display: flex; gap: 28px; font-weight: 700; font-size: 15px; }
+.slot .dir .f { color: var(--false); } .slot .dir .t { color: var(--true); }
+.ghost { position: absolute; top: calc(50% - 30px); left: 50%; pointer-events: none; }
+.ghost.t { color: var(--true); opacity: calc(var(--intent) * 1.4); transform: translate(-50%, -50%) rotate(-2deg) scale(calc(.85 + var(--intent) * .15)); }
+.ghost.f { color: var(--false); opacity: calc(var(--intent) * -1.4); transform: translate(-50%, -50%) rotate(2deg) scale(calc(.85 - var(--intent) * .15)); }
+.card[data-dragging] .slot .ring { opacity: calc(1 - max(var(--intent), calc(var(--intent) * -1)) * 1.5); }
+
+/* stamps: outlined shape, one ink */
+.stamp { position: relative; display: grid; place-items: center; color: currentColor; }
+.stamp > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.stamp > svg * { fill: none; stroke: currentColor; }
+.stamp .in { position: relative; display: flex; flex-direction: column; align-items: center; line-height: 1; }
+.stamp .word { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 22px; letter-spacing: -.005em; }
+.stamp .sub { margin-top: 5px; font-family: var(--mono); font-size: 10px; letter-spacing: .04em; }
+.stamp.oval { width: 170px; height: 96px; }
+.stamp.box { width: 164px; height: 84px; }
+
+.result { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; pointer-events: none; }
+.result .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 88px; }
+.ans { font-size: 14px; color: var(--ink-muted); line-height: 1.2; }
+.ans b { display: block; margin-top: 2px; font-size: 26px; font-weight: 700; color: var(--ink); }
+.result .stamp { display: none; }
+[data-result="correct"] .result .stamp.ok, [data-result="wrong"] .result .stamp.no { display: grid; }
+.stamp.ok { color: var(--correct); } .stamp.no { color: var(--wrong); }
+.explain { margin: 8px 0 0; font-size: 16px; line-height: 1.45; color: var(--ink); }
+.source { margin-top: auto; min-height: 48px; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--accent); text-decoration: none; align-self: flex-start; }
+.source u { text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+
+.mrz { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 11px; line-height: 17px; letter-spacing: .02em; color: var(--ink-muted); opacity: .8; white-space: pre; overflow: hidden; }
+
+/* the beat: the slot clears, the visa stamp lands */
+[data-state="answer"] .slot { opacity: 0; }
+[data-state="answer"] .result { opacity: 1; pointer-events: auto; }
+[data-state="answer"] .result .stamp { animation: land 300ms var(--ease) 80ms both; }
+@keyframes land { 0% { opacity: 0; transform: rotate(-3deg) scale(1.3); } 100% { opacity: 1; transform: rotate(-2deg) scale(1); } }
+.result .stamp { transform: rotate(-2deg); }
+[data-state="answer"] .result .ans, [data-state="answer"] .result .explain, [data-state="answer"] .result .source { animation: rise 220ms var(--ease) 300ms both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+/* actions */
+.actions { position: relative; height: 60px; }
+.row2 { position: absolute; inset: 0; display: flex; gap: 12px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn {
+  flex: 1; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 700; font-size: 19px; background: var(--surface-raised); color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--rule), 0 10px 18px -12px rgba(20,38,58,.55);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease), background var(--t1);
+}
+.btn:active { transform: translateY(2px) scale(.98); background: var(--surface-sunk); }
+.btn.f svg { color: var(--false); } .btn.t svg { color: var(--true); }
+.btn.next { background: var(--ink); color: var(--on-dark); box-shadow: 0 10px 18px -10px rgba(20,38,58,.6); }
+.a-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .q-row { opacity: 0; transform: translateY(10px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .a-row { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition-delay: 300ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-state="question">
+  <header>
+    <div class="top">
+      <button class="close" type="button" aria-label="Leave round"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      <div class="deck"><b>AWS Cloud Practitioner</b><span>Card 4 of 10</span></div>
+      <div class="count" aria-hidden="true"></div>
+    </div>
+    <div class="trail" role="img" aria-label="Cards 1 and 2 correct, card 3 wrong, card 4 of 10 now">
+      <svg class="mini ok" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9"/><path d="M8.5 13.3l3 3 6-6.5"/></svg>
+      <svg class="mini ok" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9"/><path d="M8.5 13.3l3 3 6-6.5"/></svg>
+      <svg class="mini no" viewBox="0 0 26 26" aria-hidden="true"><rect x="2" y="4.5" width="22" height="17" rx="2.5"/><path d="M9.5 9.5l7 7M16.5 9.5l-7 7"/></svg>
+      <svg class="mini now" viewBox="0 0 26 26" aria-hidden="true">
+        <g class="r-q"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="2 2.6"/><text x="13" y="17" text-anchor="middle">4</text></g>
+        <g class="r-ok"><ellipse cx="13" cy="13" rx="11.5" ry="9"/><path d="M8.5 13.3l3 3 6-6.5"/></g>
+        <g class="r-no"><rect x="2" y="4.5" width="22" height="17" rx="2.5"/><path d="M9.5 9.5l7 7M16.5 9.5l-7 7"/></g>
+      </svg>
+      <svg class="mini todo" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="1 3"/></svg>
+      <svg class="mini todo" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="1 3"/></svg>
+      <svg class="mini todo" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="1 3"/></svg>
+      <svg class="mini todo" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="1 3"/></svg>
+      <svg class="mini todo" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="1 3"/></svg>
+      <svg class="mini todo" viewBox="0 0 26 26" aria-hidden="true"><ellipse cx="13" cy="13" rx="11.5" ry="9" stroke-dasharray="1 3"/></svg>
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <article class="page">
+        <div class="head">
+          <span class="brand"><svg width="20" height="14" viewBox="0 0 22 16" aria-hidden="true"><path d="M5 15h13a4 4 0 0 0 .6-8A6 6 0 0 0 7.2 5.5 4.8 4.8 0 0 0 5 15z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Truthy · Visas</span>
+          <span class="pg">Page 04</span>
+        </div>
+        <dl class="fields">
+          <div><dt>Domain</dt><dd>Security and compliance</dd></div>
+          <div><dt>Mode</dt><dd>Classic</dd></div>
+        </dl>
+        <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+
+        <div class="visa">
+          <div class="slot" aria-hidden="true">
+            <svg class="ring" viewBox="0 0 156 86"><ellipse cx="78" cy="43" rx="76" ry="41" stroke-dasharray="2 5" stroke-linecap="round"/><text x="78" y="47" text-anchor="middle">VISA 04</text></svg>
+            <p>Swipe the page to stamp it</p>
+            <div class="dir"><span class="f">← False</span><span class="t">True →</span></div>
+          </div>
+          <div class="ghost t" aria-hidden="true"><div class="stamp oval">
+            <svg viewBox="0 0 156 86" preserveAspectRatio="none"><ellipse cx="78" cy="43" rx="76" ry="41" stroke-width="2.5"/><ellipse cx="78" cy="43" rx="69" ry="35" stroke-width="1"/></svg>
+            <div class="in"><span class="word"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>True</span></div>
+          </div></div>
+          <div class="ghost f" aria-hidden="true"><div class="stamp box">
+            <svg viewBox="0 0 156 80" preserveAspectRatio="none"><rect x="1.25" y="1.25" width="153.5" height="77.5" rx="6" stroke-width="2.5"/><rect x="7" y="7" width="142" height="66" rx="3" stroke-width="1"/></svg>
+            <div class="in"><span class="word"><svg width="15" height="15" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>False</span></div>
+          </div></div>
+
+          <div class="result" aria-live="polite">
+            <div class="row">
+              <div class="ans">The answer is<b>False</b></div>
+              <div class="stamp oval ok">
+                <svg viewBox="0 0 156 86" preserveAspectRatio="none"><ellipse cx="78" cy="43" rx="76" ry="41" stroke-width="2.5"/><ellipse cx="78" cy="43" rx="69" ry="35" stroke-width="1"/></svg>
+                <div class="in"><span class="word"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Correct</span><span class="sub">CARD 04 · SEC</span></div>
+              </div>
+              <div class="stamp box no">
+                <svg viewBox="0 0 156 80" preserveAspectRatio="none"><rect x="1.25" y="1.25" width="153.5" height="77.5" rx="6" stroke-width="2.5"/><rect x="7" y="7" width="142" height="66" rx="3" stroke-width="1"/></svg>
+                <div class="in"><span class="word"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>Not quite</span><span class="sub">CARD 04 · SEC</span></div>
+              </div>
+            </div>
+            <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+            <a class="source" href="#" id="source"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 3h5l1 1 1-1h5v12h-5l-1 1-1-1H3zM9 4v11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><u>Shared responsibility model</u><span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+
+        <div class="mrz" id="mrz" aria-label="Deck CLF, domain security and compliance, card 4 of 10"></div>
+      </article>
+    </div>
+  </section>
+
+  <div class="actions">
+    <div class="row2 q-row">
+      <button class="btn f" type="button" data-answer="false"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>False</button>
+      <button class="btn t" type="button" data-answer="true"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>True</button>
+    </div>
+    <div class="row2 a-row">
+      <button class="btn next" type="button" id="next">Next card <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// machine-readable zone: deck, domain, card number, padded to 44 characters
+;(function () {
+  const line = s => s.padEnd(43, '<').slice(0, 43)
+  const l1 = line('V<TRUTHY<CLF<<SECURITY<AND<COMPLIANCE') + '<'
+  const l2 = line('CARD04<<<<10<CLASSIC<AWS<CLOUD<PRACTITIONER') + '4'
+  document.getElementById('mrz').textContent = l1 + '\n' + l2
+})()
+
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+function answer(choice) {
+  if (app.dataset.state !== 'question') return
+  app.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 420)
+}
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'
+  delete app.dataset.result
+})
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+attachSwipe(card, answer)
+</script>
+</body>
+</html>

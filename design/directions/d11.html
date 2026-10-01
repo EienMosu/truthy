@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-state="question">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truthy, holo collectible</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --surface:#0F1115;
+  --surface-lit:#222834;
+  --surface-raised:#1B1F27;
+  --line:#343B48;
+  --frame:#F0B93E;
+  --frame-deep:#A8741A;
+  --paper:#F8EFDC;
+  --paper-deep:#EADCBD;
+  --ink:#1D1913;
+  --ink-muted:#5C5240;
+  --on-dark:#F4EEE2;
+  --on-dark-muted:#A7ADBA;
+  --accent:#F0B93E;
+  --true:#49A9DE;
+  --false:#F2733F;
+  --correct:#1E7F55;
+  --wrong:#C23D1C;
+  --sky-top:#1C3552;
+  --sky-low:#F0A058;
+  --night:#172230;
+  --sun:#FFD98A;
+  --holo-a:#8FE3F5;
+  --holo-b:#F5A8DC;
+  --holo-c:#D6F58A;
+  --glint:rgba(255,255,255,.28);
+  --glint-hi:rgba(255,255,255,.7);
+  --glint-0:rgba(255,255,255,0);
+  --foil-a:rgba(120,220,255,.4);
+  --foil-b:rgba(255,170,220,.4);
+  --foil-c:rgba(255,240,150,.35);
+  --ray:rgba(255,255,255,.09);
+  --shade:rgba(0,0,0,.12);
+  --press:rgba(0,0,0,.2);
+  --edge:rgba(0,0,0,.25);
+  --chip-drop:rgba(0,0,0,.3);
+  --drop:rgba(0,0,0,.6);
+  --drop-0:rgba(0,0,0,0);
+  --halo:rgba(240,185,62,.25);
+  --r-s:6px;--r-m:12px;--r-l:20px;
+  --shadow:0 2px 0 rgba(0,0,0,.35),0 26px 40px -18px rgba(0,0,0,.85);
+  --t1:120ms;--t2:220ms;--t3:360ms;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --display:"Dela Gothic One","Arial Black",sans-serif;
+  --text:"Onest",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--surface);color:var(--on-dark);font-family:var(--text);-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(70% 45% at 50% 44%,var(--surface-lit) 0%,var(--surface) 100%)}
+button,a{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.app{position:relative;height:100%;max-width:390px;margin:0 auto}
+
+/* header */
+.top{position:absolute;top:56px;left:20px;right:20px;height:48px;display:flex;align-items:center;justify-content:space-between}
+.close{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface-raised);display:grid;place-items:center;cursor:pointer;transition:transform var(--t1)}
+.close:active{transform:scale(.92)}
+.close svg{width:14px;height:14px;stroke:var(--on-dark);stroke-width:2.4;stroke-linecap:round}
+.deck{text-align:right;line-height:1.2}
+.deck small{display:block;font-size:12px;font-weight:500;color:var(--on-dark-muted)}
+.deck b{font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.02em}
+.deck b span{color:var(--on-dark-muted);font-size:14px}
+
+/* collection slots */
+.slots{position:absolute;top:114px;left:0;right:0;display:flex;justify-content:center;gap:6px}
+.slot{width:22px;height:30px;border-radius:4px;border:1.5px solid var(--line);display:grid;place-items:center}
+.slot svg{width:12px;height:12px;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.slot.c{background:var(--frame);border-color:var(--frame)}
+.slot.c svg{stroke:var(--ink)}
+.slot.w{background:var(--surface-raised);border-color:var(--false)}
+.slot.w svg{stroke:var(--false)}
+.slot.now{border-color:var(--frame);box-shadow:0 0 0 3px var(--halo)}
+.slot .x4{display:none}
+
+/* card */
+.stage{position:absolute;left:27px;top:162px;width:336px;height:490px;perspective:1100px}
+.floor{position:absolute;left:10%;right:10%;bottom:-26px;height:40px;border-radius:50%;background:radial-gradient(closest-side,var(--drop),var(--drop-0))}
+.card{position:absolute;inset:0;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;transform-style:preserve-3d;
+  transform:translateX(var(--dx,0px)) rotate(calc(var(--rot,0deg) * .6)) rotateY(calc(var(--intent,0) * 16deg));
+  transition:transform var(--t3) var(--spring)}
+.card[data-dragging]{transition:none;cursor:grabbing}
+.flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform 460ms var(--spring)}
+.face{position:absolute;inset:0;border-radius:var(--r-l);background:var(--frame);padding:10px;box-shadow:var(--shadow);
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;
+  background-image:linear-gradient(160deg,var(--glint),var(--glint-0) 40%,var(--shade)),
+    linear-gradient(115deg,var(--frame) 0%,var(--holo-a) 14%,var(--frame) 28%,var(--holo-b) 42%,var(--frame) 56%,var(--holo-c) 70%,var(--frame) 84%,var(--holo-a) 100%);
+  background-size:100% 100%,300% 300%;
+  background-position:0 0,calc(50% - var(--intent,0) * 50%) 50%;
+  transition:background-position var(--t3) var(--spring)}
+.card[data-dragging] .face{transition:none}
+.face::before{content:"";position:absolute;inset:5px;border-radius:15px;border:1.5px solid var(--frame-deep);pointer-events:none}
+.back{transform:rotateY(180deg)}
+
+.title{position:relative;height:40px;border-radius:var(--r-m) var(--r-m) 4px 4px;background:var(--paper);display:flex;align-items:center;justify-content:space-between;padding:0 12px;
+  box-shadow:inset 0 -2px 0 var(--paper-deep)}
+.title h2{margin:0;font-family:var(--display);font-weight:400;font-size:15px;color:var(--ink);letter-spacing:.01em}
+.title .no{font-family:var(--display);font-size:13px;color:var(--ink);display:flex;align-items:center;gap:4px}
+.title .no i{width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--frame);display:grid;place-items:center;font-style:normal;font-size:11px}
+
+.win{position:relative;margin-top:6px;height:190px;border-radius:4px;overflow:hidden;background:linear-gradient(180deg,var(--sky-top),var(--sky-low));
+  box-shadow:inset 0 0 0 3px var(--frame-deep),inset 0 0 0 4px var(--edge)}
+.layer{position:absolute;left:-24px;top:0;width:calc(100% + 48px);height:100%;pointer-events:none;transition:transform var(--t3) var(--spring)}
+.card[data-dragging] .layer,.card[data-dragging] .foil{transition:none}
+.l1{transform:translateX(calc(var(--intent,0) * -6px))}
+.l2{transform:translateX(calc(var(--intent,0) * -14px))}
+.l3{transform:translateX(calc(var(--intent,0) * -24px))}
+
+.sun{fill:var(--sun)}.star,.cl{fill:var(--paper)}.cl2{fill:var(--paper-deep)}.nt{fill:var(--night)}.gd{fill:var(--frame)}
+.foil{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg,var(--glint-0) 30%,var(--foil-a) 40%,var(--glint-hi) 47%,var(--foil-b) 54%,var(--foil-c) 60%,var(--glint-0) 70%);
+  background-size:300% 100%;background-position:calc(50% - var(--intent,0) * 50%) 0;
+  opacity:calc(.5 + max(var(--intent,0),var(--intent,0) * -1) * .45);transition:background-position var(--t3) var(--spring),opacity var(--t3)}
+
+.type{margin:6px 2px 0;height:22px;display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--ink)}
+.type span:last-child{font-weight:500;color:var(--ink-muted)}
+.text{position:relative;margin-top:6px;height:202px;border-radius:4px 4px var(--r-m) var(--r-m);background:var(--paper);padding:14px 14px 0;
+  box-shadow:inset 0 0 0 1.5px var(--paper-deep)}
+.stmt{margin:0;font-weight:700;font-size:22.5px;line-height:1.3;color:var(--ink);letter-spacing:-.01em}
+.foot{position:absolute;left:14px;right:14px;bottom:10px;display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:500;color:var(--ink-muted)}
+.foot .mark{width:24px;height:12px;fill:var(--frame-deep)}
+
+/* drag intent chips */
+.chip{position:absolute;top:64px;padding:6px 12px;border-radius:999px;font-family:var(--display);font-size:18px;color:var(--ink);display:flex;align-items:center;gap:6px;pointer-events:none;
+  box-shadow:0 3px 0 var(--chip-drop)}
+.chip svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.chip.t{left:20px;background:var(--true);opacity:clamp(0,calc(var(--intent,0) * 1.5 - .2),1);transform:scale(calc(.85 + max(0,var(--intent,0)) * .15))}
+.chip.f{right:20px;background:var(--false);opacity:clamp(0,calc(var(--intent,0) * -1.5 - .2),1);transform:scale(calc(.85 + max(0,var(--intent,0) * -1) * .15))}
+
+/* back face */
+.back .panel{position:absolute;inset:10px;border-radius:var(--r-m);background:var(--paper);display:flex;flex-direction:column;overflow:hidden}
+.band{position:relative;height:168px;flex:none;background:var(--correct);color:var(--paper);padding:20px 18px 0;display:flex;flex-direction:column;
+  background-image:repeating-conic-gradient(from 0deg at 80% 120%,var(--ray) 0 6deg,var(--glint-0) 6deg 14deg);border-bottom:3px solid var(--frame-deep)}
+.badge{display:flex;align-items:center;gap:14px}
+.badge .ring{width:60px;height:60px;border-radius:50%;background:var(--paper);display:grid;place-items:center;flex:none;box-shadow:0 0 0 3px var(--correct),0 0 0 5px var(--paper)}
+.badge .ring svg{width:30px;height:30px;stroke:var(--correct);fill:none;stroke-width:4.4;stroke-linecap:round;stroke-linejoin:round}
+.badge h2{margin:0;font-family:var(--display);font-weight:400;font-size:36px;line-height:1;color:var(--paper)}
+.ans{margin-top:18px;align-self:flex-start;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:700;font-size:15px}
+.ans i{font-style:normal;padding:3px 12px;border-radius:999px;background:var(--false);color:var(--ink);font-weight:700}
+.body{flex:1;display:flex;flex-direction:column;padding:16px 18px 0}
+.recap{margin:0;font-size:13px;line-height:1.4;font-weight:500;color:var(--ink-muted)}
+.recap b{display:block;font-weight:700;color:var(--ink);font-size:11px;margin-bottom:2px}
+.rule{height:2px;background:var(--paper-deep);margin:14px 0 14px;border-radius:2px}
+.exp{margin:0;font-size:18px;line-height:1.42;font-weight:500;color:var(--ink)}
+.src{margin:auto 0 4px;min-height:52px;display:flex;align-items:center;justify-content:space-between;border-top:1.5px solid var(--paper-deep);font-weight:700;font-size:15px;color:var(--ink);text-decoration:none}
+.src span{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1.5px}
+.src svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2}
+.ix{display:none}
+[data-result="wrong"] .band{background-color:var(--wrong)}
+[data-result="wrong"] .badge .ring{box-shadow:0 0 0 3px var(--wrong),0 0 0 5px var(--paper)}
+[data-result="wrong"] .badge .ring svg{stroke:var(--wrong)}
+[data-result="wrong"] .ic{display:none}
+[data-result="wrong"] .ix{display:block}
+.back .foil{opacity:0}
+
+/* hint + actions */
+.hint{position:absolute;top:670px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--on-dark-muted)}
+.hint svg{width:18px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
+.actions{position:absolute;top:704px;left:20px;right:20px;display:flex;gap:12px}
+.btn{flex:1;height:64px;border:0;border-radius:999px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;
+  font-family:var(--display);font-size:20px;color:var(--ink);box-shadow:inset 0 -5px 0 var(--press),0 6px 14px -6px var(--drop);
+  transition:transform var(--t1),box-shadow var(--t1)}
+.btn:active,.btn.down{transform:translateY(3px) scale(.98);box-shadow:inset 0 -2px 0 var(--press),0 2px 6px -4px var(--drop)}
+.btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.btn[data-answer="false"]{background:var(--false)}
+.btn[data-answer="true"]{background:var(--true)}
+.next{display:none;background:var(--accent)}
+
+/* answer state */
+[data-state="answer"] .flip{transform:rotateY(180deg)}
+[data-state="answer"] .btn[data-answer],[data-state="answer"] .hint{display:none}
+[data-state="answer"] .next{display:flex;animation:rise var(--t2) ease-out 300ms both}
+[data-state="answer"] .card{cursor:default}
+[data-state="answer"] .slot.now{border-color:var(--frame);background:var(--frame)}
+[data-state="answer"] .slot.now .x4{display:block;stroke:var(--ink)}
+[data-state="answer"][data-result="wrong"] .slot.now{background:var(--surface-raised);border-color:var(--false)}
+[data-state="answer"][data-result="wrong"] .slot.now .x4{stroke:var(--false)}
+[data-state="answer"] .back .foil{animation:sweep 700ms ease-out 200ms both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes sweep{0%{opacity:.9;background-position:100% 0}100%{opacity:0;background-position:0 0}}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:1ms!important;animation-duration:1ms!important;animation-delay:0ms!important}
+  .card{transform:none!important}
+  .layer{transform:none!important}
+  .flip{transform:none!important}
+  .back{transform:none;opacity:0}
+  [data-state="answer"] .back{opacity:1}
+  [data-state="answer"] .front{opacity:0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button>
+    <div class="deck"><small>Classic</small><b>4 <span>/ 10</span></b></div>
+  </header>
+
+  <div class="slots" aria-label="Progress: cards 1 and 2 correct, card 3 wrong, card 4 in play">
+    <span class="slot c"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3"/></svg></span>
+    <span class="slot c"><svg viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3"/></svg></span>
+    <span class="slot w"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3L3 9"/></svg></span>
+    <span class="slot now"><svg class="x4" id="s4" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3"/></svg></span>
+    <span class="slot"></span><span class="slot"></span><span class="slot"></span><span class="slot"></span><span class="slot"></span><span class="slot"></span>
+  </div>
+
+  <main class="stage">
+    <div class="floor" aria-hidden="true"></div>
+    <article class="card" id="card">
+      <div class="flip">
+        <section class="face front">
+          <div class="title"><h2>Security and compliance</h2><span class="no"><i>04</i></span></div>
+          <div class="win" aria-hidden="true">
+            <svg class="layer l1" viewBox="0 0 340 172" preserveAspectRatio="none">
+              <circle class="sun" cx="228" cy="104" r="40"/>
+              <circle class="sun" cx="228" cy="104" r="54" opacity=".25"/>
+              <g class="star" opacity=".8"><circle cx="40" cy="26" r="1.5"/><circle cx="92" cy="14" r="1"/><circle cx="150" cy="34" r="1.3"/><circle cx="300" cy="22" r="1.4"/><circle cx="270" cy="46" r="1"/><circle cx="66" cy="54" r="1"/></g>
+            </svg>
+            <svg class="layer l2" viewBox="0 0 340 172" preserveAspectRatio="none">
+              <path d="M-10 132c14-22 44-26 60-12 8-24 44-30 62-8 10-14 36-14 46 2 16-20 52-16 60 8 12-10 34-8 42 8 10-12 34-10 40 6 10-6 30-4 40 10V180H-10z" class="cl"/>
+              <path d="M-10 150c20-12 46-10 62 0 20-14 54-14 74 0 18-10 48-10 64 2 22-12 56-10 74 2 20-10 44-8 62 0V180H-10z" class="cl2"/>
+            </svg>
+            <svg class="layer l3" viewBox="0 0 340 172" preserveAspectRatio="none">
+              <g class="nt">
+                <rect x="24" y="96" width="34" height="80" rx="3"/><rect x="62" y="116" width="26" height="60" rx="3"/>
+                <rect x="262" y="104" width="30" height="72" rx="3"/><rect x="296" y="88" width="30" height="88" rx="3"/>
+              </g>
+              <g class="gd"><rect x="30" y="104" width="22" height="3" rx="1"/><rect x="30" y="112" width="22" height="3" rx="1"/><rect x="30" y="120" width="14" height="3" rx="1"/>
+                <rect x="302" y="96" width="18" height="3" rx="1"/><rect x="302" y="104" width="18" height="3" rx="1"/><rect x="268" y="112" width="18" height="3" rx="1"/></g>
+              <path d="M170 40l46 16v34c0 30-20 50-46 60-26-10-46-30-46-60V56z" class="nt"/>
+              <path d="M170 50l36 12v28c0 24-15 40-36 49-21-9-36-25-36-49V62z" class="gd"/>
+              <circle cx="170" cy="86" r="9" class="nt"/><path d="M165 90h10l3 22h-16z" class="nt"/>
+            </svg>
+            <div class="foil"></div>
+          </div>
+          <div class="type"><span>AWS Cloud Practitioner</span></div>
+          <div class="text">
+            <p class="stmt">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+            <div class="foot"><span>True or false?</span><svg class="mark" viewBox="0 0 24 12" aria-hidden="true"><path d="M2 6l4-4 4 4-4 4zM8 6l4-4 4 4-4 4zM14 6l4-4 4 4-4 4z"/></svg></div>
+          </div>
+          <div class="foil" style="border-radius:var(--r-l);opacity:calc(.12 + max(var(--intent,0),var(--intent,0) * -1) * .3)"></div>
+          <span class="chip t" aria-hidden="true">True<svg viewBox="0 0 14 14"><path d="M2 7h10M8 3l4 4-4 4"/></svg></span>
+          <span class="chip f" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M12 7H2M6 3L2 7l4 4"/></svg>False</span>
+        </section>
+        <section class="face back" role="status">
+          <div class="panel">
+            <div class="band">
+              <div class="badge">
+                <span class="ring"><svg class="ic" viewBox="0 0 28 28"><path d="M6 15l5 5L22 8"/></svg><svg class="ix" viewBox="0 0 28 28"><path d="M8 8l12 12M20 8L8 20"/></svg></span>
+                <h2 class="vt">Correct</h2>
+              </div>
+              <span class="ans">The answer is <i>False</i></span>
+            </div>
+            <div class="body">
+            <p class="recap"><b>Card 04</b>AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+            <div class="rule"></div>
+            <p class="exp">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+            <a class="src" href="#" onclick="return false"><span>Shared responsibility model</span><svg viewBox="0 0 16 16"><path d="M5 3h8v8M13 3L3 13"/></svg></a>
+            </div>
+          </div>
+          <div class="foil"></div>
+        </section>
+      </div>
+    </article>
+  </main>
+
+  <div class="hint" aria-hidden="true"><svg viewBox="0 0 18 10"><path d="M17 5H1M5 1L1 5l4 4"/></svg>Tilt the card to answer<svg viewBox="0 0 18 10"><path d="M1 5h16M13 1l4 4-4 4"/></svg></div>
+  <div class="actions">
+    <button class="btn" type="button" data-answer="false"><svg viewBox="0 0 18 18"><path d="M15 9H3M8 4L3 9l5 5"/></svg>False</button>
+    <button class="btn" type="button" data-answer="true">True<svg viewBox="0 0 18 18"><path d="M3 9h12M10 4l5 5-5 5"/></svg></button>
+    <button class="btn next" type="button" id="next">Next card<svg viewBox="0 0 18 18"><path d="M3 9h12M10 4l5 5-5 5"/></svg></button>
+  </div>
+</div>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+const root = document.documentElement
+const card = document.getElementById('card')
+const tick = '<path d="M2 6.5l2.5 2.5L10 3"/>', cross = '<path d="M3 3l6 6M9 3L3 9"/>'
+
+function answer(a) {
+  if (root.dataset.state !== 'question') return
+  const ok = a === 'false'
+  root.dataset.result = ok ? 'correct' : 'wrong'
+  root.dataset.state = 'answer'
+  card.querySelector('.vt').textContent = ok ? 'Correct' : 'Not quite'
+  document.getElementById('s4').innerHTML = ok ? tick : cross
+  document.getElementById('next').focus({preventScroll: true})
+}
+function reset() {
+  root.dataset.state = 'question'
+  delete root.dataset.result
+  document.querySelector('[data-answer="false"]').focus({preventScroll: true})
+}
+
+card.addEventListener('pointerdown', e => { if (root.dataset.state !== 'question') e.stopImmediatePropagation() })
+attachSwipe(card, answer)
+
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => {
+  b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120)
+  answer(b.dataset.answer)
+}))
+document.getElementById('next').addEventListener('click', reset)
+document.querySelector('.close').addEventListener('click', reset)
+document.addEventListener('keydown', e => {
+  if (root.dataset.state !== 'question') return
+  if (e.key === 'ArrowLeft') answer('false')
+  if (e.key === 'ArrowRight') answer('true')
+})
+</script>
+</body>
+</html>

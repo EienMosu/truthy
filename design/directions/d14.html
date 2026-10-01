@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Truthy: Isometric Cloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --surface: #eef3f8;
+  --surface-deep: #d9e4ef;
+  --surface-raised: #ffffff;
+  --edge: #d3dee9;
+  --ink: #15212f;
+  --ink-muted: #546579;
+  --accent: #ff7a45;
+  --true: #2461d3;
+  --false: #37475a;
+  --correct: #0b806b;
+  --wrong: #5d6878;
+  --true-edge: #173f8c; --accent-edge: #c8521f;
+  --blk-top: #f6f9fc; --blk-left: #c2d3e5; --blk-right: #9cb3cc; --blk-line: #7f98b4;
+  --crk-top: #e3e6ea; --crk-left: #c3c8cf; --crk-right: #a6adb6; --crk-line: #6c7582;
+  --plate-top: #d2deea; --plate-left: #b4c5d8; --plate-right: #9bb0c6; --slot: #c3d2e1;
+  --grid: rgba(21,33,47,.055); --drop: rgba(21,33,47,.5); --contact: rgba(21,33,47,.28); --contact-0: rgba(21,33,47,0);
+  --r: 12px; --r-sm: 10px;
+  --shadow: 0 1px 0 rgba(21,33,47,.05), 0 26px 40px -22px rgba(21,33,47,.42);
+  --t1: 120ms; --t2: 220ms; --t3: 360ms;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sans: 'Outfit', system-ui, sans-serif;
+  --mono: 'DM Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: var(--surface); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+button { border: 0; background: none; padding: 0; cursor: pointer; }
+svg { display: block; }
+
+#app {
+  position: relative; width: 100%; max-width: 390px; height: 100%; margin: 0 auto; overflow: hidden;
+  padding: 52px 16px 34px; display: flex; flex-direction: column;
+  background:
+    repeating-linear-gradient(30deg, var(--grid) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(150deg, var(--grid) 0 1px, transparent 1px 32px),
+    linear-gradient(180deg, var(--surface) 0%, var(--surface) 45%, var(--surface-deep) 100%);
+}
+
+.top { display: flex; align-items: center; gap: 12px; height: 56px; position: relative; z-index: 3; }
+.close {
+  width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-raised); color: var(--ink);
+  box-shadow: 0 3px 0 var(--edge), 0 8px 16px -10px var(--drop);
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.close:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--edge); }
+.deck { flex: 1; min-width: 0; }
+.deck b { display: block; font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
+.deck span { font-family: var(--mono); font-size: 12px; color: var(--ink-muted); }
+.count { font-family: var(--mono); font-size: 13px; color: var(--ink-muted); text-align: right; line-height: 1.2; }
+.count b { font-family: var(--sans); font-weight: 700; font-size: 22px; color: var(--ink); }
+
+/* card */
+.stage { position: relative; z-index: 2; height: 368px; margin-top: 10px; perspective: 1100px; }
+.card {
+  --dx: 0px; --rot: 0deg; --intent: 0;
+  position: absolute; left: 8px; right: 8px; top: 6px; height: 344px;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+  transform-style: preserve-3d;
+  transform: translateX(var(--dx)) rotateY(calc(var(--intent) * 16deg)) rotateZ(var(--rot));
+  transition: transform var(--t3) var(--spring);
+  animation: float 4.8s ease-in-out infinite;
+}
+@keyframes float { 50% { translate: 0 -5px; } }
+.card[data-dragging] { transition: none; cursor: grabbing; animation: none; translate: 0 -10px; }
+[data-state="answer"] .card { transform: none; cursor: default; }
+.flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 560ms var(--spring); }
+[data-state="answer"] .flip { transform: rotateY(-180deg); }
+.face {
+  position: absolute; inset: 0; border-radius: var(--r); background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1.5px var(--edge), 0 14px 0 var(--blk-left), 0 14px 0 1.5px var(--blk-right), var(--shadow);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; flex-direction: column; padding: 20px 22px 12px; overflow: hidden;
+}
+.back { transform: rotateY(180deg); }
+.bhead { margin-bottom: 18px; }
+
+.chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 10px;
+  border-radius: 15px; background: var(--surface); font-size: 14px; font-weight: 500; color: var(--ink); }
+.chip svg { color: var(--accent); }
+.fhead { display: flex; align-items: center; justify-content: space-between; }
+.fhead .no { font-family: var(--mono); font-size: 13px; color: var(--ink-muted); }
+.statement { flex: 1; display: flex; align-items: center; margin: 0; font-weight: 700; font-size: 27px; line-height: 1.24; letter-spacing: -.015em; }
+.hint { display: flex; align-items: center; justify-content: space-between; height: 44px; border-top: 1.5px dashed var(--edge);
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink-muted); }
+.hint .f, .hint .t { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.hint .f { color: var(--false); } .hint .t { color: var(--true); }
+
+/* drag edge badges */
+.lean { position: absolute; bottom: 14px; display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 10px; border-radius: 17px;
+  font-weight: 700; font-size: 16px; color: var(--surface-raised); pointer-events: none; }
+.lean.t { left: 16px; background: var(--true); opacity: calc(var(--intent) * 1.8); transform: translateY(calc(8px - var(--intent) * 8px)); }
+.lean.f { right: 16px; background: var(--false); opacity: calc(var(--intent) * -1.8); transform: translateY(calc(8px + var(--intent) * 8px)); }
+.rim { position: absolute; inset: 0; border-radius: var(--r); pointer-events: none; }
+.rim.t { box-shadow: inset 0 0 0 3px var(--true); opacity: calc(var(--intent) * 1.4); }
+.rim.f { box-shadow: inset 0 0 0 3px var(--false); opacity: calc(var(--intent) * -1.4); }
+
+/* back */
+.verdict { display: flex; align-items: center; gap: 12px; }
+.verdict h2 { margin: 0; font-weight: 700; font-size: 34px; letter-spacing: -.02em; line-height: 1; }
+.badge { width: 44px; height: 44px; display: grid; place-items: center; color: var(--surface-raised); }
+.badge svg.hex { position: absolute; }
+.v-ok, .v-no { display: none !important; }
+[data-result="correct"] .v-ok, [data-result="wrong"] .v-no { display: flex !important; }
+.v-ok h2 { color: var(--correct); } .v-no h2 { color: var(--wrong); }
+.truth { margin: 10px 0 0; font-size: 16px; color: var(--ink-muted); }
+.truth b { color: var(--ink); font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.explain { margin: 14px 0 0; font-size: 17px; line-height: 1.5; color: var(--ink); }
+.source { margin-top: auto; min-height: 48px; display: flex; align-items: center; gap: 10px; border-top: 1.5px dashed var(--edge);
+  font-weight: 500; font-size: 15px; color: var(--true); text-decoration: none; }
+.source .go { margin-left: auto; }
+
+/* contact shadow */
+.contact {
+  position: absolute; left: 50%; top: 470px; width: 260px; height: 36px; margin-left: -130px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--contact), var(--contact-0));
+  transform: translateX(calc(var(--dx, 0px) * .5)); pointer-events: none; z-index: 1;
+  transition: transform var(--t3) var(--spring), opacity var(--t3) var(--ease);
+}
+
+/* scene */
+.scene { position: absolute; left: 0; right: 0; top: 462px; height: 240px; z-index: 1; pointer-events: none; }
+.scene svg { width: 390px; height: 240px; margin: 0 auto; overflow: visible; }
+.p-top { fill: var(--plate-top); } .p-left { fill: var(--plate-left); } .p-right { fill: var(--plate-right); }
+.slot { fill: var(--slot); }
+.b-top { fill: var(--blk-top); } .b-left { fill: var(--blk-left); } .b-right { fill: var(--blk-right); }
+.b-line { stroke: var(--blk-line); stroke-width: 1.5; fill: none; stroke-linecap: round; }
+.led { fill: var(--correct); }
+.c-top { fill: var(--crk-top); } .c-left { fill: var(--crk-left); } .c-right { fill: var(--crk-right); }
+.c-line { stroke: var(--crk-line); stroke-width: 1.8; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.ghost { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 5; stroke-linejoin: round; }
+.ghost-floor { fill: var(--accent); opacity: .22; }
+.g-ghost { animation: bob 1.6s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-4px); } }
+.caption { font-family: var(--mono); font-size: 11px; fill: var(--ink-muted); }
+.cap-ok, .cap-no { display: none; }
+[data-state="answer"] .cap-q { display: none; }
+[data-state="answer"][data-result="correct"] .cap-ok, [data-state="answer"][data-result="wrong"] .cap-no { display: inline; }
+.drop { opacity: 0; transform: translateY(-150px); }
+[data-state="answer"] .g-ghost { opacity: 0; animation: none; transition: opacity var(--t1); }
+[data-state="answer"][data-result="correct"] .drop.ok,
+[data-state="answer"][data-result="wrong"] .drop.no { animation: land 620ms var(--spring) 380ms both; }
+@keyframes land { 0% { opacity: 0; transform: translateY(-150px); } 30% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+[data-state="answer"] .scene svg .world { animation: thud 300ms var(--ease) 700ms; }
+@keyframes thud { 40% { transform: translateY(3px); } }
+
+/* actions */
+.actions { position: absolute; left: 16px; right: 16px; bottom: 38px; height: 64px; z-index: 3; }
+.row { position: absolute; inset: 0; display: flex; gap: 14px; transition: opacity var(--t2) var(--ease), transform var(--t2) var(--ease); }
+.btn {
+  flex: 1; height: 58px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; gap: 10px;
+  font-weight: 700; font-size: 20px;
+  transition: transform var(--t1) var(--ease), box-shadow var(--t1) var(--ease);
+}
+.btn.f { background: var(--surface-raised); color: var(--false); box-shadow: 0 6px 0 var(--plate-right), 0 14px 18px -12px var(--drop); }
+.btn.t { background: var(--true); color: var(--surface-raised); box-shadow: 0 6px 0 var(--true-edge), 0 14px 18px -12px var(--drop); }
+.btn.next { background: var(--accent); color: var(--ink); box-shadow: 0 6px 0 var(--accent-edge), 0 14px 18px -12px var(--drop); }
+.btn:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--plate-right); }
+.btn.t:active { box-shadow: 0 1px 0 var(--true-edge); } .btn.next:active { box-shadow: 0 1px 0 var(--accent-edge); }
+.a-row { opacity: 0; transform: translateY(12px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .q-row { opacity: 0; transform: translateY(12px); pointer-events: none; visibility: hidden; }
+[data-state="answer"] .a-row { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition-delay: 420ms; }
+
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0ms !important; }
+  [data-state="answer"][data-result="correct"] .drop.ok, [data-state="answer"][data-result="wrong"] .drop.no { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<main id="app" data-state="question">
+  <header class="top">
+    <button class="close" type="button" aria-label="Leave round"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+    <div class="deck"><b>AWS Cloud Practitioner</b><span>Classic mode</span></div>
+    <div class="count" aria-label="Card 4 of 10"><b>4</b> / 10</div>
+  </header>
+
+  <section class="stage">
+    <div class="card" id="card">
+      <div class="flip">
+        <article class="face front">
+          <div class="fhead">
+            <span class="chip"><svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 1l6 2.2v4.3c0 3.8-2.6 6.3-6 7.5-3.4-1.2-6-3.7-6-7.5V3.2z" fill="currentColor"/></svg>Security and compliance</span>
+            <span class="no">#04</span>
+          </div>
+          <p class="statement">AWS is responsible for patching the guest operating system on your EC2 instances.</p>
+          <div class="hint" aria-hidden="true">
+            <span class="f"><svg width="12" height="12" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>← False</span>
+            <span>Drag to tilt</span>
+            <span class="t">True →<svg width="13" height="13" viewBox="0 0 18 18"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </div>
+          <div class="rim t"></div><div class="rim f"></div>
+          <div class="lean t" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 18 18"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>True</div>
+          <div class="lean f" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 16 16"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>False</div>
+        </article>
+        <article class="face back" aria-live="polite">
+          <div class="fhead bhead"><span class="chip"><svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M7 1l6 2.2v4.3c0 3.8-2.6 6.3-6 7.5-3.4-1.2-6-3.7-6-7.5V3.2z" fill="currentColor"/></svg>Security and compliance</span><span class="no">#04</span></div>
+          <div class="verdict v-ok">
+            <span class="badge"><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 2l18 10v20L22 42 4 32V12z" fill="var(--correct)"/><path d="M13 22.5l6 6 12-13" fill="none" stroke="var(--surface-raised)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h2>Correct</h2>
+          </div>
+          <div class="verdict v-no">
+            <span class="badge"><svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><path d="M22 2l18 10v20L22 42 4 32V12z" fill="var(--wrong)"/><path d="M24 8l-5 11 6 4-6 13" fill="none" stroke="var(--surface-raised)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h2>Not quite</h2>
+          </div>
+          <p class="truth">The answer is <b><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>False</b></p>
+          <p class="explain">You patch the guest OS on EC2. AWS looks after the hypervisor, the physical hosts and the data centres beneath it.</p>
+          <a class="source" href="#" id="source"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 1.5l7 4v7l-7 4-7-4v-7zM2 5.5l7 4 7-4M9 9.5v7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>Shared responsibility model<span class="go" aria-hidden="true">→</span></a>
+        </article>
+      </div>
+    </div>
+  </section>
+  <div class="contact" id="contact" aria-hidden="true"></div>
+
+  <div class="scene" aria-label="Your build: 2 blocks placed, 1 cracked, next slot is card 4" role="img">
+    <svg id="scene" viewBox="0 0 390 240"></svg>
+  </div>
+
+  <div class="actions">
+    <div class="row q-row">
+      <button class="btn f" type="button" data-answer="false"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>False</button>
+      <button class="btn t" type="button" data-answer="true"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>True</button>
+    </div>
+    <div class="row a-row">
+      <button class="btn next" type="button" id="next">Next card <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</main>
+
+<script>
+// Sets --dx (px), --rot (deg) and --intent (-1 False .. 1 True) on the card while dragging.
+function attachSwipe(card, onAnswer) {
+  let startX = 0, dx = 0, dragging = false
+  const set = v => {
+    dx = v
+    card.style.setProperty('--dx', dx + 'px')
+    card.style.setProperty('--rot', dx / 18 + 'deg')
+    card.style.setProperty('--intent', Math.max(-1, Math.min(1, dx / 110)))
+  }
+  card.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX
+    card.setPointerCapture(e.pointerId); card.dataset.dragging = ''
+  })
+  card.addEventListener('pointermove', e => { if (dragging) set(e.clientX - startX) })
+  const end = () => {
+    if (!dragging) return
+    dragging = false; delete card.dataset.dragging
+    const answer = dx > 90 ? 'true' : dx < -90 ? 'false' : null
+    set(0)
+    if (answer) onAnswer(answer)
+  }
+  card.addEventListener('pointerup', end)
+  card.addEventListener('pointercancel', end)
+}
+
+// isometric scene: 10 slots on a platform, one per card in the round
+;(function () {
+  const HW = 38, HH = 19, OX = 138, OY = 70, H = 44, G = 0.07
+  const P = (i, j, up = 0) => [OX + (i - j) * HW, OY + (i + j) * HH - up]
+  const pts = a => a.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ')
+  const poly = (cls, a) => `<polygon class="${cls}" points="${pts(a)}"/>`
+  const line = (cls, a) => `<polyline class="${cls}" points="${pts(a)}"/>`
+  const box = (i, j, h, k, pre) => {
+    const a = i - .5 + G, b = i + .5 - G, c = j - .5 + G, d = j + .5 - G
+    const top = [P(a, c, h), P(b, c, h), P(b, d, h), P(a, d, h)]
+    const left = [P(a, d, h), P(b, d, h), P(b, d), P(a, d)]
+    const right = [P(b, c, h), P(b, d, h), P(b, d), P(b, c)]
+    return poly(pre + '-left', left) + poly(pre + '-right', right) + poly(pre + '-top', top)
+  }
+  const rack = (i, j, h) => {
+    const a = i - .5 + G, b = i + .5 - G, d = j + .5 - G, c = j - .5 + G
+    let s = ''
+    for (const f of [.3, .55, .8]) s += line('b-line', [P(a + .12, d, h * f), P(b - .12, d, h * f)])
+    const led = P(b, c + .25, h * .72)
+    s += `<circle class="led" cx="${led[0].toFixed(1)}" cy="${led[1].toFixed(1)}" r="2.6"/>`
+    const led2 = P(b, c + .45, h * .72)
+    s += `<circle class="led" cx="${led2[0].toFixed(1)}" cy="${led2[1].toFixed(1)}" r="2.6" opacity=".45"/>`
+    return s
+  }
+  const crack = (i, j, h) => {
+    const b = i + .5 - G, c = j - .5 + G, a = i - .5 + G, d = j + .5 - G
+    return line('c-line', [P(b, c + .3, h), P(b, c + .42, h * .7), P(b, c + .3, h * .45), P(b, c + .5, h * .12)]) +
+      line('c-line', [P(a + .35, c + .1, h), P(a + .5, c + .45, h), P(a + .42, d - .05, h)])
+  }
+  const ok = (i, j) => box(i, j, H, 0, 'b') + rack(i, j, H)
+  const bad = (i, j) => box(i, j, H * .78, 0, 'c') + crack(i, j, H * .78)
+  const slot = (i, j) => poly('slot', [P(i - .42, j - .42), P(i + .42, j - .42), P(i + .42, j + .42), P(i - .42, j + .42)])
+
+  const m = .45, a0 = -.5 - m, a1 = 4.5 + m, b0 = -.5 - m, b1 = 1.5 + m, T = 16
+  let s = '<g class="world">'
+  s += poly('p-left', [P(a0, b1), P(a1, b1), P(a1, b1, -T), P(a0, b1, -T)])
+  s += poly('p-right', [P(a1, b0), P(a1, b1), P(a1, b1, -T), P(a1, b0, -T)])
+  s += poly('p-top', [P(a0, b0), P(a1, b0), P(a1, b1), P(a0, b1)])
+  const state = ['ok', 'ok', 'bad', 'next', '', '', '', '', '', '']
+  const cells = state.map((st, k) => ({ st, i: k % 5, j: Math.floor(k / 5) })).sort((x, y) => (x.i + x.j) - (y.i + y.j) || x.j - y.j)
+  for (const { st, i, j } of cells) {
+    if (st === 'ok') s += ok(i, j)
+    else if (st === 'bad') s += bad(i, j)
+    else if (st === 'next') {
+      const a = i - .5 + G, b = i + .5 - G, c = j - .5 + G, d = j + .5 - G
+      s += poly('ghost-floor', [P(a, c), P(b, c), P(b, d), P(a, d)])
+      s += `<g class="drop ok">${ok(i, j)}</g><g class="drop no">${bad(i, j)}</g>`
+      s += `<g class="g-ghost">` + poly('ghost', [P(a, c, H), P(b, c, H), P(b, d, H), P(a, d, H)]) +
+        line('ghost', [P(a, d, H), P(a, d), P(b, d), P(b, c), P(b, c, H)]) + line('ghost', [P(b, d, H), P(b, d)]) + '</g>'
+    } else s += slot(i, j)
+  }
+  s += '</g>'
+  s += `<text class="caption" x="195" y="248" text-anchor="middle"><tspan class="cap-q">2 built · 1 cracked · 6 to go</tspan><tspan class="cap-ok">3 built · 1 cracked · 6 to go</tspan><tspan class="cap-no">2 built · 2 cracked · 6 to go</tspan></text>`
+  document.getElementById('scene').innerHTML = s
+})()
+
+const app = document.getElementById('app')
+const card = document.getElementById('card')
+const contact = document.getElementById('contact')
+new MutationObserver(() => contact.style.setProperty('--dx', card.style.getPropertyValue('--dx') || '0px'))
+  .observe(card, { attributes: true, attributeFilter: ['style'] })
+function answer(choice) {
+  if (app.dataset.state !== 'question') return
+  app.dataset.result = choice === 'false' ? 'correct' : 'wrong'
+  app.dataset.state = 'answer'
+  setTimeout(() => document.getElementById('next').focus({ preventScroll: true }), 460)
+}
+document.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => answer(b.dataset.answer)))
+document.getElementById('next').addEventListener('click', () => {
+  app.dataset.state = 'question'
+  delete app.dataset.result
+})
+const src = document.getElementById('source')
+src.addEventListener('pointerdown', e => e.stopPropagation())
+src.addEventListener('click', e => e.preventDefault())
+attachSwipe(card, answer)
+</script>
+</body>
+</html>
