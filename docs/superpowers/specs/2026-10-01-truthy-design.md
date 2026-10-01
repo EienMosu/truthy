@@ -37,7 +37,7 @@ Each step leaves working, tested, deployed software.
 
 1. **One mode end to end.** Project skeleton, design tokens, deck build, the start flow, a Classic round, the result screen, progress storage, deploy to Vercel. Decks: every deck whose review is finished when the step ships (AWS Cloud Practitioner, Next.js Rendering, Google Cloud Digital Leader).
 2. **The other three modes.** Streak, Three lives and Timed with their in-game states and result screens.
-3. **Polish.** Night theme, offline play, and the AWS Solutions Architect Associate deck once its review is finished.
+3. **Polish.** Offline play, and the AWS Solutions Architect Associate deck once its review is finished. The night theme was planned for this step and was pulled forward after step 1 shipped (section 9, "Tokens in code").
 
 This document specifies all three. Implementation plans are written per step, starting with step 1.
 
@@ -250,7 +250,7 @@ Where this document and those disagree on a visual value, the design documents w
 
 ### Tokens in code
 
-A build script turns `tokens.json` into CSS custom properties and the Tailwind theme reads those properties. Components use tokens only, never raw colour values. Steps 1 and 2 ship the day theme only. Step 3 adds the night values under `prefers-color-scheme: dark`, after every screen has been checked in both themes; from then on the theme follows the system setting.
+A build script turns `tokens.json` into CSS custom properties and the Tailwind theme reads those properties. Components use tokens only, never raw colour values. The day values sit on `:root` and the night values override them under `prefers-color-scheme: dark`, so the theme follows the system setting; a manual theme switch stays out of scope. The night theme was planned for step 3 and was pulled forward after step 1 shipped; every screen has been checked in both themes, and both themes pass the same contrast gate.
 
 ### Typography
 
@@ -291,7 +291,7 @@ A web app manifest and icons ship in step 1 so the game can be added to the home
 | `pnpm test` (Vitest) | Engine: dealing priority and constraints, the end rule and record of each mode, determinism under a seed, Timed pausing. Input: every swipe rule. Progress: history, records, deck changes, corrupt storage. Content: schemas, section mapping, conflict group integrity. |
 | `pnpm typecheck` | Strict TypeScript across app, scripts and tests. |
 | `pnpm build` | The deck build and validation, then the Next.js build. |
-| `pnpm e2e` (Playwright) | At phone size in Chromium and WebKit: the start flow to a finished Classic round and its result; each mode's ending; answering by swipe, button and keyboard; an accidental-swipe case that must not answer; reduced motion; a returning player's "Continue". |
+| `pnpm e2e` (Playwright) | At phone size in Chromium and WebKit: the start flow to a finished Classic round and its result; each mode's ending; answering by swipe, button and keyboard; an accidental-swipe case that must not answer; reduced motion; a returning player's "Continue"; a whole round in the dark colour scheme, drawn with the night colours. |
 
 The engine and the input module are written test first. GitHub Actions runs all gates on every pull request. After each screen is implemented it is compared side by side with its mockup at 390 by 844.
 

@@ -500,7 +500,7 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 ## 10. Open questions
 
 1. **Day contrast failures.** The tagline is `ink-muted` on `sky-1` at 3.78:1, and the `accent` focus ring on pills is 1.6:1 against the sky. Possible fixes: make the tagline `ink`, or move it lower onto a lighter band; make the pill ring `ink` in day. Each fix changes an approved screen, so it needs the client's sign-off.
-2. **Night sheet.** No night screen shows the sheet, so there is no night scrim or night sheet shadow. The final start flow does not use the sheet; decide them only if the sheet comes back.
+2. **Night sheet.** No night screen shows the sheet, so there is no night scrim or night sheet shadow. The final start flow does not use the sheet, but the app's "Leave round?" confirmation is a sheet over `scrim` with the sheet shadow. At night it keeps their day values (the navy scrim and navy shadow), which barely show on the night sky, so the sheet stands apart from the pass behind it mostly by its own paper. Decide a night scrim and a night sheet shadow.
 3. **Two title sizes.** `screen-title` is 24 (mode-select) and `step-title` is 22 (browse-c, start). Unify them, or keep both? If the start flow replaces mode-select, only 22 remains.
 4. **Safe areas on native.** Use the system insets alone, or the insets plus the mock's 52/34 as a minimum?
 5. **Timed hold.** The file uses 1000ms from tap to leave; the builder suggested 700ms for the product.
