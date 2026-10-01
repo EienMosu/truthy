@@ -10,7 +10,9 @@ import { tokensToCss } from "@/src/tokens/build";
 
 const CSS = tokensToCss(JSON.parse(readFileSync("design/system/tokens.json", "utf8")));
 
-const VARIABLES = new Map([...CSS.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1] ?? "", (m[2] ?? "").trim()]));
+// The day block: everything before the night overrides under prefers-color-scheme: dark.
+const DAY_CSS = CSS.slice(0, CSS.indexOf("@media (prefers-color-scheme: dark)") >>> 0);
+const VARIABLES = new Map([...DAY_CSS.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1] ?? "", (m[2] ?? "").trim()]));
 
 /** The value of a variable with every var() inside it replaced, as a browser would compute it. */
 function resolve(name: string, seen: readonly string[] = []): string {
