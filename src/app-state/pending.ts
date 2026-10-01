@@ -3,6 +3,7 @@
 // memory for when the browser blocks storage.
 
 import { z } from "zod";
+import { browserSessionStorage } from "@/src/app-state/services";
 import type { Route } from "@/src/content/schema";
 import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
 
@@ -19,22 +20,13 @@ const PendingSchema = z.object({
   mode: z.custom<Mode>((value) => typeof value === "string" && (AVAILABLE_MODES as readonly string[]).includes(value)),
 });
 
-// window.sessionStorage, or undefined on the server and where the browser blocks storage.
-function sessionStore(): Storage | undefined {
-  try {
-    return typeof window === "undefined" ? undefined : window.sessionStorage;
-  } catch {
-    return undefined;
-  }
-}
-
 // The last round handed over on this page. The start flow and /play are one page (client-side navigation),
 // so this copy reaches /play when storage cannot: blocked, full or throwing (spec sections 7 and 10, the
 // game runs without storage). Only in the browser: on the server a module value would be shared.
 let inMemory: PendingRound | null = null;
 
 // Never throws. Keeps a copy in memory, then stores it; without storage only the copy is kept.
-export function savePending(pending: PendingRound, storage: Pick<Storage, "setItem"> | undefined = sessionStore()): void {
+export function savePending(pending: PendingRound, storage: Pick<Storage, "setItem"> | undefined = browserSessionStorage()): void {
   if (typeof window !== "undefined") inMemory = { route: { deckId: pending.route.deckId, sectionId: pending.route.sectionId }, mode: pending.mode };
   if (!storage) return;
   try {
@@ -51,7 +43,7 @@ function fromMemory(): PendingRound | null {
 
 // The stored pending round, or null when there is none or it is not valid. Where storage cannot give a
 // round back, the copy in memory. Never throws.
-export function readPending(storage: Pick<Storage, "getItem"> | undefined = sessionStore()): PendingRound | null {
+export function readPending(storage: Pick<Storage, "getItem"> | undefined = browserSessionStorage()): PendingRound | null {
   if (!storage) return fromMemory();
   let value: unknown;
   try {

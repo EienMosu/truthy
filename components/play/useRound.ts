@@ -4,22 +4,16 @@
 // through PlayServices, so the play screen runs in tests without a browser.
 import { useCallback, useEffect, useReducer, useState } from "react";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexDeck, type Route } from "@/src/content/schema";
-import { createDeckCache, loadDeck, loadIndex, poolFor, type Fetcher } from "@/src/content/load";
+import { createDeckCache, loadDeck, loadIndex, poolFor } from "@/src/content/load";
 import { modeInfo } from "@/src/app-state/modes";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
-import { browserBackToStart } from "@/src/app-state/services";
+import { browserAppServices, browserBackToStart, type AppServices } from "@/src/app-state/services";
 import { reduce, startRound, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { pruneDeck } from "@/src/progress/progress";
-import { browserLocalStorage, createLocalStore, type ProgressStore } from "@/src/progress/local";
+import { createLocalStore, type ProgressStore } from "@/src/progress/local";
 
-/** The play screen's window on the outside world. Tests pass fakes; the app uses browserPlayServices. */
-export interface PlayServices {
-  /** GETs a URL. In the browser: window.fetch. */
-  fetcher: Fetcher;
-  /** Where progress, the deck cache and the index cache live. In the browser: localStorage (or undefined when blocked). */
-  localStorage: () => Pick<Storage, "getItem" | "setItem"> | undefined;
-  /** Where the start flow left the pending round. In the browser: sessionStorage (or undefined when blocked). */
-  sessionStorage: () => Pick<Storage, "getItem"> | undefined;
+/** The play screen's window on the outside world: the app services plus the clock and the dice. Tests pass fakes; the app uses browserPlayServices. */
+export interface PlayServices extends AppServices {
   /** The clock in ms since the epoch: answer times (card history) and the swipe settle time. */
   now: () => number;
   /** A fresh 32-bit seed for dealing a round. */
@@ -31,19 +25,9 @@ export interface PlayServices {
   backToStart?: () => boolean;
 }
 
-function browserSessionStorage(): Storage | undefined {
-  try {
-    return typeof window === "undefined" ? undefined : window.sessionStorage;
-  } catch {
-    return undefined;
-  }
-}
-
 /** The real services. A module constant, so it is stable across renders. */
 export const browserPlayServices: PlayServices = {
-  fetcher: (url) => fetch(url),
-  localStorage: browserLocalStorage,
-  sessionStorage: browserSessionStorage,
+  ...browserAppServices,
   now: () => Date.now(),
   backToStart: browserBackToStart,
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
