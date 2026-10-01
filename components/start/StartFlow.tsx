@@ -23,6 +23,7 @@ import { Logo } from "@/components/Logo";
 import { PillButton } from "@/components/PillButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { EASE, EASE_OUT } from "@/components/easing";
 import { BackArrowIcon } from "@/components/icons";
 import { MODE_TABLE, modeInfo, type ModeInfo } from "@/src/app-state/modes";
 import { savePending } from "@/src/app-state/pending";
@@ -167,8 +168,6 @@ function readEntry(state: unknown): Entry | null {
 
 // ---------- motion ----------
 
-const EASE = [0.2, 0.7, 0.2, 1] as const;
-const EASE_OUT = [0, 0, 0.58, 1] as const;
 type Direction = 1 | -1;
 
 /** A step's panel: on its way out it rises (forward) or sinks (back) 10px and fades. */

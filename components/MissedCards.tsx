@@ -8,6 +8,7 @@ import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { Answered } from "@/src/engine/round";
 import { PassLower } from "./BoardingPass";
+import { pad2 } from "./format";
 import { BookIcon, ChevronIcon } from "./icons";
 
 /** One missed card, as the list shows it. */
@@ -44,10 +45,6 @@ export function missedCards(answers: readonly Answered[]): MissedCard[] {
 export interface MissedCardsProps {
   missed: readonly MissedCard[];
   className?: string;
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
 }
 
 function word(value: boolean): string {

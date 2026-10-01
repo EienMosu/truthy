@@ -9,6 +9,7 @@
 // the game ticket (the hand-off to /play, which shows its ticket in the same place).
 import { motion } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
+import { EASE } from "./easing";
 import { LogoMark } from "./Logo";
 import { CloudIcon } from "./icons";
 
@@ -63,8 +64,6 @@ const CHANGE_WORD: Record<PassFieldName, string> = {
 export function changeLabel(field: PassFieldName, value: string): string {
   return `Change ${CHANGE_WORD[field]}, now ${value}`;
 }
-
-const EASE = [0.2, 0.7, 0.2, 1] as const;
 
 const FIELD_LABEL =
   "font-(family-name:--type-field-label-family) text-(length:--type-field-label-size) font-(--type-field-label-weight) " +

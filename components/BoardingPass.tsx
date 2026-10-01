@@ -6,6 +6,7 @@
 // The result screen reuses the shell with its own body and lower part (PassLower gives the notched paper).
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import type { CSSProperties, ReactNode, Ref } from "react";
+import { EASE, EASE_IN, FALL } from "./easing";
 import { Stamp } from "./Stamp";
 import { BookIcon, CheckIcon, CloudIcon, CrossIcon } from "./icons";
 
@@ -53,7 +54,7 @@ const PERFORATION: CSSProperties = {
 
 const JOLT: Variants = {
   rest: { y: 0 },
-  jolt: { y: [0, 2, 0], transition: { duration: 0.26, delay: 0.42, times: [0, 0.4, 1], ease: [0.2, 0.7, 0.2, 1] } },
+  jolt: { y: [0, 2, 0], transition: { duration: 0.26, delay: 0.42, times: [0, 0.4, 1], ease: EASE } },
 };
 
 const FIELD_LABEL =
@@ -251,15 +252,15 @@ export type TearSide = "left" | "right";
 
 const STUB_VARIANTS: Variants = {
   hidden: { opacity: 0, y: 12 },
-  shown: { opacity: 1, x: 0, y: 0, rotate: 0, transition: { duration: 0.22, ease: [0.2, 0.7, 0.2, 1] } },
+  shown: { opacity: 1, x: 0, y: 0, rotate: 0, transition: { duration: 0.22, ease: EASE } },
   tear: (side: TearSide | undefined) => ({
     x: side === "right" ? 40 : -40,
     y: 360,
     rotate: side === "right" ? 18 : -18,
     opacity: 0,
     transition: {
-      default: { duration: 0.46, ease: [0.5, 0, 0.9, 0.4] },
-      opacity: { duration: 0.46, ease: [0.42, 0, 1, 1] },
+      default: { duration: 0.46, ease: FALL },
+      opacity: { duration: 0.46, ease: EASE_IN },
     },
   }),
 };

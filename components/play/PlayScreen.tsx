@@ -21,6 +21,8 @@ import { FlightPath } from "@/components/FlightPath";
 import { PillButton } from "@/components/PillButton";
 import { RoundButton } from "@/components/RoundButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
+import { EASE } from "@/components/easing";
+import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
 import { SWIPE } from "@/src/input/swipe";
 import { currentCard, lastAnswer, type RoundEvent, type RoundState } from "@/src/engine/round";
@@ -35,7 +37,6 @@ export interface PlayScreenProps {
   services?: PlayServices;
 }
 
-const EASE = [0.2, 0.7, 0.2, 1] as const;
 
 /**
  * How long after an answer "Next card" counts as arrived and starts to accept presses. Before that it is
@@ -58,10 +59,6 @@ const SCROLLER: CSSProperties = {
   paddingBottom: "calc(var(--space-12) + var(--size-actions))",
   scrollbarWidth: "none",
 };
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
 
 /** What the live region says after an answer: "Correct. The answer is False." */
 export function verdictText(correct: boolean, answer: boolean): string {

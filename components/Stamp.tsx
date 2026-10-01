@@ -6,6 +6,7 @@
 // When it lands it scales from 1.9 and turns from -14 to -6 degrees (420 ms spring, 380 ms delay);
 // with reduced motion it is simply shown at rest.
 import { motion, useReducedMotion } from "motion/react";
+import { SPRING_EASE, STAMP_LANDING, STAMP_REST } from "./easing";
 import { CheckIcon, CrossIcon } from "./icons";
 
 export type Verdict = "correct" | "wrong";
@@ -16,12 +17,6 @@ export interface StampProps {
   animate?: boolean;
   className?: string;
 }
-
-/** The spring curve of the design (cubic-bezier 0.34, 1.56, 0.64, 1), as Motion wants it. */
-export const SPRING_EASE = [0.34, 1.56, 0.64, 1] as const;
-
-const REST = { opacity: 1, scale: 1, rotate: -6 };
-const LANDING = { opacity: 0, scale: 1.9, rotate: -14 };
 
 const BASE =
   "inline-flex flex-none items-center gap-(--space-8) px-(--space-14) pt-(--space-6) pb-(--space-4) " +
@@ -38,8 +33,8 @@ export function Stamp({ verdict, animate = false, className }: StampProps) {
       className={[BASE, verdict === "correct" ? "text-(--color-correct)" : "text-(--color-wrong)", className]
         .filter(Boolean)
         .join(" ")}
-      initial={land ? LANDING : false}
-      animate={REST}
+      initial={land ? STAMP_LANDING : false}
+      animate={STAMP_REST}
       transition={{ duration: 0.42, delay: 0.38, ease: SPRING_EASE }}
     >
       {verdict === "correct" ? <CheckIcon size={22} /> : <CrossIcon size={18} />}

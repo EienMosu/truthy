@@ -13,6 +13,7 @@ import { QuietButton } from "@/components/QuietButton";
 import { RoundButton } from "@/components/RoundButton";
 import { ScoreBlock } from "@/components/ScoreBlock";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
+import { pad2 } from "@/components/format";
 import { CloseIcon, ReplayIcon, RouteIcon } from "@/components/icons";
 import { summarise, type RoundState } from "@/src/engine/round";
 import { applyResult, compareWithBest, type ApplyOutcome } from "@/src/progress/progress";
@@ -74,10 +75,6 @@ const SCROLLER: CSSProperties = {
   paddingBottom: `calc${UNDER_PILL}`,
   scrollbarWidth: "none",
 };
-
-function pad2(n: number): string {
-  return String(n).padStart(2, "0");
-}
 
 export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }: ResultViewProps) {
   const outcome = useRecordedRound(round, progressStore);

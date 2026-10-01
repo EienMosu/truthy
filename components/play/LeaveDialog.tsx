@@ -8,6 +8,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, type KeyboardEvent } from "react";
 import { PillButton } from "@/components/PillButton";
 import { QuietButton } from "@/components/QuietButton";
+import { EASE } from "@/components/easing";
 
 export interface LeaveDialogProps {
   open: boolean;
@@ -20,8 +21,6 @@ export interface LeaveDialogProps {
 export function LeaveDialog({ open, onStay, onLeave }: LeaveDialogProps) {
   return <AnimatePresence>{open ? <Sheet key="leave" onStay={onStay} onLeave={onLeave} /> : null}</AnimatePresence>;
 }
-
-const EASE = [0.2, 0.7, 0.2, 1] as const;
 
 function Sheet({ onStay, onLeave }: Omit<LeaveDialogProps, "open">) {
   const reduced = useReducedMotion() ?? false;

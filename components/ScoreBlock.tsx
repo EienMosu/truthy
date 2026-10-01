@@ -6,7 +6,7 @@
 // "Equals your best" and the other lines are plain text, not stamps.
 import { motion, useReducedMotion } from "motion/react";
 import type { Comparison } from "@/src/progress/progress";
-import { SPRING_EASE } from "./Stamp";
+import { SPRING_EASE, STAMP_LANDING, STAMP_REST } from "./easing";
 import { StarIcon } from "./icons";
 
 export interface ScoreBlockProps {
@@ -40,17 +40,14 @@ const NEW_BEST =
   "font-(family-name:--type-stamp-family) text-[22px] font-(--type-stamp-weight) leading-(--type-stamp-line-height) " +
   "tracking-(--type-stamp-letter-spacing)";
 
-const REST = { opacity: 1, scale: 1, rotate: -6 };
-const LANDING = { opacity: 0, scale: 1.9, rotate: -14 };
-
 function NewBestStamp({ animate }: { animate: boolean }) {
   const reduced = useReducedMotion() ?? false;
   return (
     <motion.span
       data-new-best=""
       className={NEW_BEST}
-      initial={animate && !reduced ? LANDING : false}
-      animate={REST}
+      initial={animate && !reduced ? STAMP_LANDING : false}
+      animate={STAMP_REST}
       transition={{ duration: 0.42, delay: 0.38, ease: SPRING_EASE }}
     >
       <StarIcon />
