@@ -81,6 +81,17 @@ export function timedStatus(round: RoundState): string {
   return lastAnswer(round)?.correct ? "Correct." : "Not quite.";
 }
 
+/**
+ * What the Timed card announcer says: "Card 2. <statement>" from the second card on, until time is up.
+ * The first card is read through focus (the statement takes it); at time up the status speaks. The text
+ * stays the same through the stamp, so a card is announced once.
+ */
+export function timedCardText(round: RoundState): string {
+  const card = currentCard(round);
+  if (round.index === 0 || isDecided(round) || !card) return "";
+  return `Card ${round.index + 1}. ${card.text.en.statement}`;
+}
+
 // Timed: when the stamp has held, the answered card leaves towards the side that was answered while the next
 // is dealt under it (design system 7, "Timed beat").
 type CardSide = "left" | "right";
@@ -266,8 +277,8 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   useClock(timed && !decided, dispatch, services);
 
   // A new card: start its settle time, scroll the ticket to the top, put focus on the statement. In Timed
-  // only the first card takes focus; later ones are announced by the statement's live region, so focus
-  // stays on the pill the player used.
+  // only the first card takes focus; later ones are announced by the card announcer (a live region that
+  // stays mounted, see timedCardText), so focus stays on the pill the player used.
   useEffect(() => {
     if (round.phase !== "question") return;
     shownAt.current = now();
@@ -476,7 +487,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
                         </div>
                       }
                     >
-                      <PassStatement ref={statementRef} appliesTo={card.appliesTo} muted={timeUp} live={timed && !timeUp}>
+                      <PassStatement ref={statementRef} appliesTo={card.appliesTo} muted={timeUp}>
                         {card.text.en.statement}
                       </PassStatement>
                     </BoardingPass>
@@ -524,6 +535,13 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
         <p role="status" className="sr-only">
           {timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : ""}
         </p>
+        {/* Timed: each card is a new element (the swap keys it), and a live region that arrives with its text
+            is not reliably read, so new cards are announced from here, outside the card. */}
+        {timed ? (
+          <p data-card-announcer="" aria-live="polite" aria-atomic="true" className="sr-only">
+            {timedCardText(round)}
+          </p>
+        ) : null}
       </main>
       <LeaveDialog
         open={confirming}

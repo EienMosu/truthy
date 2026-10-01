@@ -9,7 +9,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { NEXT_ARRIVES_MS, PlayScreen, timedStatus } from "@/components/play/PlayScreen";
+import { NEXT_ARRIVES_MS, PlayScreen, timedCardText, timedStatus } from "@/components/play/PlayScreen";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { emptyProgress, parseProgress } from "@/src/progress/progress";
 import { reduce, startRound } from "@/src/engine/round";
@@ -284,21 +284,51 @@ describe("PlayScreen Timed: the stamp beat", () => {
     noAnswer();
   });
 
-  it("the statement is a live region and takes focus on the first card only", async () => {
+  // Each card is a new element (the swap keys it by round.index), and a live region that arrives with its
+  // text is not reliably read by screen readers. So the statement is announced from a region that stays
+  // mounted outside the card, and the card's own statement is not live (nothing is read twice).
+  it("announces each new card from a live region that stays mounted; the statement takes focus on the first card only", async () => {
     await start();
+    const announcer = document.querySelector("[data-card-announcer]");
+    expect(announcer?.getAttribute("aria-live")).toBe("polite");
+    expect(announcer?.getAttribute("aria-atomic")).toBe("true");
+    expect(announcer?.textContent).toBe("");
     const statement = document.querySelector("[data-statement]");
-    expect(statement?.getAttribute("aria-live")).toBe("polite");
+    expect(statement?.hasAttribute("aria-live")).toBe(false);
     expect(document.activeElement).toBe(statement);
+
     const first = statementText();
     const pill = button(true);
     pill.focus();
     fireEvent.click(pill);
+    expect(announcer?.textContent).toBe("");
     run(700);
     await nextCard(first);
+    expect(document.querySelector("[data-card-announcer]")).toBe(announcer);
+    expect(announcer?.textContent).toBe(`Card 2. ${statementText()}`);
     const next = document.querySelector("[data-statement]");
-    expect(next?.getAttribute("aria-live")).toBe("polite");
+    expect(next?.hasAttribute("aria-live")).toBe(false);
     expect(document.activeElement).not.toBe(next);
     expect(document.activeElement?.textContent).toMatch(/^(True|False)$/);
+
+    // The stamp does not change it (so it is not read again); the third card replaces it.
+    const second = statementText();
+    h.advance(300);
+    give(false);
+    expect(announcer?.textContent).toBe(`Card 2. ${second}`);
+    run(700);
+    await nextCard(second);
+    expect(announcer?.textContent).toBe(`Card 3. ${statementText()}`);
+
+    // At time up the card does not count: the status says so and the region falls silent.
+    runToTimeUp();
+    expect(announcer?.textContent).toBe("");
+    expect(status()).toBe("Time is up. This card doesn't count.");
+  });
+
+  it("has no card announcer outside Timed", async () => {
+    await start(harness(pendingFor("classic")));
+    expect(document.querySelector("[data-card-announcer]")).toBeNull();
   });
 });
 
@@ -534,5 +564,25 @@ describe("timedStatus", () => {
     let up = question;
     for (let now = 1000; now <= 60_000; now += 1000) up = reduce(up, { type: "tick", now });
     expect(timedStatus(up)).toBe("Time is up. This card doesn't count.");
+  });
+});
+
+describe("timedCardText", () => {
+  it("says nothing on the first card, the card number and statement from the second on, and nothing at time up", () => {
+    const pool = DECK.cards.filter((card) => card.section === "SEC");
+    const question = reduce(startRound({ mode: "timed", route: { deckId: DECK_ID, sectionId: "SEC" }, pool, history: {}, seed: 1 }), { type: "tick", now: 0 });
+    expect(timedCardText(question)).toBe("");
+    const first = question.cards[0];
+    if (!first) throw new Error("no card");
+    const stamped = reduce(question, { type: "answer", value: first.answer, at: 500 });
+    expect(timedCardText(stamped)).toBe("");
+    const second = reduce(stamped, { type: "tick", now: 1200 });
+    const card = second.cards[second.index];
+    if (second.index !== 1 || !card) throw new Error("the second card was not dealt");
+    expect(timedCardText(second)).toBe(`Card 2. ${card.text.en.statement}`);
+    expect(timedCardText(reduce(second, { type: "answer", value: card.answer, at: 1500 }))).toBe(`Card 2. ${card.text.en.statement}`);
+    let up = second;
+    for (let now = 2000; now <= 61_000; now += 1000) up = reduce(up, { type: "tick", now });
+    expect(timedCardText(up)).toBe("");
   });
 });
