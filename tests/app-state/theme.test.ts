@@ -259,17 +259,34 @@ describe("themeScript, the inline script in <head>", () => {
     expectBar("dark");
   });
 
-  it("sets theme-color tags that come after the script once the document has been parsed", () => {
-    Object.defineProperty(document, "readyState", { configurable: true, get: () => "loading" });
-    try {
-      run(memoryStorage({ "truthy.theme": "light" }));
-      expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-      addThemeColorMetas();
-      document.dispatchEvent(new Event("DOMContentLoaded"));
-      expectBar("light");
-    } finally {
-      delete (document as { readyState?: unknown }).readyState;
-    }
+  // The router of Next.js replaces the theme-color tags on a client-side navigation (start to /play), and
+  // they come back with their system media. The script keeps watching <head> for the life of the page.
+  const observed = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it("sets theme-color tags that arrive after it ran, as on a client-side navigation", async () => {
+    run(memoryStorage({ "truthy.theme": "light" }));
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    addThemeColorMetas();
+    await observed();
+    expectBar("light");
+  });
+
+  it("keeps a choice made later with the switch when the tags are replaced", async () => {
+    run(memoryStorage());
+    addThemeColorMetas();
+    applyTheme(document, "dark");
+    document.head.innerHTML = "";
+    addThemeColorMetas();
+    await observed();
+    expectBar("dark");
+  });
+
+  it("keeps watching when storage throws, so a choice for this page alone survives a navigation too", async () => {
+    run(memoryStorage({}, true));
+    applyTheme(document, "dark");
+    addThemeColorMetas();
+    await observed();
+    expectBar("dark");
   });
 
   it("leaves the page to the system for no choice or a garbage value", () => {

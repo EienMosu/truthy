@@ -125,19 +125,25 @@ export function subscribeTheme(doc: Document, matchMedia: MatchMedia | undefined
 }
 
 /**
- * The inline script app/layout.tsx puts in <head>: it applies a stored choice as the page is parsed, before
- * the first paint, the same way applyTheme does. Should the theme-color tags come after it in <head>, it
- * sets them again once the document is parsed. Wrapped in try/catch: blocked storage leaves the page
- * to the system setting.
+ * The inline script app/layout.tsx puts in <head>. As the page is parsed, before the first paint, it puts a
+ * stored choice on <html> and sets the theme-color tags the way applyTheme does. Then it keeps watching
+ * <head> for the life of the page: the router of Next.js replaces the theme-color tags on a client-side
+ * navigation (start to /play) and they come back with their system media, so whenever tags arrive or
+ * change, a choice on <html> (stored, or made with the switch on this page) is applied to them again.
+ * Storage that throws only skips the stored choice.
  */
 export function themeScript(): string {
   const key = JSON.stringify(THEME_KEY);
   const colors = JSON.stringify(THEME_COLOR);
   const metas = JSON.stringify(THEME_COLOR_METAS);
+  const attribute = JSON.stringify(ATTRIBUTE);
   return (
-    `(function(){try{var t=localStorage.getItem(${key});if(t!=="light"&&t!=="dark")return;` +
-    `var d=document,c=${colors}[t];d.documentElement.setAttribute(${JSON.stringify(ATTRIBUTE)},t);` +
-    `var m=function(){var l=d.querySelectorAll(${metas});for(var i=0;i<l.length;i++)l[i].setAttribute("media",l[i].getAttribute("content")===c?"all":"not all")};` +
-    `m();if(d.readyState==="loading")d.addEventListener("DOMContentLoaded",m)}catch(e){}})()`
+    `(function(){try{var d=document,r=d.documentElement,c=${colors};` +
+    `var m=function(){var t=r.getAttribute(${attribute});if(t!=="light"&&t!=="dark")return;` +
+    `var l=d.querySelectorAll(${metas});for(var i=0;i<l.length;i++){` +
+    `var w=l[i].getAttribute("content")===c[t]?"all":"not all";if(l[i].getAttribute("media")!==w)l[i].setAttribute("media",w)}};` +
+    `try{var s=localStorage.getItem(${key});if(s==="light"||s==="dark")r.setAttribute(${attribute},s)}catch(e){}` +
+    `m();new MutationObserver(m).observe(d.head||r,{childList:true,subtree:true,attributes:true,attributeFilter:["media","content"]})` +
+    `}catch(e){}})()`
   );
 }
