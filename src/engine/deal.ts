@@ -12,15 +12,56 @@ export const DEAL = { missedPerTen: 3, minTrue: 4, maxTrue: 6, maxRun: 3 } as co
 export interface DealOptions {
   count: number; // how many cards to deal
   avoid?: readonly Card[]; // cards whose conflict groups must not be repeated (unbounded modes pass the last ten; Classic passes nothing)
+  before?: readonly boolean[]; // the answers of the cards dealt just before this deal, oldest first: the run limit holds across the join
 }
 
 export function deal(pool: readonly Card[], history: History, rng: Rng, options: DealOptions): Card[] {
   const cards = uniqueById(pool);
   const size = dealSize(options.count, cards.length);
   if (size === 0) return [];
-  const ranking = rankByPriority(cards, history, rng, size);
-  const chosen = choose(ranking, size, options.avoid ?? []);
-  return arrange(chosen, rng);
+  return dealRanked(rankByPriority(cards, history, rng, size), size, rng, options);
+}
+
+// Chooses `size` cards from a ranking and puts them in order.
+function dealRanked(ranking: Ranking, size: number, rng: Rng, options: Pick<DealOptions, "avoid" | "before">): Card[] {
+  return arrange(choose(ranking, size, options.avoid ?? []), rng, joinOf(options.before ?? []));
+}
+
+// Where a deal joins the cards before it: their last answer and the length of the run of equal answers
+// that ends them. Nothing before: no last answer, no run.
+interface Join {
+  last: boolean | null;
+  run: number;
+}
+
+function joinOf(before: readonly boolean[]): Join {
+  const last = before[before.length - 1] ?? null;
+  let run = 0;
+  for (let i = before.length - 1; i >= 0 && before[i] === last; i--) run++;
+  return { last, run };
+}
+
+export const CHUNK = 10;
+
+// The next cards of a round, given every card the round has dealt so far (in order): ten, or as many as
+// may be dealt. First in line are the cards the round has not shown, ranked by the stored history. Behind
+// them stand the cards it may bring back: every card outside the last min(CHUNK, route size - 1) dealt,
+// the one shown longest ago first. Never empty for a pool with a card in it.
+export function dealChunk(pool: readonly Card[], history: History, rng: Rng, dealt: readonly Card[]): Card[] {
+  const cards = uniqueById(pool);
+  const lastDealtAt = new Map<string, number>();
+  dealt.forEach((card, position) => lastDealtAt.set(card.id, position));
+  const unshown = cards.filter((card) => !lastDealtAt.has(card.id));
+  const gap = Math.min(CHUNK, cards.length - 1);
+  const comeBack = cards
+    .filter((card) => (lastDealtAt.get(card.id) ?? dealt.length) < dealt.length - gap)
+    .sort((a, b) => (lastDealtAt.get(a.id) ?? 0) - (lastDealtAt.get(b.id) ?? 0));
+  const size = Math.min(CHUNK, unshown.length + comeBack.length);
+  const lastTen = dealt.slice(-CHUNK);
+  return dealRanked({ ...rankByPriority(unshown, history, rng, size), comeBack }, size, rng, {
+    avoid: lastTen,
+    before: lastTen.map((card) => card.answer),
+  });
 }
 
 // The first card with each id wins, so a card can never be dealt twice.
@@ -63,6 +104,7 @@ function oldestFirst(cards: readonly Card[], history: History): Card[] {
 interface Ranking {
   withinCap: Card[];
   overCap: Card[];
+  comeBack: Card[]; // dealChunk only: cards the round has shown and may bring back, the one shown longest ago first
 }
 
 function rankByPriority(cards: readonly Card[], history: History, rng: Rng, size: number): Ranking {
@@ -74,6 +116,7 @@ function rankByPriority(cards: readonly Card[], history: History, rng: Rng, size
   return {
     withinCap: [...missed.slice(0, missedCap), ...unseen, ...seenRight],
     overCap: missed.slice(missedCap),
+    comeBack: [],
   };
 }
 
@@ -93,13 +136,16 @@ function balanceFor(size: number): Balance {
 // Picks `size` cards, relaxing the rules in the order of the spec only as far as needed:
 // 1. every rule, without the missed cards over the cap;
 // 2. recency: the missed cards over the cap may join, last in line;
-// 3. conflict groups, then 4. answer balance (relaxStepByStep).
+// 3. recency again, in a round that goes on: a card the round has shown may come back, last in line;
+// 4. conflict groups, then 5. answer balance (relaxStepByStep).
 function choose(ranking: Ranking, size: number, avoid: readonly Card[]): Card[] {
   const balance = balanceFor(size);
-  const everyCard = [...ranking.withinCap, ...ranking.overCap];
+  const unshown = [...ranking.withinCap, ...ranking.overCap];
+  const everyCard = [...unshown, ...ranking.comeBack];
   return (
     searchWithAllRules(ranking.withinCap, size, avoid, balance) ??
-    searchWithAllRules(everyCard, size, avoid, balance) ??
+    searchWithAllRules(unshown, size, avoid, balance) ??
+    (ranking.comeBack.length > 0 ? searchWithAllRules(everyCard, size, avoid, balance) : null) ??
     relaxStepByStep(everyCard, size, avoid, balance)
   );
 }
@@ -226,14 +272,14 @@ function balanceAllows(answer: boolean, trues: number, falses: number, size: num
 // Puts the chosen cards in a random order with no run of equal answers longer than the run limit.
 // Position by position, it draws True or False in proportion to how many of each are left, among the
 // answers that still allow the rest to be placed; then it takes the next card of that answer.
-function arrange(chosen: readonly Card[], rng: Rng): Card[] {
+function arrange(chosen: readonly Card[], rng: Rng, join: Join): Card[] {
   const trues = shuffle(chosen.filter((card) => card.answer), rng);
   const falses = shuffle(chosen.filter((card) => !card.answer), rng);
-  const limit = runLimit(trues.length, falses.length);
+  const limit = runLimit(trues.length, falses.length, join);
   const canPlace = placementCheck(limit);
   const order: Card[] = [];
-  let last: boolean | null = null;
-  let run = 0;
+  let last = join.last;
+  let run = join.run;
 
   while (trues.length + falses.length > 0) {
     const allowed = [true, false].filter((answer) => {
@@ -252,20 +298,20 @@ function arrange(chosen: readonly Card[], rng: Rng): Card[] {
   return order;
 }
 
-// The run limit is DEAL.maxRun, unless the answers are so uneven that no order can keep it
-// (all True, or 9 True and 1 False); then it is the shortest longest run that is possible.
-// The majority can be split into at most minority + 1 runs.
-function runLimit(trues: number, falses: number): number {
-  const majority = Math.max(trues, falses);
-  const minority = Math.min(trues, falses);
-  return Math.max(DEAL.maxRun, Math.ceil(majority / (minority + 1)));
+// The run limit is DEAL.maxRun, unless no order of these answers after the cards before them can keep
+// it (all True, 9 True and 1 False, or a True card alone after three True cards); then it is the
+// smallest limit some order can keep. Without cards before, that is ceil(majority / (minority + 1)).
+function runLimit(trues: number, falses: number, join: Join): number {
+  let limit = DEAL.maxRun;
+  while (!placementCheck(limit)(trues, falses, join.last, join.run)) limit++;
+  return limit;
 }
 
 // canPlace(t, f, last, run): can t True and f False cards still be placed after a run of `run` cards
 // with answer `last`, without any run passing the limit? Memoised, so a whole deal costs little.
-function placementCheck(limit: number): (t: number, f: number, last: boolean, run: number) => boolean {
+function placementCheck(limit: number): (t: number, f: number, last: boolean | null, run: number) => boolean {
   const memo = new Map<string, boolean>();
-  const canPlace = (t: number, f: number, last: boolean, run: number): boolean => {
+  const canPlace = (t: number, f: number, last: boolean | null, run: number): boolean => {
     if (t === 0 && f === 0) return true;
     const key = `${t},${f},${last},${run}`;
     const known = memo.get(key);
