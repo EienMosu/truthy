@@ -35,3 +35,22 @@ export function canStart(sample: SwipeSample, context: SwipeContext): boolean {
   const awayFromEdges = sample.x >= SWIPE.edgePx && sample.x <= context.viewportWidth - SWIPE.edgePx;
   return settled && awayFromEdges;
 }
+
+function sideOf(dx: number): SwipeOutcome {
+  return dx > 0 ? "true" : "false";
+}
+
+// Turns the samples of one gesture (first = pointer down, last = release) into an answer or "cancel".
+export function interpret(samples: readonly SwipeSample[], context: SwipeContext): SwipeOutcome {
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  if (samples.length < 2 || first === undefined || last === undefined) return "cancel";
+
+  const dx = last.x - first.x;
+  const dy = last.y - first.y;
+  if (dx === 0) return "cancel";
+  if (Math.abs(dy) > Math.abs(dx)) return "cancel";
+
+  if (Math.abs(dx) >= SWIPE.commitPx) return sideOf(dx);
+  return "cancel";
+}
