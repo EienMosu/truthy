@@ -4,7 +4,7 @@
 // through PlayServices, so the play screen runs in tests without a browser.
 import { useCallback, useEffect, useReducer, useState } from "react";
 import { WHOLE_DECK, deckPassName, findRoute, type Route, type RouteInIndex } from "@/src/content/schema";
-import { createDeckCache, loadDeck, loadIndex, poolFor } from "@/src/content/load";
+import { LoadError, createDeckCache, loadDeck, loadIndex, poolFor } from "@/src/content/load";
 import { modeInfo } from "@/src/app-state/modes";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
 import { browserAppServices, browserBackToStart, type AppServices } from "@/src/app-state/services";
@@ -132,8 +132,12 @@ export function useRound(services: PlayServices, goHome: () => void): UseRoundRe
         send({ type: "start", round: prepared.round });
         setLoad({ kind: "ready", ticket: prepared.ticket });
       },
-      () => {
-        if (!cancelled) setLoad({ kind: "error", message: LOAD_FAILED_MESSAGE });
+      (reason: unknown) => {
+        if (cancelled) return;
+        // A LoadError is the network or the cache. Anything else is a bug in dealing or pruning: it is
+        // logged, and the player still sees the one message the screen has.
+        if (!(reason instanceof LoadError)) console.error(reason);
+        setLoad({ kind: "error", message: LOAD_FAILED_MESSAGE });
       },
     );
     return () => {

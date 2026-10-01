@@ -115,6 +115,36 @@ describe("useRound", () => {
     await ready(status);
   });
 
+  it("shows the load message for a network failure without logging", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const h = harness();
+      h.network.online = false;
+      const { status } = run(h);
+      await waitFor(() => expect(status()).toEqual({ kind: "error", message: LOAD_FAILED_MESSAGE }));
+      expect(log).not.toHaveBeenCalled();
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it("logs a failure that is not a load failure and still shows the message", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const h = harness();
+      const failure = new Error("no entropy");
+      h.services.randomSeed = () => {
+        throw failure;
+      };
+      const { status } = run(h);
+      await waitFor(() => expect(status()).toEqual({ kind: "error", message: LOAD_FAILED_MESSAGE }));
+      expect(log).toHaveBeenCalledTimes(1);
+      expect(log).toHaveBeenCalledWith(failure);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("plays from the cached index and deck when the network fails", async () => {
     const local = memoryStorage();
     await ready(run(harness(undefined, local)).status);
