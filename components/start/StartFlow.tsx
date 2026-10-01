@@ -24,10 +24,11 @@ import { PillButton } from "@/components/PillButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { BackArrowIcon } from "@/components/icons";
+import { MODE_TABLE, modeInfo, type ModeInfo } from "@/src/app-state/modes";
 import { savePending } from "@/src/app-state/pending";
 import { browserAppServices, browserStepHistory, markStartEntryBehind, type AppServices, type StepHistory } from "@/src/app-state/services";
+import type { Mode } from "@/src/content/play";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
-import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
 import { SWIPE } from "@/src/input/swipe";
 import { ContinueLine } from "./ContinueLine";
 import { bestFor, continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "./useCatalog";
@@ -89,21 +90,6 @@ function sameChoice(a: Choice, b: Choice): boolean {
   return CHOICE_KEYS.every((key) => a[key] === b[key]);
 }
 
-export interface ModeOption {
-  id: Mode;
-  name: string;
-  description: string;
-  /** The unit of the best, as the class card shows it under the number. */
-  unit: string;
-}
-
-export const MODE_OPTIONS: readonly ModeOption[] = [
-  { id: "classic", name: "Classic", description: "10 cards, score at the end.", unit: "of 10" },
-  { id: "streak", name: "Streak", description: "Keep going until the first wrong answer.", unit: "in a row" },
-  { id: "lives", name: "Three lives", description: "The round ends on the third wrong answer.", unit: "cards" },
-  { id: "timed", name: "Timed", description: "60 seconds, as many cards as you can.", unit: "correct" },
-];
-
 /** A section as the flow shows it; the whole deck is one too. */
 interface SectionView {
   id: string;
@@ -122,7 +108,7 @@ interface Resolved {
   platform?: IndexPlatform;
   deck?: IndexDeck;
   section?: SectionView;
-  mode?: ModeOption;
+  mode?: ModeInfo;
 }
 
 function resolve(index: DeckIndex, choice: Choice): Resolved {
@@ -135,7 +121,7 @@ function resolve(index: DeckIndex, choice: Choice): Resolved {
     const found = deck.sections.find((s) => s.id === choice.sectionId);
     if (found) section = { id: found.id, title: found.title, cardCount: found.cardCount, whole: false };
   }
-  const mode = MODE_OPTIONS.find((m) => m.id === choice.mode && AVAILABLE_MODES.includes(m.id));
+  const mode = MODE_TABLE.find((m) => m.id === choice.mode && m.offered);
   return { area, platform, deck, section, mode };
 }
 
@@ -583,7 +569,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                 deckTitle={returning.found.deck.title}
                 sectionCode={returning.found.section?.id ?? WHOLE_DECK}
                 sectionTitle={returning.found.section?.title ?? "Whole deck"}
-                modeLabel={MODE_OPTIONS.find((m) => m.id === returning.mode)?.name ?? returning.mode}
+                modeLabel={modeInfo(returning.mode).name}
                 lastScore={returning.lastScore ?? undefined}
                 onContinue={continueLast}
               />
@@ -695,8 +681,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
         ));
       }
       case 5:
-        return MODE_OPTIONS.map((mode) => {
-          const available = AVAILABLE_MODES.includes(mode.id);
+        return MODE_TABLE.map((mode) => {
+          const available = mode.offered;
           const { deckId, sectionId } = view.choice;
           const best = available && deckId && sectionId ? bestFor(progress, { deckId, sectionId }, mode.id) : null;
           return (

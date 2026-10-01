@@ -3,9 +3,10 @@
 // area has, how much of a deck has been seen, the best for a route, and where "Continue" leads.
 import { useCallback, useEffect, useState } from "react";
 import type { AppServices } from "@/src/app-state/services";
+import { isOffered } from "@/src/app-state/modes";
 import { loadIndex } from "@/src/content/load";
 import { WHOLE_DECK, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform, type Route } from "@/src/content/schema";
-import { AVAILABLE_MODES, type Mode } from "@/src/engine/round";
+import type { Mode } from "@/src/content/play";
 import { createLocalStore } from "@/src/progress/local";
 import { recordKey, type Progress } from "@/src/progress/progress";
 
@@ -112,7 +113,7 @@ export interface ContinueTarget {
 
 export function continueTarget(index: DeckIndex, progress: Progress): ContinueTarget | null {
   const last = progress.last;
-  if (last === null || !AVAILABLE_MODES.includes(last.mode)) return null;
+  if (last === null || !isOffered(last.mode)) return null;
   const found = findRoute(index, last.route);
   if (!found) return null;
   const lastScore = last.score !== null && last.total !== null ? { score: last.score, total: last.total } : null;
