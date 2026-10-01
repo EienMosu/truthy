@@ -4,6 +4,7 @@ import type { Answered, RoundResult } from "@/src/engine/round";
 import {
   applyResult,
   emptyProgress,
+  parseProgress,
   pruneDeck,
   recordKey,
   seenShare,
@@ -333,5 +334,118 @@ describe("seenShare", () => {
 
   it("counts a card listed twice once", () => {
     expect(seenShare({ a: seenOnce() }, ["a", "a", "b"])).toBe(0.5);
+  });
+});
+
+describe("parseProgress", () => {
+  const stored: Progress = {
+    version: 1,
+    cards: {
+      "aws-clf-c02-t1.1-01": { seen: 3, lastCorrect: false, lastSeenAt: 1_790_000_000_000 },
+      "aws-clf-c02-t2.1-06": { seen: 1, lastCorrect: true, lastSeenAt: 1_790_000_100_000 },
+    },
+    records: { "aws-clf-c02/SEC#classic": 8 },
+    last: { route: SEC, mode: "classic" },
+  };
+  const empty = emptyProgress();
+
+  it("reads back what was stored", () => {
+    expect(parseProgress(JSON.stringify(stored))).toEqual(stored);
+  });
+
+  it("reads a progress with no last route", () => {
+    const fresh = { ...stored, last: null };
+    expect(parseProgress(JSON.stringify(fresh))).toEqual(fresh);
+  });
+
+  it("gives empty progress for null (nothing stored yet)", () => {
+    expect(parseProgress(null)).toEqual(empty);
+  });
+
+  it("gives empty progress for an empty string", () => {
+    expect(parseProgress("")).toEqual(empty);
+  });
+
+  it("gives empty progress for invalid JSON", () => {
+    expect(parseProgress("{not json")).toEqual(empty);
+    expect(parseProgress(JSON.stringify(stored).slice(0, 40))).toEqual(empty);
+  });
+
+  it("gives empty progress for valid JSON that is not an object", () => {
+    expect(parseProgress("null")).toEqual(empty);
+    expect(parseProgress("42")).toEqual(empty);
+    expect(parseProgress('"progress"')).toEqual(empty);
+    expect(parseProgress("[]")).toEqual(empty);
+  });
+
+  it("gives empty progress for an object of the wrong shape", () => {
+    expect(parseProgress("{}")).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, cards: [] }))).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": "8" } }))).toEqual(empty);
+    expect(
+      parseProgress(JSON.stringify({ ...stored, cards: { a: { seen: "1", lastCorrect: true, lastSeenAt: 1 } } })),
+    ).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC } }))).toEqual(empty);
+  });
+
+  it("gives empty progress for impossible values", () => {
+    expect(
+      parseProgress(JSON.stringify({ ...stored, cards: { a: { seen: -1, lastCorrect: true, lastSeenAt: 1 } } })),
+    ).toEqual(empty);
+    expect(
+      parseProgress(JSON.stringify({ ...stored, cards: { a: { seen: 1.5, lastCorrect: true, lastSeenAt: 1 } } })),
+    ).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": -3 } }))).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "zen" } }))).toEqual(empty);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: { deckId: "", sectionId: "SEC" }, mode: "classic" } }))).toEqual(empty);
+  });
+
+  it("gives empty progress for a missing version", () => {
+    const { version: _version, ...withoutVersion } = stored;
+    expect(parseProgress(JSON.stringify(withoutVersion))).toEqual(empty);
+  });
+
+  it("gives empty progress for a future version", () => {
+    expect(parseProgress(JSON.stringify({ ...stored, version: 2 }))).toEqual(empty);
+  });
+
+  it("gives empty progress for a version stored as a string", () => {
+    expect(parseProgress(JSON.stringify({ ...stored, version: "1" }))).toEqual(empty);
+  });
+
+  it("keeps the data and drops unknown fields", () => {
+    const withExtras = {
+      ...stored,
+      theme: "night",
+      cards: { "aws-clf-c02-t1.1-01": { seen: 3, lastCorrect: false, lastSeenAt: 5, flagged: true } },
+      last: { route: { ...SEC, label: "Security" }, mode: "classic", at: 9 },
+    };
+    expect(parseProgress(JSON.stringify(withExtras))).toEqual({
+      version: 1,
+      cards: { "aws-clf-c02-t1.1-01": { seen: 3, lastCorrect: false, lastSeenAt: 5 } },
+      records: { "aws-clf-c02/SEC#classic": 8 },
+      last: { route: SEC, mode: "classic" },
+    });
+  });
+
+  it("does not let a __proto__ key in stored data change any prototype", () => {
+    const raw =
+      '{"version":1,"cards":{"__proto__":{"seen":1,"lastCorrect":true,"lastSeenAt":1}},"records":{"__proto__":3},"last":null}';
+    const parsed = parseProgress(raw);
+    expect(Object.getPrototypeOf(parsed.cards)).toBe(Object.prototype);
+    expect(Object.getPrototypeOf(parsed.records)).toBe(Object.prototype);
+    expect(({} as Record<string, unknown>)["seen"]).toBeUndefined();
+  });
+
+  it("never throws, whatever it is given", () => {
+    for (const raw of ["", " ", "{", "undefined", "NaN", "true", '{"version":1}', "\u0000"]) {
+      expect(() => parseProgress(raw)).not.toThrow();
+    }
+  });
+
+  it("returns a fresh empty progress each time", () => {
+    const first = parseProgress(null);
+    first.records["x"] = 1;
+    expect(parseProgress(null)).toEqual(empty);
   });
 });

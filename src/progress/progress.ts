@@ -2,6 +2,7 @@
 // Pure: every function returns new objects and never changes its inputs.
 // The storage side lives in ./local, behind the ProgressStore interface.
 
+import { z } from "zod";
 import { routeKey, type Route } from "@/src/content/schema";
 import type { CardHistory, History } from "@/src/engine/deal";
 import type { Mode, RoundResult } from "@/src/engine/round";
@@ -81,4 +82,38 @@ export function seenShare(history: History, cardIds: readonly string[]): number 
     if (entry !== undefined && entry.seen > 0) seen += 1;
   }
   return seen / ids.size;
+}
+
+// The stored shape. Unknown fields are dropped; any other difference makes the whole value invalid.
+const MODES = ["classic", "streak", "lives", "timed"] as const satisfies readonly Mode[];
+
+const CardHistorySchema = z.object({
+  seen: z.number().int().nonnegative(),
+  lastCorrect: z.boolean(),
+  lastSeenAt: z.number().nonnegative(),
+});
+
+const ProgressSchema = z.object({
+  version: z.literal(1),
+  cards: z.record(z.string(), CardHistorySchema),
+  records: z.record(z.string(), z.number().int().nonnegative()),
+  last: z
+    .object({
+      route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
+      mode: z.enum(MODES),
+    })
+    .nullable(),
+});
+
+// Never throws: nothing stored, invalid JSON, the wrong shape or another version all give empty progress.
+export function parseProgress(raw: string | null): Progress {
+  if (raw === null) return emptyProgress();
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return emptyProgress();
+  }
+  const parsed = ProgressSchema.safeParse(data);
+  return parsed.success ? parsed.data : emptyProgress();
 }
