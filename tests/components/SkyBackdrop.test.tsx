@@ -23,13 +23,15 @@ describe("SkyBackdrop", () => {
     expect(sky.className).toContain("fixed");
     expect(sky.className).toContain("inset-0");
     expect(sky.className).toContain("-z-10");
+    expect(sky.className).toContain("overflow-hidden");
     expect(sky.className).not.toContain("max-w-");
   });
 
   it("keeps the clouds inside the app frame", () => {
     const frame = render(<SkyBackdrop />).container.querySelector<HTMLElement>("[data-sky-frame]");
     expect(frame?.className).toContain("max-w-(--app-max-width)");
-    expect(frame?.className).toContain("overflow-hidden");
+    // The clouds hang over the frame's edges; only the viewport clips them, so a wide screen shows them whole.
+    expect(frame?.className).not.toContain("overflow-hidden");
     expect(frame?.querySelectorAll("svg")).toHaveLength(2);
   });
 

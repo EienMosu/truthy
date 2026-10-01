@@ -21,10 +21,10 @@ export function SkyBackdrop({ lowerCloud = "game" }: SkyBackdropProps) {
     <div
       aria-hidden="true"
       data-sky-backdrop=""
-      className="pointer-events-none fixed inset-0 -z-10"
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       style={{ backgroundImage: SKY }}
     >
-      <div data-sky-frame="" className="relative mx-auto h-full w-full max-w-(--app-max-width) overflow-hidden">
+      <div data-sky-frame="" className="relative mx-auto h-full w-full max-w-(--app-max-width)">
       <svg
         data-cloud="upper"
         className="absolute fill-(--color-cloud) opacity-(--opacity-cloud)"
