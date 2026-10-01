@@ -244,6 +244,70 @@ export async function expectUnanswered(page: Page, n: number, total = 10): Promi
   await expect(page.getByRole("button", { name: "See results" })).toHaveCount(0);
 }
 
+// ---------- the modes of step 2 ----------
+
+export type ClassName = "Classic" | "Streak" | "Three lives" | "Timed";
+
+/** The same route played in another class. */
+export function inClass(pick: RoutePick, name: ClassName): RoutePick {
+  return { ...pick, mode: new RegExp(`^${name}\\. `) };
+}
+
+/** Frontend, Next.js, Rendering, "How a request renders": an eleven card section, the smallest kind of route. */
+export const RND_REQUEST: RoutePick = {
+  area: /^Frontend, \d+ decks?$/,
+  platform: /^Next\.js, \d+ decks?$/,
+  deck: /^RND, Rendering, \d+ cards, /,
+  section: /^REQ, How a request renders, 11 cards$/,
+  mode: /^Classic\. /,
+};
+export const RND_ID = "nextjs-rendering";
+
+/**
+ * Waits until the card on screen can be answered, in any mode: True is there and takes presses, no action
+ * row is in its place, and the settle time has passed. It does not read the header (each mode has its own)
+ * and does not wait for focus (in Timed only the first card takes it). Returns the statement and its answer.
+ */
+export async function waitForQuestion(page: Page, answers: Map<string, boolean>, previous?: string): Promise<{ statement: string; truth: boolean }> {
+  const trueButton = page.getByRole("button", { name: "True", exact: true });
+  await expect(trueButton).toBeVisible();
+  await expect(trueButton).not.toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByRole("button", { name: /^(Next card|See results)$/ })).toHaveCount(0);
+  if (previous !== undefined) await expect.poll(() => statementOnScreen(page)).not.toBe(previous);
+  await page.waitForTimeout(SETTLE_MS);
+  const statement = await statementOnScreen(page);
+  const truth = answers.get(statement);
+  if (truth === undefined) throw new Error(`The statement on screen is not in the deck file: "${statement}"`);
+  return { statement, truth };
+}
+
+/** Answers the card on screen right or wrong with the buttons. `number` is its place in the round, for expectMissed. */
+export async function answerCard(page: Page, answers: Map<string, boolean>, number: number, right: boolean, previous?: string): Promise<Played> {
+  const { statement, truth } = await waitForQuestion(page, answers, previous);
+  const given = right ? truth : !truth;
+  await page.getByRole("button", { name: given ? "True" : "False", exact: true }).click();
+  return { number, statement, truth, given };
+}
+
+/** "See results", then the result screen with its heading focused. */
+export async function seeResults(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "See results" }).click();
+  await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+}
+
+/** Tells the page it is hidden or shown, as the browser does when the player switches apps or locks the phone. */
+export async function setPageHidden(page: Page, hidden: boolean): Promise<void> {
+  await page.evaluate((isHidden) => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (isHidden ? "hidden" : "visible") });
+    document.dispatchEvent(new Event("visibilitychange"));
+  }, hidden);
+}
+
+/** The stored progress of the page (truthy.progress.v1), parsed. */
+export async function storedProgress(page: Page): Promise<{ records: Record<string, number>; cards: Record<string, unknown>; last: unknown }> {
+  return page.evaluate(() => JSON.parse(localStorage.getItem("truthy.progress.v1") ?? '{"records":{},"cards":{},"last":null}'));
+}
+
 // ---------- colours ----------
 
 interface ColorToken {
@@ -275,7 +339,10 @@ export function tokenHex(theme: TokenTheme, role: string): string {
   return `#${[r, g, b].map((n) => (n ?? 0).toString(16).padStart(2, "0")).join("")}`;
 }
 
-export async function computed(locator: Locator, property: "color" | "backgroundColor" | "backgroundImage"): Promise<string> {
+export async function computed(
+  locator: Locator,
+  property: "color" | "backgroundColor" | "backgroundImage" | "fill" | "stroke",
+): Promise<string> {
   return locator.evaluate((element, name) => getComputedStyle(element)[name], property);
 }
 

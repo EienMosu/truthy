@@ -1,16 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
   CONTINUE_CLF_SECURITY,
+  answerCard,
   chooseRoute,
   deckAnswers,
+  inClass,
   openHome,
+  seeResults,
   startRound,
   stepTitle,
+  storedProgress,
   verdict,
   verdictFor,
   waitForCard,
+  type ClassName,
 } from "./helpers";
 
 test.use({ reducedMotion: "no-preference" });
@@ -66,4 +71,69 @@ test("leaving before any answer goes home at once and leaves nothing to continue
   await expect(stepTitle(page)).toHaveText("Choose an area");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Continue/ })).toHaveCount(0);
+});
+
+/** Back on the start flow after a left round: the answers are kept, no record is set, and the route can be continued without a score. */
+async function expectLeftRound(page: Page, className: ClassName, cards: number): Promise<void> {
+  await expect(page).toHaveURL(/\/$/);
+  await expect(stepTitle(page)).toHaveText("Choose an area");
+  const progress = await storedProgress(page);
+  expect(Object.keys(progress.cards)).toHaveLength(cards);
+  expect(progress.records).toEqual({});
+  expect((progress.last as { score: number | null } | null)?.score).toBeNull();
+  await expect(
+    page.getByRole("button", { name: `Continue: Cloud Practitioner, Security and compliance, ${className}.`, exact: true }),
+  ).toBeVisible();
+}
+
+// The phone's back gesture leaves a round the way the close button does, in every mode.
+for (const className of ["Streak", "Three lives", "Timed"] as const) {
+  test(`back in the middle of a round keeps the answers and sets no record, in every mode: ${className}`, async ({ page }) => {
+    if (className === "Timed") await page.clock.install();
+    await openHome(page);
+    await chooseRoute(page, inClass(CLF_SECURITY, className));
+    await startRound(page);
+    await answerCard(page, await deckAnswers(page, CLF_ID), 1, true);
+    await expect(verdict(page)).not.toHaveText("");
+
+    await page.goBack();
+    await expectLeftRound(page, className, 1);
+  });
+}
+
+/** A Streak round of two right answers and a wrong one: decided, with "See results" waiting. */
+async function decidedStreak(page: Page): Promise<void> {
+  await openHome(page);
+  await chooseRoute(page, inClass(CLF_SECURITY, "Streak"));
+  await startRound(page);
+  const answers = await deckAnswers(page, CLF_ID);
+  let previous: string | undefined;
+  for (let number = 1; number <= 3; number += 1) {
+    const card = await answerCard(page, answers, number, number < 3, previous);
+    await expect(verdict(page)).toHaveText(verdictFor(card.given, card.truth));
+    if (number < 3) await page.getByRole("button", { name: "Next card" }).click();
+    previous = card.statement;
+  }
+  await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
+}
+
+// Spec sections 2 and 6: a round that is left sets no record, also once it is decided. Only "See results"
+// finishes it. (The plan lists the proposal to count such a round as finished; it is not built.)
+test("back on a decided Streak round keeps the answers and sets no record", async ({ page }) => {
+  await decidedStreak(page);
+  await page.goBack();
+  await expectLeftRound(page, "Streak", 3);
+});
+
+test("the close button on a decided round asks, and Keep playing leads to See results", async ({ page }) => {
+  await decidedStreak(page);
+  await page.getByRole("button", { name: "Leave round" }).click();
+  const dialog = page.getByRole("dialog", { name: "Leave round?" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Keep playing" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
+
+  await seeResults(page);
+  expect((await storedProgress(page)).records["aws-clf-c02/SEC#streak"]).toBe(2);
 });
