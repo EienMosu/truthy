@@ -3,9 +3,11 @@ import { APP_DESCRIPTION, APP_NAME } from "@/src/meta";
 
 // The web app manifest (spec section 9, "Installability"), served by Next.js at /manifest.webmanifest.
 // A manifest cannot read CSS variables, so the day sky colours are written out here:
-//   theme_color       --color-sky-1, the top sky band (the same value as themeColor in app/layout.tsx)
+//   theme_color       --color-sky-1, the top sky band (the same value as the light themeColor in app/layout.tsx)
 //   background_color  --color-surface, the page background behind the sky (the splash screen)
 // tests/app/manifest.test.ts checks both against design/system/tokens.json.
+// The manifest is static and has no media queries, so it keeps the day colours even when the system is
+// dark: the splash screen is day, and once the page loads its theme-color meta tags take over.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: APP_NAME,

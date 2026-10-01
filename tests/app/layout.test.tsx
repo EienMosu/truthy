@@ -62,15 +62,29 @@ describe("fonts", () => {
 });
 
 describe("viewport", () => {
-  it("colours the browser bar with the top sky band of the day theme", () => {
+  // The top sky band of each theme in the generated CSS: the day :root block, then the night block.
+  function sky1(theme: "day" | "night"): string | undefined {
     const tokens: unknown = JSON.parse(readFileSync("design/system/tokens.json", "utf8"));
-    const sky1 = /--color-sky-1: (#[0-9a-f]{6});/.exec(tokensToCss(tokens))?.[1];
-    expect(sky1).toBeDefined();
-    expect(viewport.themeColor).toBe(sky1);
+    const css = tokensToCss(tokens);
+    const dark = css.indexOf("@media (prefers-color-scheme: dark)");
+    const block = theme === "day" ? css.slice(0, dark) : css.slice(dark);
+    return /--color-sky-1: (#[0-9a-f]{6});/.exec(block)?.[1];
+  }
+
+  it("colours the browser bar with the top sky band of the theme the system asks for", () => {
+    const day = sky1("day");
+    const night = sky1("night");
+    expect(day).toBeDefined();
+    expect(night).toBeDefined();
+    expect(night).not.toBe(day);
+    expect(viewport.themeColor).toEqual([
+      { media: "(prefers-color-scheme: light)", color: day },
+      { media: "(prefers-color-scheme: dark)", color: night },
+    ]);
   });
 
-  it("is a light, device-width page that still allows zooming", () => {
-    expect(viewport.colorScheme).toBe("light");
+  it("is a device-width page in the light or dark scheme the system asks for, that still allows zooming", () => {
+    expect(viewport.colorScheme).toBe("light dark");
     expect(viewport.width).toBe("device-width");
     expect(viewport.maximumScale).toBeUndefined();
     expect(viewport.userScalable).toBeUndefined();

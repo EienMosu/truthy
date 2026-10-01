@@ -26,6 +26,11 @@ describe("app/globals.css", () => {
     expect(css).not.toContain("--color-focus-on-fill");
   });
 
+  it("lets the browser draw its own parts in the light or dark scheme the system asks for", () => {
+    const root = css.slice(css.indexOf(":root {"), css.indexOf("}", css.indexOf(":root {")));
+    expect(root).toContain("color-scheme: light dark;");
+  });
+
   it("stops CSS movement when the player asks for reduced motion", () => {
     const block = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
     expect(block).toContain("animation: none !important;");

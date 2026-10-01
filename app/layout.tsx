@@ -27,9 +27,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  colorScheme: "light",
-  // The top sky band, --color-sky-1 in app/tokens.css (tests/app/layout.test.tsx checks they agree).
-  themeColor: "#a9d6f0",
+  // The theme follows the system setting (the night values sit under prefers-color-scheme: dark in app/tokens.css).
+  colorScheme: "light dark",
+  // The top sky band of each theme, --color-sky-1 in app/tokens.css (tests/app/layout.test.tsx checks they agree).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#a9d6f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1528" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
