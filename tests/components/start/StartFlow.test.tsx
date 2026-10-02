@@ -5,7 +5,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { StartFlow, canShow, clearFrom, pathTo, previousStep } from "@/components/start/StartFlow";
 import { PENDING_KEY } from "@/src/app-state/pending";
 import { SWIPE } from "@/src/input/swipe";
-import { INDEX, harness, storedProgress, type Harness } from "./fixtures";
+import { INDEX_CACHE_KEY } from "@/src/content/load";
+import { INDEX, harness, memoryStorage, storedProgress, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -133,6 +134,15 @@ describe("StartFlow: step 1", () => {
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("button", { name: "Cloud, 2 decks" })).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says the decks did not load and offers Try again when offline with a cached index of the wrong shape", async () => {
+    h = harness(memoryStorage({ [INDEX_CACHE_KEY]: '{"areas":"none"}' }));
+    h.network.online = false;
+    render(<StartFlow services={h.services} />);
+    expect((await screen.findByRole("alert")).textContent).toBe("The decks didn't loadCheck your connection and try again.");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cloud, 2 decks" })).toBeNull();
   });
 
   it("has no Continue line on a first run", async () => {

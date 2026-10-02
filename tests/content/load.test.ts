@@ -370,6 +370,22 @@ describe("loadIndex with a cached copy", () => {
     const storage = memoryStorage({ "truthy.index.v1": "{corrupt" });
     await expect(loadIndex(fakeFetcher({}), storage)).rejects.toBeInstanceOf(LoadError);
   });
+
+  // Valid JSON of the wrong shape (an older schema, a hand edit) must read as no copy: the start screen would
+  // otherwise be handed an object it cannot draw. The text "{corrupt" does not get that far, JSON.parse fails first.
+  it.each(['{"areas":"none"}', "null", "[]", "42", '{"areas":[{"id":"x"}]}', '{"version":2}'])(
+    "throws a LoadError when the fetch fails and the cached index is valid JSON of the wrong shape: %s",
+    async (cached) => {
+      const storage = memoryStorage({ "truthy.index.v1": cached });
+      await expect(loadIndex(fakeFetcher({}), storage)).rejects.toBeInstanceOf(LoadError);
+    },
+  );
+
+  it("throws a LoadError when the fetched index is not valid and the cached index is of the wrong shape", async () => {
+    const storage = memoryStorage({ "truthy.index.v1": '{"areas":"none"}' });
+    const fetcher = fakeFetcher({ "/decks/index.json": { ok: true, body: { areas: "none" } } });
+    await expect(loadIndex(fetcher, storage)).rejects.toBeInstanceOf(LoadError);
+  });
 });
 
 // A phone on a weak signal: the request is sent but no answer ever comes (no error either). Without a time
