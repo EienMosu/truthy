@@ -1,8 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectResult, playRound } from "./helpers";
 
-test.use({ reducedMotion: "no-preference" });
-
 // The Associate deck has the longest explanations of the decks.
 const SAA_ID = "aws-saa-c03";
 // The fade at the foot of the missed-card list (28 px) hides what scrolls under it.
@@ -77,9 +75,9 @@ async function expectEveryWhyInView(page: Page): Promise<void> {
 for (const viewport of [
   { width: 320, height: 568 },
   { width: 390, height: 844 },
-]) {
-  test.describe(`the opened Why of a missed card on a ${viewport.width} by ${viewport.height} screen`, () => {
-    test.use({ viewport });
+]) for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test.describe(`the opened Why of a missed card on a ${viewport.width} by ${viewport.height} screen, ${reducedMotion === "reduce" ? "with" : "without"} reduced motion`, () => {
+    test.use({ viewport, reducedMotion });
 
     test("shows the explanation from its first line and the source link, for each of ten missed cards", async ({ page }) => {
       test.setTimeout(90_000);

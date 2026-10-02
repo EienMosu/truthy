@@ -81,10 +81,11 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
   const regionId = useId();
   const number = pad2(item.number);
 
-  // Once the explanation has grown (380 ms, at once with reduced motion), scroll it into the list: the whole
-  // item, its source link 16 px clear of the foot of the list, as far as that leaves the first line of the
-  // explanation in view. A card taller than the list (a long explanation on a short phone) gives up its
-  // statement and its Why row, never the start of the explanation.
+  // Once the explanation has grown (380 ms; with reduced motion its 1 ms transition is over after a frame or
+  // two), scroll it into the list: the whole item, 16 px clear of the foot of the list, as far as that leaves
+  // the first line of the explanation in view. A card taller than the list (a long explanation on a short
+  // phone) gives up its statement and its Why row, never the start of the explanation. The explanation is
+  // measured at its own height, which does not depend on how far the row has grown.
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(
@@ -93,13 +94,14 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
         const element = itemRef.current;
         const why = whyRef.current;
         if (!list || !element || !why) return;
-        const box = element.getBoundingClientRect();
         const frame = list.getBoundingClientRect();
-        const over = box.bottom + 16 - frame.bottom;
-        const toExplanation = why.getBoundingClientRect().top - frame.top;
+        const explanation = why.getBoundingClientRect();
+        const below = parseFloat(getComputedStyle(why).marginBottom) + parseFloat(getComputedStyle(element).paddingBottom);
+        const over = explanation.bottom + (below || 0) + 16 - frame.bottom;
+        const toExplanation = explanation.top - frame.top;
         if (over > 0) list.scrollBy?.({ top: Math.min(over, toExplanation), behavior: reduced ? "auto" : "smooth" });
       },
-      reduced ? 0 : 380,
+      reduced ? 50 : 380,
     );
     return () => clearTimeout(timer);
   }, [open, reduced, listRef]);
