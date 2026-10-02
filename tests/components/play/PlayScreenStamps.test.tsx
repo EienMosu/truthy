@@ -91,8 +91,10 @@ describe("PlayScreen: the slip stamp lands", () => {
   it("in Streak, on the deciding answer", async () => {
     await start(harness(pendingFor("streak")));
     answer(false);
-    expect(await screen.findByRole("button", { name: "See results" })).toBeTruthy();
+    // Read the stamp in the frame it appears: waiting for "See results" first lets a frame pass, and with
+    // animations skipped the stamp is then already at rest (this failed on the slower CI machine).
     expectLanding(only("[data-verdict]"));
+    expect(await screen.findByRole("button", { name: "See results" })).toBeTruthy();
   });
 
   it("with reduced motion it is shown at rest and the slip fades in", async () => {
