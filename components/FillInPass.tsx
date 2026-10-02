@@ -183,9 +183,10 @@ function Field({ field, label, value, code = false, now, first = false, choosabl
 
 /**
  * A word on the quiet line of the route pass ("Cloud", "AWS"): 22 tall, its hit area 48 by 48 at least. The
- * line is 30 tall and the Deck / Section / Class row starts right under the word, so the hit area reaches 18
- * up (over the band, which takes no taps) and 8 down (over the top of the 56 tall fields, which keep 48), and
- * it paints above the fields. It grows to the right to be 48 wide: on the left lies the other word.
+ * line is 30 tall and the Deck / Section / Class row starts right under the word, so the hit area reaches 13
+ * up and 13 down, over the top of the 56 tall fields, and it paints above them: a tap just under a word is the
+ * word's, and under the words a field keeps 43 of its 56. It grows to the right to be 48 wide: on the left
+ * lies the other word.
  */
 function LineWord({ field, value, hidden, onJump }: { field: PassFieldName; value: string; hidden: boolean; onJump: (field: PassFieldName) => void }) {
   return (
@@ -196,7 +197,7 @@ function LineWord({ field, value, hidden, onJump }: { field: PassFieldName; valu
       className={[
         "relative z-[1] h-[22px] cursor-pointer rounded-[6px] px-(--space-6) whitespace-nowrap text-(--color-ink-muted)",
         "font-(family-name:--type-pass-line-family) text-(length:--type-pass-line-size) font-(--type-pass-line-weight)",
-        "after:absolute after:top-[-18px] after:bottom-[-8px] after:left-[-2px] after:w-[max(100%+4px,48px)] after:content-['']",
+        "after:absolute after:inset-y-[-13px] after:left-[-2px] after:w-[max(100%+4px,48px)] after:content-['']",
         "active:bg-(--color-press) focus-visible:outline-offset-[-2px]",
       ].join(" ")}
     >

@@ -128,7 +128,7 @@ async function hitSpan(target: Locator): Promise<{ height: number; width: number
 }
 
 // U119: the area and platform words of the route pass are 22 px tall; their hit area reaches 48 by 48 without
-// moving the pass, and the Deck field under them keeps 48 of its 56.
+// moving the pass, 13 px above and 13 px under the word, so a tap just under a word is the word's.
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 320, height: 568 },
@@ -154,13 +154,19 @@ for (const viewport of [
           const x = b.x + b.width / 2;
           expect(await hits(page, word, x, b.y - 12), "12 px above the word").toBe(true);
           expect(await hits(page, word, x, b.y + b.height + 6), "6 px under the word").toBe(true);
+          expect(await hits(page, word, x, b.y + b.height + 8), "8 px under the word").toBe(true);
+          expect(await hits(page, word, x, b.y + b.height + 12), "12 px under the word").toBe(true);
         }
+        // The words paint over the top 13 px of the field row (hint b of the RULING): the Deck field keeps 43 of
+        // its 56 under them, and a tap lower down in it is still its own.
         const deck = page.getByRole("button", { name: "Change deck, now CLF" });
-        expect((await hitSpan(deck)).height, "the Deck field under the words").toBeGreaterThanOrEqual(48);
+        expect((await hitSpan(deck)).height, "the Deck field under the words").toBeGreaterThanOrEqual(43);
+        const deckBox = await box(deck);
+        expect(await hits(page, deck, deckBox.x + deckBox.width / 2, deckBox.y + 14), "14 px into the Deck field").toBe(true);
 
-        // A tap 6 px under AWS goes back to the platforms, not to the decks.
+        // A tap 8 px under AWS (the reported tap) goes back to the platforms, not to the decks.
         const aws = await box(words[1] as Locator);
-        await page.touchscreen.tap(aws.x + aws.width / 2, aws.y + aws.height + 6);
+        await page.touchscreen.tap(aws.x + aws.width / 2, aws.y + aws.height + 8);
         await expect(currentStep(page).locator("h2")).toHaveText("Choose a platform");
       });
     }
