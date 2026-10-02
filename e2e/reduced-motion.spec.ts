@@ -104,25 +104,59 @@ async function boardAndWatchUnroll(page: Page): Promise<boolean> {
   return page.evaluate(() => (window as unknown as { unrollSeen?: boolean }).unrollSeen === true);
 }
 
-/** Answers True and times, from the press, when the Next row is more than half faded in and when Next card has focus. */
-function watchNextRow(page: Page): Promise<{ visibleAt: number | null; focusAt: number | null }> {
+type NextRow = {
+  /** From the press, when the Next row is more than half faded in, and when Next card has focus. */
+  visibleAt: number | null;
+  focusAt: number | null;
+  /** The delay and the length of the row's fade, as the animation that runs it was created with. */
+  fade: { delay: number; duration: number } | null;
+  /** Whether focus reached Next card while the row had not arrived yet (it takes no taps until then). */
+  focusBeforeArrival: boolean | null;
+  /** Whether a CSS transition ran anywhere on the page after the answer. */
+  cssTransition: boolean;
+};
+
+/** Answers True and watches 900 ms of the Next row: its fade, its focus, and any CSS transition. */
+function watchNextRow(page: Page): Promise<NextRow> {
   return page.evaluate(
     () =>
-      new Promise<{ visibleAt: number | null; focusAt: number | null }>((resolve) => {
+      new Promise<NextRow>((resolve) => {
         const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("main button")];
         const answer = buttons().find((button) => button.textContent?.trim() === "True");
         if (!answer) throw new Error("no True button");
-        const out = { visibleAt: null as number | null, focusAt: null as number | null };
+        const out: NextRow = { visibleAt: null, focusAt: null, fade: null, focusBeforeArrival: null, cssTransition: false };
+        const nextButton = () => buttons().find((button) => button.textContent?.includes("Next card"));
+        // Read at every change of the page as well as every frame: a transition can start and end between frames.
+        const look = () => {
+          if (document.getAnimations().some((animation) => animation instanceof CSSTransition)) out.cssTransition = true;
+          const row = nextButton()?.parentElement;
+          if (!row || out.fade !== null) return;
+          const timing = row.getAnimations().find((animation) => !(animation instanceof CSSTransition))?.effect?.getTiming();
+          if (timing) out.fade = { delay: Number(timing.delay ?? 0), duration: Number(timing.duration ?? 0) };
+        };
+        const observer = new MutationObserver(look);
+        observer.observe(document.body, { subtree: true, childList: true, attributes: true });
         const t0 = performance.now();
+        const onFocus = (event: FocusEvent) => {
+          const next = nextButton();
+          if (event.target !== next || out.focusBeforeArrival !== null) return;
+          out.focusBeforeArrival = next.parentElement?.classList.contains("pointer-events-none") ?? null;
+        };
+        document.addEventListener("focusin", onFocus);
         answer.click();
         const frame = () => {
+          look();
           const at = Math.round(performance.now() - t0);
-          const next = buttons().find((button) => button.textContent?.includes("Next card"));
+          const next = nextButton();
           const row = next?.parentElement;
           if (row && out.visibleAt === null && Number(getComputedStyle(row).opacity) > 0.5) out.visibleAt = at;
           if (next && out.focusAt === null && document.activeElement === next) out.focusAt = at;
           if (at < 900) requestAnimationFrame(frame);
-          else resolve(out);
+          else {
+            observer.disconnect();
+            document.removeEventListener("focusin", onFocus);
+            resolve(out);
+          }
         };
         requestAnimationFrame(frame);
       }),
@@ -154,15 +188,26 @@ for (const reduced of [true, false]) {
       await chooseRoute(page, CLF_SECURITY);
       await startRound(page);
       await waitForCard(page, await deckAnswers(page, CLF_ID), 1);
-      const { visibleAt, focusAt } = await watchNextRow(page);
+      const { visibleAt, focusAt, fade, focusBeforeArrival, cssTransition } = await watchNextRow(page);
       expect(visibleAt).not.toBeNull();
       expect(focusAt).not.toBeNull();
-      // Reduced: a 220 ms fade with no delay, and focus at once (about 50 ms and 5 ms). Full motion: the row
-      // waits 360 ms, and focus comes when it has arrived, 420 ms after the answer.
+      // Reduced: a 220 ms fade with no delay, and focus at once, before the row arrives (420 ms after the
+      // answer). Full motion: the row waits 360 ms, and focus comes when it has arrived.
+      //
+      // When the reduced row is seen is not asserted against the clock: a fade starts on the next frame the
+      // browser draws, and on a busy runner (Linux WebKit in CI, drawing the slip at three times scale without
+      // a GPU) that frame came 300 to 500 ms after the answer while the page itself was idle. The delay the
+      // fade was given is what reduced motion changes, so that is what is read. A lower bound, as with full
+      // motion below, only grows on a slower runner, so it holds.
       if (reduced) {
-        expect(visibleAt).toBeLessThan(330);
-        expect(focusAt).toBeLessThan(330);
+        expect(fade).toEqual({ delay: 0, duration: 220 });
+        expect(focusBeforeArrival).toBe(true);
+        // No CSS transition runs: WebKit draws one at its start value for a frame, so the style Motion
+        // commits when the cross-fade ends would flash the True and False row back over the answered card.
+        expect(cssTransition).toBe(false);
       } else {
+        expect(fade).toEqual({ delay: 360, duration: 220 });
+        expect(focusBeforeArrival).toBe(false);
         expect(visibleAt).toBeGreaterThanOrEqual(360);
         expect(focusAt).toBeGreaterThanOrEqual(400);
       }

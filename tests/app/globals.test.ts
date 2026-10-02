@@ -48,7 +48,8 @@ describe("app/globals.css", () => {
   it("stops CSS movement when the player asks for reduced motion", () => {
     const block = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
     expect(block).toContain("animation: none !important;");
-    expect(block).toContain("transition-duration: 1ms !important;");
+    // 0s, so no transition starts: a 1ms one is painted at its start value for a frame in WebKit.
+    expect(block).toContain("transition-duration: 0s !important;");
     expect(block).toContain("transition-delay: 0ms !important;");
   });
 
