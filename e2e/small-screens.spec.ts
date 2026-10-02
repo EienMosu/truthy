@@ -6,6 +6,7 @@ import {
   answerCard,
   chooseRoute,
   deckAnswers,
+  inClass,
   openHome,
   playRound,
   seeResults,
@@ -154,6 +155,31 @@ test.describe("on a 320 by 568 screen", () => {
     await expectNoSidewaysScroll(page);
     await expect(page.getByRole("button", { name: "Play again" })).toBeVisible();
   });
+
+  // The ready step teaches the swipe in its last sentence. For every class it ends above Start round, which
+  // is opaque and would hide what runs under it, and nothing covers its last line (review finding U8).
+  for (const name of ["Classic", "Streak", "Three lives", "Timed"] as const) {
+    test(`the ready sentence of ${name} ends above Start round`, async ({ page }) => {
+      await openHome(page);
+      await chooseRoute(page, inClass(CLF_SECURITY, name));
+      const pill = page.getByRole("button", { name: "Start round" });
+      await expect(pill).toBeInViewport();
+      await page.waitForTimeout(600);
+      const sentence = page.locator("[data-step]:not([inert]) p").filter({ hasText: "Swipe right for true, left for false." });
+      const last = await sentence.evaluate((p) => {
+        const range = document.createRange();
+        range.selectNodeContents(p);
+        const lines = [...range.getClientRects()];
+        const line = lines.reduce((a, b) => (b.bottom > a.bottom ? b : a));
+        const top = document.elementFromPoint(line.right - 4, line.top + line.height / 2);
+        return { bottom: line.bottom, onTop: top !== null && p.contains(top) };
+      });
+      const pillBox = await pill.boundingBox();
+      if (pillBox === null) throw new Error("Start round is not on screen");
+      expect(last.bottom, "the last line ends above Start round").toBeLessThanOrEqual(pillBox.y - 8);
+      expect(last.onTop, "nothing covers the last line").toBe(true);
+    });
+  }
 
   // The continue line after a round of each class: the line stays inside the page and inside its 60 px
   // row, the route and the class are shown whole, and the score, which no longer fits beside them at this

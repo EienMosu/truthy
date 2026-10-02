@@ -744,7 +744,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
       <motion.div
         data-step={step}
         inert={!present}
-        className={`flex min-h-0 flex-col [grid-area:1/1] ${step === 6 ? "pt-(--size-ready-offset)" : ""}`}
+        className={`flex min-h-0 flex-col [grid-area:1/1] ${step === 6 ? "pt-(--size-ready-offset) tight:pt-[calc(var(--size-ready-offset)-var(--space-24))]" : ""}`}
         variants={reduced ? PANEL_REDUCED : PANEL}
         initial="hidden"
         animate="shown"
