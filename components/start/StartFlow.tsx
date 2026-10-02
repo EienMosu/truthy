@@ -347,6 +347,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
 
   const index = status.kind === "ready" ? status.index : null;
   const progress = status.kind === "ready" ? status.progress : null;
+  const cardIds = status.kind === "ready" ? status.cardIds : {};
   const r = index ? resolve(index, view.choice) : {};
   const hasSections = (r.deck?.sections.length ?? 1) > 0;
 
@@ -749,7 +750,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
         });
       case 3:
         return (r.platform?.decks ?? []).map((deck) => {
-          const seen = seenPercent(progress, deck);
+          const seen = seenPercent(progress, deck, cardIds[deck.id]);
           const choose = () =>
             deck.sections.length > 0
               ? forward(4, { ...view.choice, deckId: deck.id }, "deck", optionEl(deck.id))

@@ -180,6 +180,28 @@ describe("StartFlow: choosing a route", () => {
     expect(screen.getByRole("button", { name: "CLF, Cloud Practitioner, 92 cards, 25 percent seen" })).toBeTruthy();
   });
 
+  // Review finding U52: the share counts the deck's current cards, read from its file on the device.
+  it("says a deck is not started when the cards seen have since been removed from it", async () => {
+    const played = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`aws-clf-c02-old-${i}`, { seen: 1, lastCorrect: true, lastSeenAt: 1 }]));
+    const local = storedProgress({ cards: played });
+    const card = (id: string) => ({
+      id,
+      section: "SEC",
+      text: { en: { statement: `Statement ${id}`, explanation: `Explanation ${id}` } },
+      answer: true,
+      source: { title: "Docs", url: "https://docs.aws.amazon.com/" },
+      difficulty: 1,
+      appliesTo: "",
+      conflictGroups: [],
+    });
+    const cards = Array.from({ length: 92 }, (_, i) => card(`aws-clf-c02-t1-${i}`));
+    local.setItem("truthy.deck.aws-clf-c02", JSON.stringify({ id: "aws-clf-c02", hash: "clf-1", cards }));
+    await start(harness(local));
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await choose("AWS, 1 deck", "Choose a deck");
+    expect(screen.getByRole("button", { name: "CLF, Cloud Practitioner, 92 cards, not started" })).toBeTruthy();
+  });
+
   it("skips the section step for a deck without sections and plays the whole deck", async () => {
     await start();
     await choose("Cloud, 2 decks", "Choose a platform");

@@ -11,6 +11,7 @@ import {
   playRound,
   startRound,
   stepTitle,
+  storedProgress,
   wrongOn,
 } from "./helpers";
 
@@ -65,3 +66,48 @@ for (const [i, garbage] of GARBAGE.entries()) {
     await expect(page.getByRole("button", { name: CONTINUE_CLF_SECURITY })).toBeVisible();
   });
 }
+
+// Review finding U52 (spec section 7): the seen share counts the deck's current cards. After an update that
+// removes the cards a player has seen, the deck reads "not started", and their history is dropped.
+test("after a deck update that removes the cards seen, the deck reads not started", async ({ page }) => {
+  type Deck = { id: string; hash: string; cards: { id: string; text: { en: { statement: string } } }[] };
+  const deck = (await (await page.request.get(`/decks/${CLF_ID}.json`)).json()) as Deck;
+  const index = (await (await page.request.get("/decks/index.json")).json()) as {
+    areas: { platforms: { decks: { id: string; hash: string; cardCount: number; sections: { id: string; cardCount: number }[] }[] }[] }[];
+  };
+  const seenIds = deck.cards.slice(0, 10).map((card) => card.id);
+
+  // A player who has seen ten CLF cards: their history, and the deck file on the device.
+  await page.goto("/");
+  await page.evaluate(
+    ({ seenIds, deck }) => {
+      const cards = Object.fromEntries(seenIds.map((id) => [id, { seen: 1, lastCorrect: true, lastSeenAt: 1 }]));
+      localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards, records: {}, last: null }));
+      localStorage.setItem(`truthy.deck.${deck.id}`, JSON.stringify(deck));
+    },
+    { seenIds, deck },
+  );
+  await page.reload();
+  await atHome(page);
+  await page.getByRole("button", { name: CLF_SECURITY.area }).click();
+  await atStep(page, "Choose a platform");
+  await page.getByRole("button", { name: CLF_SECURITY.platform }).click();
+  await expect(page.getByRole("button", { name: /^CLF, Cloud Practitioner, \d+ cards, [1-9]\d* percent seen$/ })).toBeVisible();
+
+  // The update: those ten cards removed, one added, a new hash.
+  const updated: Deck = { ...deck, hash: "f1b0000000000001", cards: [...deck.cards.slice(10), { ...deck.cards[10]!, id: `${CLF_ID}-new-01` }] };
+  const clf = index.areas.flatMap((a) => a.platforms.flatMap((p) => p.decks)).find((d) => d.id === CLF_ID)!;
+  clf.hash = updated.hash;
+  clf.cardCount = updated.cards.length;
+  await page.route("**/decks/index.json*", (route) => route.fulfill({ json: index }));
+  await page.route(`**/decks/${CLF_ID}.json*`, (route) => route.fulfill({ json: updated }));
+
+  await page.goto("/");
+  await atHome(page);
+  await page.getByRole("button", { name: CLF_SECURITY.area }).click();
+  await atStep(page, "Choose a platform");
+  await page.getByRole("button", { name: CLF_SECURITY.platform }).click();
+  await expect(page.getByRole("button", { name: `CLF, Cloud Practitioner, ${updated.cards.length} cards, not started`, exact: true })).toBeVisible();
+  const stored = await storedProgress(page);
+  expect(Object.keys(stored.cards).filter((id) => seenIds.includes(id))).toEqual([]);
+});
