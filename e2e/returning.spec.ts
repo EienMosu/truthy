@@ -3,6 +3,7 @@ import {
   CLF_ID,
   CLF_SECURITY,
   CONTINUE_CLF_SECURITY,
+  atHome,
   atStep,
   chooseRoute,
   expectResult,
@@ -29,7 +30,7 @@ test("a returning player continues to the ready pass, and each round is compared
   // Home: the continue line names the route and the last score, and leads to the ready pass.
   await page.getByRole("button", { name: "Choose another route" }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(stepTitle(page)).toHaveText("Choose an area");
+  await atHome(page);
   await expect(page.getByRole("button", { name: `${CONTINUE_CLF_SECURITY} Last score 7 of 10.` })).toContainText("last 7 of 10");
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await expect(stepTitle(page)).toHaveText("Your pass is ready");

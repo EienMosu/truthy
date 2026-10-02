@@ -3,6 +3,7 @@ import {
   CLF_ID,
   CLF_SECURITY,
   CONTINUE_CLF_SECURITY,
+  atHome,
   atStep,
   chooseRoute,
   expectResult,
@@ -26,7 +27,7 @@ test("progress survives a reload", async ({ page }) => {
 
   await page.goto("/");
   await page.reload();
-  await expect(stepTitle(page)).toHaveText("Choose an area");
+  await atHome(page);
   // The deck card counts the ten cards seen (10 of 214 is 5 percent).
   await page.getByRole("button", { name: CLF_SECURITY.area }).click();
   await atStep(page, "Choose a platform");
@@ -34,6 +35,7 @@ test("progress survives a reload", async ({ page }) => {
   await expect(page.getByRole("button", { name: /^CLF, Cloud Practitioner, \d+ cards, [1-9]\d* percent seen$/ })).toBeVisible();
 
   await page.reload();
+  await atHome(page);
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await page.getByRole("button", { name: "Back to classes" }).click();
   await expect(page.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 9 of 10." })).toBeVisible();
@@ -50,7 +52,7 @@ for (const [i, garbage] of GARBAGE.entries()) {
     await page.reload();
 
     await expect(page.getByRole("heading", { level: 1, name: "Truthy" })).toBeVisible();
-    await expect(stepTitle(page)).toHaveText("Choose an area");
+    await atHome(page);
     await expect(page.getByRole("button", { name: /^Continue/ })).toHaveCount(0);
 
     await chooseRoute(page, CLF_SECURITY);

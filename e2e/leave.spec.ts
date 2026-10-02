@@ -4,6 +4,7 @@ import {
   CLF_SECURITY,
   CONTINUE_CLF_SECURITY,
   answerCard,
+  atHome,
   chooseRoute,
   deckAnswers,
   inClass,
@@ -51,7 +52,7 @@ test("leaving after an answer asks once, Keep playing stays, Leave round goes ho
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Leave round" }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(stepTitle(page)).toHaveText("Choose an area");
+  await atHome(page);
 
   // Continue is offered, and the Classic card still has no record.
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();

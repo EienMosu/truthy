@@ -64,12 +64,21 @@ function option(page: Page, name: OptionName): Locator {
   return page.getByRole("button", typeof name === "string" ? { name, exact: true } : { name });
 }
 
-/** Opens the start screen at step 1 and waits for the areas. */
+/**
+ * Waits until the start flow shows step 1 with its areas and their settle time has passed: step 1's options
+ * ignore presses for 250 ms after they appear, as every step's do (review finding U6).
+ */
+export async function atHome(page: Page): Promise<void> {
+  await expect(stepTitle(page)).toHaveText("Choose an area");
+  await expect(page.getByRole("button", { name: CLF_SECURITY.area })).toBeVisible();
+  await page.waitForTimeout(SETTLE_MS);
+}
+
+/** Opens the start screen at step 1 and waits for the areas and their settle time. */
 export async function openHome(page: Page): Promise<void> {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1, name: "Truthy" })).toBeVisible();
-  await expect(stepTitle(page)).toHaveText("Choose an area");
-  await expect(page.getByRole("button", { name: CLF_SECURITY.area })).toBeVisible();
+  await atHome(page);
 }
 
 /** Fills in the pass from step 1 to "Your pass is ready" by tapping the cards, letting each step settle. */

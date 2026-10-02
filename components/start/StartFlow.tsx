@@ -364,12 +364,14 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     });
   }, [services]);
 
-  // The settle time, as on the play screen (spec section 8): a step change starts it. The first render
-  // starts none, so step 1 takes a press as soon as its cards are there.
+  // The settle time, as on the play screen (spec section 8): a step change starts it, and so do step 1's
+  // options when they first appear (the index is loaded). Arriving from /play, the continue line appears
+  // where the button just pressed was, so the second tap of a double tap must not take it.
   const shownAt = useRef(Number.NEGATIVE_INFINITY);
+  const optionsShown = status.kind === "ready";
   useLayoutEffect(() => {
-    if (view.seq > 0) shownAt.current = services.now();
-  }, [view.seq, services]);
+    if (view.seq > 0 || optionsShown) shownAt.current = services.now();
+  }, [view.seq, optionsShown, services]);
 
   // On a short screen the start screen scrolls as one column (globals.css, "short"): a step that arrives starts
   // at its top, with the pass and the new title in view. Elsewhere the screen does not scroll and this does nothing.

@@ -3,13 +3,13 @@ import {
   CLF_ID,
   CLF_SECURITY,
   CONTINUE_CLF_SECURITY,
+  atHome,
   chooseRoute,
   deckAnswers,
   expectResult,
   openHome,
   playRound,
   startRound,
-  stepTitle,
   waitForCard,
   wrongOn,
 } from "./helpers";
@@ -43,7 +43,7 @@ test("the browser's back button on the result goes home with the round recorded"
 
   await page.goBack();
   await expect(page).toHaveURL(/\/$/);
-  await expect(stepTitle(page)).toHaveText("Choose an area");
+  await atHome(page);
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await page.getByRole("button", { name: "Back to classes" }).click();
   await expect(page.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 6 of 10." })).toBeVisible();

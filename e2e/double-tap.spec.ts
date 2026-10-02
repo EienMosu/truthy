@@ -1,11 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
+  answerCard,
+  centreOf,
   chooseRoute,
   deckAnswers,
   expectUnanswered,
+  inClass,
   openHome,
+  seeResults,
   startRound,
   stepTitle,
   verdict,
@@ -89,4 +93,51 @@ test("a double tap on an area does not choose a platform", async ({ page }) => {
   await page.waitForTimeout(400);
   await expect(stepTitle(page)).toHaveText("Choose a platform");
   await expect(page.getByRole("button", { name: CLF_SECURITY.platform })).toBeVisible();
+});
+
+// Review finding U6: the start screen opened from /play shows the continue line where the button just pressed
+// was. Step 1's options appearing start the settle time, so the second tap of a double tap does not take the
+// line to the old route's ready pass: the player lands on step 1 as asked.
+async function doubleTap(page: Page, button: Locator, gap: number): Promise<void> {
+  const { x, y } = await centreOf(button);
+  await page.touchscreen.tap(x, y);
+  await page.waitForTimeout(gap);
+  // The second tap really lands on the continue line, so the spec cannot pass for want of a target.
+  const line = await page.getByRole("button", { name: /^Continue: / }).boundingBox();
+  expect(line).not.toBeNull();
+  if (line) {
+    expect(y).toBeGreaterThanOrEqual(line.y);
+    expect(y).toBeLessThanOrEqual(line.y + line.height);
+  }
+  await page.touchscreen.tap(x, y);
+}
+
+for (const gap of [100, 200]) {
+  test(`a double tap on Choose another route lands on step 1, not on the old route's pass (${gap} ms)`, async ({ page }) => {
+    await openHome(page);
+    await chooseRoute(page, inClass(CLF_SECURITY, "Streak"));
+    await startRound(page);
+    await answerCard(page, await deckAnswers(page, CLF_ID), 1, false);
+    await seeResults(page);
+    await page.waitForTimeout(1600); // past the result's own one-second guard
+    await doubleTap(page, page.getByRole("button", { name: "Choose another route" }), gap);
+    await page.waitForTimeout(600);
+    await expect(stepTitle(page)).toHaveText("Choose an area");
+    await expect(page.getByRole("button", { name: /^Continue: Cloud Practitioner, Security and compliance, Streak\./ })).toBeVisible();
+  });
+}
+
+test("a double tap on the Leave dialog's Leave round lands on step 1, not on the old route's pass", async ({ page }) => {
+  await openHome(page);
+  await chooseRoute(page, CLF_SECURITY);
+  await startRound(page);
+  await answerCard(page, await deckAnswers(page, CLF_ID), 1, true);
+  await expect(verdict(page)).not.toHaveText("");
+  await page.getByRole("button", { name: "Leave round" }).click();
+  const dialog = page.getByRole("dialog", { name: "Leave round?" });
+  await expect(dialog).toBeVisible();
+  await page.waitForTimeout(500);
+  await doubleTap(page, dialog.getByRole("button", { name: "Leave round" }), 100);
+  await page.waitForTimeout(600);
+  await expect(stepTitle(page)).toHaveText("Choose an area");
 });

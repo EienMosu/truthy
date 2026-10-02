@@ -3,6 +3,7 @@ import {
   CLF_ID,
   CLF_SECURITY,
   CONTINUE_CLF_SECURITY,
+  atHome,
   atStep,
   chooseRoute,
   deckAnswers,
@@ -33,6 +34,7 @@ async function expectHomeAtStepOne(page: Page): Promise<void> {
 /** The Classic card of CLF / SEC: still without a record after a round that was left. */
 async function expectNoRecordButHistory(page: Page): Promise<void> {
   await page.goto("/");
+  await atHome(page);
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await atStep(page, "Your pass is ready");
   await page.getByRole("button", { name: "Back to classes" }).click();
@@ -95,6 +97,7 @@ test("leaving with the close button lands on step 1 with nothing stale behind it
   await expectHomeAtStepOne(page);
 
   // The continue line fills in the whole pass at once; its steps are spent the same way.
+  await atHome(page);
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await atStep(page, "Your pass is ready");
   await startRound(page);

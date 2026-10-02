@@ -481,6 +481,7 @@ describe("StartFlow: continue", () => {
     await start(harness(storedProgress({ last: LAST_CLF_SEC })));
     const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Classic." });
     expect(line.textContent).toBe("Continue where you left offCLF → SEC · Classic");
+    settle();
     fireEvent.click(line);
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));
     expect(document.querySelector("[data-leg='deck']")?.textContent).toBe("CLFAWS Cloud Practitioner");
@@ -494,6 +495,7 @@ describe("StartFlow: continue", () => {
 
   it("retraces a whole-deck route of a deck without sections without a section step", async () => {
     await start(harness(storedProgress({ last: { route: { deckId: "gcp-cdl", sectionId: "ALL" }, mode: "classic", score: null, total: null } })));
+    settle();
     fireEvent.click(screen.getByRole("button", { name: "Continue: Cloud Digital Leader, Whole deck, Classic." }));
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));
     expect(document.querySelector("[data-leg='section']")?.textContent).toBe("ALLWhole deck");
@@ -520,6 +522,7 @@ describe("StartFlow: continue", () => {
     await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, mode: "lives", score: 21, total: 21 } })));
     const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Three lives. Last score 21 cards." });
     expect(line.textContent).toBe("Continue where you left offCLF → SEC · Three lives · last 21 cards");
+    settle();
     fireEvent.click(line);
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));
     expect(passText()).toContain("ClassThree lives");
@@ -619,6 +622,7 @@ describe("StartFlow: the settle time", () => {
 
   it("holds back Start round right after the continue line has filled the pass", async () => {
     await start(harness(storedProgress({ last: LAST_CLF_SEC })));
+    settle();
     fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));
     h.clock.time += 100;
@@ -634,6 +638,39 @@ describe("StartFlow: the settle time", () => {
     await choose("Cloud, 2 decks", "Choose a platform");
     fireEvent.click(screen.getByRole("button", { name: "Back to areas" }));
     await waitFor(() => expect(heading()).toBe("Choose an area"));
+    h.clock.time += 100;
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose an area");
+    h.clock.time += 150;
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await waitFor(() => expect(heading()).toBe("Your pass is ready"));
+  });
+
+  // Review finding U6: the start screen opened from /play ("Choose another route", Leave round) shows the
+  // continue line where the button just pressed was. Step 1 appearing starts the settle time like any step.
+  it("holds back the continue line and the area cards right after step 1's options appear", async () => {
+    await start(harness(storedProgress({ last: LAST_CLF_SEC })));
+    h.clock.time += 100;
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose an area");
+    fireEvent.click(screen.getByRole("button", { name: "Cloud, 2 decks" }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose an area");
+    expect(h.history.position).toBe(0);
+    h.clock.time += 150;
+    fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
+    await waitFor(() => expect(heading()).toBe("Your pass is ready"));
+  });
+
+  it("counts step 1's settle time from when its options appear, not from the first render", async () => {
+    h = harness(storedProgress({ last: LAST_CLF_SEC }));
+    h.network.hold = true;
+    render(<StartFlow services={h.services} />);
+    h.clock.time += 1000; // the index takes a second to load
+    await act(async () => h.network.release());
+    await screen.findByRole("button", { name: /^Continue/ });
     h.clock.time += 100;
     fireEvent.click(screen.getByRole("button", { name: /^Continue/ }));
     await act(async () => {});
