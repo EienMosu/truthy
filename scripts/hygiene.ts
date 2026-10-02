@@ -1,3 +1,5 @@
+import { inflateSync } from "node:zlib";
+
 // The repository is public. Nothing tracked may reveal a local machine, a work identity or a secret.
 // The rules live here so that more than the tracked-files test (tests/repo-hygiene.test.ts) can use them.
 
@@ -41,4 +43,71 @@ export function findingsIn(text: string): string[] {
     }
   });
   return found;
+}
+
+// Every finding in a file's bytes. Text is scanned as it is. A binary file has no lines, so its findings carry
+// no line number: a PNG is scanned in its text and EXIF chunks (not its compressed pixels, which can hold any
+// bytes), any other binary file, or a PNG that does not parse, in its runs of readable characters.
+export function findingsInBytes(bytes: Uint8Array): string[] {
+  const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (!buffer.includes(0)) return findingsIn(buffer.toString("utf8"));
+  const text = pngText(buffer) ?? readableRuns(buffer);
+  return findingsIn(text).map((finding) => finding.replace(/^\d+: /, ""));
+}
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+// The text a PNG carries besides its pixels, or null when the bytes are not a well-formed PNG.
+function pngText(bytes: Buffer): string | null {
+  if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE)) return null;
+  const texts: string[] = [];
+  let offset = 8;
+  while (offset + 12 <= bytes.length) {
+    const length = bytes.readUInt32BE(offset);
+    const type = bytes.toString("latin1", offset + 4, offset + 8);
+    const end = offset + 12 + length;
+    if (end > bytes.length) return null;
+    try {
+      const text = chunkText(type, bytes.subarray(offset + 8, offset + 8 + length));
+      if (text !== null) texts.push(text);
+    } catch {
+      return null; // a compressed chunk that does not inflate
+    }
+    offset = end;
+    if (type === "IEND") {
+      // Bytes after the end of the image are not part of it; whatever they hold is read as text.
+      texts.push(readableRuns(bytes.subarray(offset)));
+      return texts.join("\n");
+    }
+  }
+  return null;
+}
+
+function chunkText(type: string, data: Buffer): string | null {
+  const keywordEnd = data.indexOf(0);
+  switch (type) {
+    case "tEXt":
+      return data.toString("latin1").replaceAll("\0", " ");
+    case "zTXt":
+      // keyword, 0, compression method, compressed text
+      return `${data.toString("latin1", 0, keywordEnd)} ${inflateSync(data.subarray(keywordEnd + 2)).toString("latin1")}`;
+    case "iTXt": {
+      // keyword, 0, compressed flag, compression method, language tag, 0, translated keyword, 0, text
+      const compressed = data[keywordEnd + 1] === 1;
+      const languageEnd = data.indexOf(0, keywordEnd + 3);
+      const translatedEnd = data.indexOf(0, languageEnd + 1);
+      const body = data.subarray(translatedEnd + 1);
+      const head = data.subarray(0, translatedEnd).toString("utf8").replaceAll("\0", " ");
+      return `${head} ${(compressed ? inflateSync(body) : body).toString("utf8")}`;
+    }
+    case "eXIf":
+      return readableRuns(data);
+    default:
+      return null;
+  }
+}
+
+// Runs of four or more printable ASCII characters, one per line.
+function readableRuns(bytes: Buffer): string {
+  return (bytes.toString("latin1").match(/[\x20-\x7e\t]{4,}/g) ?? []).join("\n");
 }

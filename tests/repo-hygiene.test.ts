@@ -1,8 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
+import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { ALLOWED_EMAIL, findingsIn } from "@/scripts/hygiene";
+import { ALLOWED_EMAIL, findingsIn, findingsInBytes } from "@/scripts/hygiene";
 
 // The rules live in scripts/hygiene.ts, shared with the pre-push hook.
 const ROOT = join(import.meta.dirname, "..");
@@ -27,9 +28,7 @@ function scanRepository(): string[] {
       for (const finding of findingsIn(readlinkSync(full))) found.push(`${path} -> ${finding}`);
       continue;
     }
-    const bytes = readFileSync(full);
-    if (bytes.includes(0)) continue; // binary (images, fonts)
-    for (const finding of findingsIn(bytes.toString("utf8"))) found.push(`${path}:${finding}`);
+    for (const finding of findingsInBytes(readFileSync(full))) found.push(`${path}:${finding}`);
   }
   return found;
 }
@@ -114,6 +113,55 @@ describe("hygiene rules", () => {
   it("flags any e-mail address except the GitHub noreply one", () => {
     expect(findingsIn(`write to ${email}`)).toEqual([`1: e-mail address: ${email}`]);
     expect(findingsIn(`Author: EienMosu <${ALLOWED_EMAIL}>`)).toEqual([]);
+  });
+});
+
+// A PNG file: the signature, then each chunk as length, type, data and checksum (left at zero, nothing here checks it).
+function png(...chunks: [type: string, data: Buffer][]): Buffer {
+  const parts: Buffer[] = [Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])];
+  const all: [string, Buffer][] = [["IHDR", Buffer.alloc(13)], ...chunks, ["IEND", Buffer.alloc(0)]];
+  for (const [type, data] of all) {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    parts.push(length, Buffer.from(type, "latin1"), data, Buffer.alloc(4));
+  }
+  return Buffer.concat(parts);
+}
+
+describe("binary files", () => {
+  const home = "/" + "Users/alex";
+  const email = "someone" + "@" + "example.org";
+
+  // A binary file has no lines, so its findings carry no line number.
+  it("flags a local path or an e-mail address in a PNG text chunk, plain, compressed or international", () => {
+    const text = png(["tEXt", Buffer.from(`Comment\0${home}/Pictures/shot.png`, "latin1")]);
+    expect(findingsInBytes(text)).toEqual([`absolute local path: ${home}`]);
+    const compressed = png(["zTXt", Buffer.concat([Buffer.from("Comment\0\0", "latin1"), deflateSync(`by ${email}`)])]);
+    expect(findingsInBytes(compressed)).toEqual([`e-mail address: ${email}`]);
+    const international = png(["iTXt", Buffer.from(`XML:com.adobe.xmp\0\0\0en\0\0<x:path>${home}/Desktop</x:path>`, "utf8")]);
+    expect(findingsInBytes(international)).toEqual([`absolute local path: ${home}`]);
+    const compressedInternational = png([
+      "iTXt",
+      Buffer.concat([Buffer.from("Description\0\x01\0\0\0", "latin1"), deflateSync(`${home}/notes.md`)]),
+    ]);
+    expect(findingsInBytes(compressedInternational)).toEqual([`absolute local path: ${home}`]);
+  });
+
+  it("flags a local path in a PNG's EXIF data", () => {
+    const exif = png(["eXIf", Buffer.concat([Buffer.from("MM\0*\0\0\0\x08", "latin1"), Buffer.from(`\0\0${home}/Pictures\0`, "latin1")])]);
+    expect(findingsInBytes(exif)).toEqual([`absolute local path: ${home}`]);
+  });
+
+  it("does not read the compressed pixels of a PNG as text", () => {
+    // Pixel data can hold any bytes, an e-mail shape among them; only the text chunks are read.
+    expect(findingsInBytes(png(["IDAT", Buffer.from(`\0\x01${email}\0`, "latin1")]))).toEqual([]);
+  });
+
+  it("flags a local path in the readable text of another binary file, or of a broken PNG", () => {
+    const other = Buffer.concat([Buffer.from([0, 1, 2, 3]), Buffer.from(`${home}/fonts/x.woff2`, "latin1"), Buffer.from([0, 0xff])]);
+    expect(findingsInBytes(other)).toEqual([`absolute local path: ${home}`]);
+    const broken = Buffer.concat([png().subarray(0, 8), Buffer.from(`\0\0\0\0tEXtComment\0${home}/shot.png`, "latin1")]);
+    expect(findingsInBytes(broken)).toEqual([`absolute local path: ${home}`]);
   });
 });
 
