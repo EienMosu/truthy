@@ -164,6 +164,7 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome, 
             to={{ code: ticket.sectionCode, name: ticket.sectionName }}
             fields={copy.fields}
             jolt={landed && comparison.kind === "new-best"}
+            shortLegs
             lower={<MissedCards missed={missedCards(round.answers)} className="contain-size" />}
           >
             <ScoreBlock

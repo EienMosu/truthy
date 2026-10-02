@@ -499,6 +499,78 @@ test.describe("the header labels of a result on a 320 by 568 screen", () => {
   });
 });
 
+// The result on the smallest phone shows the start of the missed-card list ("N to review", or "No missed
+// cards") above "Play again" before any scroll, so the player sees the list is there: on a screen 600 px tall
+// or less the ticket leaves out the names under the codes (review finding U81). Measured at rest.
+test.describe("the missed list of a result on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+
+  async function expectListHeadAbovePill(page: Page, head: string): Promise<void> {
+    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+    await page.waitForTimeout(SETTLE_MS);
+    const scrolled = await page.locator("[data-boarding-pass]").locator("..").evaluate((scroller) => scroller.scrollTop);
+    expect(scrolled).toBe(0);
+    await expectInPassAbovePill(page, [page.getByRole("region", { name: "Missed cards" }).getByText(head, { exact: true })]);
+    await expectNoSidewaysScroll(page);
+  }
+
+  // A round that ends after `n` cards, each answered right or wrong as `right(card)` says.
+  async function playShort(page: Page, n: number, right: (card: number) => boolean): Promise<void> {
+    const answers = await deckAnswers(page, CLF_ID);
+    let previous: string | undefined;
+    for (let card = 1; card <= n; card += 1) {
+      previous = (await answerCard(page, answers, card, right(card), previous)).statement;
+      await page.getByRole("button", { name: card < n ? "Next card" : "See results" }).click();
+    }
+  }
+
+  test("Classic with two missed cards: 2 to review", async ({ page }) => {
+    await openRound(page, "classic", null);
+    await playRound(page, CLF_ID, wrongOn(1, 2));
+    await expectListHeadAbovePill(page, "2 to review");
+  });
+
+  test("Classic with none missed: No missed cards", async ({ page }) => {
+    await openRound(page, "classic", 10);
+    await playRound(page, CLF_ID, wrongOn());
+    await expectListHeadAbovePill(page, "No missed cards");
+  });
+
+  test("Streak ended on card 3: 1 to review", async ({ page }) => {
+    await openRound(page, "streak", null);
+    await playShort(page, 3, (card) => card < 3);
+    await expectListHeadAbovePill(page, "1 to review");
+  });
+
+  test("Three lives out on card 3: 3 to review", async ({ page }) => {
+    await openRound(page, "lives", null);
+    await playShort(page, 3, () => false);
+    await expectListHeadAbovePill(page, "3 to review");
+  });
+});
+
+// Taller screens keep the approved ticket: the names under the codes stay on the result.
+for (const viewport of [
+  { width: 375, height: 667 },
+  { width: 390, height: 844 },
+]) {
+  test.describe(`the result ticket on a ${viewport.width} by ${viewport.height} screen`, () => {
+    test.use({ viewport, reducedMotion: "reduce" });
+
+    test("keeps the names under the codes", async ({ page }) => {
+      await openRound(page, "streak", null);
+      const answers = await deckAnswers(page, CLF_ID);
+      await answerCard(page, answers, 1, false);
+      await page.getByRole("button", { name: "See results" }).click();
+      await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+      await expect(page.locator('[data-leg="from"] > span').nth(1)).toHaveText("AWS Cloud Practitioner");
+      await expect(page.locator('[data-leg="from"] > span').nth(1)).toBeVisible();
+      await expect(page.locator('[data-leg="to"] > span').nth(1)).toHaveText("Security and compliance");
+      await expect(page.locator('[data-leg="to"] > span').nth(1)).toBeVisible();
+    });
+  });
+}
+
 // The route of the header stays where it is when its labels wrap at 320 ("Card 10 of 10" beside "10 correct
 // · 0 wrong" as the tenth verdict lands, "Streak ended at 11" beside "Previous best 10"): the header centres a
 // frame one label line tall, and a second line hangs below it, above the ticket.

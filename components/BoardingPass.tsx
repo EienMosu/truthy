@@ -35,6 +35,12 @@ export interface BoardingPassProps {
   jolt?: boolean;
   /** When the jolt starts, in seconds: as the stamp lands. 0.42 for the slip stamp (default), 0.12 and 0.24 in Timed. */
   joltDelay?: number;
+  /**
+   * On a screen 600 px tall or less, leave the names under the codes out of sight (screen readers still read
+   * them) and tighten the legs row: the result, so the head of its missed-card list shows above "Play again"
+   * on a 320 by 568 phone (review finding U81).
+   */
+  shortLegs?: boolean;
   className?: string;
 }
 
@@ -72,8 +78,9 @@ const LEG_NAME =
   "mt-(--space-6) block font-(family-name:--type-leg-name-family) text-(length:--type-leg-name-size) " +
   "font-(--type-leg-name-weight) leading-(--type-leg-name-line-height) tracking-(--type-leg-name-letter-spacing) text-(--color-ink-muted)";
 
-export function BoardingPass({ from, to, fields, children, lower, jolt = false, joltDelay = 0.42, className }: BoardingPassProps) {
+export function BoardingPass({ from, to, fields, children, lower, jolt = false, joltDelay = 0.42, shortLegs = false, className }: BoardingPassProps) {
   const reduced = useReducedMotion() ?? false;
+  const legName = shortLegs ? `${LEG_NAME} [@media(max-height:600px)]:sr-only` : LEG_NAME;
   return (
     <div data-boarding-pass="" className={["relative text-(--color-ink)", className].filter(Boolean).join(" ")}>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-(--radius-card) shadow-(--elevation-ticket)" />
@@ -99,15 +106,20 @@ export function BoardingPass({ from, to, fields, children, lower, jolt = false, 
         </div>
         {/* The approved screens show no arrow between the legs (the mockup's 40px arrow collapses to zero
             height), only its 40px column. Codes align at the top so a one-line name does not push its code down. */}
-        <div className="grid grid-cols-[1fr_40px_1fr] items-start gap-(--space-8) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-12)">
+        <div
+          className={[
+            "grid grid-cols-[1fr_40px_1fr] items-start gap-(--space-8) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-12)",
+            shortLegs ? "[@media(max-height:600px)]:pt-(--space-8) [@media(max-height:600px)]:pb-(--space-8)" : "",
+          ].join(" ")}
+        >
           <div data-leg="from">
             <span className={LEG_CODE}>{from.code}</span>
-            <span className={LEG_NAME}>{from.name}</span>
+            <span className={legName}>{from.name}</span>
           </div>
           <span aria-hidden="true" />
           <div data-leg="to" className="text-right">
             <span className={LEG_CODE}>{to.code}</span>
-            <span className={LEG_NAME}>{to.name}</span>
+            <span className={legName}>{to.name}</span>
           </div>
         </div>
         <dl className="mx-(--size-ticket-inset) my-0 grid grid-cols-[1.1fr_1fr_1fr] border-y-(length:--stroke-rule) border-(--color-rule)">
