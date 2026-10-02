@@ -66,6 +66,51 @@ describe("hygiene rules", () => {
     expect(findingsIn('"datasync-task-runs-versus-live-mount"')).toEqual([]);
   });
 
+  it("flags a WSL, root or mounted volume path, but not the same words inside a web URL", () => {
+    const wsl = "/mnt/c/" + "Users/alex";
+    const root = "/ro" + "ot/.aws";
+    const volume = "/Vol" + "umes/WorkDisk";
+    expect(findingsIn(`${wsl}/notes.md`)).toEqual([`1: absolute local path: ${wsl}`]);
+    expect(findingsIn(`cat ${root}/credentials`)).toEqual([`1: absolute local path: ${root}`]);
+    expect(findingsIn(`${volume}/alex/notes.md`)).toEqual([`1: absolute local path: ${volume}`]);
+    expect(findingsIn("https://example.org" + "/ro" + "ot/docs and https://example.org" + "/Vol" + "umes/x")).toEqual([]);
+  });
+
+  it("flags a Windows user path, also when it is escaped inside JSON", () => {
+    const plain = "C:\\" + "Users\\alex";
+    const escaped = "C:\\\\" + "Users\\\\alex";
+    expect(findingsIn(`${plain}\\notes.md`)).toEqual([`1: Windows user path: ${plain}`]);
+    expect(findingsIn(`{"file": "${escaped}\\\\notes.md"}`)).toEqual([`1: Windows user path: ${escaped}`]);
+  });
+
+  it("flags a GitLab, npm, Stripe or Google OAuth secret", () => {
+    const tokens = [
+      "glp" + "at-" + "Ab3dEf6hIj9kLm2nOp5q",
+      "np" + "m_" + "A".repeat(36),
+      "sk_" + "live_" + "4eC39HqLyjWDarjtT1zdp7dc",
+      "rk_" + "live_" + "4eC39HqLyjWDarjtT1zdp7dc",
+      "GOC" + "SPX-" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4",
+    ];
+    for (const token of tokens) expect(findingsIn(`token=${token}`), token).toEqual([`1: API key: ${token}`]);
+  });
+
+  it("flags a Slack webhook URL", () => {
+    const hook = "https://hooks.sl" + "ack.com/services/" + "T00000000/B00000000/" + "X".repeat(24);
+    expect(findingsIn(hook)).toEqual([`1: Slack webhook: ${hook.slice("https://".length)}`]);
+  });
+
+  it("flags a JSON web token", () => {
+    const jwt = "eyJ" + "hbGciOiJIUzI1NiJ9" + ".eyJ" + "zdWIiOiJhbGV4In0" + ".abcDEFghiJKLmnoPQRstuVWXyz0123456789abcd";
+    expect(findingsIn(`Authorization: Bearer ${jwt}`)).toEqual([`1: JSON web token: ${jwt}`]);
+  });
+
+  it("flags an AWS secret access key value, but not the setting's name on its own", () => {
+    const line = "aws_secret_" + "access_key = " + "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+    expect(findingsIn(line)).toEqual([`1: AWS secret access key: ${line}`]);
+    expect(findingsIn("AWS_SECRET_" + "ACCESS_KEY: " + '"' + "a".repeat(40) + '"')).toHaveLength(1);
+    expect(findingsIn("Set aws_secret_" + "access_key in the credentials file.")).toEqual([]);
+  });
+
   it("flags any e-mail address except the GitHub noreply one", () => {
     expect(findingsIn(`write to ${email}`)).toEqual([`1: e-mail address: ${email}`]);
     expect(findingsIn(`Author: EienMosu <${ALLOWED_EMAIL}>`)).toEqual([]);
