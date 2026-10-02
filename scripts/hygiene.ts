@@ -1,7 +1,9 @@
+import { execFileSync, spawnSync } from "node:child_process";
 import { inflateSync } from "node:zlib";
 
 // The repository is public. Nothing tracked may reveal a local machine, a work identity or a secret.
-// The rules live here so that more than the tracked-files test (tests/repo-hygiene.test.ts) can use them.
+// These rules are shared by the tracked-files test (tests/repo-hygiene.test.ts) and the pre-push hook
+// (.githooks/pre-push), which applies them to every commit about to be pushed.
 
 export const ALLOWED_EMAIL = "EienMosu@users.noreply.github.com";
 
@@ -110,4 +112,106 @@ function chunkText(type: string, data: Buffer): string | null {
 // Runs of four or more printable ASCII characters, one per line.
 function readableRuns(bytes: Buffer): string {
   return (bytes.toString("latin1").match(/[\x20-\x7e\t]{4,}/g) ?? []).join("\n");
+}
+
+// A co-author trailer or a tool's "Generated with ..." footer: commits carry the owner's name only.
+const ATTRIBUTION = /^\s*(?:co-authored-by:|\W{0,3}\s*generated (?:with|by)\b).*$/i;
+
+function git(cwd: string, args: readonly string[]): Buffer {
+  return execFileSync("git", args, { cwd, maxBuffer: 1 << 30 });
+}
+
+// Every finding in the commits that `git rev-list <revisions>` lists, newest first: their author and committer
+// e-mail addresses, their messages, the names of the files they add, and every line they add (lines they only
+// delete are not new). A merge counts only the lines it adds itself, outside what its parents bring.
+export function scanCommits(cwd: string, revisions: readonly string[]): string[] {
+  const commits = git(cwd, ["rev-list", ...revisions, "--"]).toString("utf8").split("\n").filter(Boolean);
+  return commits.flatMap((sha) => scanCommit(cwd, sha));
+}
+
+function scanCommit(cwd: string, sha: string): string[] {
+  const short = sha.slice(0, 7);
+  const found: string[] = [];
+  const report = (where: string, findings: readonly string[]) => {
+    for (const finding of findings) found.push(`${short} ${where}: ${finding.replace(/^\d+: /, "")}`);
+  };
+
+  const [author = "", committer = "", message = ""] = git(cwd, ["show", "-s", "--format=%ae%x00%ce%x00%B", sha])
+    .toString("utf8")
+    .split("\0");
+  if (author !== ALLOWED_EMAIL) report("author", [`e-mail address: ${author}`]);
+  if (committer !== ALLOWED_EMAIL) report("committer", [`e-mail address: ${committer}`]);
+  report("message", findingsIn(message.trimEnd()));
+  for (const line of message.split("\n")) {
+    if (ATTRIBUTION.test(line)) report("message", [`attribution line: ${line.trim()}`]);
+  }
+
+  // The files the commit adds or changes; "-" counts mark a binary file. A merge lists none here.
+  const changes = git(cwd, ["diff-tree", "-r", "--root", "--no-commit-id", "--no-renames", "--numstat", "-z", sha])
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .map((entry) => {
+      const [added = "", , ...rest] = entry.split("\t");
+      return { binary: added === "-", path: rest.join("\t") };
+    });
+  const present = (path: string) => spawnSync("git", ["cat-file", "-e", `${sha}:${path}`], { cwd }).status === 0;
+  for (const { path } of changes) {
+    if (present(path)) report(path, findingsIn(path).map((finding) => `file name: ${finding.replace(/^\d+: /, "")}`));
+  }
+
+  for (const [path, lines] of addedLines(git(cwd, ["show", "--format=", "--unified=0", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", sha]).toString("utf8"))) {
+    report(path, lines.flatMap((line) => findingsIn(line)));
+  }
+  for (const { path, binary } of changes) {
+    if (binary && present(path)) report(path, findingsInBytes(git(cwd, ["cat-file", "blob", `${sha}:${path}`])));
+  }
+  return found;
+}
+
+// The lines a patch adds, per file. A combined (merge) diff has one marker column per parent; a line counts
+// when it is new to at least one parent and removed from none.
+function addedLines(patch: string): [path: string, lines: string[]][] {
+  const files: [string, string[]][] = [];
+  let current: string[] | null = null;
+  let columns = 1;
+  let path = "";
+  for (const line of patch.split("\n")) {
+    if (line.startsWith("diff ")) {
+      current = null;
+      continue;
+    }
+    if (current === null && line.startsWith("+++ ")) {
+      path = line.slice(4).replace(/^b\//, "");
+      continue;
+    }
+    const hunk = /^(@{2,}) /.exec(line);
+    if (hunk) {
+      columns = (hunk[1] ?? "@@").length - 1;
+      if (current === null) {
+        current = [];
+        files.push([path, current]);
+      }
+      continue;
+    }
+    if (current === null) continue;
+    const markers = line.slice(0, columns);
+    if (markers.includes("+") && !markers.includes("-")) current.push(line.slice(columns));
+  }
+  return files;
+}
+
+// The revisions to scan for each line git passes a pre-push hook on its standard input:
+// "<local ref> <local sha> <remote ref> <remote sha>". A deletion pushes no commits. For a branch the remote
+// already has, the commits after the remote's one; for a new branch, or when the remote's commit is not known
+// here (a forced push over commits this clone never fetched), every commit not on a remote.
+export function pushRanges(cwd: string, stdin: string): string[][] {
+  const ranges: string[][] = [];
+  for (const line of stdin.split("\n")) {
+    const [, local, , remote] = line.trim().split(/\s+/);
+    if (!local || !remote || /^0+$/.test(local)) continue;
+    const known = !/^0+$/.test(remote) && spawnSync("git", ["cat-file", "-e", `${remote}^{commit}`], { cwd }).status === 0;
+    ranges.push(known ? [`${remote}..${local}`] : [local, "--not", "--remotes"]);
+  }
+  return ranges;
 }

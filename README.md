@@ -27,6 +27,14 @@ Node 24 and pnpm 10.
 
 Before the first `pnpm e2e`, install the browsers once with `pnpm exec playwright install chromium webkit`.
 
+## Before you push
+
+The repository is public, and a push publishes every commit in it, not only the last one. `pnpm test` checks the tracked files (`tests/repo-hygiene.test.ts`, rules in `scripts/hygiene.ts`), but CI runs it only after the push. A tracked pre-push hook checks the commits themselves before they leave the machine: every line they add, the files they add (PNG text and EXIF chunks included), their author and committer e-mail addresses and their messages (no co-author or tool attribution lines). It refuses the push on a finding. Turn it on once per clone, after `pnpm install`:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## License
 
 The code is licensed under [MIT](LICENSE). The card content in `content/` is licensed under [CC BY 4.0](content/LICENSE.md); the documentation pages the cards link to belong to their owners.
