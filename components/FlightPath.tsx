@@ -4,7 +4,7 @@
 // (wrong), the plane (current), a small open circle (still to come). The whole path is one image with a
 // full-sentence label; the label row is hidden from screen readers because the image already says it.
 // PathFrame, RouteLine, Plane and Mark are the pieces every mode's header is drawn with.
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ICON_PATHS } from "./icons";
 
 export type WaypointState = "correct" | "wrong" | "current" | "future";
@@ -196,10 +196,17 @@ export interface PathFrameProps {
   className?: string;
 }
 
+// The frame is as tall as the drawing and one line of labels, whatever the labels do. The header centres it,
+// so a label row that wraps to a second line (a 320 px phone, "Streak ended at 13" beside "Previous best 12")
+// hangs below the frame into the gap above the ticket instead of lifting the route as the verdict lands.
+const FRAME: CSSProperties = {
+  height: "calc(var(--size-flight-path-height) + var(--space-2) + var(--type-route-label-size) * var(--type-route-label-line-height))",
+};
+
 /** The wrapper every header shares: one image with a full-sentence label, the drawing and the label row (hidden from screen readers). */
 export function PathFrame({ label, progress, tally, children, className }: PathFrameProps) {
   return (
-    <div role="img" aria-label={label} data-flight-path="" className={["min-w-0 flex-1", className].filter(Boolean).join(" ")}>
+    <div role="img" aria-label={label} data-flight-path="" className={["min-w-0 flex-1", className].filter(Boolean).join(" ")} style={FRAME}>
       <svg viewBox="0 0 276 34" aria-hidden="true" focusable="false" className="block h-(--size-flight-path-height) w-full overflow-visible">
         {children}
       </svg>

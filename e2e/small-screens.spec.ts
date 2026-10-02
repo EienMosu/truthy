@@ -450,6 +450,62 @@ test.describe("the header labels of a result on a 320 by 568 screen", () => {
   });
 });
 
+// The route of the header stays where it is when its labels wrap at 320 ("Card 10 of 10" beside "10 correct
+// · 0 wrong" as the tenth verdict lands, "Streak ended at 11" beside "Previous best 10"): the header centres a
+// frame one label line tall, and a second line hangs below it, above the ticket.
+test.describe("the route of the header on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+
+  async function routeTop(page: Page): Promise<number> {
+    const box = await page.locator("[data-flight-path] svg").boundingBox();
+    if (box === null) throw new Error("The route is not on screen");
+    return box.y;
+  }
+
+  // The label row ends above the ticket.
+  async function expectLabelsAboveTicket(page: Page): Promise<void> {
+    const labels = await page.locator("[data-flight-path] [data-progress]").evaluate((element) => element.parentElement?.getBoundingClientRect().bottom ?? 0);
+    const pass = await page.locator("[data-boarding-pass]").last().boundingBox();
+    if (pass === null) throw new Error("The pass is not on screen");
+    expect(labels).toBeLessThanOrEqual(pass.y + 0.5);
+  }
+
+  test("a perfect Classic round: the route does not move on the verdict of card 10", async ({ page }) => {
+    await openRound(page, "classic", null);
+    const answers = await deckAnswers(page, CLF_ID);
+    await waitForCard(page, answers, 1);
+    const atStart = await routeTop(page);
+    for (let n = 1; n <= 10; n += 1) {
+      const { truth } = await waitForCard(page, answers, n);
+      await page.getByRole("button", { name: truth ? "True" : "False", exact: true }).click();
+      await expect(verdict(page)).toHaveText(verdictFor(truth, truth));
+      if (n < 10) await page.getByRole("button", { name: "Next card" }).click();
+    }
+    await expect(page.locator("[data-flight-path] [data-tally]")).toHaveText("10 correct · 0 wrong");
+    expect(await routeTop(page)).toBeCloseTo(atStart, 1);
+    await expectLabelsAboveTicket(page);
+  });
+
+  test("a Streak that passes the best and ends: the route does not move on the deciding answer", async ({ page }) => {
+    await openRound(page, "streak", 10);
+    const answers = await deckAnswers(page, CLF_ID);
+    let previous: string | undefined;
+    let atStart: number | null = null;
+    for (let n = 1; n <= 12; n += 1) {
+      if (atStart === null) {
+        await expect(page.locator("[data-statement]")).toBeFocused();
+        atStart = await routeTop(page);
+      }
+      previous = (await answerCard(page, answers, n, n < 12, previous)).statement;
+      if (n < 12) await page.getByRole("button", { name: "Next card" }).click();
+    }
+    await expect(page.locator("[data-flight-path] [data-progress]")).toHaveText("Streak ended at 11");
+    await expect(page.locator("[data-flight-path] [data-tally]")).toHaveText("Previous best 10");
+    expect(await routeTop(page)).toBeCloseTo(atStart ?? Number.NaN, 1);
+    await expectLabelsAboveTicket(page);
+  });
+});
+
 // A statement with one long word (a real Next.js card: "suppressHydrationWarning", 24 characters) wraps
 // inside its own paragraph; the pass keeps the width of the card, so SEC, Gate and the stub are not cut off
 // on the right. A sideways scroll check cannot see this: the card's scroller clips what sticks out.
