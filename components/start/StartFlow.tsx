@@ -385,13 +385,34 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   const settled = () => services.now() - shownAt.current >= SWIPE.settleMs;
   const headerHeld = () => services.now() < headerHeldUntil.current;
 
-  // Focus: the new step's title, or (going back) the card chosen before.
+  // The last kind of input: a key, or a press (finger, pen or mouse). It decides below whether going back may
+  // scroll the column.
+  const lastInput = useRef<"key" | "press">("press");
+  useEffect(() => {
+    const onKey = () => {
+      lastInput.current = "key";
+    };
+    const onPress = () => {
+      lastInput.current = "press";
+    };
+    const presses = ["pointerdown", "mousedown", "touchstart"] as const;
+    document.addEventListener("keydown", onKey, true);
+    for (const type of presses) document.addEventListener(type, onPress, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      for (const type of presses) document.removeEventListener(type, onPress, { capture: true });
+    };
+  }, []);
+
+  // Focus: the new step's title, or (going back) the card chosen before. On a short screen, a way back from the
+  // keyboard also brings that card into view, where its focus ring is. A way back by a press does not: the column
+  // stays at its top, so the Back pill and the pass stay under the finger and a second tap cannot land on a card.
   useEffect(() => {
     if (view.seq === 0) return;
     const panel = mainRef.current?.querySelector(`[data-step="${view.step}"]`);
     const card = view.focusId ? panel?.querySelector<HTMLElement>(`[data-option="${CSS.escape(view.focusId)}"] button`) : null;
     (card ?? panel?.querySelector<HTMLElement>("h2"))?.focus({ preventScroll: true });
-    if (card && mainRef.current) showInColumn(mainRef.current, card);
+    if (card && mainRef.current && lastInput.current === "key") showInColumn(mainRef.current, card);
   }, [view]);
 
   /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */

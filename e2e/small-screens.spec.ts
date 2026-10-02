@@ -697,6 +697,44 @@ for (const viewport of [
       expect(b.y + b.height, "the bottom of the focused card is on screen").toBeLessThanOrEqual(viewport.height);
     });
 
+    // Going back by a tap keeps the column at its top, so the Back pill stays under the finger: "Back, Back" at a
+    // normal pace goes back two steps and never lands on a card the column moved there (fix round 2). Only a way
+    // back from the keyboard brings the focused card into view (the test above).
+    async function backTwiceByTouch(page: Page, from: string): Promise<void> {
+      const back = page.getByRole("button", { name: /^Back to / });
+      const b = await back.boundingBox();
+      if (b === null) throw new Error("The Back pill is not on screen");
+      const x = b.x + b.width / 2;
+      const y = b.y + b.height / 2;
+      expect(y, "the Back pill is on screen").toBeLessThan(viewport.height);
+      await page.touchscreen.tap(x, y);
+      await expect(page.locator("[data-step]:not([inert]) h2")).not.toHaveText(from);
+      await page.waitForTimeout(150);
+      const under = await page.evaluate(([px, py]) => document.elementFromPoint(px ?? 0, py ?? 0)?.closest("button")?.getAttribute("aria-label") ?? null, [x, y]);
+      expect(under, "the Back pill is still under the finger after the first tap").toMatch(/^Back to /);
+      await page.waitForTimeout(200); // the second tap comes 350 ms after the first
+      await page.touchscreen.tap(x, y);
+      await page.waitForTimeout(500);
+    }
+
+    test("tapping Back twice from the ready step goes back two steps", async ({ page }) => {
+      await openHome(page);
+      await tapThrough(page, [...ROUTE_BY_TAPS.slice(0, 4), [/^Timed\. /, "Your pass is ready"]]);
+      await backTwiceByTouch(page, "Your pass is ready");
+      await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Choose a section");
+    });
+
+    test("after a way back by the keyboard, tapping Back twice still goes back two steps", async ({ page }) => {
+      await openHome(page);
+      await tapThrough(page, [...ROUTE_BY_TAPS.slice(0, 4), [/^Timed\. /, "Your pass is ready"]]);
+      await page.keyboard.press("Escape");
+      await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Choose how to play");
+      await page.waitForTimeout(SETTLE_MS);
+      await tapThrough(page, [[/^Timed\. /, "Your pass is ready"]]);
+      await backTwiceByTouch(page, "Your pass is ready");
+      await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Choose a section");
+    });
+
     test("a returning player continues and starts the round by touch", async ({ page }) => {
       await page.addInitScript(() =>
         localStorage.setItem(

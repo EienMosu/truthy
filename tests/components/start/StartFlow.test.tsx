@@ -759,6 +759,83 @@ describe("StartFlow: the column of a short screen", () => {
     expect(h.history.position).toBe(1);
   });
 
+  // Fix round 2 of F1a: bringing the focused card into view after a tap on Back moved an option card under the
+  // finger, so "Back, Back" chose it. Only a way back from the keyboard scrolls the column to the focused card.
+  describe("the card focused on the way back", () => {
+    function columnOverCard(main: HTMLElement) {
+      main.style.overflowY = "auto";
+      Object.defineProperty(main, "clientHeight", { configurable: true, get: () => 200 });
+      const scroll = scrollable(main);
+      // The Timed card lies 400 px down the column, below its 200 px fold.
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+        const top = this.closest('[data-option="timed"]') && this.tagName === "BUTTON" ? 400 - scroll.top : 0;
+        const height = top === 0 ? 0 : 90;
+        return { x: 0, y: top, left: 0, top, width: 0, height, right: 0, bottom: top + height, toJSON: () => ({}) } as DOMRect;
+      });
+      // jsdom has no DOMMatrixReadOnly; the cards are at rest (skipAnimations), so their rise-in shift is 0.
+      vi.stubGlobal("DOMMatrixReadOnly", class {
+        m42 = 0;
+      });
+      return scroll;
+    }
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    async function toReadyWithTimed(): Promise<{ main: HTMLElement; scroll: { top: number } }> {
+      await start();
+      await toClasses();
+      await choose(/^Timed\. /, "Your pass is ready");
+      settle();
+      const main = document.querySelector("main");
+      if (!main) throw new Error("No main");
+      return { main, scroll: columnOverCard(main) };
+    }
+
+    it("keeps the column at its top after a tap on Back", async () => {
+      const { scroll } = await toReadyWithTimed();
+      const back = screen.getByRole("button", { name: "Back to classes" });
+      fireEvent.pointerDown(back);
+      fireEvent.click(back);
+      await waitFor(() => expect(heading()).toBe("Choose how to play"));
+      await act(async () => {});
+      expect(document.activeElement?.closest('[data-option="timed"]')).not.toBeNull();
+      expect(scroll.top).toBe(0);
+    });
+
+    it("keeps the column at its top after a tap on a field of the pass", async () => {
+      const { scroll } = await toReadyWithTimed();
+      const field = screen.getByRole("button", { name: "Change class, now Timed" });
+      fireEvent.pointerDown(field);
+      fireEvent.click(field);
+      await waitFor(() => expect(heading()).toBe("Choose how to play"));
+      await act(async () => {});
+      expect(scroll.top).toBe(0);
+    });
+
+    it("brings the card into view after Escape", async () => {
+      const { scroll } = await toReadyWithTimed();
+      await act(async () => {});
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      await waitFor(() => expect(heading()).toBe("Choose how to play"));
+      await act(async () => {});
+      expect(document.activeElement?.closest('[data-option="timed"]')).not.toBeNull();
+      expect(scroll.top).toBe(298); // 400 + 90 + 8 for the focus ring - 200
+    });
+
+    it("brings the card into view after Enter on Back, even when the last press before it was a tap", async () => {
+      const { scroll } = await toReadyWithTimed();
+      const back = screen.getByRole("button", { name: "Back to classes" });
+      fireEvent.pointerDown(document.body);
+      fireEvent.keyDown(back, { key: "Enter" });
+      fireEvent.click(back); // Enter on a button activates it, as browsers do
+      await waitFor(() => expect(heading()).toBe("Choose how to play"));
+      await act(async () => {});
+      expect(scroll.top).toBe(298);
+    });
+  });
+
   it("never holds back Escape after the column jumped to its top", async () => {
     await start();
     const main = document.querySelector("main");
