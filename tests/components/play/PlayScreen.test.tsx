@@ -154,6 +154,38 @@ describe("PlayScreen: answering", () => {
     expect(status()).toBe(`${second ? "Correct" : "Not quite"}. The answer is ${second ? "True" : "False"}.`);
   });
 
+  // Review finding U14: an arrow with Alt, Ctrl, Cmd or Shift is the browser's (Alt+Left and Cmd+Left are
+  // back). It neither answers nor is cancelled.
+  for (const modifier of ["altKey", "ctrlKey", "metaKey", "shiftKey"] as const) {
+    it(`leaves an arrow key with ${modifier} to the browser`, async () => {
+      await start();
+      expect(fireEvent.keyDown(window, { key: "ArrowLeft", [modifier]: true })).toBe(true);
+      expect(fireEvent.keyDown(window, { key: "ArrowRight", [modifier]: true })).toBe(true);
+      await act(async () => {});
+      expect(status()).toBe("");
+      expect(screen.getByRole("button", { name: "True" })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: "Next card" })).toBeNull();
+    });
+  }
+
+  it("does not answer with an arrow key that something else has already handled", async () => {
+    await start();
+    const handled = (event: KeyboardEvent) => event.preventDefault();
+    document.addEventListener("keydown", handled);
+    try {
+      fireEvent.keyDown(document.body, { key: "ArrowLeft" });
+      fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    } finally {
+      document.removeEventListener("keydown", handled);
+    }
+    await act(async () => {});
+    expect(status()).toBe("");
+    expect(screen.queryByRole("button", { name: "Next card" })).toBeNull();
+    // The same key, not handled elsewhere, answers.
+    fireEvent.keyDown(document.body, { key: "ArrowLeft" });
+    expect(status()).not.toBe("");
+  });
+
   it("answers with a swipe across the card", async () => {
     await start();
     const right = currentAnswer();
@@ -347,6 +379,22 @@ describe("PlayScreen: leaving", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(document.activeElement).toBe(close);
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  // Review finding U14: while "Leave round?" is open the round behind it is inert, so assistive technology
+  // and pointers cannot reach it; Keep playing makes it live again.
+  it("makes the round behind the Leave round? sheet inert until Keep playing", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "True" }));
+    const main = document.querySelector("main");
+    expect(main?.hasAttribute("inert")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    const dialog = screen.getByRole("dialog", { name: "Leave round?" });
+    expect(main?.contains(dialog)).toBe(false);
+    expect(main?.hasAttribute("inert")).toBe(true);
+    fireEvent.click(within(dialog).getByRole("button", { name: "Keep playing" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(main?.hasAttribute("inert")).toBe(false);
   });
 
   it("does not answer with the arrow keys while the dialog is open", async () => {
