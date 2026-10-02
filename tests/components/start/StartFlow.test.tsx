@@ -243,6 +243,63 @@ describe("StartFlow: choosing a route", () => {
     fireEvent.click(button);
     await waitFor(() => expect(router.push).toHaveBeenCalledTimes(1));
   });
+
+  // Review finding U127: the Escape listener sits on the document, so the inert main does not stop it; the
+  // boarding check in backTo is all that keeps an Escape from stepping back and moving the history a second
+  // time on top of the rewind (in a browser, past the site's first entry).
+  describe("ignores Escape while the pass boards", () => {
+    async function boardWithEscape(): Promise<number[]> {
+      await start();
+      await toClasses();
+      await choose(/^Classic\./, "Your pass is ready");
+      const moves: number[] = [];
+      const go = h.history.go.bind(h.history);
+      h.history.go = (delta) => {
+        moves.push(delta);
+        go(delta);
+      };
+      settle();
+      fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+      await act(async () => {});
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      await act(async () => {});
+      return moves;
+    }
+
+    it("while the browser moves back to the first entry", async () => {
+      const moves = await boardWithEscape();
+      expect(moves).toEqual([-5]);
+      expect(h.history.position).toBe(0);
+      expect(heading()).toBe("Your pass is ready");
+      await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      await act(async () => {});
+      expect(moves).toEqual([-5]);
+      expect(heading()).toBe("Your pass is ready");
+      expect(router.push).toHaveBeenCalledTimes(1);
+    });
+
+    it("while it waits for a browser that never reports the move", async () => {
+      h = harness();
+      const dropped: number[] = [];
+      h.history.go = (delta) => {
+        dropped.push(delta); // a browser that drops the move: the flow falls back on its 1 s timer
+      };
+      render(<StartFlow services={h.services} />);
+      await screen.findByRole("button", { name: "Cloud, 2 decks" });
+      await toClasses();
+      await choose(/^Classic\./, "Your pass is ready");
+      settle();
+      fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+      await act(async () => {});
+      fireEvent.keyDown(document.body, { key: "Escape" });
+      await act(async () => {});
+      expect(dropped).toEqual([-5]);
+      expect(heading()).toBe("Your pass is ready");
+      await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"), { timeout: 2000 });
+      expect(router.push).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 // Review finding F3: once a round starts, the step entries are spent. The flow moves the browser back to

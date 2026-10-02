@@ -67,6 +67,20 @@ test("back from a round is the start at step 1, and one more back leaves the sit
   await expectNoRecordButHistory(page);
 });
 
+// Review finding U127: Escape while the pass boards is ignored. Were it taken, its step back would move the
+// history once more on top of the rewind, and the player would leave the site instead of opening the round.
+test("an Escape right after Start round is ignored: the round opens, and back is step 1, then off the site", async ({ page }) => {
+  await openHome(page);
+  await chooseRoute(page, CLF_SECURITY);
+  await page.getByRole("button", { name: "Start round" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/play$/);
+  await waitForCard(page, await deckAnswers(page, CLF_ID), 1);
+  await page.goBack();
+  await expectHomeAtStepOne(page);
+  await expectLeftTheSite(page);
+});
+
 test("leaving with the close button lands on step 1 with nothing stale behind it", async ({ page }) => {
   await openHome(page);
   await chooseRoute(page, CLF_SECURITY);
