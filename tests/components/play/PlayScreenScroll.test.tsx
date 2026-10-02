@@ -194,3 +194,121 @@ describe("PlayScreen: the verdict slip comes into view after an answer (U44)", (
     expect(scrolls).toEqual([]);
   });
 });
+
+describe("PlayScreen: a new card shows its statement above the action row (U49)", () => {
+  it("scrolls the first card so its statement ends above True and False", async () => {
+    // The first card's effect runs inside start(): the ticket is already where it should be.
+    await start();
+    expect(scrolls.at(-1)).toEqual({ top: TEXT_BOTTOM - VISIBLE, behavior: "instant" });
+    expect(scrollTop).toBe(TEXT_BOTTOM - VISIBLE);
+  });
+
+  it("does the same for each next card in Classic, at once", async () => {
+    await start();
+    await give(true);
+    scrolls = [];
+    await pressNext();
+    expect(scrolls).toEqual([{ top: TEXT_BOTTOM - VISIBLE, behavior: "instant" }]);
+  });
+
+  it("glides there in Timed from the stamped stub", async () => {
+    await start("timed");
+    const first = statementText();
+    await give(true);
+    act(() => h.run(700));
+    await waitFor(() => {
+      expect(document.querySelectorAll("[data-statement]")).toHaveLength(1);
+      expect(statementText()).not.toBe(first);
+    });
+    await act(async () => {});
+    expect(scrolls.at(-1)).toEqual({ top: TEXT_BOTTOM - VISIBLE, behavior: "smooth" });
+  });
+});
+
+describe("PlayScreen: the ticket scrolls by keyboard in every mode (U49)", () => {
+  it("is a stop of its own in the Tab order, named Ticket", async () => {
+    await start("timed");
+    const group = screen.getByRole("group", { name: "Ticket" });
+    expect(group).toBe(ticket());
+    expect(group.tabIndex).toBe(0);
+  });
+
+  it("scrolls with the arrow keys, Page Up and Down, Space, Home and End when focus is outside the ticket", async () => {
+    await start("timed");
+    (document.activeElement as HTMLElement | null)?.blur();
+    expect(document.activeElement).toBe(document.body);
+    scrollTop = 100;
+    scrolls = [];
+    const press = (key: string, init: KeyboardEventInit = {}) => fireEvent.keyDown(document.body, { key, ...init });
+    press("ArrowDown");
+    expect(scrollTop).toBe(140);
+    press("ArrowUp");
+    expect(scrollTop).toBe(100);
+    press("PageDown");
+    expect(scrollTop).toBe(100 + VISIBLE - 40);
+    press("PageUp");
+    expect(scrollTop).toBe(100);
+    press(" ");
+    expect(scrollTop).toBe(100 + VISIBLE - 40);
+    press(" ", { shiftKey: true });
+    expect(scrollTop).toBe(100);
+    press("End");
+    expect(scrollTop).toBe(HEIGHT - VISIBLE);
+    press("ArrowDown");
+    expect(scrollTop).toBe(HEIGHT - VISIBLE);
+    press("Home");
+    expect(scrollTop).toBe(0);
+    press("ArrowUp");
+    expect(scrollTop).toBe(0);
+    expect(scrolls.every((options) => options.behavior === "instant")).toBe(true);
+  });
+
+  it("scrolls with the arrow keys from the pill the player used, and leaves Space to the pill", async () => {
+    await start("timed");
+    const trueButton = screen.getByRole("button", { name: "True" });
+    trueButton.focus();
+    scrollTop = 0;
+    scrolls = [];
+    fireEvent.keyDown(trueButton, { key: "ArrowDown" });
+    expect(scrollTop).toBe(40);
+    fireEvent.keyDown(trueButton, { key: " " });
+    expect(scrollTop).toBe(40);
+  });
+
+  // Safari does not scroll a focused scroller by keys, so the screen does it there too.
+  it("scrolls the same way when focus is in the ticket: the ticket itself, the statement, the source link", async () => {
+    await start();
+    expect(document.activeElement?.matches("[data-statement]")).toBe(true);
+    scrollTop = 0;
+    fireEvent.keyDown(document.activeElement as Element, { key: "ArrowDown" });
+    expect(scrollTop).toBe(40);
+    fireEvent.keyDown(ticket(), { key: "PageDown" });
+    expect(scrollTop).toBe(40 + VISIBLE - 40);
+    fireEvent.keyDown(ticket(), { key: " " });
+    expect(scrollTop).toBe(40 + 2 * (VISIBLE - 40));
+    await give(true);
+    const link = screen.getByRole("link", { name: /\(opens in a new tab\)$/ });
+    scrollTop = 0;
+    fireEvent.keyDown(link, { key: "ArrowDown" });
+    expect(scrollTop).toBe(40);
+    fireEvent.keyDown(link, { key: " " });
+    expect(scrollTop).toBe(40);
+  });
+
+  it("does not scroll with a modifier key or while the Leave round sheet is open", async () => {
+    await start();
+    (document.activeElement as HTMLElement | null)?.blur();
+    scrolls = [];
+    fireEvent.keyDown(document.body, { key: "ArrowDown", altKey: true });
+    fireEvent.keyDown(document.body, { key: "ArrowDown", metaKey: true });
+    fireEvent.keyDown(document.body, { key: "ArrowDown", ctrlKey: true });
+    expect(scrolls).toEqual([]);
+    await give(true);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    const dialog = screen.getByRole("dialog", { name: "Leave round?" });
+    scrolls = [];
+    fireEvent.keyDown(within(dialog).getByRole("button", { name: "Keep playing" }), { key: "ArrowDown" });
+    fireEvent.keyDown(document.body, { key: "End" });
+    expect(scrolls).toEqual([]);
+  });
+});

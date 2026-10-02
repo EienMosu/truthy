@@ -118,3 +118,111 @@ test.describe("the verdict slip of long cards on a 390 by 844 screen", () => {
     }
   });
 });
+
+// ---------- the statement of a new card (review finding U49) ----------
+
+/**
+ * The statement's text (from its first line, the appliesTo line where there is one, to its last) lies in the
+ * visible stage: it starts inside the stage and ends above the action row, or, when it is taller than the
+ * stage, it starts at the top of the stage. Polled: in Timed the ticket glides back up from the stamped stub.
+ */
+async function expectStatementInView(page: Page): Promise<void> {
+  const action = page.getByRole("button", { name: "True", exact: true });
+  await expect
+    .poll(
+      async () => {
+        const { top, row } = await stageAndRow(page, action);
+        const text = await page.locator("[data-statement]").last().evaluate((block) => {
+          const first = block.firstElementChild?.getBoundingClientRect();
+          const last = block.lastElementChild?.getBoundingClientRect();
+          return first && last ? { y: first.top, bottom: last.bottom } : null;
+        });
+        if (text === null) return "the statement is not on screen";
+        if (text.y < top - 0.5) return `the statement starts above the stage (${text.y} < ${top})`;
+        const fits = text.bottom - text.y <= row - top;
+        if (fits && text.bottom > row + 0.5) return `the statement runs under the action row (${text.bottom} > ${row})`;
+        if (!fits && Math.abs(text.y - top) > 1) return `a statement taller than the stage starts at ${text.y}, not at the top ${top}`;
+        return "in view";
+      },
+      { message: "the statement is in view above True and False", timeout: 5_000 },
+    )
+    .toBe("in view");
+}
+
+/** The ticket of the play screen: the stage's scroller. */
+function ticket(page: Page): Locator {
+  return page.locator("[data-swipe-card]").locator("..");
+}
+
+async function ticketScroll(page: Page): Promise<{ top: number; max: number }> {
+  return ticket(page).evaluate((scroller) => ({ top: scroller.scrollTop, max: scroller.scrollHeight - scroller.clientHeight }));
+}
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 844, height: 390 },
+  { width: 640, height: 400 },
+]) {
+  test.describe(`the statement of a new card on a ${viewport.width} by ${viewport.height} screen`, () => {
+    test.use({ viewport });
+
+    test("Classic: each card shows its statement above True and False", async ({ page }) => {
+      await openPendingRound(page, "classic");
+      const answers = await deckAnswers(page, CLF_ID);
+      for (let n = 1; n <= 3; n += 1) {
+        const { truth } = await waitForCard(page, answers, n);
+        await expectStatementInView(page);
+        await page.getByRole("button", { name: truth ? "True" : "False", exact: true }).click();
+        await page.getByRole("button", { name: "Next card" }).click();
+      }
+    });
+
+    test("Timed: each card shows its statement above True and False", async ({ page }) => {
+      await openPendingRound(page, "timed");
+      const answers = await deckAnswers(page, CLF_ID);
+      let previous: string | undefined;
+      for (let n = 1; n <= 3; n += 1) {
+        if (n > 1) await expect(page.locator("[data-card-announcer]")).toHaveText(new RegExp(`^Card ${n}\\. `));
+        await expect.poll(() => statementOnScreen(page)).not.toBe(previous);
+        await expectStatementInView(page);
+        previous = (await answerCard(page, answers, n, true, previous)).statement;
+      }
+    });
+  });
+}
+
+// The stage scrolls by keyboard in every mode. In Timed, from the second card on, focus is on the page or on
+// the pill the player used, outside the ticket: the keys that scroll a page scroll the ticket from there. The
+// ticket is also a stop of its own in the Tab order (Option+Tab in Safari, which leaves Tab to text fields).
+test.describe("the ticket by keyboard on a 640 by 400 screen (a page zoomed to 200 percent)", () => {
+  test.use({ viewport: { width: 640, height: 400 } });
+
+  test("Timed: from the second card the arrow keys, End and Home scroll the ticket", async ({ page }) => {
+    await openPendingRound(page, "timed");
+    await expect(page.locator("[data-statement]")).toBeFocused();
+    await page.waitForTimeout(SETTLE_MS);
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("[data-card-announcer]")).toHaveText(/^Card 2\. /);
+    await expectStatementInView(page);
+    await page.waitForTimeout(SETTLE_MS);
+    const before = await ticketScroll(page);
+    expect(before.max, "the ticket is taller than the stage").toBeGreaterThan(before.top);
+    await page.keyboard.press("ArrowDown");
+    await expect.poll(async () => (await ticketScroll(page)).top).toBeGreaterThan(before.top);
+    await page.keyboard.press("End");
+    await expect.poll(async () => (await ticketScroll(page)).top).toBeCloseTo(before.max, 0);
+    await page.keyboard.press("Home");
+    await expect.poll(async () => (await ticketScroll(page)).top).toBe(0);
+  });
+
+  test("the ticket is a stop in the Tab order and scrolls with the arrow keys", async ({ page, browserName }) => {
+    await openPendingRound(page, "classic");
+    await expect(page.locator("[data-statement]")).toBeFocused();
+    await page.getByRole("button", { name: "Leave round" }).focus();
+    await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
+    await expect(ticket(page)).toBeFocused();
+    const before = await ticketScroll(page);
+    await page.keyboard.press("ArrowDown");
+    await expect.poll(async () => (await ticketScroll(page)).top).toBeGreaterThan(before.top);
+  });
+});

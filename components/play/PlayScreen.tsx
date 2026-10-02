@@ -34,7 +34,7 @@ import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, ty
 import { LeaveDialog } from "./LeaveDialog";
 import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
-import { slipScroll, spanInTicket } from "./ticketScroll";
+import { keyScroll, slipScroll, spanInTicket, statementScroll, visibleHeight } from "./ticketScroll";
 import { useClock } from "./useClock";
 import { browserPlayServices, useRound, type PlayServices, type TicketInfo } from "./useRound";
 import { useSwipe } from "./useSwipe";
@@ -331,15 +331,31 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     reducedRef.current = reduced;
   }, [reduced]);
 
-  // A new card: start its settle time, scroll the ticket to the top, put focus on the statement. In Timed
-  // only the first card takes focus; later ones are announced by the card announcer (a live region that
-  // stays mounted, see timedCardText), so focus stays on the pill the player used. Timed glides back up
-  // from the stamped stub (below) while the new card is dealt.
+  // A new card: start its settle time, scroll the ticket so the statement shows, put focus on the statement.
+  // The ticket goes back to its top, or, where the stage is short (320 by 568, a phone held sideways, a zoomed
+  // page), only as far up as lets the statement's text end above True and False, which hide what lies under
+  // them; a text taller than the stage starts at its top. In Timed only the first card takes focus; later
+  // ones are announced by the card announcer (a live region that stays mounted, see timedCardText), so focus
+  // stays on the pill the player used. Timed glides back up from the stamped stub (below) while the new card
+  // is dealt.
   useEffect(() => {
     if (round.phase !== "question") return;
     shownAt.current = now();
-    scrollerRef.current?.scrollTo?.({ top: 0, behavior: timed && !reducedRef.current ? "smooth" : "instant" });
-    if (!timed || round.index === 0) statementRef.current?.focus({ preventScroll: true });
+    const scroller = scrollerRef.current;
+    const statement = statementRef.current;
+    if (scroller) {
+      const first = statement?.firstElementChild;
+      const last = statement?.lastElementChild;
+      const top =
+        first instanceof HTMLElement && last instanceof HTMLElement
+          ? statementScroll(
+              { top: spanInTicket(first, scroller).top, bottom: spanInTicket(last, scroller).bottom },
+              visibleHeight(scroller),
+            )
+          : 0;
+      scroller.scrollTo?.({ top, behavior: timed && !reducedRef.current ? "smooth" : "instant" });
+    }
+    if (!timed || round.index === 0) statement?.focus({ preventScroll: true });
   }, [round.cards, round.index, round.phase, now, timed]);
 
   // Timed: when the stub is stamped (an answer, or time up), the ticket scrolls to its end, which is the stub.
@@ -467,6 +483,31 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [round.phase, awaitsNext, confirming, answer, next]);
 
+  // The ticket by keyboard, in every mode: wherever focus is on the screen (the ticket itself, a stop in the
+  // Tab order; the statement; the page itself, as in Timed from the second card on; a pill or the close
+  // button) the keys that scroll a page scroll the ticket: the arrows, Page Up and Down, Home and End, and
+  // Space unless a focused control takes it. Done here rather than left to the browser, which scrolls a
+  // focused scroller in Chromium and Firefox but not in Safari, and scrolls nothing from the page or a pill.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || confirming || event.altKey || event.ctrlKey || event.metaKey) return;
+      const scroller = scrollerRef.current;
+      const target = event.target;
+      if (!scroller) return;
+      if (event.key === " " && target instanceof Element && target.closest("a, button, input, select, textarea")) return;
+      const top = keyScroll(event.key, event.shiftKey, {
+        top: scroller.scrollTop,
+        visible: visibleHeight(scroller),
+        max: scroller.scrollHeight - scroller.clientHeight,
+      });
+      if (top === null) return;
+      event.preventDefault();
+      scroller.scrollTo?.({ top, behavior: "instant" });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [confirming]);
+
   const swipe = useSwipe<HTMLDivElement>({
     enabled: round.phase === "question" && !confirming,
     cardShownAt: () => shownAt.current,
@@ -528,7 +569,10 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
         <section aria-label="Card" className="relative mt-(--space-12) -mx-(--size-gutter) min-h-0 flex-1">
           <div
             ref={scrollerRef}
-            className="absolute inset-x-0 top-0 overflow-x-hidden overflow-y-auto overscroll-contain px-(--size-gutter)"
+            role="group"
+            aria-label="Ticket"
+            tabIndex={0}
+            className="absolute inset-x-0 top-0 overflow-x-hidden overflow-y-auto overscroll-contain px-(--size-gutter) focus-visible:outline-offset-[-2px]"
             style={SCROLLER}
           >
             <div

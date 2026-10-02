@@ -402,11 +402,11 @@ async function ticketScroll(page: Page): Promise<number> {
 // Timed on the smallest phone: the ticket is taller than the stage, so while a card is a question its stub
 // lies under the answer row. When the stub is stamped (an answer, or time up) the ticket scrolls to its end:
 // the stamp and its hint show above the row, and nothing of the ticket is left under the dimmed pills. The
-// next card starts at the top again. A hidden page holds the beat while the boxes are measured.
+// next card glides back up to its statement. A hidden page holds the beat while the boxes are measured.
 test.describe("the Timed stamp on a 320 by 568 screen", () => {
   test.use({ viewport: { width: 320, height: 568 } });
 
-  test("the stamp and its hint show above the answer row, and the next card starts at the top", async ({ page }) => {
+  test("the stamp and its hint show above the answer row, and the next card glides back up to its statement", async ({ page }) => {
     await openRound(page, "timed", null);
     const answers = await deckAnswers(page, CLF_ID);
     await expect(page.locator("[data-statement]")).toBeFocused();
@@ -421,8 +421,23 @@ test.describe("the Timed stamp on a 320 by 568 screen", () => {
     await setPageHidden(page, false);
     await expect(page.locator("[data-card-announcer]")).toHaveText(/^Card 2\. /);
     await expect.poll(() => statementOnScreen(page)).not.toBe(first.statement);
-    await expect.poll(() => ticketScroll(page), { timeout: 5_000 }).toBe(0);
-    await expect(page.locator("[data-statement]").last()).toBeInViewport();
+    // The ticket glides back up for the new card: to its top, or on this short stage only as far as lets the
+    // statement's text end above True and False (review finding U49), never left at the stub.
+    await expect
+      .poll(async () => {
+        const stage = await page.getByRole("region", { name: "Card" }).boundingBox();
+        const row = await trueButton.boundingBox();
+        const text = await page.locator("[data-statement]").last().evaluate((block) => ({
+          top: block.firstElementChild?.getBoundingClientRect().top ?? NaN,
+          bottom: block.lastElementChild?.getBoundingClientRect().bottom ?? NaN,
+        }));
+        return stage !== null && row !== null && text.top >= stage.y - 0.5 && text.bottom <= row.y + 0.5;
+      }, { message: "the new statement lies in the stage, above True and False", timeout: 5_000 })
+      .toBe(true);
+    expect(await ticketScroll(page)).toBeLessThan(await page.locator("[data-swipe-card]").evaluate((card) => {
+      const scroller = card.parentElement;
+      return scroller ? scroller.scrollHeight - scroller.clientHeight : 0;
+    }));
   });
 
   test.describe("with reduced motion", () => {
