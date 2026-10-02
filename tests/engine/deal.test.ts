@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "@/src/content/schema";
-import { DEAL, deal, type CardHistory, type History } from "@/src/engine/deal";
+import { DEAL, deal, dealChunk, type CardHistory, type History } from "@/src/engine/deal";
 import { createRng } from "@/src/engine/rng";
 
 function card(id: string, answer: boolean, conflictGroups: string[] = []): Card {
@@ -336,6 +336,70 @@ describe("deal: relaxing the constraints when the pool is too small", () => {
     const dealt = deal([...wrong, ...unseen], history, createRng(3), { count: 10 });
     expect(trueCount(dealt)).toBe(6);
     expect(withPrefix(dealt, "m").sort()).toEqual(["m1", "m2", "m3", "m4", "m5"]);
+  });
+
+  // Step 2 of choose: the missed cards over the cap join, last in line, and only as many as the deal needs. A card is
+  // never dealt twice, and at most three missed cards come per ten unless the balance or the groups need more.
+  it("never deals a card twice when the missed cards over the cap are needed and still do not suffice", () => {
+    // Missed, oldest first: m1 False, m2 False, m3 False, m4 True. Never seen: u1 to u10, all True. Only three False cards exist.
+    const wrong = [card("m1", false), card("m2", false), card("m3", false), card("m4", true)];
+    const unseen = cards("u", 10, () => true);
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
+    for (let seed = 1; seed <= 20; seed++) {
+      const dealt = deal([...wrong, ...unseen], history, createRng(seed), { count: 10 });
+      expect(dealt, `seed ${seed}`).toHaveLength(10);
+      expect(new Set(ids(dealt)).size, `seed ${seed}`).toBe(10);
+    }
+  });
+
+  it("never deals a card twice through dealChunk, the path the rounds use", () => {
+    const wrong = [card("m1", false), card("m2", false), card("m3", false), card("m4", true)];
+    const unseen = cards("u", 10, () => true);
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
+    for (let seed = 1; seed <= 20; seed++) {
+      const chunk = dealChunk([...wrong, ...unseen], history, createRng(seed), []);
+      expect(chunk, `seed ${seed}`).toHaveLength(10);
+      expect(new Set(ids(chunk)).size, `seed ${seed}`).toBe(10);
+    }
+  });
+
+  it("deals no card twice when almost the whole pool was missed", () => {
+    const wrong = cards("m", 8);
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
+    for (let seed = 1; seed <= 20; seed++) {
+      const dealt = deal([...wrong, ...cards("u", 2)], history, createRng(seed), { count: 10 });
+      expect(new Set(ids(dealt)).size, `seed ${seed}`).toBe(10);
+    }
+  });
+
+  it("takes only as many missed cards over the cap as the balance needs, the oldest first", () => {
+    // Missed: m1 to m3 True (within the cap), m4 to m7 False (over it, oldest first). Never seen: u1 to u9 True, f1 False.
+    // Four False cards are needed: f1, m4, m5 and m6. m7 stays out.
+    const wrong = [
+      ...cards("m", 3, () => true),
+      ...[4, 5, 6, 7].map((n) => card(`m${n}`, false)),
+    ];
+    const unseen = [...cards("u", 9, () => true), card("f1", false)];
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
+    for (let seed = 1; seed <= 20; seed++) {
+      const dealt = deal([...wrong, ...unseen], history, createRng(seed), { count: 10 });
+      expect(ids(dealt), `seed ${seed}`).toContain("f1");
+      expect(withPrefix(dealt, "m").sort(), `seed ${seed}`).toEqual(["m1", "m2", "m3", "m4", "m5", "m6"]);
+    }
+  });
+
+  it("keeps the missed cap when a deal within it exists only by leaving out a higher ranked card", () => {
+    // Missed: m1 to m3 False (within the cap), m4 False (over it). Never seen: x True and y False share a group,
+    // and u1 to u6 True. Within the cap the only deal is m1 to m3, y and u1 to u6. Taking x first can only
+    // finish with m4, a fourth missed card.
+    const wrong = [1, 2, 3, 4].map((n) => card(`m${n}`, false));
+    const unseen = [card("x", true, ["g"]), card("y", false, ["g"]), ...cards("u", 6, () => true)];
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
+    for (let seed = 1; seed <= 20; seed++) {
+      const dealt = deal([...wrong, ...unseen], history, createRng(seed), { count: 10 });
+      expect(withPrefix(dealt, "m").sort(), `seed ${seed}`).toEqual(["m1", "m2", "m3"]);
+      expect(ids(dealt), `seed ${seed}`).toContain("y");
+    }
   });
 
   it("relaxes the avoid groups too when there is nothing else", () => {
