@@ -117,6 +117,38 @@ test.describe("the verdict slip of long cards on a 390 by 844 screen", () => {
       if (n < 10) await action.click();
     }
   });
+
+  // Most CLF tickets are a few pixels taller than the stage, but their slip still ends in the gap above Next
+  // card, where nothing hides it: the ticket must not move for them (a nudge would cut the pass's top
+  // corners flat at the stage top on most ordinary cards). Only a slip that runs under the row itself moves it.
+  test("a slip that ends above Next card leaves the ticket where it is on a CLF Classic round", async ({ page }) => {
+    await openPendingRound(page, "classic");
+    const answers = await deckAnswers(page, CLF_ID);
+    let overflowingButFits = 0;
+    for (let n = 1; n <= 10; n += 1) {
+      const { truth } = await waitForCard(page, answers, n);
+      const ticketBox = ticket(page);
+      expect(await ticketBox.evaluate((scroller) => scroller.scrollTop), "the statement fits: the ticket is at its top").toBe(0);
+      await page.getByRole("button", { name: truth ? "True" : "False", exact: true }).click();
+      const action = page.getByRole("button", { name: n === 10 ? "See results" : "Next card" });
+      await expectSlipInView(page, action);
+      await page.waitForTimeout(400); // past any smooth scroll
+      const row = await action.boundingBox();
+      if (row === null) throw new Error("The action row is not on screen");
+      const at = await ticketBox.evaluate((scroller, rowTop) => {
+        const slip = scroller.querySelector("[data-slip]");
+        const top = scroller.getBoundingClientRect().top;
+        const slipBottom = slip === null ? Infinity : slip.getBoundingClientRect().bottom - top + scroller.scrollTop;
+        return { top: scroller.scrollTop, overflow: scroller.scrollHeight - scroller.clientHeight, fits: slipBottom <= rowTop - top };
+      }, row.y);
+      if (at.fits) {
+        expect(at.top, `card ${n}: the slip ends above the row, so the ticket stays at its top`).toBe(0);
+        if (at.overflow > 0) overflowingButFits += 1;
+      }
+      if (n < 10) await action.click();
+    }
+    expect(overflowingButFits, "the round had a ticket taller than the stage whose slip still ends above the row").toBeGreaterThan(0);
+  });
 });
 
 // ---------- the statement of a new card (review finding U49) ----------

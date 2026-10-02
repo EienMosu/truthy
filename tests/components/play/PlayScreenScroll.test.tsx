@@ -22,12 +22,13 @@ vi.mock("motion/react", async (original) => ({
 }));
 
 // The geometry: a stage 300 tall over a ticket 900 tall (so it scrolls up to 600); the statement's text runs
-// from 400 to 560 in the ticket, the slip starts at `slipTop`.
+// from 400 to 560 in the ticket, the slip starts at `slipTop` and is `slipHeight` tall.
 const VISIBLE = 300;
 const HEIGHT = 900;
 const TEXT_TOP = 400;
 const TEXT_BOTTOM = 560;
 let slipTop = 700;
+let slipHeight = 100;
 let scrollTop = 0;
 let scrolls: ScrollToOptions[] = [];
 
@@ -54,6 +55,7 @@ beforeEach(() => {
   router.replace.mockReset();
   router.push.mockReset();
   slipTop = 700;
+  slipHeight = 100;
   scrollTop = 0;
   scrolls = [];
   mock(Element.prototype, "scrollTo", {
@@ -91,6 +93,7 @@ beforeEach(() => {
   });
   mock(HTMLElement.prototype, "offsetHeight", {
     get(this: HTMLElement) {
+      if (this.matches("[data-slip]")) return slipHeight;
       const child = statementChild(this);
       if (child === null) return 0;
       // The last child (or the only one) ends at TEXT_BOTTOM.
@@ -157,6 +160,7 @@ describe("PlayScreen: the verdict slip comes into view after an answer (U44)", (
 
   it("stops at the top of a slip taller than the stage, so the answer and its stamp stay in view", async () => {
     slipTop = 450;
+    slipHeight = 400;
     await start();
     scrolls = [];
     await give(false);
@@ -180,6 +184,25 @@ describe("PlayScreen: the verdict slip comes into view after an answer (U44)", (
     await give(true);
     expect(document.querySelector('[data-slip] [data-verdict="new-best"]')).not.toBeNull();
     expect(scrolls).toEqual([{ top: HEIGHT - VISIBLE, behavior: "smooth" }]);
+  });
+
+  it("leaves the ticket where it is when the slip already ends above the action row", async () => {
+    // The first card scrolls to 260 (see below), so the visible stage runs from 260 to 560.
+    slipTop = 300;
+    slipHeight = 200;
+    await start();
+    scrolls = [];
+    await give(true);
+    expect(scrolls).toEqual([]);
+  });
+
+  it("scrolls when the slip ends only a pixel under the action row", async () => {
+    slipTop = 300;
+    slipHeight = 261;
+    await start();
+    scrolls = [];
+    await give(true);
+    expect(scrolls).toEqual([{ top: slipTop, behavior: "smooth" }]);
   });
 
   it("scrolls once per answer: the screen rendering again does not pull the ticket back", async () => {

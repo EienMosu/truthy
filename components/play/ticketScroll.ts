@@ -18,11 +18,17 @@ export function statementScroll(text: Span, visible: number): number {
 }
 
 /**
- * After an answer: the scroll that brings the slip in, which is the end of the ticket, so the slip ends above
- * the action row. A slip taller than the stage starts at the top of the stage, so its verdict row stays in view.
+ * After an answer: the scroll that brings the slip in, or null when the slip is in view already. In view means
+ * it starts inside the stage and ends no lower than the top of the action row: the gap above the row hides
+ * nothing, so a slip that ends there leaves the ticket where it is (at 390 by 844 most tickets are a few pixels
+ * taller than the stage, and a nudge would cut the pass's top corners flat for nothing). Otherwise the scroll
+ * goes to the end of the ticket, which is the slip, so the slip ends above the row with the gap under it; a slip
+ * taller than the stage starts at the top of the stage, so its verdict row stays in view.
+ * `at` is the scroll now, the visible stage (above the gap), the gap and the largest scroll.
  */
-export function slipScroll(slipTop: number, maxScroll: number): number {
-  return Math.max(0, Math.min(maxScroll, slipTop));
+export function slipScroll(slip: Span, at: { top: number; visible: number; gap: number; max: number }): number | null {
+  if (slip.top >= at.top && slip.bottom <= at.top + at.visible + at.gap) return null;
+  return Math.max(0, Math.min(at.max, slip.top));
 }
 
 /** One arrow press scrolls this far, as a page does. */
@@ -51,6 +57,12 @@ export function keyScroll(key: string, shift: boolean, at: { top: number; visibl
 export function visibleHeight(scroller: HTMLElement): number {
   const under = parseFloat(getComputedStyle(scroller).paddingBottom);
   return scroller.clientHeight - (Number.isFinite(under) ? under : 0);
+}
+
+/** The gap between the visible stage and the action row (--space-12), which hides nothing; 0 where it has no value. */
+export function gapAboveRow(scroller: HTMLElement): number {
+  const gap = parseFloat(getComputedStyle(scroller).getPropertyValue("--space-12"));
+  return Number.isFinite(gap) ? gap : 0;
 }
 
 /**

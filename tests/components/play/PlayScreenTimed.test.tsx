@@ -8,7 +8,7 @@
 // clock, and an answer given right after start() takes 1000.
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { NEXT_ARRIVES_MS, PlayScreen, timedCardText, timedStatus } from "@/components/play/PlayScreen";
 import { RESULT_ARRIVES_MS } from "@/components/play/ResultView";
 import { PROGRESS_KEY } from "@/src/progress/local";
@@ -502,8 +502,20 @@ describe("PlayScreen Timed: bringing the stamped stub into view", () => {
   });
 
   // Outside Timed an answer brings the slip into view instead (review finding U44): one smooth scroll, which
-  // stops at the slip's top (0 here, jsdom has no layout; PlayScreenScroll.test.tsx sets the geometry).
+  // stops at the slip's top (0 here, jsdom has no layout; PlayScreenScroll.test.tsx sets the geometry). The
+  // slip is given a height so that it runs under the action row (the stage here is 0 tall): a slip that ends
+  // above the row leaves the ticket where it is.
   it("scrolls once to the slip after an answer outside Timed, not to the end of the ticket", async () => {
+    const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.matches("[data-slip]") ? 100 : 0;
+      },
+    });
+    onTestFinished(() => {
+      if (originalOffsetHeight) Object.defineProperty(HTMLElement.prototype, "offsetHeight", originalOffsetHeight);
+    });
     await start(harness(pendingFor("classic")));
     scrolls = [];
     give(true);

@@ -34,7 +34,7 @@ import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, ty
 import { LeaveDialog } from "./LeaveDialog";
 import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
-import { keyScroll, slipScroll, spanInTicket, statementScroll, visibleHeight } from "./ticketScroll";
+import { gapAboveRow, keyScroll, slipScroll, spanInTicket, statementScroll, visibleHeight } from "./ticketScroll";
 import { useClock } from "./useClock";
 import { browserPlayServices, useRound, type PlayServices, type TicketInfo } from "./useRound";
 import { useSwipe } from "./useSwipe";
@@ -369,16 +369,24 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     scroller?.scrollTo?.({ top: scroller.scrollHeight, behavior: reducedRef.current ? "instant" : "smooth" });
   }, [stubStamped, round.index]);
 
-  // The other modes: after an answer the ticket scrolls to its end, which is the slip, so the answer, its stamp
-  // (New best, the deciding wrong answer), the explanation and the source show above the action row, which
-  // hides what lies under it. A slip taller than the stage stops at its top, keeping the verdict row in view.
-  // Where the ticket fits the stage (390 by 844, most cards) there is nothing to scroll.
+  // The other modes: after an answer, when part of the slip lies under the action row (or above the stage),
+  // the ticket scrolls to its end, which is the slip, so the answer, its stamp (New best, the deciding wrong
+  // answer), the explanation and the source show above the row, which hides what lies under it. A slip taller
+  // than the stage stops at its top, keeping the verdict row in view. A slip that already ends above the row,
+  // in the gap over it at worst, leaves the ticket where it is: that is most cards at 390 by 844, even where
+  // the ticket is a few pixels taller than the stage (see slipScroll).
   useEffect(() => {
     if (!answered || timed) return;
     const scroller = scrollerRef.current;
     const slip = scroller?.querySelector<HTMLElement>("[data-slip]");
     if (!scroller || !slip) return;
-    const top = slipScroll(spanInTicket(slip, scroller).top, scroller.scrollHeight - scroller.clientHeight);
+    const top = slipScroll(spanInTicket(slip, scroller), {
+      top: scroller.scrollTop,
+      visible: visibleHeight(scroller),
+      gap: gapAboveRow(scroller),
+      max: scroller.scrollHeight - scroller.clientHeight,
+    });
+    if (top === null) return;
     scroller.scrollTo?.({ top, behavior: reducedRef.current ? "instant" : "smooth" });
   }, [answered, timed, round.index]);
 

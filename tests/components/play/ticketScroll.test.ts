@@ -17,16 +17,38 @@ describe("statementScroll: a new card", () => {
 });
 
 describe("slipScroll: after an answer", () => {
+  // A stage 300 tall at the top of the ticket, then the 12 px gap above the action row; the ticket scrolls to 340.
+  const at = { top: 0, visible: 300, gap: 12, max: 340 };
+
   it("scrolls to the end of the ticket when the slip fits the stage", () => {
-    expect(slipScroll(500, 340)).toBe(340);
+    expect(slipScroll({ top: 500, bottom: 620 }, at)).toBe(340);
   });
 
   it("stops at the top of a slip taller than the stage", () => {
-    expect(slipScroll(300, 340)).toBe(300);
+    expect(slipScroll({ top: 300, bottom: 640 }, at)).toBe(300);
   });
 
   it("does not move a ticket that fits", () => {
-    expect(slipScroll(500, 0)).toBe(0);
+    expect(slipScroll({ top: 200, bottom: 300 }, { ...at, max: 0 })).toBeNull();
+  });
+
+  it("does not move the ticket when the slip ends in the gap above the action row, where nothing hides it", () => {
+    expect(slipScroll({ top: 200, bottom: 303 }, { ...at, max: 3 })).toBeNull();
+    expect(slipScroll({ top: 200, bottom: 312 }, at)).toBeNull();
+    expect(slipScroll({ top: 300, bottom: 452 }, { ...at, top: 140 })).toBeNull();
+  });
+
+  it("scrolls once the slip runs under the action row itself", () => {
+    expect(slipScroll({ top: 200, bottom: 313 }, at)).toBe(200);
+    expect(slipScroll({ top: 200, bottom: 313 }, { ...at, max: 13 })).toBe(13);
+  });
+
+  it("scrolls back up to a slip that starts above the stage", () => {
+    expect(slipScroll({ top: 100, bottom: 200 }, { ...at, top: 150 })).toBe(100);
+  });
+
+  it("stays at 0 when there is nothing to scroll", () => {
+    expect(slipScroll({ top: 200, bottom: 400 }, { ...at, max: 0 })).toBe(0);
   });
 });
 
