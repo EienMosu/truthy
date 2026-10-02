@@ -369,3 +369,29 @@ export async function expectPass(page: Page, theme: TokenTheme): Promise<void> {
   expect(await computed(paper, "backgroundImage")).toContain(tokenRgb(theme, "surface-raised"));
   expect(await computed(page.locator("[data-boarding-pass]").first(), "color")).toBe(tokenRgb(theme, "ink"));
 }
+
+/**
+ * Opens /play straight on a round of CLF / SEC in this class, as the start flow hands it over, with the
+ * stored record for that route and class (none when null). Skips the start flow for specs about the round.
+ */
+export async function openPendingRound(page: Page, mode: "classic" | "streak" | "lives" | "timed", record: number | null = null): Promise<void> {
+  await page.addInitScript(
+    ({ mode, record }) => {
+      const route = { deckId: "aws-clf-c02", sectionId: "SEC" };
+      sessionStorage.setItem("truthy.pending.v1", JSON.stringify({ route, mode }));
+      if (localStorage.getItem("truthy.progress.v1") === null) {
+        const records = record === null ? {} : { [`${route.deckId}/${route.sectionId}#${mode}`]: record };
+        localStorage.setItem("truthy.progress.v1", JSON.stringify({ version: 1, cards: {}, records, last: null }));
+      }
+    },
+    { mode, record },
+  );
+  await page.goto("/play");
+}
+
+/** The centre of an element on screen. */
+export async function centreOf(locator: Locator): Promise<{ x: number; y: number }> {
+  const box = await locator.boundingBox();
+  if (box === null) throw new Error("The element is not on screen");
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+}

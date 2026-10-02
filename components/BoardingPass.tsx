@@ -4,7 +4,7 @@
 // (shadow box, carrier band, legs, field grid, a body, the perforation and a lower part); the game fills
 // the body with PassStatement and the lower part with PassStub (question) or PassSlip (answered).
 // The result screen reuses the shell with its own body and lower part (PassLower gives the notched paper).
-import { motion, useReducedMotion, type Variants } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import type { CSSProperties, ReactNode, Ref } from "react";
 import { EASE, EASE_IN, FALL } from "./easing";
 import { Stamp } from "./Stamp";
@@ -308,7 +308,10 @@ export interface PassStubProps {
   cardLabel: string;
   /** The data the barcode is drawn from (the card id). */
   barcode: string;
-  /** A stamp drawn on the stub, centred 96 px from its top (Timed: the verdict, Time is up). */
+  /**
+   * A stamp drawn on the stub, centred 96 px from its top (Timed: the verdict, Time is up). It sits in a presence
+   * of its own, so the stub's AnimatePresence initial={false} (a Timed card is dealt whole) does not stop it landing.
+   */
   stamp?: ReactNode;
   /** One centred line in place of "← False / swipe to board / True →"; the intent stamps are left out with it. */
   hint?: string;
@@ -358,7 +361,9 @@ export function PassStub({ routeLine, cardLabel, barcode, stamp, hint, className
           )}
         </PassLower>
         {stamp === undefined ? null : (
-          <div className="pointer-events-none absolute top-[96px] left-1/2 -translate-x-1/2 -translate-y-1/2">{stamp}</div>
+          <div className="pointer-events-none absolute top-[96px] left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <AnimatePresence>{stamp}</AnimatePresence>
+          </div>
         )}
         {hint === undefined ? <IntentStamps /> : null}
       </div>
@@ -404,43 +409,51 @@ export interface PassSlipProps {
   className?: string;
 }
 
-/** The answer slip revealed under the stub: the right answer, the verdict stamp, the explanation and the source. */
+/**
+ * The answer slip revealed under the stub: the right answer, the verdict stamp, the explanation and the source.
+ * It mounts with the answer, inside a card that may have been mounted by an AnimatePresence with
+ * initial={false} (the Timed swap). Motion blocks the first animation of everything under such a presence for
+ * as long as it stays, so the slip opens a presence of its own: its fade (reduced motion) and its stamp's
+ * landing always play. PassStub does the same for its stamp.
+ */
 export function PassSlip({ answer, correct, explanation, source, animateStamp = false, newBest = false, className }: PassSlipProps) {
   const reduced = useReducedMotion() ?? false;
   return (
-    <motion.div
-      data-slip=""
-      className={className}
-      initial={reduced ? { opacity: 0 } : false}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.14 }}
-    >
-      <PassLower tone="sunk" className="flex h-full flex-col px-(--size-ticket-inset) pt-(--space-18) pb-(--space-12)">
-        <div className="flex min-h-[60px] items-center justify-between gap-(--space-12)">
-          <p className="m-0 font-(family-name:--type-answer-label-family) text-(length:--type-answer-label-size) leading-(--type-answer-label-line-height) font-(--type-answer-label-weight) text-(--color-ink-muted)">
-            The answer is
-            <b className="mt-(--space-2) block font-(family-name:--type-answer-value-family) text-(length:--type-answer-value-size) leading-(--type-answer-value-line-height) font-(--type-answer-value-weight) tracking-(--type-answer-value-letter-spacing) text-(--color-ink)">
-              {answer ? "True" : "False"}
-            </b>
+    <AnimatePresence>
+      <motion.div
+        data-slip=""
+        className={className}
+        initial={reduced ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.14 }}
+      >
+        <PassLower tone="sunk" className="flex h-full flex-col px-(--size-ticket-inset) pt-(--space-18) pb-(--space-12)">
+          <div className="flex min-h-[60px] items-center justify-between gap-(--space-12)">
+            <p className="m-0 font-(family-name:--type-answer-label-family) text-(length:--type-answer-label-size) leading-(--type-answer-label-line-height) font-(--type-answer-label-weight) text-(--color-ink-muted)">
+              The answer is
+              <b className="mt-(--space-2) block font-(family-name:--type-answer-value-family) text-(length:--type-answer-value-size) leading-(--type-answer-value-line-height) font-(--type-answer-value-weight) tracking-(--type-answer-value-letter-spacing) text-(--color-ink)">
+                {answer ? "True" : "False"}
+              </b>
+            </p>
+            <Stamp verdict={!correct ? "wrong" : newBest ? "new-best" : "correct"} animate={animateStamp} />
+          </div>
+          <p className="m-0 mt-(--space-10) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight) text-(--color-ink)">
+            {explanation}
           </p>
-          <Stamp verdict={!correct ? "wrong" : newBest ? "new-best" : "correct"} animate={animateStamp} />
-        </div>
-        <p className="m-0 mt-(--space-10) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight) text-(--color-ink)">
-          {explanation}
-        </p>
-        <a
-          href={source.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${source.title} (opens in a new tab)`}
-          className="mt-auto flex min-h-(--size-touch-min) items-center gap-(--space-8) font-(family-name:--type-mono-data-strong-family) text-[13.5px] leading-(--type-mono-data-strong-line-height) font-(--type-mono-data-strong-weight) text-(--color-true) no-underline"
-        >
-          <BookIcon className="flex-none" />
-          <u className="decoration-[1.5px] underline-offset-[3px]">{source.title}</u>
-          <span aria-hidden="true">→</span>
-        </a>
-      </PassLower>
-    </motion.div>
+          <a
+            href={source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${source.title} (opens in a new tab)`}
+            className="mt-auto flex min-h-(--size-touch-min) items-center gap-(--space-8) font-(family-name:--type-mono-data-strong-family) text-[13.5px] leading-(--type-mono-data-strong-line-height) font-(--type-mono-data-strong-weight) text-(--color-true) no-underline"
+          >
+            <BookIcon className="flex-none" />
+            <u className="decoration-[1.5px] underline-offset-[3px]">{source.title}</u>
+            <span aria-hidden="true">→</span>
+          </a>
+        </PassLower>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
