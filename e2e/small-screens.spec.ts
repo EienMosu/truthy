@@ -564,6 +564,115 @@ for (const width of [320, 360]) {
   });
 }
 
+// A phone held sideways, and a page zoomed to 200 percent and more: under 568 tall the fixed start layout does
+// not fit, so the start screen scrolls as one column (review finding U79). A player reaches every control the
+// way a finger does: dragging the middle of the screen, which scrolls the scroll container under the finger if
+// there is one a finger can scroll, until the control is wholly on screen and on top where it is tapped, then
+// tapping it. Nothing scrolls it into view for them, as Playwright's own tap() would (it also scrolls boxes
+// with overflow: hidden). Mobile WebKit has no wheel, so the drag is played as a scrollBy on that container.
+async function dragPage(page: Page, dy: number): Promise<void> {
+  await page.evaluate((delta) => {
+    let node: Element | null = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+    for (; node !== null; node = node.parentElement) {
+      const overflow = getComputedStyle(node).overflowY;
+      if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight) {
+        node.scrollBy(0, delta);
+        return;
+      }
+    }
+    const root = getComputedStyle(document.documentElement).overflowY;
+    const body = getComputedStyle(document.body).overflowY;
+    if (root !== "hidden" && body !== "hidden") window.scrollBy(0, delta);
+  }, dy);
+}
+
+async function tapLikeAPlayer(page: Page, target: Locator): Promise<void> {
+  const viewport = page.viewportSize();
+  if (viewport === null) throw new Error("No viewport");
+  for (let tries = 0; tries < 30; tries += 1) {
+    const box = await target.boundingBox();
+    if (box !== null && box.y >= 0 && box.y + box.height <= viewport.height) {
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height / 2;
+      const onTop = await target.evaluate((element, [px, py]) => {
+        const top = document.elementFromPoint(px ?? 0, py ?? 0);
+        return top !== null && (top === element || element.contains(top));
+      }, [x, y]);
+      if (onTop) {
+        await page.touchscreen.tap(x, y);
+        return;
+      }
+    }
+    await dragPage(page, box !== null && box.y < 0 ? -80 : 80);
+    await page.waitForTimeout(80);
+  }
+  throw new Error(`A player cannot reach ${String(target)}: it never comes wholly on screen and on top`);
+}
+
+async function tapThrough(page: Page, steps: readonly [string | RegExp, string][]): Promise<void> {
+  for (const [name, next] of steps) {
+    await tapLikeAPlayer(page, page.locator("[data-step]:not([inert])").getByRole("button", { name }));
+    await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText(next);
+    await page.waitForTimeout(SETTLE_MS);
+  }
+}
+
+const ROUTE_BY_TAPS: readonly [string | RegExp, string][] = [
+  [CLF_SECURITY.area, "Choose a platform"],
+  [CLF_SECURITY.platform, "Choose a deck"],
+  [CLF_SECURITY.deck, "Choose a section"],
+  [CLF_SECURITY.section ?? "", "Choose how to play"],
+  [CLF_SECURITY.mode, "Your pass is ready"],
+];
+
+for (const viewport of [
+  { width: 844, height: 390 },
+  { width: 734, height: 340 },
+  { width: 667, height: 375 },
+  { width: 640, height: 280 },
+]) {
+  test.describe(`a phone turned sideways, ${viewport.width} by ${viewport.height}`, () => {
+    test.use({ viewport });
+
+    test("a first-run player chooses a route and starts the round by touch", async ({ page }) => {
+      await openHome(page);
+      await tapThrough(page, ROUTE_BY_TAPS);
+      await tapLikeAPlayer(page, page.getByRole("button", { name: "Start round" }));
+      await expect(page).toHaveURL(/\/play$/);
+    });
+
+    test("a returning player chooses a route by touch, and the continue line does not take the taps", async ({ page }) => {
+      await page.addInitScript(() =>
+        localStorage.setItem(
+          "truthy.progress.v1",
+          JSON.stringify({ version: 1, cards: {}, records: {}, last: { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic", score: 7, total: 10 } }),
+        ),
+      );
+      await openHome(page);
+      await expect(page.getByRole("button", { name: /^Continue: / })).toBeAttached();
+      await tapThrough(page, ROUTE_BY_TAPS);
+      await tapLikeAPlayer(page, page.getByRole("button", { name: "Start round" }));
+      await expect(page).toHaveURL(/\/play$/);
+    });
+
+    test("a returning player continues and starts the round by touch", async ({ page }) => {
+      await page.addInitScript(() =>
+        localStorage.setItem(
+          "truthy.progress.v1",
+          JSON.stringify({ version: 1, cards: {}, records: {}, last: { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic", score: 7, total: 10 } }),
+        ),
+      );
+      await openHome(page);
+      await page.waitForTimeout(SETTLE_MS);
+      await tapLikeAPlayer(page, page.getByRole("button", { name: /^Continue: Cloud Practitioner, Security and compliance, Classic\./ }));
+      await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Your pass is ready");
+      await page.waitForTimeout(SETTLE_MS);
+      await tapLikeAPlayer(page, page.getByRole("button", { name: "Start round" }));
+      await expect(page).toHaveURL(/\/play$/);
+    });
+  });
+}
+
 // Turning the phone in the middle of a round: the round goes on where it was (no reload, no new deal).
 test.describe("turning the phone", () => {
   test.use({ viewport: { width: 390, height: 844 } });

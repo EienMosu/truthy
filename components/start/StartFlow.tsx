@@ -348,6 +348,12 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   useLayoutEffect(() => {
     if (view.seq > 0) shownAt.current = services.now();
   }, [view.seq, services]);
+
+  // On a short screen the start screen scrolls as one column (globals.css, "short"): a step that arrives starts
+  // at its top, with the pass and the new title in view. Elsewhere the screen does not scroll and this does nothing.
+  useLayoutEffect(() => {
+    if (view.seq > 0 && mainRef.current) mainRef.current.scrollTop = 0;
+  }, [view.seq]);
   const settled = () => services.now() - shownAt.current >= SWIPE.settleMs;
 
   // Focus: the new step's title, or (going back) the card chosen before.
@@ -495,12 +501,22 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   };
 
   return (
-    <main ref={mainRef} className="flex min-h-0 flex-1 flex-col" inert={boarding}>
+    <main
+      ref={mainRef}
+      className={[
+        "flex min-h-0 flex-1 flex-col",
+        // Short screens: the column scrolls, over the whole frame (its padding moves inside, so the top 52 and
+        // bottom 34 scroll with the content and every position stays the same at the top of the column).
+        "short:-mx-(--size-gutter) short:-mt-(--size-safe-top) short:-mb-(--size-safe-bottom) short:overflow-y-auto",
+        "short:px-(--size-gutter) short:pt-(--size-safe-top) short:pb-(--size-safe-bottom)",
+      ].join(" ")}
+      inert={boarding}
+    >
       <SkyBackdrop lowerCloud="start" />
 
       {/* Top zone, 176 tall: the logo on step 1, the Back pill and the pass from step 2 on (same place),
-          and the theme switch at the top right on every step. */}
-      <header className="relative z-[7] grid h-(--size-start-top-zone) flex-none">
+          and the theme switch at the top right on every step. On a short screen it is as tall as what it holds. */}
+      <header className="relative z-[7] grid h-(--size-start-top-zone) flex-none short:h-auto">
         <AnimatePresence initial={false}>
           {step === 1 ? (
             <motion.div key="brand" className="[grid-area:1/1] pt-9" {...swapMotion(reduced, -12)}>
@@ -552,7 +568,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       </header>
 
       {/* Main area: the title of the step and its options, one step at a time in the same place. */}
-      <section className={`mt-(--space-20) grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] ${returning ? "mb-(--size-foot-gap)" : ""}`}>
+      <section className={`mt-(--space-20) grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] short:flex-none ${returning ? "mb-(--size-foot-gap) short:mb-0" : ""}`}>
         <AnimatePresence initial={false} custom={view.dir}>
           <StepPanel key={step} step={step} dir={view.dir} reduced={reduced}>
             {renderOptions()}
@@ -561,8 +577,9 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       </section>
 
       {/* Foot zone: where a game's action row sits. The continue line on step 1, Start round on step 6. It lies
-          over the bottom of the step's list and is empty on most steps, so only what it holds takes a tap. */}
-      <div className="pointer-events-none absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)]">
+          over the bottom of the step's list and is empty on most steps, so only what it holds takes a tap. On a
+          short screen it follows the list in the column, and takes no room while it is empty. */}
+      <div className="pointer-events-none absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)] short:static short:mb-(--space-4) short:empty:hidden">
         <AnimatePresence initial={false}>
           {returning ? (
             <motion.div key="continue" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
@@ -744,7 +761,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
       <motion.div
         data-step={step}
         inert={!present}
-        className={`flex min-h-0 flex-col [grid-area:1/1] ${step === 6 ? "pt-(--size-ready-offset) tight:pt-[calc(var(--size-ready-offset)-var(--space-24))]" : ""}`}
+        className={`flex min-h-0 flex-col [grid-area:1/1] ${step === 6 ? "pt-(--size-ready-offset) tight:pt-[calc(var(--size-ready-offset)-var(--space-24))] short:pt-0" : ""}`}
         variants={reduced ? PANEL_REDUCED : PANEL}
         initial="hidden"
         animate="shown"
@@ -763,6 +780,8 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
           data-more={more ? "" : undefined}
           className={[
             "-mx-(--space-8) mt-(--space-8) min-h-0 flex-1 overflow-y-auto px-(--space-8) pt-(--space-6) pb-(--space-24) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            // Short screens: the list takes its own height and the whole column scrolls instead.
+            "short:flex-none short:overflow-visible",
             "data-more:[mask-image:linear-gradient(to_bottom,var(--color-ink)_calc(100%_-_28px_-_var(--list-fade-lift,0px)),transparent_calc(100%_-_var(--list-fade-lift,0px)))]",
           ].join(" ")}
         >

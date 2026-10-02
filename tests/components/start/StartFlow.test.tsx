@@ -702,3 +702,33 @@ describe("StartFlow: the cue that a list goes on", () => {
     });
   });
 });
+
+// Review finding U79: under 568 tall the start screen scrolls as one column. A step that arrives starts at the
+// top of the column, with the pass and the new title in view (and the travelling name lands where it is measured).
+describe("StartFlow: the column of a short screen", () => {
+  function scrollable(main: HTMLElement): { top: number } {
+    const state = { top: 0 };
+    Object.defineProperty(main, "scrollTop", {
+      configurable: true,
+      get: () => state.top,
+      set: (value: number) => {
+        state.top = value;
+      },
+    });
+    return state;
+  }
+
+  it("goes back to the top of the column when a step arrives, forward or back", async () => {
+    await start();
+    const main = document.querySelector("main");
+    if (!main) throw new Error("No main");
+    const scroll = scrollable(main);
+    scroll.top = 240;
+    await choose("Cloud, 2 decks", "Choose a platform");
+    expect(scroll.top).toBe(0);
+    scroll.top = 180;
+    fireEvent.click(screen.getByRole("button", { name: "Back to areas" }));
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
+    expect(scroll.top).toBe(0);
+  });
+});

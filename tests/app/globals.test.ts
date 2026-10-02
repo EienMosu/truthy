@@ -61,6 +61,13 @@ describe("app/globals.css", () => {
     expect(frame).toContain("overflow: hidden;");
   });
 
+  it("has a tight variant for screens under 600 tall and a short one for screens under 568, short declared last so it wins", () => {
+    const tight = css.indexOf("@custom-variant tight (@media (max-height: 599px));");
+    const short = css.indexOf("@custom-variant short (@media (max-height: 567px));");
+    expect(tight).toBeGreaterThan(0);
+    expect(short).toBeGreaterThan(tight);
+  });
+
   it("uses token colours only", () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
   });
