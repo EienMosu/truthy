@@ -138,3 +138,54 @@ test("the close button on a decided round asks, and Keep playing leads to See re
   await seeResults(page);
   expect((await storedProgress(page)).records["aws-clf-c02/SEC#streak"]).toBe(2);
 });
+
+// Review finding U57 (design system 8, Accessibility: on step 7 Escape leaves the round): Escape does what
+// the close button does. Before the first answer it leaves at once; after it, it opens "Leave round?", where
+// Escape keeps playing. A held Escape opens the sheet once and leaves it open.
+test("Escape leaves at once before the first answer", async ({ page }) => {
+  await openHome(page);
+  await chooseRoute(page, CLF_SECURITY);
+  await startRound(page);
+  await waitForCard(page, await deckAnswers(page, CLF_ID), 1);
+
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(stepTitle(page)).toHaveText("Choose an area");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("Escape after an answer asks once, Escape in the sheet keeps playing, and a held Escape leaves the sheet open", async ({ page }) => {
+  await openHome(page);
+  await chooseRoute(page, CLF_SECURITY);
+  await startRound(page);
+  const first = await waitForCard(page, await deckAnswers(page, CLF_ID), 1);
+  await page.getByRole("button", { name: "True", exact: true }).click();
+  await expect(verdict(page)).toHaveText(verdictFor(true, first.truth));
+  const next = page.getByRole("button", { name: "Next card" });
+  await expect(next).toBeFocused();
+
+  const dialog = page.getByRole("dialog", { name: "Leave round?" });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Keep playing" })).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(page).toHaveURL(/\/play$/);
+  await expect(verdict(page)).toHaveText(verdictFor(true, first.truth));
+  await expect(page.getByRole("button", { name: "Leave round" })).toBeFocused();
+
+  // Held: the repeats neither close the sheet nor open it again.
+  await page.keyboard.down("Escape");
+  for (let held = 0; held < 1200; held += 33) {
+    await page.waitForTimeout(33);
+    await page.keyboard.down("Escape");
+  }
+  await page.keyboard.up("Escape");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Keep playing" })).toBeFocused();
+
+  await dialog.getByRole("button", { name: "Leave round" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(Object.keys((await storedProgress(page)).cards)).toHaveLength(1);
+});

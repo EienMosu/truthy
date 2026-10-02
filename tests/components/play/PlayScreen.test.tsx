@@ -357,6 +357,58 @@ describe("PlayScreen: leaving", () => {
     expect(status()).toBe("");
   });
 
+  // Review finding U57 (design system 8: on step 7 Escape leaves the round): Escape does what the close
+  // button does.
+  it("leaves at once on Escape before the first answer", async () => {
+    await start();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith("/");
+    expect(parseProgress(h.local.getItem(PROGRESS_KEY)).last).toBeNull();
+  });
+
+  it("asks on Escape after an answer; Escape in the sheet keeps playing", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "True" }));
+    const verdict = status();
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    const dialog = screen.getByRole("dialog", { name: "Leave round?" });
+    await act(async () => {});
+    const stay = within(dialog).getByRole("button", { name: "Keep playing" });
+    expect(document.activeElement).toBe(stay);
+    fireEvent.keyDown(stay, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Leave round" }));
+    expect(status()).toBe(verdict);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("asks on Escape on a decided round too", async () => {
+    await start(harness({ route: { deckId: DECK_ID, sectionId: "SEC" }, mode: "streak" }));
+    fireEvent.click(screen.getByRole("button", { name: currentAnswer() ? "False" : "True" }));
+    expect(screen.getByRole("button", { name: "See results" })).toBeTruthy();
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(screen.getByRole("dialog", { name: "Leave round?" })).toBeTruthy();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("opens the sheet once for a held Escape: its repeats do not close it", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "True" }));
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await act(async () => {});
+    const stay = within(screen.getByRole("dialog")).getByRole("button", { name: "Keep playing" });
+    fireEvent.keyDown(stay, { key: "Escape", repeat: true });
+    await act(async () => {});
+    expect(screen.getByRole("dialog", { name: "Leave round?" })).toBeTruthy();
+  });
+
+  it("ignores Escape with a modifier key", async () => {
+    await start();
+    fireEvent.keyDown(document.body, { key: "Escape", shiftKey: true });
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it("records the answers given so far, but no record, when the player leaves", async () => {
     await start();
     const first = cardByStatement(statementText());

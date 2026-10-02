@@ -7,7 +7,7 @@
 // A finished round shows its result (ResultView), which records it and offers Play again and another route.
 import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Variants } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import { AnswerButtons } from "@/components/AnswerButtons";
 import {
   BoardingPass,
@@ -52,7 +52,7 @@ export interface PlayScreenProps {
 export const NEXT_ARRIVES_MS = 420;
 
 /** The keys the round acts on. Held down, only the first keydown counts (see the repeat guard in RoundView). */
-const HELD_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight", "Enter"]);
+const HELD_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight", "Enter", "Escape"]);
 
 // The card follows --drag-x (set by useSwipe): translateX(dx) and a rotation of dx / 18 degrees.
 const CARD_TRANSFORM: CSSProperties = {
@@ -379,8 +379,8 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
 
   // A held key: the system repeats its keydown, and a repeat is not a new press. It is cancelled before
   // anything sees it (capture on window), so it neither answers a card nor presses the focused True, False or
-  // Next card (the browser presses a focused button on Enter unless the keydown is cancelled). One press, one
-  // answer or one action.
+  // Next card (the browser presses a focused button on Enter unless the keydown is cancelled), nor closes the
+  // leave sheet that its first Escape opened. One press, one answer or one action.
   useEffect(() => {
     const onRepeat = (event: KeyboardEvent) => {
       if (!event.repeat || !HELD_KEYS.has(event.key)) return;
@@ -391,12 +391,26 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     return () => window.removeEventListener("keydown", onRepeat, { capture: true });
   }, []);
 
+  // The close control (and Escape): before the first answer it leaves at once, after it it asks once.
+  const requestLeave = () => {
+    if (round.answers.length === 0) onLeave();
+    else setConfirming(true);
+  };
+  const requestLeaveRef = useRef(requestLeave);
+  useLayoutEffect(() => {
+    requestLeaveRef.current = requestLeave;
+  });
+
   // Keyboard: left arrow answers False, right arrow True; Enter is the action after an answer
-  // (unless focus is on a link or a button, which handle Enter themselves).
+  // (unless focus is on a link or a button, which handle Enter themselves); Escape is the close control
+  // (design system 8). While the sheet is open it handles Escape itself.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || confirming || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      if (round.phase === "question" && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        requestLeaveRef.current();
+      } else if (round.phase === "question" && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
         event.preventDefault();
         answer(event.key === "ArrowRight");
       } else if (awaitsNext && event.key === "Enter") {
@@ -416,11 +430,6 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     now,
     onSwipe: answer,
   });
-
-  const requestLeave = () => {
-    if (round.answers.length === 0) onLeave();
-    else setConfirming(true);
-  };
 
   if (!card) return null;
 
