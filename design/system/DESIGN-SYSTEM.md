@@ -149,7 +149,7 @@ Inline link (source): Mono 600 13.5, colour `true`, underline 1.5px thick with a
 
 ## 4. Layout
 
-- **Design viewport** 390 × 844. `#app` is a column with padding **52 top, 16 sides, 34 bottom** (`max-width` 390). The page never scrolls. Only a list inside a screen scrolls, and it hides its scrollbar.
+- **Design viewport** 390 × 844. `#app` is a column with padding **52 top, 16 sides, 34 bottom** (`max-width` 390). The page never scrolls. Only a list inside a screen scrolls, and it hides its scrollbar. While more of a start-flow list lies below what it shows, its bottom edge fades out over 28 (the length of the missed-cards fade, as a mask, so it works on any sky and in both themes). Where the fold falls in the gap between two cards or shows only a sliver of the next, the fade ends higher, on the card above, so it always dissolves a card; scrolled to its end, or when everything fits, the edge is plain.
 - **Safe zones.** The contract keeps the top 50px and the bottom 30px free of interactive content. The 52/34 padding stands in for the status bar and the home indicator. Natively, use the system safe-area insets and keep at least the same visual distance (see Open questions).
 - **Game, result and mode screens:** header row 56 → stage (flex, `margin-top` 12) → actions row 64 (`margin-top` 12). The ticket content inset is **20**. Measured on the reference: header at y 52, ticket at y 120 to 728 (carrier 44, legs 96, field grid 52, statement 188, stub 228), actions at y 746 to 810.
 - **Start flow (start.html):** three stacked zones, each holding one state at a time in the same place.

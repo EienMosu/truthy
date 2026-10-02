@@ -166,3 +166,87 @@ for (const viewport of [
     }
   });
 }
+
+/** The scrolling list of the current step and whether it shows the cue that more lies below: its bottom edge fades out. */
+async function listCue(page: Page): Promise<{ marked: boolean; mask: string }> {
+  return currentStep(page).locator("[data-option]").first().evaluate((first) => {
+    const list = first.parentElement?.parentElement;
+    if (!list) throw new Error("No list around the options");
+    const style = getComputedStyle(list) as CSSStyleDeclaration & { webkitMaskImage?: string };
+    const mask = style.maskImage && style.maskImage !== "none" ? style.maskImage : (style.webkitMaskImage ?? "none");
+    return { marked: list.hasAttribute("data-more"), mask };
+  });
+}
+
+async function expectCue(page: Page, shown: boolean): Promise<void> {
+  await expect.poll(async () => (await listCue(page)).marked, `the list is marked as going on: ${shown}`).toBe(shown);
+  const { mask } = await listCue(page);
+  if (shown) expect(mask).toContain("gradient");
+  else expect(mask).toBe("none");
+}
+
+/** The 28 px fade lies over a card, not over the gap between two cards or a sliver of one. */
+async function expectFadeOverACard(page: Page): Promise<void> {
+  const { end, cards } = await currentStep(page).locator("[data-option]").first().evaluate((first) => {
+    const list = first.parentElement?.parentElement;
+    if (!list) throw new Error("No list around the options");
+    const lift = parseFloat(list.style.getPropertyValue("--list-fade-lift") || "0");
+    const options = [...list.querySelectorAll<HTMLElement>("[data-option]")];
+    return {
+      end: list.getBoundingClientRect().bottom - lift,
+      cards: options.map((o) => ({ top: o.getBoundingClientRect().top, bottom: o.getBoundingClientRect().bottom })),
+    };
+  });
+  const under = cards.find((card) => card.top <= end - 28 && card.bottom >= end - 2);
+  expect(under, `a card lies under the fade ending at ${end}: ${JSON.stringify(cards)}`).toBeDefined();
+}
+
+// U118: a list that goes on below the fold fades out at its bottom edge, so the cards under it are not taken
+// for missing; scrolled to its end, or when everything fits, the edge is plain.
+test.describe("the cue that a step's list goes on", () => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    test.describe(`on a ${viewport.width} by ${viewport.height} screen`, () => {
+      test.use({ viewport });
+
+      test("the eight sections of RND: the list fades out until it is scrolled to REV", async ({ page }) => {
+        await openHome(page);
+        await option(page, /^Frontend, /).click();
+        await atStep(page, "Choose a platform");
+        await option(page, /^Next\.js, /).click();
+        await atStep(page, "Choose a deck");
+        await option(page, /^RND, /).click();
+        await atStep(page, "Choose a section");
+        await page.waitForTimeout(300);
+        await expectCue(page, true);
+        await expectFadeOverACard(page);
+        await scrollListToEnd(page);
+        await expect(option(page, /^REV, /)).toBeInViewport({ ratio: 1 });
+        await expectCue(page, false);
+      });
+
+      test("the five options of CLF fit: no fade", async ({ page }) => {
+        await toSections(page);
+        await expectCue(page, false);
+      });
+    });
+  }
+
+  test.describe("on a 320 by 568 screen", () => {
+    test.use({ viewport: { width: 320, height: 568 } });
+
+    test("the four classes: the list fades out until it is scrolled to Timed", async ({ page }) => {
+      await toSections(page);
+      await option(page, CLF_SECURITY.section ?? "").click();
+      await atStep(page, "Choose how to play");
+      await page.waitForTimeout(300);
+      await expectCue(page, true);
+      await expectFadeOverACard(page);
+      await scrollListToEnd(page);
+      await expect(option(page, /^Timed\. /)).toBeInViewport({ ratio: 1 });
+      await expectCue(page, false);
+    });
+  });
+});

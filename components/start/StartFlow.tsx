@@ -33,6 +33,7 @@ import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDec
 import { SWIPE } from "@/src/input/swipe";
 import { bestFor } from "@/src/progress/progress";
 import { ContinueLine } from "./ContinueLine";
+import { useListCue } from "./listCue";
 import { continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "./useCatalog";
 
 // ---------- services ----------
@@ -735,6 +736,9 @@ const ItemMotion = createContext<{ variants: Variants | undefined; dir: Directio
 function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
   const present = useIsPresent();
   const item = reduced ? undefined : ITEM;
+  const listRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const more = useListCue(listRef, contentRef);
   return (
     <ItemMotion.Provider value={{ variants: item, dir }}>
       <motion.div
@@ -750,9 +754,21 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
         <motion.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={item} custom={dir}>
           {STEP_TITLE[step]}
         </motion.h2>
-        {/* The list scrolls when it is taller than the screen; its margin and padding leave room for the focus ring. */}
-        <div className="-mx-(--space-8) mt-(--space-8) min-h-0 flex-1 overflow-y-auto px-(--space-8) pt-(--space-6) pb-(--space-24) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex flex-col gap-(--space-12)">{children}</div>
+        {/* The list scrolls when it is taller than the screen; its margin and padding leave room for the focus ring.
+            While more lies below what it shows, it fades out over 28 px at its bottom, or a little higher so that
+            the fade lies over a card (./listCue.ts). A mask: right on any sky, in both themes. */}
+        <div
+          ref={listRef}
+          data-list=""
+          data-more={more ? "" : undefined}
+          className={[
+            "-mx-(--space-8) mt-(--space-8) min-h-0 flex-1 overflow-y-auto px-(--space-8) pt-(--space-6) pb-(--space-24) [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            "data-more:[mask-image:linear-gradient(to_bottom,var(--color-ink)_calc(100%_-_28px_-_var(--list-fade-lift,0px)),transparent_calc(100%_-_var(--list-fade-lift,0px)))]",
+          ].join(" ")}
+        >
+          <div ref={contentRef} className="flex flex-col gap-(--space-12)">
+            {children}
+          </div>
         </div>
       </motion.div>
     </ItemMotion.Provider>

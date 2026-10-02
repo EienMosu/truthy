@@ -642,3 +642,63 @@ describe("StartFlow: the theme switch", () => {
     await waitFor(() => expect(heading()).toBe("Choose a deck"));
   });
 });
+
+// Review finding U118: a step's list that goes on below the fold fades out at its bottom edge. jsdom has no
+// layout, so each list here is 400 tall and its cards together are as tall as `cardsHeight` says.
+describe("StartFlow: the cue that a list goes on", () => {
+  function listOfStep(): HTMLElement {
+    const list = document.querySelector<HTMLElement>("[data-step]:not([inert]) [data-list]");
+    if (!list) throw new Error("No list on the current step");
+    return list;
+  }
+
+  async function withCardsHeight(cardsHeight: number, run: () => Promise<void>) {
+    const rect = HTMLElement.prototype.getBoundingClientRect;
+    const clientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
+    const offsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.hasAttribute("data-list")) return DOMRect.fromRect({ x: 0, y: 292, width: 358, height: 400 });
+      if (this.parentElement?.hasAttribute("data-list")) return DOMRect.fromRect({ x: 0, y: 298, width: 358, height: cardsHeight });
+      return rect.call(this);
+    };
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.hasAttribute("data-list") ? 400 : 0;
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.parentElement?.hasAttribute("data-list") ? cardsHeight : 0;
+      },
+    });
+    try {
+      await run();
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = rect;
+      if (clientHeight) Object.defineProperty(HTMLElement.prototype, "clientHeight", clientHeight);
+      if (offsetHeight) Object.defineProperty(HTMLElement.prototype, "offsetHeight", offsetHeight);
+    }
+  }
+
+  it("marks the list of classes and fades its bottom edge when the cards run on below it", async () => {
+    await withCardsHeight(480, async () => {
+      await start();
+      await toClasses();
+      await act(async () => {});
+      const list = listOfStep();
+      expect(list.hasAttribute("data-more")).toBe(true);
+      expect(list.className).toContain("data-more:[mask-image:linear-gradient(to_bottom,var(--color-ink)_calc(100%_-_28px_-_var(--list-fade-lift,0px)),transparent_calc(100%_-_var(--list-fade-lift,0px)))]");
+    });
+  });
+
+  it("leaves the edge plain when the cards fit", async () => {
+    await withCardsHeight(300, async () => {
+      await start();
+      await toClasses();
+      await act(async () => {});
+      expect(listOfStep().hasAttribute("data-more")).toBe(false);
+    });
+  });
+});
