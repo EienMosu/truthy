@@ -863,7 +863,7 @@ git commit -m "chore: add CI gates, Vercel region and README"
 
 - [ ] **Step 33: Move content and design into the repository**
 
-This moves the folders; nothing is copied. `OLD_FOLDER` (exported, step 35 uses it again) is the former content working folder and `EARLIER_FOLDER` the project folder's earlier location; `OLD_FOLDER` keeps only its `.superpowers/` folder afterwards (leave it alone).
+This moves the folders; nothing is copied. `OLD_FOLDER` is the former content working folder and `EARLIER_FOLDER` the project folder's earlier location; export both, step 35 uses them again (with one unset, its rewrite would delete every slash); `OLD_FOLDER` keeps only its `.superpowers/` folder afterwards (leave it alone).
 
 ```bash
 test ! -e content && test ! -e design && mv "$OLD_FOLDER/content" ./content && mv "$OLD_FOLDER/design" ./design && ls content design
@@ -940,6 +940,7 @@ Five of them hold it inside a scratchpad path, which the scratchpad rewrite repl
 Run (macOS and Linux; `--null` with `xargs -0` keeps file names with spaces safe, and only files that contain a match are touched):
 
 ```bash
+: "${OLD_FOLDER:?export OLD_FOLDER (step 33)}" "${EARLIER_FOLDER:?export EARLIER_FOLDER (step 33)}" && export OLD_FOLDER EARLIER_FOLDER
 TMP_ROOT=/private/tmp
 grep -rIlF --null -e "$HOME" -e "$TMP_ROOT/claude-" content design \
   | xargs -0 perl -pi -e 's#\Q$ENV{OLD_FOLDER}\E/##g; s#\Q$ENV{EARLIER_FOLDER}\E/##g; s#/private[/]tmp/claude-[0-9]+/[^/\s"]+/[^/\s"]+/scratchpad/#<scratchpad>/#g; s#\Q$ENV{HOME}\E/#~/#g; s#~/\.claude/projects/-Users-[^/\s]+/[^/\s]+/tool-results/#<session tool-results>/#g'

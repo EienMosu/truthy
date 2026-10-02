@@ -24,10 +24,18 @@ describe("end-to-end configuration", () => {
     for (const project of config.projects ?? []) expect(project.use?.colorScheme, project.name).toBe("light");
   });
 
-  it("serves the production build, not the dev server", () => {
-    const server = Array.isArray(config.webServer) ? config.webServer[0] : config.webServer;
-    expect(server?.command).toBe("pnpm build && pnpm start --port 3100");
-    expect(config.use?.baseURL).toBe("http://localhost:3100");
+  it("serves the production build, not the dev server", async () => {
+    // The default port, whatever E2E_PORT the shell that runs the unit tests has set.
+    vi.stubEnv("E2E_PORT", "");
+    vi.resetModules();
+    try {
+      const { default: plain } = await import("@/playwright.config");
+      const server = Array.isArray(plain.webServer) ? plain.webServer[0] : plain.webServer;
+      expect(server?.command).toBe("pnpm build && pnpm start --port 3100");
+      expect(plain.use?.baseURL).toBe("http://localhost:3100");
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("takes the port from E2E_PORT, so two checkouts can run the specs at once, and 3100 without it", () => {

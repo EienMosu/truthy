@@ -41,4 +41,6 @@ Locally an already running `pnpm start --port 3100` is reused (rebuild it after 
 
 ```bash
 E2E_PORT=3200 pnpm e2e
-``` A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact.
+```
+
+A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact.
