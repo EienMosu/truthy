@@ -16,6 +16,7 @@ import {
   verdict,
   verdictFor,
   waitForCard,
+  waitForQuestion,
   type ClassName,
 } from "./helpers";
 
@@ -188,4 +189,58 @@ test("Escape after an answer asks once, Escape in the sheet keeps playing, and a
   await dialog.getByRole("button", { name: "Leave round" }).click();
   await expect(page).toHaveURL(/\/$/);
   expect(Object.keys((await storedProgress(page)).cards)).toHaveLength(1);
+});
+
+/** Two cards of a round answered right with the buttons, in any mode. */
+async function answerTwo(page: Page): Promise<void> {
+  const answers = await deckAnswers(page, CLF_ID);
+  const first = await answerCard(page, answers, 1, true);
+  await expect(verdict(page)).not.toHaveText("");
+  const action = page.getByRole("button", { name: "Next card" });
+  if (await action.count()) await action.click();
+  await answerCard(page, answers, 2, true, first.statement);
+  await expect(verdict(page)).not.toHaveText("");
+}
+
+/** Every card in the card history was seen once. */
+async function expectSeenOnce(page: Page, cards: number): Promise<void> {
+  const progress = await storedProgress(page);
+  const seen = Object.values(progress.cards).map((card) => (card as { seen: number }).seen);
+  expect(seen).toEqual(Array.from({ length: cards }, () => 1));
+}
+
+// Review finding U2 (spec section 6): the answers of a round that is left stay in the card history also
+// when leaving /play unloads the page: a /play that was opened as its own page and left with back, a
+// player who goes to another site, a reload. The round is saved when the page is hidden for good (pagehide).
+for (const className of ["Classic", "Streak", "Three lives", "Timed"] as const) {
+  test(`back from a /play opened as its own page keeps the answers and sets no record: ${className}`, async ({ page }) => {
+    await openHome(page);
+    await chooseRoute(page, inClass(CLF_SECURITY, className));
+    await startRound(page);
+    await waitForQuestion(page, await deckAnswers(page, CLF_ID));
+    // Leaving before an answer keeps the round for the tab, so /play typed in the address bar opens it again,
+    // this time as a page of its own.
+    await page.getByRole("button", { name: "Leave round" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto("/play");
+    await page.evaluate(() => Object.assign(window, { truthyPlayDocument: true }));
+    await answerTwo(page);
+
+    await page.goBack();
+    expect(await page.evaluate(() => "truthyPlayDocument" in window)).toBe(false);
+    await expectLeftRound(page, className, 2);
+    await expectSeenOnce(page, 2);
+  });
+}
+
+test("going to another site in the middle of a round keeps the answers and sets no record", async ({ page }) => {
+  await openHome(page);
+  await chooseRoute(page, CLF_SECURITY);
+  await startRound(page);
+  await answerTwo(page);
+
+  await page.goto("about:blank");
+  await page.goto("/");
+  await expectLeftRound(page, "Classic", 2);
+  await expectSeenOnce(page, 2);
 });

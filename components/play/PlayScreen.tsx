@@ -148,9 +148,12 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // close control (the phone's back gesture, the browser's back button) unmounts this screen; the cleanup
   // below then leaves the round the same way, so those answers are not lost.
   const unsaved = useRef<RoundState | null>(null);
+  // Set once pagehide has saved the round: from then on it is never saved again.
+  const savedOnHide = useRef(false);
   useEffect(() => {
     const round = status.kind === "ready" ? status.round : null;
-    unsaved.current = round && round.phase !== "finished" && !round.abandoned && round.answers.length > 0 ? round : null;
+    unsaved.current =
+      round && round.phase !== "finished" && !round.abandoned && round.answers.length > 0 && !savedOnHide.current ? round : null;
   });
   useEffect(
     () => () => {
@@ -162,6 +165,30 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     },
     [progressStore],
   );
+  // When leaving unloads the page (a back step to another document, another site, a reload, a closed tab),
+  // no cleanup runs: pagehide leaves the round the same way. A page kept in the back-forward cache can come
+  // back (pageshow, persisted) with that round on screen; its answers are saved, so it is not played on and
+  // the player goes to the start.
+  useEffect(() => {
+    const onPageHide = () => {
+      const round = unsaved.current;
+      if (!round) return;
+      unsaved.current = null;
+      savedOnHide.current = true;
+      saveLeftRound(round, progressStore());
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted || !savedOnHide.current) return;
+      dispatch({ type: "abandon" });
+      goHome();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [progressStore, dispatch, goHome]);
 
   // Leaving: the round is abandoned, the answers given so far go into the card history (no record),
   // and the player goes back to the start. Without answers nothing is recorded.

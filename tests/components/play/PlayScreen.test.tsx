@@ -531,6 +531,63 @@ describe("PlayScreen: leaving with the back gesture", () => {
     expect(progress.last).toBeNull();
   });
 
+  // Review finding U2: when leaving unloads the page (a back step to another document, another site, a
+  // reload, a closed tab) no React cleanup runs; the page's pagehide leaves the round instead.
+  it("keeps the answers given so far, once and without a record, when the page is hidden for good", async () => {
+    const view = await start();
+    const first = cardByStatement(statementText());
+    await answerAndNext(first.answer);
+    fireEvent(window, new PageTransitionEvent("pagehide", { persisted: false }));
+    const progress = parseProgress(h.local.getItem(PROGRESS_KEY));
+    expect(Object.keys(progress.cards)).toEqual([first.id]);
+    expect(progress.cards[first.id]?.seen).toBe(1);
+    expect(progress.records).toEqual({});
+    expect(progress.last).toEqual({ route: { deckId: DECK_ID, sectionId: "SEC" }, mode: "classic", score: null, total: null });
+    fireEvent(window, new PageTransitionEvent("pagehide", { persisted: false }));
+    view.unmount();
+    expect(parseProgress(h.local.getItem(PROGRESS_KEY)).cards[first.id]?.seen).toBe(1);
+  });
+
+  it("saves nothing on pagehide before the first answer", async () => {
+    await start();
+    fireEvent(window, new PageTransitionEvent("pagehide", { persisted: true }));
+    const progress = parseProgress(h.local.getItem(PROGRESS_KEY));
+    expect(progress.cards).toEqual({});
+    expect(progress.last).toBeNull();
+  });
+
+  it("does not go on with a round whose answers were saved when the page comes back from the back-forward cache", async () => {
+    const view = await start();
+    const first = cardByStatement(statementText());
+    fireEvent.click(screen.getByRole("button", { name: first.answer ? "True" : "False" }));
+    fireEvent(window, new PageTransitionEvent("pagehide", { persisted: true }));
+    fireEvent(window, new PageTransitionEvent("pageshow", { persisted: true }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
+    expect(screen.queryByRole("button", { name: "Next card" })).toBeNull();
+    view.unmount();
+    expect(parseProgress(h.local.getItem(PROGRESS_KEY)).cards[first.id]?.seen).toBe(1);
+  });
+
+  it("never saves a round twice once pagehide has saved it, also when the screen renders again before it goes away", async () => {
+    const view = await start();
+    const first = cardByStatement(statementText());
+    fireEvent.click(screen.getByRole("button", { name: first.answer ? "True" : "False" }));
+    fireEvent(window, new PageTransitionEvent("pagehide", { persisted: true }));
+    await pressNext();
+    await act(async () => {});
+    view.unmount();
+    expect(parseProgress(h.local.getItem(PROGRESS_KEY)).cards[first.id]?.seen).toBe(1);
+  });
+
+  it("goes on with a round that had nothing to save when the page comes back from the back-forward cache", async () => {
+    await start();
+    fireEvent(window, new PageTransitionEvent("pagehide", { persisted: true }));
+    fireEvent(window, new PageTransitionEvent("pageshow", { persisted: true }));
+    await act(async () => {});
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "True" })).toBeTruthy();
+  });
+
   it("does not record the answers twice when the round was already left with Leave round", async () => {
     const view = await start();
     const first = cardByStatement(statementText());
