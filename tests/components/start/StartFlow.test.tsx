@@ -727,8 +727,47 @@ describe("StartFlow: the column of a short screen", () => {
     await choose("Cloud, 2 decks", "Choose a platform");
     expect(scroll.top).toBe(0);
     scroll.top = 180;
+    settle(); // the column jumped, so Back is held back for the settle time (the test below)
     fireEvent.click(screen.getByRole("button", { name: "Back to areas" }));
     await waitFor(() => expect(heading()).toBe("Choose an area"));
     expect(scroll.top).toBe(0);
+  });
+
+  // Fix round 1 of F1a: going back to the top puts the Back pill and the pass where the finger just was, so the
+  // second tap of a double tap would land on a way back the player has not seen. While the settle time runs
+  // after such a jump, a press on them is ignored; Escape and the browser's back button are not.
+  it("holds back the pass fields and Back for the settle time after the column jumped to its top", async () => {
+    await start();
+    const main = document.querySelector("main");
+    if (!main) throw new Error("No main");
+    const scroll = scrollable(main);
+    await choose("Cloud, 2 decks", "Choose a platform");
+    scroll.top = 160;
+    await choose("AWS, 1 deck", "Choose a deck");
+    expect(scroll.top).toBe(0);
+    h.clock.time += 100;
+    fireEvent.click(screen.getByRole("button", { name: "Back to platforms" }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose a deck");
+    fireEvent.click(screen.getByRole("button", { name: "Change platform, now AWS" }));
+    await act(async () => {});
+    expect(heading()).toBe("Choose a deck");
+    expect(h.history.position).toBe(2);
+    h.clock.time += 150;
+    fireEvent.click(screen.getByRole("button", { name: "Change platform, now AWS" }));
+    await waitFor(() => expect(heading()).toBe("Choose a platform"));
+    expect(h.history.position).toBe(1);
+  });
+
+  it("never holds back Escape after the column jumped to its top", async () => {
+    await start();
+    const main = document.querySelector("main");
+    if (!main) throw new Error("No main");
+    const scroll = scrollable(main);
+    scroll.top = 160;
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await act(async () => {});
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
   });
 });

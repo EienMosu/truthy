@@ -351,10 +351,17 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
 
   // On a short screen the start screen scrolls as one column (globals.css, "short"): a step that arrives starts
   // at its top, with the pass and the new title in view. Elsewhere the screen does not scroll and this does nothing.
+  // When the column did move, the Back pill and the pass now lie where the finger just was, so for the settle
+  // time a press on them is held back (a double tap must not take a way back the player has not seen).
+  const headerHeldUntil = useRef(Number.NEGATIVE_INFINITY);
   useLayoutEffect(() => {
-    if (view.seq > 0 && mainRef.current) mainRef.current.scrollTop = 0;
-  }, [view.seq]);
+    const main = mainRef.current;
+    if (view.seq === 0 || !main) return;
+    if (main.scrollTop > 0) headerHeldUntil.current = services.now() + SWIPE.settleMs;
+    main.scrollTop = 0;
+  }, [view.seq, services]);
   const settled = () => services.now() - shownAt.current >= SWIPE.settleMs;
+  const headerHeld = () => services.now() < headerHeldUntil.current;
 
   // Focus: the new step's title, or (going back) the card chosen before.
   useEffect(() => {
@@ -377,6 +384,11 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     }
     setView((v) => ({ step, choice, dir: 1, seq: v.seq + 1 }));
     services.history()?.push(entryState({ step, choice }));
+  }
+
+  /** A press on the Back pill or a field of the pass: held back only right after the column jumped (see above). */
+  function tapBackTo(target: Step) {
+    if (!headerHeld()) backTo(target);
   }
 
   /** Goes back to an earlier step, clearing it and every later choice. Never held back by the settle time. */
@@ -529,7 +541,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
               <motion.button
                 type="button"
                 aria-label={`Back to ${BACK_TO[previousStep(step, hasSections)]}`}
-                onClick={back}
+                onClick={() => tapBackTo(previousStep(step, hasSections))}
                 animate={{ opacity: boarding ? 0 : 1 }}
                 transition={{ duration: 0.11 }}
                 className={[
@@ -546,7 +558,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                 values={passValues}
                 now={NOW_FIELD[step]}
                 sectionChoosable={hasSections}
-                onJump={(field) => backTo(STEP_OF_FIELD[field])}
+                onJump={(field) => tapBackTo(STEP_OF_FIELD[field])}
                 travelling={travel?.field}
                 unroll={boarding && !reduced}
                 onUnrolled={onUnrolled}

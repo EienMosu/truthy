@@ -655,6 +655,32 @@ for (const viewport of [
       await expect(page).toHaveURL(/\/play$/);
     });
 
+    // A step that arrives starts at the top of the column, which brings the Back pill and the pass under the
+    // finger: the second tap of a double tap must not take a way back the player has not seen (fix round 1).
+    test("a double tap on a card the player scrolled to chooses it once, and does not go back", async ({ page }) => {
+      await openHome(page);
+      await tapThrough(page, ROUTE_BY_TAPS.slice(0, 1));
+      const card = page.locator("[data-step]:not([inert])").getByRole("button", { name: CLF_SECURITY.platform });
+      const tapY = 180;
+      await card.evaluate((element, y) => {
+        const main = element.closest("main");
+        if (!main) throw new Error("No main");
+        main.scrollTop += element.getBoundingClientRect().top - (y - 30);
+      }, tapY);
+      await page.waitForTimeout(100);
+      const b = await card.boundingBox();
+      if (b === null) throw new Error("The platform card is not on screen");
+      const x = b.x + b.width / 2;
+      expect(Math.abs(b.y - (tapY - 30)), "the card was scrolled to the tap").toBeLessThan(2);
+      await page.touchscreen.tap(x, tapY);
+      await page.waitForTimeout(100);
+      const under = await page.evaluate(([px, py]) => document.elementFromPoint(px ?? 0, py ?? 0)?.closest("header button")?.getAttribute("aria-label") ?? null, [x, tapY]);
+      expect(under, "a way back of the pass lies under the finger after the first tap").toMatch(/^(Change |Back to )/);
+      await page.touchscreen.tap(x, tapY);
+      await page.waitForTimeout(400);
+      await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Choose a deck");
+    });
+
     test("a returning player continues and starts the round by touch", async ({ page }) => {
       await page.addInitScript(() =>
         localStorage.setItem(
