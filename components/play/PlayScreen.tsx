@@ -34,6 +34,7 @@ import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, ty
 import { LeaveDialog } from "./LeaveDialog";
 import { saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
+import { slipScroll, spanInTicket } from "./ticketScroll";
 import { useClock } from "./useClock";
 import { browserPlayServices, useRound, type PlayServices, type TicketInfo } from "./useRound";
 import { useSwipe } from "./useSwipe";
@@ -61,8 +62,10 @@ const CARD_TRANSFORM: CSSProperties = {
 };
 
 // The ticket scrolls inside the stage when it is taller than the space (long texts, short phones). The
-// scroller runs on under the action row, so at 390 by 844 nothing scrolls and the ticket's shadow shows
+// scroller runs on under the action row, so at 390 by 844 most tickets fit and the ticket's shadow shows
 // in the gap above the buttons, as in the mockup; its side padding lets a dragged card reach the frame edge.
+// What lies in its bottom padding is hidden under the row, so the screen scrolls what the player needs
+// above it (see ticketScroll).
 const SCROLLER: CSSProperties = {
   bottom: "calc(-1 * (var(--space-12) + var(--size-actions)))",
   paddingBottom: "calc(var(--space-12) + var(--size-actions))",
@@ -349,6 +352,19 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     const scroller = scrollerRef.current;
     scroller?.scrollTo?.({ top: scroller.scrollHeight, behavior: reducedRef.current ? "instant" : "smooth" });
   }, [stubStamped, round.index]);
+
+  // The other modes: after an answer the ticket scrolls to its end, which is the slip, so the answer, its stamp
+  // (New best, the deciding wrong answer), the explanation and the source show above the action row, which
+  // hides what lies under it. A slip taller than the stage stops at its top, keeping the verdict row in view.
+  // Where the ticket fits the stage (390 by 844, most cards) there is nothing to scroll.
+  useEffect(() => {
+    if (!answered || timed) return;
+    const scroller = scrollerRef.current;
+    const slip = scroller?.querySelector<HTMLElement>("[data-slip]");
+    if (!scroller || !slip) return;
+    const top = slipScroll(spanInTicket(slip, scroller).top, scroller.scrollHeight - scroller.clientHeight);
+    scroller.scrollTo?.({ top, behavior: reducedRef.current ? "instant" : "smooth" });
+  }, [answered, timed, round.index]);
 
   // Time is up: note the moment (See results counts its arrival from it) and whether True or False had focus.
   useEffect(() => {

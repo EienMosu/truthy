@@ -501,12 +501,14 @@ describe("PlayScreen Timed: bringing the stamped stub into view", () => {
     expect(scrolls.at(-1)).toEqual({ top: 0, behavior: "instant" });
   });
 
-  it("leaves the scroll alone after an answer outside Timed (the slip is read from the top)", async () => {
+  // Outside Timed an answer brings the slip into view instead (review finding U44): one smooth scroll, which
+  // stops at the slip's top (0 here, jsdom has no layout; PlayScreenScroll.test.tsx sets the geometry).
+  it("scrolls once to the slip after an answer outside Timed, not to the end of the ticket", async () => {
     await start(harness(pendingFor("classic")));
     scrolls = [];
     give(true);
     await act(async () => {});
-    expect(scrolls).toEqual([]);
+    expect(scrolls).toEqual([{ top: 0, behavior: "smooth" }]);
   });
 });
 

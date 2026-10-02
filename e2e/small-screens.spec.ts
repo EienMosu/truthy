@@ -136,11 +136,19 @@ test.describe("on a 320 by 568 screen", () => {
     await expect(page.getByRole("button", { name: "False", exact: true })).toBeInViewport();
     await expect(page.getByRole("button", { name: "Leave round" })).toBeInViewport();
 
-    // The answer slip (explanation and source link) can be scrolled into view under the action row.
+    // The answer slip (explanation and source link) is brought into view above Next card, which is opaque and
+    // hides what scrolls under it; the player does not have to scroll (review finding U44).
     await page.getByRole("button", { name: "True", exact: true }).click();
-    await expect(page.getByRole("button", { name: "Next card" })).toBeInViewport();
+    const next = page.getByRole("button", { name: "Next card" });
+    await expect(next).toBeFocused();
     const source = page.getByRole("link", { name: /\(opens in a new tab\)$/ });
-    await source.scrollIntoViewIfNeeded();
+    await expect
+      .poll(async () => {
+        const link = await source.boundingBox();
+        const pill = await next.boundingBox();
+        return link === null || pill === null ? Infinity : link.y + link.height - pill.y;
+      }, { message: "the source link ends above Next card", timeout: 5_000 })
+      .toBeLessThanOrEqual(0.5);
     await expect(source).toBeInViewport();
     await expectNoSidewaysScroll(page);
     await page.getByRole("button", { name: "Next card" }).click();
@@ -488,12 +496,14 @@ test.describe("the route of the header on a 320 by 568 screen", () => {
     return box.y;
   }
 
-  // The label row ends above the ticket.
+  // The label row ends above the ticket where it shows: its top, or the top of the stage once an answer has
+  // scrolled the slip into view (review finding U44) and the top of the pass lies above the stage, clipped.
   async function expectLabelsAboveTicket(page: Page): Promise<void> {
     const labels = await page.locator("[data-flight-path] [data-progress]").evaluate((element) => element.parentElement?.getBoundingClientRect().bottom ?? 0);
     const pass = await page.locator("[data-boarding-pass]").last().boundingBox();
-    if (pass === null) throw new Error("The pass is not on screen");
-    expect(labels).toBeLessThanOrEqual(pass.y + 0.5);
+    const stage = await page.getByRole("region", { name: "Card" }).boundingBox();
+    if (pass === null || stage === null) throw new Error("The pass is not on screen");
+    expect(labels).toBeLessThanOrEqual(Math.max(pass.y, stage.y) + 0.5);
   }
 
   test("a perfect Classic round: the route does not move on the verdict of card 10", async ({ page }) => {
