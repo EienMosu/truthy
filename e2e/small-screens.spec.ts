@@ -775,16 +775,39 @@ for (const viewport of [
       await tapThrough(page, ROUTE_BY_TAPS.slice(0, 1));
       const card = page.locator("[data-step]:not([inert])").getByRole("button", { name: CLF_SECURITY.platform });
       const tapY = 180;
-      await card.evaluate((element, y) => {
-        const main = element.closest("main");
-        if (!main) throw new Error("No main");
-        main.scrollTop += element.getBoundingClientRect().top - (y - 30);
-      }, tapY);
-      await page.waitForTimeout(100);
+      // The cards of the step that arrived rise 24 px into place, one after another (about 400 ms in all, more
+      // on a busy runner): scroll only once this one has stopped, or the scroll is off by what it had left to
+      // rise (6.7 px in CI). Stopped means the same place for five frames in a row.
+      await card.evaluate(
+        (element, y) =>
+          new Promise<void>((resolve, reject) => {
+            const main = element.closest("main");
+            if (!main) throw new Error("No main");
+            const t0 = performance.now();
+            let last = Number.NaN;
+            let still = 0;
+            const frame = () => {
+              const top = element.getBoundingClientRect().top;
+              still = Math.abs(top - last) < 0.01 ? still + 1 : 0;
+              last = top;
+              if (still >= 5) {
+                main.scrollTop += top - (y - 30);
+                resolve();
+              } else if (performance.now() - t0 > 5_000) reject(new Error("The platform card never stopped moving"));
+              else requestAnimationFrame(frame);
+            };
+            requestAnimationFrame(frame);
+          }),
+        tapY,
+      );
+      await expect
+        .poll(async () => Math.abs(((await card.boundingBox())?.y ?? Number.POSITIVE_INFINITY) - (tapY - 30)), {
+          message: "the card was scrolled to the tap",
+        })
+        .toBeLessThan(2);
       const b = await card.boundingBox();
       if (b === null) throw new Error("The platform card is not on screen");
       const x = b.x + b.width / 2;
-      expect(Math.abs(b.y - (tapY - 30)), "the card was scrolled to the tap").toBeLessThan(2);
       await page.touchscreen.tap(x, tapY);
       await page.waitForTimeout(100);
       const under = await page.evaluate(([px, py]) => document.elementFromPoint(px ?? 0, py ?? 0)?.closest("header button")?.getAttribute("aria-label") ?? null, [x, tapY]);
