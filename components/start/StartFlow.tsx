@@ -559,11 +559,12 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
         </AnimatePresence>
       </section>
 
-      {/* Foot zone: where a game's action row sits. The continue line on step 1, Start round on step 6. */}
-      <div className="absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)]">
+      {/* Foot zone: where a game's action row sits. The continue line on step 1, Start round on step 6. It lies
+          over the bottom of the step's list and is empty on most steps, so only what it holds takes a tap. */}
+      <div className="pointer-events-none absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)]">
         <AnimatePresence initial={false}>
           {returning ? (
-            <motion.div key="continue" className="[grid-area:1/1]" {...swapMotion(reduced, 12)}>
+            <motion.div key="continue" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
               <ContinueLine
                 deckCode={returning.found.deck.code}
                 deckTitle={returning.found.deck.title}
@@ -576,14 +577,14 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
             </motion.div>
           ) : null}
           {step === 6 && !boarding ? (
-            <motion.div key="start" className="[grid-area:1/1]" {...swapMotion(reduced, 12)}>
+            <motion.div key="start" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
               <PillButton trailingIcon="→" onClick={startRound}>
                 Start round
               </PillButton>
             </motion.div>
           ) : null}
           {status.kind === "error" && step === 1 ? (
-            <motion.div key="retry" className="[grid-area:1/1]" {...swapMotion(reduced, 12)}>
+            <motion.div key="retry" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
               <PillButton onClick={retry}>Try again</PillButton>
             </motion.div>
           ) : null}
