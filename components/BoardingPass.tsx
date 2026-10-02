@@ -157,7 +157,11 @@ export interface PassStatementProps {
   live?: boolean;
 }
 
-/** The statement area of the game: at least 188 tall, the text centred vertically. */
+/**
+ * The statement area of the game: at least 188 tall, the text centred vertically. A word longer than the line
+ * (an identifier such as "suppressHydrationWarning" at 320 px) breaks inside it rather than running past the
+ * pass edge, where it would be cut off.
+ */
 export function PassStatement({ children, appliesTo, ref, id, muted = false, live = false }: PassStatementProps) {
   return (
     <div
@@ -174,7 +178,7 @@ export function PassStatement({ children, appliesTo, ref, id, muted = false, liv
           Applies to {appliesTo}
         </p>
       ) : null}
-      <p className={`m-0 font-(family-name:--type-card-statement-family) text-(length:--type-card-statement-size) leading-(--type-card-statement-line-height) font-(--type-card-statement-weight) tracking-(--type-card-statement-letter-spacing) ${muted ? "text-(--color-ink-muted)" : "text-(--color-ink)"}`}>
+      <p className={`m-0 wrap-break-word font-(family-name:--type-card-statement-family) text-(length:--type-card-statement-size) leading-(--type-card-statement-line-height) font-(--type-card-statement-weight) tracking-(--type-card-statement-letter-spacing) ${muted ? "text-(--color-ink-muted)" : "text-(--color-ink)"}`}>
         {children}
       </p>
     </div>

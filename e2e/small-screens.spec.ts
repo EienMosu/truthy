@@ -534,8 +534,20 @@ test.describe("the route of the header on a 320 by 568 screen", () => {
 
 // A statement with one long word (a real Next.js card: "suppressHydrationWarning", 24 characters) wraps
 // inside its own paragraph; the pass keeps the width of the card, so SEC, Gate and the stub are not cut off
-// on the right. A sideways scroll check cannot see this: the card's scroller clips what sticks out.
+// on the right. A sideways scroll check cannot see this: the card's scroller clips what sticks out. The word
+// itself breaks where it must, so its text ends inside the paragraph and is not cut at the pass edge (review
+// finding U54).
 const LONG_WORD_STATEMENT = "suppressHydrationWarning repairs mismatched text during hydration.";
+
+/** The paragraph's overflow and how far its text runs past its right edge (0 or less: inside). */
+async function textOverflow(paragraph: Locator): Promise<{ scroll: number; client: number; pastRight: number }> {
+  return paragraph.evaluate((p) => {
+    const range = document.createRange();
+    range.selectNodeContents(p);
+    const right = Math.max(...[...range.getClientRects()].map((r) => r.right));
+    return { scroll: p.scrollWidth, client: p.clientWidth, pastRight: right - p.getBoundingClientRect().right };
+  });
+}
 
 for (const width of [320, 360]) {
   test.describe(`on a ${width} px wide screen`, () => {
@@ -560,6 +572,10 @@ for (const width of [320, 360]) {
       const gate = await page.getByText("Gate", { exact: true }).boundingBox();
       if (gate === null) throw new Error("The Gate field is not on screen");
       expect(gate.x + gate.width).toBeLessThanOrEqual(card.x + card.width + 0.5);
+      // The long word breaks inside the paragraph: nothing of it runs past the paragraph's right edge.
+      const overflow = await textOverflow(page.locator("[data-statement] > p").last());
+      expect(overflow.scroll, "the paragraph is not wider than its box").toBeLessThanOrEqual(overflow.client);
+      expect(overflow.pastRight, "the text ends inside the paragraph").toBeLessThanOrEqual(0.5);
     });
   });
 }
