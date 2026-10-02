@@ -134,6 +134,12 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     if (!services.backToStart?.()) router.replace("/");
   }, [router, services]);
   const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome);
+  // The player's own ways home (Leave round, Choose another route, Close results): the start then focuses its
+  // step 1 title. A page load of /play without a round goes home too, but that is not a way back.
+  const leaveToStart = useCallback(() => {
+    services.markReturnToStart?.();
+    goHome();
+  }, [goHome, services]);
 
   // A round in progress with answers that are not in the card history yet. Leaving any other way than the
   // close control (the phone's back gesture, the browser's back button) unmounts this screen; the cleanup
@@ -163,18 +169,18 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
       if (round.answers.length > 0) {
         saveLeftRound(round, progressStore());
       }
-      goHome();
+      leaveToStart();
     },
-    [dispatch, progressStore, goHome],
+    [dispatch, progressStore, leaveToStart],
   );
 
-  if (status.kind === "error") return <LoadFailed onRetry={retry} onLeave={goHome} />;
-  if (status.kind !== "ready" || status.round.abandoned) return <Loading onLeave={goHome} />;
+  if (status.kind === "error") return <LoadFailed onRetry={retry} onLeave={leaveToStart} />;
+  if (status.kind !== "ready" || status.round.abandoned) return <Loading onLeave={leaveToStart} />;
 
   const { round, ticket } = status;
   if (round.phase === "finished") {
     return (
-      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={goHome} now={services.now} />
+      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={leaveToStart} now={services.now} />
     );
   }
 

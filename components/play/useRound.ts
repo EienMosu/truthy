@@ -7,7 +7,7 @@ import { WHOLE_DECK, deckPassName, findRoute, type Route, type RouteInIndex } fr
 import { LoadError, createDeckCache, loadDeck, loadIndex, poolFor } from "@/src/content/load";
 import { modeInfo } from "@/src/app-state/modes";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
-import { browserAppServices, browserBackToStart, type AppServices } from "@/src/app-state/services";
+import { browserAppServices, browserBackToStart, markReturnFromPlay, type AppServices } from "@/src/app-state/services";
 import type { Mode } from "@/src/content/play";
 import { reduce, startRound, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { bestFor, pruneDeck } from "@/src/progress/progress";
@@ -35,6 +35,8 @@ export interface PlayServices extends AppServices {
    * did. Left out (tests) or false: the screen replaces /play with / instead.
    */
   backToStart?: () => boolean;
+  /** Tells the start that the player is coming back from a round by a control, so it takes the focus. */
+  markReturnToStart?: () => void;
   /** Calls onTick about every TICK_MS while subscribed. Returns the unsubscribe. In the browser: setInterval. */
   ticker: (onTick: () => void) => () => void;
   visibility: PageVisibility;
@@ -45,6 +47,7 @@ export const browserPlayServices: PlayServices = {
   ...browserAppServices,
   now: () => Date.now(),
   backToStart: browserBackToStart,
+  markReturnToStart: markReturnFromPlay,
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   ticker: (onTick) => {
     const id = window.setInterval(onTick, TICK_MS);

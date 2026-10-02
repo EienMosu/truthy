@@ -96,3 +96,20 @@ export function browserBackToStart(): boolean {
   window.history.back();
   return true;
 }
+
+// Whether the player has just left /play for the start with one of its controls (Choose another route,
+// Close results, Leave round). The start flow then focuses its step 1 title, which a fresh page load does
+// not. It lasts as long as the page and is read once.
+let returningFromPlay = false;
+
+/** /play is sending the player back to the start with one of its controls. */
+export function markReturnFromPlay(): void {
+  if (typeof window !== "undefined") returningFromPlay = true;
+}
+
+/** Whether the start is being opened by a way back from /play; clears the mark. */
+export function takeReturnFromPlay(): boolean {
+  const was = returningFromPlay;
+  returningFromPlay = false;
+  return was;
+}

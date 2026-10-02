@@ -27,7 +27,14 @@ import { EASE, EASE_OUT } from "@/components/easing";
 import { BackArrowIcon } from "@/components/icons";
 import { MODE_TABLE, lastScoreText, modeInfo, type ModeInfo } from "@/src/app-state/modes";
 import { savePending } from "@/src/app-state/pending";
-import { browserAppServices, browserStepHistory, markStartEntryBehind, type AppServices, type StepHistory } from "@/src/app-state/services";
+import {
+  browserAppServices,
+  browserStepHistory,
+  markStartEntryBehind,
+  takeReturnFromPlay,
+  type AppServices,
+  type StepHistory,
+} from "@/src/app-state/services";
 import type { Mode } from "@/src/content/play";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { SWIPE } from "@/src/input/swipe";
@@ -43,9 +50,16 @@ export interface StartServices extends AppServices {
   history: () => StepHistory | undefined;
   /** A clock in ms for the settle time. In the browser: performance.now. */
   now: () => number;
+  /** Whether the player has just come back from /play by one of its controls (read once). Left out: never. */
+  returnedFromPlay?: () => boolean;
 }
 
-export const browserStartServices: StartServices = { ...browserAppServices, history: browserStepHistory, now: () => performance.now() };
+export const browserStartServices: StartServices = {
+  ...browserAppServices,
+  history: browserStepHistory,
+  now: () => performance.now(),
+  returnedFromPlay: takeReturnFromPlay,
+};
 
 // ---------- the steps and the choices (pure) ----------
 
@@ -409,13 +423,18 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   // Focus: the new step's title, or (going back) the card chosen before. On a short screen, a way back from the
   // keyboard also brings that card into view, where its focus ring is. A way back by a press does not: the column
   // stays at its top, so the Back pill and the pass stay under the finger and a second tap cannot land on a card.
+  // The first render moves no focus on a fresh page load; coming back from /play, the step 1 title takes it, so
+  // the control the player pressed there does not leave the focus on the body.
   useEffect(() => {
-    if (view.seq === 0) return;
+    if (view.seq === 0) {
+      if (services.returnedFromPlay?.()) mainRef.current?.querySelector<HTMLElement>('[data-step="1"] h2')?.focus({ preventScroll: true });
+      return;
+    }
     const panel = mainRef.current?.querySelector(`[data-step="${view.step}"]`);
     const card = view.focusId ? panel?.querySelector<HTMLElement>(`[data-option="${CSS.escape(view.focusId)}"] button`) : null;
     (card ?? panel?.querySelector<HTMLElement>("h2"))?.focus({ preventScroll: true });
     if (card && mainRef.current && lastInput.current === "key") showInColumn(mainRef.current, card);
-  }, [view]);
+  }, [view, services]);
 
   /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */
   function forward(step: Step, choice: Choice, field: PassFieldName, source?: HTMLElement | null) {

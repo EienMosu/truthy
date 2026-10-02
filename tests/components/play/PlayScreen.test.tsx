@@ -350,6 +350,28 @@ describe("PlayScreen: leaving to the start's entry", () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  // Review finding U56: the start focuses its step 1 title when the player comes back from a round.
+  it("tells the start that the player comes back from a round when they leave it", async () => {
+    const setup = harness();
+    const markReturnToStart = vi.fn();
+    setup.services = { ...setup.services, markReturnToStart };
+    await start(setup);
+    expect(markReturnToStart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    expect(markReturnToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).toHaveBeenCalledWith("/");
+  });
+
+  it("does not when /play sends a page load without a round to the start", async () => {
+    const setup = harness(null);
+    const markReturnToStart = vi.fn();
+    setup.services = { ...setup.services, markReturnToStart };
+    h = setup;
+    render(<PlayScreen services={h.services} />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
+    expect(markReturnToStart).not.toHaveBeenCalled();
+  });
+
   it("opens the start in place of /play when the start flow is not behind it", async () => {
     const setup = harness();
     const backToStart = vi.fn(() => false);

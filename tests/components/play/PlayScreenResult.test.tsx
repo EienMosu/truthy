@@ -115,6 +115,18 @@ describe("PlayScreen: the result of a finished round", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close results" }));
     expect(router.replace).toHaveBeenCalledWith("/");
   });
+
+  // Review finding U56: the start focuses its step 1 title when the player comes back from a round.
+  it.each(["Choose another route", "Close results"])("tells the start that the player comes back from a round: %s", async (name) => {
+    const h = harness();
+    const markReturnToStart = vi.fn();
+    h.services = { ...h.services, markReturnToStart };
+    await playRound(h, SEVEN_OF_TEN);
+    expect(markReturnToStart).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name }));
+    expect(markReturnToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).toHaveBeenCalledWith("/");
+  });
 });
 
 describe("PlayScreen: Play again", () => {

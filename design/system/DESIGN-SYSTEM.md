@@ -459,7 +459,7 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
   - The ring is a 3px `ink` outline with a 3px offset. On filled pills it is `accent`; on option rows the offset is 2; on Why it is 0; on sheet rows it is −1 with radius 8.
   - Start-flow step titles take focus programmatically after each step, with no visible ring on purpose.
   - Focus moves to Next card, or to See results after a deciding answer, 420ms after the answer, to the first sheet row on open, and back to the opener on close or Back. At time up See results takes focus only if True or False had it. In Timed only the first card's statement takes focus.
-  - In the start flow, going forward focuses the new step title; going back (Back, a field, Leave round) focuses the card that was chosen before; starting the round focuses the statement.
+  - In the start flow, going forward focuses the new step title; going back (Back, a field, Leave round) focuses the card that was chosen before; starting the round focuses the statement. Coming back to the start from /play by one of its controls (Choose another route, Close results, Leave round, all of which land on step 1 with the choices cleared), the step 1 title takes focus; a fresh page load of the start moves no focus.
   - Escape closes the sheet, or goes back a step (on step 7 it leaves the round).
 - **Screen reader:**
   - The flight path is one image with a full-sentence label.

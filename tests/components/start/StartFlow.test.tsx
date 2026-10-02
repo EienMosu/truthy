@@ -418,6 +418,46 @@ describe("StartFlow: going back", () => {
   });
 });
 
+// Review finding U56: back on the start from /play (Choose another route, Close results, Leave round), focus
+// lands on the step 1 title instead of the body. A fresh page load moves no focus, as before.
+describe("StartFlow: arriving from a round", () => {
+  function arriving(fromRound: boolean): Harness {
+    const setup = harness();
+    let mark = fromRound;
+    setup.services = {
+      ...setup.services,
+      returnedFromPlay: () => {
+        const was = mark;
+        mark = false;
+        return was;
+      },
+    } as Harness["services"];
+    return setup;
+  }
+
+  it("focuses the step 1 title when the player comes back from a round", async () => {
+    await start(arriving(true));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Choose an area"));
+    expect(document.activeElement?.tagName).toBe("H2");
+  });
+
+  it("focuses the title already while the index loads, and keeps it there once the areas appear", async () => {
+    h = arriving(true);
+    h.network.hold = true;
+    render(<StartFlow services={h.services} />);
+    await waitFor(() => expect(document.activeElement?.textContent).toBe("Choose an area"));
+    await act(async () => h.network.release());
+    await screen.findByRole("button", { name: "Cloud, 2 decks" });
+    expect(document.activeElement?.textContent).toBe("Choose an area");
+  });
+
+  it("moves no focus on a fresh page load", async () => {
+    await start(arriving(false));
+    await act(async () => {});
+    expect(document.activeElement).toBe(document.body);
+  });
+});
+
 describe("StartFlow: the browser history", () => {
   it("keeps one entry per step, without changing the URL path", async () => {
     await start();
