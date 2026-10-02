@@ -7,7 +7,7 @@ Four gates, all run by CI (`.github/workflows/ci.yml`) on every push and pull re
 | `pnpm test` | Vitest: the engine, input, progress, content and token modules, and every component (`tests/`) |
 | `pnpm typecheck` | `tsc --noEmit` over the app, the scripts, the unit tests and the end-to-end specs |
 | `pnpm build` | Tokens and decks, then the Next.js production build |
-| `pnpm e2e` | Playwright (`e2e/`) at 390 by 844 with touch, in `phone-chromium` and `phone-webkit`, against `pnpm build && pnpm start --port 3100` |
+| `pnpm e2e` | Playwright (`e2e/`) at 390 by 844 with touch, in `phone-chromium` and `phone-webkit`, against `pnpm build && pnpm start --port 3100` (the port comes from `E2E_PORT`, see below) |
 
 Install the browsers once with `pnpm exec playwright install chromium webkit`.
 
@@ -37,4 +37,8 @@ pnpm exec playwright test e2e/swipe.spec.ts
 pnpm exec playwright test e2e/swipe.spec.ts --project=phone-webkit --headed
 ```
 
-Locally an already running `pnpm start --port 3100` is reused (rebuild it after a change); in CI the specs always build first. A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact.
+Locally an already running `pnpm start --port 3100` is reused (rebuild it after a change); in CI the specs always build first. The port is 3100 unless the environment variable `E2E_PORT` names another one (a whole number from 1 to 65535; anything else stops the run), so two checkouts can run the specs at the same time, each against its own server:
+
+```bash
+E2E_PORT=3200 pnpm e2e
+``` A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact.

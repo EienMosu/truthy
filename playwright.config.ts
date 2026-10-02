@@ -1,6 +1,16 @@
 import { defineConfig } from "@playwright/test";
 
-const PORT = 3100;
+// E2E_PORT lets two checkouts run the specs at the same time, each against its own server.
+export function e2ePort(value: string | undefined): number {
+  if (value === undefined || value === "") return 3100;
+  const port = Number(value);
+  if (!/^\d+$/.test(value) || port < 1 || port > 65535) {
+    throw new Error(`E2E_PORT must be a whole port number from 1 to 65535, not "${value}"`);
+  }
+  return port;
+}
+
+const PORT = e2ePort(process.env.E2E_PORT);
 const BASE_URL = `http://localhost:${PORT}`;
 
 // Phone size from the spec: 390 by 844, touch enabled so swipe specs can use touch input. The day theme
