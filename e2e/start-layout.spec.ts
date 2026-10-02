@@ -103,3 +103,66 @@ test.describe("the empty foot zone", () => {
     });
   });
 });
+
+/** The run of pixels around the centre of `target` that hit it: up and down at its centre x, across at its centre y. */
+async function hitSpan(target: Locator): Promise<{ height: number; width: number }> {
+  return target.evaluate((element) => {
+    const r = element.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const on = (x: number, y: number) => {
+      const top = document.elementFromPoint(x, y);
+      return top !== null && (top === element || element.contains(top));
+    };
+    const run = (from: number, step: (n: number) => [number, number]) => {
+      let n = 0;
+      while (n < 200 && on(...step(from + n))) n += 1;
+      return n;
+    };
+    const down = run(0, (n) => [cx, Math.floor(cy) + n]);
+    const up = run(1, (n) => [cx, Math.floor(cy) - n]);
+    const right = run(0, (n) => [Math.floor(cx) + n, cy]);
+    const left = run(1, (n) => [Math.floor(cx) - n, cy]);
+    return { height: down + up, width: right + left };
+  });
+}
+
+// U119: the area and platform words of the route pass are 22 px tall; their hit area reaches 48 by 48 without
+// moving the pass, and the Deck field under them keeps 48 of its 56.
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 320, height: 568 },
+]) {
+  test.describe(`the words of the route pass on a ${viewport.width} by ${viewport.height} screen`, () => {
+    test.use({ viewport });
+
+    for (const at of ["Choose a section", "Choose how to play"] as const) {
+      test(`on "${at}" each word takes taps over 48 by 48, and a tap just under it is its own`, async ({ page }) => {
+        await toSections(page);
+        if (at === "Choose how to play") {
+          await option(page, CLF_SECURITY.section ?? "").click();
+          await atStep(page, at);
+        }
+        await page.waitForTimeout(400);
+        const words = [page.getByRole("button", { name: "Change area, now Cloud" }), page.getByRole("button", { name: "Change platform, now AWS" })];
+        for (const word of words) {
+          const b = await box(word);
+          expect(b.height).toBeCloseTo(22, 0);
+          const span = await hitSpan(word);
+          expect(span.height, "hit area height").toBeGreaterThanOrEqual(48);
+          expect(span.width, "hit area width").toBeGreaterThanOrEqual(48);
+          const x = b.x + b.width / 2;
+          expect(await hits(page, word, x, b.y - 12), "12 px above the word").toBe(true);
+          expect(await hits(page, word, x, b.y + b.height + 6), "6 px under the word").toBe(true);
+        }
+        const deck = page.getByRole("button", { name: "Change deck, now CLF" });
+        expect((await hitSpan(deck)).height, "the Deck field under the words").toBeGreaterThanOrEqual(48);
+
+        // A tap 6 px under AWS goes back to the platforms, not to the decks.
+        const aws = await box(words[1] as Locator);
+        await page.touchscreen.tap(aws.x + aws.width / 2, aws.y + aws.height + 6);
+        await expect(currentStep(page).locator("h2")).toHaveText("Choose a platform");
+      });
+    }
+  });
+}
