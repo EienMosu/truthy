@@ -226,6 +226,65 @@ describe("PlayScreen: answering", () => {
     expect(status()).not.toBe("");
   });
 
+  // Review finding U122: a gesture may only start after the settle time (spec 8), so a drag that starts
+  // inside it is ignored even when it is let go after it. The play screen gives the swipe the moment the card appeared.
+  describe("a drag that starts in the first 250 ms of a card", () => {
+    const pointer = { pointerId: 1, isPrimary: true, pointerType: "touch" };
+    /** A drag 140 px towards the right answer: down now, moved 150 ms later, let go 150 ms after that. */
+    function dragToAnswer() {
+      const right = currentAnswer();
+      const card = swipeCard();
+      const to = right ? 340 : 60;
+      fireEvent.pointerDown(card, { ...pointer, clientX: 200, clientY: 400 });
+      h.advance(150);
+      fireEvent.pointerMove(card, { ...pointer, clientX: (200 + to) / 2, clientY: 400 });
+      h.advance(150);
+      fireEvent.pointerUp(card, { ...pointer, clientX: to, clientY: 400 });
+      return right;
+    }
+
+    async function firstCard() {
+      h = harness();
+      render(<PlayScreen services={h.services} />);
+      await screen.findByRole("button", { name: "True" });
+      await act(async () => {});
+    }
+
+    async function secondCard() {
+      await start();
+      fireEvent.click(screen.getByRole("button", { name: "True" }));
+      await pressNext();
+      await screen.findByRole("button", { name: "True" });
+      await act(async () => {});
+    }
+
+    it("is ignored on the first card", async () => {
+      await firstCard();
+      h.advance(100);
+      dragToAnswer();
+      await act(async () => {});
+      expect(status()).toBe("");
+      expect(screen.queryByRole("button", { name: "Next card" })).toBeNull();
+      expect(swipeCard().hasAttribute("data-dragging")).toBe(false);
+    });
+
+    it("is ignored on a card dealt by Next card", async () => {
+      await secondCard();
+      h.advance(100);
+      dragToAnswer();
+      await act(async () => {});
+      expect(status()).toBe("");
+      expect(screen.queryByRole("button", { name: "Next card" })).toBeNull();
+    });
+
+    it("answers when it starts after the settle time", async () => {
+      await secondCard();
+      h.advance(300);
+      const right = dragToAnswer();
+      expect(status()).toBe(`Correct. The answer is ${right ? "True" : "False"}.`);
+    });
+  });
+
   it("shows the right answer, the verdict stamp, the explanation and the source after an answer", async () => {
     await start();
     const card = cardByStatement(statementText());
