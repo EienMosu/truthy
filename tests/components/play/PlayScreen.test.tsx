@@ -293,6 +293,41 @@ describe("PlayScreen: moving on", () => {
   });
 });
 
+// Review finding U3: a held key sends repeated keydowns (event.repeat). One press is one answer or one
+// action: the repeats are ignored, also the browser's own Enter on a focused True, False or Next card.
+describe("PlayScreen: a held key", () => {
+  it("does not answer with a repeated arrow key", async () => {
+    await start();
+    fireEvent.keyDown(window, { key: "ArrowRight", repeat: true });
+    fireEvent.keyDown(window, { key: "ArrowLeft", repeat: true });
+    expect(status()).toBe("");
+    expect(screen.getByRole("button", { name: "True" })).toBeTruthy();
+  });
+
+  it("a held Enter does not press Next card and skip the verdict", async () => {
+    await start();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    const verdict = status();
+    const next = await screen.findByRole("button", { name: "Next card" });
+    h.advance(NEXT_ARRIVES_MS + 100);
+    fireEvent.keyDown(document.body, { key: "Enter", repeat: true });
+    expect(screen.getByRole("img", { name: /^Card 1 of 10\./ })).toBeTruthy();
+    expect(status()).toBe(verdict);
+    // The browser presses a focused button on Enter unless the keydown is cancelled.
+    next.focus();
+    expect(fireEvent.keyDown(next, { key: "Enter", repeat: true })).toBe(false);
+    expect(fireEvent.keyDown(next, { key: "Enter" })).toBe(true);
+  });
+
+  it("cancels a repeated Enter on a focused True or False, so the browser does not press it again", async () => {
+    await start();
+    const trueButton = screen.getByRole("button", { name: "True" });
+    trueButton.focus();
+    expect(fireEvent.keyDown(trueButton, { key: "Enter", repeat: true })).toBe(false);
+    expect(fireEvent.keyDown(screen.getByRole("button", { name: "False" }), { key: "Enter", repeat: true })).toBe(false);
+  });
+});
+
 describe("PlayScreen: leaving", () => {
   it("leaves at once, recording nothing, when no card has been answered", async () => {
     await start();

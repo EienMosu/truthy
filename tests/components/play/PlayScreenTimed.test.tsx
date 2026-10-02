@@ -242,6 +242,20 @@ describe("PlayScreen Timed: the stamp beat", () => {
     expect(stubStamps()).toEqual([second ? "wrong" : "correct"]);
   });
 
+  // Review finding U3: a held arrow key answered every new card about 250 ms after it settled.
+  it("answers once for a held arrow key: its repeats do not answer the next card", async () => {
+    await start();
+    const first = statementText();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(stubStamps()).toHaveLength(1);
+    run(700);
+    await nextCard(first);
+    h.advance(300);
+    fireEvent.keyDown(window, { key: "ArrowRight", repeat: true });
+    expect(stubStamps()).toEqual([]);
+    expect(tally()).toMatch(/^(1 correct · 0 wrong|0 correct · 1 wrong)$/);
+  });
+
   it("shows the next card 700 ms after the answer, not before", async () => {
     await start();
     const first = statementText();

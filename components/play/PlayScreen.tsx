@@ -51,6 +51,9 @@ export interface PlayScreenProps {
  */
 export const NEXT_ARRIVES_MS = 420;
 
+/** The keys the round acts on. Held down, only the first keydown counts (see the repeat guard in RoundView). */
+const HELD_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight", "Enter"]);
+
 // The card follows --drag-x (set by useSwipe): translateX(dx) and a rotation of dx / 18 degrees.
 const CARD_TRANSFORM: CSSProperties = {
   transform:
@@ -373,6 +376,20 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     if (since === null || now() - since < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
   }, [answeredAt, timeUp, now, dispatch]);
+
+  // A held key: the system repeats its keydown, and a repeat is not a new press. It is cancelled before
+  // anything sees it (capture on window), so it neither answers a card nor presses the focused True, False or
+  // Next card (the browser presses a focused button on Enter unless the keydown is cancelled). One press, one
+  // answer or one action.
+  useEffect(() => {
+    const onRepeat = (event: KeyboardEvent) => {
+      if (!event.repeat || !HELD_KEYS.has(event.key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener("keydown", onRepeat, { capture: true });
+    return () => window.removeEventListener("keydown", onRepeat, { capture: true });
+  }, []);
 
   // Keyboard: left arrow answers False, right arrow True; Enter is the action after an answer
   // (unless focus is on a link or a button, which handle Enter themselves).
