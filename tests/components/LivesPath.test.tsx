@@ -30,8 +30,13 @@ describe("trailLayout", () => {
     expect(layout).toMatchObject({ r: 2.2, side: 8, cross: true });
   });
 
-  it("drops the x of a wrong mark when a long round leaves no room for it", () => {
-    expect(trailLayout(60)).toMatchObject({ r: 0.9, side: 2.6, cross: false });
+  it("keeps a wrong mark a square with its x however long the round, so it is never told by colour alone", () => {
+    expect(trailLayout(60)).toMatchObject({ r: 0.9, side: 6, cross: true });
+    for (let marks = 15; marks <= 200; marks++) {
+      const layout = trailLayout(marks);
+      expect(layout.cross, `${marks} marks`).toBe(true);
+      expect(layout.side, `${marks} marks`).toBeGreaterThanOrEqual(6);
+    }
   });
 });
 
@@ -93,6 +98,23 @@ describe("LivesPath", () => {
     expect(wrong[0]?.querySelector("path")).toBeTruthy();
     expect(container.querySelector("[data-tally]")?.textContent).toBe("14 answered");
     expect(container.querySelector("[data-progress]")?.textContent).toBe("2 of 3 lives left");
+  });
+
+  it.each([60, 119])("in a round of %i marks draws each wrong card as a square with its x, on top of the dots", (n) => {
+    const { container } = render(<LivesPath results={results([30, n - 1], n)} answered={false} />);
+    const wrong = [...container.querySelectorAll('[data-trail="wrong"]')];
+    expect(wrong).toHaveLength(2);
+    for (const mark of wrong) {
+      const rect = mark.querySelector("rect");
+      const width = Number(rect?.getAttribute("width"));
+      expect(width).toBeGreaterThanOrEqual(6);
+      // A corner radius of half the side would draw the square as a circle.
+      expect(Number(rect?.getAttribute("rx"))).toBeLessThanOrEqual(width * 0.25);
+      expect(mark.querySelector("path")).toBeTruthy();
+    }
+    // The dots of the neighbouring cards must not cover the x: the wrong marks come after every dot.
+    const trail = [...container.querySelectorAll("[data-trail]")].map((mark) => mark.getAttribute("data-trail"));
+    expect(trail.slice(-2)).toEqual(["wrong", "wrong"]);
   });
 
   it("after an answer shows its mark where the plane was and counts it", () => {

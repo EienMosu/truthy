@@ -19,7 +19,7 @@ export interface TrailLayout {
   r: number;
   /** Side of a wrong square. */
   side: number;
-  /** Wrong squares carry their x (side >= 6). */
+  /** Wrong squares carry their x (always: the side never drops below 6). */
   cross: boolean;
 }
 
@@ -27,10 +27,12 @@ export interface TrailLayout {
 export function trailLayout(marks: number): TrailLayout {
   // Up to 14 marks: 9 apart, the newest at x 219 next to the plane (14 marks start at x 102).
   if (marks <= 14) return { x: (i) => 219 - 9 * (marks - 1 - i), r: 2.6, side: 9, cross: true };
-  // More: squeezed between x 100 and x 219.
+  // More: squeezed between x 100 and x 219. A wrong square keeps a side of at least 6 with its x however long
+  // the round (spec section 9: correct and wrong are never told apart by colour alone); there are at most two in
+  // the trail, so they may overlap the dots of their neighbours.
   const step = 119 / (marks - 1);
-  const side = Math.min(8, round1(step * 1.3));
-  return { x: (i) => round1(100 + i * step), r: Math.min(2.2, round1(step * 0.45)), side, cross: side >= 6 };
+  const side = Math.max(6, Math.min(8, round1(step * 1.3)));
+  return { x: (i) => round1(100 + i * step), r: Math.min(2.2, round1(step * 0.45)), side, cross: true };
 }
 
 /** The accessible name of the header. */
@@ -138,9 +140,13 @@ export function LivesPath({ results, answered, className }: LivesPathProps): Rea
         <path d={`M${layout.x(0)} 17H238`} fill="none" className="stroke-(--color-ink)" strokeWidth="1.2" strokeLinecap="round" />
       ) : null}
       <path d="M238 17H274" fill="none" className="stroke-(--color-ink)" strokeWidth="1.6" strokeDasharray="2 5" strokeLinecap="round" />
+      {marks.map((correct, i) =>
+        correct ? <circle key={i} data-trail="correct" cx={layout.x(i)} cy={17} r={layout.r} className="fill-(--color-ink)" /> : null,
+      )}
+      {/* The wrong squares after every dot, so the dots of the cards around them never cover their x. */}
       {marks.map((correct, i) => {
+        if (correct) return null;
         const x = layout.x(i);
-        if (correct) return <circle key={i} data-trail="correct" cx={x} cy={17} r={layout.r} className="fill-(--color-ink)" />;
         return (
           <g key={i} data-trail="wrong">
             <rect x={round1(x - layout.side / 2)} y={round1(17 - layout.side / 2)} width={layout.side} height={layout.side} rx="1.5" className="fill-(--color-wrong)" />

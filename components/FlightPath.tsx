@@ -274,19 +274,24 @@ export function Num({ children }: { children: ReactNode }) {
 
 function CompletedMarks({ results, total, ring }: { results: readonly boolean[]; total: number; ring: number | undefined }) {
   const scale = completedScale(total);
-  // A mark too small to carry its tick or its x is drawn plain.
+  // A correct mark too small to carry its tick is drawn plain. A wrong square keeps a side of at least 6 with
+  // its x on any route (spec section 9: correct and wrong are never told apart by colour alone). Enlarged past
+  // its neighbours, it is drawn after every other mark, so their dots never cover its x.
   const plainCorrect = 7 * scale < 5;
-  const plainWrong = 13 * scale < 6;
+  const wrongScale = Math.max(scale, 6 / 13);
+  const lifted = wrongScale > scale;
+  const marks = results.slice(0, total).map((correct, i) => ({ correct, i }));
+  const order = lifted ? [...marks.filter((mark) => mark.correct), ...marks.filter((mark) => !mark.correct)] : marks;
   const ringAt = ring === undefined || ring < 0 || ring >= total ? null : pointAt(waypointT(ring, total));
   return (
     <>
-      {results.slice(0, total).map((correct, i) => (
+      {order.map(({ correct, i }) => (
         <Mark
           key={i}
           verdict={correct ? "correct" : "wrong"}
           at={pointAt(waypointT(i, total))}
-          scale={scale}
-          plain={correct ? plainCorrect : plainWrong}
+          scale={correct ? scale : wrongScale}
+          plain={correct ? plainCorrect : false}
         />
       ))}
       {ringAt === null ? null : (

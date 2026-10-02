@@ -165,8 +165,26 @@ describe("FlightPath, completed (result screens)", () => {
     for (const mark of larger.container.querySelectorAll("[data-waypoint]")) expect(mark.querySelector("path")).not.toBeNull();
     cleanup();
     const tiny = render(<FlightPath variant="completed" total={60} results={wrongOn(60, 7)} />);
-    expect(tiny.container.querySelector('[data-waypoint="wrong"] path')).toBeNull();
+    expect(tiny.container.querySelector('[data-waypoint="correct"] path')).toBeNull();
+    expect(tiny.container.querySelector('[data-waypoint="wrong"] path')).not.toBeNull();
   });
+
+  it.each([30, 60, 120, 200])(
+    "on a route of %i cards keeps every wrong mark a square of side 6 or more with its x, on top of the dots",
+    (total) => {
+      const wrongOn = (n: number, ...numbers: number[]) => Array.from({ length: n }, (_, i) => !numbers.includes(i + 1));
+      const { container } = render(<FlightPath variant="completed" total={total} results={wrongOn(total, 2, total / 2, total)} />);
+      const wrong = [...container.querySelectorAll('[data-waypoint="wrong"]')];
+      expect(wrong).toHaveLength(3);
+      for (const mark of wrong) {
+        const scale = Number(/scale\(([\d.]+)\)/.exec(mark.getAttribute("transform") ?? "")?.[1] ?? 1);
+        expect(13 * scale).toBeGreaterThanOrEqual(6);
+        expect(mark.querySelector("path")).not.toBeNull();
+      }
+      const order = [...container.querySelectorAll("[data-waypoint]")].map((mark) => mark.getAttribute("data-waypoint"));
+      expect(order.slice(-3)).toEqual(["wrong", "wrong", "wrong"]);
+    },
+  );
 
   it("rings one card when asked", () => {
     const fourteen = Array.from({ length: 14 }, (_, i) => i !== 13);
