@@ -37,6 +37,26 @@ describe("hashDeck", () => {
     expect(hashDeck(cards.slice(0, 1))).not.toBe(hashDeck(cards));
   });
 
+  // A changed hash is the only thing that makes a client fetch a deck again (spec section 5): a hash that ignored a
+  // field would keep a corrected answer, source or explanation out of every player's cache. One field at a time.
+  it.each<[string, (card: Card) => Card]>([
+    ["id", (card) => ({ ...card, id: "d-2b" })],
+    ["section", (card) => ({ ...card, section: "OTH" })],
+    ["statement", (card) => ({ ...card, text: { en: { ...card.text.en, statement: "Two, edited." } } })],
+    ["explanation", (card) => ({ ...card, text: { en: { ...card.text.en, explanation: "Because, fixed." } } })],
+    ["answer", (card) => ({ ...card, answer: !card.answer })],
+    ["source title", (card) => ({ ...card, source: { ...card.source, title: "Other docs" } })],
+    ["source url", (card) => ({ ...card, source: { ...card.source, url: "https://aws.amazon.com/" } })],
+    ["difficulty", (card) => ({ ...card, difficulty: 3 })],
+    ["appliesTo", (card) => ({ ...card, appliesTo: "all regions" })],
+    ["conflictGroups", (card) => ({ ...card, conflictGroups: ["topic"] })],
+  ])("changes when only the %s of a card changes", (_field, edit) => {
+    const first = cards[0];
+    const second = cards[1];
+    if (first === undefined || second === undefined) throw new Error("the fixture has two cards");
+    expect(hashDeck([first, edit(second)])).not.toBe(hashDeck(cards));
+  });
+
   it("hashes an empty list without throwing", () => {
     expect(hashDeck([])).toMatch(/^[0-9a-f]{16}$/);
   });
