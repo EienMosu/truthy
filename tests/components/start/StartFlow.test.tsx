@@ -9,6 +9,11 @@ import { INDEX, harness, storedProgress, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+const motionPreference = vi.hoisted(() => ({ reduced: false }));
+vi.mock("motion/react", async (original) => ({
+  ...(await original<typeof import("motion/react")>()),
+  useReducedMotion: () => motionPreference.reduced,
+}));
 
 beforeAll(() => {
   MotionGlobalConfig.skipAnimations = true;
@@ -17,7 +22,10 @@ beforeEach(() => {
   router.push.mockReset();
   router.replace.mockReset();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  motionPreference.reduced = false;
+});
 
 // The last round on CLF / SEC / Classic, left before the end: it has no score.
 const LAST_CLF_SEC = { route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" as const, score: null, total: null };
@@ -321,6 +329,39 @@ describe("StartFlow: choosing a route", () => {
       await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"), { timeout: 2000 });
       expect(router.push).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// Review finding U128: with reduced motion the ready pass does not unroll (spec section 9, every transition
+// has a reduced-motion fallback); /play opens without waiting for it. The panels and the travelling name are
+// seen in a real browser (e2e/reduced-motion.spec.ts): jsdom has no layout for the name to travel in.
+describe("StartFlow: boarding with reduced motion", () => {
+  /** Starts the round on the ready pass and says whether the unrolling paper was ever on screen. */
+  async function board(): Promise<boolean> {
+    await start();
+    await toClasses();
+    await choose(/^Classic\./, "Your pass is ready");
+    let unrolled = false;
+    const observer = new MutationObserver(() => {
+      if (document.querySelector("[data-unroll]")) unrolled = true;
+    });
+    observer.observe(document.body, { subtree: true, childList: true });
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
+    observer.disconnect();
+    return unrolled;
+  }
+
+  it("opens /play without unrolling the pass", async () => {
+    motionPreference.reduced = true;
+    expect(await board()).toBe(false);
+    expect(router.push).toHaveBeenCalledTimes(1);
+  });
+
+  it("control: with full motion the pass unrolls before /play opens", async () => {
+    expect(await board()).toBe(true);
+    expect(router.push).toHaveBeenCalledTimes(1);
   });
 });
 
