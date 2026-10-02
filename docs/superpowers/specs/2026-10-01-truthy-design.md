@@ -312,7 +312,7 @@ The engine and the input module are written test first. GitHub Actions runs all 
 
 ## 12. Repository and deployment
 
-One public GitHub repository. Commits use the owner's GitHub identity. The existing working folder (`~/Desktop/cloud-cards`: content pipeline and design files) moves into the repository as `content/` and `design/`, with local absolute paths in notes turned into relative ones. Vercel builds and deploys `main`; pull requests get preview deployments. The licence for code and for card content is decided when the repository is published.
+One public GitHub repository. Commits use the owner's GitHub identity. The former content working folder (content pipeline and design files) moves into the repository as `content/` and `design/`, with local absolute paths in notes turned into relative ones. Vercel builds and deploys `main`; pull requests get preview deployments. The licence for code and for card content is decided when the repository is published.
 
 ## 13. Open questions
 

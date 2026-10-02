@@ -1,8 +1,8 @@
 ### Task 14: Publish: GitHub repository and Vercel
 
-Tasks 1 to 13 are done and committed on `main` in `~/Desktop/workspace/truthy`. This task makes the repository safe to publish, adds the licences, creates the public repository `EienMosu/truthy`, checks CI, deploys `main` on Vercel the way The Slow Wire (`~/Desktop/workspace/ai-news`) is deployed (Vercel's GitHub integration, imported in the dashboard, no Vercel CLI, no `.vercel/` folder), verifies the production URL and records it in the README.
+Tasks 1 to 13 are done and committed on `main`. This task makes the repository safe to publish, adds the licences, creates the public repository `EienMosu/truthy`, checks CI, deploys `main` on Vercel the way The Slow Wire is deployed (Vercel's GitHub integration, imported in the dashboard, no Vercel CLI, no `.vercel/` folder), verifies the production URL and records it in the README.
 
-The owner keeps two work identities on this machine. Every step that touches an account starts with the account check in step 1 and stops if it does not show `EienMosu`. Steps marked **Owner action or explicit go-ahead required** change something outside the machine: do not run them until the owner says so in this session. Every command runs from the repository root.
+Every step that touches an account starts with the account check in step 1 and stops if it does not show `EienMosu`. Steps marked **Owner action or explicit go-ahead required** change something outside the machine: do not run them until the owner says so in this session. Every command runs from the repository root.
 
 **Files:**
 - Create: `tests/repo-hygiene.test.ts`, `tests/publish-files.test.ts`, `LICENSE`, `content/LICENSE.md`
@@ -447,7 +447,7 @@ Expected: `true`; a run of workflow `checks` whose `headSha` equals `git rev-par
 
 Vercel needs the owner's login, so the owner does this in the dashboard; read these steps out to them:
 
-1. Sign in at https://vercel.com with the account that owns the `ai-news` project. Check the scope selector at the top left shows the personal account, not a work team; stop if it shows anything else.
+1. Sign in at https://vercel.com with the owner's personal Vercel account. Check the scope selector at the top left shows that personal account; stop if it shows anything else.
 2. Add New, then Project. Under "Import Git Repository" the GitHub account is `EienMosu`. If `truthy` is not listed, choose "Adjust GitHub App Permissions", add `EienMosu/truthy` to the repository access, save, and come back.
 3. Press Import next to `truthy`.
 4. Configure: Project Name `truthy`; Framework Preset `Next.js` (detected); Root Directory `./`; Build and Output Settings: leave every Override switch off (Vercel then runs `pnpm install` and `pnpm run build`, and pnpm runs `prebuild` first); Environment Variables: none. Press Deploy.

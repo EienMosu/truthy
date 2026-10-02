@@ -4,7 +4,7 @@ Pure functions that turn the pointer samples of one gesture into `"true"`, `"fal
 
 The behaviour is built up in five test-first slices: constants and `intent`, then `canStart`, then `interpret` by distance and direction, then flings, then the guard against gestures that should never have started.
 
-Every command below runs from the repository root, `~/Desktop/workspace/truthy`.
+Every command below runs from the repository root.
 
 **Files:**
 - Create: `src/input/swipe.ts`

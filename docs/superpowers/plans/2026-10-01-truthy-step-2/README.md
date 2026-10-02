@@ -12,7 +12,7 @@
 
 ## How this plan is organised
 
-One file per task in this folder. Execute them in numeric order on the branch `step-2`; each task ends with all four gates green and all of its changes committed. Every command runs from the repository root, `~/Desktop/workspace/truthy`.
+One file per task in this folder. Execute them in numeric order on the branch `step-2`; each task ends with all four gates green and all of its changes committed. Every command runs from the repository root.
 
 | Task | File | Delivers | Tier |
 |---|---|---|---|

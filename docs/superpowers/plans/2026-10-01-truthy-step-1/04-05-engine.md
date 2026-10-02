@@ -10,7 +10,7 @@ How the dealer works, so the steps below make sense:
 
 The search has a step budget of 20,000 visits. Real decks finish in a few dozen. The budget only runs out on pools where no deal keeps every rule (for example ten cards spread over nine groups), and then the fallback takes over. Measured in the spike on the real CLF deck: every section and the whole deck (214 cards) dealt 500 times with a random history, every rule held every time, about 0.03 ms per deal.
 
-Every command below runs from the repository root, `~/Desktop/workspace/truthy`.
+Every command below runs from the repository root.
 
 **Files:**
 - Create: `src/engine/rng.ts`
@@ -1725,7 +1725,7 @@ git commit -m "test: cover unavoidable conflicts and corrupt history in dealing"
 
 Phases for Classic: `question` (card on screen) to `answered` (verdict visible) on `answer`, then to the next card's `question` on `next`, or to `finished` after the last card. `abandon` ends any unfinished round as `finished` with `abandoned: true`. Every event that does not apply to the current phase is ignored, and `reduce` then returns the very same state object (so React skips the re-render).
 
-Every command below runs from the repository root, `~/Desktop/workspace/truthy`.
+Every command below runs from the repository root.
 
 **Files:**
 - Create: `src/engine/round.ts`

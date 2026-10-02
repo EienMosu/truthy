@@ -4,7 +4,7 @@ What the device remembers between rounds (spec section 7): per card how often it
 
 The behaviour is built in nine test-first slices: the empty value and record keys; card history and the last route; records; deck pruning and the seen share; reading stored progress; the local store; the review focus cases; reaching `window.localStorage` safely; the score of the last round (steps 38a to 38e).
 
-Every command below runs from the repository root, `~/Desktop/workspace/truthy`.
+Every command below runs from the repository root.
 
 **Files:**
 - Create: `src/progress/progress.ts`

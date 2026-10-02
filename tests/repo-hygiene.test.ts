@@ -75,6 +75,20 @@ describe("hygiene rules", () => {
     expect(findingsIn("https://example.org" + "/ro" + "ot/docs and https://example.org" + "/Vol" + "umes/x")).toEqual([]);
   });
 
+  it("flags a folder under the home folder's Desktop, Documents or Downloads, which shows the machine's layout", () => {
+    for (const folder of ["Desktop", "Documents", "Downloads"]) {
+      const path = "~/" + folder + "/";
+      expect(findingsIn(`cd ${path}workspace/x`), folder).toEqual([`1: home folder layout: ${path}`]);
+    }
+    expect(findingsIn("~/.claude/paste-cache/*")).toEqual([]);
+  });
+
+  it("flags a per-user temp folder named with the user id", () => {
+    const folder = "claude" + "-502";
+    expect(findingsIn(`/tmp/${folder}/project/scratchpad`)).toEqual([`1: per-user temp folder: ${folder}`]);
+    expect(findingsIn("the claude-code docs and claude-3 models")).toEqual([]);
+  });
+
   it("flags a Windows user path, also when it is escaped inside JSON", () => {
     const plain = "C:\\" + "Users\\alex";
     const escaped = "C:\\\\" + "Users\\\\alex";

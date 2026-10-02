@@ -13,6 +13,10 @@ export const RULES: readonly { name: string; pattern: RegExp }[] = [
     name: "absolute local path",
     pattern: /(?<![\w.-])(?:\/Users|\/home|\/root|\/Volumes|\/mnt\/[a-z]\/Users|\/private\/tmp|\/private\/var|\/var\/folders)\/[\w.-]+/,
   },
+  // A home-relative path names no user, but these folders show how the machine is laid out.
+  { name: "home folder layout", pattern: /~\/(?:Desktop|Documents|Downloads)\// },
+  // A tool's temp folder per user, named with the numeric user id.
+  { name: "per-user temp folder", pattern: /\bclaude-\d{3,}\b/ },
   // One or two backslashes: the second form is the same path escaped inside JSON.
   { name: "Windows user path", pattern: /\b[A-Za-z]:\\{1,2}Users\\{1,2}[\w.-]+/ },
   // Tools encode a home folder into a folder name, for example a transcript folder per project.

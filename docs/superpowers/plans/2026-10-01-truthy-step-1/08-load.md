@@ -6,7 +6,7 @@ Neither module touches `window.fetch`, `window.localStorage` or `window.sessionS
 
 The behaviour is built up in six test-first slices: the deck cache and `poolFor`, then `loadIndex`, then `loadDeck`, then the pending round, then guards against files that belong to another deck and modes this build cannot play, then the cached copy of the index.
 
-Every command below runs from the repository root, `~/Desktop/workspace/truthy`.
+Every command below runs from the repository root.
 
 **Files:**
 - Create: `src/content/load.ts`
