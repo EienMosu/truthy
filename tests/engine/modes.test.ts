@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import type { Card, Route } from "@/src/content/schema";
+import type { History } from "@/src/content/play";
 import { dealChunk } from "@/src/engine/deal";
 import { createRng } from "@/src/engine/rng";
 import {
@@ -244,5 +245,42 @@ describe("the Timed hold", () => {
       motion: { duration: Record<string, { $value: { value: number; unit: string } }> };
     };
     expect(tokens.motion.duration["hold-timed"]?.$value).toEqual({ value: TIMED.holdMs, unit: "ms" });
+  });
+});
+
+// Spec section 6, plan decision 9: the stored history ranks the cards a chunk has not shown, missed cards first,
+// at most three per ten. Every chunk of an unbounded round is dealt by withNextChunk from the stored history, not
+// only the first: a round that dealt the later chunks with an empty history would pass the tests above.
+describe("the stored history in every chunk", () => {
+  // Nine missed cards of both answers, spread over a pool of forty: three chunks owe three each.
+  const missedIds = ["c1", "c4", "c9", "c12", "c17", "c20", "c25", "c28", "c33"];
+  const history: History = Object.fromEntries(
+    missedIds.map((id, i) => [id, { seen: 2, lastCorrect: false, lastSeenAt: 100 + i }]),
+  );
+  const missedIn = (state: RoundState, from: number) =>
+    state.cards.slice(from, from + 10).filter((c) => missedIds.includes(c.id)).length;
+  const tick = (now: number): RoundEvent => ({ type: "tick", now });
+
+  // Answers every card right, Next card (or the Timed hold) in between, until `count` cards are answered.
+  function playRight(mode: Mode, seed: number, count: number): RoundState {
+    let state = startRound({ mode, route, pool: pool(40), history, seed });
+    let now = 1_700_000_000_000;
+    while (state.answers.length < count) {
+      state = reduce(state, { type: "answer", value: currentCard(state)?.answer ?? true, at: now });
+      if (mode === "timed") {
+        const answered = state.answers.length;
+        while (state.answers.length === answered && state.phase === "stamped") state = reduce(state, tick((now += 100)));
+      } else {
+        state = reduce(state, NEXT);
+      }
+    }
+    return state;
+  }
+
+  it.each(["streak", "lives", "timed"] as const)("%s: deals three missed cards in each of the first three chunks", (mode) => {
+    for (let seed = 1; seed <= 40; seed++) {
+      const state = playRight(mode, seed, 21);
+      expect([0, 10, 20].map((from) => missedIn(state, from)), `seed ${seed}`).toEqual([3, 3, 3]);
+    }
   });
 });
