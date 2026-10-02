@@ -533,14 +533,36 @@ describe("PlayScreen: load failure", () => {
 });
 
 describe("PlayScreen: review focus", () => {
+  // Review finding U121: once Next card has arrived Enter would move on, so only the check of the focused
+  // element keeps Enter on the source link (or on the close button) with that link or button.
   it("lets Enter open the source link instead of moving to the next card", async () => {
     await start();
     fireEvent.click(screen.getByRole("button", { name: "True" }));
+    await screen.findByRole("button", { name: "Next card" });
+    h.advance(NEXT_ARRIVES_MS + 1000);
     const link = screen.getByRole("link");
+    expect(link.getAttribute("target")).toBe("_blank");
     link.focus();
-    fireEvent.keyDown(link, { key: "Enter" });
+    expect(fireEvent.keyDown(link, { key: "Enter" })).toBe(true);
+    await act(async () => {});
     expect(screen.getByRole("button", { name: "Next card" })).toBeTruthy();
     expect(screen.getByRole("img", { name: /^Card 1 of 10\./ })).toBeTruthy();
+  });
+
+  it("leaves Enter on the focused close button to the button, not to Next card", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "True" }));
+    await screen.findByRole("button", { name: "Next card" });
+    h.advance(NEXT_ARRIVES_MS + 1000);
+    const close = screen.getByRole("button", { name: "Leave round" });
+    close.focus();
+    expect(fireEvent.keyDown(close, { key: "Enter" })).toBe(true);
+    await act(async () => {});
+    expect(screen.getByRole("img", { name: /^Card 1 of 10\./ })).toBeTruthy();
+    // Enter from the page itself does move on now, so the card staying is down to the focused button.
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    await screen.findByRole("button", { name: "True" });
+    expect(screen.getByRole("img", { name: /^Card 2 of 10\./ })).toBeTruthy();
   });
 
   it("plays from the copies on the device when the network is gone", async () => {
