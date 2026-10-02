@@ -436,6 +436,17 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     if (card && mainRef.current && lastInput.current === "key") showInColumn(mainRef.current, card);
   }, [view, services]);
 
+  // The chosen card's name, hidden while its copy travels into the pass. Going back within the step's exit
+  // (140 ms) brings back the leaving panel itself, with this node in it, so every way back shows it again before
+  // the frame is painted. Hidden with opacity, not visibility: Safari does not repaint a name whose visibility
+  // comes back inside the moving panel.
+  const hiddenName = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (view.dir > 0 || !hiddenName.current) return;
+    hiddenName.current.style.removeProperty("opacity");
+    hiddenName.current = null;
+  }, [view.seq, view.dir]);
+
   /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */
   function forward(step: Step, choice: Choice, field: PassFieldName, source?: HTMLElement | null) {
     if (!settled()) return;
@@ -443,7 +454,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     const frame = layerRef.current?.offsetParent;
     if (!reduced && name && frame) {
       setTravel({ field, from: lookOf(name, frame) });
-      name.style.visibility = "hidden"; // the card is leaving; its name is now the travelling copy
+      name.style.opacity = "0"; // the card is leaving; its name is now the travelling copy
+      hiddenName.current = name;
     } else {
       setTravel(null);
     }
