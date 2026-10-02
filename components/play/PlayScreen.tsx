@@ -284,15 +284,33 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // screen goes away. It keeps running while the "Leave round?" sheet is open.
   useClock(timed && !decided, dispatch, services);
 
+  // The motion preference for the scroll calls below, read without making it a reason to run them again.
+  const reducedRef = useRef(reduced);
+  useEffect(() => {
+    reducedRef.current = reduced;
+  }, [reduced]);
+
   // A new card: start its settle time, scroll the ticket to the top, put focus on the statement. In Timed
   // only the first card takes focus; later ones are announced by the card announcer (a live region that
-  // stays mounted, see timedCardText), so focus stays on the pill the player used.
+  // stays mounted, see timedCardText), so focus stays on the pill the player used. Timed glides back up
+  // from the stamped stub (below) while the new card is dealt.
   useEffect(() => {
     if (round.phase !== "question") return;
     shownAt.current = now();
-    scrollerRef.current?.scrollTo?.({ top: 0 });
+    scrollerRef.current?.scrollTo?.({ top: 0, behavior: timed && !reducedRef.current ? "smooth" : "instant" });
     if (!timed || round.index === 0) statementRef.current?.focus({ preventScroll: true });
   }, [round.cards, round.index, round.phase, now, timed]);
+
+  // Timed: when the stub is stamped (an answer, or time up), the ticket scrolls to its end, which is the stub.
+  // On a short phone (320 by 568) the stub lies under the action row while the card is a question; this shows
+  // the stamp and its hint above the row and leaves nothing of the ticket under the dimmed pills. Where the
+  // ticket fits the stage there is nothing to scroll.
+  const stubStamped = beat || timeUp;
+  useEffect(() => {
+    if (!stubStamped) return;
+    const scroller = scrollerRef.current;
+    scroller?.scrollTo?.({ top: scroller.scrollHeight, behavior: reducedRef.current ? "instant" : "smooth" });
+  }, [stubStamped, round.index]);
 
   // Time is up: note the moment (See results counts its arrival from it) and whether True or False had focus.
   useEffect(() => {

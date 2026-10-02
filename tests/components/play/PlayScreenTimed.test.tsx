@@ -17,6 +17,11 @@ import { DECK, DECK_ID, cardByStatement, harness, pendingFor, type Harness } fro
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
+const motionPreference = vi.hoisted(() => ({ reduced: false }));
+vi.mock("motion/react", async (original) => ({
+  ...(await original<typeof import("motion/react")>()),
+  useReducedMotion: () => motionPreference.reduced,
+}));
 
 beforeAll(() => {
   MotionGlobalConfig.skipAnimations = true;
@@ -25,7 +30,10 @@ beforeEach(() => {
   router.replace.mockReset();
   router.push.mockReset();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  motionPreference.reduced = false;
+});
 
 let h: Harness;
 
@@ -418,6 +426,72 @@ describe("PlayScreen Timed: time up", () => {
     expect(Object.keys(progress.cards).sort()).toEqual([first.id, second.id].sort());
     expect(progress.cards[third.id]).toBeUndefined();
     expect(progress.last).toEqual({ route: { deckId: DECK_ID, sectionId: "SEC" }, mode: "timed", score: 1, total: 2 });
+  });
+});
+
+// On a short phone (320 by 568) the ticket is taller than the stage and the stub lies under the answer row.
+// jsdom has no layout: the ticket's scroll calls are recorded with a scroll height of 900, and the e2e spec
+// small-screens measures where the stamp ends up.
+describe("PlayScreen Timed: bringing the stamped stub into view", () => {
+  const originalScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, "scrollTo");
+  const originalScrollHeight = Object.getOwnPropertyDescriptor(Element.prototype, "scrollHeight");
+  let scrolls: unknown[] = [];
+  beforeEach(() => {
+    scrolls = [];
+    Object.defineProperty(Element.prototype, "scrollTo", {
+      configurable: true,
+      writable: true,
+      value(this: Element, options?: unknown) {
+        if (this.querySelector(":scope > [data-swipe-card]")) scrolls.push(options);
+      },
+    });
+    Object.defineProperty(Element.prototype, "scrollHeight", { configurable: true, get: () => 900 });
+  });
+  afterEach(() => {
+    if (originalScrollTo) Object.defineProperty(Element.prototype, "scrollTo", originalScrollTo);
+    else delete (Element.prototype as Partial<Element>).scrollTo;
+    if (originalScrollHeight) Object.defineProperty(Element.prototype, "scrollHeight", originalScrollHeight);
+  });
+
+  it("scrolls the ticket to its end, smoothly, when an answer is stamped, and the next card back to the top", async () => {
+    await start();
+    scrolls = [];
+    const first = statementText();
+    give(true);
+    await act(async () => {});
+    expect(scrolls).toEqual([{ top: 900, behavior: "smooth" }]);
+    run(700);
+    await nextCard(first);
+    expect(scrolls.at(-1)).toEqual({ top: 0, behavior: "smooth" });
+  });
+
+  it("scrolls the ticket to its end at time up", async () => {
+    await start();
+    scrolls = [];
+    runToTimeUp();
+    await act(async () => {});
+    expect(scrolls).toEqual([{ top: 900, behavior: "smooth" }]);
+  });
+
+  it("jumps at once when the player asks for reduced motion", async () => {
+    motionPreference.reduced = true;
+    await start();
+    scrolls = [];
+    const first = statementText();
+    give(false);
+    await act(async () => {});
+    expect(scrolls).toEqual([{ top: 900, behavior: "instant" }]);
+    run(700);
+    await nextCard(first);
+    expect(scrolls.at(-1)).toEqual({ top: 0, behavior: "instant" });
+  });
+
+  it("leaves the scroll alone after an answer outside Timed (the slip is read from the top)", async () => {
+    await start(harness(pendingFor("classic")));
+    scrolls = [];
+    give(true);
+    await act(async () => {});
+    expect(scrolls).toEqual([]);
   });
 });
 

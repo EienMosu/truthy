@@ -203,12 +203,20 @@ export function PathFrame({ label, progress, tally, children, className }: PathF
       <svg viewBox="0 0 276 34" aria-hidden="true" focusable="false" className="block h-(--size-flight-path-height) w-full overflow-visible">
         {children}
       </svg>
+      {/* Each label stays on one line with its number; when the two do not fit side by side (a 320 px phone),
+          the row wraps between them and the tally keeps to the right. */}
       <div
         aria-hidden="true"
-        className="mt-(--space-2) flex justify-between font-(family-name:--type-route-label-family) text-(length:--type-route-label-size) leading-(--type-route-label-line-height) font-(--type-route-label-weight) tracking-(--type-route-label-letter-spacing) text-(--color-ink)"
+        className="mt-(--space-2) flex flex-wrap justify-between gap-x-(--space-8) font-(family-name:--type-route-label-family) text-(length:--type-route-label-size) leading-(--type-route-label-line-height) font-(--type-route-label-weight) tracking-(--type-route-label-letter-spacing) text-(--color-ink)"
       >
-        <span data-progress="">{progress}</span>
-        {tally === undefined ? null : <span data-tally="">{tally}</span>}
+        <span data-progress="" className="whitespace-nowrap">
+          {progress}
+        </span>
+        {tally === undefined ? null : (
+          <span data-tally="" className="ml-auto whitespace-nowrap">
+            {tally}
+          </span>
+        )}
       </div>
     </div>
   );

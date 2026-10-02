@@ -279,7 +279,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 
 ### 5.10 Flight-path header
 - **Purpose:** progress through the round at a glance, without numbers taking over.
-- **Anatomy:** the header row (56 tall, gap 12) holds a round button, then the route. The route is an SVG with viewBox 276 × 34, drawn 34 tall at full width with overflow visible. Under it is the label row (`route-label`, margin-top 2, ink): progress on the left, tally on the right. The whole route is one image with a full-sentence accessible label ("Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.").
+- **Anatomy:** the header row (56 tall, gap 12) holds a round button, then the route. The route is an SVG with viewBox 276 × 34, drawn 34 tall at full width with overflow visible. Under it is the label row (`route-label`, margin-top 2, ink): progress on the left, tally on the right. Each label stays on one line with its number; when the two do not fit side by side (a 320 wide phone), the row wraps between them and the tally keeps to the right, so no label is ever split ("Ended · 5" over "cards"). The whole route is one image with a full-sentence accessible label ("Card 4 of 10. Cards 1 and 2 correct, card 3 wrong.").
 - **Curve:** the quadratic `M6 24 Q138 -6 270 24`. The future part is dotted (stroke 1.6, dash 2 5, round caps, `ink`). The flown part is solid (stroke 2.4).
 - **Marks:**
   - **Done:** a circle of r7 in `ink` with a `surface-raised` tick (stroke 1.8).
@@ -425,6 +425,7 @@ Durations and curves come from `tokens.json` `motion`. On web, `--spring` is `cu
 | Jump back through a field | Tapping a filled field goes straight to its step: every later value fades out as a ghost (120) or flies back to its card if that card is on the target step | 360, ease | Cross-fade | as above | as above |
 | Continue (step 1 → 6) | Logo out, full pass in (the top-zone swap); the pass values fade in (220, delay 200); Start round comes in (240, delay 140) | as listed | Cross-fade | as above | as above |
 | Time is up | Stub stamp lands (`land-fast`, 300, delay 120); jolt (260, delay 240) | as listed | Stamp at rest | as Stamp lands | as Stamp lands |
+| Timed stub into view | When the stub is stamped (an answer, or time up) the ticket scrolls to its end, which is the stub, so the stamp and its hint sit above the action row and nothing of the ticket is left under the dimmed pills. The next card scrolls the ticket back to the top while it is dealt. Only a ticket taller than its stage moves (320 × 568: about 270); at 390 × 844 nothing scrolls | Smooth scroll (the browser's) | Instant scroll | `ScrollViewReader.scrollTo(_:anchor: .bottom)` in `withAnimation` | `ScrollState.animateScrollTo(maxValue)` |
 | Life lost | The slash is drawn through the heart that is lost (stroke dash 23 → 0, 300, delay 380, ease) as the Not quite stamp lands; every life, the last included | as listed | Drawn at rest | `trim(from:to:)` | `PathMeasure.getSegment` |
 | Sheet open (browse-c) | Sheet rises from 104%; scrim fades in; deck code travels into Deck | 420 `land`; scrim 360 ease | Instant | Custom overlay (not `.sheet`) with `.spring` | Custom `Box` overlay with `animateFloatAsState(spring)`; not `ModalBottomSheet` |
 | Sheet close (browse-c) | Sheet drops to 104%, scrim fades out, the code flies back to its card | 360 ease | Instant | as above | as above |
@@ -516,6 +517,7 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 10. **Mode-select and the sheet versus the start flow.** start.html chooses the section and the class as steps, which makes the approved mode-select screen and the browse-c sheet redundant. Confirm with the client that start.html is the flow to build.
 11. **Round header on start step 7 for other classes (closed).** Each class shows its own header from card 1: "Streak **0**" with its best, three full hearts and "**0** answered", "**1:00** left". The play screen draws the header of the mode, so the hand-over from the start flow needs no motion of its own.
 12. **Bests per route.** The class cards show the best for the chosen deck and section. Whether a whole-deck best and a section best are kept apart (they are in the mock) needs confirming.
+13. **Timed stamp on a short phone (decided in the build, for the owner to confirm).** At 320 × 568 the ticket is taller than the stage, and the stub with its stamp and hint lay under the answer row for the whole beat and at time up, with the statement showing through the dimmed pills. The ticket now scrolls to the stub when it is stamped and back for the next card (section 7, "Timed stub into view"). The alternative, a smaller or moved stub stamp on short screens, was not taken because it changes the approved stub.
 
 ### Where approved screens disagree (value chosen in bold)
 

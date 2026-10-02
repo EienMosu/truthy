@@ -3,10 +3,13 @@ import {
   CLF_ID,
   CLF_SECURITY,
   SETTLE_MS,
+  answerCard,
   chooseRoute,
   deckAnswers,
   openHome,
   playRound,
+  seeResults,
+  setPageHidden,
   startRound,
   statementOnScreen,
   verdict,
@@ -178,7 +181,7 @@ for (const width of [360, 390] as const) {
 
 // A round handed to /play the way the start flow does (the pending round in sessionStorage), with a record for
 // its route and mode already stored (null: none).
-async function openRound(page: Page, mode: "classic" | "lives" | "timed", record: number | null): Promise<void> {
+async function openRound(page: Page, mode: "classic" | "streak" | "lives" | "timed", record: number | null): Promise<void> {
   await page.addInitScript(
     ({ mode, record }) => {
       const route = { deckId: "aws-clf-c02", sectionId: "SEC" };
@@ -330,6 +333,119 @@ test.describe("the New best landing on a 320 by 568 screen", () => {
       .toBeLessThan(80);
     await page.waitForTimeout(SETTLE_MS);
     await expectInPassAbovePill(page, [stamp, page.getByText(/^Previous best /)]);
+    await expectNoSidewaysScroll(page);
+  });
+});
+
+// The parts of a ticket that must be seen lie inside the screen and above the action row, which covers what
+// scrolls under it (the pills dim to 0.45 during the Timed beat), and the ticket ends above the row, so none
+// of its text shows through the pills. Half a pixel for subpixel layout. Polled: the ticket may still be
+// scrolling there and the stamp landing.
+async function expectAboveActionRow(page: Page, parts: readonly Locator[], action: Locator): Promise<void> {
+  const row = await action.boundingBox();
+  if (row === null) throw new Error("The action row is not on screen");
+  for (const part of parts) {
+    await expect
+      .poll(async () => {
+        const box = await part.boundingBox();
+        return box !== null && box.y >= -0.5 && box.y + box.height <= row.y + 0.5;
+      }, { message: `${part} lies inside the screen and above the action row`, timeout: 5_000 })
+      .toBe(true);
+  }
+  await expect
+    .poll(async () => {
+      const pass = await page.locator("[data-boarding-pass]").last().boundingBox();
+      return pass === null ? Infinity : pass.y + pass.height - row.y;
+    }, { message: "the ticket ends above the action row", timeout: 5_000 })
+    .toBeLessThanOrEqual(0.5);
+}
+
+/** How far the ticket of the play screen is scrolled. */
+async function ticketScroll(page: Page): Promise<number> {
+  return page.locator("[data-swipe-card]").evaluate((card) => card.parentElement?.scrollTop ?? -1);
+}
+
+// Timed on the smallest phone: the ticket is taller than the stage, so while a card is a question its stub
+// lies under the answer row. When the stub is stamped (an answer, or time up) the ticket scrolls to its end:
+// the stamp and its hint show above the row, and nothing of the ticket is left under the dimmed pills. The
+// next card starts at the top again. A hidden page holds the beat while the boxes are measured.
+test.describe("the Timed stamp on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test("the stamp and its hint show above the answer row, and the next card starts at the top", async ({ page }) => {
+    await openRound(page, "timed", null);
+    const answers = await deckAnswers(page, CLF_ID);
+    await expect(page.locator("[data-statement]")).toBeFocused();
+    const first = await answerCard(page, answers, 1, true);
+    await setPageHidden(page, true);
+    const stamp = page.locator('[data-stub-stamp="correct"]');
+    await expect(stamp).toBeVisible();
+    const trueButton = page.getByRole("button", { name: "True", exact: true });
+    await expectAboveActionRow(page, [stamp, page.locator("[data-hint]")], trueButton);
+    await expectNoSidewaysScroll(page);
+
+    await setPageHidden(page, false);
+    await expect(page.locator("[data-card-announcer]")).toHaveText(/^Card 2\. /);
+    await expect.poll(() => statementOnScreen(page)).not.toBe(first.statement);
+    await expect.poll(() => ticketScroll(page), { timeout: 5_000 }).toBe(0);
+    await expect(page.locator("[data-statement]").last()).toBeInViewport();
+  });
+
+  test.describe("with reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("Time is up and its hint show above See results, and the result labels keep their numbers", async ({ page }) => {
+      await page.clock.install();
+      await openRound(page, "timed", null);
+      await expect(page.getByRole("button", { name: "True", exact: true })).toBeVisible();
+      await page.clock.runFor(61_000);
+      const stamp = page.locator('[data-stub-stamp="time-up"]');
+      await expect(stamp).toBeVisible();
+      await expectAboveActionRow(
+        page,
+        [stamp, page.getByText("This card doesn't count · 0 answered")],
+        page.getByRole("button", { name: "See results" }),
+      );
+      await seeResults(page);
+      await expectLabelsWhole(page);
+    });
+  });
+});
+
+// The label row of a header at 320: each label stays on one line with its number ("Ended · 5 cards", never
+// "Ended · 5" over "cards"); when the two do not fit side by side, the row wraps between them.
+async function expectLabelsWhole(page: Page): Promise<void> {
+  const header = page.locator("[data-flight-path]");
+  for (const name of ["progress", "tally"]) {
+    const label = header.locator(`[data-${name}]`);
+    await expect(label).toBeVisible();
+    const m = await label.evaluate((element) => {
+      const row = element.parentElement?.getBoundingClientRect();
+      const box = element.getBoundingClientRect();
+      return { lines: box.height / parseFloat(getComputedStyle(element).lineHeight), left: box.left, right: box.right, row: row ? { left: row.left, right: row.right } : null };
+    });
+    expect(m.lines, `[data-${name}] is one line`).toBeLessThan(1.5);
+    if (m.row === null) throw new Error("The label has no row");
+    expect(m.left).toBeGreaterThanOrEqual(m.row.left - 0.5);
+    expect(m.right).toBeLessThanOrEqual(m.row.right + 0.5);
+  }
+}
+
+test.describe("the header labels of a result on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 }, reducedMotion: "reduce" });
+
+  test("a Streak that ends on card 5: Ended · 5 cards and 4 correct · 1 wrong, each on one line", async ({ page }) => {
+    await openRound(page, "streak", null);
+    const answers = await deckAnswers(page, CLF_ID);
+    let previous: string | undefined;
+    for (let n = 1; n <= 5; n += 1) {
+      previous = (await answerCard(page, answers, n, n < 5, previous)).statement;
+      await page.getByRole("button", { name: n < 5 ? "Next card" : "See results" }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+    await expect(page.locator("[data-flight-path] [data-progress]")).toHaveText("Ended · 5 cards");
+    await expect(page.locator("[data-flight-path] [data-tally]")).toHaveText("4 correct · 1 wrong");
+    await expectLabelsWhole(page);
     await expectNoSidewaysScroll(page);
   });
 });
