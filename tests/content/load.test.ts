@@ -440,6 +440,66 @@ describe("a network that never answers", () => {
     }
   });
 
+  // fetch() resolves when the headers arrive; the body of a deck file can still trickle in for minutes on a weak
+  // signal. The time limit has to cover reading the body too.
+  describe("with the headers in and the body stalled", () => {
+    const stalledBody = vi.fn<Fetcher>(async () => ({ ok: true, json: () => new Promise<unknown>(() => {}) }));
+
+    async function settleBody<T>(promise: Promise<T>): Promise<{ value?: T; error?: unknown } | "pending"> {
+      const outcome = promise.then(
+        (value) => ({ value }),
+        (error: unknown) => ({ error }),
+      );
+      await vi.advanceTimersByTimeAsync(2 * FETCH_TIMEOUT_MS);
+      return Promise.race([outcome, Promise.resolve("pending" as const)]);
+    }
+
+    it("throws a LoadError for the index when nothing is cached, so the player gets Try again", async () => {
+      vi.useFakeTimers();
+      try {
+        const outcome = await settleBody(loadIndex(stalledBody, memoryStorage()));
+        expect(outcome).not.toBe("pending");
+        expect((outcome as { error?: unknown }).error).toBeInstanceOf(LoadError);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("uses the cached index", async () => {
+      vi.useFakeTimers();
+      try {
+        const storage = memoryStorage({ "truthy.index.v1": JSON.stringify(index) });
+        expect(await settleBody(loadIndex(stalledBody, storage))).toEqual({ value: index });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("uses a cached deck of an older hash", async () => {
+      vi.useFakeTimers();
+      try {
+        const cache = createDeckCache(memoryStorage());
+        cache.write(deckFile("aws-clf", "h1"));
+        const outcome = await settleBody(loadDeck({ id: "aws-clf", hash: "h2" }, cache, stalledBody));
+        expect(outcome).not.toBe("pending");
+        expect((outcome as { value?: { hash: string } }).value?.hash).toBe("h1");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("throws a LoadError for a deck with no cached copy", async () => {
+      vi.useFakeTimers();
+      try {
+        const outcome = await settleBody(loadDeck({ id: "aws-clf", hash: "h2" }, createDeckCache(memoryStorage()), stalledBody));
+        expect(outcome).not.toBe("pending");
+        expect((outcome as { error?: unknown }).error).toBeInstanceOf(LoadError);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
+
   it("still waits for a slow answer that arrives inside the limit", async () => {
     vi.useFakeTimers();
     try {
