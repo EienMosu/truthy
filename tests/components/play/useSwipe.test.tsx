@@ -167,6 +167,26 @@ describe("useSwipe", () => {
     expect(onSwipe).not.toHaveBeenCalled();
   });
 
+  // Review finding U5: a second finger that lands while the first one drags is a pinch, not a swipe. The
+  // first finger's travel must not answer the card, and the card springs back.
+  it("drops the gesture when a second finger lands during it (a pinch)", () => {
+    const { onSwipe, card } = setup();
+    const second = { ...pointer, pointerId: 2, isPrimary: false };
+    down(card, [175, 400, 2000]);
+    time = 2010;
+    fireEvent.pointerDown(card, { ...second, clientX: 215, clientY: 400 });
+    expect(card.dataset.dragging).toBeUndefined();
+    for (let spread = 25; spread <= 120; spread += 5) {
+      move(card, [195 - spread, 400, time + 16]);
+      fireEvent.pointerMove(card, { ...second, clientX: 195 + spread, clientY: 400 });
+    }
+    expect(card.style.getPropertyValue("--drag-x")).toBe("0");
+    up(card, [75, 400, time + 16]);
+    fireEvent.pointerUp(card, { ...second, clientX: 315, clientY: 400 });
+    expect(onSwipe).not.toHaveBeenCalled();
+    expect(card.dataset.dragging).toBeUndefined();
+  });
+
   it("makes the card follow the finger and shows the intent while dragging", () => {
     const { card } = setup();
     down(card, [200, 400, 2000]);

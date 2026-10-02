@@ -81,3 +81,39 @@ test("a real touch drag answers in Chromium (touch-action lets the horizontal dr
 
   await expect(verdict(page)).toHaveText(verdictFor(false, first.truth));
 });
+
+// Review finding U5: the card lets the browser take a pinch (touch-action pan-y pinch-zoom), so a player can
+// zoom into the statement, and the pinch does not answer the card.
+test("the card lets the browser zoom with a pinch", async ({ page }) => {
+  const answers = await toFirstCard(page);
+  await waitForCard(page, answers, 1);
+  const touchAction = await page.locator("[data-swipe-card]").evaluate((card) => getComputedStyle(card).touchAction);
+  expect(touchAction.split(" ")).toEqual(expect.arrayContaining(["pan-y", "pinch-zoom"]));
+});
+
+test("a two-finger pinch on the statement zooms in and does not answer the card, in Chromium", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "Multi-touch input is only available through the Chromium DevTools protocol");
+  const answers = await toFirstCard(page);
+  await waitForCard(page, answers, 1);
+
+  const box = await page.locator("[data-statement]").boundingBox();
+  if (box === null) throw new Error("The statement is not on screen");
+  const x = Math.round(box.x + box.width / 2);
+  const y = Math.round(box.y + box.height / 2);
+  const finger = (id: number, spread: number) => ({ x: x + (id === 1 ? -spread : spread), y, id });
+  const fingers = (spread: number) => [finger(1, spread), finger(2, spread)];
+  const cdp = await page.context().newCDPSession(page);
+  // The first finger lands alone, then the second, and the two spread apart horizontally by 200 px.
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [finger(1, 20)] });
+  await page.waitForTimeout(30);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: fingers(20) });
+  for (let step = 1; step <= 20; step += 1) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: fingers(20 + step * 5) });
+    await page.waitForTimeout(16);
+  }
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+
+  await expect.poll(() => page.evaluate(() => window.visualViewport?.scale ?? 1)).toBeGreaterThan(1);
+  await page.waitForTimeout(500);
+  await expectUnanswered(page, 1);
+});

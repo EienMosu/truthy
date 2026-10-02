@@ -62,6 +62,12 @@ export function useSwipe<T extends HTMLElement>({ enabled, cardShownAt, now, onS
 
   const onPointerDown = useCallback(
     (event: PointerEvent<T>) => {
+      // A second finger while one drags is a pinch, not a swipe: the gesture is dropped and the card springs
+      // back, so the first finger's travel cannot answer it (the browser zooms, see touch-action on the card).
+      if (gesture.current !== null && event.pointerId !== gesture.current.pointerId) {
+        reset();
+        return;
+      }
       if (!enabled || gesture.current !== null || !event.isPrimary) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       const first = sample(event);
@@ -79,7 +85,7 @@ export function useSwipe<T extends HTMLElement>({ enabled, cardShownAt, now, onS
         }
       }
     },
-    [enabled, sample, cardShownAt],
+    [enabled, sample, cardShownAt, reset],
   );
 
   const onPointerMove = useCallback(

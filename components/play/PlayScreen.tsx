@@ -496,7 +496,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
               onPointerUp={swipe.onPointerUp}
               onPointerCancel={swipe.onPointerCancel}
               className={[
-                `group relative touch-pan-y ${dragging ? "select-none" : "select-text"}`,
+                `group relative touch-pan-y touch-pinch-zoom ${dragging ? "select-none" : "select-text"}`,
                 "transition-transform duration-(--duration-t3) ease-(--easing-spring) data-dragging:transition-none",
                 round.phase === "question" ? "cursor-grab data-dragging:cursor-grabbing" : "cursor-default",
               ].join(" ")}
