@@ -263,6 +263,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Ink variant:** fill `ink`, text `on-dark`. Used for "Next card →", "See results →" (after every deciding answer, Classic's last card included: Classic after the last card, Streak after a wrong answer, Three lives after the third wrong answer, Time is up), "Start round →" (start step 6) and "Play again" (with a leading replay icon, 18, stroke 2.2).
 - **States:** pressed moves down 2px, scales to 0.98 and switches to `elevation.press` (t1, ease). Focus ring colour `accent` (`focus-on-fill`).
 - In the game answer state the Next row replaces the True/False row: it rises 12px and fades in after a 360ms delay. Focus moves to it at 420ms.
+- On the result, "Play again", "Choose another route" (5.9) and "Close results" take presses only one second after the result appears; they look the same before. "Choose another route" lies where "See results" was, and a second tap, or a player still tapping when a Timed minute ends, must not leave the result unseen.
 - **Used by:** game-*, mode-select, result-*, start (Start round).
 
 ### 5.8 True and False buttons

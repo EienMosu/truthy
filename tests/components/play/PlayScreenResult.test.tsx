@@ -4,6 +4,7 @@ import { MotionGlobalConfig } from "motion/react";
 import { StrictMode } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
+import { RESULT_ARRIVES_MS } from "@/components/play/ResultView";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress, recordKey } from "@/src/progress/progress";
 import { DECK, DECK_ID, INDEX, cardByStatement, fakeNetwork, harness, memoryStorage, pendingFor, type Harness } from "./fixtures";
@@ -33,7 +34,7 @@ async function playRound(h: Harness, right: readonly boolean[], strict = false):
   return answerAll(h, right);
 }
 
-/** Answers the cards on screen, one per entry of right, then waits for the result. */
+/** Answers the cards on screen, one per entry of right, then waits for the result and lets its actions arrive. */
 async function answerAll(h: Harness, right: readonly boolean[]): Promise<string[]> {
   const statements: string[] = [];
   for (const ok of right) {
@@ -48,6 +49,7 @@ async function answerAll(h: Harness, right: readonly boolean[]): Promise<string[
     fireEvent.click(next);
   }
   await screen.findByRole("heading", { name: "Round complete" });
+  h.advance(RESULT_ARRIVES_MS); // the result's actions take presses once they have arrived
   return statements;
 }
 
@@ -79,6 +81,33 @@ describe("PlayScreen: the result of a finished round", () => {
     await playRound(harness(), SEVEN_OF_TEN);
     fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
     expect(router.replace).toHaveBeenCalledWith("/");
+  });
+
+  it("keeps the result on screen when the taps go on after See results: Choose another route lies where See results was", async () => {
+    const h = harness();
+    render(<PlayScreen services={h.services} />);
+    for (const [i, ok] of SEVEN_OF_TEN.entries()) {
+      await screen.findByRole("button", { name: "True" });
+      h.advance(1000);
+      const answer = cardByStatement(statementText()).answer;
+      fireEvent.click(screen.getByRole("button", { name: (ok ? answer : !answer) ? "True" : "False" }));
+      const action = await screen.findByRole("button", { name: i === 9 ? "See results" : "Next card" });
+      h.advance(NEXT_ARRIVES_MS);
+      fireEvent.click(action);
+    }
+    await screen.findByRole("heading", { name: "Round complete" });
+    // Taps 80 to 900 ms after See results, on every action of the result.
+    let since = 0;
+    for (const at of [80, 150, 250, 350, 500, 900, RESULT_ARRIVES_MS - 1]) {
+      h.advance(at - since);
+      since = at;
+      fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+      fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+      fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    }
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
   });
 
   it("goes home with the close button", async () => {

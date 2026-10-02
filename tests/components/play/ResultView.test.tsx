@@ -4,7 +4,7 @@ import { MotionGlobalConfig } from "motion/react";
 import { StrictMode } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { pointAt } from "@/components/FlightPath";
-import { ResultView, recordRound } from "@/components/play/ResultView";
+import { RESULT_ARRIVES_MS, ResultView, recordRound } from "@/components/play/ResultView";
 import type { TicketInfo } from "@/components/play/useRound";
 import { poolFor } from "@/src/content/load";
 import type { Mode } from "@/src/content/play";
@@ -82,8 +82,15 @@ function storeWith(records: Record<string, number>): { storage: MemoryStorage; s
   return { storage, store: () => store };
 }
 
+// The clock the result's actions are timed on; each test starts it afresh.
+let time = 5_000_000;
+const now = () => time;
+beforeEach(() => {
+  time = 5_000_000;
+});
+
 function renderResult(round: RoundState, store: () => ProgressStore, handlers = { onPlayAgain: vi.fn(), onHome: vi.fn() }) {
-  const view = render(<ResultView round={round} ticket={ticketOf(round.mode)} progressStore={store} {...handlers} />);
+  const view = render(<ResultView round={round} ticket={ticketOf(round.mode)} progressStore={store} now={now} {...handlers} />);
   return { ...view, ...handlers };
 }
 
@@ -172,7 +179,7 @@ describe("ResultView: the comparison with the record", () => {
     const { store } = storeWith({ [KEY]: 6 });
     const round = finishedRound("classic", SEVEN_OF_TEN);
     const view = renderResult(round, store);
-    view.rerender(<ResultView round={round} ticket={TICKET} progressStore={store} onPlayAgain={view.onPlayAgain} onHome={view.onHome} />);
+    view.rerender(<ResultView round={round} ticket={TICKET} progressStore={store} onPlayAgain={view.onPlayAgain} onHome={view.onHome} now={now} />);
     expect(comparison()).toBe("New bestPrevious best 6 / 10");
     cleanup();
     renderResult(round, store);
@@ -241,12 +248,12 @@ describe("ResultView: recording", () => {
     const handlers = { onPlayAgain: vi.fn(), onHome: vi.fn() };
     const view = render(
       <StrictMode>
-        <ResultView round={round} ticket={TICKET} progressStore={progressStore} {...handlers} />
+        <ResultView round={round} ticket={TICKET} progressStore={progressStore} now={now} {...handlers} />
       </StrictMode>,
     );
     view.rerender(
       <StrictMode>
-        <ResultView round={round} ticket={TICKET} progressStore={progressStore} {...handlers} />
+        <ResultView round={round} ticket={TICKET} progressStore={progressStore} now={now} {...handlers} />
       </StrictMode>,
     );
     expect(setItem).toHaveBeenCalledTimes(1);
@@ -296,6 +303,7 @@ describe("ResultView: actions", () => {
     const view = renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith({}).store);
     const again = screen.getByRole("button", { name: "Play again" });
     expect(again.querySelector("svg path")?.getAttribute("d")).toBe("M3.5 9a5.5 5.5 0 1 0 1.8-4.1M3.5 2.5v3h3");
+    time += RESULT_ARRIVES_MS; // the actions take presses once they have arrived
     fireEvent.click(again);
     expect(view.onPlayAgain).toHaveBeenCalledTimes(1);
     expect(view.onHome).not.toHaveBeenCalled();
@@ -303,10 +311,67 @@ describe("ResultView: actions", () => {
 
   it("goes home with Choose another route and with the close button", () => {
     const view = renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith({}).store);
+    time += RESULT_ARRIVES_MS; // the actions take presses once they have arrived
     fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
     fireEvent.click(screen.getByRole("button", { name: "Close results" }));
     expect(view.onHome).toHaveBeenCalledTimes(2);
     expect(view.onPlayAgain).not.toHaveBeenCalled();
+  });
+});
+
+// "Choose another route" lies where "See results" was: a second tap on See results, or a player still tapping
+// when a Timed minute ends, must not leave the result before it has been seen.
+describe("ResultView: the actions arrive", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("ignores presses on Play again, Choose another route and Close results until the result has been shown for a second", () => {
+    expect(RESULT_ARRIVES_MS).toBe(1000);
+    const view = renderResult(finishedRound("streak", [true, false]), storeWith({}).store);
+    const press = () => {
+      fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+      fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+      fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    };
+    press();
+    time += 80;
+    press();
+    time += RESULT_ARRIVES_MS - 81; // 1 ms short
+    press();
+    expect(view.onPlayAgain).not.toHaveBeenCalled();
+    expect(view.onHome).not.toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+
+    time += 1;
+    press();
+    expect(view.onPlayAgain).toHaveBeenCalledTimes(1);
+    expect(view.onHome).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts from when the result appeared, not from a later render", () => {
+    const { store } = storeWith({});
+    const round = finishedRound("classic", SEVEN_OF_TEN);
+    const view = renderResult(round, store);
+    time += 600;
+    view.rerender(<ResultView round={round} ticket={TICKET} progressStore={store} onPlayAgain={view.onPlayAgain} onHome={view.onHome} now={now} />);
+    time += 400;
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    expect(view.onPlayAgain).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets taps through to nothing until then: the action row and the close button take no pointer events", () => {
+    vi.useFakeTimers();
+    renderResult(finishedRound("lives", [false, false, false]), storeWith({}).store);
+    const row = screen.getByRole("button", { name: "Play again" }).parentElement;
+    const close = screen.getByRole("button", { name: "Close results" });
+    expect(row?.className).toContain("pointer-events-none");
+    expect(close.className).toContain("pointer-events-none");
+    act(() => vi.advanceTimersByTime(RESULT_ARRIVES_MS - 1));
+    expect(row?.className).toContain("pointer-events-none");
+    act(() => vi.advanceTimersByTime(1));
+    expect(row?.className).not.toContain("pointer-events-none");
+    expect(close.className).not.toContain("pointer-events-none");
   });
 });
 

@@ -3,7 +3,8 @@
 // The result of a finished round in any mode (spec sections 6, 7 and 9; mockups result-classic, result-streak,
 // result-lives, result-timed): the completed flight path, the ticket with the score block and the comparison
 // with the record for this route and mode, the missed cards with their explanations, and two actions: play
-// the same route and mode again, or choose another route. What follows the mode (the three fields, the score
+// the same route and mode again, or choose another route. The actions (and Close results) take presses only
+// once the result has been on screen for RESULT_ARRIVES_MS, so taps meant for the round cannot skip it. What follows the mode (the three fields, the score
 // and its unit, the header's words) comes from resultCopy. Showing it records the round in the progress on
 // the device, exactly once.
 import { useReducedMotion } from "motion/react";
@@ -33,7 +34,18 @@ export interface ResultViewProps {
   onPlayAgain: () => void;
   /** "Choose another route" and the close button: back to the start. */
   onHome: () => void;
+  /** The clock the arrival of the actions is timed on (the play services' now). */
+  now: () => number;
 }
+
+/**
+ * How long after the result appears its actions (Play again, Choose another route, Close results) start to
+ * take presses, by pointer or by Enter. "Choose another route" lies where "See results" was, and in Timed the
+ * player may still be tapping answers when the minute ends, so a second tap, or a steady tapper, must not
+ * leave the result unseen (a second tap never skips what the player has not seen). Longer than the Next
+ * row's 420 ms: a double tap is over by then, a steady tapper is not.
+ */
+export const RESULT_ARRIVES_MS = 1000;
 
 // Rounds already written to the progress store, with what applyResult said. A round is recorded once,
 // however often its result is rendered, its effect runs (React strict mode runs it twice) or it remounts.
@@ -81,7 +93,7 @@ const SCROLLER: CSSProperties = {
   scrollbarWidth: "none",
 };
 
-export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }: ResultViewProps) {
+export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome, now }: ResultViewProps) {
   const outcome = useRecordedRound(round, progressStore);
   const result = summarise(round);
   const comparison = compareWithBest(result.score, outcome.previousBest);
@@ -93,6 +105,19 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
   // The ticket jolts as the New best stamp lands, so the jolt starts after the first frame.
   const [landed, setLanded] = useState(false);
   const newBest = comparison.kind === "new-best";
+  // When the result appeared (the first render), and whether its actions have arrived (only for the
+  // pointer-events class: the presses themselves are checked on the clock, as the Next row's are).
+  const [shownAt] = useState(now);
+  const [arrived, setArrived] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setArrived(true), RESULT_ARRIVES_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  const whenArrived = (action: () => void) => () => {
+    if (now() - shownAt < RESULT_ARRIVES_MS) return;
+    action();
+  };
+  const waiting = arrived ? undefined : "pointer-events-none";
 
   useEffect(() => {
     headingRef.current?.focus({ preventScroll: true });
@@ -111,7 +136,7 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
     <main className="flex min-h-0 flex-1 flex-col">
       <SkyBackdrop />
       <header className="relative z-10 flex h-(--size-header) flex-none items-center gap-(--space-12)">
-        <RoundButton label="Close results" onClick={onHome}>
+        <RoundButton label="Close results" className={waiting} onClick={whenArrived(onHome)}>
           <CloseIcon />
         </RoundButton>
         <FlightPath
@@ -152,11 +177,11 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome }
           </BoardingPass>
         </div>
       </section>
-      <div className="relative z-10 mt-(--space-12) flex flex-none flex-col gap-(--space-4)">
-        <PillButton leadingIcon={<ReplayIcon />} onClick={onPlayAgain}>
+      <div className={["relative z-10 mt-(--space-12) flex flex-none flex-col gap-(--space-4)", waiting].filter(Boolean).join(" ")}>
+        <PillButton leadingIcon={<ReplayIcon />} onClick={whenArrived(onPlayAgain)}>
           Play again
         </PillButton>
-        <QuietButton leadingIcon={<RouteIcon />} onClick={onHome}>
+        <QuietButton leadingIcon={<RouteIcon />} onClick={whenArrived(onHome)}>
           Choose another route
         </QuietButton>
       </div>

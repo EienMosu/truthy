@@ -10,6 +10,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NEXT_ARRIVES_MS, PlayScreen, timedCardText, timedStatus } from "@/components/play/PlayScreen";
+import { RESULT_ARRIVES_MS } from "@/components/play/ResultView";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { emptyProgress, parseProgress } from "@/src/progress/progress";
 import { reduce, startRound } from "@/src/engine/round";
@@ -611,7 +612,9 @@ describe("PlayScreen Timed: focus and input at time up", () => {
     run(60_000);
     h.advance(NEXT_ARRIVES_MS);
     fireEvent.click(screen.getByRole("button", { name: "See results" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Play again" }));
+    const again = await screen.findByRole("button", { name: "Play again" });
+    h.advance(RESULT_ARRIVES_MS); // the result's actions take presses once they have arrived
+    fireEvent.click(again);
     await screen.findByRole("button", { name: "True" });
     await act(async () => {});
     h.advance(1000);

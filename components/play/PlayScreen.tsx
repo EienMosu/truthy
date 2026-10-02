@@ -173,7 +173,9 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
 
   const { round, ticket } = status;
   if (round.phase === "finished") {
-    return <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={goHome} />;
+    return (
+      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={goHome} now={services.now} />
+    );
   }
 
   return <RoundView round={round} ticket={ticket} services={services} dispatch={dispatch} onLeave={() => leave(round)} />;

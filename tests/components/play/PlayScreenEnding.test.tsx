@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
+import { RESULT_ARRIVES_MS } from "@/components/play/ResultView";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { emptyProgress, parseProgress } from "@/src/progress/progress";
 import { DECK_ID, cardByStatement, harness, memoryStorage, pendingFor, type Harness } from "./fixtures";
@@ -356,6 +357,7 @@ describe("PlayScreen: the Streak header", () => {
     h.advance(NEXT_ARRIVES_MS);
     fireEvent.click(action);
     await screen.findByRole("heading", { name: "Round complete" });
+    h.advance(RESULT_ARRIVES_MS); // the result's actions take presses once they have arrived
     fireEvent.click(screen.getByRole("button", { name: "Play again" }));
     await screen.findByRole("button", { name: "True" });
     expect(headerName()).toBe("Streak of 0 correct answers. Your best on this route is 2.");
