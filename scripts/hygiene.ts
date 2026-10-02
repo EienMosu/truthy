@@ -206,16 +206,19 @@ function addedLines(patch: string): [path: string, lines: string[]][] {
 }
 
 // The revisions to scan for each line git passes a pre-push hook on its standard input:
-// "<local ref> <local sha> <remote ref> <remote sha>". A deletion pushes no commits. For a branch the remote
-// already has, the commits after the remote's one; for a new branch, or when the remote's commit is not known
-// here (a forced push over commits this clone never fetched), every commit not on a remote.
+// "<local ref> <local sha> <remote ref> <remote sha>". A deletion pushes no commits. Every pushed commit that
+// is not on a remote yet: a commit already public on another remote branch publishes nothing new when it
+// reaches this one (a merge of a released branch), and rewriting it would rewrite public history. For a branch
+// the remote already has, its commit is excluded as well, in case this clone has not fetched it into a
+// remote-tracking branch; when that commit is not known here (a forced push over commits this clone never
+// fetched), only the remote-tracking branches bound the scan.
 export function pushRanges(cwd: string, stdin: string): string[][] {
   const ranges: string[][] = [];
   for (const line of stdin.split("\n")) {
     const [, local, , remote] = line.trim().split(/\s+/);
     if (!local || !remote || /^0+$/.test(local)) continue;
     const known = !/^0+$/.test(remote) && spawnSync("git", ["cat-file", "-e", `${remote}^{commit}`], { cwd }).status === 0;
-    ranges.push(known ? [`${remote}..${local}`] : [local, "--not", "--remotes"]);
+    ranges.push(known ? [local, "--not", remote, "--remotes"] : [local, "--not", "--remotes"]);
   }
   return ranges;
 }

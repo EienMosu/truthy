@@ -145,7 +145,24 @@ describe("pushRanges", () => {
       `(delete) ${ZERO} refs/heads/old ${first}`,
       "",
     ].join("\n");
-    expect(pushRanges(dir, stdin)).toEqual([[`${first}..${second}`], [second, "--not", "--remotes"]]);
+    expect(pushRanges(dir, stdin)).toEqual([[second, "--not", first, "--remotes"], [second, "--not", "--remotes"]]);
+  });
+
+  it("does not scan a commit that is already public on another remote branch when it reaches a branch it was not on", () => {
+    const dir = repo();
+    const base = commit(dir, { "README.md": "Truthy\n" }, "docs: readme");
+    git(dir, ["checkout", "-q", "-b", "side"]);
+    // Published before the rules flagged it: rewriting it now would rewrite public history.
+    const published = commit(dir, { "notes.md": `${home}/notes.md\n` }, "docs: notes");
+    git(dir, ["update-ref", "refs/remotes/origin/main", base]);
+    git(dir, ["update-ref", "refs/remotes/origin/side", published]);
+    const fresh = commit(dir, { "c.md": `${home}/c.md\n` }, "docs: c");
+    git(dir, ["checkout", "-q", "main"]);
+    git(dir, ["merge", "-q", "--ff-only", "side"]);
+    const ranges = pushRanges(dir, `refs/heads/main ${fresh} refs/heads/main ${base}\n`);
+    expect(ranges.flatMap((revisions) => scanCommits(dir, revisions))).toEqual([
+      `${fresh.slice(0, 7)} c.md: absolute local path: ${home}`,
+    ]);
   });
 
   it("scans every commit not on a remote when the remote's commit is not known here (a forced push)", () => {
@@ -194,5 +211,21 @@ describe(".githooks/pre-push", () => {
     expect(push.status).not.toBe(0);
     expect(push.stderr).toContain(`author: e-mail address: ${email}`);
     expect(git(remote, ["branch", "--list"]).stdout).toBe("");
+  });
+
+  it("lets a branch through that only brings commits another branch of the remote already has", () => {
+    const { dir, remote } = pushSetup();
+    commit(dir, { "README.md": "Truthy\n" }, "docs: readme");
+    expect(git(dir, ["push", "-q", "origin", "main"]).status).toBe(0);
+    git(dir, ["checkout", "-q", "-b", "side"]);
+    commit(dir, { "notes.md": `${home}/notes.md\n` }, "docs: notes");
+    const head = commit(dir, { "notes.md": "notes\n" }, "docs: no path");
+    // Published before the hook existed.
+    expect(git(dir, ["push", "-q", "--no-verify", "origin", "side"]).status).toBe(0);
+    git(dir, ["checkout", "-q", "main"]);
+    git(dir, ["merge", "-q", "--ff-only", "side"]);
+    const push = git(dir, ["push", "-q", "origin", "main"]);
+    expect(push.status, push.stderr).toBe(0);
+    expect(git(remote, ["rev-parse", "main"]).stdout.trim()).toBe(head);
   });
 });
