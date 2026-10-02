@@ -76,22 +76,28 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
   const reduced = useReducedMotion() ?? false;
   const [open, setOpen] = useState(false);
   const itemRef = useRef<HTMLLIElement>(null);
+  const whyRef = useRef<HTMLDivElement>(null);
   const buttonId = useId();
   const regionId = useId();
   const number = pad2(item.number);
 
-  // Once the explanation has grown (380 ms, at once with reduced motion), scroll it fully into the list.
+  // Once the explanation has grown (380 ms, at once with reduced motion), scroll it into the list: the whole
+  // item, its source link 16 px clear of the foot of the list, as far as that leaves the first line of the
+  // explanation in view. A card taller than the list (a long explanation on a short phone) gives up its
+  // statement and its Why row, never the start of the explanation.
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(
       () => {
         const list = listRef.current;
         const element = itemRef.current;
-        if (!list || !element) return;
+        const why = whyRef.current;
+        if (!list || !element || !why) return;
         const box = element.getBoundingClientRect();
         const frame = list.getBoundingClientRect();
         const over = box.bottom + 16 - frame.bottom;
-        if (over > 0) list.scrollBy?.({ top: Math.min(over, box.top - frame.top), behavior: reduced ? "auto" : "smooth" });
+        const toExplanation = why.getBoundingClientRect().top - frame.top;
+        if (over > 0) list.scrollBy?.({ top: Math.min(over, toExplanation), behavior: reduced ? "auto" : "smooth" });
       },
       reduced ? 0 : 380,
     );
@@ -140,7 +146,7 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
         className={`grid transition-[grid-template-rows] duration-(--duration-t3) ease-(--easing-ease) ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
-          <div className="mb-(--space-12) border-l-(length:--stroke-quote) border-(--color-rule) pl-(--space-12)">
+          <div ref={whyRef} className="mb-(--space-12) border-l-(length:--stroke-quote) border-(--color-rule) pl-(--space-12)">
             <p className={EXPLANATION}>{item.explanation}</p>
             <a
               href={item.source.url}
