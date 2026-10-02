@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MissedCards, missedCards, type MissedCard } from "@/components/MissedCards";
 import type { Answered } from "@/src/engine/round";
 import { DECK } from "./play/fixtures";
@@ -106,6 +106,57 @@ describe("MissedCards", () => {
     expect(closed?.hasAttribute("inert")).toBe(true);
     fireEvent.click(why);
     expect(closed?.hasAttribute("inert")).toBe(false);
+  });
+
+  describe("scrolling an opened Why into the list", () => {
+    // jsdom has no layout: the list is 200 tall, the explanation (with its link) runs from 150 to 300, and the
+    // row that holds it is closed (0 tall) until the test lets it grow.
+    let grown = false;
+    function layout(): HTMLElement {
+      const region = screen.getByRole("region", { name: "Why, card 09" });
+      const why = region.firstElementChild?.firstElementChild;
+      vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+        if (this.tagName === "OL") return DOMRect.fromRect({ x: 0, y: 0, width: 300, height: 200 });
+        if (this === why) return DOMRect.fromRect({ x: 0, y: 150, width: 300, height: 150 });
+        if (this === region) return DOMRect.fromRect({ x: 0, y: 150, width: 300, height: grown ? 150 : 0 });
+        return DOMRect.fromRect();
+      });
+      const list = screen.getByRole("list");
+      list.scrollBy = vi.fn();
+      return list;
+    }
+
+    beforeEach(() => {
+      grown = false;
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame"] });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it("waits until the row has grown, so a list that is still short does not stop the scroll", () => {
+      render(<MissedCards missed={MISSED} />);
+      fireEvent.click(screen.getByRole("button", { name: "Why, card 09" }));
+      const list = layout();
+      act(() => vi.advanceTimersByTime(500));
+      expect(list.scrollBy).not.toHaveBeenCalled();
+      grown = true;
+      act(() => vi.advanceTimersByTime(20));
+      // 16 px clear of the foot of the list: 300 + 16 - 200.
+      expect(list.scrollBy).toHaveBeenCalledTimes(1);
+      expect(list.scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: 116 }));
+    });
+
+    it("scrolls after about a second even if the row never reports its full height", () => {
+      render(<MissedCards missed={MISSED} />);
+      fireEvent.click(screen.getByRole("button", { name: "Why, card 09" }));
+      const list = layout();
+      act(() => vi.advanceTimersByTime(800));
+      expect(list.scrollBy).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(1000));
+      expect(list.scrollBy).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("shows one calm line instead of an empty list when nothing was missed", () => {

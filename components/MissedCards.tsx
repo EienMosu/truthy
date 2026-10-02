@@ -72,38 +72,55 @@ const ANSWER_WORD =
 const EXPLANATION =
   "m-0 font-(family-name:--type-body-family) text-[15px] font-(--type-body-weight) leading-(--type-body-line-height) text-(--color-ink)";
 
+// How many frames the scroll to an opened Why waits for the row to reach its full height: about a second.
+const GROWN_WAIT_FRAMES = 60;
+
 function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HTMLOListElement | null> }) {
   const reduced = useReducedMotion() ?? false;
   const [open, setOpen] = useState(false);
   const itemRef = useRef<HTMLLIElement>(null);
   const whyRef = useRef<HTMLDivElement>(null);
+  const regionRef = useRef<HTMLDivElement>(null);
   const buttonId = useId();
   const regionId = useId();
   const number = pad2(item.number);
 
-  // Once the explanation has grown (380 ms; with reduced motion its 1 ms transition is over after a frame or
-  // two), scroll it into the list: the whole item, 16 px clear of the foot of the list, as far as that leaves
-  // the first line of the explanation in view. A card taller than the list (a long explanation on a short
-  // phone) gives up its statement and its Why row, never the start of the explanation. The explanation is
-  // measured at its own height, which does not depend on how far the row has grown.
+  // Once the explanation has grown (380 ms; with reduced motion there is no transition), scroll it into the list:
+  // the whole item, 16 px clear of the foot of the list, as far as that leaves the first line of the explanation
+  // in view. A card taller than the list (a long explanation on a short phone) gives up its statement and its
+  // Why row, never the start of the explanation. The explanation is measured at its own height, which does not
+  // depend on how far the row has grown, but the list can only scroll as far as its content then reaches: a
+  // browser that has not drawn the transition by the time the timer fires (a slow phone, a busy test runner)
+  // still has the row closed, and the scroll to a card near the end would stop short, leaving its source link
+  // under the fade. So the scroll waits, a frame at a time, until the row has its full height (at most a second).
   useEffect(() => {
     if (!open) return;
-    const timer = setTimeout(
-      () => {
-        const list = listRef.current;
-        const element = itemRef.current;
-        const why = whyRef.current;
-        if (!list || !element || !why) return;
-        const frame = list.getBoundingClientRect();
-        const explanation = why.getBoundingClientRect();
-        const below = parseFloat(getComputedStyle(why).marginBottom) + parseFloat(getComputedStyle(element).paddingBottom);
-        const over = explanation.bottom + (below || 0) + 16 - frame.bottom;
-        const toExplanation = explanation.top - frame.top;
-        if (over > 0) list.scrollBy?.({ top: Math.min(over, toExplanation), behavior: reduced ? "auto" : "smooth" });
-      },
-      reduced ? 50 : 380,
-    );
-    return () => clearTimeout(timer);
+    let request = 0;
+    let frames = 0;
+    const scroll = () => {
+      const list = listRef.current;
+      const element = itemRef.current;
+      const why = whyRef.current;
+      const row = regionRef.current;
+      if (!list || !element || !why || !row) return;
+      const explanation = why.getBoundingClientRect();
+      const full = explanation.height + (parseFloat(getComputedStyle(why).marginBottom) || 0);
+      if (row.getBoundingClientRect().height < full - 0.5 && frames < GROWN_WAIT_FRAMES) {
+        frames += 1;
+        request = requestAnimationFrame(scroll);
+        return;
+      }
+      const frame = list.getBoundingClientRect();
+      const below = parseFloat(getComputedStyle(why).marginBottom) + parseFloat(getComputedStyle(element).paddingBottom);
+      const over = explanation.bottom + (below || 0) + 16 - frame.bottom;
+      const toExplanation = explanation.top - frame.top;
+      if (over > 0) list.scrollBy?.({ top: Math.min(over, toExplanation), behavior: reduced ? "auto" : "smooth" });
+    };
+    const timer = setTimeout(scroll, reduced ? 50 : 380);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(request);
+    };
   }, [open, reduced, listRef]);
 
   return (
@@ -140,6 +157,7 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
       {/* The one height animation of the web build (design system 7): the row grows from 0fr to 1fr.
           Closed, the explanation is hidden from screen readers and its link is out of the tab order. */}
       <div
+        ref={regionRef}
         id={regionId}
         role="region"
         aria-labelledby={buttonId}
