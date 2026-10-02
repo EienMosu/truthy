@@ -125,6 +125,64 @@ describe("deal: the run limit across a join", () => {
   });
 });
 
+// Spec section 6: the unshown cards come first; recency gives way before a conflict group repeats (a card the round
+// has shown comes back in place of an unshown card that would repeat a group of the last ten).
+describe("dealChunk: the order in which the rules give way", () => {
+  function sharedGroups(dealt: readonly Card[]): string[] {
+    const seen = new Set<string>();
+    const shared: string[] = [];
+    for (const c of dealt) {
+      for (const g of c.conflictGroups) {
+        if (seen.has(g)) shared.push(g);
+        seen.add(g);
+      }
+    }
+    return shared;
+  }
+
+  it("brings shown cards back rather than repeat a group inside the chunk", () => {
+    // u1 has not been shown and belongs to groups A and B. k1 (A) and k2 (B) were shown longest ago. Ten cards that
+    // keep every rule need u1 left out, so that k1 and k2 can both come back.
+    const ks = Array.from({ length: 10 }, (_, i) => card(`k${i + 1}`, i % 2 === 0, i === 0 ? ["A"] : i === 1 ? ["B"] : []));
+    const rs = Array.from({ length: 10 }, (_, i) => card(`r${i + 1}`, i % 2 === 0));
+    const pool = [card("u1", true, ["A", "B"]), ...ks, ...rs];
+    for (let seed = 0; seed < 20; seed++) {
+      const chunk = dealChunk(pool, {}, createRng(seed), [...ks, ...rs]);
+      expect(chunk, `seed ${seed}`).toHaveLength(10);
+      expect(sharedGroups(chunk), `seed ${seed}`).toEqual([]);
+      expect(ids(chunk).sort(), `seed ${seed}`).toEqual(ids(ks).sort());
+    }
+  });
+
+  it("brings a card back rather than deal an unshown card that repeats a group of the last ten, when the greedy pick would", () => {
+    // c21 (True, not shown) shares group X with c1 (False, shown). c2 to c10 hold six True and three False, so only
+    // c1 to c10 keep every rule: c21 has to be left out and c1 has to come back.
+    const shown = [
+      card("c1", false, ["X"]),
+      ...Array.from({ length: 9 }, (_, i) => card(`c${i + 2}`, i % 3 !== 0)),
+      ...Array.from({ length: 10 }, (_, i) => card(`c${i + 11}`, i % 2 === 0)),
+    ];
+    const unshown = card("c21", true, ["X"]);
+    for (let seed = 0; seed < 50; seed++) {
+      const chunk = dealChunk([...shown, unshown], {}, createRng(seed), shown);
+      expect(ids(chunk).sort(), `seed ${seed}`).toEqual(ids(shown.slice(0, 10)).sort());
+    }
+  });
+
+  it("deals every unshown card, the missed one over the cap too, before any card comes back", () => {
+    // Unshown: m1 to m4 answered wrong (m4 is over the cap of three) and u1 to u6 never seen: five True, five False.
+    // Shown: k1 (longest ago) to k11. The ten unshown cards keep every rule, so no card comes back.
+    const wrong = [card("m1", true), card("m2", false), card("m3", true), card("m4", false)];
+    const unseen = Array.from({ length: 6 }, (_, i) => card(`u${i + 1}`, i % 2 === 0));
+    const shown = Array.from({ length: 11 }, (_, i) => card(`k${i + 1}`, i % 2 === 1));
+    const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, { seen: 1, lastCorrect: false, lastSeenAt: i + 1 }]));
+    for (let seed = 0; seed < 20; seed++) {
+      const chunk = dealChunk([...wrong, ...unseen, ...shown], history, createRng(seed), shown);
+      expect(ids(chunk).sort(), `seed ${seed}`).toEqual(ids([...wrong, ...unseen]).sort());
+    }
+  });
+});
+
 describe("dealChunk", () => {
   it("is ten", () => {
     expect(CHUNK).toBe(10);

@@ -319,11 +319,36 @@ describe("deal: relaxing the constraints when the pool is too small", () => {
       ...cards("f", 2, () => false),
       ...Array.from({ length: 4 }, (_, i) => card(`g${i + 1}`, false, ["clash"])),
     ];
-    for (let seed = 0; seed < 30; seed++) {
+    for (let seed = 0; seed < 60; seed++) {
       const dealt = deal(pool, {}, createRng(seed), { count: 10 });
       expect(dealt).toHaveLength(10);
       expect(trueCount(dealt)).toBe(6);
       expect(inGroup(dealt, "clash")).toBe(2);
+    }
+  });
+
+  it("relaxes conflict groups before answer balance also when the group cards rank last", () => {
+    // The same pool, but the four group cards were answered right long ago, so they rank after every True card.
+    // A fallback that relaxes the balance first, or both at once, would take the seventh True card instead.
+    const pool = [
+      ...cards("t", 8, () => true),
+      ...cards("f", 2, () => false),
+      ...Array.from({ length: 4 }, (_, i) => card(`g${i + 1}`, false, ["clash"])),
+    ];
+    const history: History = Object.fromEntries(["g1", "g2", "g3", "g4"].map((id, i) => [id, right(i + 1)]));
+    for (let seed = 0; seed < 20; seed++) {
+      const dealt = deal(pool, history, createRng(seed), { count: 10 });
+      expect(dealt, `seed ${seed}`).toHaveLength(10);
+      expect(trueCount(dealt), `seed ${seed}`).toBe(6);
+      expect(inGroup(dealt, "clash"), `seed ${seed}`).toBe(2);
+    }
+  });
+
+  it("always deals the full count, also from twelve True cards of one group", () => {
+    const pool = Array.from({ length: 12 }, (_, i) => card(`c${i + 1}`, true, ["one-topic"]));
+    for (let seed = 0; seed < 20; seed++) {
+      expect(deal(pool, {}, createRng(seed), { count: 10 }), `seed ${seed}`).toHaveLength(10);
+      expect(dealChunk(pool, {}, createRng(seed), []), `seed ${seed}`).toHaveLength(10);
     }
   });
 
