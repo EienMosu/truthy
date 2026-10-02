@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import type { Card, Route } from "@/src/content/schema";
+import { dealChunk } from "@/src/engine/deal";
+import { createRng } from "@/src/engine/rng";
 import {
   LIVES,
+  TIMED,
   chunkSeed,
   currentCard,
   isDecided,
@@ -214,5 +218,31 @@ describe("scoreOf", () => {
     expect(scoreOf("timed", answers)).toBe(3);
     expect(scoreOf("streak", answers)).toBe(2);
     expect(scoreOf("lives", answers)).toBe(4);
+  });
+});
+
+// Rule 2 and decision 11 of the step 2 plan, the contract the Swift and Kotlin clones keep: chunk k of a round
+// is dealt with createRng(chunkSeed(seed, k)), after the cards already dealt. A round dealt with one generator
+// for every chunk passes the determinism tests above, so this pins the seed of each chunk.
+describe("the seed of each chunk", () => {
+  it("deals chunk 1 and chunk 2 of a round with chunkSeed(seed, 1) and chunkSeed(seed, 2)", () => {
+    const seed = 4242;
+    const state = rightTimes(start("streak", 40, seed), 20);
+    const first10 = state.cards.slice(0, 10);
+    expect(first10.map((c) => c.id)).toEqual(dealChunk(pool(40), {}, createRng(chunkSeed(seed, 0)), []).map((c) => c.id));
+    const chunk1 = dealChunk(pool(40), {}, createRng(chunkSeed(seed, 1)), first10);
+    expect(state.cards.slice(10, 20).map((c) => c.id)).toEqual(chunk1.map((c) => c.id));
+    const chunk2 = dealChunk(pool(40), {}, createRng(chunkSeed(seed, 2)), [...first10, ...chunk1]);
+    expect(state.cards.slice(20, 30).map((c) => c.id)).toEqual(chunk2.map((c) => c.id));
+  });
+});
+
+// The engine is pure and keeps its own hold; the design token says the same time to the clones.
+describe("the Timed hold", () => {
+  it("is the hold-timed token of design/system/tokens.json", () => {
+    const tokens = JSON.parse(readFileSync(new URL("../../design/system/tokens.json", import.meta.url), "utf8")) as {
+      motion: { duration: Record<string, { $value: { value: number; unit: string } }> };
+    };
+    expect(tokens.motion.duration["hold-timed"]?.$value).toEqual({ value: TIMED.holdMs, unit: "ms" });
   });
 });

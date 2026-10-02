@@ -93,7 +93,7 @@ describe("savePending and readPending", () => {
   });
 });
 
-describe("modes this build cannot play", () => {
+describe("stored modes", () => {
   it("reads null for a mode the game does not know", () => {
     const stored = JSON.stringify({ route: pending.route, mode: "sudden-death" });
     expect(readPending(memoryStorage({ [PENDING_KEY]: stored }))).toBeNull();
