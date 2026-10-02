@@ -242,6 +242,28 @@ function layoutBox(el: HTMLElement, frame: Element): { left: number; top: number
   return node === frame ? { left, top, width: el.offsetWidth, height: el.offsetHeight } : null;
 }
 
+/** Room left around a card brought into view, for its focus ring (the list's own padding is 8). */
+const FOCUS_ROOM = 8;
+
+/**
+ * On a short screen, where the start column scrolls (globals.css, "short"), scrolls `main` just enough to show
+ * `card` whole with its focus ring. The card is measured where it comes to rest, without its rise-in transform.
+ * Elsewhere `main` does not scroll and this does nothing.
+ */
+function showInColumn(main: HTMLElement, card: HTMLElement) {
+  const overflow = getComputedStyle(main).overflowY;
+  if (overflow !== "auto" && overflow !== "scroll") return;
+  const option = card.closest<HTMLElement>("[data-option]");
+  const transform = option ? getComputedStyle(option).transform : "none";
+  const shift = transform && transform !== "none" ? new DOMMatrixReadOnly(transform).m42 : 0;
+  const area = main.getBoundingClientRect();
+  const box = card.getBoundingClientRect();
+  const top = box.top - shift - area.top - FOCUS_ROOM;
+  const bottom = box.bottom - shift - area.top + FOCUS_ROOM;
+  if (bottom > main.clientHeight) main.scrollTop += Math.min(bottom - main.clientHeight, top);
+  else if (top < 0) main.scrollTop += top;
+}
+
 function lookOf(el: HTMLElement, frame: Element): Look {
   const box = el.getBoundingClientRect();
   const origin = frame.getBoundingClientRect();
@@ -369,6 +391,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     const panel = mainRef.current?.querySelector(`[data-step="${view.step}"]`);
     const card = view.focusId ? panel?.querySelector<HTMLElement>(`[data-option="${CSS.escape(view.focusId)}"] button`) : null;
     (card ?? panel?.querySelector<HTMLElement>("h2"))?.focus({ preventScroll: true });
+    if (card && mainRef.current) showInColumn(mainRef.current, card);
   }, [view]);
 
   /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */
@@ -462,6 +485,9 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     savePending({ route: { deckId, sectionId }, mode }, services.sessionStorage());
     latest.current = { ...latest.current, boarding: true }; // the move back below is ours, not the player's
     setBoarding(true);
+    // On a short screen Start round sits at the foot of the scrolled column: back to its top, so the pass unrolls in view.
+    const main = mainRef.current;
+    if (main && main.scrollTop > 0) main.scrollTo?.({ top: 0, behavior: reduced ? "auto" : "smooth" });
     const history = services.history();
     const distance = pathTo(view.step, hasSections).length - 1;
     const state = { rewound: !history || distance <= 0, unrolled: reduced, opened: false, onFirstEntry: Boolean(history) && distance <= 0 };

@@ -681,6 +681,22 @@ for (const viewport of [
       await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Choose a deck");
     });
 
+    // Going back focuses the card chosen before; the column starts at its top, so that card is brought into view
+    // (with its focus ring) rather than left below the fold (fix round 1).
+    test("going back with Escape shows the card it focuses", async ({ page }) => {
+      await openHome(page);
+      await tapThrough(page, [...ROUTE_BY_TAPS.slice(0, 4), [/^Timed\. /, "Your pass is ready"]]);
+      await page.keyboard.press("Escape");
+      await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Choose how to play");
+      await page.waitForTimeout(600);
+      const timed = page.locator("[data-step]:not([inert])").getByRole("button", { name: /^Timed\. / });
+      await expect(timed).toBeFocused();
+      const b = await timed.boundingBox();
+      if (b === null) throw new Error("The Timed card has no box");
+      expect(b.y, "the top of the focused card is on screen").toBeGreaterThanOrEqual(0);
+      expect(b.y + b.height, "the bottom of the focused card is on screen").toBeLessThanOrEqual(viewport.height);
+    });
+
     test("a returning player continues and starts the round by touch", async ({ page }) => {
       await page.addInitScript(() =>
         localStorage.setItem(
