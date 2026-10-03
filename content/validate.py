@@ -9,7 +9,21 @@ REQUIRED = ['id', 'statement', 'answer', 'explanation', 'misconception', 'topic'
 # v1 batches use task/services, v2 batches use section/tags/factKey/appliesTo
 EITHER = [('task', 'section'), ('services', 'tags')]
 NEGATION = re.compile(r"\b(not|cannot|can't|never|no longer|isn't|doesn't|don't|without)\b", re.I)
-OFFICIAL = re.compile(r"https://([\w-]+\.)*(aws\.amazon\.com|google\.com|nextjs\.org|react\.dev)/")
+# Official documentation hosts of every deck's product (exact host or a subdomain of it).
+OFFICIAL = re.compile(
+    r"https://([\w-]+\.)*("
+    r"aws\.amazon\.com|google\.com|google|nextjs\.org|react\.dev"
+    r"|microsoft\.com"
+    r"|docker\.com|kubernetes\.io|cncf\.io|linuxfoundation\.org|github\.com/cncf"
+    r"|prometheus\.io|opentelemetry\.io|opengitops\.dev|opencontainers\.org|knative\.dev|helm\.sh|readthedocs\.io"
+    r"|github\.blog"
+    r"|hashicorp\.com|github\.com|githubusercontent\.com"
+    r"|typescriptlang\.org"
+    r"|owasp\.org|mozilla\.org|w3\.org|whatwg\.org|ietf\.org|rfc-editor\.org|web\.dev|chromium\.org"
+    r"|tc39\.es|ecma-international\.org|nodejs\.org|git-scm\.com|kernel\.org|man7\.org|gnu\.org|freedesktop\.org"
+    r"|openbsd\.org|openssh\.com|w3c\.github\.io|chrome\.com|debian\.org|fedoraproject\.org|ubuntu\.com|systemd\.io"
+    r")/"
+)
 ABSOLUTE = re.compile(r"\b(always|all|only|every|solely|exclusively)\b", re.I)
 VERDICT_START = re.compile(r"\s*(true|false|correct|incorrect)\b", re.I)
 AWS_URL = re.compile(r"https://([\w-]+\.)*aws\.amazon\.com/")
