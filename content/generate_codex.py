@@ -9,7 +9,8 @@ context, so the deck plan and the duplicate checks of the prompt still work.
 
 An answer that is not one JSON object for the expected batch is sent back once with the error. A deck that
 already has raw files continues after the last one only if the session id was saved (.codex-sessions/,
-git-ignored).
+git-ignored). With --handoff, raw batches written in another chat are sent with the prompt instead, and
+Codex continues from the first missing batch.
 """
 import argparse
 import json
@@ -21,6 +22,19 @@ import tempfile
 
 HERE = pathlib.Path(__file__).parent
 FENCE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.S)
+START = "Start now with STEP 1, STEP 2 and batch b1."
+HANDOFF = ("This chat continues a deck whose first batches ({done}) were written in another chat. They are final "
+           "and follow below exactly as written. Their plan, in b1, already includes the replacements named in each "
+           "batch's notes. Treat them as batches already written in this chat: check every new card against them "
+           "and do not test their facts again. Do not repeat STEP 1 or STEP 2. Answer now with batch {batch} only.")
+
+
+def handoff(prompt: str, deck: str, done: list[str], batch: str) -> str:
+    if START not in prompt:
+        sys.exit(f"{deck}: the prompt has no start line to replace")
+    written = "".join(f"\n\n```json\n{(HERE / 'raw' / f'{deck}-{b}.json').read_text(encoding='utf-8').strip()}\n```"
+                      for b in done)
+    return prompt.replace(START, HANDOFF.format(done=", ".join(done), batch=batch)) + written + "\n"
 
 
 def batches_of(prompt: str) -> list[str]:
@@ -62,6 +76,7 @@ def main() -> None:
     parser.add_argument("deck")
     parser.add_argument("--model", default="gpt-6-sol")
     parser.add_argument("--effort", default="max")
+    parser.add_argument("--handoff", action="store_true", help="continue raw batches written in another chat")
     opts = parser.parse_args()
 
     prompt = (HERE / "prompts" / f"ready-v2-{opts.deck}.txt").read_text(encoding="utf-8")
@@ -74,12 +89,13 @@ def main() -> None:
 
     done = [b for b in batches if (raw / f"{opts.deck}-{b}.json").exists()]
     session = session_file.read_text().strip() if session_file.exists() else ""
-    if done and not session:
-        sys.exit(f"{opts.deck}: raw files exist but no saved session; remove them or add {session_file.name}")
+    if done and not session and not opts.handoff:
+        sys.exit(f"{opts.deck}: raw files exist but no saved session; use --handoff or add {session_file.name}")
 
     for batch in batches[len(done):]:
         if not session:
-            session, answer = run([*common, "-s", "read-only", "-"], prompt, workdir)
+            first = handoff(prompt, opts.deck, done, batch) if done else prompt
+            session, answer = run([*common, "-s", "read-only", "-"], first, workdir)
             session_file.write_text(session + "\n")
         else:
             _, answer = run(["resume", session, *common, "-"], "next", workdir)
