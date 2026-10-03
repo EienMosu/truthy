@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DeckBuildError, buildDecks, hashDeck, type BuildOutput } from "@/src/content/build";
-import { DeckFileSchema, DeckIndexSchema, WHOLE_DECK, type Card } from "@/src/content/schema";
+import { DeckFileSchema, DeckIndexSchema, WHOLE_DECK, deckPassName, type Card } from "@/src/content/schema";
 
 function shippedCard(id: string, statement: string): Card {
   return {
@@ -526,8 +526,26 @@ describe("the real content", () => {
     const output = buildReal();
     expect(output.index.areas.map((area) => [area.id, area.title, area.platforms.map((platform) => [platform.id, platform.title, platform.decks.map((deck) => deck.id)])])).toEqual([
       ["cloud", "Cloud", [["aws", "AWS", ["aws-clf-c02"]], ["gcp", "Google Cloud", []], ["azure", "Azure", []]]],
-      ["frontend", "Frontend", [["nextjs", "Next.js", ["nextjs-rendering"]]]],
-      ["devops", "DevOps", []],
+      [
+        "frontend",
+        "Frontend",
+        [
+          ["nextjs", "Next.js", ["nextjs-rendering"]],
+          ["react", "React", []],
+          ["typescript", "TypeScript", []],
+          ["web", "Web platform", []],
+        ],
+      ],
+      [
+        "devops",
+        "DevOps",
+        [
+          ["docker", "Docker", []],
+          ["kubernetes", "Kubernetes", []],
+          ["terraform", "Terraform", []],
+          ["github", "GitHub", []],
+        ],
+      ],
     ]);
   });
 
@@ -628,6 +646,223 @@ describe("the real content: Solutions Architect Associate", () => {
     for (const deck of output.decks) {
       expect(DeckFileSchema.safeParse(deck).success, deck.id).toBe(true);
       expect(indexDecks.find((entry) => entry.id === deck.id)?.hash, deck.id).toBe(hashDeck(deck.cards));
+    }
+  });
+
+  it("ships only conflict groups that at least two cards of a deck share", () => {
+    for (const deck of output.decks) {
+      const uses = new Map<string, number>();
+      for (const card of deck.cards) for (const group of card.conflictGroups) uses.set(group, (uses.get(group) ?? 0) + 1);
+      for (const [group, count] of uses) expect(count, `${deck.id} ${group}`).toBeGreaterThan(1);
+    }
+  });
+});
+
+// Eight decks entered after step 2 shipped: a second Google Cloud deck, the first Azure deck, three Frontend
+// platforms and the first DevOps platforms. This pins what the deploy builds from every reviewed file in the
+// repository, which the blocks above never build all at once. Kubernetes is in the catalog, but its reviewed
+// file is not in the repository yet, so its platform has no deck.
+describe("the real content: the decks added after step 2", () => {
+  function readContent(path: string): unknown {
+    return JSON.parse(readFileSync(new URL(`../../content/${path}`, import.meta.url), "utf8"));
+  }
+
+  const OLD = ["aws-clf-c02", "aws-saa-c03", "gcp-cdl", "nextjs-rendering"];
+  const NEW = [
+    "gcp-ace",
+    "azure-az-900",
+    "react-fundamentals",
+    "typescript-fundamentals",
+    "web-security",
+    "docker-fundamentals",
+    "terraform-associate",
+    "github-actions",
+  ];
+  const output = buildDecks({
+    catalog: readContent("catalog.json"),
+    reviewed: Object.fromEntries([...OLD, ...NEW].map((id) => [id, readContent(`reviewed/${id}.json`)])),
+    version: VERSION,
+  });
+  const placed = output.index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks.map((deck) => ({ platform, deck }))));
+
+  it("lists every area and platform in the catalog's order, each with its decks", () => {
+    expect(output.index.areas.map((area) => [area.id, area.title, area.platforms.map((platform) => [platform.id, platform.title, platform.decks.map((deck) => deck.id)])])).toEqual([
+      [
+        "cloud",
+        "Cloud",
+        [
+          ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03"]],
+          ["gcp", "Google Cloud", ["gcp-cdl", "gcp-ace"]],
+          ["azure", "Azure", ["azure-az-900"]],
+        ],
+      ],
+      [
+        "frontend",
+        "Frontend",
+        [
+          ["nextjs", "Next.js", ["nextjs-rendering"]],
+          ["react", "React", ["react-fundamentals"]],
+          ["typescript", "TypeScript", ["typescript-fundamentals"]],
+          ["web", "Web platform", ["web-security"]],
+        ],
+      ],
+      [
+        "devops",
+        "DevOps",
+        [
+          ["docker", "Docker", ["docker-fundamentals"]],
+          ["kubernetes", "Kubernetes", []],
+          ["terraform", "Terraform", ["terraform-associate"]],
+          ["github", "GitHub", ["github-actions"]],
+        ],
+      ],
+    ]);
+  });
+
+  // Each deck: code, title, the name on the pass and the ticket, card count, and its sections in order.
+  const PINNED: [id: string, code: string, title: string, passName: string, cards: number, sections: [string, string, number][]][] = [
+    [
+      "gcp-ace",
+      "ACE",
+      "Associate Cloud Engineer",
+      "Google Associate Cloud Engineer",
+      113,
+      [
+        ["ENV", "Cloud solution environment", 20],
+        ["PLN", "Planning and implementing", 38],
+        ["OPS", "Operating the solution", 37],
+        ["IAM", "Access and security", 18],
+      ],
+    ],
+    [
+      "azure-az-900",
+      "AZ9",
+      "Fundamentals",
+      "Azure Fundamentals",
+      99,
+      [
+        ["CON", "Cloud concepts", 27],
+        ["ARC", "Architecture, compute and networking", 18],
+        ["STO", "Storage", 9],
+        ["IDN", "Identity, access and security", 9],
+        ["GOV", "Cost and governance", 18],
+        ["MGT", "Management and monitoring", 18],
+      ],
+    ],
+    [
+      "react-fundamentals",
+      "RCT",
+      "Fundamentals",
+      "React Fundamentals",
+      135,
+      [
+        ["CMP", "Components, props and lists", 31],
+        ["STA", "Rendering and state", 29],
+        ["HKS", "Context, refs and memoization", 30],
+        ["EFF", "Effects and Strict Mode", 27],
+        ["ACT", "Actions and Server Components", 18],
+      ],
+    ],
+    [
+      "typescript-fundamentals",
+      "TSC",
+      "Fundamentals",
+      "TypeScript Fundamentals",
+      113,
+      [
+        ["BAS", "Type system basics", 27],
+        ["NAR", "Narrowing, unions and intersections", 20],
+        ["GEN", "Generics", 10],
+        ["TFT", "Types from types", 27],
+        ["ENM", "Enums versus unions", 9],
+        ["CFG", "Compiler options and modules", 20],
+      ],
+    ],
+    [
+      "web-security",
+      "WEB",
+      "Security",
+      "Web Security",
+      112,
+      [
+        ["TOP", "OWASP Top 10:2025", 28],
+        ["ORG", "Origins and CORS", 18],
+        ["CKS", "Cookies and CSRF", 18],
+        ["XSS", "XSS and CSP", 19],
+        ["FRM", "Framing, integrity and HTTPS", 29],
+      ],
+    ],
+    [
+      "docker-fundamentals",
+      "DKR",
+      "Fundamentals",
+      "Docker Fundamentals",
+      112,
+      [
+        ["CNT", "Containers and the Engine", 19],
+        ["BLD", "Dockerfile and builds", 38],
+        ["REG", "Images and registries", 9],
+        ["STO", "Volumes and mounts", 18],
+        ["NET", "Networking and Compose", 19],
+        ["SEC", "Security basics", 9],
+      ],
+    ],
+    [
+      "terraform-associate",
+      "TFA",
+      "Associate",
+      "Terraform Associate",
+      144,
+      [
+        ["FUN", "IaC and Terraform fundamentals", 27],
+        ["WFL", "Core workflow", 18],
+        ["CFG", "Terraform configuration", 45],
+        ["MOD", "Modules", 9],
+        ["STA", "State and maintenance", 27],
+        ["HCP", "HCP Terraform", 18],
+      ],
+    ],
+    [
+      "github-actions",
+      "GHA",
+      "Actions",
+      "GitHub Actions",
+      125,
+      [
+        ["WFL", "Authoring workflows", 27],
+        ["RUN", "Consuming and troubleshooting", 27],
+        ["ACT", "Building actions", 26],
+        ["ENT", "Actions for the enterprise", 27],
+        ["SEC", "Security and optimization", 18],
+      ],
+    ],
+  ];
+
+  it("pins every new deck", () => {
+    expect(PINNED.map(([id]) => id)).toEqual(NEW);
+  });
+
+  it.each(PINNED)("builds %s as %s, %s, named %s on the pass, with %i cards in its sections", (id, code, title, passName, cards, sections) => {
+    const found = placed.find((entry) => entry.deck.id === id);
+    if (!found) throw new Error(`${id} is not in the index`);
+    const { platform, deck } = found;
+    expect([deck.code, deck.title, deckPassName(platform, deck), deck.cardCount]).toEqual([code, title, passName, cards]);
+    expect(deck.sections.map((section) => [section.id, section.title, section.cardCount])).toEqual(sections);
+    const file = output.decks.find((entry) => entry.id === id);
+    expect(file?.cards).toHaveLength(cards);
+    expect(file?.cards.every((card) => card.id.startsWith(`${id}-`))).toBe(true);
+    expect([...new Set(file?.cards.map((card) => card.section))].sort()).toEqual(sections.map(([section]) => section).sort());
+  });
+
+  it("builds next to the four earlier decks", () => {
+    expect(output.decks.map((deck) => deck.id).sort()).toEqual([...OLD, ...NEW].sort());
+  });
+
+  it("writes deck files the client schema accepts, each with the hash the index names", () => {
+    expect(DeckIndexSchema.safeParse(output.index).success).toBe(true);
+    for (const deck of output.decks) {
+      expect(DeckFileSchema.safeParse(deck).success, deck.id).toBe(true);
+      expect(placed.find((entry) => entry.deck.id === deck.id)?.deck.hash, deck.id).toBe(hashDeck(deck.cards));
     }
   });
 
