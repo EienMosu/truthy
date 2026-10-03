@@ -1,0 +1,413 @@
+{
+ "drop": {
+  "typescript-fundamentals-sr1-02": "duplicate: other side of sr1-03 (extra fields allowed on a non-fresh value, rejected on a fresh literal), and the same rule as sr1-09; the verifier and the scan both name it.",
+  "typescript-fundamentals-sr1-04": "weak_card: definition card. An optional property may be missing because that is what optional means. r1 stays at 9 cards (5T/4F).",
+  "typescript-fundamentals-sr1-06": "weak_card: strawman. 'Incompatible ... assignable' contradicts itself, so the wording gives the answer away.",
+  "typescript-fundamentals-sr2-01": "duplicate: mirror of sr2-04 (an arbitrary property call passes on any and fails on unknown); the verifier and the scan both name it.",
+  "typescript-fundamentals-sr2-03": "weak_card: definition card. That every value is assignable to unknown can be read from the name.",
+  "typescript-fundamentals-sr2-12": "weak_card: strawman (a never function returning a value), and it rests on the same 'nothing is assignable to never' fact as sr2-02 and sr2-10. r2 stays at 9 (4T/5F).",
+  "typescript-fundamentals-sr3-06": "weak_card and the scan's duplicate: a truism from the definition of a literal union, and its explanation repeats the declared-type fact.",
+  "typescript-fundamentals-sr3-09": "Scan duplicate with sr3-11: assertions are erased and do no runtime check. sr3-09 goes because it is closer to sr1-12 (annotations erased). sr3-11 tests a realistic belief, that ! throws like Kotlin's !!, so it is kept and is no longer a duplicate.",
+  "typescript-fundamentals-sr3-12": "weak_card: give-away. The fragment `as number` itself says the expression is checked as a number.",
+  "typescript-fundamentals-sr4-08": "weak_card: the term 'declared type' settles the answer. The section stays at 11 cards (6T/5F), so no rewrite is needed.",
+  "typescript-fundamentals-sr5-06": "duplicate: same fact as sr5-05 (string & number is never). Its source, the TS 2.6 blog, only covers reduction inside a union.",
+  "typescript-fundamentals-sr5-07": "weak_card: truism. An extending interface keeps inherited members by the meaning of extends.",
+  "typescript-fundamentals-sr5-11": "weak_card: definition card and a near-copy of the Everyday Types sentence (an alias can name a union).",
+  "typescript-fundamentals-sr6-01": "weak_card: give-away. The printed signature `identity<T>(x: T): T` states the answer. r6 keeps 10 cards (4T/6F, at the limit but not past it).",
+  "typescript-fundamentals-sr6-08": "duplicate: instance side of the instance-versus-static split that sr6-07 tests, and a substitution truism.",
+  "typescript-fundamentals-sr7-09": "weak_card and the scan's duplicate: strawman (Uppercase as title case) and the mirror of sr7-10.",
+  "typescript-fundamentals-sr7-10": "weak_card: name giveaway. Lowercase produces lowercase.",
+  "typescript-fundamentals-sr7-12": "duplicate: mirror of sr7-11 (Capitalize and Uncapitalize change only the first character).",
+  "typescript-fundamentals-sr8-05": "duplicate: two sides of one distinction with sr8-04 (distribution and its bracket switch-off), with near-identical statements. The verifier dropped 05 and the scan dropped 04; 05 goes, keeping the distribution card sr8-04.",
+  "typescript-fundamentals-sr8-07": "weak_card: give-away, because `: boolean` is written in the statement. The suggested tuple replacement was not used: tsc 7.0.2 shows that a non-generic mapping over a concrete tuple does turn `length` into `Promise<2>`, so that card is fragile. sr8-01 was rewritten instead.",
+  "typescript-fundamentals-sr8-08": "duplicate: same '+ adds the modifier' rule as sr8-10, and the scan's mirror of sr8-09.",
+  "typescript-fundamentals-sr9-04": "weak_card: truism by definition and a compound statement (Pick and Omit on a two-property type).",
+  "typescript-fundamentals-sr9-05": "weak_card: truism by definition and a compound statement (Exclude and Extract on string | number).",
+  "typescript-fundamentals-sr9-11": "weak_card: strawman (ThisParameterType adding undefined to an explicit this). r9 stays at 9 (4T/5F) with the rewrite of sr9-08.",
+  "typescript-fundamentals-sr10-05": "duplicate: same 'enum members are types' fact as sr10-06. Its explanation also makes literal members a condition, which has been outdated since TS 5.0.",
+  "typescript-fundamentals-sr10-07": "duplicate: regular enums emit a runtime object, which is the reason sr10-12 gives. Also a truism with a hedge verb.",
+  "typescript-fundamentals-sr10-10": "duplicate: the answer follows from the as-const literal retention fact in sr3-05, so the card is close to a strawman.",
+  "typescript-fundamentals-sr11-03": "weak_card: the named option plays no part in the answer; it is a generic JavaScript this-binding fact.",
+  "typescript-fundamentals-sr11-04": "weak_card: name giveaway (strictBindCallApply checks .call arguments).",
+  "typescript-fundamentals-sr11-11": "weak_card: name giveaway (noImplicitOverride requires explicit override).",
+  "typescript-fundamentals-sr12-09": "weak_card: strawman. A `declare function` in a declaration file supplying an implementation; the keyword gives the answer away. r12 stays at 11 (6T/5F)."
+ },
+ "source": {},
+ "rewrite": {
+  "typescript-fundamentals-sr1-07": {
+   "reason": "ambiguous: the unqualified 'one-parameter function fits a two-parameter slot' is false when the first parameter types differ. Now concrete, with matching first parameters (tsc 7.0.2 accepts it). (final: keep)",
+   "statement": "`(a: number) => void` is assignable to the type `(a: number, b: string) => void`.",
+   "answer": true,
+   "explanation": "A function may ignore extra arguments, so a source with fewer parameters fits a target with more, provided each of its parameters matches the target parameter in the same position.",
+   "misconception": "",
+   "source": {
+    "title": "Type Compatibility",
+    "url": "https://www.typescriptlang.org/docs/handbook/type-compatibility.html"
+   }
+  },
+  "typescript-fundamentals-sr1-09": {
+   "reason": "ambiguous: 'satisfies a return type' reads as an annotated function returning a fresh literal, which gets an excess property error. Now tests function-type assignability with a non-fresh source (tsc 7.0.2 accepts it). (final: keep)",
+   "statement": "Given `let f = () => ({ a: 1, b: 2 })`, TypeScript accepts assigning `f` to a `() => { a: number }` variable.",
+   "answer": true,
+   "explanation": "TypeScript requires the source function's return type to be a subtype of the target's, and `{ a: number; b: number }` has every member that `{ a: number }` needs.",
+   "misconception": "",
+   "source": {
+    "title": "Type Compatibility",
+    "url": "https://www.typescriptlang.org/docs/handbook/type-compatibility.html"
+   }
+  },
+  "typescript-fundamentals-sr1-05": {
+   "reason": "tell: error words (rejects, reports, fails) marked only true statements. Same fact (readonly is ignored in compatibility) and same answer, false. (final: keep)",
+   "statement": "TypeScript rejects assigning a `{ readonly x: number }` value to a variable of type `{ x: number }`.",
+   "answer": false,
+   "explanation": "TypeScript ignores `readonly` when comparing object property compatibility. An alias with a mutable property may therefore change the same object.",
+   "misconception": "The readonly modifier makes structurally identical object types assignment-incompatible.",
+   "source": {
+    "title": "Object Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+   }
+  },
+  "typescript-fundamentals-sr2-08": {
+   "reason": "explanation_error: the strictNullChecks qualifier implied that void would be assignable to number with the flag off (tsc6 and tsc 7.0.2 reject it either way). The qualifier is gone, and the statement avoids the 'A value of type X is assignable to Y' false template, which already carries sr2-02 and sr2-05. (final: keep)",
+   "statement": "TypeScript accepts `let n: number = done()` when `done` has the return type `void`.",
+   "answer": false,
+   "explanation": "Apart from `void` itself, a `void` value is assignable only to `any` and `unknown`, whatever the `strictNullChecks` setting, so a void call result is unusable as a number.",
+   "misconception": "A void result can be assigned to a concrete value type such as number.",
+   "source": {
+    "title": "Type Compatibility",
+    "url": "https://www.typescriptlang.org/docs/handbook/type-compatibility.html"
+   }
+  },
+  "typescript-fundamentals-sr3-02": {
+   "reason": "weak_card (the words 'contextually typed' gave the answer away), rewritten because dropping it would leave r3 with 8 cards. Uses the verifier's map-callback replacement; tsc 7.0.2 reports no error. (final: keep)",
+   "statement": "TypeScript flags `n` as implicit `any` in `xs.map(n => n.toFixed())` for `xs: number[]`.",
+   "answer": false,
+   "explanation": "The callback sits where the signature of `map` supplies a contextual type, so TypeScript infers `n` as `number` and `noImplicitAny` has nothing to report.",
+   "misconception": "Unannotated callback parameters fall back to implicit any.",
+   "source": {
+    "title": "Everyday Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html"
+   }
+  },
+  "typescript-fundamentals-sr3-04": {
+   "reason": "weak_card (it copied the handbook's const req / method 'GET' example), reworded with an original example because dropping it would leave r3 below 9. Same fact and answer; the verifier's 'not `3`' was removed to avoid a negation. (final: keep)",
+   "statement": "In `const opts = { retries: 3 }`, TypeScript infers `opts.retries` as the type `number`.",
+   "answer": true,
+   "explanation": "A `const` binding only stops reassignment of `opts`. Its properties stay writable, so TypeScript widens the literal `3` to `number`.",
+   "misconception": "",
+   "source": {
+    "title": "Everyday Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html"
+   }
+  },
+  "typescript-fundamentals-sr4-02": {
+   "reason": "tell: transformation verbs (removes, changes, converts) marked false statements. Now uses the 'narrows to' form of the true narrowing cards. Same fact (typeof 'object' keeps null) and same answer, false. (final: keep)",
+   "statement": "`typeof v === 'object'` narrows a value `v: object | null` to `object`.",
+   "answer": false,
+   "explanation": "`typeof null` evaluates to `'object'`, so TypeScript retains `null` in the guarded branch.",
+   "misconception": "The typeof object guard excludes null during narrowing.",
+   "source": {
+    "title": "Narrowing",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+   }
+  },
+  "typescript-fundamentals-sr4-03": {
+   "reason": "ambiguous: 'still processes the empty string' is false at runtime but true at type level. Now asks only what the checker narrows to; tsc 7.0.2 keeps string | null in the falsy branch. (final: keep)",
+   "statement": "In the falsy branch of `if (s)`, `s: string | null` narrows to `null`.",
+   "answer": false,
+   "explanation": "The empty string is falsy too, so TypeScript keeps `string | null` in the falsy branch. That is why a truthiness check on a string can skip `\"\"`.",
+   "misconception": "A falsy check on a nullable string leaves only null.",
+   "source": {
+    "title": "Narrowing",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+   }
+  },
+  "typescript-fundamentals-sr4-07": {
+   "reason": "ambiguous: the checker's instanceof narrowing filters union members structurally, so 'by property names' was defensible. Now a concrete runtime case built on the verifier's replacement; tsc 7.0.2 accepts the annotation, and the handbook says instanceof checks Foo.prototype on the prototype chain. (final: keep)",
+   "statement": "For `class Foo { id = 1 }` and `const f: Foo = { id: 2 }`, `f instanceof Foo` is `true`.",
+   "answer": false,
+   "explanation": "`instanceof` checks whether `Foo.prototype` is on the prototype chain of `f`, so the plain object literal fails it, even though TypeScript accepts it as a `Foo` by its shape.",
+   "misconception": "A value the checker accepts as a class type is an instance of that class at runtime.",
+   "source": {
+    "title": "Narrowing",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+   }
+  },
+  "typescript-fundamentals-sr5-01": {
+   "reason": "weak_card (it reused the handbook's number[] | string slice example), rewritten with the verifier's original example because dropping it would leave r5 with 8 cards. tsc 7.0.2 accepts the call. (final: keep)",
+   "statement": "Before narrowing, TypeScript accepts the call `x.indexOf(\"a\")` on a value `x: string | string[]`.",
+   "answer": true,
+   "explanation": "Every member of this union has an `indexOf` method that takes a string, so TypeScript permits the call on the union without narrowing first.",
+   "misconception": "",
+   "source": {
+    "title": "Everyday Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/everyday-types.html"
+   }
+  },
+  "typescript-fundamentals-sr5-02": {
+   "reason": "tell: the 'A value of type X is directly assignable to string' template carried three false statements (sr2-02, sr2-05, sr5-02) against one true, and 'directly' marked false. Now the argument form the Narrowing page shows. Same fact and answer, false. (final: keep)",
+   "statement": "TypeScript accepts a `string | number` argument for a parameter of type `string`.",
+   "answer": false,
+   "explanation": "A `string | number` value might be a number. TypeScript requires narrowing before passing that value where a `string` is expected.",
+   "misconception": "A union value is assignable to any one of its member types.",
+   "source": {
+    "title": "Narrowing",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/narrowing.html"
+   }
+  },
+  "typescript-fundamentals-sr5-08": {
+   "reason": "ambiguous: 'can extend one other interface at a time' is literally true. Now states the false limit outright, as the verifier suggested; Object Types says interfaces 'can also extend from multiple types' and shows ColorfulCircle. (final: keep)",
+   "statement": "TypeScript limits the `extends` clause of an `interface` declaration to a single base type.",
+   "answer": false,
+   "explanation": "An interface can list several types after `extends`, separated by commas, and inherits the members of each, as in `interface ColorfulCircle extends Colorful, Circle {}`.",
+   "misconception": "Interface extension accepts one base type.",
+   "source": {
+    "title": "Object Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/objects.html"
+   }
+  },
+  "typescript-fundamentals-sr5-10": {
+   "reason": "ambiguous: 'overload groups ... earlier declarations first' could mean the order inside a group, which is true. Now it can only mean group order. Declaration Merging: 'the groups themselves are merged with later overload sets ordered first'. (final: fixed)",
+   "statement": "When two `interface Doc` declarations merge, TypeScript tries the earlier declaration's overloads first in a call.",
+   "answer": false,
+   "explanation": "For a merged interface, overload resolution tries the later declaration's overload group first, each group in its own order. Signatures with a single string literal parameter type go before the rest.",
+   "misconception": "Merged method overloads retain declaration order from earliest to latest.",
+   "source": {
+    "title": "Declaration Merging",
+    "url": "https://www.typescriptlang.org/docs/handbook/declaration-merging.html"
+   }
+  },
+  "typescript-fundamentals-sr7-04": {
+   "reason": "weak_card ('evaluates' gave the answer away, and the explanation's remedy typeof fn was wrong), rewritten because dropping it would leave r7 below 9. Typeof Types shows the same shape as error 1005; tsc 7.0.2 also gives TS1005. (final: keep)",
+   "statement": "`let ok: typeof check();` types `ok` as `check`'s return type.",
+   "answer": false,
+   "explanation": "In a type position, `typeof` takes only identifiers and their properties, so the call is a syntax error. `ReturnType<typeof check>` gives the return type.",
+   "misconception": "A type query can take a function call and yield its result type.",
+   "source": {
+    "title": "Typeof Type Operator",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/typeof-types.html"
+   }
+  },
+  "typescript-fundamentals-sr7-08": {
+   "reason": "weak_card (vague: 'template literal unions pair positionally'), made concrete because dropping it would leave r7 below 9. Aliases replace nested backticks. The page says 'the unions are cross multiplied', and tsc 7.0.2 accepts \"b-1\". (final: fixed)",
+   "statement": "For `A = \"a\" | \"b\"` and `N = \"1\" | \"2\"`, the template literal type `${A}-${N}` is `\"a-1\" | \"b-2\"`.",
+   "answer": false,
+   "explanation": "Each interpolated union is cross multiplied with the others, so two two-member unions give four strings: `\"a-1\" | \"a-2\" | \"b-1\" | \"b-2\"`.",
+   "misconception": "Template literal types zip union members by their positions.",
+   "source": {
+    "title": "Template Literal Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html"
+   }
+  },
+  "typescript-fundamentals-sr8-01": {
+   "reason": "weak_card (number extends string is a truism), rewritten with the verifier's replacement because r8 needed three rewrites to reach 9. The explanation leaves out distribution so it does not give away sr8-04. tsc 7.0.2 gives 2. (final: keep)",
+   "statement": "`boolean extends true ? 1 : 2` resolves to the type `2`.",
+   "answer": true,
+   "explanation": "`boolean` is the union `true | false`, and that union as a whole is not assignable to `true`, so the conditional type picks its false branch.",
+   "misconception": "",
+   "source": {
+    "title": "Conditional Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+   }
+  },
+  "typescript-fundamentals-sr8-03": {
+   "reason": "weak_card (strawman: infer after the arrow captures the parameters), rewritten with the verifier's promise idea because r8 would drop below 9. tsc 7.0.2 gives Promise<number>. (final: keep)",
+   "statement": "For `T = () => Promise<number>`, `T extends () => infer R ? R : never` is `number`.",
+   "answer": false,
+   "explanation": "`infer R` in the return position captures the declared return type as a whole, so the result for `() => Promise<number>` is `Promise<number>`.",
+   "misconception": "Inferring a return type unwraps a returned promise.",
+   "source": {
+    "title": "Conditional Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/conditional-types.html"
+   }
+  },
+  "typescript-fundamentals-sr8-09": {
+   "reason": "duplicate (mirror of sr8-08, and a strawman), rewritten with the verifier's replacement because r8 would drop below 9. Mapped Types: 'You can filter out keys by producing never'; tsc 7.0.2 confirms the key is removed. (final: fixed)",
+   "statement": "For `T = { id: 1; name: string }`, `{ [K in keyof T as Exclude<K, \"id\">]: T[K] }` keeps `id` as a `never` property.",
+   "answer": false,
+   "explanation": "Producing `never` in the `as` clause filters the key out, so the result is `{ name: string }` with no `id` property at all.",
+   "misconception": "Remapping a key to never keeps the property and types it as never.",
+   "source": {
+    "title": "Mapped Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+   }
+  },
+  "typescript-fundamentals-sr8-11": {
+   "reason": "tell (the verb 'removes' marked false), plus the scan's ambiguity: 'removes optional properties' can be read as 'removes optionality', which is true. Now a concrete result. Same fact and answer, false; tsc 7.0.2 makes a required. (final: keep)",
+   "statement": "For `T = { a?: number; b: string }`, `{ [K in keyof T]-?: T[K] }` is `{ b: string }`.",
+   "answer": false,
+   "explanation": "The `-?` modifier removes the optional flag, not the property. Previously optional properties remain present and become required.",
+   "misconception": "Removing an optional modifier removes the property itself.",
+   "source": {
+    "title": "Mapped Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+   }
+  },
+  "typescript-fundamentals-sr8-12": {
+   "reason": "tell: transformation verb 'changes' on a false statement. Same fact (as remaps keys, not values) and same answer, false. (final: keep)",
+   "statement": "A mapped type's `as` clause controls its property value types.",
+   "answer": false,
+   "explanation": "The `as` clause remaps generated property keys. The expression after the colon determines their value types.",
+   "misconception": "Mapped-type key remapping changes the property value types.",
+   "source": {
+    "title": "Mapped Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/2/mapped-types.html"
+   }
+  },
+  "typescript-fundamentals-sr9-08": {
+   "reason": "wrong_answer: under the default newest target the ES2022 lib gives ErrorConstructor `[message?, options?]`, and the card was compound. Rewritten as the verifier's replacement, which Utility Types example T3 confirms (ConstructorParameters<typeof C>). tsc 7.0.2 shows it is identical to [a: number, b?: string]. (final: keep)",
+   "statement": "For `class C { constructor(a: number, b?: string) {} }`, `ConstructorParameters<typeof C>` is `[a: number, b?: string]`.",
+   "answer": true,
+   "explanation": "`ConstructorParameters` reads the parameter list of a constructor type such as `typeof C`, keeping each parameter's name and optional marker.",
+   "misconception": "",
+   "source": {
+    "title": "Utility Types",
+    "url": "https://www.typescriptlang.org/docs/handbook/utility-types.html"
+   }
+  },
+  "typescript-fundamentals-sr11-08": {
+   "reason": "weak_card (borderline name giveaway), rewritten because dropping all five weak r11 cards would leave 7. TS 4.4 notes: 'we can always add an explicit : any annotation so that we can opt out of stricter types'. tsc 7.0.2 accepts catch (e: any) with the flag on. (final: keep)",
+   "statement": "With `useUnknownInCatchVariables`, TypeScript rejects an explicit `catch (e: any)` annotation.",
+   "answer": false,
+   "explanation": "The flag changes only the type of an unannotated catch variable to `unknown`. An explicit `: any` annotation stays allowed and opts that catch clause out of the stricter type.",
+   "misconception": "The flag forbids any as a catch variable annotation.",
+   "source": {
+    "title": "TypeScript 4.4",
+    "url": "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html"
+   }
+  },
+  "typescript-fundamentals-sr11-12": {
+   "reason": "weak_card (name giveaway), rewritten because r11 would otherwise have 7 cards. The option page's GameSettings example keeps settings.speed valid with the flag on; tsc 7.0.2 errors only on settings.username (TS4111). (final: keep)",
+   "statement": "Under `noPropertyAccessFromIndexSignature`, `settings.speed` errors when `speed` is declared beside an index signature.",
+   "answer": false,
+   "explanation": "Properties declared in the type keep dot access. The flag only rejects dot access to keys that come from the index signature, which then need `settings[\"key\"]`.",
+   "misconception": "The flag forces bracket access on every property of a type that has an index signature.",
+   "source": {
+    "title": "TSConfig Option: noPropertyAccessFromIndexSignature",
+    "url": "https://www.typescriptlang.org/tsconfig/noPropertyAccessFromIndexSignature.html"
+   }
+  },
+  "typescript-fundamentals-sr12-08": {
+   "reason": "ambiguous: 'Since TypeScript 6.0' presented paths without baseUrl as new in 6.0, when it has worked since 4.1. Now it states the resolution rule from the paths page ('relative to the baseUrl if set, or to the tsconfig file itself otherwise'). 'Without' was avoided as a negation. (final: keep)",
+   "statement": "When `baseUrl` is unset, TypeScript resolves `paths` targets relative to the tsconfig.json that declares them.",
+   "answer": true,
+   "explanation": "Each `paths` target resolves relative to the tsconfig file itself when `baseUrl` is unset, so `paths` mappings work with no `baseUrl` in the configuration.",
+   "misconception": "",
+   "source": {
+    "title": "TSConfig Option: paths",
+    "url": "https://www.typescriptlang.org/tsconfig/paths.html"
+   }
+  },
+  "typescript-fundamentals-sr12-11": {
+   "reason": "ambiguous: 'checks source references to declarations' suggested that the referenced .d.ts declarations get partly checked. Now states what is still reported, and the source moves to the per-option page. tsc 7.0.2 with --skipLibCheck hides errors inside the .d.ts and reports the .ts misuse (TS2345). (final: fixed)",
+   "statement": "With `skipLibCheck`, TypeScript reports errors in a `.ts` file that misuses a type declared in a `.d.ts` file.",
+   "answer": true,
+   "explanation": "`skipLibCheck` skips type checking inside declaration files, but TypeScript still checks your source code against the types those files declare.",
+   "misconception": "",
+   "source": {
+    "title": "TSConfig Option: skipLibCheck",
+    "url": "https://www.typescriptlang.org/tsconfig/skipLibCheck.html"
+   }
+  }
+ },
+ "conflictGroups": {
+  "excess-property-freshness": [
+   "typescript-fundamentals-sr1-03",
+   "typescript-fundamentals-sr1-09",
+   "typescript-fundamentals-sr3-08"
+  ],
+  "satisfies-vs-annotation": [
+   "typescript-fundamentals-sr3-07",
+   "typescript-fundamentals-sr3-08"
+  ],
+  "unknown-operations": [
+   "typescript-fundamentals-sr2-04",
+   "typescript-fundamentals-sr2-05"
+  ],
+  "never-assignability": [
+   "typescript-fundamentals-sr2-02",
+   "typescript-fundamentals-sr2-06",
+   "typescript-fundamentals-sr2-10"
+  ],
+  "void-assignability": [
+   "typescript-fundamentals-sr2-07",
+   "typescript-fundamentals-sr2-08",
+   "typescript-fundamentals-sr2-11"
+  ],
+  "type-erasure-runtime": [
+   "typescript-fundamentals-sr1-12",
+   "typescript-fundamentals-sr3-11",
+   "typescript-fundamentals-sr6-03",
+   "typescript-fundamentals-sr12-06"
+  ],
+  "literal-widening-as-const": [
+   "typescript-fundamentals-sr3-03",
+   "typescript-fundamentals-sr3-04",
+   "typescript-fundamentals-sr3-05"
+  ],
+  "implicit-any-contextual": [
+   "typescript-fundamentals-sr2-09",
+   "typescript-fundamentals-sr3-02"
+  ],
+  "union-member-access": [
+   "typescript-fundamentals-sr5-01",
+   "typescript-fundamentals-sr5-03",
+   "typescript-fundamentals-sr7-06"
+  ],
+  "intersection-never": [
+   "typescript-fundamentals-sr5-04",
+   "typescript-fundamentals-sr5-05"
+  ],
+  "declaration-merging": [
+   "typescript-fundamentals-sr5-09",
+   "typescript-fundamentals-sr5-10",
+   "typescript-fundamentals-sr12-12"
+  ],
+  "keyof-constraint": [
+   "typescript-fundamentals-sr6-05",
+   "typescript-fundamentals-sr7-01"
+  ],
+  "mapped-optional-modifiers": [
+   "typescript-fundamentals-sr8-10",
+   "typescript-fundamentals-sr8-11",
+   "typescript-fundamentals-sr9-01"
+  ],
+  "infer-position": [
+   "typescript-fundamentals-sr8-02",
+   "typescript-fundamentals-sr8-03"
+  ],
+  "enum-auto-increment": [
+   "typescript-fundamentals-sr10-01",
+   "typescript-fundamentals-sr10-02"
+  ],
+  "enum-runtime-emit": [
+   "typescript-fundamentals-sr10-08",
+   "typescript-fundamentals-sr10-09",
+   "typescript-fundamentals-sr10-12"
+  ],
+  "isolated-modules-single-file": [
+   "typescript-fundamentals-sr10-09",
+   "typescript-fundamentals-sr12-07"
+  ],
+  "mapped-as-clause": [
+   "typescript-fundamentals-sr8-09",
+   "typescript-fundamentals-sr8-12"
+  ],
+  "structural-vs-runtime-class": [
+   "typescript-fundamentals-sr1-01",
+   "typescript-fundamentals-sr4-07"
+  ],
+  "type-position-typeof": [
+   "typescript-fundamentals-sr7-03",
+   "typescript-fundamentals-sr7-04"
+  ],
+  "function-parameter-compat": [
+   "typescript-fundamentals-sr1-07",
+   "typescript-fundamentals-sr1-08"
+  ],
+  "conditional-union-check": [
+   "typescript-fundamentals-sr8-01",
+   "typescript-fundamentals-sr8-04"
+  ]
+ }
+}

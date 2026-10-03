@@ -1,0 +1,669 @@
+{
+ "deck": "gcp-ace",
+ "sections": [
+  {
+   "section": "1.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s1.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/iam/docs/groups-in-cloud-console)",
+     "evidence": "Source supports the answer: \"Each member of a Google group inherits the Identity and Access Management (IAM) roles granted to that group.\" (https://docs.cloud.google.com/iam/docs/groups-in-cloud-console). But this is a truism: a role granted to a group reaching its members is what a group is for in any IAM system, so a player with no Google Cloud knowledge answers True. The explanation only repeats the statement.",
+     "problem": "Truism / definition card: the answer follows from what a group is, so the card teaches nothing about project-level IAM granting on Google Cloud.",
+     "suggestedFix": "Replace (keeps True). Statement: \"The gcloud projects add-iam-policy-binding command grants a role to a principal on a project.\" Explanation: \"This command adds one role binding to the project's allow policy, so you skip the get-iam-policy, edit and set-iam-policy cycle that a direct policy edit needs.\" URL: https://docs.cloud.google.com/iam/docs/granting-changing-revoking-access (\"lets you quickly grant a role to a principal\")."
+    },
+    {
+     "id": "gcp-ace-s1.1-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/asset-inventory/docs/search-resources)",
+     "evidence": "\"You can search for resources in a project, folder, or organization, and filter the returned results using a query.\" (https://docs.cloud.google.com/asset-inventory/docs/search-resources). The statement lists the three standard hierarchy levels that almost every Google Cloud scoped feature uses, and the explanation just restates it.",
+     "problem": "Give-away: a player who knows nothing about Cloud Asset Inventory guesses True because project, folder and organization are the standard scopes. No realistic misconception is being tested, and the card says nothing about configuring Cloud Asset Inventory to analyze resources.",
+     "suggestedFix": "Replace (keeps True). Statement: \"Cloud Asset Inventory can export asset metadata to BigQuery for analysis with SQL queries.\" Explanation: \"An export writes a snapshot of asset metadata to a BigQuery table or a Cloud Storage object. Feeds to Pub/Sub cover change monitoring instead.\" URL: https://docs.cloud.google.com/asset-inventory/docs/overview (\"Export your asset metadata to BigQuery or Cloud Storage.\")."
+    },
+    {
+     "id": "gcp-ace-s1.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/organization-policy/overview)",
+     "evidence": "\"When an organization policy is set on a resource, all descendants of that resource inherit the organization policy by default.\" and \"You can set an organization policy on a descendant resource that either overwrites the inheritance or inherits the organization policy of the parent resource.\" (https://docs.cloud.google.com/organization-policy/overview). The deck already has gcp-ace-s4.1-03 (\"An IAM role granted on an organization flows to descendant projects\", True) and gcp-ace-s2.3-08 (\"A hierarchical firewall policy associated with a folder automatically applies to its descendant projects\", True).",
+     "problem": "This is the third True card using the same \"policy on a parent applies to descendant projects\" pattern. A player who has seen one of them answers the others from the pattern. The card also leaves out the part of org policy inheritance that sets it apart from IAM: a descendant can override it. The explanation's \"inherited by its descendants\" skips the \"by default\" qualifier the source uses.",
+     "suggestedFix": "Replace (keeps True). Statement: \"A project can set its own organization policy that overrides the one it inherits from its folder.\" Explanation: \"Organization policies are inherited by default, but a descendant resource can set a policy on the same constraint that replaces the inherited one, unlike IAM grants, which only add access.\" URL: https://docs.cloud.google.com/organization-policy/overview."
+    }
+   ],
+   "notes": "I checked all 12 cards against their source pages and section 1.1 of the current four-section exam guide PDF (bullets: resource hierarchy, org policies, project IAM, Cloud Identity users and groups, APIs, Observability, quotas, standalone orgs, availability by location, Cloud Asset Inventory and Gemini Cloud Assist, Workforce Identity Federation). Every source URL loads, is official and current, and supports its card, including the right fact given for each false card.\nPassed:\n- 01: folders contain projects and other folders.\n- 04: \\\"These permissions are managed by Google Workspace, not IAM.\\\"\n- 05: GCDS group sync is optional (\"If you intend to provision groups, ensure that Groups is selected\").\n- 06: \\\"enables a service with the name specified for the current project\\\".\n- 07: metrics scope lets you chart time series stored in multiple projects.\n- 09: \\\"With standalone organizations, you don't require Cloud Identity\\\". Eligibility is new Free Trial customers, and may_change is set.\n- 10: regions list shows quotas and status; machine-types list with a filter finds the zones for a machine type.\n- 12: \\\"it doesn't store user accounts in Google Cloud\\\", sync-less.\nBorderline, not flagged:\n- 08: most quota requests are approved by automated systems, sometimes within minutes. The card still holds because the source says requests are evaluated and \\\"Requests that don't meet the criteria are denied.\\\" Difficulty 3 is generous, since the card does not contrast two similar things.\n- 06 and 10 are easy (difficulty 1) but test real command-group choices.\nTrue/false balance is 6/6, and average statement length is 81.8 for true and 78.0 for false, inside the 5-character rule. The three replacements I suggest are all True and keep that balance. Coverage gaps: no card in 1.1 tests Gemini Cloud Assist or \\\"setting up cloud networking\\\". That is acceptable given the deck-wide limit of three Gemini Cloud Assist cards."
+  },
+  {
+   "section": "1.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s1.2-12",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, official, last updated 2026; supports Standard/Detailed/Pricing setup only",
+     "evidence": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-setup: \"Before you enable your Cloud Billing data to export to BigQuery, you must create at least one BigQuery dataset to manage your exported data.\" The same page also says, for CUD metadata export: \"it uses a BigQuery linked dataset which is created automatically during configuration ... You do not need to create a dataset beforehand.\" And https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-focus-setup: \"The FOCUS usage cost export is an immutable BigQuery dataset (linked dataset)\" and \"export creates a dataset and a table with your billing data in the new dataset\".",
+     "problem": "The statement says only \"usage export\". The FOCUS usage cost export (Preview) is also a usage cost export, and Cloud Billing creates its dataset itself. An expert could therefore defend True. The answer holds only for the Standard and Detailed usage cost exports, and the statement does not name them.",
+     "suggestedFix": "Keep the answer false and name the export. Statement (81 chars): \"Cloud Billing creates the dataset when you enable the Detailed usage cost export.\" Explanation (154 chars): \"For Standard and Detailed usage cost exports, you create the BigQuery dataset first and select it; Cloud Billing then creates the export tables inside it.\" Keep the same URL."
+    },
+    {
+     "id": "gcp-ace-s1.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official, current",
+     "evidence": "https://docs.cloud.google.com/billing/docs/how-to/budgets: \"Setting an alerts-only budget doesn't automatically cap Google Cloud or Google Maps Platform usage or spending. Alerts-only budgets trigger alerts to inform you of how your usage costs are trending over time.\" The same page also documents \"spend cap budget (preview)\": \"When enforced, the specified services are paused until you manually lift the cap.\"",
+     "problem": "The answer is correct and the source supports it, but the wording gives it away. A budget called \"alerts-only\" plainly only sends alerts, so a player can answer False from the term without knowing the mechanism. The qualifier cannot simply be removed: spend cap budgets (Preview) do pause services, so \"a budget pauses usage\" would become ambiguous.",
+     "suggestedFix": "Keep the same fact without the giveaway term and keep the answer false. Statement (84 chars): \"A Cloud Billing budget disables billing on its projects when a threshold is crossed.\" Explanation (148 chars): \"Budget threshold rules only send alert notifications; billing and usage continue. Cutting off billing automatically needs automation that you build.\" Keep the same URL. Spend cap budgets pause services and do not disable billing, so the statement stays false."
+    }
+   ],
+   "notes": "I checked all 12 cards in section 1.2 (6 true, 6 false). All six source URLs return 200, are official docs.cloud.google.com pages and are current (export-data-bigquery was last updated 2026-09-30). All four exam-guide bullets are covered: creating billing accounts, linking projects, budgets and alerts, and billing exports. No other card in the deck rests on the same fact as a 1.2 card.\n\nCards that pass, with the sentence that settles each:\n- 01 (true): modify-project says \"A Cloud Billing account ... can be linked to one or more projects.\"\n- 02 (false): verify-billing-enabled says \"If projects are linked to a Cloud Billing account that's subsequently closed or suspended, then billing is no longer enabled on those projects.\"\n- 03 (false): modify-project says \"charges already incurred prior to moving the project are billed to the former Cloud Billing account.\"\n- 04 (false): modify-project says \"You need both project permissions and billing account permissions\", meaning Project Owner AND Billing Account User or Administrator on the current and target accounts.\n- 05 (true): the budgets page scopes a budget to \"One or more organizations, folders, or projects\" and \"One or more services\".\n- 07 (true): the budgets page says \"Under Trigger on, select either Actual or Forecasted spend.\" Budgets with a custom time range cannot trigger forecasted alerts, but \"can\" in the statement covers that.\n- 08 (true): budgets-programmatic-notifications says \"To connect a Pub/Sub topic to a Cloud Billing budget\".\n- 09 (true): export-data-bigquery says the export runs \"automatically throughout the day to a BigQuery dataset\". This card is easy but in scope.\n- 10 (false): export-data-bigquery says the Detailed export \"includes everything in the standard usage cost data plus resource-level cost data, like a virtual machine or SSD\". The Standard export does carry resource-level Tags, but not per-resource cost, so the card is still false.\n- 11 (true): the setup page says \"If you plan to export your Cloud Billing pricing data to BigQuery, you need to enable the BigQuery Data Transfer Service API.\" The card's may_change volatility is appropriate.\n\nRecent changes that affect this section:\n1. Spend cap budgets (Preview) now exist and can pause services. Card 06 survives only because it says \"alerts-only\". Any future card that says budgets never stop usage must name alerts-only budgets or avoid the claim.\n2. The FOCUS usage cost export (Preview) and the CUD metadata export auto-create linked datasets. This is why card 12 is flagged.\n\nLength balance with both replacements applied: false average 76.7 characters against true average 72.7, which is within the 5-character rule. The true/false split stays 6/6."
+  },
+  {
+   "section": "2.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s2.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instances/creating-instance-with-custom-machine-type: \"you can create a VM instance with a custom number of vCPUs and amount of memory, effectively using a custom machine type.\" The fact is correct, but the answer follows from the word \"custom\". This is the definition card the prompt bans, and nobody who studied would answer False.",
+     "problem": "Definition card and name giveaway: the statement only restates what \"custom machine type\" means. It tests no behaviour, scope or distinction.",
+     "suggestedFix": "Replace (answer true, keeps 6/6 balance): \"N2 custom machine types can use extended memory to exceed the series' maximum memory per vCPU.\" Explanation: \"Extended memory is offered on N4, N4A, N4D, N2, N2D and N1 custom machine types; predefined types and E2 or G2 custom types lack it, and it does not qualify for resource-based CUDs.\" Same URL; set volatility may_change because the series list can change."
+    },
+    {
+     "id": "gcp-ace-s2.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/regional-clusters: \"Regional clusters increase the availability of a cluster by replicating the control plane across multiple zones in a region.\" The card says \"A regional GKE cluster replicates its control plane across zones in one region.\" That is a near-copy of the source sentence, and \"regional\" largely gives away \"zones in one region\". The same regional-means-zones-in-one-region idea is already tested by s2.1-04 (regional Persistent Disk).",
+     "problem": "Near-copy of the source wording, and the answer is largely readable from the word \"regional\". It overlaps conceptually with s2.1-04, and the hard rating is not earned. The real hard distinction is zonal (multi-zonal) versus regional control planes.",
+     "suggestedFix": "Replace (answer true): \"A zonal GKE cluster with nodes in several zones still runs a single control plane in one zone.\" Explanation: \"Zonal clusters keep one control plane in one zone even when their nodes span zones; only a regional cluster replicates the control plane across zones of its region.\" URL: https://docs.cloud.google.com/kubernetes-engine/docs/concepts/types-of-clusters (\"Zonal clusters have a single control plane in a single zone.\" and \"you can choose to distribute your nodes for your zonal cluster in a single zone or in multiple zones.\")"
+    },
+    {
+     "id": "gcp-ace-s2.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/network-isolation: \"Prevent external clients from accessing nodes by provisioning those nodes only with internal IP addresses, making the nodes private.\" The answer is correct, but the word \"private\" gives it away to a player who does not know GKE.",
+     "problem": "Name giveaway and near-strawman: a node called \"private\" getting an external IP is the obvious False. The useful associate-level fact, that node isolation and control plane access are independent settings, goes untested.",
+     "suggestedFix": "Replace (answer false): \"Enabling private nodes on a GKE cluster also turns off its control plane's external endpoint.\" Explanation: \"Node isolation and control plane access are separate GKE settings: a cluster can run private nodes while its control plane keeps an external endpoint, and both can change without recreating the cluster.\" Same URL (\"You can change the control plane access and cluster node configuration settings at any time without having to re-create the cluster.\")"
+    },
+    {
+     "id": "gcp-ace-s2.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instance-groups/create-mig-with-basic-autoscaling: \"Create an instance template, which is required in order to create a managed instance group.\" Every MIG is built from an instance template whether or not it autoscales, so \"autoscaled\" adds nothing and the card restates what a MIG is.",
+     "problem": "Definitional truism: no studied player answers False. The autoscaling half of the factKey is not tested.",
+     "suggestedFix": "Replace (answer true): \"A MIG autoscaler ignores usage data from VMs that are still inside their initialization period.\" Explanation: \"New VMs may not reflect normal load yet, so the autoscaler skips their metrics until the configured initialization period ends; an accurate period improves scaling decisions.\" Same URL (\"the autoscaler ignores data from VMs that are still initializing because those VMs might not yet represent normal usage of your application\")."
+    },
+    {
+     "id": "gcp-ace-s2.1-03",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, current; supports the statement only partly",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instances/spot says \"Spot VMs don't have a minimum or maximum runtime unless you specifically limit the runtime\" but never mentions the 24-hour preemptible limit that the explanation states. https://docs.cloud.google.com/compute/docs/instances/preemptible covers both facts: \"Compute Engine always stops preemptible instances after they run for 24 hours.\" and \"Spot VMs don't have a maximum runtime unless you limit the runtime.\"",
+     "problem": "The cited page does not support the explanation's right fact (the 24-hour cap belongs to preemptible VMs). The answer itself is correct.",
+     "suggestedFix": "Change the source URL to https://docs.cloud.google.com/compute/docs/instances/preemptible (title \"Preemptible VM instances\"), which supports both halves. Keep the statement, answer and explanation."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.1 (6 true, 6 false). Every source URL loaded on docs.cloud.google.com. These 7 cards passed: 02 (OS Login; the ssh page says Compute Engine \"no longer accepts connections from SSH keys that are stored in project or instance metadata\"), 04 (regional PD: \"each replica distributed between two zones in the same region\"), 05 (Hyperdisk: \"you can increase or decrease a Hyperdisk volume's performance while it's in use\"; changes are limited to once every 4 to 6 hours, but that does not break the claim), 07 (Autopilot: \"Google manages worker nodes\"; custom ComputeClasses do not need user-created node pools), 10 (kubectl auth: \"You must install this plugin to use kubectl and other clients to interact with GKE\", so the official wording supports \\\"requires\\\"), 11 (Cloud Run functions: \"All event-driven functions use Eventarc for event delivery. Pub/Sub triggers and Cloud Storage triggers are implemented as particular types of Eventarc triggers\") and 12 (Agent Runtime: \"fully-managed, opinionated runtime\" that \"abstracts away the underlying infrastructure\"; the page loads under the current name and states no Preview label). I found no wrong answers. All 5 flags concern card quality (4 weak cards, 1 source citation), and all 4 replacements keep the section at 6 true and 6 false (01, 06 and 08 replaced with true cards, 09 with a false one). I compared the section against the other 132 cards in the deck and found no duplicate factKeys. 2.1-07 (Autopilot node provisioning) and 3.1-06 (Autopilot default resource requests) test different facts, and so do 2.1-12 and 3.1-10 (Agent Runtime). If you keep 2.1-08 instead of using its replacement, note that it and 2.1-04 rest on the same idea: regional means replicated across zones within one region."
+  },
+  {
+   "section": "2.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s2.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/dataflow/docs/concepts/streaming-pipelines), supports the card",
+     "evidence": "Source: \"An unbounded collection contains data from a continuously updating data source such as Pub/Sub.\" The answer follows from the word \"streaming\" in the statement. The prompt forbids this explicitly: \"No strawman and no definition card: a statement whose answer follows from the meaning of a term in it (elastic, serverless, open standard, streaming) teaches nothing.\"",
+     "problem": "A definition card. Anyone who knows what a streaming job is answers False without knowing anything about Dataflow, and few who studied would believe the statement, so it is also close to a strawman.",
+     "suggestedFix": "Replace and keep the answer False. Statement: \"Dataflow Streaming Engine runs streaming pipeline steps on the job's worker VMs.\" Explanation: \"Streaming Engine moves streaming pipeline execution out of worker VMs into the Dataflow service backend, so workers use less CPU, memory and Persistent Disk.\" factKey dataflow-streaming-engine-backend. URL: https://docs.cloud.google.com/dataflow/docs/streaming-engine (quote: Streaming Engine moves \"pipeline execution out of the worker virtual machines (VMs) and into the Dataflow service backend\")."
+    },
+    {
+     "id": "gcp-ace-s2.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/filestore/docs/overview), supports the card",
+     "evidence": "Overview page: NFSv3 is supported on \"All service tiers\" and Filestore instances can be connected to clients including \"Compute Engine VMs\". Filestore is Google Cloud's managed NFS file server, so the statement only says what the product is.",
+     "problem": "A product-identification card that is close to a truism, against the depth rule (\"cards that only identify a product belong to the Cloud Digital Leader deck\"). Rated difficulty 3, but it tests no real distinction between two similar options.",
+     "suggestedFix": "Replace and keep the answer True. Statement: \"A Filestore regional instance stays available through the outage of a single zone in its region.\" Explanation: \"The Filestore regional tier is designed for regional availability and resilience against zone outages, unlike Basic and zonal instances that run in one zone.\" URL: https://docs.cloud.google.com/filestore/docs/service-tiers (quote: \"Designed for regional availability and resilience against zone outages\")."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.2 against the exam guide's 2.2 bullets, which I read in the current four-section PDF: data products, storage products and classes, loading data, multi-region redundancy. Every source URL loads, is official and supports its card. The quotes that settle each card:\n- 01, false: \"You can use Cloud SQL with MySQL, PostgreSQL, or SQL Server.\"\n- 02, true: \"You can load data into BigQuery from Cloud Storage or from a local file as a batch operation.\"\n- 03, true: the eur3 multi-region has read-write replicas in europe-west1 and europe-west4, with a witness replica in europe-north1.\n- 04, false: \"Multi-region configurations are available with the Spanner Enterprise Plus edition.\" The editions overview confirms that Enterprise edition is regional only.\n- 05, true: \"Row keys sort rows lexicographically from the lowest to the highest byte string.\"\n- 07, false: \"After the deadline passes ... Pub/Sub attempts to redeliver the message.\"\n- 08, false: Archive data \"is available within milliseconds, not hours or days\".\n- 10, true: \"On-premises storage to Cloud Storage\" is a listed transfer scenario.\n- 11, false: writes are confirmed after data \"has been redundantly stored in one initial region\", then \"asynchronously replicated\". Turbo replication is also asynchronous (15-minute RPO), so the card still holds.\n- 12, true: \"The service automatically provisions a number of brokers based on the vCPU count.\"\n\nBalance is 6 true and 6 false, and both replacements keep it. I found no duplicates with the rest of the deck. The 3.2 cards on Nearline minimum duration, Firestore backups and Bigtable backups test different facts.\n\nMinor observations, not flagged:\n- 02 (BigQuery load from Cloud Storage) and 10 (Storage Transfer Service from on-premises) are basic, difficulty-1 cards that border on product identification. Both are named directly in the guide's \"Loading data\" bullet, so I kept them.\n- 08 makes the storage class the actor (\"Cloud Storage Archive can retrieve objects...\"). A rewording such as \"Reading a Cloud Storage Archive object requires an offline restore job first\" would read better, but the fact is correct."
+  },
+  {
+   "section": "2.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s2.3-02",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official (docs.cloud.google.com/vpc/docs/shared-vpc), supports the intended fact",
+     "evidence": "https://docs.cloud.google.com/vpc/docs/shared-vpc: \"The host project can then share selected subnets, including secondary ranges, with the service projects.\" The same page also says: \"Use of a Shared VPC network is not mandatory. For example, instance admins can create instances in the service project that use a VPC network in that project.\" and \"Networks defined in service projects are not shared.\"",
+     "problem": "The statement says \"the network subnets used by its application VMs\" but never says these are the shared subnets. A service project can also hold its own VPC network, and VMs on that network use subnets the service project creates and owns. Read literally, the statement can be true, so an expert could argue for True.",
+     "suggestedFix": "Keep answer False. Statement: \"In Shared VPC, the shared subnets that service project VMs use belong to the service project.\" Explanation: \"Shared subnets live in the host project's Shared VPC network. Service Project Admins create VMs in them, but the host project creates and owns the subnets.\" Same URL."
+    },
+    {
+     "id": "gcp-ace-s2.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/vpc/docs/vpc), supports the card",
+     "evidence": "https://docs.cloud.google.com/vpc/docs/vpc: \"When a custom mode VPC network is created, no subnets are automatically created. This type of network provides you with complete control over its subnets and IP ranges. You decide which subnets to create in regions that you choose by using IP ranges that you specify.\"",
+     "problem": "The word \"custom\" gives the answer away: a custom mode network is one where the administrator chooses. Players can answer True without knowing VPC, which breaks the rule against name giveaways.",
+     "suggestedFix": "Keep answer True. Statement: \"Switching a VPC network from auto mode to custom mode is a one-way conversion.\" Explanation: \"An auto mode VPC network can be switched to custom mode to take control of its subnets, but the change is permanent: a custom mode network cannot be turned back into auto mode.\" Source: https://docs.cloud.google.com/vpc/docs/vpc (\"This is a one-way conversion; custom mode VPC networks cannot be changed to auto mode VPC networks.\")"
+    },
+    {
+     "id": "gcp-ace-s2.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/firewall/docs/firewalls), supports the card",
+     "evidence": "https://docs.cloud.google.com/firewall/docs/firewalls lists \"A list of IPv4 addresses in CIDR format\" as an ingress source, and also says: \"when you omit a source specification in an ingress rule, Google Cloud uses the default source IPv4 address range 0.0.0.0/0.\"",
+     "problem": "This is a truism. Every firewall can match source IP ranges, so the card is true from general networking knowledge and teaches nothing specific to Google Cloud. Nobody who studied would answer False.",
+     "suggestedFix": "Keep answer True. Statement: \"An ingress VPC firewall rule that omits its source specification matches traffic from 0.0.0.0/0.\" Explanation: \"When an ingress VPC firewall rule names no source ranges, tags or service accounts, Google Cloud applies the default source range 0.0.0.0/0, so the rule matches any IPv4 sender.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.3 (all in gcp-ace-b2.json). The exam guide PDF's 2.3 bullets are: custom mode VPC, Shared VPC, VPC Network Peering; VPC firewall rules and Cloud NGFW policies with their attributes; secure Tags and service accounts; Cloud VPN, Peering and Interconnect; load balancers; Network Service Tiers. Every card is within those bullets. The section has 6 true and 6 false cards. Average statement length is 79.5 characters for true cards and 79.7 for false. All three suggested replacements keep their card's answer, so the balance stays the same.\n\nCards that passed, with the deciding quote:\n- 03: vpc-peering says \"VPC Network Peering does not provide transitive routing\". A hub NVA can carry spoke-to-spoke traffic, but the NVA does that, not the peering, so the card is not ambiguous.\n- 05: tags-firewalls-overview says \"VPC firewall rules don't support secure tags\".\n- 06: firewalls page says target service accounts apply to \"instances ... if the instances use a service account that matches\".\n- 07: firewalls page says \"Rules based on source ports are not supported\".\n- 08: firewall-policies says \"All folders and VPC networks in a folder inherit its associated policy\".\n- 09: Cloud Router overview says it provides \"BGP speaker and responder capabilities\" and works with Cloud VPN, and lists HA VPN as needing dynamic routing with Cloud Router. The page never says \"over HA VPN tunnels\" outright, but taken together it is enough.\n- 10: interconnect overview says \"Cloud Interconnect doesn't encrypt traffic by default\". MACsec is a second option besides HA VPN, which the explanation's \"an option\" covers.\n- 11: l7-internal says \"The regional mode requires that backends be in a single Google Cloud region\". Hybrid NEGs (on-premises or other-cloud backends) are an edge case only.\n- 12: network-tiers overview says Premium Tier traffic \"enters Google's network ... in a Google point of presence (PoP) that's as close as possible to the internet user\".\n\nMinor points I did not flag:\n- 08: the word \"hierarchical\" partly hints at inheritance, but scope is exactly what the depth rules ask cards to test.\n- 10: its factKey (\"cloud-interconnect-private-connection\") does not match its fact (encryption by default).\n- I found no duplicates with other sections, including the firewall cards in 3.3 (logging, policy priority) and 1.1-02 (org policy inheritance, a different product)."
+  },
+  {
+   "section": "2.4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s2.4-12",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current (last updated 2026-09-30)",
+     "evidence": "https://docs.cloud.google.com/shell/docs/how-cloud-shell-works: \"Cloud Shell provisions a Compute Engine virtual machine running a Debian-based Linux operating system for your temporary use.\" The fact is correct, but it is a strawman: nobody who has used Cloud Shell thinks it runs the workstation's gcloud. It is also outside 2.4: the exam guide lists only \"Infrastructure as Code tooling (e.g., Fabric FAST, Config Connector, Terraform, Helm)\" and \"AI-assisted planning and implementation (e.g., Gemini CLI, Google Antigravity, Gemini Cloud Assist, Application Design Center)\". Cloud Shell appears nowhere in the guide.",
+     "problem": "Strawman, and out of the section's scope: it is a Cloud Shell basics card, not an IaC or AI-tooling card.",
+     "suggestedFix": "Replace with a FALSE card: \"Infrastructure Manager runs Terraform on the machine where the user submits the deployment.\" (91 chars). Explanation: \"Infrastructure Manager runs Terraform in an ephemeral Cloud Build environment from a Google-maintained container image and discards that environment after the run.\" (163 chars). URL: https://docs.cloud.google.com/infrastructure-manager/docs/overview (quote: \"Creates a Cloud Build job using a container image. This image is owned and maintained by Google Cloud.\")"
+    },
+    {
+     "id": "gcp-ace-s2.4-11",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://docs.cloud.google.com/sdk/gcloud/reference/storage/cp: \"The default mode is a 'copy in the cloud,' where data is copied without uploading or downloading.\" The fact is correct, but the 2.4 considerations (quoted from the exam guide PDF) cover only IaC tooling and AI-assisted planning. gcloud storage copying belongs to 2.2 (\"Loading data (e.g., command-line upload...)\") or 3.2 (\"Managing and securing objects in Cloud Storage buckets\").",
+     "problem": "The answer is correct, but the card tests Cloud Storage object handling, not resource tooling. It takes a 2.4 slot away from the IaC and AI-tooling bullets the section defines.",
+     "suggestedFix": "Replace with a FALSE card: \"Terraform's Google Cloud provider needs a downloaded service account key to authenticate from a workstation.\" (108 chars). Explanation: \"The Terraform google provider uses Application Default Credentials, for example from gcloud auth application-default login or service account impersonation, so no key file is needed.\" (182 chars). URL: https://docs.cloud.google.com/docs/terraform/authentication (quote: \"You can use service account impersonation to set up a local ADC file. Terraform uses those credentials automatically.\"). Alternatively, move the gcloud storage cp fact to 3.2 if that section has a free slot."
+    },
+    {
+     "id": "gcp-ace-s2.4-08",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (last updated 2026-09-30)",
+     "evidence": "https://docs.cloud.google.com/gemini/docs/codeassist/gemini-cli: \"Each Gemini Code Assist edition provides quotas for using the Gemini CLI. Note that these quotas are shared between Gemini CLI and Gemini Code Assist agent mode. Gemini CLI also supports using a Gemini API key to pay as you go.\"",
+     "problem": "The statement does not name the Code Assist edition context. A Gemini CLI user who authenticates with a Gemini API key (or through Gemini Enterprise Agent Platform) draws on that API's quota, which is separate from Code Assist agent mode, so an expert could defend True.",
+     "suggestedFix": "Keep it FALSE and scope it: \"Under a Gemini Code Assist edition, Gemini CLI draws on its own quota apart from Code Assist agent mode.\" (104 chars). Explanation: \"Each Gemini Code Assist edition grants quotas that Gemini CLI shares with Gemini Code Assist agent mode; a Gemini API key is a separate pay-as-you-go option.\" (157 chars). Same URL."
+    },
+    {
+     "id": "gcp-ace-s2.4-06",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current; supports the Terraform export",
+     "evidence": "https://docs.cloud.google.com/application-design-center/docs/download-and-deploy lists the export as Terraform files (main.tf, variables.tf, ...). The Gemini Cloud Assist overview, however, says: \"Iteratively generate or refine Google Cloud CLI commands, `kubectl` manifests, and Terraform code for infrastructure ... through interactive conversations in App Design Center and Gemini Cloud Assist chat\" (https://docs.cloud.google.com/cloud-assist/overview). Application Design Center also offers a GKE workload template (Preview) that deploys a Helm chart (https://docs.cloud.google.com/application-design-center/docs/enterprise-grade-production-gke).",
+     "problem": "Inside App Design Center, Kubernetes manifests can be generated and Helm-based GKE workloads exist, so an expert could argue that the product produces Kubernetes manifests. The card also sits close to 2.4-10, which tests Cloud Assist refining Terraform in the same tool.",
+     "suggestedFix": "Replace with a FALSE card on a different ADC fact: \"Teams register apps deployed from Application Design Center in App Hub as a separate manual step.\" (97 chars). Explanation: \"When you deploy an application with Application Design Center, it registers the application in App Hub automatically.\" (117 chars). URL: https://docs.cloud.google.com/application-design-center/docs/deploy-applications (quote: \"When you deploy an application using App Design Center, your application is automatically registered in App Hub.\"). No other card in the deck tests App Hub."
+    },
+    {
+     "id": "gcp-ace-s2.4-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (last updated 2026-09-30)",
+     "evidence": "https://docs.cloud.google.com/config-connector/docs/overview: \"Config Connector provides a collection of Kubernetes Custom Resource Definitions (CRDs) and controllers... Config Connector reconciles the configured state against Google Cloud APIs asynchronously.\"",
+     "problem": "The card is true, but it only defines what Config Connector is. The prompt says: \"Assume the player already knows what each product is for; cards that only identify a product belong to the Cloud Digital Leader deck.\" It does not test behaviour or configuration.",
+     "suggestedFix": "Replace with a TRUE behaviour card: \"Deleting a Config Connector object from the cluster deletes its Google Cloud resource by default.\" (97 chars). Explanation: \"Once Config Connector manages a resource, deleting its Kubernetes object deletes the resource too, unless the object has the cnrm.cloud.google.com/deletion-policy: abandon annotation.\" (183 chars). URL: https://docs.cloud.google.com/config-connector/docs/how-to/managing-deleting-resources (quote: \"By default, after Config Connector acquires and manages a resource, deleting the object from your cluster will delete the resource.\")"
+    },
+    {
+     "id": "gcp-ace-s2.4-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (GoogleCloudPlatform GitHub, allowed for Fabric FAST)",
+     "evidence": "https://github.com/GoogleCloudPlatform/cloud-foundation-fabric: \"FAST provides a design of a GCP organization that includes the typical elements required by enterprise customers.\" and \"we provide a reference implementation of the FAST design using Terraform.\"",
+     "problem": "The card is true, but it only identifies the product and restates the README's description. It does not test how FAST behaves or is configured.",
+     "suggestedFix": "Replace with a TRUE card: \"Fabric FAST splits organization setup into Terraform stages that hand outputs to later stages.\" (94 chars). Explanation: \"FAST stages are modeled on the security boundaries of mature organizations; each stage takes inputs from earlier stages and produces outputs for the ones that follow.\" (166 chars). URL: https://github.com/GoogleCloudPlatform/cloud-foundation-fabric/blob/master/fast/README.md (quote: \"FAST uses the concept of stages, which individually perform precise tasks but taken together build a functional, ready-to-use GCP organization.\")"
+    },
+    {
+     "id": "gcp-ace-s2.4-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/artifact-registry/docs/helm/store-helm-charts: \"In Helm, a deployed instance of your application is called a release.\" It also says \"Create a Docker repository to store the sample chart\" and \"Install Helm 3.8.0 or later. In previous versions of Helm, support for charts in OCI format is an experimental feature.\"",
+     "problem": "The card is close to a truism: Helm installing charts into a Kubernetes cluster is what Helm does, and GKE is Kubernetes. The only Google Cloud-specific part (where the charts live) is left implicit, so few learners would answer False.",
+     "suggestedFix": "Replace with a TRUE card: \"Artifact Registry stores Helm charts as OCI artifacts in Docker-format repositories.\" (84 chars). Explanation: \"Helm 3.8.0 or later pushes charts in OCI format to an Artifact Registry Docker repository, and helm install can then deploy them to a GKE cluster as a release.\" (159 chars). Same URL."
+    }
+   ],
+   "notes": "I checked all 12 cards against the current four-section exam guide PDF. Its 2.4 bullets are \"Infrastructure as Code tooling (e.g., Fabric FAST, Config Connector, Terraform, Helm)\" and \"AI-assisted planning and implementation (e.g., Gemini CLI, Google Antigravity, Gemini Cloud Assist, Application Design Center)\". Every source URL loaded and every card's answer is correct as of 2026-10-03. No card has a wrong answer.\n\nCards that pass:\n- 03 (Infrastructure Manager runs Terraform, not Deployment Manager templates). The deprecation page confirms \"Infra Manager leverages Terraform\" and end of support on March 31, 2026. DM Convert exists, but it converts templates to Terraform, so the statement stays false.\n- 05 (standard template components): \"they can configure each component from the template, but they can't add or remove any components.\"\n- 07 (Gemini CLI in Cloud Shell): \"available without additional setup in Cloud Shell.\"\n- 09 (Antigravity visual artifacts): \"(such as plans, code diffs, and browser recordings)\". The explanation closely paraphrases the source sentence and is slightly trivia-like, but within scope. The www. URL works; https://antigravity.google/docs/home is the canonical form.\n- 10 (Gemini Cloud Assist refines Terraform): \"Iteratively generate or refine ... Terraform code ... through interactive conversations.\" Gemini Cloud Assist is still Preview and volatility is set. It is one of two Cloud Assist cards in the deck (with 3.4-12), within the cap of three.\n\nBalance:\n- The original section has 6 true and 6 false cards.\n- The suggested fixes keep that split: 01, 02 and 04 are replaced by true cards; 06, 08, 11 and 12 by false cards.\n- The replacements add a second Infrastructure Manager card (Cloud Build execution, a different fact from 03) and a Config Connector deletion-policy card. The Terraform ADC replacement for 11 is near, but not the same fact as, 4.2-07 (impersonation does not read a key).\n- If the orchestrator wants fewer changes, the higher-priority flags are 12, 11, 08 and 06. 01, 02 and 04 are depth-rule (identification) flags.\n- If 2.4-11 is moved to 3.2 instead of dropped, check it against the 3.2 cards first."
+  },
+  {
+   "section": "3.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s3.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/compute/docs/gcloud-compute/common-commands: \"Run the following command to connect to a VM using SSH: gcloud compute ssh VM_NAME\". The answer can be read from the command name (compute + ssh), so a player who knows nothing about Google Cloud still answers True. It is a name giveaway and close to a definition.",
+     "problem": "The card is a name giveaway and teaches nothing beyond the command's own name.",
+     "suggestedFix": "Replace (True): \"When a user has no SSH key, gcloud compute ssh generates one with ssh-keygen before connecting to the VM.\" Explanation: \"gcloud compute ssh wraps ssh and handles authentication: if the user has no public SSH key, it creates one with ssh-keygen and makes it available to the VM.\" Source: https://cloud.google.com/sdk/gcloud/reference/compute/ssh (\"If the user does not have a public SSH key, one is generated using ssh-keygen(1)\")."
+    },
+    {
+     "id": "gcp-ace-s3.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/compute/docs/disks/about-snapshot-schedules: \"A snapshot schedule creates standard snapshots, which are geo-redundant disk backups, at specified intervals.\" The statement only restates what a 'snapshot schedule' means, so the answer follows from the term itself.",
+     "problem": "This is a definition card: anyone can answer True from the words 'snapshot schedule'. It tests no behaviour or configuration.",
+     "suggestedFix": "Replace (True): \"By default, Compute Engine keeps snapshots from a snapshot schedule after their source disk is deleted.\" Explanation: \"A snapshot schedule's default source disk deletion rule keeps its auto-generated snapshots indefinitely. You can instead set it to apply the schedule's retention policy.\" Same URL, which says: \"By default, if your source disk is deleted, snapshots automatically generated from your snapshot schedule are retained permanently unless you delete them manually\"."
+    },
+    {
+     "id": "gcp-ace-s3.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler: \"GKE's cluster autoscaler automatically resizes the number of nodes in a given node pool, based on the demands of your workloads.\" The statement says cluster autoscaling changes node counts as demand changes, which follows from the word 'autoscaling'.",
+     "problem": "This is a definition or truism card with a name giveaway. The page also offers a real distinction that the card misses: the autoscaler acts on requests, not on utilization.",
+     "suggestedFix": "Replace (True): \"GKE cluster autoscaler resizes a node pool based on Pod resource requests rather than measured node CPU use.\" Explanation: \"Cluster autoscaler adds or removes nodes in a node pool from the resource requests of Pods, not actual utilization, so explicit requests on every workload make its decisions accurate.\" Same URL: \"Cluster autoscaler makes these scaling decisions based on the resource requests (rather than actual resource utilization) of Pods\"."
+    },
+    {
+     "id": "gcp-ace-s3.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/artifact-registry/docs/access-control: \"GKE clusters and node pools can pull containers without any additional configuration if all the following requirements are met: GKE is in the same project as Artifact Registry [and] Nodes are using the default service account\". The page never mentions deployer credentials. The answer is correct, but few learners who studied would believe that a deployer's own login authorizes the nodes' image pulls.",
+     "problem": "The card is close to a strawman and is rated difficulty 3 although it is easy. It misses the real exam point, 'Configuring GKE to access Artifact Registry', which is the same-project versus cross-project setup.",
+     "suggestedFix": "Replace (False): \"Cross-project Artifact Registry pulls by GKE nodes work on the same default setup as same-project pulls.\" Explanation: \"Pulls work without setup only when the repository is in the cluster's project and nodes use the default service account. For other projects, grant the node service account Artifact Registry Reader.\" Same URL."
+    },
+    {
+     "id": "gcp-ace-s3.1-09",
+     "verdict": "explanation_error",
+     "urlStatus": "loads, official (updated 2026-09-30); supports the per-revision limit but leaves out the service-level setting",
+     "evidence": "https://docs.cloud.google.com/run/docs/about-instance-autoscaling: \"Because the maximum instances limit is a limit for each revision, if the service splits traffic across multiple revisions, the total number of instances for the service can exceed the maximum instances per revision.\" However, https://docs.cloud.google.com/run/docs/configuring/max-instances says: \"You can configure maximum instances at the service level or at the revision level. Google recommends that you use service-level maximum instances to cap the number of instances of a service\".",
+     "problem": "The answer (False) is right because the statement names the revision's setting. The explanation, though, suggests that a service's total can always exceed the maximum and leaves out the service-level maximum instances setting, which Google now recommends for capping a whole service. The misconception field reads like the truth for a service-level setting, and a player who knows that setting may feel cheated.",
+     "suggestedFix": "Keep the statement (False). New explanation: \"The revision-level maximum caps only that revision, so a traffic split can exceed it in total. To cap a whole service, Cloud Run offers a service-level maximum instances setting.\" Change the source to https://docs.cloud.google.com/run/docs/configuring/max-instances, which covers both levels."
+    },
+    {
+     "id": "gcp-ace-s3.1-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current, uses the current name; supports the card",
+     "evidence": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/notebooks/workbench/introduction: \"Agent Platform Workbench instances are prepackaged with JupyterLab and have a preinstalled suite of deep learning packages.\" The card only identifies what the product is (a notebook environment), which the prompt assigns to the Cloud Digital Leader deck. The exam bullet is 'Managing notebooks in ... Workbench'.",
+     "problem": "This is a product-identification card that is close to a name giveaway. It does not test any management behaviour.",
+     "suggestedFix": "Replace (True): \"Gemini Enterprise Agent Platform Workbench instances shut down by default after a period with no kernel activity.\" Explanation: \"Workbench idle shutdown is on by default; running cells or new output resets the timer but CPU usage does not, and disk charges continue while the instance is shut down.\" volatility may_change. Source: https://docs.cloud.google.com/gemini-enterprise-agent-platform/notebooks/workbench/instances/idle-shutdown."
+    }
+   ],
+   "notes": "I checked all 12 cards against their source pages and the current exam guide PDF. Every 3.1 card maps to a bullet in the guide's 3.1, including the Agent Runtime, Workbench and Cloud Workstations bullets. Every source URL loads and supports its card.\n\nCards that pass:\n- 03 (machine image memory, False): the page lists \"Data in memory\" under information not collected by a machine image.\n- 06 (Autopilot default requests, True): \"If you don't specify resource requests for some containers in a Pod, Autopilot applies default values.\"\n- 07 (node pool upgrade, False): \"upgrade each node pool independently\".\n- 08 (Cloud Run traffic split, True): an easy card but valid.\n- 10 (Agent Runtime list scope, False): \"List all deployed agents for a given project and location\".\n- 12 (Cloud Workstations, False): \"When the session ends, Cloud Workstations deletes the VM but detaches and retains the persistent disk\".\n\nFlags:\n- Four weak cards (01, 02, 04, 11) give the answer away through a name or definition, and 05 is close to a strawman.\n- 09 has the right answer, but its explanation leaves out Cloud Run's service-level maximum instances, which Google now recommends.\n\nThe suggested replacements keep the true and false split at 6/6. None of them clashes with an existing factKey. I checked overlap with 2.1-02 (OS Login), 2.4-04 (Helm with Artifact Registry) and 4.2-11/12 (Workload Identity Federation for GKE).\n\nBalance check: the true cards, especially 01, 08 and 11, are shorter and simpler than the false ones, which partly gives away the answers by form. The replacements narrow that gap.\n\nThe section has no card on Pod autoscaling (HPA/VPA), GPUs and TPUs, or viewing running instances or cluster inventory. That is acceptable at 12 cards but worth noting."
+  },
+  {
+   "section": "3.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s3.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/bigquery/docs/reference/bq-cli-reference: \"Use the bq query command to create a query job that runs the specified SQL query.\" The fact is correct, but bq is the BigQuery CLI and every learner knows it runs SQL against BigQuery, so the answer can be read from the tool name. The prompt rules out truisms and name giveaways, and asks for associate-level behaviour.",
+     "problem": "Truism and name giveaway: 'the BigQuery CLI sends SQL to BigQuery' teaches nothing at associate depth.",
+     "suggestedFix": "Replacement (answer TRUE, factKey bigquery-dry-run-bytes-estimate): statement \"A BigQuery dry run returns an estimate of the bytes a query would process before it runs.\" Explanation: \"A dry run validates the query and estimates the data it will process. It uses no slots and is free, so you can price a query before running it. Federated or row-level-secured tables can report 0 bytes.\" Source: https://docs.cloud.google.com/bigquery/docs/running-queries#dry-run (\"A dry run in BigQuery provides ... approximate bytes processed by your query ... you are not charged for performing a dry run.\")"
+    },
+    {
+     "id": "gcp-ace-s3.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/dataflow/docs/guides/monitoring-overview: \"See a list of running, completed, and failed jobs.\" The statement \"shows whether a job is running, completed, or failed\" is close to a copy of this sentence. It is also common sense, since any job monitoring UI shows job status.",
+     "problem": "Truism and near-copy of the source sentence: nobody who studied would answer False, so the card teaches nothing about reviewing job status.",
+     "suggestedFix": "Replacement (answer TRUE, factKey bigquery-jobs-view-state): statement \"BigQuery's INFORMATION_SCHEMA.JOBS view reports each job's state as PENDING, RUNNING or DONE.\" Explanation: \"BigQuery has no separate failed state. A failed job ends as DONE with an error_result, and the JOBS view keeps running jobs and up to 180 days of job history for the project.\" Source: https://docs.cloud.google.com/bigquery/docs/information-schema-jobs (\"state STRING Running state of the job. Valid states include PENDING, RUNNING, and DONE.\")"
+    },
+    {
+     "id": "gcp-ace-s3.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://cloud.google.com/storage/pricing: \"you can delete ... an object before it has been stored for the minimum duration, but at the time you delete, replace, or move the object, you are charged as if the object was stored for the minimum duration.\" The phrase \"remaining minimum storage duration\" in the statement already defines the charge, so the answer follows from the meaning of the term.",
+     "problem": "Definition card: anyone who knows what a 'minimum storage duration' is answers True from the wording alone. The cost mechanism that actually matters, which actions trigger the charge, is never tested.",
+     "suggestedFix": "Replacement (answer TRUE, factKey storage-class-minimum-duration-cost kept): statement \"Manually rewriting a Nearline object to Coldline within its first 30 days can incur an early deletion charge.\" Explanation: \"A manual storage class change rewrites and replaces the object, so Nearline's 30-day minimum is billed. Class changes by Object Lifecycle Management or Autoclass are exempt.\" Source: https://cloud.google.com/storage/pricing (\"Early deletion charges apply when rewriting objects, such as when you change an object's storage class\")"
+    },
+    {
+     "id": "gcp-ace-s3.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/storage/docs/lifecycle: \"The SetStorageClass action changes the storage class of an object and updates the object's modification time\". Cloud Storage sets storage class per object, so the idea that a lifecycle rule moves the object into another bucket is a misconception few who studied would hold.",
+     "problem": "Strawman: hardly anyone who studied lifecycle management would answer True. The documented fact is correct.",
+     "suggestedFix": "Replacement (answer FALSE, factKey gcs-lifecycle-age-creation-time): statement \"A Cloud Storage lifecycle age condition counts days from an object's last modification time.\" Explanation: \"Cloud Storage measures lifecycle age from the object's creation time, which is when its upload completes. Later changes, such as a SetStorageClass action that updates the modification time, do not reset the age.\" Misconception: \"Lifecycle age restarts when an object is modified.\" Source: https://docs.cloud.google.com/storage/docs/lifecycle (\"Age is measured from the resource's creation time. For objects, the creation time is the time when the object is successfully written to the bucket\")"
+    }
+   ],
+   "notes": "Section 3.2 has 12 cards: 6 true (01, 03, 04, 07, 09, 10) and 6 false (02, 05, 06, 08, 11, 12). All 4 replacements keep their card's answer, so the balance stays at 6 and 6. Sections and wording were checked against the current four-section exam guide PDF. It lists 3.2 bullets for objects, lifecycle, queries, cost estimation, backup and restore, job status, Database Center and CMEK. Every source URL loaded and supports its card.\n\nCards that passed, with the deciding sentence:\n- 01: \\\"ACLs are disabled, and only bucket-level IAM permissions grant access\\\".\n- 04: \\\"MySQL uses binary logging as the transaction logs for point-in-time recovery (PITR)\\\". Since the change of storage location, the logs may sit in Cloud Storage, but they are still binary logs.\n- 05: \\\"A backup resides in the same location as the source database\\\". The misconception is realistic because managed export does go to Cloud Storage.\n- 06: \\\"You can restore from a backup to a table in a different instance\\\" and \\\"You cannot export, copy, or move a Bigtable backup to another service, such as Cloud Storage\\\".\n- 08: \\\"Data displayed in Database Center is not updated in real time ... may take up to 24 hours\\\". This is borderline trivia, because it tests a data-freshness disclaimer rather than what Database Center does, but it is unambiguous and in scope, so it was not flagged.\n- 10: \\\"if your bucket is located in US-EAST1, any key ring ... must also be created in US-EAST1\\\". The explanation's wording \\\"match the location\\\" is a slight simplification for dual-regions, but it is acceptable.\n- 11: For PITR, \\\"The new cluster must be in the same region as the source cluster\\\". Cross-region backup storage exists only for on-demand and automated backups, not continuous backup, so the card holds.\n- 12: The manage-backups page documents Update metadata in the console and \\\"gcloud spanner backups update-metadata\\\" to change a backup's expiration date.\n\nNo card in 3.2 rests on the same fact as a card in another section. The closest neighbours are s2.2-08 (Archive online reads), s1.2 (BigQuery billing export) and s3.1-02 (snapshot schedules), and each tests a different fact. The replacements for 02 (lifecycle age from creation time) and 09 (manual rewrite triggers the early deletion charge) were chosen so they do not give each other away. Also check that the 3 replacement true statements (99 to 105 characters) keep the section's true and false average lengths within 5 characters."
+  },
+  {
+   "section": "3.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s3.3-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, GA command reference, supports the card",
+     "evidence": "https://docs.cloud.google.com/sdk/gcloud/reference/dns/record-sets/update : \"gcloud dns record-sets update - updates a record-set in a managed-zone\" ... \"This command updates a record-set contained within the specified managed-zone.\"",
+     "problem": "The answer can be read straight from the command name: 'record-sets update' updates a record set. That is a name giveaway and a truism, and it tests nothing about how Cloud DNS behaves. The prompt allows command cards only when they test which command group does a task, without the task being written into the command.",
+     "suggestedFix": "Replacement (answer TRUE): \"To publish a Cloud DNS public zone, you point the domain's registrar at the name servers Cloud DNS assigned to it.\" Explanation: \"After you create a public managed zone, you change the name servers on the domain registration to the zone's Cloud DNS name servers. Until then, resolvers on the internet never reach the zone.\" Source: https://docs.cloud.google.com/dns/docs/update-name-servers (\"After you create a managed zone, you must change the name servers that are associated with your domain registration to point to the Cloud DNS name servers.\")"
+    },
+    {
+     "id": "gcp-ace-s3.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.cloud.google.com/nat/docs/overview : \"Public NAT lets Google Cloud resources that don't have external IPv4 addresses communicate with IPv4 destinations on the internet.\" ... \"These VMs use a set of shared external IP addresses to connect to the internet.\"",
+     "problem": "The statement only says what Public NAT is for: NAT translates internal addresses to external ones. That follows from the term itself and is product identification at Cloud Digital Leader level. The prompt says to assume the player already knows each product's purpose. A behaviour or configuration card would fit the associate depth better.",
+     "suggestedFix": "Replacement (answer TRUE): \"Traffic from a VM's primary internal IP uses the VM's own external IPv4 address, even in a subnet served by Public NAT.\" Explanation: \"When an interface has an external IP address, Google Cloud performs one-to-one NAT for its primary internal IP. Public NAT serves that traffic only for interfaces without an external address.\" Source: https://docs.cloud.google.com/nat/docs/public-nat (\"if the network interface has an external IP address assigned to it, Google Cloud automatically performs one-to-one NAT for packets whose sources match the interface's primary internal IP address\")"
+    },
+    {
+     "id": "gcp-ace-s3.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.cloud.google.com/vpc/docs/reserve-static-external-ip-address : \"A reserved address remains fixed and available for your customers and services until you decide to release it.\" and \"promote an ephemeral external IP address of a resource to a static external IP address so that the address remains reserved even after the resource is deleted.\"",
+     "problem": "The fact is correct, but the answer follows from the words 'reserved static' in the statement: an address that is reserved and static obviously stays allocated. A player who does not know the subject can guess True, so this is a definition card and a wording tell.",
+     "suggestedFix": "Replacement (answer TRUE): \"A running VM keeps its current external IPv4 address when you promote that ephemeral address to a static one.\" Explanation: \"Promoting an in-use ephemeral external IP address to static keeps the address and drops no packets. The reservation then outlives the VM until you release it.\" Same URL, quote: \"Promoting an ephemeral external IP address to reserved does not cause Google Cloud to drop packets sent to the VM.\""
+    }
+   ],
+   "notes": "I checked all 12 cards of section 3.3 against their source pages and the current exam guide PDF. The 3.3 bullets are: resizing subnet IPv4 ranges, reserving static IPs, custom static routes, Cloud DNS and Cloud NAT, and VPC firewall rules and Cloud NGFW policies. All source URLs load and are official docs.cloud.google.com pages. The section is balanced at 6 true and 6 false, and the three replacements keep their cards true, so the balance holds.\n\nCards that passed, with the sentence that settles each:\n- 01: \"the primary IPv4 range for the subnet can be expanded but not replaced or shrunk\" (vpc/docs/subnets).\n- 02: \"You can remove and replace a subnet's secondary IPv4 address range only if no instances are using that range.\"\n- 04: false holds. \"An IPv4 address that you reserve must belong to the subnet's primary IPv4 address range\". The compute page configure-static-internal-ip-address adds that internal IPs are assigned from the interface's subnet. The source states the subnet limit only indirectly, so it is acceptable but not ideal.\n- 05: \"The next-hop-address of a static route must match an IP address that is assigned to a VM in the route's VPC network\" (vpc/docs/routes).\n- 06: \"Lower numbers indicate higher priorities.\"\n- 07: \"Only authorized networks are allowed to query your private zone.\"\n- 10: \"A Cloud NAT gateway cannot be associated with more than one region, VPC network, or Cloud Router.\"\n- 11: \"An allowed connection that matches a firewall rule with 'allow and logging' is logged only once.\" Firewall logs also appear in the 3.4 bullets, but no 3.4 card overlaps.\n- 12: \"In a firewall policy, every rule must have a unique priority number.\"\n\nDuplicates: I found none against the 2.1, 2.3, 3.4 or 4.x cards. Card 2.1-09 (GKE private nodes have no external IPs) is close to the NAT topic but rests on a different fact. The section has two firewall cards (11 and 12), which is the limit the prompt sets.\n\nMinor and not flagged: card 05 is easy, and a working VM next hop also needs IP forwarding enabled on the VM. That does not change the answer."
+  },
+  {
+   "section": "3.4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s3.4-09",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current; overview supports the dashboard but not the word 'automatically'",
+     "evidence": "https://docs.cloud.google.com/service-health/docs/view-events lists 'Enable the Service Health API' as a Before you begin step. https://docs.cloud.google.com/service-health/docs/script-enable-api says the script 'enables each project in an organization or folder for service health events processing' and that 'Personalized Service Health will take up to 24 hours to start processing service health events'. Overview: the dashboard shows 'incidents that are relevant to your project, their state, and the impacted Google Cloud products and locations.'",
+     "problem": "The statement says Personalized Service Health 'automatically' shows a project's incidents. In fact someone has to enable the Service Health API in each project, and processing can take up to 24 hours to start. An expert could defend False. The explanation also leaves out this enablement step.",
+     "suggestedFix": "TRUE replacement: \"Personalized Service Health shows a project's incidents after someone enables the Service Health API in that project.\" Explanation: \"Each project needs the Service Health API enabled, and event processing can take up to 24 hours to start. The dashboard then lists relevant incidents with impacted products and locations.\" Source: https://docs.cloud.google.com/service-health/docs/view-events"
+    },
+    {
+     "id": "gcp-ace-s3.4-02",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current; supports timeSeries.create but also documents the log-based exception",
+     "evidence": "https://docs.cloud.google.com/monitoring/custom-metrics/creating-metrics: 'Log-based metrics are a class of user-defined metrics, but you can't create them by using the Cloud Monitoring API... use Cloud Logging to create log-based metrics. When you create a log-based metric, Logging creates the structures... and sends the metric data to Cloud Monitoring for you.' The exam guide's 3.4 bullet reads 'Creating and ingesting Cloud Monitoring custom metrics (e.g., from applications or logs)'.",
+     "problem": "Log-based metrics are user-defined metrics that are created through the Cloud Logging API, and Logging writes their data points into Cloud Monitoring. An expert could therefore call the statement True. The actor is also wrong: Cloud Monitoring does not write the points itself, a user or app does. The exam guide names logs as a source of custom metrics, so the card's 'right fact' teaches only half of the picture.",
+     "suggestedFix": "FALSE replacement: \"Engineers create log-based metrics by calling the Cloud Monitoring API.\" Explanation: \"Log-based metrics are user-defined metrics, but the Cloud Monitoring API can't create them. You define them in Cloud Logging, which creates the metric and sends its data to Cloud Monitoring.\" (190 chars). Same URL."
+    },
+    {
+     "id": "gcp-ace-s3.4-12",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official; overview describes investigations but the feature page marks it Preview with restricted access",
+     "evidence": "https://docs.cloud.google.com/cloud-assist/investigations: Preview offering 'subject to the Pre-GA Offering Terms'. https://docs.cloud.google.com/cloud-assist/release-notes (April 10, 2026, breaking change): 'creating, running, and editing Gemini Cloud Assist investigations will only be available to users with a Premium Support contract or who have requested access through their account team.'",
+     "problem": "The prompt says to leave out any feature marked Preview. Investigations is marked Preview, and since April 10, 2026 only Premium Support customers or customers with account-team approval can use it. That makes it a gated feature, not something an associate engineer runs routinely. The statement also closely paraphrases the overview's 'processes logs, metrics, and configurations' and is easy to guess (an AI troubleshooter analyses logs and metrics), so the difficulty of 3 is overstated.",
+     "suggestedFix": "TRUE replacement, using the overview capability that is not separately gated (volatility may_change): \"Gemini Cloud Assist answers natural-language questions about metrics, logs and alerts in Google Cloud Observability.\" Explanation: \"The Gemini Cloud Assist overview lists exploring metrics, logs, alerts and errors in natural language to monitor health and troubleshoot issues in Google Cloud Observability.\" Source: https://docs.cloud.google.com/cloud-assist/overview. If that is too close to a giveaway, drop and replace with a non-Gemini true card."
+    },
+    {
+     "id": "gcp-ace-s3.4-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/trace/docs/traces-and-spans: 'A trace captures how a request runs end-to-end across your services.'",
+     "problem": "This is a strawman. It is false only because a trace is defined as one request end to end, so anyone who knows the word 'trace' answers False. The 'X rather than Y' form also hints at the answer. It does not test using a diagnostic tool to investigate an application issue at associate depth.",
+     "suggestedFix": "FALSE replacement (another 3.4 diagnostic tool, no overlap in the deck): \"Cloud Profiler collects CPU and heap profiles during on-demand sessions that you start from the console.\" Explanation: \"Cloud Profiler is a statistical, low-overhead profiler that continuously gathers CPU and memory-allocation data from running production applications through its agent.\" Source: https://docs.cloud.google.com/profiler/docs/about-profiler ('continuously gathers CPU usage and memory-allocation information from your production applications')."
+    },
+    {
+     "id": "gcp-ace-s3.4-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/stackdriver/docs/solutions/agents/ops-agent: 'The Ops Agent is the primary agent for collecting telemetry from your Compute Engine instances.'",
+     "problem": "The card only identifies what the product is for. The prompt says such cards belong to the Cloud Digital Leader deck and that ACE cards should test configuration. The explanation is also a near-copy of the source sentence. It does not cover the bullet 'Configuring and deploying Ops Agent'.",
+     "suggestedFix": "TRUE replacement: \"The Ops Agent merges the settings in its config.yaml file with its built-in configuration when it restarts.\" Explanation: \"User settings in the Ops Agent config.yaml are merged with the built-in configuration on restart; to override a built-in element you redefine it with the same identifier.\" Source: https://docs.cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/configuration ('Any user-specified configuration is merged with the built-in configuration when the agent restarts')."
+    },
+    {
+     "id": "gcp-ace-s3.4-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (title 'Create metric-threshold alerting policies'); supports the card",
+     "evidence": "https://docs.cloud.google.com/monitoring/alerts/using-alerting-ui: you 'select how long measurements must violate the threshold before Monitoring sends a notification' with the Retest window; with 'No retest', 'a single measurement can result in a notification.'",
+     "problem": "This is a truism. 'Cloud Monitoring can alert when a metric exceeds a configured threshold' is the definition of a metric-threshold alert, so a player who knows nothing about the subject answers True. The 'retest window' clause adds wording but no testable distinction.",
+     "suggestedFix": "TRUE replacement: \"A Cloud Monitoring alerting policy with no retest window can notify on a single measurement above its threshold.\" Explanation: \"With the retest window set to No retest, one measurement that violates the threshold can trigger a notification; a longer retest window requires the violation to persist for that duration first.\" (112/194 chars). Same URL."
+    }
+   ],
+   "notes": "All 12 section 3.4 cards were checked against their source pages, and every source URL loaded on docs.cloud.google.com. I also read the 3.4 bullets in the current four-section exam guide PDF; the guide explicitly names logs as a source of custom metrics, which is why card 02 is ambiguous. Six cards passed. 03: 'Except for BigQuery, Data Access audit logs are disabled by default.' 04: the sink destination must be a write-enabled BigQuery dataset, not a linked one. 05: user-defined buckets and _Default accept custom retention; it is an easy card that borders on a wording giveaway ('custom' with 'user-defined'), so consider switching it to the _Default bucket. 08: 'Google Cloud never directly accesses your cluster to pull or scrape metric data; your collectors push data.' 10: 'Apply or dismiss recommendations ... using the apply or dismiss buttons.' 11: 'Cloud Hub can display data for a selected Google Cloud project or App Hub application'; health docs confirm incidents for an application. Its 'limits ... to' wording is effectively a disguised 'only'. The suggested replacements keep the section at 6 true and 6 false: true replacements for 01, 07, 09 and 12, false replacements for 02 and 06. The deck has two Gemini Cloud Assist cards (2.4-10 and 3.4-12), within the limit of three. No duplicates across the deck were found for these cards or for the replacements (no other card mentions Profiler, log-based metrics, the Service Health API or Ops Agent config)."
+  },
+  {
+   "section": "4.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s4.1-02",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official (docs.cloud.google.com), current; supports the card",
+     "evidence": "https://docs.cloud.google.com/iam/docs/granting-changing-revoking-access: \"Note: A resource's allow policy does not show any roles gained through policy inheritance.\" The same page also says: \"Note: You cannot edit inherited roles when managing access to a resource. To edit inherited roles, go to the resource where the role was granted.\"",
+     "problem": "The answer is right, but the card tests the same fact as gcp-ace-s4.1-04 (iam-inherited-grant-edit-location): a project's own allow policy holds only the bindings attached to it directly, not the inherited ones. A player who knows one card can answer the other.",
+     "suggestedFix": "Replace (answer false, keeps 6/6 balance): \"gcloud projects set-iam-policy merges the bindings in a policy file into the project's existing allow policy.\" Explanation: \"set-iam-policy makes the file the project's new allow policy and overwrites the existing one; gcloud projects add-iam-policy-binding adds one grant and keeps the rest.\" Same URL, which says: \"Warning: Setting a new allow policy permanently overwrites the existing allow policy on the resource.\""
+    },
+    {
+     "id": "gcp-ace-s4.1-12",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/iam/docs/testing-permissions: \"The testIamPermissions() method is intended for third-party graphical user interfaces (GUIs) that need to display Google Cloud resources based on what the authenticated user has permissions to see.\" and \"If you need to test a permission so that you can troubleshoot access to a resource, use the Policy Troubleshooter instead.\" The exam guide's 4.1 bullets are: viewing and creating IAM policies; attaching roles and policy inheritance in the Organization hierarchy; managing role types and defining custom IAM roles.",
+     "problem": "The card is correct, but testIamPermissions is a developer API meant for building custom UIs. It is not in the 4.1 bullets and is beyond the associate engineer depth, and Google's docs send operators to Policy Troubleshooter instead.",
+     "suggestedFix": "Replace (answer true): \"Policy Troubleshooter evaluates both allow and deny policies when it explains a principal's access to a resource.\" Explanation: \"Given a principal, a resource and a permission, Policy Troubleshooter examines the allow, deny and Principal Access Boundary policies that affect that access.\" URL: https://docs.cloud.google.com/policy-intelligence/docs/troubleshoot-access (\"Policy Troubleshooter examines the allow policies, deny policies, and Principal Access Boundary (PAB) policies that impact the principal's access.\")"
+    },
+    {
+     "id": "gcp-ace-s4.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/iam/docs/allow-policies: \"A role binding specifies what access should be granted to a resource. It associates, or binds, one or more principals with a single IAM role and any context-specific conditions.\"",
+     "problem": "This is a definition card: the answer follows from what 'binding' means. It also repeats the source sentence almost word for word ('associates ... with a role'), so it teaches nothing at associate level.",
+     "suggestedFix": "Replace (answer true): \"A single IAM role binding names one role and can list several principals who receive that role.\" Explanation: \"Each role binding in an allow policy binds one or more principals to exactly one IAM role, optionally with a condition; granting a second role takes another binding.\" Same URL."
+    },
+    {
+     "id": "gcp-ace-s4.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/iam/docs/roles-overview: \"Basic roles are highly permissive roles that give broad access to Google Cloud resources. Caution: Basic roles include thousands of permissions across all Google Cloud services.\" The same page now lists Admin/Writer/Reader basic roles (Preview) and calls Owner/Editor/Viewer \"legacy basic roles\". It also says: \"Owner (roles/owner): All Editor permissions, plus ... Managing roles and permissions for a project and all resources within the project.\"",
+     "problem": "Strawman. Anyone who has studied knows basic roles (Owner/Editor/Viewer) are the broad, project-wide roles, so nobody would answer True to 'limited to a single service'.",
+     "suggestedFix": "Replace (answer false): \"The Editor role (roles/editor) lets a principal grant IAM roles to other principals on the project.\" Explanation: \"Managing roles and permissions for a project belongs to the Owner role; Editor adds state-changing permissions to Viewer access but cannot change who has access.\" Same URL. Avoid any 'conditions on basic roles' card: the new Preview basic roles accept conditions and only legacy basic roles do not."
+    }
+   ],
+   "notes": "I checked all 12 cards in section 4.1 (all in raw/gcp-ace-b3.json). All 12 source URLs load and are official docs.cloud.google.com pages. Exam guide 4.1 bullets, from the current PDF: viewing and creating IAM policies; attaching roles and policy inheritance in the Organization hierarchy; managing role types and defining custom IAM roles.\n\nCards that pass, with the evidence:\n- s4.1-03: resource-hierarchy-access-control says \"IAM roles granted at this level are inherited by all resources under the organization.\"\n- s4.1-04: granting-changing-revoking-access says \"To edit inherited roles, go to the resource where the role was granted.\" A project-level deny policy could block the permission, but that is not removing the grant by editing the allow policy, so the answer holds.\n- s4.1-06: roles-overview says \"Google automatically updates their permissions as necessary, such as when Google Cloud adds new features or services.\"\n- s4.1-07: roles-overview says custom roles are created only at organization or project level, and you cannot define them at folder level.\n- s4.1-08: understanding-custom-roles says \"A project-level custom role can contain any supported permission except for permissions that can only be used at the organization or folder level.\" One weakness: roles-overview words this as \"ineffective\" rather than \"cannot include\", but both readings make the card false.\n- s4.1-09: deny-overview says \"IAM always checks relevant deny policies before checking relevant allow policies.\" Only supported permissions can be denied; the explanation already says so.\n- s4.1-10: conditions-overview gives request.time examples.\n- s4.1-11: the REST Policy reference says \"Any operation that affects conditional role bindings must specify version 3.\" Allow-policies confirms that a version 1 read drops the conditions and adds _withcond_ to the role name. This card sits at the edge of the associate depth but is defensible, because you need version 3 for set-iam-policy with conditions.\n\nRecent change to note for the deck: roles-overview now lists Preview basic roles Admin, Writer and Reader, and renames Owner, Editor and Viewer to \"legacy basic roles\". Conditions cannot be used on the legacy basic roles but can on the new ones. No card in 4.1 currently breaks because of this. Any future card claiming \"conditions cannot be used with basic roles\" would be ambiguous.\n\nTrue/false balance stays at 6/6 with the suggested replacements: 01 and 12 stay true, 02 and 05 stay false. I found no duplicates with 1.1 or 4.2. The set-iam-policy replacement for 02 is not used in any other section."
+  },
+  {
+   "section": "4.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gcp-ace-s4.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/compute/docs/access/service-accounts)",
+     "evidence": "\"Applications running on a VM retrieve the attached service account's credentials through the metadata server\" and the page recommends you \"attach it to your Compute Engine instance. Your code can then use Application Default Credentials\" (https://docs.cloud.google.com/compute/docs/access/service-accounts). The card is correct, but supplying credentials to workloads is the definition of attaching a service account, so a player can answer from the wording alone.",
+     "problem": "Definition card: the answer follows from what 'attached service account' means. It tests no behaviour or configuration beyond the term itself.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Access scopes on a Compute Engine VM can further limit API calls made with its attached service account.\" Explanation: \"IAM roles on the service account set which APIs it may use, and the VM access scopes can narrow that further; Google recommends the cloud-platform scope plus IAM roles.\" Same URL."
+    },
+    {
+     "id": "gcp-ace-s4.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/iam/docs/service-account-permissions)",
+     "evidence": "Token Creator lets you \"create short-lived credentials for a service account\" including \"OAuth 2.0 access tokens, OIDC ID tokens, and signed JWTs\" and includes iam.serviceAccounts.signJwt (https://docs.cloud.google.com/iam/docs/service-account-permissions). The fact is right, but the role name gives it away.",
+     "problem": "Name giveaway: anyone who knows that a JWT is a token will answer True for a role called 'Token Creator' without knowing IAM.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"IAM signs a service account JWT with a Google-managed private key that stays in Google's escrow.\" Explanation: \"The signJwt permission in Service Account Token Creator signs with the service account's Google-managed private key, which Google holds in escrow and never exposes directly.\" Same URL (\"the Google-managed private key of the service account\" ... \"always held in escrow and is never directly exposed\")."
+    },
+    {
+     "id": "gcp-ace-s4.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/iam/docs/attach-service-accounts)",
+     "evidence": "\"This boolean constraint controls whether you can attach a service account to a resource in another project. It is enforced by default and can only be configured at the project level, not the folder or organization level.\" (https://docs.cloud.google.com/iam/docs/attach-service-accounts). The answer and explanation are correct, but the statement asks whether cross-project use works while cross-project use is disabled.",
+     "problem": "The answer can be read from the wording ('cross-project usage is disabled' makes 'can attach from another project' obviously false), so it is close to a truism. It also names the VM as the actor that attaches. The useful facts on this page (enforced by default, set only at project level, adds a lien) go untested.",
+     "suggestedFix": "Replace (answer stays false). Statement: \"An organization admin can lift the cross-project service account attachment block with one organization policy.\" Explanation: \"The iam.disableCrossProjectServiceAccountUsage constraint is enforced by default and is configured only at project level, in the project that owns the service account.\" Same URL."
+    },
+    {
+     "id": "gcp-ace-s4.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/iam/docs/workload-identity-federation)",
+     "evidence": "\"A workload identity pool provider is an entity that describes a relationship between Google Cloud and your IdP.\" (https://docs.cloud.google.com/iam/docs/workload-identity-federation). The fact is correct, but the statement asserts that Workload Identity Federation uses a 'workload identity pool provider', which echoes the product's own name.",
+     "problem": "Name and definition giveaway: a player who does not know the subject would answer True from the repeated 'workload identity' wording. It restates the page's definition of a provider.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"A workload identity pool provider can use a CEL attribute condition to reject credentials from some external identities.\" Explanation: \"An attribute condition on a workload identity pool provider is a CEL expression on the external token's claims; credentials that fail it are rejected, for example tokens from other GitHub repositories.\" Same URL (\"a CEL expression that can check assertion attributes and target attributes\" ... \"Otherwise, the credential is rejected.\")."
+    }
+   ],
+   "notes": "I checked all 12 cards in section 4.2. All source URLs load and are official, current docs.cloud.google.com pages. No answer is wrong. I flagged 4 cards as weak: 03 (definition), 06 (name giveaway), 09 (wording gives away the answer) and 10 (name and definition echo). Every replacement keeps the original answer, so the section stays at 6 true and 6 false.\nThe other 8 cards pass. Evidence for each:\n- 01: \"Each service account is located in a project. After you create a service account, you cannot move it to a different project.\"\n- 02: \"Service accounts that are created and managed by Google Cloud\". Users can trigger creation of some service agents, but that does not make the false answer defensible.\n- 04: Roles granted *on* a service account determine who can manage or impersonate it, while roles granted *to* it determine what it can access.\n- 05: Service Account User lets a principal \"attach a service account to a resource\" via iam.serviceAccounts.actAs. Attaching to a VM also needs Compute permissions, but the statement only claims this role provides the actAs permission, so it holds.\n- 07: --impersonate-service-account \"automatically creates short-lived credentials\".\n- 08: \"routinely rotate all keys that you manage\". Downloaded keys \"stay valid until you delete them\".\n- 11: The KSA principal identifier principal://.../subject/ns/NAMESPACE/sa/SERVICEACCOUNT. The STS token may have limits with some services, but \"can grant\" covers that.\n- 12: \"The GKE metadata server intercepts HTTP requests to http://metadata.google.internal\". Pods call the same endpoint, but the GKE metadata server answers them, so False is correct.\nDuplicates: I found none across the deck. 2.3-06 (firewall rules targeting service accounts) and 3.1-05 (the GKE node service account pulling images) are different facts. I did not suggest a replacement for 06 based on a project-level Service Account User grant, because it would overlap with 4.1-03 (inheritance).\nWording check: the replacement statements avoid negations and absolutes, and are 96 to 120 characters long. The explanations are under 240 characters."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "gcp-ace-s1.2-09",
+     "gcp-ace-s1.2-12"
+    ],
+    "why": "s1.2-12 ('Cloud Billing creates the BigQuery dataset when usage export is enabled') assumes in its own statement, and says outright in its explanation ('You create the BigQuery dataset first, then configure Cloud Billing to export data into it'), that billing export goes to a BigQuery dataset. That is exactly the fact s1.2-09 tests ('Cloud Billing exports usage and cost data to a BigQuery dataset'). Knowing one answer gives the other. s1.2-09 is the weaker card: difficulty 1, little more than naming the product, and s1.2-10 and s1.2-11 also take BigQuery export for granted.",
+    "dropId": "gcp-ace-s1.2-09"
+   },
+   {
+    "ids": [
+     "gcp-ace-s4.1-03",
+     "gcp-ace-s4.1-04"
+    ],
+    "why": "s4.1-04 ('A project admin can remove an inherited IAM role by editing the project's allow policy', explanation: edit the parent folder where the role was granted) assumes that IAM grants pass down the hierarchy, and that is the whole of s4.1-03 ('An IAM role granted on an organization flows to descendant projects'). s4.1-02 ('displays grants inherited from parent folders') assumes it as well. s4.1-03 is the generic difficulty-1 card, and the other two test more specific inheritance mechanics, so drop s4.1-03.",
+    "dropId": "gcp-ace-s4.1-03"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "cloud-run-revisions",
+    "ids": [
+     "gcp-ace-s3.1-08",
+     "gcp-ace-s3.1-09"
+    ],
+    "why": "The explanation of s3.1-09 says 'When a service splits traffic across revisions...', which gives away the True answer of s3.1-08 (Cloud Run splits traffic among revisions by percentage)."
+   },
+   {
+    "name": "billing-export-bigquery",
+    "ids": [
+     "gcp-ace-s1.2-09",
+     "gcp-ace-s1.2-10",
+     "gcp-ace-s1.2-11",
+     "gcp-ace-s1.2-12"
+    ],
+    "why": "s1.2-10, s1.2-11 and s1.2-12 all take BigQuery export for granted (usage cost export, pricing-export dataset, BigQuery dataset), so s1.2-09 can be answered from any of them. The explanation of s1.2-12 states the export-to-dataset flow outright."
+   },
+   {
+    "name": "iam-inheritance",
+    "ids": [
+     "gcp-ace-s4.1-02",
+     "gcp-ace-s4.1-03",
+     "gcp-ace-s4.1-04"
+    ],
+    "why": "The statements of s4.1-02 and s4.1-04 both mention inherited grants from parent folders, and their explanations say where inherited grants live. Together they answer s4.1-03, and each one hints at the other's scope rule."
+   },
+   {
+    "name": "descendant-inheritance-pattern",
+    "ids": [
+     "gcp-ace-s1.1-02",
+     "gcp-ace-s2.3-08",
+     "gcp-ace-s4.1-03"
+    ],
+    "why": "Three True cards share one pattern: a policy set on a folder or organization applies to descendant projects (Organization Policy, hierarchical firewall policy, IAM). Seeing one in a round strongly suggests True for the others."
+   },
+   {
+    "name": "regional-scope",
+    "ids": [
+     "gcp-ace-s2.1-04",
+     "gcp-ace-s2.1-08",
+     "gcp-ace-s2.3-11",
+     "gcp-ace-s3.3-10",
+     "gcp-ace-s3.2-11"
+    ],
+    "why": "s2.1-08 states that 'regional' means zones in one region, and the explanations of s3.3-10 and s2.3-11 say a regional resource stays in its own region. Together these give away the False answers of the other 'regional X spans several or another region' cards."
+   },
+   {
+    "name": "service-account-resource-roles",
+    "ids": [
+     "gcp-ace-s4.2-04",
+     "gcp-ace-s4.2-05",
+     "gcp-ace-s4.2-06"
+    ],
+    "why": "The explanation of s4.2-04 ('Roles granted on a service account resource control who may use or manage that account') is the principle behind the True answers of s4.2-05 (Service Account User attaches the account) and s4.2-06 (Token Creator signs JWTs). Those two statements in turn show s4.2-04 to be False."
+   },
+   {
+    "name": "service-account-home-project",
+    "ids": [
+     "gcp-ace-s4.2-01",
+     "gcp-ace-s4.2-09"
+    ],
+    "why": "s4.2-01 says a service account belongs to its project 'even when workloads use it elsewhere', and the explanation of s4.2-09 describes the cross-project restriction in the service account's own project. Each hints at the other."
+   },
+   {
+    "name": "attached-sa-credentials",
+    "ids": [
+     "gcp-ace-s3.1-05",
+     "gcp-ace-s4.2-03"
+    ],
+    "why": "The explanation of s3.1-05 ('GKE image pulls use the node's service account') states the principle that s4.2-03 tests: a VM's attached service account supplies its credentials."
+   },
+   {
+    "name": "no-external-ip-egress",
+    "ids": [
+     "gcp-ace-s2.1-09",
+     "gcp-ace-s3.3-09"
+    ],
+    "why": "s3.3-09 (statement and explanation) says that VMs without external IPv4 addresses get internet egress through Public NAT. That hints that private GKE nodes do not get external IPs for outbound traffic (s2.1-09 is False)."
+   },
+   {
+    "name": "cloud-shell-preinstalled",
+    "ids": [
+     "gcp-ace-s2.4-07",
+     "gcp-ace-s2.4-12"
+    ],
+    "why": "The explanation of s2.4-12 (Cloud Shell is a Google-managed VM with tools preinstalled) points straight at s2.4-07 (Gemini CLI available by default in Cloud Shell)."
+   },
+   {
+    "name": "iac-output-format",
+    "ids": [
+     "gcp-ace-s2.4-02",
+     "gcp-ace-s2.4-03",
+     "gcp-ace-s2.4-06",
+     "gcp-ace-s2.4-10"
+    ],
+    "why": "The explanations of s2.4-03 and s2.4-06 state that Infrastructure Manager and Application Design Center use Terraform. s2.4-02 and s2.4-10 are True statements that name Terraform. The False cards share the template 'tool X uses non-Terraform format Y', so in one round they answer each other."
+   },
+   {
+    "name": "custom-role-folder-scope",
+    "ids": [
+     "gcp-ace-s4.1-07",
+     "gcp-ace-s4.1-08"
+    ],
+    "why": "The explanation of s4.1-07 (custom roles are created in an organization or project only) and the explanation of s4.1-08 (a project custom role cannot hold folder- or organization-level permissions) hint at each other. Both are False cards built on 'folder' and custom roles."
+   },
+   {
+    "name": "gke-standard-vs-autopilot-nodes",
+    "ids": [
+     "gcp-ace-s2.1-07",
+     "gcp-ace-s3.1-04",
+     "gcp-ace-s3.1-07"
+    ],
+    "why": "s3.1-04 and s3.1-07 say 'Standard node pools' and 'GKE Standard node pool' explicitly, which signals that Autopilot differs. That hints at the answer of s2.1-07 (Autopilot needs no user-created node pools)."
+   },
+   {
+    "name": "identity-federation-no-sync",
+    "ids": [
+     "gcp-ace-s1.1-12",
+     "gcp-ace-s4.2-10"
+    ],
+    "why": "Both explanations describe federation as trusting an external IdP and exchanging credentials. s4.2-10 (True) therefore suggests that Workforce Identity Federation does not create Cloud Identity accounts (s1.1-12 is False). This also edges toward the Workforce/Workload pair that the prompt says to test once."
+   },
+   {
+    "name": "managed-backup-gcs-staging",
+    "ids": [
+     "gcp-ace-s3.2-05",
+     "gcp-ace-s3.2-06"
+    ],
+    "why": "Both cards use the same False template, 'managed database backups pass through or land in a user Cloud Storage bucket' (Firestore, Bigtable). Once a player learns one, the other is free."
+   },
+   {
+    "name": "budget-alert-only",
+    "ids": [
+     "gcp-ace-s1.2-05",
+     "gcp-ace-s1.2-06",
+     "gcp-ace-s1.2-08"
+    ],
+    "why": "s1.2-05 ('filters for cost alerts'; its explanation says 'An alerts-only budget can narrow...') and s1.2-08 (budget notifications go to Pub/Sub) present budgets as notifiers only. That gives away s1.2-06 (an alerts-only budget pausing usage is False), which the name 'alerts-only' already gives away."
+   },
+   {
+    "name": "firewall-source-match",
+    "ids": [
+     "gcp-ace-s2.3-04",
+     "gcp-ace-s2.3-07"
+    ],
+    "why": "These are near-mirrored: 'An ingress VPC firewall rule can match the source IP range' (True) and 'A VPC firewall rule can filter TCP traffic by its source port' (False). Same template, opposite answers, and the explanation of s2.3-04 names the source-range field."
+   },
+   {
+    "name": "firewall-target-selectors",
+    "ids": [
+     "gcp-ace-s2.3-05",
+     "gcp-ace-s2.3-06"
+    ],
+    "why": "These are near-mirrored target-selector cards: secure tags as VPC firewall rule targets (False) and service accounts as VPC firewall rule targets (True). The explanation of s2.3-05 lists what VPC firewall rules use to select VMs."
+   },
+   {
+    "name": "subnet-range-changes",
+    "ids": [
+     "gcp-ace-s3.3-01",
+     "gcp-ace-s3.3-02"
+    ],
+    "why": "These are paired templates, 'A subnet's primary/secondary IPv4 range can change after creation/while in use', with opposite answers. The explanation of s3.3-02 sets the condition for changing ranges, which frames s3.3-01."
+   }
+  ],
+  "tells": "Statement lengths are fine: the true and false averages are within 5 characters in every section (largest gaps: 4.1 at 69.5 vs 74.3, 3.1 at 81.3 vs 85.3). The tells are in the wording and the templates:\n\n1. Crossing-scope words mark False. 'another/other': 6 False (s1.2-03, s2.3-03, s3.1-07, s3.2-11, s3.3-04, s4.2-09), 1 True (s1.1-07). 'several regions / two regions / another region': 4 of 4 False (s2.1-04, s2.3-11, s3.3-10, s3.2-11). 'across': 3 False (s2.1-04, s3.1-09, s3.1-10), 1 True (s2.1-08). 'any': 2 of 2 False (s1.2-04, s3.3-07). Overall about 13 False cards overclaim scope (the four 'regional X spans regions' cards, plus s1.2-04, s2.3-03, s3.1-07, s3.1-09, s3.1-10, s3.3-04, s3.3-07, s4.1-08, s4.2-09), against about 7 True ones. The template 'a regional resource reaches other regions' carries 4 False cards, over the prompt's limit of 2.\n\n2. 'by default' marks False: 4 False (s2.3-10, s2.4-11, s3.1-05, s3.4-03), 1 True (s2.4-07). This breaks the prompt's rule that coverage words must not mark False cards.\n\n3. Hedge verbs mark True: 'lets/let' 4 True (s2.1-01, s2.1-05, s3.4-05, s4.2-06), 1 False (s2.4-05); 'supports' 2 True, 0 False (s2.2-09, s3.2-04). Also 'uses/use' 8 True (s2.1-05, s2.1-11, s3.2-01, s3.2-04, s3.2-10, s4.1-11, s4.2-01, s4.2-10), 2 False (s2.4-12, s3.3-02). 'can' is balanced (18 True, 17 False).\n\n4. Persistence verbs mark False. 'stores' 3 of 3 False (s1.1-12, s3.1-03, s3.2-05). 'keeps/retains' 3 False (s1.2-02, s3.1-12, s3.2-12) vs 1 True ('stays', s3.3-03). 'same' 4 False (s3.1-07, s3.3-04, s3.3-10, s4.1-06), 1 True (s3.2-10). 'after' 5 False (s2.2-06, s2.2-11, s3.1-12, s3.2-12, s4.2-08), 2 True. 'as soon as' 2 of 2 False (s1.1-08, s3.4-10).\n\n5. 'Magic automation' False template, where Google or the service does the work for you: s1.1-08 (quota granted on submit), s1.2-12 (Billing creates the dataset), s3.4-10 (Active Assist auto-applies), s4.2-08 (Google rotates keys). That is 4 False cards in one template, over the limit of 2.\n\n6. 'Hidden Cloud Storage staging' False template: s3.2-05 and s3.2-06, with s2.2-08 (Archive offline restore) in the same vein. In section 3.2, 'Cloud Storage' appears in 3 False cards and 2 True; across the deck it appears in 7 False and 5 True. In 3.2, 4 of the 5 backup cards are False (s3.2-05, 06, 11, 12; only s3.2-04 is True), so 'backup card in 3.2 = False' is a pattern.\n\n7. 'Terraform' marks True: 2 of 2 (s2.4-02, s2.4-10). The False 2.4 cards name another format instead (Deployment Manager templates s2.4-03, Kubernetes manifests s2.4-06).\n\n8. In 4.1 the answer follows the card type. All 6 role-mechanics cards that name a scope or type (basic, predefined, custom-in-folder, project custom role with folder permissions, inherited edit, get-iam-policy) are False (s4.1-02, 04, 05, 06, 07, 08). All 6 short 'IAM feature X can/does Y' cards are True (s4.1-01, 03, 09, 10, 11, 12). The pattern 'mentions folder' = False holds for 4.1-02, 4.1-04 (parent folder in explanation), 4.1-07 and 4.1-08.\n\n9. The answer can be read from the name (most of these are True): s1.1-06 'gcloud services ... enables APIs', s2.1-01 'custom machine types let users choose vCPU', s3.1-01 'gcloud compute ssh opens an SSH connection', s3.2-03 'bq ... submits SQL queries', s3.3-08 'record-sets update changes an existing record set', s4.1-12 'testIamPermissions checks the caller's permissions', s3.1-02 'snapshot schedule ... creates backups on a cadence', s3.4-05 'custom retention for a user-defined bucket', s2.2-10, s3.1-11, s4.1-01 (definition). False cards whose name contradicts the claim: s1.2-06 ('alerts-only' budget pauses usage) and s2.1-09 ('private' nodes get external IPs). Strategy: when the statement restates the product name, answer True. That works on about 11 of 13 such cards.\n\n10. True statements sometimes carry a safety qualifier that False ones lack: s3.3-01 'when the new range avoids conflicts', s4.2-01 'even when workloads use it elsewhere', s3.4-01 'for a retest window'.\n\nAccuracy notes (outside the schema, for the editor):\n- s3.4-02 can be defended as True, because log-based metrics are user-defined metrics produced from entries written through the Cloud Logging API. Its actor is also odd ('Cloud Monitoring can write...').\n- s1.1-09 is correctly False (I checked the docs page). Its explanation should add that standalone organizations are available only to new Free Trial signups.\n- s3.3-12, s3.2-08, s3.4-11 and s1.1-04 match their official pages as of today."
+ }
+}

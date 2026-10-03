@@ -1,0 +1,322 @@
+{
+ "drop": {
+  "docker-fundamentals-sr1-02": "weak_card (vague, close to a truism) and the scan's duplicate of sr2-03; r1 keeps 10 cards at 5/5",
+  "docker-fundamentals-sr1-09": "weak_card: strawman, nobody believes a container starts before its image exists; r1 keeps 10 cards at 5/5",
+  "docker-fundamentals-sr2-02": "duplicate of sr8-04 (--rm cleanup at exit) and the flag name gives it away; r2 keeps 9 cards at 4/5",
+  "docker-fundamentals-sr2-03": "weak_card: strawman (a runtime -e flag rewriting the stored image config)",
+  "docker-fundamentals-sr2-10": "weak_card: the answer follows from the flag name --follow",
+  "docker-fundamentals-sr3-06": "weak_card: the answer follows from what a relative path means; r3 keeps 10 cards at 4/6",
+  "docker-fundamentals-sr3-09": "weak_card: an inspect command showing metadata is a giveaway and leans on CLI output trivia",
+  "docker-fundamentals-sr4-01": "duplicate: sr4-02's explanation states this card's answer almost word for word; r4 keeps 10 cards at 4/6",
+  "docker-fundamentals-sr4-10": "weak_card: the driver name docker-container gives the answer away",
+  "docker-fundamentals-sr5-07": "weak_card: FROM scratch is empty by definition, and 'automatically' is a false tell",
+  "docker-fundamentals-sr5-09": "weak_card: strawman (two platforms listed, the claim says one is targeted)",
+  "docker-fundamentals-sr5-10": "weak_card: definition card (an emulator runs non-native binaries)",
+  "docker-fundamentals-sr6-01": "weak_card: definition card and near-copy of the source sentence",
+  "docker-fundamentals-sr6-09": "weak_card: the answer can be read from type=cache",
+  "docker-fundamentals-sr6-10": "weak_card: 'merely' gives it away, it is a strawman, and it is a third use of the build-input-persisted template",
+  "docker-fundamentals-sr7-02": "weak_card: the premise ('with an omitted registry host') contradicts the claim, so the wording gives the answer",
+  "docker-fundamentals-sr7-09": "weak_card: syntax trivia that overlaps sr7-06 digest pinning; the suggested DSOS replacement was not used because it would sit next to sr7-10 on trusted-content categories",
+  "docker-fundamentals-sr7-12": "duplicate: the other side of the fresh install versus upgrade split in sr7-11. I kept sr7-11 rather than the scan's choice because sr7-12 carries the false-only tell word 'automatically' and keeping the true card helps the r7 balance",
+  "docker-fundamentals-sr8-08": "weak_card: definition card and strawman (a read-only mount accepting writes)",
+  "docker-fundamentals-sr8-11": "weak_card: the wording describes an event rather than a rule",
+  "docker-fundamentals-sr8-12": "weak_card: vague near-truism that an expert could dispute through the local driver bind option",
+  "docker-fundamentals-sr9-04": "weak_card: near-copy of the source heading; r9 keeps 9 cards at 4/5",
+  "docker-fundamentals-sr9-06": "weak_card: definition card (a bind mount shows live host files)",
+  "docker-fundamentals-sr9-11": "weak_card: strawman on matching target paths, and the same false template as the old sr8-02",
+  "docker-fundamentals-sr10-03": "duplicate of sr11-06 (peers use CONTAINER_PORT); dropped on this side as the scan chose, and CONTAINER_PORT versus HOST_PORT is r11 scope",
+  "docker-fundamentals-sr10-06": "weak_card: truism (127.0.0.1 is loopback) and the scan's duplicate that gives away sr10-05",
+  "docker-fundamentals-sr10-09": "weak_card: near-copy of the overlay page's opening sentence and a near-definition",
+  "docker-fundamentals-sr11-01": "weak_card: truism, and it overlaps sr11-02 and sr11-03; r11 keeps 10 cards at 4/6",
+  "docker-fundamentals-sr11-10": "weak_card: the action name sync gives it away, and it mirrors sr11-11 (sync versus rebuild)",
+  "docker-fundamentals-sr12-03": "weak_card: 'drop ALL removes' gives the answer away",
+  "docker-fundamentals-sr12-05": "weak_card: definition card (seccomp filters system calls)",
+  "docker-fundamentals-sr12-10": "weak_card: near-strawman that repeats sr12-09's not-in-image point"
+ },
+ "source": {},
+ "rewrite": {
+  "docker-fundamentals-sr1-08": {
+   "reason": "ambiguous: by default the CLI does use the local dockerd socket, so an expert could defend True. The new wording tests the remote-daemon fact directly (final: fixed)",
+   "statement": "With the active docker context pointing at a remote host's daemon, `docker ps` lists the local machine's containers.",
+   "answer": false,
+   "explanation": "The CLI sends each command to the daemon chosen by -H, DOCKER_HOST or the active docker context, which can be a remote host reached over SSH or TCP. With none of these set, it uses the local daemon socket.",
+   "misconception": "The docker CLI can talk only to a daemon on its own host.",
+   "source": {
+    "title": "docker",
+    "url": "https://docs.docker.com/reference/cli/docker/"
+   }
+  },
+  "docker-fundamentals-sr3-12": {
+   "reason": "ambiguous: the reference shows a RUN heredoc (cat > file1) whose lines end up as files, so True was defensible. The card now tests the COPY side (final: keep)",
+   "statement": "`COPY <<EOF /app.sh` runs the heredoc lines in the default shell during the build.",
+   "answer": false,
+   "explanation": "A COPY heredoc writes the here-document content to the destination file, here /app.sh. A RUN heredoc with no command is the form the default shell executes.",
+   "misconception": "A COPY heredoc executes its lines like a RUN heredoc.",
+   "source": {
+    "title": "Dockerfile reference",
+    "url": "https://docs.docker.com/reference/dockerfile/"
+   }
+  },
+  "docker-fundamentals-sr5-03": {
+   "reason": "source_problem: no official page supports the clause 'even when that stage has a name'. It is removed so the multi-stage page supports the whole card (final: keep)",
+   "statement": "`COPY --from=0` copies from the stage that the first FROM instruction in the Dockerfile starts.",
+   "answer": true,
+   "explanation": "Unnamed stages are referenced by integer, starting at 0 for the first FROM. Naming stages with AS keeps COPY --from working if the stages are reordered later.",
+   "misconception": "",
+   "source": {
+    "title": "Multi-stage builds",
+    "url": "https://docs.docker.com/build/building/multi-stage/"
+   }
+  },
+  "docker-fundamentals-sr5-04": {
+   "reason": "weak_card, rewritten because dropping it with the other three weak r5 cards would leave 8 cards. It now tests the external-image pull behaviour. The page says 'The Docker client pulls the image if necessary and copies the artifact from there' (final: keep)",
+   "statement": "A build with `COPY --from=nginx:latest` stops with an error when nginx:latest is missing locally.",
+   "answer": false,
+   "explanation": "When --from names an image instead of a stage, Docker pulls that image if necessary during the build and copies the file from it.",
+   "misconception": "COPY --from can only use an external image that was pulled beforehand.",
+   "source": {
+    "title": "Multi-stage builds",
+    "url": "https://docs.docker.com/build/building/multi-stage/"
+   }
+  },
+  "docker-fundamentals-sr6-11": {
+   "reason": "weak_card (the flag name gives it away), rewritten because dropping all four weak r6 cards would leave 8 cards at 3/5. Backends page: 'In min cache mode (the default), only layers that are exported into the resulting image are cached' (final: keep)",
+   "statement": "With its default mode, `--cache-to` exports cache only for layers that end up in the final image.",
+   "answer": true,
+   "explanation": "The default mode=min caches only layers exported into the resulting image; mode=max also caches the layers of intermediate steps, for more cache hits.",
+   "misconception": "",
+   "source": {
+    "title": "Cache storage backends",
+    "url": "https://docs.docker.com/build/cache/backends/"
+   }
+  },
+  "docker-fundamentals-sr7-07": {
+   "reason": "weak_card (strawman about the image store), rewritten because r7 would otherwise fall below 9 cards. Login page: without a credential store, credentials go into config.json 'in a base64-encoded format' (final: keep)",
+   "statement": "When `docker login` saves credentials directly to `config.json`, it encrypts them first.",
+   "answer": false,
+   "explanation": "Without a credential store, Docker writes credentials to config.json only base64-encoded, which anyone can reverse. A credential store keeps them in an external store such as the OS keychain or pass.",
+   "misconception": "config.json holds registry credentials in encrypted form.",
+   "source": {
+    "title": "docker login",
+    "url": "https://docs.docker.com/reference/cli/docker/login/"
+   }
+  },
+  "docker-fundamentals-sr7-08": {
+   "reason": "weak_card (the flag name gives it away), rewritten because r7 would otherwise fall below 9 cards. Push page: to push to a self-hosted registry, 'tag the image with the host name or IP address, and the port of the registry' (final: keep)",
+   "statement": "`docker image push` takes its destination registry from the host part of the image reference.",
+   "answer": true,
+   "explanation": "To publish to a self-hosted registry, you first tag the image as host:port/name, and Docker pushes to the registry named in that reference.",
+   "misconception": "",
+   "source": {
+    "title": "docker image push",
+    "url": "https://docs.docker.com/reference/cli/docker/image/push/"
+   }
+  },
+  "docker-fundamentals-sr8-02": {
+   "reason": "weak_card (repeats the same-path sharing template), rewritten because r8 would otherwise drop to 7 cards. Volumes page: 'Anonymous volumes are given a random name that's guaranteed to be unique within a given Docker host' (final: keep)",
+   "statement": "When a container creates an anonymous volume, Docker names that volume after the container.",
+   "answer": false,
+   "explanation": "Docker gives an anonymous volume a random name that is unique on that Docker host. docker inspect shows it in the container's Mounts section.",
+   "misconception": "An anonymous volume takes the name of the container that created it.",
+   "source": {
+    "title": "Volumes",
+    "url": "https://docs.docker.com/engine/storage/volumes/"
+   }
+  },
+  "docker-fundamentals-sr8-09": {
+   "reason": "weak_card (near-truism), rewritten because r8 would otherwise drop to 7 cards. The volumes page shows volume-driver=local with volume-opt=type=nfs, device and addr (final: fixed)",
+   "statement": "On Linux, Docker's built-in `local` volume driver mounts NFS exports as volumes through its volume options.",
+   "answer": true,
+   "explanation": "The local driver passes mount options from volume-opt, for example type=nfs with addr and device, so an NFS share needs no third-party volume plugin.",
+   "misconception": "",
+   "source": {
+    "title": "Volumes",
+    "url": "https://docs.docker.com/engine/storage/volumes/"
+   }
+  },
+  "docker-fundamentals-sr10-11": {
+   "reason": "weak_card (the flag syntax and the hedge verb 'lets' give it away), rewritten because r10 would otherwise drop to 8 cards at 3/5. The networking overview's Redis example binds to 127.0.0.1 and connects from a container:redis peer (final: keep)",
+   "statement": "With `--network container:redis`, a container reaches Redis bound to 127.0.0.1 inside `redis`.",
+   "answer": true,
+   "explanation": "The container: mode joins the other container's network stack, loopback included, so a service bound to localhost in one container is reachable from the other.",
+   "misconception": "",
+   "source": {
+    "title": "Networking overview",
+    "url": "https://docs.docker.com/engine/network/"
+   }
+  },
+  "docker-fundamentals-sr11-04": {
+   "reason": "ambiguous: COMPOSE_PROJECT_NAME beats the top-level name even when no -p is given. The card now tests that precedence, from the project-name page (final: fixed)",
+   "statement": "`COMPOSE_PROJECT_NAME` takes precedence over the top-level `name` in a Compose file.",
+   "answer": true,
+   "explanation": "Compose takes the project name from the -p flag first, then COMPOSE_PROJECT_NAME, then the top-level name, and then the base name of the project directory.",
+   "misconception": "",
+   "source": {
+    "title": "Specify a project name",
+    "url": "https://docs.docker.com/compose/how-tos/project-name/"
+   }
+  },
+  "docker-fundamentals-sr12-04": {
+   "reason": "weak_card (the name privileged gives it away), rewritten because r12 would otherwise drop to 7 cards. Run page: --privileged 'gives all capabilities', 'enables access to all devices on the host, and reconfigures AppArmor or SELinux' (final: keep)",
+   "statement": "`docker run --cap-add=ALL` gives a container the same access to the host as `--privileged`.",
+   "answer": false,
+   "explanation": "Beyond granting all capabilities, --privileged opens access to all host devices and reconfigures AppArmor or SELinux; --cap-add=ALL only adds capabilities.",
+   "misconception": "--privileged only adds capabilities, so --cap-add=ALL is equivalent.",
+   "source": {
+    "title": "Running containers",
+    "url": "https://docs.docker.com/engine/containers/run/"
+   }
+  },
+  "docker-fundamentals-sr12-07": {
+   "reason": "weak_card (it restates the instruction's name), rewritten because r12 would otherwise drop to 7 cards, and to keep USER coverage. Run page: 'you can override the USER instruction by passing the -u option' (final: keep)",
+   "statement": "`docker run --user 1000` overrides the user named by the image's USER.",
+   "answer": true,
+   "explanation": "USER sets the default user for the image's first process, and the -u or --user option of docker run replaces it for that container.",
+   "misconception": "",
+   "source": {
+    "title": "Running containers",
+    "url": "https://docs.docker.com/engine/containers/run/"
+   }
+  },
+  "docker-fundamentals-sr3-05": {
+   "reason": "tell: removes 'remain' (persistence verbs appeared only in false statements). Same fact and answer (final: keep)",
+   "statement": "A container started from the image sees the Dockerfile's ARG values as environment variables.",
+   "answer": false,
+   "explanation": "ARG supplies build-time values. ENV sets environment values that persist in the built image.",
+   "misconception": "ARG persists as a runtime environment variable like ENV.",
+   "source": {
+    "title": "Dockerfile reference",
+    "url": "https://docs.docker.com/reference/dockerfile/"
+   }
+  },
+  "docker-fundamentals-sr6-06": {
+   "reason": "tell: removes 'keeps' and 'stays' (false-only words). Same fact and answer (final: fixed)",
+   "statement": "After one RUN step misses the cache, BuildKit reuses cache for later RUN steps in that stage with unchanged text.",
+   "answer": false,
+   "explanation": "Once a step misses the cache, later RUN steps in that stage rebuild even with unchanged text, because each runs on the previous step's result.",
+   "misconception": "Later RUN steps remain cached as long as their command strings stay the same.",
+   "source": {
+    "title": "Build cache invalidation",
+    "url": "https://docs.docker.com/build/cache/invalidation/"
+   }
+  },
+  "docker-fundamentals-sr10-01": {
+   "reason": "tell: removes the 'On Linux' prefix (the platform prefix marked false 8 times out of 12). Same fact and answer; Linux is the deck's default scope (final: keep)",
+   "statement": "By default, `docker run` creates a new bridge network for the container it starts.",
+   "answer": false,
+   "explanation": "Without a network option, Docker Engine connects the container to the built-in default `bridge` network.",
+   "misconception": "Docker creates a separate bridge network for each new container.",
+   "source": {
+    "title": "Networking overview",
+    "url": "https://docs.docker.com/engine/network/"
+   }
+  },
+  "docker-fundamentals-sr10-10": {
+   "reason": "tell: removes the 'On Linux' prefix. Same fact and answer (final: keep)",
+   "statement": "`ipvlan` L2 mode assigns containers MAC addresses distinct from the parent interface.",
+   "answer": false,
+   "explanation": "In `ipvlan` L2 mode, containers use the parent interface's MAC address. The `macvlan` driver assigns a MAC address to each container interface.",
+   "misconception": "IPvlan L2 exposes a separate container MAC address to the physical network.",
+   "source": {
+    "title": "Macvlan network driver",
+    "url": "https://docs.docker.com/engine/network/drivers/macvlan/"
+   }
+  },
+  "docker-fundamentals-sr12-02": {
+   "reason": "tell: removes the 'On Linux' prefix. Same fact and answer (final: keep)",
+   "statement": "With userns-remap enabled in daemon.json, the Docker daemon runs as a non-root host user.",
+   "answer": false,
+   "explanation": "With `userns-remap`, container root maps to an unprivileged host UID, but the daemon still runs as root. Rootless mode runs both without root privileges.",
+   "misconception": "User namespace remapping makes the daemon itself rootless.",
+   "source": {
+    "title": "Rootless mode",
+    "url": "https://docs.docker.com/engine/security/rootless/"
+   }
+  }
+ },
+ "conflictGroups": {
+  "image-unchanged-by-runtime": [
+   "docker-fundamentals-sr1-01",
+   "docker-fundamentals-sr1-12"
+  ],
+  "client-daemon-remote": [
+   "docker-fundamentals-sr1-06",
+   "docker-fundamentals-sr1-07",
+   "docker-fundamentals-sr1-08",
+   "docker-fundamentals-sr9-02"
+  ],
+  "linux-kernel-desktop-vm": [
+   "docker-fundamentals-sr1-03",
+   "docker-fundamentals-sr1-10",
+   "docker-fundamentals-sr1-11"
+  ],
+  "namespaces-cgroups": [
+   "docker-fundamentals-sr1-04",
+   "docker-fundamentals-sr1-05"
+  ],
+  "configured-resource-limits": [
+   "docker-fundamentals-sr1-05",
+   "docker-fundamentals-sr2-12",
+   "docker-fundamentals-sr9-12"
+  ],
+  "volume-cleanup-scope": [
+   "docker-fundamentals-sr8-03",
+   "docker-fundamentals-sr8-04",
+   "docker-fundamentals-sr8-05"
+  ],
+  "stop-signal": [
+   "docker-fundamentals-sr2-06",
+   "docker-fundamentals-sr3-10",
+   "docker-fundamentals-sr2-08"
+  ],
+  "arg-persistence": [
+   "docker-fundamentals-sr3-05",
+   "docker-fundamentals-sr6-07",
+   "docker-fundamentals-sr12-08",
+   "docker-fundamentals-sr3-01"
+  ],
+  "build-target-stages": [
+   "docker-fundamentals-sr5-05",
+   "docker-fundamentals-sr5-06"
+  ],
+  "build-secret-handling": [
+   "docker-fundamentals-sr6-08",
+   "docker-fundamentals-sr12-09"
+  ],
+  "image-reference-parsing": [
+   "docker-fundamentals-sr7-01",
+   "docker-fundamentals-sr7-03",
+   "docker-fundamentals-sr7-08"
+  ],
+  "auto-create-missing-mount-source": [
+   "docker-fundamentals-sr8-01",
+   "docker-fundamentals-sr9-01"
+  ],
+  "volume-populate-vs-bind-obscure": [
+   "docker-fundamentals-sr8-06",
+   "docker-fundamentals-sr9-03"
+  ],
+  "bind-propagation": [
+   "docker-fundamentals-sr9-07",
+   "docker-fundamentals-sr9-08"
+  ],
+  "peer-traffic-and-publishing": [
+   "docker-fundamentals-sr11-06",
+   "docker-fundamentals-sr10-04",
+   "docker-fundamentals-sr3-07"
+  ],
+  "compose-version-confusion": [
+   "docker-fundamentals-sr11-02",
+   "docker-fundamentals-sr11-03"
+  ],
+  "sbom-products": [
+   "docker-fundamentals-sr12-11",
+   "docker-fundamentals-sr12-12"
+  ],
+  "multi-stage-copy-from-sources": [
+   "docker-fundamentals-sr5-03",
+   "docker-fundamentals-sr5-04",
+   "docker-fundamentals-sr5-02"
+  ]
+ }
+}

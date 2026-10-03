@@ -1,0 +1,872 @@
+{
+ "deck": "terraform-associate",
+ "sections": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s1.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads (developer.hashicorp.com/terraform/intro/v1.12.x/core-workflow), official, v1.12.x",
+     "evidence": "\"The natural place for these reviews to occur is alongside pull requests within version control\" (https://developer.hashicorp.com/terraform/intro/v1.12.x/core-workflow). The statement is a truism: any version-controlled code can be reviewed before it is used, and nobody would answer False. It also sits close to s3.1-01 (\"The core Terraform workflow reviews a plan before applying infrastructure changes\").",
+     "problem": "Truism with a hedge verb (\"can\") on a true card. It teaches nothing specific to Terraform, and it overlaps the review step that s3.1-01 already tests.",
+     "suggestedFix": "Replace (True): \"One Terraform configuration can create matching, repeatable copies of an environment for testing and for production.\" Explanation: \"Codifying an environment lets teams spin it up for development or QA and tear it down again, rather than keep permanent staging infrastructure.\" Source: https://developer.hashicorp.com/terraform/intro/v1.12.x/use-cases (Parallel Environments: \"Terraform lets you rapidly spin up and decommission infrastructure for development, test, QA, and production.\")"
+    },
+    {
+     "id": "terraform-associate-s1.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads (core-workflow v1.12.x), official, but does not state the card's fact",
+     "evidence": "The core-workflow page only says \"Others arrange for their CI system to post speculative plan output to pull requests automatically\" and, for HCP Terraform, \"the plan is automatically run when the pull request is created\" (https://developer.hashicorp.com/terraform/intro/v1.12.x/core-workflow). Nothing on the page says the CLI cannot watch Git. The VCS-triggered run behaviour is tested in s8.1-03.",
+     "problem": "Strawman: anyone who has run the CLI knows it is a command and not a daemon that watches Git. The real distinction (VCS-driven runs in HCP Terraform) belongs to 8.1, where s8.1-03 already covers it. The cited source does not support the statement.",
+     "suggestedFix": "Replace (False): \"Terraform converts its configuration into each cloud's native template format and submits it for deployment.\" Explanation: \"Terraform providers call each platform's APIs directly to create and manage resources, so Terraform needs no cloud-native template service.\" Source: https://developer.hashicorp.com/terraform/intro/v1.12.x (\"Terraform creates and manages resources on cloud platforms and other services through their application programming interfaces (APIs).\")"
+    },
+    {
+     "id": "terraform-associate-s1.1-07",
+     "verdict": "duplicate",
+     "urlStatus": "loads (tutorials/aws-get-started/infrastructure-as-code), official",
+     "evidence": "\"You can compose resources from different providers into reusable Terraform configurations called modules\" (https://developer.hashicorp.com/terraform/tutorials/aws-get-started/infrastructure-as-code). s1.1-03 (\"Terraform can manage cloud and on-premises resources in the same configuration\") and s1.1-09 (\"one workflow ... across cloud providers\") rest on the same fact: one configuration (a root module) mixes resources from several providers.",
+     "problem": "If you know s1.1-03 or s1.1-09, you know the answer here. It duplicates s1.1-03, and s1.1-04 also leans on the same idea.",
+     "suggestedFix": "Replace (True): \"Terraform can provision a Kubernetes cluster and also manage the deployments and services that run inside it.\" Explanation: \"Through the Kubernetes provider, Terraform manages in-cluster objects such as deployments and services as well as the cluster infrastructure itself.\" Source: https://developer.hashicorp.com/terraform/intro/v1.12.x/use-cases (Kubernetes section)"
+    },
+    {
+     "id": "terraform-associate-s1.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads (intro v1.12.x), official",
+     "evidence": "\"You can then use a consistent workflow to provision and manage all of your infrastructure throughout its lifecycle.\" (https://developer.hashicorp.com/terraform/intro/v1.12.x)",
+     "problem": "Strawman: nobody who has used terraform apply on a changed configuration would think Terraform leaves updates to the operator. The wording \"leaves updates ... to the operator\" is also vague about what the operator would do.",
+     "suggestedFix": "Rewrite the same fact as a realistic provisioning-versus-configuration-management misconception (False): \"Once Terraform creates a resource, it stops tracking it and leaves later changes to other tools.\" Explanation: \"Terraform records each resource it creates in state and keeps managing it, planning later updates and its eventual deletion from the same configuration.\" Keep the same URL. If that still reads as a strawman, drop it and write a new false 1.1 fact."
+    },
+    {
+     "id": "terraform-associate-s1.1-01",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (tutorials/aws-get-started/infrastructure-as-code), official",
+     "evidence": "\"Terraform's configuration language is declarative, meaning that it describes the desired end-state for your infrastructure, in contrast to procedural programming languages that require step-by-step instructions\" (https://developer.hashicorp.com/terraform/tutorials/aws-get-started/infrastructure-as-code). Against that, depends_on \"handle[s] hidden resource or module dependencies that Terraform cannot automatically infer\" (https://developer.hashicorp.com/terraform/language/v1.12.x/meta-arguments/depends_on).",
+     "problem": "An expert could argue True. With references and depends_on, a configuration does fix the order in which providers make create, update and delete calls across resources, so \"prescribe the API call sequence\" can be defended. The declarative point would be clearer if the statement were about step-by-step procedure.",
+     "suggestedFix": "Replace (False): \"Terraform configuration files spell out the step-by-step procedure Terraform follows to build infrastructure.\" Explanation: \"Terraform's language is declarative: configuration describes the desired end state, and Terraform works out the actions needed to reach it.\" Same URL."
+    },
+    {
+     "id": "terraform-associate-s1.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads (intro v1.12.x), official",
+     "evidence": "\"Terraform can manage low-level components like compute, storage, and networking resources, as well as high-level components like DNS entries and SaaS features.\" (https://developer.hashicorp.com/terraform/intro/v1.12.x)",
+     "problem": "Near-copy of the source sentence (\"Terraform can manage ... SaaS features ... compute ... networking\") with words dropped, which the prompt forbids. Its explanation also says that providers \"expose APIs\", when providers actually call the services' APIs.",
+     "suggestedFix": "Reword (True): \"One Terraform configuration can create a virtual machine and the DNS record and monitoring alert for it.\" Explanation: \"Providers cover low-level components such as compute and high-level ones such as DNS entries and SaaS features, so one configuration can mix them.\" Same URL."
+    }
+   ],
+   "notes": "All 6 source URLs load and are official HashiCorp pages: 4 versioned /v1.12.x/ pages and 1 unversioned getting-started tutorial (infrastructure-as-code). Every true and false answer holds against the current docs; I found no wrong answer. Cards that pass: 03 (hybrid, supported by \"define both cloud and on-prem resources in human-readable configuration files\"), 04 (HCP Terraform is optional for multi-cloud; the CLI alone handles it), 08 (provider-specific schemas, supported by \"Each provider has its own documentation, describing its resource types and their arguments\") and 09 (cross-cloud dependencies, supported by \"Terraform lets you use the same workflow to manage multiple providers and handle cross-cloud dependencies\"). 09 paraphrases its source sentence closely but is reworded enough to pass; it is borderline. The main problem in the section is clustering: 03, 04, 07 and 09 all rest on \"one configuration and workflow spans several providers\". That is why 07 is flagged as a duplicate; 04 and 09 are kept because they add the HCP Terraform requirement and the cross-cloud dependency ordering. The replacements keep the section at 5 true and 5 false: 01, 06 and 10 stay False, and 02, 05 and 07 stay True. Replacement statements are 96 to 116 characters, and false and true lengths stay close. I avoided Sentinel as a replacement because policy cards belong to 8.2, and the native policy framework is beta."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s2.1-02",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/providers/requirements: \"Local names are module-specific, and are assigned when requiring a provider.\" and \"A provider's source address is its global identifier.\" The same page also says: \"If you omit the `source` argument when requiring a provider, Terraform uses an implied source address of `registry.terraform.io/hashicorp/<LOCAL NAME>`.\"",
+     "problem": "When source is omitted, the local name does decide the global source address (hashicorp/<LOCAL NAME>), so an expert could argue that 'fixes' is true. The vague verb 'fixes' and the implied-source exception make the false answer arguable.",
+     "suggestedFix": "Keep false. Statement: \"Two modules must use the same local name when they require the same provider source address.\" (92 chars) Explanation: \"Local names are module-specific: each module picks its own name in required_providers, while the source address is the provider's global identifier.\" (148 chars). Same URL."
+    },
+    {
+     "id": "terraform-associate-s2.1-08",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/block/provider: provider arguments accept expressions only for values known before apply, and you \"cannot reference computed resource attributes, such as `google.web.public_ip`.\"",
+     "problem": "The answer matches the docs, but Terraform core does not reject such a reference. A provider block that reads a managed resource's attribute (for example a cluster endpoint) is a common working pattern, and Terraform passes the provider unknown values during plan. Because the statement says 'can read', an expert could call it true as a capability claim. The docs' 'cannot' is guidance, not an enforced error.",
+     "suggestedFix": "Keep false and tie it to the documented rule. Statement: \"The provider block reference lists computed resource attributes among the values a provider argument accepts.\" (109 chars) Explanation: \"Provider arguments take values known before apply, such as input variables and literals; the provider block reference says computed resource attributes cannot be used.\" (167 chars). Same URL."
+    },
+    {
+     "id": "terraform-associate-s2.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/providers/requirements: \"Each provider dependency you declare should have a version constraint given in the `version` argument so Terraform can select a single version per provider that all modules are compatible with.\"",
+     "problem": "This is a truism and definition card: a version 'constraint' limiting acceptable releases follows from the meaning of the word. Anyone can answer True without knowing Terraform. It also repeats the template of 5.1-07 (version argument constrains module releases).",
+     "suggestedFix": "Keep true. Statement: \"Terraform selects one version of each provider that satisfies the constraints of every module in the configuration.\" (115 chars) Explanation: \"Each module declares constraints in required_providers; Terraform picks a single version per provider that all modules accept and records it in the lock file.\" (158 chars). Same URL."
+    },
+    {
+     "id": "terraform-associate-s2.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/block/provider: \"Defining multiple provider aliases lets you specify which provider configuration to use for individual resources, data sources, or modules.\"",
+     "problem": "This is near-definitional: an 'alias' naming an additional configuration is readable from the term itself, so no studied learner answers False. It also overlaps with 07 (the provider meta-argument selects an aliased configuration), which already assumes this fact.",
+     "suggestedFix": "Replace with another true fact on how Terraform uses providers. Statement: \"Terraform reads the first word of an unqualified resource type as the local name of the provider it uses.\" (105 chars) Explanation: \"A resource without a provider argument maps to a provider by the prefix of its type, so example_thing uses the provider whose local name is example.\" (~150 chars). Source: https://developer.hashicorp.com/terraform/language/v1.12.x/providers/requirements (\"If a resource doesn't specify which provider configuration to use, Terraform interprets the first word of the resource type as a local provider name.\")"
+    }
+   ],
+   "notes": "I checked all 10 section 2.1 cards (all in raw/terraform-associate-b1.json). All five source URLs load, are official HashiCorp pages for v1.12.x, and support their cards.\n\nPassed:\n- 03 (lock-file checksums): \"Terraform will also verify that each package it installs matches at least one of the checksums it previously recorded in the lock file\".\n- 04 (lock file does not track modules): \"At present, the dependency lock file tracks only provider dependencies. Terraform does not remember version selections for remote modules\".\n- 06 (unqualified resource uses the default config, implied empty default when every block is aliased): confirmed on the provider block page.\n- 07 (provider meta-argument <NAME>.<ALIAS>): confirmed.\n- 09 (child module inherits default provider configs): \"a child module automatically inherits default provider configurations from its parent\"; the word 'default' correctly excludes aliased configs.\n- 10 (providers ship separately): \"Providers are distributed separately from Terraform itself, and each provider has its own release cadence and version numbers\". Bundling before 0.10 is history; the card says 1.12.\n\nMinor, not flagged: the explanation of 04 (\"module version constraints govern remote module selection\") states the answer of 5.1-07. Consider trimming it to \"Terraform downloads the newest remote module version that matches the configuration's constraints.\"\n\nBalance: the section is 5 true and 5 false. All suggested fixes keep each card's answer, so the balance is unchanged. Replacement 05 (resource type prefix to local name) is a different fact from 06 (default versus aliased configuration)."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s2.2-10",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, versioned v1.12.x (https://developer.hashicorp.com/terraform/cli/v1.12.x/state/resource-addressing)",
+     "evidence": "Source: \"Omitting an index when addressing a resource where count > 1 means that the address references all instances.\" and \"aws_instance.web Refers to all four \"web\" instances.\" So the count instances do share the resource address example.item (each also has its own indexed instance address), and the state JSON stores them as one resource entry with per-instance index_key. The card also overlaps 5.1-09 (\"A module block's count creates child instances addressed with numeric indexes\"), and it is closer to addressing (7.1/4.1) than to what state records.",
+     "problem": "An expert could defend True: all count instances share the resource address example.item, which addresses every one of them. The false reading only holds if 'state address' means the instance address. The fact (count gives [N] indexed addresses) also nearly repeats 5.1-09.",
+     "suggestedFix": "Replace (answer false): \"Terraform falls back to resource tags to find remote objects missing from state.\" Explanation: \"Early Terraform prototypes tried tags, but not every resource or provider supports them, so Terraform keeps its own state to map configuration to objects.\" URL https://developer.hashicorp.com/terraform/language/v1.12.x/state/purpose (\"not all resources support tags, and not all cloud providers support tags. Therefore ... Terraform uses its own state structure\")."
+    },
+    {
+     "id": "terraform-associate-s2.2-06",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, versioned v1.12.x (https://developer.hashicorp.com/terraform/language/v1.12.x/state/purpose)",
+     "evidence": "Source supports the answer: \"This is the default behavior of Terraform: for every plan and apply, Terraform will sync all resources in your state.\" But 6.2-09 (\"terraform plan -refresh=false detects manual remote edits through the existing state snapshot\", false) and 6.2-10 (a normal plan proposes restoring drifted attributes) test the same refresh versus no-refresh distinction. The prompt also puts refresh in 6.2: \"6.2 covers drift, refresh-only mode\".",
+     "problem": "Answer correct, but it is the other side of the default-refresh vs -refresh=false fact already tested in 6.2-09 (knowing one gives the other), and it belongs to 6.2's refresh topic, not to 2.2.",
+     "suggestedFix": "Replace (answer false): \"HashiCorp recommends editing the state file's JSON directly to change Terraform state.\" Explanation: \"State files use JSON, but the docs discourage editing them directly; the terraform state command makes basic changes and shields you from format changes.\" URL https://developer.hashicorp.com/terraform/language/v1.12.x/state (\"While the format of the state files are just JSON, direct file editing of the state is discouraged.\")."
+    },
+    {
+     "id": "terraform-associate-s2.2-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, versioned v1.12.x (https://developer.hashicorp.com/terraform/language/v1.12.x/state)",
+     "evidence": "The /state page only says \"Terraform uses state to determine which changes to make to your infrastructure.\" It never says that the configuration is the desired state, and its wording could even point a reader toward True. The purpose page does settle it: \"Terraform must know the current state of resources in order to effectively determine the changes that it needs to make to reach your desired configuration.\" (https://developer.hashicorp.com/terraform/language/v1.12.x/state/purpose)",
+     "problem": "The answer (false) and the explanation are right, but the cited page does not support the right fact given in the explanation (the configuration defines the desired state).",
+     "suggestedFix": "Change the source to https://developer.hashicorp.com/terraform/language/v1.12.x/state/purpose (title \"Purpose of Terraform State\"); keep the statement and explanation."
+    }
+   ],
+   "notes": "All 6 source URLs return 200 and are official v1.12.x pages. Cards that pass: 01 (state binding, /state: \\\"record the identity of that remote object against a particular resource instance\\\"); 02 (purpose: \\\"Terraform expects that each remote object is bound to only one resource instance\\\"); 03 (purpose: \\\"Terraform retains a copy of the most recent set of dependencies within the state\\\"); 05 (purpose: \\\"stores a cache of the attribute values for all resources in the state ... only as a performance improvement\\\"); 07 (modules/develop/providers: \\\"Terraform retains, as part of its state, a reference to the provider configuration that was most recently used\\\"); 08 (data-sources: \\\"Terraform reads the data source and updates its state during Terraform's refresh phase\\\"; data.* entries do persist in state in 1.x); 09 (block/output: \\\"exposes the result as the return value of an output and stores that value in state\\\"; root outputs cannot be ephemeral, so \\\"ordinary\\\" is safe). Minor, not flagged: 03 and 07 use the same \\\"state retains X for removed blocks\\\" pattern (different facts, both true); 02's \\\"can safely\\\" leans slightly toward a false tell. The two suggested replacements are both false, which keeps the section at 5 true and 5 false; the false-statement average length becomes 77.6 against 77.2 for the true ones. The replacements were checked against the rest of the deck (no other card on tags or on editing state directly)."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s3.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/intro/v1.12.x/core-workflow: \"Plan - Preview changes before applying.\" The statement repeats the workflow's step names, so anyone can answer it from the word \"plan\". It also gives the action to \"the core Terraform workflow\" instead of a person, which breaks the name-the-actor rule. The apply confirmation behind it is already tested by s3.2-04, s3.2-05 and s8.1-02.",
+     "problem": "This is a truism and a giveaway: anyone who has heard \"plan, then apply\" answers True. The statement also names no real actor, since a workflow reviews nothing. It teaches nothing specific about the workflow.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"In a team workflow, the plan reviewed on a pull request can differ from the final plan run after the merge.\" (107 chars). Explanation: \"Merge order and recent infrastructure changes can alter the result, so the team reviews the final plan against the shared branch and latest state before apply.\" (159 chars). Source is the same core-workflow page: \"This plan may differ from the pull request review due to merge order or recent infrastructure modifications\"."
+    },
+    {
+     "id": "terraform-associate-s3.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/validate: \"Validate runs checks that verify whether a configuration is syntactically valid and internally consistent, regardless of any provided variables or existing state.\" The statement is the source sentence with a few words changed. The command name \"validate\" already suggests that it checks syntax.",
+     "problem": "The statement copies the source almost word for word, which breaks the original-wording rule. It is also close to a name giveaway, since \"validate checks syntax\" can be guessed from the command name.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"In a fresh clone, terraform validate reports an error until terraform init installs the referenced providers.\" Explanation: \"Validation needs an initialized working directory with referenced providers and modules installed; terraform init -backend=false prepares one without touching the backend.\" (171 chars). Source is the same page: \"Validation requires an initialized working directory with any referenced plugins and modules installed.\""
+    },
+    {
+     "id": "terraform-associate-s3.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/fmt: \"The terraform fmt command formats Terraform configuration file contents so that it matches the canonical format and style.\" The statement \"terraform fmt applies Terraform's canonical layout to configuration files\" is that sentence with \"format and style\" changed to \"layout\".",
+     "problem": "The statement copies the source almost word for word. The answer can also be read from the command name: a formatter formats.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"By default, terraform fmt formats files in the current directory and leaves configuration in subdirectories untouched.\" (118 chars). Explanation: \"Without the -recursive flag, terraform fmt processes only the given or current directory, so nested module directories stay unformatted.\" (136 chars). Source is the same page: \"By default, the command only processes the specified, or current, directory.\""
+    },
+    {
+     "id": "terraform-associate-s3.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, v1.12.x, but the page never discusses reference repair",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/fmt: \"This command applies a subset of the Terraform language style conventions, along with other minor adjustments for readability.\" No learner who has studied would expect a formatter to \"repair\" references, so the False answer is obvious. Difficulty 3 is wrong: a hard card needs a real distinction between two similar things.",
+     "problem": "This is a strawman marked as hard. The misconception it targets, a formatter fixing references, is not one a learner who studied would plausibly hold. The real distinction a learner can confuse is fmt against validate.",
+     "suggestedFix": "Replace (answer stays false, difficulty 3). Statement: \"terraform fmt reports an error when a resource block refers to an undeclared resource.\" Explanation: \"terraform fmt only parses and restyles files; terraform validate is the command that catches references to undeclared resources.\" (128 chars). Sources: the fmt page above plus https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/validate (\"syntactically valid and internally consistent\")."
+    }
+   ],
+   "notes": "I opened every source URL (core-workflow, init, validate and fmt, all /v1.12.x/). All of them load, are official, and support the stated answers. No card has a wrong answer.\n\nCards that pass, with the quote that settles each:\n- 02: \"the root configuration directory is consulted for backend configuration and the chosen backend is initialized\".\n- 03: \"the configuration is searched for module blocks, and the source code for referenced modules is retrieved\". Minor: the explanation says init \"fetches\" every child module, but local-path modules are used where they are and not downloaded. Optional wording fix only.\n- 04: init \"initializes a working directory\". Easy, but a common exam distractor, so kept.\n- 05: \"this command will never delete your existing configuration or state\".\n- 07: validate \"does not validate remote services, such as remote state or provider APIs\".\n- 08: \"regardless of any provided variables or existing state ... use the terraform plan command instead\". Also checked: validate takes no -var input in 1.12.\n\nDuplicates checked:\n- 3.1-02 against 6.1-08 and 6.1-09 (partial backend config, state migration): different facts.\n- My replacement for 01 deliberately avoids the apply confirmation prompt, which s3.2-04, s3.2-05 and s8.1-02 already cover.\n\nBalance: the section is 5 true and 5 false, and all four replacements keep their answers (01 T, 06 T, 09 T, 10 F), so the balance holds. The replacements use no negations or flag spellings in the statements. The -recursive and -backend=false flags appear only in explanations."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s3.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads; official v1.12.x plan reference; supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan: \"Proposes a set of change actions that should, if applied, make the remote objects match the configuration.\" The card restates what an execution plan is. Nobody who has studied would answer False, so it is a definition card. It also sits close to s3.1-01 (the workflow reviews a plan before applying).",
+     "problem": "Truism or definition card: saying that plan proposes create, update or delete actions when the configuration changes is the meaning of 'plan' and tests no behaviour.",
+     "suggestedFix": "Replacement (TRUE): \"terraform plan proposes destroy-and-recreate when the remote API rejects in-place updates to a changed argument.\" Explanation: \"Arguments the remote API is unable to change in place force a replacement, shown as -/+ in the plan; other changed arguments get an in-place update.\" URL: https://developer.hashicorp.com/terraform/language/v1.12.x/resources/behavior (\"Destroys and re-creates resources whose arguments have changed but cannot be updated in-place due to remote API limitations.\")"
+    },
+    {
+     "id": "terraform-associate-s3.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads; official v1.12.x plan reference; supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan: \"If Terraform detects that no changes are needed to resource instances or to root module output values, terraform plan will report that no actions need to be taken.\" The statement's 'already aligned configuration' just means 'nothing to change', so the answer follows from the wording. 'Aligned' is also vague: aligned with state, or with remote objects?",
+     "problem": "Near-truism: if nothing differs, the plan proposes nothing. The answer can be read from the wording, and the card's key term is vague.",
+     "suggestedFix": "Replacement (TRUE): \"terraform plan -target limits planning to the addressed resource instances and the objects they depend on.\" Explanation: \"Resource targeting narrows a plan to a subset of resources plus their dependencies; HashiCorp presents it as a tool for exceptional cases such as recovering from errors, not for routine use.\" URL: https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan (\"-target=ADDRESS - Instructs Terraform to focus its planning efforts only on resource instances which match the given address and on any objects that those instances depend on.\")"
+    },
+    {
+     "id": "terraform-associate-s3.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads; official v1.12.x destroy reference; supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/destroy: \"The terraform destroy command deprovisions all objects managed by a Terraform configuration.\" No learner who has studied would believe that destroy scans a provider account and deletes unmanaged objects of the same type. The wording 'of a configured type beyond its managed set' is also contrived.",
+     "problem": "Strawman with awkward wording. There is a more realistic misconception about destroy scope: that it only covers resources still declared in configuration.",
+     "suggestedFix": "Replacement (FALSE): \"terraform destroy skips state-tracked resources whose blocks were already removed from the configuration.\" Explanation: \"Destroy mode plans to delete every remote object recorded in state, including objects whose resource blocks were removed, and leaves an empty state.\" URL: https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan (destroy mode: \"Creates a plan whose goal is to destroy all remote objects that currently exist, leaving an empty Terraform state.\")"
+    },
+    {
+     "id": "terraform-associate-s3.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads; official v1.12.x destroy reference; supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/destroy: \"terraform plan -destroy ... will run terraform plan in destroy mode, showing you the proposed destroy changes without executing them.\" The answer can be read from the command words: 'plan' means preview and '-destroy' means deletion.",
+     "problem": "Name giveaway: the command and flag names alone give the answer True.",
+     "suggestedFix": "Replacement (TRUE): \"terraform destroy acts as a convenience alias for terraform apply -destroy.\" Explanation: \"terraform destroy runs apply in destroy mode and accepts most apply options. terraform plan -destroy previews the same deletions without executing them.\" URL: https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/destroy (\"This command is just a convenience alias for the following command: terraform apply -destroy\")"
+    }
+   ],
+   "notes": "I opened all four source URLs: the v1.12.x pages for plan, apply, destroy and internals/graph. All load, are official and match the 1.12 exam version. Every one of the 10 answers is correct against them. These cards pass:\n- s3.2-03 and s3.2-04: the apply page says \"When you pass a saved plan file to terraform apply, Terraform takes the actions in the saved plan without prompting you for confirmation.\"\n- s3.2-05: \"-auto-approve - Skips interactive approval of the plan before applying\"; automatic plan mode \"automatically creates a new execution plan\".\n- s3.2-08: graph page, \"Validate the graph has no cycles and has a single root\". Terraform stops with a Cycle error.\n- s3.2-09: \"Graph walking is done in parallel: a node is walked as soon as all of its dependencies are walked\", limited by a semaphore (-parallelism, default 10).\n- s3.2-10: -replace \"Instructs Terraform to plan to replace the resource instance\", and \"The plan command alone does not actually carry out the proposed changes\". The appliesTo value 0.15.2 matches the page.\n\nWatch points that I did not flag:\n- s3.2-03, 04 and 05 all rest on the same short passage of the apply page (saved plan mode, the approval prompt and -auto-approve). They are three different facts, but together they make the section lean towards apply approval. The s3.2-05 explanation also mentions the confirmation prompt, which is close to s3.2-04's fact.\n- s3.2-08 relies on an inference: the graph page says Terraform validates that there are no cycles, and does not literally say it errors out. Its explanation is still accurate.\n\nI checked the replacements against the rest of the deck: none reuses the factKey of another card. s1.1-10 and s4.4-04 touch replacement and update but test different facts. The section balance stays at 5 true and 5 false (01, 02 and 07 stay true; 06 stays false). Replacement statements are under 120 characters, contain no negation words and use the v1.12.x pages. The -target flag comes in through the plan command reference, which the 004 content list maps to objective 3d."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s4.1-06",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official v1.12.x page (https://developer.hashicorp.com/terraform/language/v1.12.x/expressions/references)",
+     "evidence": "References page: \"data.<DATA TYPE>.<NAME> is an object representing a data resource of the given data source type and name.\" The data-sources page (https://developer.hashicorp.com/terraform/language/v1.12.x/data-sources) also says \"Data sources fetch data from the provider\" and that a data block whose \"configuration directly depends on a Terraform-managed resource\" is deferred. So a data block can itself contain a type.label.attribute reference to a managed resource.",
+     "problem": "The intended fact is right: references to a data source need the data. prefix. But the subject of the sentence is the data source, and \"A data source can use a type.label.attribute reference like a managed resource\" also reads as \"a data block can contain a type.label.attribute reference, as a resource block can\". That reading is true, because data block arguments routinely reference managed resource attributes, so an expert could defend True.",
+     "suggestedFix": "Answer stays false. Statement (113 chars): \"A configuration references a data source attribute with the type.label.attribute form used for managed resources.\" Explanation (151 chars): \"Data source references start with the data. prefix, as in data.<TYPE>.<LABEL>.<ATTRIBUTE>; the unprefixed type.label form addresses a managed resource.\" Keep the same URL."
+    },
+    {
+     "id": "terraform-associate-s4.1-05",
+     "verdict": "duplicate",
+     "urlStatus": "200, official v1.12.x page (https://developer.hashicorp.com/terraform/language/v1.12.x/expressions/references)",
+     "evidence": "References page: \"If the resource has the count argument set, the reference's value is a list of objects representing its instances. If the resource has the for_each argument set, the value is a map of objects representing its instances.\" Card terraform-associate-s4.3-05 (\"A splat expression can extract attributes directly from a resource using for_each\", false) rests on the for_each side of this split. Its explanation says \"a for_each resource evaluates to a map\".",
+     "problem": "The card is correct and its source supports it. But count yielding a list and for_each yielding a map are the two sides of one distinction, which the prompt counts as one fact (\"The two sides of one distinction are one fact\"). This card's explanation (\"an index or splat accesses instance attributes\") also leans into s4.3-05's splat topic. It also sits close to s2.2-10, which covers indexed count addresses.",
+     "suggestedFix": "Replace with a true card on another 4a fact. Statement (91 chars): \"A data block can use for_each to read one data source instance per element of a collection.\" Explanation (161 chars): \"Data blocks accept the count and for_each meta-arguments like resource blocks; Terraform reads each instance separately and indexes the results by number or key.\" URL: https://developer.hashicorp.com/terraform/language/v1.12.x/block/data, whose table lists \"for_each map or set of strings | mutually exclusive with count\" for data blocks. Avoid the data-sources page for this fact, because it wrongly says count keys start at 1."
+    }
+   ],
+   "notes": "Checked all 10 cards in section 4.1 (5 true, 5 false). Every source URL returned 200 and is an official /v1.12.x/ page. The version switcher shows v1.16.x as latest and v1.17.x as beta. Cards that passed, with the evidence that settles them:\n- 01 (false): block/resource says \"You cannot use both a count and for_each argument in the same block.\"\n- 02 (true) and 03 (true): data-sources says \"You can reference your infrastructure's data using the data source's attributes in other parts of your configuration\" and \"You can use expressions and other dynamic Terraform language features to configure constraints.\"\n- 04 (false): data-sources says \"When data source arguments refer to computed values, Terraform cannot read from the data source until all of its arguments are defined. In this case, Terraform defers refreshing the data source until the apply phase.\"\n- 07 (true): references says \"Terraform uses special unknown value placeholders for information that it cannot predict during the plan phase ... (known after apply).\"\n- 08 (false): remote-state-data says \"Only the root-level output values from the remote state snapshot are exposed ... output values from nested modules are not accessible ... you must explicitly configure a passthrough in the root module.\" It is in scope: the 4a tutorial \"Query Data Sources\" that the Exam Content List maps uses terraform_remote_state.\n- 09 (true): resource-addressing says \"An address is made up of two parts: [module path][resource spec]\" and \"If the module path is omitted, the address applies to the root module.\" The page only implies per-module uniqueness. The unversioned resource docs state it outright (\"must be unique within a module\"), but the 1.12 page is enough.\n- 10 (false): block/resource says \"LABEL: Specifies a name for the resource. Terraform uses this label to track the resource in your state file. The label does not affect settings on the actual\" infrastructure.\n\nBorderline but not flagged: card 02 is close to definitional, since referencing data block attributes is the purpose of data blocks. It is subject-specific and difficulty 1, so I let it pass; a stricter reviewer could call it weak.\n\nCaution for the fixer: the v1.12.x data-sources page says count instance keys are \"a number starting at 1\". That is a documentation error (count indexes start at 0, per resource-addressing). Do not cite that sentence.\n\nCross-deck check: no other 4.1 card duplicates cards in other sections. Card 07 (computed unknown) and card 04 (deferred data read) are related but test different facts."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s4.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, versioned v1.12.x page (https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan)",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan: \"-var 'NAME=VALUE' - Sets a value for a single input variable declared in the root module of the configuration.\" The source supports the card, but the answer can be read from the flag name: no learner who has seen -var would answer False, so the card teaches nothing beyond the flag's name.",
+     "problem": "Name give-away and near-truism. The option is literally called -var, and the statement only says that it sets a variable. It tests no behaviour that a studied learner could get wrong.",
+     "suggestedFix": "Replacement (answer True): \"Terraform returns an error when -var names a root input variable that the configuration leaves undeclared.\" Explanation: \"An undeclared name in -var is an error, while an undeclared name in a variable definition file only triggers a warning and an unmatched TF_VAR_ environment variable is ignored.\" Source: https://developer.hashicorp.com/terraform/language/v1.12.x/values/variables (\"Terraform errors if you attempt to assign a value for an undeclared variable with -var on the command line.\")"
+    },
+    {
+     "id": "terraform-associate-s4.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, versioned v1.12.x page (https://developer.hashicorp.com/terraform/language/v1.12.x/block/output)",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/values/outputs: \"Terraform displays root module output values in the CLI after you apply your configuration.\" The block reference says \"Root modules can display values in CLI output.\" The answer is right, but the qualifier \"when sensitive is false\" tells the player that output display is the normal case. That the CLI prints outputs after apply is something anyone who has run apply has seen.",
+     "problem": "Truism with a wording tell. The card is true by common experience, and the clause \"when sensitive is false\" gives the answer away. It also sits next to the sensitive and ephemeral output facts that 4.5 tests (s4.5-01, s4.5-03), so it adds no new 4c fact.",
+     "suggestedFix": "Replacement (answer True): \"A module caller can pass null to replace a variable's default when the variable leaves nullable at true.\" Explanation: \"nullable defaults to true, so an explicit null overrides the variable's default value; setting nullable = false makes Terraform require a non-null value for that variable.\" Source: https://developer.hashicorp.com/terraform/language/v1.12.x/block/variable (\"If nullable is true and the variable has a default argument, you can explicitly set the variable value to null, overwriting the default argument.\" Summary: \"Default: true\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.2. All source URLs return 200 and are official versioned /v1.12.x/ pages. The version switcher shows v1.16.x as latest and v1.17.x as beta. The section stays balanced at 5 true and 5 false, and both suggested replacements are true cards, so the balance holds.\n\nPassing cards and the quotes that settle them:\n- 01 (false): values/variables says \"If a variable does not have a default value ... then Terraform prompts the user to assign a value before it generates a plan.\"\n- 02 (true): type-constraints says \"The Terraform language will automatically convert number and bool values to string values when needed.\" This is distinct from s4.3-01, which is about converting conditional result arms.\n- 04 (false): the precedence list ranks \"Any -var and -var-file options\" above \"Environment variables\".\n- 06 (false): \"If the given value were instead [\\\"a\\\", 1, \\\"b\\\"] then Terraform would still select list(string)\", and [\"a\", [], \"b\"] is rejected.\n- 07 (false): \"map(...): a collection of values where each is identified by a string label.\"\n- 08 (true): \"Values with additional keys can still match an object type, but the extra attributes are discarded during type conversion.\"\n- 09 (false): \"If not specified, Terraform uses a null value of the appropriate type as the default.\" appliesTo \"Terraform 1.3 and later\" is correct for optional attributes.\n- 10 (true): \"If the set's elements were strings, they will be in lexicographical order.\"\n\nI found no wrong answers and no duplicates in the other sections. The nearest neighbours are s2.2-09 (outputs stored in state), s4.1-08 (terraform_remote_state), s5.1-05 (module outputs) and s4.3-01 (conditional type conversion). Each rests on a different fact. The replacement for 05 avoids remote_state and module outputs because those are already used. No replacement uses nullable or undeclared -var elsewhere in the deck (checked with grep). Pages were saved locally for checking."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s4.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, versioned v1.12.x, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/expressions/dynamic-blocks: \"A dynamic block acts much like a for expression, but produces nested blocks instead of a complex typed value.\" The statement restates what a dynamic block is, so a player can answer it from the term \"dynamic block\" alone. It reads as a definition card.",
+     "problem": "This is a definition card, close to a giveaway: the answer follows from the name of the feature, and anyone who has heard of dynamic blocks answers True. It does not test any behaviour.",
+     "suggestedFix": "Replacement (true, keeps the 5/5 balance): statement \"A dynamic block's iterator symbol defaults to the label of that dynamic block.\" Explanation \"When the iterator argument is omitted, the temporary variable inside content takes the dynamic block's label, for example setting.key and setting.value.\" Same URL; it quotes \"If omitted, the name of the variable defaults to the label of the dynamic block\"."
+    },
+    {
+     "id": "terraform-associate-s4.3-05",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, versioned v1.12.x, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/expressions/splat: \"Resources that use the for_each argument will appear in expressions as a map of objects, so you can't use splat expressions with those resources.\" Card terraform-associate-s4.1-05 tests the other side of the same split: \"A resource reference using count evaluates to a list of instance objects\", and its explanation adds \"an index or splat accesses instance attributes\".",
+     "problem": "This card and s4.1-05 test two sides of one distinction: what a count resource reference evaluates to (a list, so splat works) versus what a for_each reference evaluates to (a map, so splat fails). The prompt says the two sides of a two-way split are one fact. The answer is correct. One small point: the explanation's \"values() first\" is good practice, but the page names only for expressions.",
+     "suggestedFix": "Replacement (false, keeps the balance), still about splat: statement \"A splat expression applied to one non-null object returns that object instead of a tuple.\" Explanation \"A splat on a value that is not a list, set or tuple wraps a non-null value in a single-element tuple; a null value gives an empty tuple.\" Same URL; it quotes \"the splat expression will transform it into a single-element list, or more accurately a single-element tuple value\"."
+    }
+   ],
+   "notes": "I opened all 10 source URLs. Each is an official, versioned /v1.12.x/ page, each loads, and each supports its card's answer.\n01: the conditionals page says \\\"Terraform will attempt to find a type that they can both convert to\\\". Passes. Two side notes: the word \\\"compatible\\\" makes it close to self-evident, and difficulty 3 is generous.\n02: the for page says square brackets produce a tuple and braces produce an object. Passes as an easy card, though \\\"keyed by input positions\\\" is an unusual way to phrase the distractor.\n03: if-clause filtering is quoted verbatim on the for page.\n06: the coalesce page says it \\\"returns the first one that isn't null or an empty string\\\" and shows coalesce(\\\"\\\", \\\"b\\\") returning b.\n07: the try page says it \\\"returns the result of the first one that does not produce any errors\\\". The static-error exception does not change the answer.\n08: the templatefile page says \\\"each of the keys in the map is available as a variable for interpolation\\\". Templates get no implicit module scope, so False holds. The page shows this by omission rather than with an explicit prohibition.\n09: the can page says it returns a boolean showing whether the expression \\\"produced a result without any errors\\\", and only dynamic errors are caught, which matches the statement's wording.\n10: the for_each page says \\\"The keys of the map or all values in a set of strings must be known values. Otherwise, Terraform returns an error\\\". Unknown-key deferral exists only in experimental alpha builds, not in 1.12, so False holds.\nScope: the Exam Content List maps objective 4e to Built-in Functions plus the dynamic-expressions and functions tutorials. Card 10 (for_each, a meta-argument) sits at the edge of that scope but is acceptable at the depth the prompt sets. It does not duplicate s4.1-01 (count/for_each exclusivity) or s2.1-08 (provider config known values).\nBalance: 5 true and 5 false. Average statement length is 70.4 for true and 74.4 for false, within the 5-character limit. Hedge words are balanced (\\\"can\\\" appears 3 times in true statements and 3 in false). The difficulty mix is 4 easy, 4 medium and 2 hard.\nPossible overlap: 07 (try) and 09 (can) both rest on the dynamic-error mechanism, but they test different functions and outcomes, so I did not flag them. 01 is related to s4.2-02 (number-to-string conversion for a variable) but the context is different, so I did not flag it."
+  },
+  {
+   "section": "4.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s4.4-01",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official v1.12.x page (depends_on reference); supports the card only through a code comment",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/resources/configure#specify-resource-dependencies: \"Terraform analyzes expressions within a resource block to find references to other objects and treats those references as the implicit dependencies when creating, updating, or destroying resources.\" The depends_on page only has the comment \"Because this expression refers to the role, Terraform automatically infers that the role must be created first.\"",
+     "problem": "The statement says Terraform orders the referring resource after its target, with no operation named. On destroy the order is reversed: the referring resource is destroyed first. An expert could defend False on that reading. The source only supports the card through an example comment.",
+     "suggestedFix": "Keep True. Statement: \"A reference to another resource's attribute makes Terraform create the referenced resource first.\" (97 chars). Explanation: \"Terraform treats references as implicit dependencies: it creates or updates the referenced resource first, and on destroy it removes the referring one first.\" (157 chars). URL: https://developer.hashicorp.com/terraform/language/v1.12.x/resources/configure#specify-resource-dependencies"
+    },
+    {
+     "id": "terraform-associate-s4.4-02",
+     "verdict": "duplicate",
+     "urlStatus": "200, official v1.12.x depends_on reference",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/meta-arguments/depends_on: \"Use the depends_on meta-argument to handle hidden resource or module dependencies that Terraform cannot automatically infer. You only need to explicitly specify a dependency when a resource or module relies on another resource's behavior but does not access any of that resource's data in its arguments.\"",
+     "problem": "This card is the other side of the implicit (reference) versus explicit (depends_on) split that s4.4-01 tests, and the prompt treats both sides of one distinction as one fact. The name also gives it away, since depends_on obviously declares a dependency. The explanation is a near-copy of the source sentence.",
+     "suggestedFix": "Keep True, new fact. Statement: \"Using depends_on where a reference would work can make Terraform plan more values as known after apply.\" (103 chars). Explanation: \"HashiCorp calls depends_on a last resort: it makes plans more conservative, with more unknown values and more replacements than an expression reference needs.\" (158 chars). Same URL, anchor #processing-and-planning-consequences (\"You should only use depends_on as a last resort because it can cause Terraform to create more conservative plans that replace more resources than necessary.\")"
+    },
+    {
+     "id": "terraform-associate-s4.4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.12.x variable block reference",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/block/variable: \"Terraform evaluates variable validations while it creates a plan, and if a validation block's condition expression evaluates to false, then Terraform throws an error...\" The validate page adds: \"Terraform executes input variable validations immediately, before generating a plan.\"",
+     "problem": "The statement is a near-copy of the source sentence with one word changed (\"creates\" became \"builds\"). It is also close to a truism, since nobody who studied would expect validation to run anywhere other than at plan, so it has no realistic false reading. It overlaps s3.1-08, whose explanation already says \"terraform plan validates values in a run's context\".",
+     "suggestedFix": "Keep True, new 4g fact. Statement: \"A failed postcondition stops downstream actions but leaves the change Terraform already applied in place.\" (105 chars). Explanation: \"A failed postcondition halts processing and blocks dependent actions, but Terraform does not undo actions it has already taken on that resource.\" (144 chars). URL: https://developer.hashicorp.com/terraform/language/v1.12.x/validate (\"A failed postcondition halts processing and prevents further downstream actions that rely on the resource or data source, but does not undo any actions Terraform has already taken.\"), appliesTo \"Terraform 1.2 and later\"."
+    },
+    {
+     "id": "terraform-associate-s4.4-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.12.x validate page; supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/validate: \"During the apply phase, a failed precondition prevents Terraform from implementing planned actions for the associated resource, data source, or output.\" and \"Unlike other ways of validating your configuration, check blocks do not block operations.\"",
+     "problem": "The answer is correct, but the card gives itself away. \"Pre\"-condition already tells the player it runs before the action. That it blocks rather than warns is the other side of the blocking versus non-blocking split that s4.4-09 tests (check blocks only warn), so it adds little.",
+     "suggestedFix": "Keep True, new fact. Statement: \"Terraform evaluates a resource precondition per instance, so the condition can use each.key or count.index.\" (107 chars). Explanation: \"Terraform evaluates preconditions after count and for_each, so each instance gets its own check and can refer to each.key or count.index.\" (137 chars). URL: https://developer.hashicorp.com/terraform/language/v1.12.x/meta-arguments/lifecycle (\"Terraform evaluates precondition blocks after evaluating count and for_each meta-arguments. As a result, Terraform can evaluate the precondition separately for each instance and makes the each.key and count.index objects available in the conditions.\"), appliesTo \"Terraform 1.2 and later\"."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.4 against the 1.12 pages, which I fetched with curl. All four source URLs returned 200 and are official v1.12.x pages. The version switcher shows v1.16.x as latest and v1.17.x as beta. The section balance is 5 True (01, 02, 07, 09, 10) and 5 False (03, 04, 05, 06, 08); every suggested replacement keeps its card True, so the balance holds.\n\nCards that passed, with the deciding quote from the v1.12.x pages:\n- 03: depends_on page: \"When the dependency object is an entire module, depends_on affects the order in which Terraform processes all of the resources and data sources associated with that module.\"\n- 04: lifecycle page. create_before_destroy only reorders a replacement Terraform already needs (\"when Terraform must change a resource argument that cannot be updated in-place...\"). This support is implicit but sound.\n- 05: lifecycle page: \"Terraform propagates and applies create_before_destroy behavior to all resource dependencies.\"\n- 06: lifecycle page: \"Terraform considers the arguments corresponding to the given attribute names when planning a create operation, but are ignored when planning an update operation.\"\n- 08: validate page: \"The error_message argument supports any expression that evaluates to a string. This includes literal strings, heredocs, and template expressions.\"\n- 09: validate page: \"When a check block's assertion fails, Terraform reports a warning and continues executing the current operation.\" The appliesTo of 1.5 matches the page's requirements list.\n\nNo card is out of scope or uses a retired product or name. Card 10 also conflicts slightly between the two pages: the validate page says variable validation runs \"before generating a plan\", while the variable page says \"while it creates a plan\". The suggested replacement for card 10 avoids that conflict."
+  },
+  {
+   "section": "4.5",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s4.5-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.12.x page, supports the explanation",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/manage-sensitive-data: \"Use the sensitive argument on variable and output blocks when you want to redact those values from Terraform CLI log output and the HCP Terraform UI.\" and \"Terraform stores values with the sensitive argument in both state and plan files\"",
+     "problem": "The answer (false) and explanation are right, but the statement applies \"the sensitive argument\" to \"an ordinary resource argument's value\". The sensitive argument exists only on variable and output blocks, so the statement is false for two reasons: the premise is malformed, and sensitive values are still stored in state. The misconception field talks about a variable, which the statement does not mention. A player can reject the statement for the wrong reason and still score the point.",
+     "suggestedFix": "Replacement (answer false): \"Setting sensitive = true on a variable block stops Terraform from writing its value to state.\" Explanation: \"The sensitive argument only redacts the value in CLI output and the HCP Terraform UI; Terraform still writes it to state and plan files. Adding ephemeral = true omits it.\" Keep the same URL and appliesTo 0.15 and later."
+    },
+    {
+     "id": "terraform-associate-s4.5-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.12.x page, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/block/ephemeral: \"Terraform opens an ephemeral resource if it needs access to the resource's result.\" and \"Finally, Terraform closes the resource by explicitly ending the lease, letting Vault immediately revoke the associated credentials.\"",
+     "problem": "The statement nearly copies the source's lifecycle sentence with a few words changed. It is also a near-truism: \"opens it when Terraform needs its result\" is what any reader would assume, so nobody would answer False and the card teaches nothing about the open, renew and close lifecycle.",
+     "suggestedFix": "Replacement (answer true): \"When Terraform closes an ephemeral Vault secret, the Vault provider ends its lease so Vault can revoke it.\" Explanation: \"Terraform opens an ephemeral resource when it needs the result, may renew it, then closes it; for a Vault secret, closing explicitly ends the lease so Vault revokes the credentials at once.\" Same URL."
+    },
+    {
+     "id": "terraform-associate-s4.5-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official HashiCorp tutorial, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/tutorials/secrets/secrets-vault: \"leverage Terraform's Vault provider to generate appropriately scoped & short-lived AWS credentials to be used by Terraform\"; also \"if: the apply process exceeds than the TTL and the configuration needs to provision another resource ... the apply process will fail because the short-lived AWS Credentials have expired.\"",
+     "problem": "The hedged statement \"The Vault provider can fetch short-lived credentials for use in a Terraform run\" is answerable from common sense and the product name: no learner would answer False. Under the prompt's rules it is a truism or strawman. A stronger card on the same objective is available from the same source and tests how Terraform behaves with Vault-issued credentials. A card on Vault secrets being stored in state is not suggested because it would duplicate s2.2-08 (data source attributes kept in state).",
+     "suggestedFix": "Replacement (answer true): \"If an apply outlasts the TTL of credentials read through a Vault data source, later resource changes in that apply fail.\" Explanation: \"Dynamic credentials that Vault generates stay valid only for their TTL, so an apply that runs longer than that TTL fails when it next calls the cloud API with them.\" Same URL."
+    },
+    {
+     "id": "terraform-associate-s4.5-09",
+     "verdict": "duplicate",
+     "urlStatus": "200, official v1.12.x page, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/manage-sensitive-data: \"You can only refer to ephemeral values in the following contexts: In the locals block, In variable blocks with the ephemeral argument, In child module output blocks with the ephemeral argument, In a managed resource write-only argument, The ephemeral block, Configuring providers in the provider block, In provisioner and connection blocks\"",
+     "problem": "The answer (false) is correct. The card rests on the same fact as terraform-associate-s4.5-02, the list of allowed ephemeral contexts: s4.5-02 tests that a provider block is inside the list, and this card tests that an ordinary resource argument is outside it. Both cards also use the same sentence pattern (\"An ephemeral input variable can ...\"). With s4.5-03, the section spends 3 of its 10 cards on the context list.",
+     "suggestedFix": "Replacement (answer false): \"Running terraform output with -json redacts the values of outputs that set sensitive = true.\" Explanation: \"With -json or -raw, terraform output prints sensitive outputs in plain text. The sensitive argument only redacts values in plan, apply and default CLI output.\" Source: https://developer.hashicorp.com/terraform/language/v1.12.x/manage-sensitive-data (\"if you use the terraform output CLI command with the -json or -raw flags, Terraform displays sensitive variables and outputs in plain text\"). appliesTo Terraform 0.15 and later."
+    }
+   ],
+   "notes": "All 7 distinct source URLs return 200 and are official HashiCorp pages; the Terraform ones are /v1.12.x/ pages. The version switcher shows v1.16.x as latest and v1.17.x as beta. Passing cards and the sentences that settle them:\n- s4.5-02 (true): block/variable lists \\\"In the provider block to configure providers\\\" among the ephemeral contexts.\n- s4.5-03 (false): block/output says \\\"You cannot add the ephemeral argument to output blocks in the root module\\\" and that an ephemeral output may \\\"only\\\" be referenced \\\"in other ephemeral contexts\\\". Routing the value through ephemeralasnull() would forward only null, so the answer holds.\n- s4.5-05 (false): write-only values are discarded \\\"without storing it in the plan or state file\\\"; 1.11 is correct.\n- s4.5-06 (true): \\\"Each provider defines any available ephemeral resources.\\\" Borderline: anyone who knows that providers define all resource types can infer it, but the prompt names this fact explicitly, so it is not flagged.\n- s4.5-08 (false): block/provider says \\\"Many providers support shell environment variables or other alternate sources for their configuration values\\\".\n- s4.5-10 (true): style guide says \\\"Define a .gitignore file ... such as your state file. Do not commit: Your terraform.tfstate state file, including terraform.tfstate.* backup state files.\\\"\nEvery state-related card names its mechanism (sensitive, ephemeral or write-only), as the prompt requires, and every version-gated card sets appliesTo correctly (0.15, 1.10, 1.11).\nThe section stays at 5 true and 5 false after the suggested replacements (01 F, 04 T, 07 T, 09 F).\nCross-deck checks: s2.2-08 (data source attributes in state) rules out a \\\"Vault data source secret stored in state\\\" card. s4.2-05 (root outputs displayed when sensitive is false) is a different fact from the output -json replacement. Vault provider docs (registry.terraform.io, v5.12.0 index, fetched through the registry API) confirm that secrets read or written through the provider are \\\"persisted in both Terraform's state file and in any generated plan files\\\", unless ephemeral resources are used."
+  },
+  {
+   "section": "5.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s5.1-08",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (v1.12.x module block reference, official)",
+     "evidence": "v1.12.x https://developer.hashicorp.com/terraform/language/v1.12.x/block/module: \"You must specify a literal string for the source value. This argument does not support template sequences or arbitrary expressions.\" Current docs https://developer.hashicorp.com/terraform/language/block/module: \"The source attribute can reference constant input variables and local values. ... Any input variable referenced in source must declare const = true.\" HashiCorp blog (Terraform 1.15.0, April 29, 2026): \"Practitioners can now use variables within Terraform dependencies, encompassing aspects such as module sources and versions.\"",
+     "problem": "The answer is false only up to Terraform 1.14. Since Terraform 1.15 a module source can be built from a const input variable, so a player on current Terraform would rightly answer True. The statement does not name the version; appliesTo alone is not visible to the player.",
+     "suggestedFix": "Keep false and pin the version. Statement: \"In Terraform 1.12, a module call can build its source address from an input variable expression.\" Explanation: \"Terraform 1.12 requires a literal string for module source. Variables in source and version arrive in Terraform 1.15, and only through input variables declared with const = true.\""
+    },
+    {
+     "id": "terraform-associate-s5.1-09",
+     "verdict": "duplicate",
+     "urlStatus": "loads (v1.12.x count meta-argument reference, official)",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/meta-arguments/count: \"Terraform identifies instances index number starting at 0. <TYPE>.<NAME>[<INDEX>] or module.<NAME>[<INDEX>]\". Deck card terraform-associate-s2.2-10 already tests this: \"Each count instance has an indexed resource address, such as example.item[0] and example.item[1].\"",
+     "problem": "Rests on the same fact as s2.2-10 (count gives each instance a numeric index in its address); knowing one answers the other. 4.1-05 also covers count indexing.",
+     "suggestedFix": "Replace with a true card on module variable inputs (5b). Statement: \"Terraform reports an error when a module call omits an input variable that the child declares without a default.\" Explanation: \"A child variable without a default is required, so the parent must set it as an argument in the module block; a variable with a default becomes an optional input.\" Source: https://developer.hashicorp.com/terraform/language/v1.12.x/block/variable (\"Variables without a default value are required\")."
+    },
+    {
+     "id": "terraform-associate-s5.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (v1.12.x module block reference, official)",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/block/module: \"The version argument accepts a version constraint string. Terraform uses the newest installed version of the module that meets the constraint. When an acceptable version isn't installed, Terraform downloads the newest version that meets the constraint.\" Deck card s2.1-04 explanation already says \"module version constraints govern remote module selection\".",
+     "problem": "Definition card: that a version constraint constrains which version is installed follows from the words themselves, so nobody who studied answers False. Its fact is also given away by the explanation of s2.1-04.",
+     "suggestedFix": "Keep true and test the selection rule. Statement: \"Terraform downloads the newest registry release that satisfies a module's version constraint when none is installed.\" Explanation: \"Terraform first uses the newest already-installed version that meets the constraint; only when none qualifies does it download the newest acceptable release from the registry.\" Same URL."
+    },
+    {
+     "id": "terraform-associate-s5.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads (v1.12.x modules overview, official)",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/modules: \"Modules you configure using module blocks are called child modules. When you apply a configuration, the root module calls the child module.\" and \"Terraform adds the child module's resources to your workspace and manages them as part of the configuration.\"",
+     "problem": "Strawman: nobody who has run terraform apply on a configuration with modules would think that a nested module call starts its own Terraform run. It also overlaps with s6.1-06 (\"Child module resources share that configuration's state\").",
+     "suggestedFix": "Replace with a false card on module versions (5d). Statement: \"The version argument on a module block also selects a matching tag for a git:: module source.\" Explanation: \"The version argument applies only to modules installed from a registry. A Git source selects a branch, tag or commit with the ref query parameter in its source address.\" Source: https://developer.hashicorp.com/terraform/language/v1.12.x/block/module (\"This argument only applies when installing modules from a registry\"; ref \"Specifies a branch name, full or short SHA-1 hash, or tag name to clone.\")."
+    },
+    {
+     "id": "terraform-associate-s5.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads (v1.12.x module block reference, official)",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/block/module: \"Use the ./ or ../ prefix followed by the path to local module source code to install a module from files already on disk\"; also \"Terraform copies modules specified with an absolute path to the local module cache as a package.\"",
+     "problem": "Giveaway that stays close to the source wording: anyone who has used a shell knows ./ means the current directory, so the answer can be read from the statement without any Terraform knowledge.",
+     "suggestedFix": "Keep true and test real local-path behaviour. Statement: \"Terraform copies a module referenced by an absolute filesystem path into its local module cache.\" Explanation: \"Terraform treats a source starting with / or a drive letter as an absolute path and copies it to the module cache as a package; relative ./ and ../ paths point at files already on disk.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 5.1 (all in terraform-associate-b3.json). Every source URL loads and is an official, versioned v1.12.x page. The section has 5 true and 5 false cards, and every replacement keeps that balance: the fixes for 01, 07 and 09 are true, the fixes for 08 and 10 are false.\n\nThese cards pass:\n- 02: the // subdirectory works with Git sources; the page's own example is git::https://example.com/vpc.git//modules/vpc?ref=v1.2.0.\n- 03: public registry modules use NAMESPACE/NAME/PROVIDER.\n- 04: a resource attribute can be a module input. The configuration page shows inputs as module block arguments but has no explicit sentence on this. The block/module reference is a slightly better source.\n- 05: a parent reads child values only through module.NAME.OUTPUT. The v1.12 pages no longer carry the old sentence \"resources defined in a module are encapsulated\". https://developer.hashicorp.com/terraform/language/v1.12.x/block/output (\"Child modules can expose resource attributes to parent modules\") is a better URL. The wording \"the child's local resource address\" is a little vague; \"module.child.<TYPE>.<NAME>\" would be clearer.\n- 06: variable scope. The block/variable page supports the explanation's right fact: \"In child modules, the parent module passes values to child modules as arguments to the module block\". It has no explicit scope sentence.\n\nVersion risk: Terraform 1.15.0 (April 29, 2026) added const input variables in the module source and version arguments. That makes card 08 true on current Terraform unless the statement names 1.12. The deck owner may also want to check s6.1-07 (backend block using an input variable) against 1.15 for the same reason. That card is outside this section and I did not verify it."
+  },
+  {
+   "section": "6.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s6.1-06",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, versioned v1.12.x, but silent on child modules",
+     "evidence": "The answer (False) is right. Terraform ignores a backend block in a child module and warns 'Backend configuration ignored ... Any selected backend applies to the entire configuration'. The cited page https://developer.hashicorp.com/terraform/language/v1.12.x/backend only says 'A configuration can only provide one backend block' and 'add a nested backend block within the top-level terraform block'. It never mentions child modules, so it does not settle the card. The v1.12 init page does: 'During init, the root configuration directory is consulted for backend configuration and the chosen backend is initialized using the given configuration settings.' (https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/init). Note that s3.1-02 ('terraform init initializes the backend configured for the root module') rests on that same sentence, which hints at this card's answer.",
+     "problem": "The source URL does not support the card's key point that a backend block in a child module has no effect. The card also sits close to s3.1-02.",
+     "suggestedFix": "Keep the card (answer False). Change the source to https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/init. Explanation: 'Terraform reads backend settings only from the root module during init, so a backend block in a child module is ignored with a warning and its resources share the root state.' To widen the gap from s3.1-02, reword s3.1-02 so it no longer names the root module."
+    },
+    {
+     "id": "terraform-associate-s6.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, versioned v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/backend/local only lists 'path - (Optional) The path to the tfstate file. This defaults to \"terraform.tfstate\" relative to the root module by default.' and 'workspace_dir - (Optional) The path to non-default workspaces.' The page never says that path does not apply to non-default workspaces; a reader has to infer it. The behaviour is correct, since the local backend's source code applies StatePath only to the default workspace.",
+     "problem": "Difficulty 3 trivia about two local-backend configuration arguments (path versus workspace_dir). This goes below the depth the prompt sets, which bans trivia about file names and exact options. The cited source only implies the deciding fact.",
+     "suggestedFix": "Replacement (False): 'The local backend stores each CLI workspace's state inside one shared terraform.tfstate file.' Explanation: 'With local state, Terraform keeps each non-default CLI workspace's state in its own file under the terraform.tfstate.d directory, apart from the default workspace's state.' Source: https://developer.hashicorp.com/terraform/cli/v1.12.x/workspaces ('For local state, Terraform stores the workspace states in a directory called terraform.tfstate.d.')"
+    },
+    {
+     "id": "terraform-associate-s6.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, versioned v1.12.x",
+     "evidence": "https://developer.hashicorp.com/terraform/language/v1.12.x/state/locking: 'If supported by your backend, Terraform will lock your state for all operations that could write state.' and 'Not all backends support locking.' The answer (False) is correct.",
+     "problem": "The phrase 'regardless of the selected backend's capabilities' gives the answer away. Once a statement says backends have capabilities that might matter, a player can guess False without knowing Terraform. It reads like a strawman.",
+     "suggestedFix": "Replacement (False): 'Terraform applies its own built-in state lock when the selected backend lacks locking support.' Explanation: 'Locking is a backend feature. Terraform locks state only when the backend supports it, and each backend's page says whether it does; some backends offer no locking.' Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 6.1, all in raw/terraform-associate-b3.json. All four cited URLs load (HTTP 200). They are versioned /v1.12.x/ pages; the version switcher shows v1.16.x as latest and v1.17.x as beta. Cards that pass, with the sentence that settles each:\n- 01: 'Terraform uses a backend called local by default. The local backend type stores state as a local file on disk.'\n- 03: 'The local backend stores state on the local filesystem, locks that state using system APIs, and performs operations locally.'\n- 04: 'If state locking fails, Terraform does not continue.'\n- 07: 'A backend block cannot refer to named values (like input variables, locals, or data source attributes).' The latest (unversioned) backend page says the same, so newer versions do not flip it.\n- 08: -backend-config=PATH for partial configuration.\n- 09: 'When you change backends, Terraform gives you the option to migrate your state to the new backend.'\n- 10: 'When using a non-local backend, Terraform will not persist the state anywhere on disk except in the case of a non-recoverable error where writing the state to the backend failed.'\nNone of the answers is wrong. The flags are one source gap (06) and two card-quality problems (02 trivia, 05 give-away wording). All three suggested replacements keep the section at 5 true and 5 false. Smaller points that are not flagged:\n- 04 comes close to a truism and closely paraphrases the source sentence.\n- 10 is marked difficulty 1 but is more like difficulty 2.\n- 03's 'operating system APIs' slightly widens the source's 'system APIs'.\nI found no duplicate factKeys against the other sections. The nearest overlap is s3.1-02 (init initializes the root module's backend) with 6.1-06; see that flag."
+  },
+  {
+   "section": "6.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s6.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (developer.hashicorp.com tutorial), supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/tutorials/state/resource-drift: \"Terraform compares your state file to real infrastructure whenever you invoke terraform plan or terraform apply.\" The answer (false) is correct, but nobody who has run Terraform believes state is updated live when someone clicks in a console, so the statement is a strawman. It also covers the same ground as 2.2-06 (\"A normal Terraform plan skips remote reads when cached state attributes exist\", false) and 6.2-09: state learns about out-of-band edits only through a refresh.",
+     "problem": "Strawman. The false reading (state follows out-of-band edits in real time) is not a belief a studied learner holds, and the card's lesson, that refresh happens during later operations, is already taught by 2.2-06 and 6.2-09.",
+     "suggestedFix": "Replace (answer false): \"terraform apply -refresh-only writes refreshed values to state without first showing them for review.\" Explanation: \"Refresh-only apply shows the detected changes and asks you to confirm before updating state. The deprecated terraform refresh command skipped that review, like apply -refresh-only -auto-approve.\" Source: https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/refresh (\"This command is effectively an alias for ... terraform apply -refresh-only -auto-approve\" and apply -refresh-only \"will present an interactive prompt for you to confirm the detected changes\")."
+    },
+    {
+     "id": "terraform-associate-s6.2-09",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official v1.12.x page, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan: -refresh=false \"Disables the default behavior of synchronizing the Terraform state with remote objects before checking for configuration changes.\" Card 2.2-06 (false, \"A normal Terraform plan skips remote reads when cached state attributes exist\") rests on the same fact: by default a plan refreshes from the remote API instead of relying on cached state. 6.2-09 is the other side of that split (with refresh off, cached state misses edits).",
+     "problem": "Rests on the same fact as terraform-associate-s2.2-06: whether a plan reads remote objects or trusts the cached state. Knowing one answer gives the other. It also overlaps with 6.2-01.",
+     "suggestedFix": "Replace (answer false): \"A shared module can drop a moved block once its author has applied the move in their own workspace.\" Explanation: \"Callers still on the old address would plan to destroy the object instead of moving it, so HashiCorp recommends keeping historical moved blocks in shared modules.\" Source: https://developer.hashicorp.com/terraform/language/v1.12.x/modules/develop/refactoring (\"Removing a moved block is a breaking change because any configurations that refer to the old address will plan to delete the existing object instead of move it.\")"
+    },
+    {
+     "id": "terraform-associate-s6.2-02",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official v1.12.x page, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/plan: refresh-only mode \"creates a plan whose goal is only to update the Terraform state and any root module output values to match changes made to remote objects outside of Terraform.\" 6.2-03 tests the same sentence (refresh-only touches state and outputs, not remote objects). 6.2-02's explanation even states 03's answer: \"the plan does not change remote objects.\"",
+     "problem": "Same fact as terraform-associate-s6.2-03 (what refresh-only mode changes: state and root outputs only), and its explanation gives away 03's answer, which breaks the rule that an explanation stays on its own card's fact.",
+     "suggestedFix": "Replace (answer true): \"Applying a refresh-only plan drops a resource from state when the provider reports its remote object as deleted.\" Explanation: \"Refresh-only mode records what the provider reads. If a misconfigured region makes an object look deleted, applying the plan removes it from state while the real object keeps running.\" Source: https://developer.hashicorp.com/terraform/tutorials/state/refresh (\"refreshing your state file would drop your resources, so do not run the apply operation\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 6.2 (all in raw/terraform-associate-b4.json). Every source URL loads, is an official developer.hashicorp.com page (most are the /v1.12.x/ pages), and supports its card's answer. The section is 5 true and 5 false, and average statement length is 90.2 for true and 93.6 for false, so it is balanced. Each of the 3 replacements keeps the original card's answer, so the balance holds.\n\nCards that pass:\n- **04 and 05:** Quotes from the refactoring page: \"Terraform checks the state for an existing resource at the from address\" and \"Terraform recognizes the move for all instances of the call\". The page also confirms v1.1 for moved blocks.\n- **06:** The removed block reference for v1.12.x gives `destroy` as Default: true, Required: No. So \"normally destroys\" in the explanation is correct.\n- **08:** The state rm page says it \"removes the binding to an existing remote object without first destroying it\". It also says a later plan creates a new object if the configuration still declares the resource.\n- **10:** The plan page says normal mode \"proposes a set of change actions that should, if applied, make the remote objects match the configuration\".\n\nMinor issues, not flagged:\n1. **07 (state push):** The answer is right: \"If the 'serial' value in the destination state is higher than the state being pushed, Terraform will prevent the push.\" But the -force flag bypasses that check, so an expert could quibble. Consider \"terraform state push, run without -force, accepts...\". State push is in scope: the 6d page \"Refactor Terraform State\" describes the state pull, state mv and state push workflow and its safety checks.\n2. **05:** This is the third false \"X requires Y\" statement in the deck, after 4.4-08 and 4.5-08. The prompt allows at most two false cards per template. If you keep 05, consider \"After a module call rename, Terraform plans to replace its child resources unless each one has its own moved block\" (false).\n3. **06:** appliesTo says \"Terraform 1.12\". The prompt pins configuration-driven removal to 1.7, so \"Terraform 1.7 and later\" would be more precise.\n4. **03 and 10:** These test refresh-only versus normal mode on a drifted object. They are close to being the two sides of one distinction but don't strictly give each other away, so I let them pass.\n\nWith the replacement for 02, refresh-only would still have 3 cards (03, 10 and the new 02)."
+  },
+  {
+   "section": "7.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s7.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official versioned page https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/import, supports the right fact",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/import: \"ID is dependent on the resource type being imported... Please reference the provider documentation for details on the ID format.\" Also https://developer.hashicorp.com/terraform/language/v1.12.x/import: \"The id argument is an identifier specific to your cloud provider.\"",
+     "problem": "The answer is correct, but the card is a strawman. Nobody who has run an import thinks the remote object's ID format comes from Terraform address syntax. The command takes ADDRESS and ID as two separate arguments, so a learner who has studied would not answer True.",
+     "suggestedFix": "Replace with a false card. Statement: \"Leaving an import block in configuration after apply makes the next plan propose the same import again.\" (103 chars, answer false). Explanation: \"Import blocks are idempotent: once the object is in state at that address, later plans show no further import action, so the block can stay as a record.\" (152 chars). Source: https://developer.hashicorp.com/terraform/language/v1.12.x/import (\"Because the import block is idempotent, applying an import action and running another plan does not generate another import action as long as that resource remains in your state.\")"
+    },
+    {
+     "id": "terraform-associate-s7.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official versioned page https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/state/list, supports the card",
+     "evidence": "https://developer.hashicorp.com/terraform/cli/v1.12.x/commands/state/list: \"The terraform state list command lists resources within a Terraform state.\"",
+     "problem": "Name giveaway: the command name \"state list\" already tells you that it lists what is in state, so the true answer needs no knowledge. The card tests no behaviour beyond the command's name.",
+     "suggestedFix": "Replace with a true card. Statement: \"Given a remote object ID, terraform state list reports which resource address in state holds that object.\" (105 chars, answer true). Explanation: \"With the -id option, terraform state list filters its output to the resource whose ID matches, which shows where a remote object is managed.\" (140 chars). Same URL: \"This example will only list the resource whose ID is specified on the command line. This is useful to find where in your configuration a specific resource is located.\""
+    }
+   ],
+   "notes": "All 10 source URLs load (HTTP 200) on developer.hashicorp.com. Nine are /v1.12.x/ pages. s7.1-09 uses the unversioned https://developer.hashicorp.com/terraform/internals/debugging. Its text matches https://developer.hashicorp.com/terraform/internals/v1.12.x/debugging word for word (\"TRACE, DEBUG, INFO, WARN or ERROR\" in order of decreasing verbosity), so it is not flagged, but the versioned URL would be better. The version switcher shows v1.16.x latest and v1.17.x beta.\n\nPassing cards and the sentence that settles each:\n- 01: \"Import will find the existing resource from ID and import it into your Terraform state at the given ADDRESS.\"\n- 02: \"Importing via the CLI does not generate configuration.\" The only config generation, plan -generate-config-out, works with import blocks, not the terraform import command.\n- 03: \"Run terraform plan and verify that the import plan meets your needs.\"\n- 04: \"When the destination resource block is in another module, add the module.<MODULE-NAME> prefix to the resource address.\" Import blocks are root-module only in 1.12, so the prefix is needed.\n- 07: \"This command requires an address that points to a single resource in the state.\" The code resolves a resource instance address, so the explanation's \"one resource instance\" holds.\n- 08: \"provides human-readable output from a state or plan file.\"\n- 10: \"even when TF_LOG_PATH is set, TF_LOG must be set in order for any logging to be enabled.\"\n\nBalance after the fixes is still 5 true / 5 false. The current average statement length is 94.2 for true and 92.4 for false, and both replacements stay within the 5-char rule. No other card in the deck tests import, state list/show, terraform show or TF_LOG, so there are no duplicates.\n\nOne minor point, not flagged: s7.1-08 says \"the current state\", but terraform show also accepts any state file path."
+  },
+  {
+   "section": "8.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s8.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (https://developer.hashicorp.com/terraform/cloud-docs/workspaces/run/cli), but it does not say anything about the operator's local shell",
+     "evidence": "The CLI page only lists variable sources for remote runs: \"Workspace-specific Terraform and environment variables set in the workspace\" and \"you must still set all required environment variables, like provider credentials, inside the workspace.\" No HashiCorp page claims that workspace variables are exported into the caller's shell, so the claim being refuted is not one a learner holds. The real misconception sits elsewhere, on https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings: \"HCP Terraform does not evaluate workspace variables or variable sets in local execution mode.\"",
+     "problem": "This is a strawman. No one who has studied HCP Terraform thinks remote runs push workspace variables into their own local shell, so the answer is obvious. The explanation also rests on a claim that the cited source never makes.",
+     "suggestedFix": "Replace (answer stays false). Statement: \"In Local execution mode, HCP Terraform supplies its workspace variables to Terraform runs on the operator's machine.\" Explanation: \"In Local execution mode, HCP Terraform stores state only. It does not evaluate workspace variables or variable sets, so the operator provides variable values locally.\" URL: https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings. This is close to card s8.1-10 (Local mode keeps state in HCP Terraform), but it tests a different fact."
+    },
+    {
+     "id": "terraform-associate-s8.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (https://developer.hashicorp.com/terraform/cloud-docs/workspaces/run/api), supports the card",
+     "evidence": "\"Before uploading the configuration files, you must create a configuration-version to associate uploaded content with the workspace.\" ... \"HCP Terraform automatically creates a new run with a plan once the new file is uploaded.\" On https://developer.hashicorp.com/terraform/cloud-docs/api-docs/configuration-versions, auto-queue-runs: \"When true, runs are queued automatically when the configuration version is uploaded.\" (default true)",
+     "problem": "The wording gives the answer away. An \"API-driven\" run that \"can use a configuration version uploaded through the API\" can be answered from the words alone. The hedge \"can\" also marks this true card.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Uploading a configuration version through the API makes HCP Terraform queue a plan run by default.\" Explanation: \"A configuration version's auto-queue-runs attribute defaults to true, so HCP Terraform queues a run with a plan once the uploaded files arrive. Setting it to false defers the run.\" URL: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/configuration-versions"
+    }
+   ],
+   "notes": "I checked all 10 section 8.1 cards (raw/terraform-associate-b4.json). Every source URL loads and is official, and the answers to cards 01-04, 06, 07, 09 and 10 hold.\n\nEvidence for the passing cards:\n- 01: workspaces page: \"A workspace contains everything Terraform needs...\"; CLI workspaces \"isolate multiple state files in the same working directory\".\n- 02: remote-operations page: \"In the default configuration, HCP Terraform waits for user approval before running an apply\".\n- 03: VCS/UI page: \"automatically queues a Terraform run whenever new commits are merged to that branch\". \"can\" covers the exceptions (trigger path filters, and a new workspace needs one manual run first).\n- 04: CLI page: \"CLI-driven runs upload an archive of your configuration directory\". This holds even on VCS-linked workspaces, where speculative plans still use local config.\n- 06: v1.12 terraform block page: cloud is a child of terraform, and \"You cannot configure a cloud block when the configuration also contains a backend configuration\". appliesTo \"Terraform 1.1 and later\" is correct history, but the 1.12 page does not state that version, and the prompt says to confirm it or leave it out.\n- 07: v1.12 login page: it launches a web browser and saves the token in plain text in credentials.tfrc.json. The card is easy and close to its name, but acceptable.\n- 09: state page: \"By default, new workspaces in HCP Terraform do not allow other workspaces to access their state\". The existing \"Share with all workspaces in this project\" option makes the misconception realistic.\n- 10: settings page: \"Your workspace still stores your state\".\n\nBalance before and after the suggested fixes is 5 true and 5 false. No duplicates with section 8.2: 8.2-03 (plan vs apply permissions) and 8.2-10 (change requests vs run approval) are next to card 02 but test different facts."
+  },
+  {
+   "section": "8.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "terraform-associate-s8.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official HCP Terraform docs, current",
+     "evidence": "https://developer.hashicorp.com/terraform/cloud-docs/policy-enforcement/import-reference: \"tfplan/v2 : Provides access to a Terraform plan, which is the file created when you run the terraform plan command.\" The fact is correct, but the import's name (tfplan) already says it reads the plan.",
+     "problem": "Name giveaway. A player who has never written Sentinel can answer True because the import's name says \"plan\". The answer is correct, but the card does not test the distinction a hard (difficulty 3) card should.",
+     "suggestedFix": "Replace (keeps answer true): \"An HCP Terraform organization can attach a policy set to selected projects instead of applying it globally.\" Explanation: \"Policy sets can apply globally or to chosen projects, workspaces or tagged workspaces, so a project can carry its own Sentinel or OPA rules.\" URL: https://developer.hashicorp.com/terraform/cloud-docs/policy-enforcement/manage-policy-sets (\"Policy sets are collections of policies you can apply globally, to specific projects, workspaces, and Stacks, or to workspaces with specific tags\")."
+    },
+    {
+     "id": "terraform-associate-s8.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official HCP Terraform docs, current",
+     "evidence": "https://developer.hashicorp.com/terraform/cloud-docs/policy-enforcement/define-policies/opa: \"HCP Terraform combines the output from the Terraform run and plan into a single JSON file and passes that file to OPA as input.\" The answer and explanation are correct.",
+     "problem": "Strawman. OPA evaluates structured JSON data by design, so a learner who has studied OPA would not answer True to \"a terminal-formatted plan\". \"can pass\" also makes the statement vague. The card teaches little beyond what OPA is.",
+     "suggestedFix": "Replace (keeps answer false): \"HCP Terraform gives OPA policies the same three enforcement levels that Sentinel policies have.\" Explanation: \"OPA policies in HCP Terraform have two enforcement levels, advisory and mandatory. Sentinel has three: advisory, soft-mandatory and hard-mandatory.\" URL: https://developer.hashicorp.com/terraform/cloud-docs/policy-enforcement/manage-policy-sets (\"OPA provides two policy enforcement levels: advisory ... mandatory\")."
+    },
+    {
+     "id": "terraform-associate-s8.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official HCP Terraform docs, current",
+     "evidence": "https://developer.hashicorp.com/terraform/cloud-docs/workspaces/settings: \"Changing the workspace's project can change the read and write permissions for the workspace and which users can access it. To move a workspace, you must have the \\\"Manage all Projects\\\" organization permission or explicit team admin privileges on both the source and destination projects.\"",
+     "problem": "The answer can be read from the wording. Grants described as \"project-level\" cannot logically stay with a workspace that leaves the project, so the word gives the answer away. The source also hedges (\"can change\"). The answer False holds, but the card nearly defines itself.",
+     "suggestedFix": "Replace (keeps answer false): \"Admin access on only the destination project lets a team move an HCP Terraform workspace into it.\" Explanation: \"Moving a workspace needs the Manage all Projects organization permission or team admin access on both the source and destination projects, because the move changes who can access it.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 8.2 (in raw/terraform-associate-b4.json). All 10 source URLs return 200 and are official HashiCorp pages. Every card is in scope: the 004 Exam Content List maps Projects, Variable Sets, Run Triggers, Private Registry, Change Requests, Health/Drift Detection, Teams and Policy Enforcement (Sentinel/OPA) to objectives 8b/8c. The section is balanced 5 true / 5 false, and my three replacements keep that balance (06 stays true, 02 and 07 stay false). None of the cards has a wrong answer.\n\nCards that pass, with the sentence that settles each:\n- 01: \"Every workspace and Stack must belong to exactly one project.\"\n- 03: the permissions page says the Plan role \"Allows users to read, queue, and comment on Terraform plans\" and \"Regular plans require approval from a user with permission to apply runs\".\n- 04: \"Project-Scoped Variable Set: Automatically applied and available to all current and future workspaces and Stacks within a project.\"\n- 05: \"a successful apply in a source workspace will queue a run in the workspace linked to it\". The source is a tutorial rather than cloud-docs, but it is official and current.\n- 08: the private registry \"helps you share Terraform providers and Terraform modules across your organization\". Minor: \"rejects\" works as a disguised negation of the true fact, but it is not one of the banned words.\n- 09: \"If there is configuration drift, HCP Terraform proposes the necessary changes\". Drift is resolved by queuing a new plan and apply, or by updating the configuration.\n- 10: \"Change requests are a way to create a backlog of action items recorded on a workspace\". Change requests are limited to some editions, but the card names no edition and is marked may_change.\n\nCross-deck duplicate check: 8.1-02 (approval wait before apply) and 8.1-09 (sharing remote state) are related to 8.2-03 and 8.2-10 but rest on different facts. No duplicates found.\n\nPage copies were downloaded locally for checking."
+  }
+ ],
+ "scan": {
+  "cardsRead": 160,
+  "duplicates": [
+   {
+    "ids": [
+     "terraform-associate-s1.1-03",
+     "terraform-associate-s1.1-07"
+    ],
+    "why": "Same fact: one Terraform configuration or module can mix resources from several providers (cloud plus on-premises, or provider A plus provider B). If you know one answer you know the other, and s1.1-09 restates it again with dependencies added.",
+    "dropId": "terraform-associate-s1.1-07"
+   },
+   {
+    "ids": [
+     "terraform-associate-s2.1-05",
+     "terraform-associate-s2.1-07"
+    ],
+    "why": "Both test that an aliased provider block is an extra configuration a resource picks with the provider meta-argument. s2.1-05 is close to a definition, and its explanation ('defines an additional configuration that resources or modules can select') states s2.1-07's answer.",
+    "dropId": "terraform-associate-s2.1-05"
+   },
+   {
+    "ids": [
+     "terraform-associate-s3.1-09",
+     "terraform-associate-s3.1-10"
+    ],
+    "why": "Two sides of one fact: terraform fmt only changes layout and style. s3.1-09 can be answered from the command name ('fmt applies canonical layout'), and s3.1-10's explanation states it.",
+    "dropId": "terraform-associate-s3.1-09"
+   },
+   {
+    "ids": [
+     "terraform-associate-s2.2-06",
+     "terraform-associate-s6.2-10"
+    ],
+    "why": "Same fact: a normal plan refreshes remote objects from providers instead of trusting cached state (s2.2-06 false side, s6.2-10 true side). The prompt also puts refresh behaviour in 6.2, not 2.2.",
+    "dropId": "terraform-associate-s2.2-06"
+   },
+   {
+    "ids": [
+     "terraform-associate-s4.5-02",
+     "terraform-associate-s4.5-09"
+    ],
+    "why": "One distinction, two sides: where an ephemeral input variable may be used (provider block allowed, ordinary managed-resource argument not allowed). s4.5-09's explanation also lists provider configuration and write-only arguments, which gives away s4.5-02 and s4.5-05.",
+    "dropId": "terraform-associate-s4.5-09"
+   },
+   {
+    "ids": [
+     "terraform-associate-s1.1-10",
+     "terraform-associate-s3.2-01"
+    ],
+    "why": "Same fact: Terraform manages updates and deletion after creation, not just the first provisioning. s3.2-01 (plan proposes create, update or delete) answers s1.1-10 and is close to a truism.",
+    "dropId": "terraform-associate-s3.2-01"
+   },
+   {
+    "ids": [
+     "terraform-associate-s2.2-10",
+     "terraform-associate-s5.1-09"
+    ],
+    "why": "Same fact applied to a resource and to a module call: count gives each instance its own numeric index address (example.item[0], module.child[0]). s2.2-10 is close to a strawman, since nobody who studied thinks the instances share one address.",
+    "dropId": "terraform-associate-s2.2-10"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "multi-provider-config",
+    "ids": [
+     "terraform-associate-s1.1-03",
+     "terraform-associate-s1.1-04",
+     "terraform-associate-s1.1-05",
+     "terraform-associate-s1.1-07",
+     "terraform-associate-s1.1-09"
+    ],
+    "why": "s1.1-04's explanation ('Terraform CLI configurations can use providers for multiple clouds') gives away s1.1-03, s1.1-07 and s1.1-09. All five rest on 'providers let one config manage anything with an API'."
+   },
+   {
+    "name": "terraform-manages-lifecycle",
+    "ids": [
+     "terraform-associate-s1.1-10",
+     "terraform-associate-s3.2-01"
+    ],
+    "why": "s3.2-01 (plan proposes updates and deletion) answers s1.1-10 (Terraform leaves updates to the operator)."
+   },
+   {
+    "name": "vcs-triggered-runs",
+    "ids": [
+     "terraform-associate-s1.1-06",
+     "terraform-associate-s8.1-03",
+     "terraform-associate-s8.1-04"
+    ],
+    "why": "These mirror each other: the CLI does not watch Git (false), a linked VCS branch queues an HCP run (true), and a CLI-driven run does not read from VCS (false). s8.1-04's explanation states s8.1-03, and s1.1-06's explanation points to 'separately configured automation'."
+   },
+   {
+    "name": "version-constraints",
+    "ids": [
+     "terraform-associate-s2.1-01",
+     "terraform-associate-s2.1-04",
+     "terraform-associate-s5.1-07"
+    ],
+    "why": "s2.1-04's explanation ('module version constraints govern remote module selection') gives away s5.1-07 and hints at s2.1-01."
+   },
+   {
+    "name": "provider-alias-default",
+    "ids": [
+     "terraform-associate-s2.1-05",
+     "terraform-associate-s2.1-06",
+     "terraform-associate-s2.1-07",
+     "terraform-associate-s2.1-09"
+    ],
+    "why": "s2.1-07's explanation ('settings other than the default provider configuration') answers s2.1-06. s2.1-05's explanation answers s2.1-07. s2.1-09's explanation ('unless the module call supplies an explicit provider mapping') sits in the same default-versus-explicit space."
+   },
+   {
+    "name": "state-binding",
+    "ids": [
+     "terraform-associate-s2.2-01",
+     "terraform-associate-s2.2-02",
+     "terraform-associate-s7.1-01"
+    ],
+    "why": "s2.2-02's explanation ('one remote object per resource instance binding') states s2.2-01. s7.1-01 (import binds a remote object to an address) restates the binding idea."
+   },
+   {
+    "name": "state-cache-vs-refresh",
+    "ids": [
+     "terraform-associate-s2.2-05",
+     "terraform-associate-s2.2-06",
+     "terraform-associate-s6.2-01",
+     "terraform-associate-s6.2-09",
+     "terraform-associate-s6.2-10"
+    ],
+    "why": "Cache and refresh behaviour, mirrored: s2.2-05's explanation (cache 'can reduce the need for repeated remote API reads') sits against s2.2-06. s6.2-09 (-refresh=false misses edits) and s6.2-10 (a normal plan refreshes) are a true/false pair. s6.2-01's explanation ('refreshes its state during a later operation') answers s6.2-10 and s2.2-06."
+   },
+   {
+    "name": "state-retains-metadata",
+    "ids": [
+     "terraform-associate-s2.2-03",
+     "terraform-associate-s2.2-07"
+    ],
+    "why": "Same template ('Terraform state retains ... after the resource block is removed'), both true, and each explanation backs up the other."
+   },
+   {
+    "name": "count-indexing",
+    "ids": [
+     "terraform-associate-s2.2-10",
+     "terraform-associate-s4.1-05",
+     "terraform-associate-s4.3-05",
+     "terraform-associate-s5.1-09"
+    ],
+    "why": "s2.2-10's explanation (example.item[0]) and s5.1-09's explanation (module.child[0]) give away each other. s4.3-05's explanation ('splat works on sequences; a for_each resource evaluates to a map') implies s4.1-05 (count gives a list)."
+   },
+   {
+    "name": "init-scope",
+    "ids": [
+     "terraform-associate-s3.1-02",
+     "terraform-associate-s3.1-03",
+     "terraform-associate-s3.1-04",
+     "terraform-associate-s3.1-05"
+    ],
+    "why": "s3.1-04's explanation ('prepares the directory and installs dependencies') answers s3.1-03. The init cards describe each other's scope."
+   },
+   {
+    "name": "backend-init",
+    "ids": [
+     "terraform-associate-s3.1-02",
+     "terraform-associate-s3.1-05",
+     "terraform-associate-s6.1-06",
+     "terraform-associate-s6.1-07",
+     "terraform-associate-s6.1-08",
+     "terraform-associate-s6.1-09"
+    ],
+    "why": "s3.1-02's statement ('backend configured for the root module') answers s6.1-06 (backend in a child module). s6.1-07's explanation ('supply varying settings during initialization') answers s6.1-08. s6.1-09's explanation (reinit copies existing state) answers s3.1-05 (reinit clears state)."
+   },
+   {
+    "name": "validate-scope",
+    "ids": [
+     "terraform-associate-s3.1-06",
+     "terraform-associate-s3.1-07",
+     "terraform-associate-s3.1-08"
+    ],
+    "why": "s3.1-07's explanation ('examines configuration structure') answers s3.1-06. s3.1-06's explanation ('without using a particular run's state') hints at s3.1-08."
+   },
+   {
+    "name": "fmt-scope",
+    "ids": [
+     "terraform-associate-s3.1-09",
+     "terraform-associate-s3.1-10"
+    ],
+    "why": "A true/false pair on what terraform fmt does. Each explanation answers the other."
+   },
+   {
+    "name": "saved-plan-apply",
+    "ids": [
+     "terraform-associate-s3.2-03",
+     "terraform-associate-s3.2-04",
+     "terraform-associate-s3.2-05"
+    ],
+    "why": "s3.2-04's explanation ('passing a saved plan file ... executes it') states s3.2-03. s3.2-05's explanation (-auto-approve only skips the confirmation) sits against s3.2-04's approval-prompt question."
+   },
+   {
+    "name": "unknown-until-apply",
+    "ids": [
+     "terraform-associate-s2.1-08",
+     "terraform-associate-s4.1-04",
+     "terraform-associate-s4.1-07",
+     "terraform-associate-s4.3-10"
+    ],
+    "why": "s4.1-04's explanation ('query argument remains unknown during planning') and s4.3-10's explanation ('keys that emerge during apply') answer s4.1-07. Three of these use the same false template: X uses a value known only at apply."
+   },
+   {
+    "name": "var-input-precedence",
+    "ids": [
+     "terraform-associate-s4.2-03",
+     "terraform-associate-s4.2-04"
+    ],
+    "why": "s4.2-04's explanation ('-var and -var-file values take precedence ... assign the same root input') answers s4.2-03."
+   },
+   {
+    "name": "type-conversion",
+    "ids": [
+     "terraform-associate-s4.2-02",
+     "terraform-associate-s4.2-06",
+     "terraform-associate-s4.3-01"
+    ],
+    "why": "s4.2-06's explanation ('Terraform converts compatible values') and s4.3-01's statement (conversion to a common type) give away s4.2-02's number-to-string conversion."
+   },
+   {
+    "name": "implicit-explicit-dependency",
+    "ids": [
+     "terraform-associate-s4.4-01",
+     "terraform-associate-s4.4-02"
+    ],
+    "why": "Two sides of one distinction (reference-inferred vs depends_on). s4.4-02's explanation ('uses none of its values') implies s4.4-01."
+   },
+   {
+    "name": "blocking-vs-warning-conditions",
+    "ids": [
+     "terraform-associate-s4.4-07",
+     "terraform-associate-s4.4-09"
+    ],
+    "why": "A mirrored pair on custom conditions: a precondition stops the operation, a check block only warns. In one round each makes the other obvious."
+   },
+   {
+    "name": "secrets-in-state",
+    "ids": [
+     "terraform-associate-s4.5-01",
+     "terraform-associate-s4.5-05",
+     "terraform-associate-s4.5-09",
+     "terraform-associate-s4.5-10"
+    ],
+    "why": "s4.5-10's explanation ('state can contain sensitive values') hints at s4.5-01. s4.5-01 (sensitive still stored) and s4.5-05 (write-only omitted) are the two sides of the sensitive-versus-ephemeral contrast. s4.5-09's explanation names write-only arguments as an ephemeral context, which answers s4.5-05."
+   },
+   {
+    "name": "ephemeral-contexts",
+    "ids": [
+     "terraform-associate-s4.5-02",
+     "terraform-associate-s4.5-03",
+     "terraform-associate-s4.5-05",
+     "terraform-associate-s4.5-09"
+    ],
+    "why": "s4.5-09's explanation lists provider configuration and write-only arguments (answers s4.5-02 and s4.5-05). s4.5-03's explanation describes where ephemeral outputs are allowed."
+   },
+   {
+    "name": "module-value-scope",
+    "ids": [
+     "terraform-associate-s4.1-08",
+     "terraform-associate-s5.1-04",
+     "terraform-associate-s5.1-05",
+     "terraform-associate-s5.1-06"
+    ],
+    "why": "s5.1-06's explanation ('the parent passes a value through the module call') answers s5.1-04. s4.1-08's explanation ('a child output needs an explicit root output passthrough') hints at s5.1-05."
+   },
+   {
+    "name": "literal-only-settings",
+    "ids": [
+     "terraform-associate-s5.1-08",
+     "terraform-associate-s6.1-07"
+    ],
+    "why": "Same false template ('X can use an input variable' for module source and for backend settings). Seeing one explanation makes the other answer predictable."
+   },
+   {
+    "name": "refresh-only-mode",
+    "ids": [
+     "terraform-associate-s6.2-02",
+     "terraform-associate-s6.2-03"
+    ],
+    "why": "s6.2-03's explanation ('updates Terraform state and root outputs to reflect remote objects') states s6.2-02's answer."
+   },
+   {
+    "name": "cli-import",
+    "ids": [
+     "terraform-associate-s7.1-01",
+     "terraform-associate-s7.1-02",
+     "terraform-associate-s7.1-03"
+    ],
+    "why": "s7.1-02's explanation ('terraform import CLI command updates state') answers s7.1-01. s7.1-03's statement contrasts config-driven import with the CLI."
+   },
+   {
+    "name": "hcp-workspace-nature",
+    "ids": [
+     "terraform-associate-s8.1-01",
+     "terraform-associate-s8.1-08",
+     "terraform-associate-s8.1-10"
+    ],
+    "why": "s8.1-01's explanation ('own configuration, variables, state, and runs in the hosted service') hints at s8.1-10 (state stays in HCP) and s8.1-08 (variables live in the remote run environment)."
+   },
+   {
+    "name": "run-approval",
+    "ids": [
+     "terraform-associate-s8.1-02",
+     "terraform-associate-s8.2-03",
+     "terraform-associate-s8.2-10"
+    ],
+    "why": "s8.2-10's explanation ('Run approval is a separate step') and s8.2-03's explanation ('apply access permits approving') show that an approval step sits between plan and apply, which is s8.1-02's answer."
+   },
+   {
+    "name": "hcp-project-scope",
+    "ids": [
+     "terraform-associate-s8.1-09",
+     "terraform-associate-s8.2-01",
+     "terraform-associate-s8.2-02",
+     "terraform-associate-s8.2-04"
+    ],
+    "why": "s8.2-02's explanation ('each project has its own permission settings') and s8.2-01 (one project per workspace) overlap. s8.2-04 (project variable sets apply automatically) sits as the contrast to s8.1-09 (no project-wide state sharing by default)."
+   },
+   {
+    "name": "policy-plan-input",
+    "ids": [
+     "terraform-associate-s8.2-06",
+     "terraform-associate-s8.2-07"
+    ],
+    "why": "A Sentinel/OPA pair about what plan data a policy receives. Each explanation (tfplan/v2 import vs JSON input.plan) hints at the other's answer."
+   }
+  ],
+  "tells": "Lengths are fine: statement length averages 80.8 (true) vs 80.7 (false) across all 160 cards (80/80), and every section is within 5 characters. Explanations differ: false-card explanations are longer in 11 of 16 sections (1.1: 120 vs 108, 3.2: 123 vs 104, 4.5: 130 vs 112, 5.1: 108 vs 88, 8.1: 143 vs 123). That is only visible after answering. Wording tells: (1) Overreach adverbs and phrases mark false, 0 true vs 7 false: 'by itself' s1.1-06, s7.1-10; 'regardless' s6.1-05; 'beyond its managed set' s3.2-06; 'safely' s2.2-02; 'directly' s4.3-05; 'just' s4.4-03. (2) 'skip(s)' is false 3/3 (s2.2-06, s3.2-05, s4.4-06), and 'first' is false 3/4 (s2.1-06, s3.2-08, s4.4-06; true s4.3-07). (3) 'retains' is true 2/2 (s2.2-03, s2.2-07), both with the same 'state retains X ... after the block is removed' template. (4) 'after' leans true, 6T/3F. (5) 'can' is fine overall (26T/21F) but skews by section: in 7.1 every 'can' statement is false (s7.1-02, s7.1-07, s7.1-10, 0T/3F); in 1.1 'Terraform can manage ...' is true 4/6. (6) In 8.2, 'automatically' is true 2/3 (s8.2-04, s8.2-05; false s8.2-09). Requirement words are balanced: requires 3T/4F, by default 2T/1F. Recurring false templates: (a) 'X uses a value known only at apply' carries 3 false cards (s2.1-08, s4.1-04, s4.3-10; the one true card is s4.1-07), over the two-per-deck cap. (b) 'command X also does Y's job' carries 7 false cards (s3.1-04 init provisions, s3.1-07 validate checks APIs, s3.1-10 fmt repairs refs, s6.2-03 refresh-only restores objects, s8.2-09 drift detection applies, s3.2-06 destroy beyond managed set, s1.1-06 CLI watches Git), so 'the command stays in its lane' answers all of them. (c) 'a value crosses a module boundary implicitly' carries 6 false cards (s5.1-05, s5.1-06, s4.1-08, s6.1-06, s4.5-03, s4.4-03) against 2 true (s2.1-09, s5.1-04). (d) 'X can use an input variable' carries 2 false cards (s5.1-08, s6.1-07), at the cap. (e) 'X is stored/omitted in state' is mixed and fine. Name-giveaway or truism cards, all true, answerable from the flag or command name: s3.1-09 (fmt applies canonical layout), s4.2-03 (-var supplies a variable value), s3.2-07 (plan -destroy previews deletion), s3.2-01 (plan proposes create/update/delete), s3.1-01 (workflow reviews plan before apply), s1.1-02 (teams can review version-controlled config), s7.1-06 (state list prints addresses). That is 7 true cards a non-expert gets for free. Section 1.1 heuristic: 'Terraform is flexible or capable' scores 7/10 without knowledge, because s1.1-02, 03, 05, 07, 09 are true and s1.1-04, 10 are false limitation claims. s8.2-05 repeats 'HCP Terraform workspace' twice, which looks like padding on a true card."
+ }
+}

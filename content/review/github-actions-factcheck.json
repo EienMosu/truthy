@@ -1,0 +1,703 @@
+{
+ "deck": "github-actions",
+ "sections": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s1.1-02",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official docs.github.com, current; the cited workflow-syntax page supports the default-branch rule but leaves out the exception",
+     "evidence": "Workflow syntax (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax): \"This trigger only receives events when the workflow file is on the default branch.\" The events page (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch) qualifies this: \"On the GitHub UI, the \\\"Run workflow\\\" button will be present if the workflow file exists on the default branch. Once a workflow has run at least once, you can dispatch it against any branch or tag via the GitHub API or GitHub CLI.\"",
+     "problem": "The statement does not say whether the dispatch comes from the UI or the API/CLI. A workflow file that exists only on a feature branch and has already run once (for example from a push trigger) can be dispatched there with `gh workflow run --ref <branch>` or the REST API. The current events page now documents that path, so an expert could defend True. The card also cites only the page that leaves the exception out. The wording \"exists just on\" is also stiff, written to avoid \"only\".",
+     "suggestedFix": "Answer false. Statement (102 chars): \"The GitHub UI shows the Run workflow button for a workflow file that exists on a feature branch alone.\" Explanation (178 chars): \"The Run workflow button appears only when the workflow file is on the default branch. After a first run, the REST API or GitHub CLI can dispatch it against another branch or tag.\" Source: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch"
+    },
+    {
+     "id": "github-actions-s1.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current, supports the card",
+     "evidence": "Workflow syntax (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idsecrets): \"When a job is used to call a reusable workflow, you can use `secrets` to provide a map of secrets that are passed to the called workflow.\"",
+     "problem": "The answer can be read from the wording. The statement says a secret is passed with a key literally named `secrets`, so a player who doesn't know the subject guesses True, and nobody who studied would answer False. The fact is correct, but it teaches almost nothing at the intermediate depth the prompt sets.",
+     "suggestedFix": "Answer true, keeps the section at 5 true and 5 false. Statement (113 chars): \"secrets: inherit passes a caller's secrets to a reusable workflow in another organization of the same enterprise.\" Explanation (169 chars): \"inherit passes all secrets the caller can reach, including organization, repository and environment secrets, to a called workflow in the same organization or enterprise.\" Source: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idsecretsinherit (quote: \"The `inherit` keyword can be used to pass secrets across repositories within the same organization, or across organizations within the same enterprise.\") No other card in the deck tests secrets: inherit."
+    },
+    {
+     "id": "github-actions-s1.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current, supports the card",
+     "evidence": "Events that trigger workflows (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule): \"Scheduled workflows run on the latest commit on the default branch.\" The workflow syntax page has the same sentence.",
+     "problem": "The answer is right, but the statement \"A schedule trigger runs the workflow from the latest commit on the default branch\" repeats the official sentence with a few words changed. That breaks the rule \"do not reproduce a sentence of the official page with a word or two changed\" and invites recall of the doc line instead of understanding.",
+     "suggestedFix": "Answer true. Statement (100 chars): \"A cron schedule edited on a feature branch takes effect once that change reaches the default branch.\" Explanation (155 chars): \"GitHub runs scheduled workflows from the newest commit on the default branch, so a cron edit made on another branch has no effect until it is merged there.\" Same source URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.1 (5 true, 5 false), using the full text of docs.github.com workflow-syntax and events-that-trigger-workflows (both HTTP 200 on 2026-10-03) and the 2025-11-07 pull_request_target changelog. Seven cards pass, with these quotes:\n- s1.1-03: \"the `inputs` context preserves Boolean values as Booleans instead of converting them to strings\"\n- s1.1-04: \"use the `types` keyword to limit your workflow to run when a specific `event_type` value is sent\"\n- s1.1-05: \"run only for pull requests that target specific branches\"\n- s1.1-06: changelog, effective December 8, 2025: \"The workflow file and checkout commit will always be taken from the repository's default branch, regardless of the pull request's base branch\"; correctly marked may_change\n- s1.1-07: \"the workflow will only run when both filters are satisfied\"\n- s1.1-08: \"A workflow run is triggered regardless of the conclusion of the previous workflow\"\n- s1.1-10: workflow_call type \"must be one of: `boolean`, `number`, or `string`\"; workflow_dispatch accepts environment\ns1.1-07 is phrased close to the doc sentence but different enough to pass. None of the 1.1 cards duplicates another card in the deck. The nearest is s2.1-01 (GITHUB_REF is the merge ref), which tests a different fact from s1.1-05 (the branches filter matches the base branch). The section's true and false split is 5/5, and the suggested replacements keep it there: s1.1-02 stays false, s1.1-01 and s1.1-09 stay true."
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s1.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, docs.github.com workflow-syntax, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax : \"Use jobs.<job_id>.needs to identify any jobs that must complete successfully before this job will run... If you would like a job to run even if a job it is dependent on did not succeed, use the always() conditional expression in jobs.<job_id>.if.\"",
+     "problem": "The answer can be read from the key name: 'needs: build' plainly says the job waits for build, so nobody who studied would answer False. The explanation also leaves out the fact worth teaching: the needed job must succeed, otherwise the dependent job is skipped. The statement is true, but the card teaches nothing beyond the word 'needs'.",
+     "suggestedFix": "Replacement (answer true). Statement: \"A job whose needs job fails still runs when its own if condition calls always().\" Explanation: \"A needs dependency normally skips the job when the required job fails or is skipped; always() in jobs.<job_id>.if lets it run regardless of that result.\" Same URL."
+    },
+    {
+     "id": "github-actions-s1.2-10",
+     "verdict": "duplicate",
+     "urlStatus": "200, docs.github.com contexts reference, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts : context availability table, \"run-name | github, inputs, vars | None\". Deck card github-actions-s4.3-06: \"GitHub resolves an environment-level variable while evaluating the workflow's run-name.\" (false, explained as \"too late for workflow-level run-name\").",
+     "problem": "The answer is correct: steps is not available in run-name. But the card rests on the same fact as s4.3-06: run-name is evaluated before any job runs, so it sees only github, inputs and vars. Both explanations give that same reason. The card is also close to a strawman, because step outputs obviously do not exist when the run is created.",
+     "suggestedFix": "Replace with a different structure fact (answer false). Statement: \"A workflow's defaults.run.working-directory also applies to steps that call an action with uses.\" Explanation: \"defaults.run sets the default shell and working-directory for run steps only; a step that calls an action with uses is not affected by it.\" Source: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax (\"You can use defaults.run to provide default shell and working-directory options for all run steps in a workflow.\")"
+    },
+    {
+     "id": "github-actions-s1.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, docs.github.com run-job-variations, current",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations : \"To set the maximum number of jobs that can run simultaneously when using a matrix job strategy, use jobs.<job_id>.strategy.max-parallel.\" Workflow syntax page: \"By default, GitHub will maximize the number of jobs run in parallel depending on runner availability.\"",
+     "problem": "The key name gives the answer away: 'max-parallel caps the number of jobs running in parallel' only restates the name. The statement is true and the source supports it, but the card fails the no-giveaway rule.",
+     "suggestedFix": "Replacement (answer true). Statement: \"Without strategy.max-parallel, GitHub runs as many of a job's matrix variants at once as runner availability allows.\" Explanation: \"By default GitHub maximizes parallel matrix jobs based on available runners; set strategy.max-parallel to cap how many variants run at the same time.\" URL: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax"
+    },
+    {
+     "id": "github-actions-s1.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, docs.github.com workflow-commands, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands : \"Creates a warning message and prints the message to the log. This message will create an annotation, which can associate the message with a particular file in your repository. Optionally, your message can specify a position within the file.\"",
+     "problem": "The statement is true, but it is close to a giveaway: '::warning adds a warning annotation' can be read from the command name, so a studied player has no realistic reason to answer False. It is also loosely worded, because file and line are optional parameters, not something the command always targets.",
+     "suggestedFix": "Replacement (answer true). Statement: \"After a step echoes ::stop-commands::TOKEN, the runner ignores workflow commands until ::TOKEN:: is echoed.\" Explanation: \"stop-commands pauses workflow command processing so a step can print text such as a script without it running as commands; echoing the same unique token resumes processing.\" Same URL (\"Stops processing any workflow commands.\")."
+    },
+    {
+     "id": "github-actions-s1.2-07",
+     "verdict": "explanation_error",
+     "urlStatus": "200, docs.github.com workflow-syntax, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax : \"For each object in the include list, the key:value pairs in the object will be added to each of the matrix combinations if none of the key:value pairs overwrite any of the original matrix values. If the object cannot be added to any of the matrix combinations, a new matrix combination will be created instead. Note that the original matrix values will not be overwritten, but added matrix values can be overwritten.\"",
+     "problem": "The answer (false) is right. The explanation says an entry that 'cannot join an original combination creates an additional combination'. That reads as per combination, but the rule is different: the entry is added to every combination it does not conflict with, and a new combination is created only when it fits none of them. A partly conflicting entry (for example animal: cat) extends the matching combinations and creates nothing new.",
+     "suggestedFix": "Keep the statement and answer (false). New explanation: \"include adds its keys to every combination it does not conflict with; only an entry that fits no combination becomes a new one. Original matrix values are never overwritten.\""
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.2 against the live docs.github.com pages (all returned HTTP 200 on 2026-10-03). None has a wrong answer.\n\nCards that pass:\n- s1.2-02: \\\"The jobs.<job_id>.if condition is evaluated before jobs.<job_id>.strategy.matrix is applied.\\\"\n- s1.2-03: the contexts page says \\\"an environment variable defined in a step will override job and workflow environment variables with the same name, while the step executes\\\".\n- s1.2-05: services options: \\\"The --network option is not supported.\\\"\n- s1.2-06: use-docker-service-containers: \\\"If your job runs in a Docker container, you do not need to map ports on the host or the service container.\\\"\n- s1.2-09: reusing-workflow-configurations shows `test: &base_job` and `alt-test: *base_job # Reuse the entire job configuration`.\n\nOverlaps I checked:\n- s1.2-09 sits next to s2.1-04 (an alias on env does not copy steps). I did not flag it: the prompt deliberately splits anchor syntax (1.2) from anchor interpretation (2.1), and knowing one card does not settle the other.\n- s1.2-07 does not overlap the 2.1 matrix cards (axis expansion, exclude) or 5.2-04 (exclude).\n\nBalance:\n- The section is 5 true / 5 false today.\n- The proposed replacements keep that: 01, 04 and 08 stay true, 10 stays false, 07 keeps its statement.\n- The defaults.run replacement for s1.2-10 does not collide with any card in the deck. Check that factKey against the plan before adopting it.\n\nSide note: the workflow-syntax page now lists new keys (jobs.<job_id>.snapshot, cache-mode, steps[*].background/wait/parallel). None of the 1.2 cards touches them. Any future card on them would need a GA check and \\\"may_change\\\"."
+  },
+  {
+   "section": "1.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s1.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.github.com pass-job-outputs)",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/pass-job-outputs: \"To access the outputs in the dependent job, use the `needs.<job_id>.outputs.<output_name>` syntax.\" The answer (False) and explanation are correct, but the distractor `steps.<job>.outputs` does not exist in any context. A learner who has studied would reject it straight away, so the card is close to a strawman and is not the difficulty-3 distinction it claims to be. The misconception people really hold is that a dependent job reads `jobs.<job_id>.outputs`, because the `jobs` context exists (only in reusable workflows).",
+     "problem": "The false statement uses an invented context path (`steps.<job>`), so a player who studied can spot it. It does not test the real confusion between the needs and jobs contexts.",
+     "suggestedFix": "Answer stays False. Statement: \"A dependent job reads another job's outputs through the jobs.<job_id>.outputs context.\" Explanation: \"A job that lists another job in needs reads that job's declared outputs through needs.<job_id>.outputs.<output_name>.\" Same URL; also cite https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#jobs-context."
+    },
+    {
+     "id": "github-actions-s1.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.github.com tutorials/store-and-share-data)",
+     "evidence": "https://docs.github.com/en/actions/tutorials/store-and-share-data: \"You can use the `upload-artifact` and `download-artifact` actions to share data between jobs in a workflow.\" The card is true and supported, but the answer can be read from the action names: download-artifact downloads what upload-artifact uploaded. Nobody who studied would answer False, so the card teaches nothing beyond the names. The same page holds a more useful fact: \"You can also download all artifacts in a workflow run by not specifying a name... a directory for each artifact is created using its name.\"",
+     "problem": "Name giveaway / truism. A player can answer from the wording alone.",
+     "suggestedFix": "Answer stays True. Statement: \"actions/download-artifact with no name input downloads all artifacts of the run into one folder per artifact.\" Explanation: \"Omitting the name input makes the action fetch every artifact uploaded in the current run, creating a directory named after each artifact.\" appliesTo: \"actions/download-artifact v5\". Same URL."
+    },
+    {
+     "id": "github-actions-s1.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.github.com how-tos/monitor-workflows/add-a-status-badge)",
+     "evidence": "https://docs.github.com/en/actions/how-tos/monitor-workflows/add-a-status-badge: \"To display the status of a workflow run for a specific branch, add `?branch=BRANCH-NAME` to the end of the status badge URL.\" The card is true, but the statement answers itself (\"accepts a branch query parameter to show that branch's status\"), so a non-expert would guess True. The same page has a behaviour fact people get wrong: \"By default, badges display the status of your default branch. If there are no workflow runs on your default branch, it will display the status of the most recent run across all branches.\"",
+     "problem": "Wording giveaway. The statement describes what the parameter does in its own name, so the answer can be guessed without knowing the subject.",
+     "suggestedFix": "Answer stays True. Statement: \"A plain workflow status badge URL reports the workflow status for the repository's default branch.\" Explanation: \"A badge shows the default branch unless branch or event parameters are added; it falls back to the most recent run across all branches only when the default branch has no runs.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.3 (all in github-actions-b1.json). All six source URLs load (HTTP 200). They are official, current docs.github.com pages, and each one supports its card, including the right fact given for each false card. I found no wrong answers, no ambiguous cards and no explanation errors. All 10 cards are within study guide 1.3 (\"Skills measured as of January 2026\": caching and artifacts, retention, GITHUB_ENV, GITHUB_OUTPUT, reusable workflow outputs, GITHUB_STEP_SUMMARY, badges and environment protections). No card rests on the same fact as a card in another section. The section is balanced 5 true and 5 false, and all three suggested replacements keep their card's answer, so the balance stays the same.\n\nThe 7 cards that pass, with the sentence that settles each:\n- 01 (False): \"The step that creates or updates the environment variable does not have access to the new value, but all subsequent steps in a job will have access.\" (workflow-commands)\n- 02 (True): \"Sets a step's output parameter... the step will need an id to be defined to later retrieve the output value.\" (workflow-commands) This one is basic but acceptable.\n- 04 (True): \"The value must be set to the value of an output from a job within the called workflow.\" (workflow-syntax, on.workflow_call.outputs)\n- 05 (False): job summaries \"are shown on the workflow run summary page\". (workflow-commands)\n- 06 (True): \"If no cache hit occurs for key, these restore keys are used sequentially in the order provided.\" (dependency-caching) A prefix match on the key itself is tried before restore-keys, and the default branch is searched afterwards; neither changes the answer.\n- 08 (False): \"The retention-days value cannot exceed the retention limit set by the repository, organization, or enterprise.\" (store-and-share-data)\n- 10 (False): \"All deployment protection rules must pass before a job referencing the environment is sent to a runner.\" (workflow-syntax) I also tested it against the new `environment.deployment: false` option. The control-deployments page says wait timers and required reviewers still apply with that option, and custom protection rules make the job fail rather than run, so no exception makes the statement true.\n\nThe three flagged cards are all weak_card; their answers are correct. 03 uses an invented distractor (`steps.<job>`). 07 can be answered from the action's name. 09 states its own answer in its wording."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s2.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations: \"A job will run for each possible combination of the variables. In this example, the workflow will run six jobs, one for each combination of the os and version variables.\" The card is correct, but its answer follows from multiplying 2 x 2, the most basic matrix fact there is.",
+     "problem": "Truism by arithmetic. Once a player knows a matrix forms a Cartesian product, 2 OS values x 2 node values = 4 is obvious, so the card teaches nothing at the intermediate depth the deck targets. It also sits next to s2.1-03, which already tests counting matrix jobs (partial exclude).",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"A matrix include entry can add back a combination that the same matrix's exclude list removed.\" Explanation: \"GitHub processes every include entry after exclude, so an include entry that matches an excluded combination restores that job in the expanded matrix.\" Source: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax (\"All include combinations are processed after exclude. This allows you to use include to add back combinations that were previously excluded.\")"
+    },
+    {
+     "id": "github-actions-s2.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax: \"If jobs.<job_id>.strategy.fail-fast is set to true or its expression evaluates to true, GitHub will cancel all in-progress and queued jobs in the matrix if any job in the matrix fails. This property defaults to true.\"",
+     "problem": "Name giveaway and strawman. The statement claims fail-fast: false does the very thing the name fail-fast describes, so anyone who has seen the key answers False from its name alone. The answer itself is correct.",
+     "suggestedFix": "Replace with a FALSE card that tests the real distinction. Statement: \"With fail-fast: true, a failing matrix job marked continue-on-error: true cancels its sibling jobs.\" Explanation: \"A failed matrix job with continue-on-error: true leaves the other matrix jobs running; fail-fast cancels in-progress and queued jobs only when a job without it fails.\" Same URL; it quotes: \"If the job with continue-on-error: true fails, the other jobs will not be affected.\""
+    },
+    {
+     "id": "github-actions-s2.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations: \"An anchor (marked with &) identifies a piece of content that you want to reuse, while an alias (marked with *) repeats that content in another location.\" Its example anchors job1.env and aliases it in job2.env, and the expanded version shows only the env mapping repeated.",
+     "problem": "Strawman. Nobody who has read how anchors work would think aliasing an env mapping also copies the sibling steps key, so the card adds little. It also sits close to s1.2-09 (yaml-anchor-entire-job): both test what an alias copies, the whole anchored node and nothing else.",
+     "suggestedFix": "Replace with a FALSE card about reading anchor and alias configuration. Statement: \"In one workflow file, a job can alias an anchor that a later job defines further down the file.\" Explanation: \"A YAML alias can only refer to an anchor that appears earlier in the document, so GitHub's examples define the anchor on first use and repeat it with * later.\" Sources: the same docs URL (\"# Define the anchor on first use\") plus the YAML 1.2.2 spec, Node Anchors and Aliases (https://yaml.org/spec/1.2.2/#71-alias-nodes), which the docs page links to."
+    }
+   ],
+   "notes": "All 10 section 2.1 cards were checked against current docs.github.com pages (each fetched with HTTP 200 on 2026-10-03) and against the GH-200 study guide (Skills measured as of January 2026; the 2.1 bullets cover triggers, logs and run history, anchors and aliases, matrix expansion and selective reruns). The section has 5 true and 5 false cards, and each suggested replacement keeps the answer of the card it replaces, so the balance stays 5/5.\n\nCards that pass, with the evidence that settles each one:\n- s2.1-01: the variables reference says \\\"For pull request events except pull_request_target that were not merged, it is refs/pull/<pr_number>/merge\\\". Merge-conflicted pull requests do not trigger a run at all, so no exception applies.\n- s2.1-03: workflow-syntax says \\\"An excluded configuration only has to be a partial match for it to be excluded\\\".\n- s2.1-06: contexts says \\\"When a continue-on-error step fails, the outcome is failure, but the final conclusion is success\\\". A strong hard card.\n- s2.1-07: re-run page says \\\"The workflow will also use the same GITHUB_SHA (commit SHA) and GITHUB_REF (git ref) of the original event\\\".\n- s2.1-08: re-run page shows `gh run rerun --job JOB_ID`. A matrix child is a job with its own ID. Rerunning one job also reruns the jobs that depend on it, but the card does not claim otherwise.\n- s2.1-09: control-jobs-with-conditions says \\\"A job that is skipped will report its status as \\\"Success\\\". It will not prevent a pull request from merging, even if it is a required check.\\\" The checks API reports the conclusion as skipped, but the card follows the docs wording.\n- s2.1-10: view-job-condition-logs shows Evaluating, Expanded and Result lines in JOB-NAME/system.txt, and the docs note these logs exist only for job-level conditions. The feature shipped on 2026-01-29 according to the GitHub changelog and is GA, so \\\"stable\\\" is acceptable.\n\nNo card in this section tests merge keys, which follows the prompt's rule. No duplicates were found across the deck: 1.2-07 is about include conflicts, 5.2-04 about exclude not starting jobs, 1.1-05 about the branches filter, and 2.2-02 about gh run view.\n\nOne minor observation that needs no change: s2.1-08 uses the hedge \\\"can\\\" on a true card, which is balanced elsewhere in the section."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s2.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official docs.github.com, current; supports the card",
+     "evidence": "https://docs.github.com/en/actions/how-tos/monitor-workflows/view-workflow-run-history: \"To view the full log for a job, use the `--log` flag.\" followed by the example `gh run view --job JOB_ID --log`. The statement is that doc example restated, and the flag name says what it does.",
+     "problem": "The answer can be read from the wording: a player who has never used gh will guess that a flag called --log prints the log. It is also close to a copy of the source example. The fact is correct but teaches nothing that would let a learner tell it apart from a plausible wrong answer.",
+     "suggestedFix": "Replace with a TRUE card: statement \"Deleting a run's logs from its run page requires repository write access.\" (74 chars). Explanation: \"Read access is enough to download a run's log archive, but deleting its logs needs write access; afterwards the Delete all logs button disappears.\" Source: https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs (\"Write access to the repository is required to perform these steps.\" under Deleting logs)."
+    },
+    {
+     "id": "github-actions-s2.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official docs.github.com, current; supports the card",
+     "evidence": "https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts: \"Download a specific artifact: gh run download RUN_ID -n ARTIFACT_NAME\". The statement repeats the doc example, and -n NAME plainly means name.",
+     "problem": "Name giveaway and near-copy of the source: '-n NAME downloads the named artifact' is guessable without any knowledge of GitHub CLI, and no learner who studied would answer False.",
+     "suggestedFix": "Replace with a TRUE card: statement \"download-artifact needs a token and run-id to fetch another run's artifact.\" (76 chars). Explanation: \"To pull an artifact from a different workflow run or repository, actions/download-artifact needs a github-token input plus the run-id of the source run.\" appliesTo \"actions/download-artifact v4\". Source: https://docs.github.com/en/actions/tutorials/store-and-share-data (\"If you want to download artifacts from a different workflow or workflow run, you need to supply a token and run identifier.\")."
+    },
+    {
+     "id": "github-actions-s2.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official docs.github.com, current; supports read access and the Artifacts section but does not mention the signed-in requirement (that is on use-workflow-run-logs)",
+     "evidence": "https://docs.github.com/en/actions/how-tos/manage-workflow-runs/download-workflow-artifacts: \"Read access to the repository is required to perform these steps.\" ... \"In the 'Artifacts' section, click the artifact you want to download.\"",
+     "problem": "Close to a truism. Saying that a user with read access can download a run's artifact follows from what read access means, so nobody would answer False. The one non-obvious detail, that sign-in is required, is tucked into a qualifier and is not tested.",
+     "suggestedFix": "Replace with a TRUE card that tests the non-obvious detail: statement \"Viewing a public repository's workflow runs requires a signed-in account.\" (73 chars). Explanation: \"GitHub requires sign-in to view workflow run information, even in public repositories, so anonymous visitors cannot open run logs or artifacts.\" Source: https://docs.github.com/en/actions/how-tos/monitor-workflows/use-workflow-run-logs (\"You must be logged in to a GitHub account to view workflow run information, including for public repositories.\")."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 2.2: 5 true (01, 02, 05, 06, 07) and 5 false (03, 04, 08, 09, 10). Every source URL loads, is an official docs.github.com page, is current and supports its card. No card has a wrong answer.\n\nHow each passing card was settled:\n- 01: the REST event parameter \"Returns workflow run triggered by the event you specify. For example, push, pull_request or issue.\"\n- 03: use-workflow-run-logs says \"the archive only includes the jobs that were re-run. To get a complete set of logs ... download the log archives for the previous run attempts\".\n- 04: enable-debug-logging says runner diagnostic logging adds \"The runner process log ... The worker process log\" in the runner-diagnostic-logs folder. That setting is ACTIONS_RUNNER_DEBUG, not ACTIONS_STEP_DEBUG. This card is distinct from s4.2-08, which is about _diag files on a self-hosted runner.\n- 07: the artifact schema includes a required expires_at field.\n- 08: Download an artifact \"Gets a redirect URL ... expires after 1 minute. Look for Location: in the response header\", returning 302. An HTTP client that follows redirects ends up with the ZIP, but the endpoint itself does not return it, so \"directly\" stays false.\n- 09: remove-workflow-artifacts says \"When a workflow run is deleted all artifacts associated with the run are also deleted from storage.\" The REST delete-run endpoint does not mention artifacts; the how-to page settles it.\n- 10: \"When you search logs, only expanded steps are included in the results.\" The may_change tag on this card is reasonable.\n\nI found no duplicates against other sections. s2.1-08 (gh run rerun --job) and s1.3-07 (download-artifact within the same run) are separate facts.\n\nThe 3 flags are all weak true cards, and their replacements are also true, so the 5 true / 5 false balance holds. The replacements are 73 to 76 characters, which keeps the true average close to the false average of 69 characters.\n\nLesser observations that I did not flag:\n- 07 (the expires_at field name) leans toward API trivia, but it is in scope for managing artifacts.\n- 05's explanation says \"signed-in\", but its cited page does not; if 05 is kept rather than replaced, cite use-workflow-run-logs as well."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s2.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.github.com/en/actions/how-tos/write-workflows/use-workflow-templates)",
+     "evidence": "Source: \"8. Click Start commit. 9. Write a commit message and decide whether to commit directly to the default branch or to open a pull request.\" The card's factKey is template-copy-independent, and the GH-200 study guide bullet (learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/gh-200) reads \"Differentiate starter workflows (copy scaffold, independent after creation) vs reusable workflows (central versioned definition invoked via workflow_call)\".",
+     "problem": "The answer is right, but the card is close to a truism. Every workflow is a file in the repository's .github/workflows, so anyone guesses True without knowing anything about templates. It also never tests the planned fact: that the created file is an independent copy that later template edits do not change.",
+     "suggestedFix": "Keep True. Statement: \"Editing an organization workflow template leaves workflows that repositories already created from it unchanged.\" (104 chars). Explanation: \"Choosing a template copies it into the repository as a new workflow file. For logic that should update centrally, the template can call a reusable workflow instead.\" Source: https://docs.github.com/en/actions/concepts/workflows-and-actions/reusing-workflow-configurations (\"Within a workflow template, you can also reference reusable workflows ... centrally managed workflow code\"), backed by the study guide bullet above."
+    },
+    {
+     "id": "github-actions-s2.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.github.com/en/actions/concepts/workflows-and-actions/reusing-workflow-configurations)",
+     "evidence": "Source: \"When you set up workflows in your repository, GitHub analyzes the code in your repository and recommends workflows based on the language and framework in your repository.\"",
+     "problem": "The answer is right, but the statement and the explanation both repeat the source sentence with a word or two changed (\"recommends workflows based on the language and framework in your repository\" became \"recommends workflow templates based on the languages and frameworks in a repository\"). That breaks the original-wording rule. The claim is also what a non-expert would guess anyway.",
+     "suggestedFix": "Keep True and reword. Statement: \"The Choose a workflow page puts forward templates that fit the languages and frameworks GitHub detects in a repository.\" (114 chars). Explanation: \"GitHub inspects a repository's code when someone adds a workflow, so a Node.js project is offered a template that installs its packages and runs its tests.\" Same URL."
+    },
+    {
+     "id": "github-actions-s2.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)",
+     "evidence": "Source: \"Disabling a workflow allows you to stop a workflow from being triggered without having to delete the file from the repo. You can easily re-enable the workflow again on GitHub.\"",
+     "problem": "The answer is right, but it follows from the words themselves: \"disable\" versus \"delete\" tells a player who knows nothing that the file stays. The statement is also a near-paraphrase of the source sentence (\"stop ... from being triggered without having to delete the file\").",
+     "suggestedFix": "Keep True. Statement: \"GitHub disables the scheduled workflows of a fork of a public repository by default.\" (84 chars). Explanation: \"A fork of a public repository starts with its scheduled workflows disabled. The fork owner can enable them from the Actions tab, because disabling keeps the workflow file in place.\" Same URL (\"When a public repository is forked, scheduled workflows are disabled by default.\"). Before using it, check that it does not overlap s1.1-01 (schedule trigger); it rests on a different fact."
+    },
+    {
+     "id": "github-actions-s2.3-04",
+     "verdict": "explanation_error",
+     "urlStatus": "200, official, current (docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)",
+     "evidence": "Source: \"Workflow templates in an internal .github repository are only available to internal and private repositories.\" and \"If you're using a private or internal .github repository, you need to grant Read access to users or teams who should be able to use the templates.\" The second sentence is the fact tested by s4.1-08 (template-user-read-access): \"Users need Read access to a private or internal .github repository to use its workflow templates.\"",
+     "problem": "The answer (False) is right and the source supports it. But the explanation adds \"subject to read access\", which is the answer to s4.1-08. The prompt's rules forbid an explanation from stating another card's fact.",
+     "suggestedFix": "Keep the statement and answer (False). Explanation: \"Templates from an internal .github repository are offered only to internal and private repositories. Only a public .github repository serves templates to every repository type.\""
+    }
+   ],
+   "notes": "I opened all six source URLs. Each returns 200 on current docs.github.com and supports its card, including the right fact behind every false card: workflow-templates directory (02), same-name .properties.json carrying name and description (03), internal templates for internal and private repositories only (04), filePatterns matching a file in the root directory (07), a release tag winning over a branch of the same name (\\\"If a release tag and a branch have the same name, the release tag takes precedence over the branch name\\\", reuse-workflows) (08), and a composite action running as a step on the caller's machine (\\\"if the steps must be run on a type of machine that might be different from the machine chosen for the calling workflow job, then you should use a reusable workflow, not a composite action\\\") (09). No answer is wrong. The cards use the current name \\\"workflow templates\\\", not \\\"starter workflows\\\". Balance is 5 true and 5 false. Statement length averages 91.6 for true cards and 88.8 for false ones, which meets the 5-character rule; all fixes keep the same answers. Minor points not flagged: (1) 06 ($default-branch) is close in wording to \\\"When a workflow is created the placeholder will be automatically replaced\\\", but it still tests replacement at creation time rather than at run time, so I let it pass. (2) 08 tests reusable-workflow ref resolution, which sits between 2.3 (\\\"Consume organization-level and reusable workflows\\\") and the syntax sections 1.1 and 1.3. No other card covers that fact, so I kept it. (3) 07 at difficulty 3 is closer to a detail than to a two-way distinction; consider difficulty 2. (4) The deck also tests workflow templates in s4.1-08. The template topic is spread across 2.3 and 4.1 against the prompt's placement, but the two cards rest on different facts."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s3.1-06",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (docs.github.com create-a-javascript-action tutorial, current)",
+     "evidence": "Source: \"JavaScript actions run directly on the runner and use binaries that already exist in the runner image.\" But https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax (jobs.<job_id>.container): \"Use jobs.<job_id>.container to create a container to run any steps in a job that don't already specify a container.\" and \"If you do not set a container, all steps will run directly on the host specified by runs-on unless a step refers to an action configured to run in a container.\"",
+     "problem": "The statement has no condition. In a job that sets jobs.<job_id>.container, a JavaScript action step runs inside the job container, not directly on the runner's operating system, so an expert could argue False. The card is also close to a definition of a JavaScript action and near-copies the source sentence.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"In a job that sets jobs.<job_id>.container, a JavaScript action step runs inside that job container.\" (100 chars); explanation \"jobs.<job_id>.container runs every step that names no container of its own inside the job container, so JavaScript actions execute there and not on the host.\" (157 chars); source https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idcontainer"
+    },
+    {
+     "id": "github-actions-s3.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (docs.github.com set-exit-codes, current)",
+     "evidence": "https://docs.github.com/en/actions/how-tos/create-and-publish-actions/set-exit-codes: \"GitHub uses the exit code to set the action's check run status, which can be success or failure.\" and \"any other exit code indicates the action failed.\"",
+     "problem": "The answer is right, but the card is a truism. A nonzero exit code meaning failure is general Unix and CI knowledge, so the card teaches nothing specific to GitHub Actions (difficulty 1). It also leaves out the continue-on-error exception: with continue-on-error, a failing step does not fail the job's check run.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"GitHub tells Docker container action authors to omit USER from the Dockerfile so the action can reach GITHUB_WORKSPACE.\" (119 chars); explanation \"Docker container actions must run as the default Docker user (root); a USER instruction in the Dockerfile cuts the action off from the GITHUB_WORKSPACE directory.\" (162 chars); source https://docs.github.com/en/actions/reference/workflows-and-actions/dockerfile-support (\"Docker actions must be run by the default Docker user (root). Do not use the USER instruction in your Dockerfile, because you won't be able to access the GITHUB_WORKSPACE directory.\")"
+    },
+    {
+     "id": "github-actions-s3.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads (docs.github.com contexts reference, current)",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/contexts: \"github.action_path: The path where an action is located. This property is only supported in composite actions.\"",
+     "problem": "The name gives the answer away. A player who has never seen github.action_path will guess that \"action_path\" identifies the action's directory, and the statement already narrows it to composite actions, which is the only non-obvious part of the fact.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"In an action's runs.post-if, the failure() function evaluates the job's status instead of the action's own status.\" (114 chars); explanation \"post-if defaults to always(), and its status check functions read the job status, so a post script with post-if: failure() runs only when the job is failing.\" (157 chars); source https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#runspost-if (\"If not set, then post-if defaults to always(). In post-if, status check functions evaluate against the job's status, not the action's own status.\")"
+    }
+   ],
+   "notes": "All 10 source URLs load and are current official pages. The other 7 cards pass, each confirmed by a sentence on its source page. 01: the changelog says \"Runners now use Node 24 for JavaScript actions\" and tells maintainers to \"update its runs.using value to node24\". The metadata-syntax page still lists node20, which the prompt expects. The card is borderline easy because \"node24\" plus \"current\" hints at the answer, but it is kept. 02: \"Self-hosted runners must use a Linux operating system and have Docker installed to run Docker container actions.\" 03: steps \"can be either run steps or uses steps\". 04: \"This means you must include any package dependencies required to run the JavaScript code.\" 05: \"runs.pre is not supported for local actions.\" 08: \"You must check out your repository before using the action, and the ./ path resolves against the runner's workspace.\" 10: the metadata page says runs.entrypoint \"Overrides the Docker ENTRYPOINT in the Dockerfile\", and the Dockerfile support page agrees. No duplicates were found against other sections; the nearest neighbours (3.2-05 runs.main, 3.2-06 runs.image, 4.1-10 local-action policy) rest on different facts. The section is balanced 5 true and 5 false, and all three replacements are true, so the balance holds. If 3.1-09 is replaced with the post-if card, check it against 3.2, which also covers metadata."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s3.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax : \"inputs.<input_id>.default ... The default value is used when an input parameter isn't specified in a workflow file.\" The answer (false) and the explanation are correct, but the card is a strawman and close to a truism. A default that overrides an explicit caller value goes against the meaning of the word 'default', so nobody who has studied would answer True.",
+     "problem": "Strawman/definition card: the answer follows from the meaning of 'default' and teaches nothing specific to GitHub Actions.",
+     "suggestedFix": "Replacement (answer: false). Statement: \"A composite action's `run` steps read inputs from INPUT_<NAME> variables that GitHub creates automatically.\" Explanation: \"Composite actions get no automatic INPUT_<NAME> environment variables; their steps read caller values through the inputs context, for example ${{ inputs.name }}.\" Source: same metadata-syntax page: \"If the action is written using a composite, then it will not automatically get INPUT_<VARIABLE_NAME>. With composite actions you can use the inputs context to access action inputs.\" No other card in the deck tests INPUT_ variables."
+    },
+    {
+     "id": "github-actions-s3.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax : \"runs.main ... The file that contains your action code. The runtime specified in using executes this file.\" The statement \"runs.main names the file executed by the selected runtime\" restates this sentence with a few words changed. A player can read the answer from the key name 'main'.",
+     "problem": "Near-copy of the source sentence and a name giveaway, so the card is close to a definition. s3.1-04 already uses runs.main as the entry file.",
+     "suggestedFix": "Replacement (answer: true). Statement: \"A JavaScript action's `post` script runs even when a later step in the job fails, since `post-if` defaults to `always()`.\" Explanation: \"When post-if is omitted it defaults to always(), and status functions in it check the job's status, so an action's cleanup runs after later failures.\" Source: same page: \"If not set, then post-if defaults to always(). In post-if, status check functions evaluate against the job's status, not the action's own status.\" Keep the words 'a later step': if an earlier step fails, the action's main step is skipped and post does not run. This does not overlap s3.1-05, which tests runs.pre for local actions."
+    }
+   ],
+   "notes": "Checked all 10 cards of section 3.2 (5 true, 5 false), all from github-actions-b2.json. Every card cites metadata-syntax or workflow-commands on docs.github.com, and both URLs return HTTP 200. Quotes that settle the passing cards: 01 \"the metadata filename must be either action.yml or action.yaml. The preferred format is action.yml.\" 03 \"Actions using required: true will not automatically return an error if the input is not specified.\" 04 \"outputs.<output_id>.value ... You can set this to a string or an expression with context ... the steps context\". 06 \"runs.image: The Docker image to use as the container to run the action.\" 07 \"runs.steps[*].shell: Optional ... Required if run is set.\" The 2020 composite ADR also says workflow defaults never change shell in composite run steps, and I found no later change. 08: the toolkit table maps core.setSecret to add-mask, and \"Masking a value prevents a string or variable from being printed in the log.\" 09: core.saveState maps to GITHUB_STATE, and \"The GITHUB_STATE file is only available within an action.\" 10: \"Badges are shown next to your action name in GitHub Marketplace\" (branding.icon and branding.color). Borderline cards that I passed but would watch: 06 (the 'runner image for the entire job' distractor is weak, though it does match a real confusion with the job container) and 10 (branding controlling icon and color can almost be read from the key name; it is an easy card). The metadata-syntax page still lists node20 under runs.using, as the prompt warns, but no card in this section relies on it. Duplicates: no other section tests add-mask/setSecret, GITHUB_STATE/saveState, required-input enforcement, branding or composite output value. 07 sits next to s3.1-03 (composite steps accept run and uses) but tests a different fact. The two replacements keep the section at 5 true and 5 false (02 stays false, 05 stays true)."
+  },
+  {
+   "section": "3.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s3.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository: \"If you have enabled immutable releases for your repository, you cannot add, replace, or delete assets after a release is published\". The fact is right, but the answer can be read from the word \"immutable\" in the statement. https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity/prevent-release-changes: \"Be aware that immutability will only apply to future releases.\"",
+     "problem": "This is a definition card and a name giveaway. A player who knows nothing about the feature answers False because the setting is called immutable. The prompt bans a statement whose answer follows from the meaning of a term in it.",
+     "suggestedFix": "Replace (false, may_change). Statement: \"Enabling release immutability on an action repository locks the assets of releases published before it was enabled.\" Explanation: \"Release immutability applies only to releases published after the setting is enabled; earlier releases keep editable assets and a movable tag.\" URL: https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/establish-provenance-and-integrity/prevent-release-changes"
+    },
+    {
+     "id": "github-actions-s3.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/auto-update-actions: \"Specify \\\"github-actions\\\" as a package-ecosystem to monitor.\" The same page says: \"Dependabot will help ensure that references to actions in a repository's workflow.yml file and reusable workflows used inside workflows are kept up to date.\"",
+     "problem": "The fact is right, but the wording gives the answer away. A player can guess True because an ecosystem named github-actions obviously updates action references. The card tests a name, not behaviour.",
+     "suggestedFix": "Replace (true). Statement: \"Dependabot updates for the github-actions ecosystem also bump refs of reusable workflows called in workflow files.\" Explanation: \"With package-ecosystem \\\"github-actions\\\", Dependabot keeps both action references and reusable workflows used inside workflow files up to date, opening pull requests for outdated refs.\" Same URL."
+    },
+    {
+     "id": "github-actions-s3.3-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com, current",
+     "evidence": "https://docs.github.com/en/actions/how-tos/create-and-publish-actions/publish-in-github-marketplace: \"Complete all other fields and click Publish release. Publishing requires you to use two-factor authentication.\" The card's explanation is \"GitHub requires two-factor authentication when publishing an action release to Marketplace.\"",
+     "problem": "The statement copies the source sentence with only a few words changed. The explanation repeats the statement and adds no reason or context, which the rules require for a true card. GitHub's wider 2FA mandate for code contributors also makes the fact close to a truism, and it has little practical depth.",
+     "suggestedFix": "Replace (true). Statement: \"A maintainer delists a Marketplace action by clearing the publish option on each release that was published there.\" Explanation: \"Marketplace listing follows releases: to remove an action, edit every release published to Marketplace, clear \\\"Publish this Action to the GitHub Marketplace\\\" and click Update release.\" Same URL, section \"Removing an action from GitHub Marketplace\"."
+    },
+    {
+     "id": "github-actions-s3.3-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official docs.github.com (enterprise-cloud@latest), current",
+     "evidence": "https://docs.github.com/en/enterprise-cloud@latest/actions/how-tos/reuse-automations/share-with-your-enterprise: \"To allow runners to download these actions, GitHub passes a scoped installation token to the runner. This token has read access to the repository, and automatically expires after one hour.\"",
+     "problem": "The fact is right, but the statement nearly copies a sentence from a warning box on the page. It tests an internal detail of the mechanism rather than a choice of distribution model or behaviour that decides whether a workflow works. Its access-control neighbour is already in 4.1-06.",
+     "suggestedFix": "Replace (true). Statement: \"After an action repository is transferred, workflows that reference the old owner/repo path keep resolving the action.\" Explanation: \"When an admin transfers an action repository, GitHub redirects the previous URL to the new one, so workflows using the action need no update.\" URL: https://docs.github.com/en/actions/how-tos/create-and-publish-actions/publish-in-github-marketplace (section \"Transferring an action repository\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.3 (5 true, 5 false). Every source URL loads (docs.github.com article API returned 200) and is current. The section matches the study guide sub-section \"Distribute and maintain actions\" (bullets: select distribution models, publish to the Marketplace, versioning and release strategies).\n\nCards that pass:\n- 01 is supported by \"The action must be in a public repository.\"\n- 02 is supported by \"GitHub also uses the action's metadata on your GitHub Marketplace page\" and by the metadata `name` acting as the unique listing identifier.\n- 03 is supported by \"The name cannot match an existing action name published on GitHub Marketplace.\"\n- 04 is supported by \"add the action ... by tagging it as a new release and publishing it\" and the \"Publish this Action to the GitHub Marketplace\" checkbox.\n- 05 is supported by \"The 'Verified' badge seen on an organization's GitHub profile is different from the verified creator badge on GitHub Marketplace.\"\n- 07 is supported by \"Move the major version tag (for example, v1) to point to the Git ref of the current release.\"\n\nWatch items that do not need a flag:\n- Card 07, immutable releases: a tag tied to an immutable release cannot be moved. The docs page for actions says to keep the major version tags as plain Git tags without a release so they stay movable, so \"can move\" still holds. A future editor could add appliesTo or a may_change note.\n- Card 07, wording: it stays close to the source's step 3. It is rephrased enough to pass.\n- Card 02: the source supports it only indirectly, since metadata-syntax says `name` is shown in the Actions tab and the publish page says Marketplace uses the action's metadata. That is acceptable, but a more explicit sentence would be stronger.\n\nBalance: all four replacements keep the original answers (06, 08 and 10 true; 09 false), so the section stays 5 true and 5 false. Each replacement statement is 120 characters or fewer and each explanation 240 or fewer.\n\nOverlap: none of the replacement facts (repository transfer redirect, delisting per release, immutability applying only to future releases, Dependabot updating reusable workflow refs) appears elsewhere in the deck. I grepped for transfer, redirect, dependabot and immutable.\n\nDuplicates: no card in 3.3 duplicates another card in the deck. The checks covered 3.2-10 (branding), 4.1-04 (verified-creator allow setting), 4.1-06 (private reusable workflow access setting) and 5.1-08 (SHA pinning)."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s4.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.github.com enterprise-cloud@latest, Managing GitHub Actions settings for a repository), supports the card",
+     "evidence": "https://docs.github.com/en/enterprise-cloud@latest/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository : \"When you disable GitHub Actions, no workflows run in your repository.\" The answer is right, but the statement only says that repository settings contain an off switch for Actions. Anyone who has seen a settings page would answer True without knowing GitHub Actions governance, so the card teaches almost nothing at the 4.1 level, and the phrase 'disables workflow runs' is easy to confuse with per-workflow disabling, which card 2.3-10 covers.",
+     "problem": "Truism or give-away. The answer can be guessed from common sense, and the card tests no governance behaviour, such as the level a setting lives at or how a policy cascades.",
+     "suggestedFix": "Replacement (answer true). Statement: \"An organization owner can turn off a GitHub Actions policy setting that the enterprise leaves enabled.\" Explanation: \"Enterprise Actions policies cascade down: a setting enabled for the enterprise can be selectively disabled in organizations or repositories, but one disabled at enterprise level cannot be enabled below it.\" Source: https://docs.github.com/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-github-actions-in-your-enterprise (\"If a policy is enabled for an enterprise, the policy can be selectively disabled in individual organizations or repositories. If a policy is disabled for an enterprise, individual organizations or repositories cannot enable it.\")"
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.1. Balance is 5 true (01, 03, 05, 08, 09) and 5 false (02, 04, 06, 07, 10). Every source URL loads and is official docs.github.com. Evidence for the cards that pass: 01, the enterprise policy page lists \\\"Enable GitHub Actions for specific organizations\\\". 02, the org page says \\\"For a reusable workflow, the syntax is OWNER/REPOSITORY/PATH/FILENAME@TAG-OR-SHA\\\". 03, the org page says \\\"all actions must be pinned to a full-length commit SHA ... This includes ... actions authored by GitHub. Reusable workflows can still be referenced by tag.\\\" 04, \\\"Allow actions created by GitHub\\\" and \\\"Allow Marketplace actions by verified creators\\\" are separate options. 05, the org page has \\\"Require approval for first-time contributors\\\" and says \\\"A user with write access to the repository must approve\\\". 06, the reusing-workflow-configurations page says \\\"the Access policy on the Actions settings page of the called workflow's repository must be explicitly configured\\\". 07, the org page says \\\"Run workflows from fork pull requests\\\" gives \\\"a GITHUB_TOKEN with read-only permission, and with no access to secrets\\\", and \\\"Send secrets to workflows from pull requests\\\" is a separate option. 08, the reusing-workflow-configurations page says \\\"you need to grant Read access to users or teams who should be able to use the templates\\\". 10, the enterprise page says \\\"Policies never restrict access to local actions on the runner filesystem (where the uses: path start with ./)\\\". I checked the recent changelog entries: workflow execution protections went GA on 2026-09-17, bot-PR approval came in June 2026, and holding malicious workflows for approval came in July 2026. None of them reverses any 4.1 answer. Minor observations, not flagged: (a) Card 03 (policy to require SHA pinning) sits next to 5.1-08 (SHA pinning recommended). They are different facts (a policy setting versus best practice), and the prompt puts policy configuration in 4.1, so I kept both. (b) Card 08 and 2.3-04 both deal with non-public .github template access, but they test different facts (user Read access versus which repository visibilities can use the templates). (c) Card 04's 'also' leans slightly toward a false wording tell. (d) Four of the ten cards (02, 03, 04, 10) are about the allowed-actions policy. That is acceptable for this section's bullets, but it is narrow."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s4.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.github.com/en/actions/concepts/runners/actions-runner-controller)",
+     "evidence": "Source opening: \"Actions Runner Controller (ARC) is a Kubernetes operator that orchestrates and scales self-hosted runners for GitHub Actions.\" and \"With ARC, you can create runner scale sets that automatically scale based on the number of workflows running...\" The statement repeats that definition almost word for word. Anyone can read the answer from the names \"Runner Controller\" and \"runner scale sets\", so it is a definition card and not hard (difficulty 3). The fact is still correct.",
+     "problem": "This is a definition card and a near-copy of the source. The answer can be read from the product name, which breaks the no-definition and no-name-giveaway rules. The hard rating does not fit.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"ARC's runner scale set listener learns about queued jobs through an HTTPS long-poll connection to GitHub.\" Explanation: \"The listener pod authenticates to the GitHub Actions Service, holds a long poll open and patches the EphemeralRunnerSet replica count, so the cluster needs no inbound webhook.\" Same URL; its How it works section says the listener \"connects to the GitHub Actions Service to authenticate and establish an HTTPS long poll connection.\" Avoid an ARC labels card: the use-ARC-in-a-workflow page now documents multiple labels for scale sets."
+    },
+    {
+     "id": "github-actions-s4.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.github.com/en/enterprise-cloud@latest/admin/.../restricting-network-traffic-to-your-enterprise-with-an-ip-allow-list)",
+     "evidence": "Source: \"To allow your self-hosted or larger hosted runners to communicate with GitHub, add the IP address or IP address range of your runners to the IP allow list that you have configured for your enterprise.\" and \"If you use an IP allow list and would also like to use GitHub Actions, you must use self-hosted runners or GitHub-hosted larger runners with static IP address ranges.\" The page never mentions runner groups. The answer False is correct.",
+     "problem": "Strawman. Runner groups (repository access) and the IP allow list (network access) are unrelated, and nobody who studied would link them. The misconception \"Runner group access also satisfies the enterprise IP allow list\" is not realistic, and the wording \"grants ... access through an enterprise IP allow list\" is confusing. The explanation also limits the setting to enterprise admins, but organizations can have their own allow list.",
+     "suggestedFix": "Replace (keeps answer FALSE). Statement: \"An enterprise using an IP allow list can run its Actions jobs on standard GitHub-hosted runners.\" Explanation: \"With an IP allow list, Actions jobs need self-hosted runners or GitHub-hosted larger runners with static IP ranges, and admins add those runners' addresses to the allow list.\" Same URL."
+    },
+    {
+     "id": "github-actions-s4.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.github.com/en/actions/tutorials/build-and-test-code/nodejs)",
+     "evidence": "Source: \"The `setup-node` action takes a Node.js version as an input and configures that version on the runner.\" The statement says that actions/setup-node selects a Node.js version, which anyone can read from the action's name. It also sits close to s5.2-01, which also tests actions/setup-node (its cache input).",
+     "problem": "Name giveaway and near-truism. Nobody would answer False, and the card teaches nothing about installing software at runtime beyond the action's name.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"A step on an Ubuntu GitHub-hosted runner runs `sudo apt-get install` without a password prompt.\" Explanation: \"Linux and macOS GitHub-hosted VMs use passwordless sudo and Windows VMs run as administrator with UAC disabled, so jobs can install extra packages at runtime.\" Source: https://docs.github.com/en/actions/reference/runners/github-hosted-runners (\"The Linux and macOS virtual machines both run using passwordless `sudo`.\")"
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.2: 5 true (02, 04, 06, 09, 10) and 5 false (01, 03, 05, 07, 08). Every source URL loads and is official. All three replacements keep the original answer, so the balance stays at 5/5. The GH-200 study guide (Skills measured as of January 2026) lists four bullets for this section, and all cards fall within them: configure and monitor runners, IP allow lists and networking, runner groups and troubleshooting, and preinstalled software with setup-* actions.\n\nCards that pass, with the quote that settles each:\n- s4.2-01 (false): self-hosted-runners reference, \\\"If GitHub finds an online and idle runner that matches the job's `runs-on` labels and groups, the job is then assigned...\\\"\n- s4.2-02 (true): runner-groups concepts page, \\\"Restrict which organizations and repositories can use specific runners\\\". It is easy but acceptable at difficulty 1.\n- s4.2-03 (false): \\\"GitHub only assigns one job to a runner\\\" and \\\"automatically de-register the runner after it has processed one job\\\".\n- s4.2-06 (true): github-hosted-runners reference, \\\"the `actions` key in the response of the `GET /meta` endpoint\\\". The docs also advise against using these ranges as allowlists, which the card does not contradict.\n- s4.2-07 (false): github-hosted-runners concepts page, \\\"The link following `Included Software` will describe the preinstalled tools on the runner that ran the workflow.\\\" It is related to s5.2-07 (pinning ubuntu-24.04 does not freeze tools) but rests on a different fact.\n- s4.2-08 (false): monitor-and-troubleshoot page. Runner_ logs are \\\"generated each time the application is started\\\". The runner \\\"creates a detailed log file for each job... the filename begins with `Worker_`\\\".\n- s4.2-09 (true): \\\"By default, self-hosted runners will automatically perform a software update...\\\" The --disableupdate explanation is accurate. The same page adds that you must then update within 30 days.\n\nSide finding: the ARC workflow page (use-arc-in-a-workflow) now documents assigning multiple labels to a runner scale set. Do not write any replacement that claims ARC scale sets are targeted only by installation name."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s4.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, docs.github.com use-variables (current)",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets: \"When creating a secret or variable in an organization, you can use a policy to limit access by repository. For example, you can grant access to all repositories, or limit access to only private repositories or a specified list of repositories.\" The use-variables page only gives the UI step \"From the Repository access dropdown list, choose an access policy.\"",
+     "problem": "The answer is correct, but it is a give-away: a player who has never seen the feature would answer True to 'an access policy permits a selected set of repositories', because the wording itself implies it. It also rests on the same organization repository-access policy model as s4.3-01. Secrets and variables share that model, so the card teaches almost nothing new.",
+     "suggestedFix": "Replace (answer true). Statement: \"In a reusable workflow, the `vars` context resolves configuration variables from the caller workflow's repository.\" Explanation: \"A called workflow sees the configuration variables of the caller's repository, not those of the repository that stores the reusable workflow.\" Source: https://docs.github.com/en/actions/reference/workflows-and-actions/variables (Configuration variable precedence: \"For reusable workflows, the variables from the caller workflow's repository are used.\")"
+    },
+    {
+     "id": "github-actions-s4.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, docs.github.com use-variables (current)",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-variables: \"When you define configuration variables, they are automatically available in the `vars` context.\" and \"Each of the following configuration variables have been defined at the repository, organization, or environment levels.\"",
+     "problem": "The answer can be read from the names: `vars` is the configuration-variables context. The statement matches no realistic misconception, and the explanation only repeats the statement. The statement also leaves out the environment level, so it is a partial description, not a tested fact.",
+     "suggestedFix": "Replace (answer true). Statement: \"A workflow expression reads a configuration variable through `vars` with case-insensitive name matching.\" Explanation: \"Configuration variable names are case insensitive when referenced, so `vars.api_url` and `vars.API_URL` resolve to the same variable.\" Source: https://docs.github.com/en/actions/reference/workflows-and-actions/variables (Naming conventions for configuration variables: \"Are case insensitive when referenced.\")"
+    }
+   ],
+   "notes": "I opened all 7 source URLs as docs.github.com markdown on 2026-10-03; all returned 200 and are current. Balance: true cards are 01, 02, 05, 07 and 09; false cards are 03, 04, 06, 08 and 10. Both replacements are true, so the 5/5 balance holds.\n\nCards that passed, with the sentence that settles each:\n- 01: use-secrets says \"By default, the secret is only available to private repositories.\" The GHEC qualifier sidesteps the GitHub Free note.\n- 02: use-secrets says \"If your repository has environment secrets or can access secrets from the parent organization, then those secrets are also listed on this page.\" This is a borderline UI-trivia true card, but I did not flag it.\n- 03: deployments-and-environments says \"Secrets stored in an environment are only available to workflow jobs that reference the environment.\"\n- 04: the secrets reference says \"if an organization, repository, and environment all have a secret with the same name, the environment-level secret takes precedence.\"\n- 06: the variables reference says \"Environment-level variables are only available on the runner after the job starts executing.\" This card sits near s1.2-10 (steps context in run-name) and s4.3-03 (environment scope). Its fact differs: when environment variables become available. I did not count it as a duplicate.\n- 08: use-secrets says \"If a secret has not been set, the return value of an expression referencing the secret ... will be an empty string.\"\n- 09: REST secrets says \"Gets your public key, which you need to encrypt secrets.\" at GET /repos/{owner}/{repo}/actions/secrets/public-key.\n- 10: REST variables lists \"PATCH /repos/{owner}/{repo}/actions/variables/{name}\" for \"Update a repository variable\". Create uses POST, and secrets use PUT, so the misconception is realistic.\n\nI found no retired features, no version-dependent answers and no duplicates with other sections. I checked s1.1-09, s1.2-03, s1.2-10, s1.3-10, s4.1-07 and s5.1-06."
+  },
+  {
+   "section": "5.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s5.1-06",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (docs.github.com deployments-and-environments)",
+     "evidence": "\"Only one of the required reviewers needs to approve the job for it to proceed.\" (https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments). The statement never says 'environment', though. Branch protection 'Require approvals' and repository rulesets set a minimum number of approving reviews, so an expert who reads 'the required-reviewer rule' as a branch or ruleset review rule would answer False.",
+     "problem": "The answer is right for environment protection rules only. The statement does not name the environment, so the card does not stand alone and can be read as the pull request review rule, where several approvals can be required.",
+     "suggestedFix": "Answer stays True. Statement: \"An environment's required-reviewer rule lets a job proceed once any one of its listed reviewers approves.\" Explanation: \"Only one of the listed users or teams has to approve. Other protection rules on the environment, such as a wait timer, still apply.\" Keep the same URL."
+    },
+    {
+     "id": "github-actions-s5.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "\"If you enable this setting, users who initiate a deployment cannot approve the deployment job, even if they are a required reviewer.\" (https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)",
+     "problem": "The answer is correct, but the setting's name gives it away: a setting called 'Prevent self-review' that 'permits' self-approval is false by its own wording. This is a name giveaway and close to a strawman.",
+     "suggestedFix": "Answer stays False. Statement: \"An environment's deployment branches rule controls which users may approve jobs that target that environment.\" Explanation: \"Deployment branches and tags restrict which branches or tags can deploy to the environment. The required reviewers rule sets who may approve.\" Keep the same URL; it says the rule restricts \"which branches and tags can deploy to the environment\"."
+    },
+    {
+     "id": "github-actions-s5.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (secure-use reference)",
+     "evidence": "\"For inline scripts, the preferred approach to handling untrusted input is to set the value of the expression to an intermediate environment variable.\" (https://docs.github.com/en/actions/reference/security/secure-use); \"Before the shell script is run, the expressions inside ${{ }} are evaluated and then substituted with the resulting values, which can make it vulnerable to shell command injection.\" (https://docs.github.com/en/actions/concepts/security/script-injections)",
+     "problem": "As worded, the statement is true by mechanics alone: an env value obviously carries a value into a script. A player who knows nothing about script injection answers True, and the card never tests the security point (expression substitution compared with an env variable). Only the explanation teaches the real fact.",
+     "suggestedFix": "Answer stays True. Statement: \"GitHub substitutes `${{ }}` expressions in a `run` script before the shell starts, which opens it to script injection.\" Explanation: \"Expression values are pasted into the generated shell script, so an untrusted PR title can run as commands. Pass it through an intermediate env variable instead.\" URL: https://docs.github.com/en/actions/concepts/security/script-injections"
+    },
+    {
+     "id": "github-actions-s5.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (github.blog changelog 2026-04-23); also confirmed on the current OIDC reference",
+     "evidence": "\"All repositories created after July 15, 2026 will automatically use the new immutable subject claim format.\" and \"Repository renames and transfers after July 15, 2026 will also adopt the new format.\" (https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/); the docs example is \"repo:octo-org@123456/octo-repo@456789:ref:refs/heads/demo-branch\" (https://docs.github.com/en/actions/reference/security/oidc)",
+     "problem": "The answer is correct, but there is a wording tell: 'gets the earlier ... format' for a repository 'created after' a cutoff date signals the answer without any knowledge. The prompt also wants the current docs page rather than only a changelog. A more useful false fact on this same factKey is the rename/transfer case, which learners plausibly get wrong.",
+     "suggestedFix": "Answer stays False. Statement: \"Renaming a repository after July 15, 2026 leaves its OIDC `sub` claim in the name-only format.\" Explanation: \"Repositories created, renamed or transferred after July 15, 2026 move to the immutable sub format with owner and repository IDs, e.g. repo:octo-org@123456/octo-repo@456789:ref:...\" Keep may_change. URL: https://docs.github.com/en/actions/reference/security/oidc"
+    },
+    {
+     "id": "github-actions-s5.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (uses actions/attest@v4)",
+     "evidence": "\"The value of the subject-path parameter should be set to the path to the binary you want to attest.\" (https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations)",
+     "problem": "The answer is correct, but this is a strawman: anyone who has studied attestations knows the subject is the artifact being attested, and the input name 'subject-path' plus the phrase 'attest a binary' gives it away. It tests trivia about one input rather than how attestations behave.",
+     "suggestedFix": "Answer stays False. Statement: \"Artifact attestations from a private repository are written to the public Sigstore transparency log.\" Explanation: \"Private repositories use GitHub's Sigstore instance, which has no transparency log. Public repositories use the Sigstore Public Good Instance and its publicly readable log.\" URL: https://docs.github.com/en/actions/concepts/security/artifact-attestations (\"GitHub's Sigstore instance ... does not have a transparency log\")."
+    }
+   ],
+   "notes": "I opened every source URL and each one loads from an official, current page. The GH-200 study guide still says \"Skills measured as of January 2026\", and every card is in scope for the 5.1 bullets. The section is balanced: 5 true (02, 05, 06, 08, 10) and 5 false (01, 03, 04, 07, 09); every suggested fix keeps the original answer, so the balance holds.\n\nPassed:\n- 01: the workflow-syntax page says job-level permissions configure \"a different set of permissions ... for each job\" and \"all of those that are not specified are set to none\". Job-level permissions replace the workflow map rather than add to it.\n- 02: the GITHUB_TOKEN concepts page says the self-hosted job maximum is 5 days but the token \"can only be refreshed for up to 24 hours\". The explanation correctly avoids the numbers.\n- 03: the OIDC reference says id-token: write \"does not grant write access to other resources\".\n- 08: the secure-use page says \"Pinning an action to a full-length commit SHA is currently the only way to use an action as an immutable release\".\n- 10: the attestations how-to shows `gh attestation verify PATH -R ORGANIZATION_NAME/REPOSITORY_NAME`.\n\nDuplicate check, borderline but not flagged:\n- 08 (SHA pin recommended) sits close to s4.1-03 (an organization can require SHA pinning). It is a different fact, but knowing the policy exists hints at the recommendation.\n- 06 and 07 (environment approval) are separate from s1.3-10 (runner assignment before protection rules) and s4.3-03 (environment secret reach), so they are not duplicates."
+  },
+  {
+   "section": "5.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "github-actions-s5.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official docs.github.com, supports the card",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching: \"So, when the dependencies that make up the `package-lock.json` file change, the cache key changes and a new cache is automatically created.\"",
+     "problem": "The answer follows from what a hash is: a key built from a file's hash changes when the file changes. It is close to a paraphrase of the source sentence. It also tests cache-key mechanics, which the prompt assigns to 1.3, not to the cost and scaling side that belongs in 5.2.",
+     "suggestedFix": "Replace (answer true): \"GitHub bills Actions cache overage only when a repository's cache storage limit exceeds the included amount.\" Explanation: \"Each repository gets an included cache allowance. Charges for usage above it start only after someone sets the repository's cache storage limit higher than that allowance.\" Source: https://docs.github.com/en/billing/concepts/product-billing/github-actions (\"The repository owner will only be charged if the repository cache storage limit has been configured higher than the included usage.\"). Set volatility to may_change."
+    },
+    {
+     "id": "github-actions-s5.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, but does not say when exclusion happens",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations: \"To remove specific configurations defined in the matrix, use `jobs.<job_id>.strategy.matrix.exclude`... the following workflow will run nine jobs: one job for each of the 12 configurations, minus the one excluded job...\"",
+     "problem": "This is a strawman: nobody who has studied matrices thinks an excluded combination starts on a runner and is then stopped. It also rests on the same fact as s2.1-03 (exclude removes matching jobs from the matrix), and matrix interpretation belongs in 2.1 and matrix syntax in 1.2. The page never says the configurations are removed 'before GitHub schedules their jobs'. It only shows that they do not run.",
+     "suggestedFix": "Replace (answer false): \"GitHub bills a macOS hosted runner minute at the same rate as a Linux hosted runner minute.\" Explanation: \"Per-minute rates depend on the runner's operating system and size. macOS and Windows hosted minutes cost more than Linux ones, so moving OS-neutral jobs to Linux lowers cost.\" Source: https://docs.github.com/en/billing/concepts/product-billing/github-actions (\"jobs that run on Windows and macOS runners hosted by GitHub cost more to run than jobs on Linux runners\"). Set volatility to may_change."
+    },
+    {
+     "id": "github-actions-s5.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency: \"To also cancel any currently running job or workflow in the same concurrency group, specify `cancel-in-progress: true`.\"",
+     "problem": "The key's name gives the answer away: `cancel-in-progress` cancels the run in progress. The statement also says 'job' only, although at workflow level the key cancels whole workflow runs. The behaviour that is not obvious here is the default handling of pending runs, which the docs now control with a `queue` property (single or max).",
+     "suggestedFix": "Replace (answer true): \"With the default queue setting, a new run entering a concurrency group cancels the run already pending there.\" Explanation: \"A concurrency group holds one pending run by default, so the newer run replaces it. `queue: max` lets runs wait instead, and `cancel-in-progress` also cancels the running one.\" Same URL (\"`single` (default): ... any existing `pending` job or workflow run in the same group is canceled and replaced.\"). Set volatility to may_change because the queue property is new."
+    },
+    {
+     "id": "github-actions-s5.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax: \"`jobs.<job_id>.timeout-minutes`: The maximum number of minutes to let a job run before GitHub automatically cancels it.\"",
+     "problem": "This is a definition card: the key name `timeout-minutes` says that it caps a job's duration, so a player can answer from the wording alone. It teaches nothing beyond the name.",
+     "suggestedFix": "Replace (answer true): \"Re-running a failed workflow in a private repository adds the re-run's minutes to those the failed attempt used.\" Explanation: \"Minutes a failed attempt used stay billed. A workflow that fails after 5 minutes and then succeeds in a 10-minute re-run uses 15 minutes of the owner's allowance.\" Source: https://docs.github.com/en/billing/concepts/product-billing/github-actions (\"If you fix the problem and re-run the workflow successfully, in total you'll use 15 minutes of the repository owner's allowance.\"). Set volatility to may_change."
+    },
+    {
+     "id": "github-actions-s5.2-07",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.github.com/en/actions/concepts/runners/github-hosted-runners: \"The software tools included in our GitHub-owned images are updated weekly.\" The GH-200 study guide puts runner image changes under 1.2 (\"account for runner image changes\") and preinstalled tool versions under 4.2 (\"Identify preinstalled software/tool versions on GitHub-hosted runners\"). The 5.2 bullets cover only caching, artifact retention and scaling or optimization strategies.",
+     "problem": "The card is correct, but it tests how stable runner images are, not performance or cost. It also sits next to s4.2-07, which already rests on the same fact that GitHub-hosted images change over time (the Included Software link describes the exact image that ran the job).",
+     "suggestedFix": "Replace (answer false): \"A run's log files and job summary count toward the repository owner's artifact storage allowance.\" Explanation: \"Logs and job summaries do not count as artifact storage. Uploaded artifacts share the storage allowance with GitHub Packages, and caches have their own allowance.\" Source: https://docs.github.com/en/billing/concepts/product-billing/github-actions (\"If you run a workflow that generates many log files and a long job summary, these files do not count towards the repository owner's artifact storage allowance.\"). Set volatility to may_change."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 5.2, opening every source URL and reading the docs.github.com article text, plus the GH-200 study guide's 5.2 bullets. Flagged: 02, 04, 05, 06, 07. Passed: 01, 03, 08, 09, 10. Notes on the passed cards: 01 is correct (the dependency-caching page says setup-node caches npm, Yarn and pnpm dependencies, and the Node.js tutorial says the runtime comes from the runner's tools cache). Its explanation restates s4.2-10's answer (setup-node selects the Node.js version), so consider rewording it to say what is cached, the npm global cache rather than node_modules or the runtime. 03 is supported by the hourly accrual model (\"Future hourly charges stop accumulating\"). 08 is supported by the pricing page (\"GitHub rounds the minutes and partial minutes each job uses up to the nearest whole minute\"); the URL is the enterprise-cloud@latest variant, and /en/billing/reference/actions-runner-pricing is the free-pro-team equivalent. 09: the billing page still says \"GitHub Actions usage is free for self-hosted runners\". GitHub announced a $0.002/min self-hosted platform charge in December 2025 for March 2026, then postponed it and has not applied it, so the may_change marking is right; recheck before release. 10 is supported (\"Included minutes cannot be used for larger runners\"; \"Larger runners are not eligible for the use of included minutes on private repositories\"). True/false balance: the section is 5 true and 5 false, and the replacements keep it (02, 05 and 06 true; 04 and 07 false). Two things to check against the rest of the deck before applying: my replacement facts (OS rate difference, re-run billing, logs excluded from artifact storage, cache overage, default concurrency queue) did not match any other card in a grep, but the concurrency replacement relies on the new `queue` property (single/max), which the docs now describe. Also confirm no other section covers concurrency."
+  }
+ ],
+ "scan": {
+  "cardsRead": 140,
+  "duplicates": [
+   {
+    "ids": [
+     "github-actions-s4.2-10",
+     "github-actions-s5.2-01"
+    ],
+    "why": "Both cards test one distinction in actions/setup-node: node-version picks the runtime and cache picks package-manager data. The explanation of s5.2-01 states the fact that s4.2-10 tests ('node-version selects the Node.js runtime separately'). s4.2-10 is also a name giveaway (setup-node selects a Node version) and does not belong in 4.2, which is about runners at scale.",
+    "dropId": "github-actions-s4.2-10"
+   },
+   {
+    "ids": [
+     "github-actions-s2.3-09",
+     "github-actions-s3.2-06"
+    ],
+    "why": "Both cards are false for the same reason: an action runs as a step inside the caller job, so it cannot choose the job's runner. s2.3-09 frames it as a composite action choosing a runner, s3.2-06 as runs.image choosing the job runner image. Knowing either answer gives the other. s2.3-09 is the core composite action versus reusable workflow distinction of 2.3, so it should stay.",
+    "dropId": "github-actions-s3.2-06"
+   },
+   {
+    "ids": [
+     "github-actions-s1.2-10",
+     "github-actions-s4.3-06"
+    ],
+    "why": "Both cards test the same fact: run-name is evaluated at workflow level before any job runs, so data that exists only at job time is unavailable. s1.2-10 tests the steps context and s4.3-06 tests environment-level variables. Both are false and use the same 'X is readable in run-name' template. s1.2-10 is close to a strawman, because steps obviously have no outputs before the run is named. s4.3-06 tests the subtler scoping point.",
+    "dropId": "github-actions-s1.2-10"
+   },
+   {
+    "ids": [
+     "github-actions-s1.2-09",
+     "github-actions-s2.1-04"
+    ],
+    "why": "Both cards rest on one rule: an alias reproduces exactly the anchored node, no more and no less. s1.2-09 says an alias of an anchored job reuses the whole job (true). s2.1-04 says an alias of an anchored env copies the job's steps too (false). Together they form a mirrored true/false pair. s2.1-04 is close to a strawman, because nobody who has read about anchors would expect an env alias to copy steps.",
+    "dropId": "github-actions-s2.1-04"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "default-branch-workflow-source",
+    "ids": [
+     "github-actions-s1.1-01",
+     "github-actions-s1.1-02",
+     "github-actions-s1.1-06"
+    ],
+    "why": "Three 1.1 cards rest on 'the workflow file comes from the default branch'. The explanation of s1.1-02 states the default-branch rule, and the true statements s1.1-01 and s1.1-06 repeat it, so the false 'feature branch' card in s1.1-02 becomes easy to answer."
+   },
+   {
+    "name": "pr-head-branch-distractor",
+    "ids": [
+     "github-actions-s1.1-05",
+     "github-actions-s2.1-01"
+    ],
+    "why": "The two cards use the same false template ('...the pull request's/contributor's head branch') with almost the same misconception. The explanation of s1.1-05 says the source branch is exposed through github.head_ref, which hints that GITHUB_REF is something else (s2.1-01)."
+   },
+   {
+    "name": "run-name-timing",
+    "ids": [
+     "github-actions-s1.2-10",
+     "github-actions-s4.3-06"
+    ],
+    "why": "Both ask what run-name can read. The explanation of s1.2-10 ('evaluated before job steps produce outputs') gives away s4.3-06, and the reverse also holds."
+   },
+   {
+    "name": "yaml-alias-scope",
+    "ids": [
+     "github-actions-s1.2-09",
+     "github-actions-s2.1-04"
+    ],
+    "why": "A mirrored pair: an alias reuses the anchored node. One card shows the whole anchored job reused (true), the other claims an env alias copies the whole job (false)."
+   },
+   {
+    "name": "action-runs-in-caller-job",
+    "ids": [
+     "github-actions-s2.3-09",
+     "github-actions-s3.2-06",
+     "github-actions-s3.1-06"
+    ],
+    "why": "s3.1-06 (true: a JavaScript action runs directly on the job's runner) and the explanation of s2.3-09 (a composite action runs as a step in the caller job) give away the false s3.2-06 (runs.image picks the job runner image). s2.3-09 and s3.2-06 also share the 'action picks the job runner' trick."
+   },
+   {
+    "name": "output-mapping-levels",
+    "ids": [
+     "github-actions-s1.3-04",
+     "github-actions-s3.2-04"
+    ],
+    "why": "These are the two sides of one distinction: reusable workflow outputs map from job outputs, composite action outputs map from step outputs. Both are true, and each card prompts the other."
+   },
+   {
+    "name": "cross-job-values",
+    "ids": [
+     "github-actions-s1.3-02",
+     "github-actions-s1.3-03",
+     "github-actions-s3.2-09"
+    ],
+    "why": "s1.3-02 shows steps.<id>.outputs inside a job, and the explanation of s1.3-03 states that downstream jobs use needs.<job>.outputs. Together they give away s1.3-03 (steps.<job>.outputs across jobs, false) and s3.2-09 (core.saveState feeding a downstream job, false)."
+   },
+   {
+    "name": "matrix-exclude",
+    "ids": [
+     "github-actions-s2.1-03",
+     "github-actions-s5.2-04"
+    ],
+    "why": "s2.1-03 says an exclude 'removes' jobs and its explanation says matching variants are removed. That gives away s5.2-04, which is false because it claims excluded jobs start and are then stopped. s5.2-04's explanation ('removes matching configurations') in turn hints at s2.1-03."
+   },
+   {
+    "name": "sha-pin-vs-moving-tags",
+    "ids": [
+     "github-actions-s3.3-07",
+     "github-actions-s4.1-03",
+     "github-actions-s5.1-08"
+    ],
+    "why": "s4.1-03 (an organization can require full-length SHAs) strongly hints at s5.1-08 (a full SHA is the recommended pin). The explanation of s5.1-08 ('rather than a movable tag') gives away s3.3-07 (maintainers can move a major version tag)."
+   },
+   {
+    "name": "local-action-path",
+    "ids": [
+     "github-actions-s3.1-08",
+     "github-actions-s4.1-10"
+    ],
+    "why": "The explanation of s4.1-10 says local actions are 'loaded from the runner filesystem through ./ paths'. That directly answers s3.1-08 (false claim that a ./ action is read from GitHub before checkout)."
+   },
+   {
+    "name": "nonpublic-workflow-templates",
+    "ids": [
+     "github-actions-s2.3-04",
+     "github-actions-s4.1-08"
+    ],
+    "why": "The explanation of s2.3-04 ('available to internal and private repositories, subject to read access') states the answer to s4.1-08 (users need Read access to the private or internal .github repository)."
+   },
+   {
+    "name": "marketplace-action-name",
+    "ids": [
+     "github-actions-s3.3-02",
+     "github-actions-s3.3-03"
+    ],
+    "why": "Each explanation says the Marketplace listing uses the metadata name. Knowing that the name must be unique across Marketplace (s3.3-03) implies the listing name is the metadata name (s3.3-02), and the reverse also holds."
+   },
+   {
+    "name": "verified-creator-also",
+    "ids": [
+     "github-actions-s3.3-05",
+     "github-actions-s4.1-04"
+    ],
+    "why": "Both are false through the same trick: one credential or setting 'also' grants verified-creator status or verified-creator actions. Dealing both in one round teaches the trick."
+   },
+   {
+    "name": "attestation-subject",
+    "ids": [
+     "github-actions-s5.1-09",
+     "github-actions-s5.1-10"
+    ],
+    "why": "s5.1-10 (gh attestation verify takes the binary path) shows that the attestation subject is the binary, which gives away s5.1-09 (false claim that subject-path points to the workflow file). The explanation of s5.1-09 confirms s5.1-10."
+   },
+   {
+    "name": "runner-image-versions",
+    "ids": [
+     "github-actions-s4.2-07",
+     "github-actions-s5.2-07"
+    ],
+    "why": "The explanation of s5.2-07 (GitHub keeps updating image tools) and the explanation of s4.2-07 (the link points to the specific image that ran the job) each give away the other card's false answer."
+   },
+   {
+    "name": "ephemeral-runners",
+    "ids": [
+     "github-actions-s4.2-03",
+     "github-actions-s4.2-04"
+    ],
+    "why": "The explanation of s4.2-04 (ARC creates ephemeral runner pods as demand changes) hints that ephemeral runners are one-job and short-lived, which answers s4.2-03."
+   },
+   {
+    "name": "runner-group-scope",
+    "ids": [
+     "github-actions-s4.2-01",
+     "github-actions-s4.2-02",
+     "github-actions-s4.2-05"
+    ],
+    "why": "s4.2-02 and its explanation say a runner group controls which repositories can use its runners. That hints at both false cards that claim a runner group does more (s4.2-01 overrides labels, s4.2-05 satisfies the IP allow list), and both of those use the same 'runner group grants/overrides' template."
+   },
+   {
+    "name": "service-container-network",
+    "ids": [
+     "github-actions-s1.2-05",
+     "github-actions-s1.2-06"
+    ],
+    "why": "The explanation of s1.2-06 (container job and service share a Docker network that GitHub creates) hints that GitHub manages networking, which answers s1.2-05 (--network is excluded)."
+   },
+   {
+    "name": "rerun-single-job",
+    "ids": [
+     "github-actions-s2.1-08",
+     "github-actions-s2.2-02",
+     "github-actions-s2.2-03"
+    ],
+    "why": "s2.1-08 and s2.2-02 use the same 'gh run ... --job JOB_ID' pattern, and each confirms the other. The explanation of s2.2-03 (a partial rerun's archive holds only the rerun jobs) confirms that single jobs can be rerun."
+   },
+   {
+    "name": "debug-vs-diagnostic-logs",
+    "ids": [
+     "github-actions-s2.2-04",
+     "github-actions-s4.2-08"
+    ],
+    "why": "The explanation of s2.2-04 ('runner process logs belong to runner diagnostic logging') hints that Runner_ files hold runner-process logs, not per-job logs, which answers s4.2-08."
+   },
+   {
+    "name": "environment-scoped-values",
+    "ids": [
+     "github-actions-s4.3-03",
+     "github-actions-s4.3-04",
+     "github-actions-s4.3-06"
+    ],
+    "why": "All three test values scoped to an environment. The explanations of s4.3-03 and s4.3-04 (environment secrets reach jobs that reference the environment) and of s4.3-06 (environment values exist only after the job starts) reinforce each other's answers."
+   },
+   {
+    "name": "org-repository-access",
+    "ids": [
+     "github-actions-s4.3-01",
+     "github-actions-s4.3-02",
+     "github-actions-s4.3-05"
+    ],
+    "why": "s4.3-02 ('organization secrets granted to that repository') and s4.3-05 (organization variable access for selected repositories) cue each other and the access default in s4.3-01."
+   },
+   {
+    "name": "setup-node-split",
+    "ids": [
+     "github-actions-s4.2-10",
+     "github-actions-s5.2-01"
+    ],
+    "why": "The explanation of s5.2-01 states the fact of s4.2-10 word for word ('node-version selects the Node.js runtime')."
+   }
+  ],
+  "tells": "I read 140 cards: 70 true and 70 false, 5 of each per section. Statement length is balanced: in every section the true and false averages are within 5 characters (closest call is 1.3 with 81.2 true vs 76.4 false). Across the deck the averages are 85.2 true and 84.3 false; explanations average 103 true and 108 false. Hedge verbs are roughly balanced ('can' appears in 9 true and 7 false). The tells come from false-statement templates and from key names:\n\n1) Scope creep, where a setting or permission 'also' does a neighbouring thing. 7 cards, all false, no true counterpart: s2.1-04 (copies steps 'as well'), s3.3-05 ('also gives'), s4.1-04 ('also admits'), s4.1-07 (policy 'sends secrets'), s4.2-05 (runner group 'grants' IP allow list access), s5.1-01 ('adds scopes'), s5.1-03 (id-token 'gains write access'). 'also' is false 2/2, 'grants' false 2/2, 'admits'/'gains' false only. This breaks the rule of at most two false cards per template.\n\n2) Precedence claims where the general or default value wins. 4 false: s1.3-08 (retention-days 'overrides' the org maximum), s3.2-02 (default 'overrides' with), s3.1-10 (entrypoint 'ignored'), s4.3-04 (repository secret 'wins'). Only 2 true: s1.2-03 and s2.3-08. 'overrides' is false 2 of 3, and 'wins' and 'ignored' appear only in false cards.\n\n3) A value is available earlier than it really is. 4 false: s1.2-02 (job if reads matrix), s1.2-10 (run-name reads steps), s4.3-06 (run-name reads environment vars), s1.3-01 (GITHUB_ENV in the same step). Timing words lean false: 'before' is 3 true vs 5 false, 'after' is 1 true vs 3 false (s1.3-10, s3.1-04, s3.1-08, s5.2-04, s5.2-10, s3.3-09, s4.2-03, s5.1-04).\n\n4) 'An action picks the job runner' is false twice (s2.3-09, s3.2-06). 'Pull request head branch' is false twice (s1.1-05, s2.1-01), and both misconceptions say 'contributor's source branch'; 'head' and 'contributor' appear only in false cards.\n\n5) 'includes' is false 2/2 in section 2.2 (s2.2-03 log archive includes earlier attempts, s2.2-10 log search includes collapsed steps). 'immediately', 'just' and 'directly...returns bytes' appear only in false cards (s3.3-04, s1.1-02, s2.2-08).\n\n6) Words that predict true: 'default branch' is true 2/2 (s1.1-01, s1.1-06), while the false dispatch card s1.1-02 says 'feature branch'. 'both' is true 2/2 (s1.1-07, s3.1-03). 'accepts' is true 6 vs false 2 (true: s1.3-09, s2.2-01, s3.1-03, s3.2-01, s5.1-06, s5.1-10; false: s1.1-10, s1.2-05). 'by default' (s4.2-09) and 'its own' (s3.2-04) appear only in true cards.\n\n7) Every statement that names a gh CLI command is true, 5/5: s2.1-08, s2.2-02, s2.2-06, s4.3-01, s5.1-10. 'The X REST API reports/accepts/returns...' is true 3/5 (s2.2-01, s2.2-07, s4.3-09); the two false ones (s2.2-08, s4.3-10) hinge on HTTP details.\n\n8) Name giveaways and truisms: about 10 true cards can be answered from the key's name or from common sense: s1.2-01 (needs waits), s1.2-08 (max-parallel caps parallel jobs), s1.3-07 (download-artifact downloads uploaded files), s2.1-02 (2x2 matrix makes 4 jobs, pure arithmetic), s2.3-10 (disabling leaves the file), s3.2-10 (branding sets icon and color), s4.2-10 (setup-node selects the Node version), s5.2-02 (a hashFiles key changes when the file changes), s5.2-05 (cancel-in-progress cancels), s5.2-06 (timeout-minutes caps runtime). No false card is as guessable, so a 'the key does what its name says, so True' rule pays off.\n\n9) Mild: backticked code appears in 29 false vs 21 true statements.\n\nSpot check: the doc-backed claims in s3.2-03 (required:true not enforced), s3.1-05 (runs.pre unsupported for local actions), s2.2-03 and s2.2-10 (log archive and log search) match the current docs.github.com wording. The metadata syntax page still lists node20 next to node24, which the prompt says to ignore."
+ }
+}

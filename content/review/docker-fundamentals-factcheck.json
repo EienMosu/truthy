@@ -1,0 +1,723 @@
+{
+ "deck": "docker-fundamentals",
+ "sections": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr1-08",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official (docs.docker.com/get-started/docker-overview/)",
+     "evidence": "https://docs.docker.com/get-started/docker-overview/: \"The Docker client and daemon can run on the same system, or you can connect a Docker client to a remote Docker daemon.\" But https://docs.docker.com/reference/cli/docker/: \"If neither flag is set and no custom context exists, Docker uses default sockets: unix:///var/run/docker.sock on macOS/Linux\".",
+     "problem": "The statement \"The docker CLI uses a local dockerd process when executing Docker commands\" is true in the default setup, because the CLI connects to the local socket unless -H, DOCKER_HOST or a context says otherwise. The card is only false if you read in a \"requires\" or \"always\" that the wording does not contain, so an expert could defend True.",
+     "suggestedFix": "Keep false and the factKey client-connects-remote-daemon. Statement: \"The docker CLI must run on the same host as the Docker daemon it controls.\" Explanation: \"The CLI can reach a remote daemon over SSH or TCP, selected with -H, DOCKER_HOST or a docker context. With none of these set, it uses the local daemon socket.\" Source: https://docs.docker.com/reference/cli/docker/"
+    },
+    {
+     "id": "docker-fundamentals-sr1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official; the overview supports pull-then-create",
+     "evidence": "https://docs.docker.com/reference/cli/docker/container/run/: docker run \"runs a command in a new container, pulling the image if needed and starting the container\"; --pull default \"missing\": \"Pull the image if it was not found in the image cache, or use the cached image otherwise.\"",
+     "problem": "This is a strawman. Nobody who has studied Docker thinks a container can start before its image is there, because a container is created from the image. The card teaches nothing. Its phrase \"under the default pull policy\" also hints at the real fact without testing it.",
+     "suggestedFix": "Keep false. Statement: \"By default, docker run pulls a newer image for a tag that already exists locally.\" Explanation: \"The default --pull policy of docker run is missing: Docker pulls only when the image is absent locally and otherwise uses the cached copy. Use --pull always to check the registry first.\" Source: https://docs.docker.com/reference/cli/docker/container/run/ (this differs from sr6-12, which is about docker build --pull for base images)."
+    },
+    {
+     "id": "docker-fundamentals-sr1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.docker.com/get-started/docker-overview/)",
+     "evidence": "https://docs.docker.com/get-started/docker-overview/: \"A container is defined by its image as well as any configuration options you provide to it when you create or start it.\"",
+     "problem": "\"Two containers started from one image keep separate runtime settings\" is vague: it does not say which settings, or separate from what. It is close to a truism, since each container is its own object. The explanation also does not explain the statement. Its idea that per-container config is independent of the image is already the fact behind sr2-03 (docker run -e leaves the image's ENV unchanged), so the card adds nothing.",
+     "suggestedFix": "Replace with a true Engine architecture card. Statement: \"Docker Engine relies on containerd to create, start and stop containers.\" Explanation: \"dockerd hands the container lifecycle to containerd, which uses runc as its default runtime to start the container processes.\" Source: https://docs.docker.com/engine/daemon/alternative-runtimes/ (\"Docker Engine uses containerd for managing the container lifecycle, which includes creating, starting, and stopping containers.\")"
+    }
+   ],
+   "notes": "I checked all 12 r1 cards against their source pages, all of which loaded and are official. Quotes that settle the cards that pass:\n- sr1-01 (false): \"An image is a read-only template\", plus the read-write filesystem as the container's final layer (overview).\n- sr1-03 (false): \"they all share the same kernel\" and \"A VM is an entire operating system with its own kernel\" (what-is-a-container).\n- sr1-04 (true): \"Processes running within a container cannot see, and even less affect, processes running in another container, or in the host system\" (/engine/security/).\n- sr1-05 (true): \"When you use these settings, Docker modifies the settings for the container's cgroup on the host machine\" (resource_constraints).\n- sr1-06 (false): \"the client sends these commands to dockerd\" (overview).\n- sr1-07 (true): \"communicate using a REST API, over UNIX sockets or a network interface\" (overview).\n- sr1-10 (false): \"the Docker daemon and containers run in a lightweight Linux VM managed by Docker\" (mac-permission-requirements).\n- sr1-11 (true): \"Docker Desktop includes the Docker daemon (dockerd), the Docker client (docker)...\" (overview).\n- sr1-12 (true): \"It can be useful to commit a container's file changes or settings into a new image\" (commit reference).\n\nMinor points, not flagged:\n1. sr1-04 (namespaces isolate) and sr1-05 (cgroups limit) are the two sides of the classic namespaces versus cgroups split. The SECTIONS line names both, so I kept both. sr1-05 is a fairly direct definition of cgroups, and its difficulty 3 is overrated: 2 would fit.\n2. sr1-03 assumes the default runc runtime. An alternative runtime such as Kata gives a container its own kernel, but that is outside this deck's depth.\n3. The overview page used for sr1-11 still lists Docker Content Trust among Docker Desktop's components. The card doesn't depend on it, but don't build any explanation from that list.\n4. sr1-12 slightly hints at sr1-01, because commit is how container changes become an image. I judged them distinct facts.\n5. After the suggested fixes, r1 still has 6 true and 6 false cards: the sr1-02 replacement stays true, and the sr1-08 and sr1-09 replacements stay false."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr2-02",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official (docs.docker.com/reference/cli/docker/container/run/), supports the card",
+     "evidence": "Run reference: --rm \"Automatically remove the container and its associated anonymous volumes when it exits\". Card sr8-04 (factKey anonymous-volume-rm-cleanup) says \"`docker run --rm` removes an unshared anonymous volume when its container exits\" and its explanation describes --rm cleanup at exit, so a player who has seen sr8-04 already knows sr2-02 is True. The flag name rm also makes the answer easy to guess.",
+     "problem": "Rests on the same --rm cleanup-on-exit fact as sr8-04 and is close to a name giveaway. Section r2 has no card on restart policies other than on-failure, so the slot is better used for that.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"With --restart unless-stopped, a container you stopped manually stays stopped after the Docker daemon restarts.\" Explanation: \"unless-stopped works like always, except that a stopped container (stopped manually or otherwise) is not restarted, even when the daemon restarts.\" URL: https://docs.docker.com/engine/containers/start-containers-automatically/ (quote: \"Similar to always, except that when the container is stopped (manually or otherwise), it isn't restarted even after Docker daemon restarts.\")"
+    },
+    {
+     "id": "docker-fundamentals-sr2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/reference/cli/docker/container/run/: -e, --env and --env-file \"set simple (non-array) environment variables in the container you're running, or overwrite variables defined in the Dockerfile\". https://docs.docker.com/engine/containers/run/: \"You can even override ... variables defined using a Dockerfile ENV instruction when building the image.\"",
+     "problem": "Strawman. Nobody who has studied Docker thinks a runtime flag rewrites the stored image config. The misconception a learner could really hold is about precedence: does the image ENV beat -e?",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"An image's ENV value takes precedence over a docker run -e value for the same variable.\" Explanation: \"Values passed with -e or --env-file override variables the Dockerfile set with ENV, for that container only. The image itself stays unchanged.\" Keep the same URL (run reference)."
+    },
+    {
+     "id": "docker-fundamentals-sr2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.docker.com/reference/cli/docker/container/logs/), supports the card",
+     "evidence": "Logs reference: \"The docker logs --follow command will continue streaming the new output from the container's STDOUT and STDERR.\" https://docs.docker.com/engine/logging/: \"By default, docker logs shows the command's STDOUT and STDERR.\" and \"that application may send its output to log files instead of STDOUT and STDERR.\"",
+     "problem": "Give-away. A player can read the answer from the flag name --follow, which works like tail -f. The real behaviour to test is that docker logs only shows stdout and stderr, so an app that writes only to files inside the container shows nothing.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"docker logs collects a container's STDOUT and STDERR, so an app that writes only to files inside the container shows nothing.\" Explanation: \"By default docker logs shows the main command's STDOUT and STDERR. Servers that log to files must redirect them to those streams to appear there.\" URL: https://docs.docker.com/engine/logging/"
+    }
+   ],
+   "notes": "All 12 r2 cards were checked against their source pages, and every page loaded and is official and current. Cards that pass: 01 (-d: 'starts the container without occupying your terminal window'); 04 (--entrypoint replaces the executable and 'clears out any default command set on the image'); 05 (create: 'creates a new container from the specified image, without starting it', initial status 'created'); 06 (stop: SIGTERM or STOPSIGNAL/--stop-signal, then SIGKILL after the timeout); 07 (on-failure: 'Restart the container if it exits due to an error, which manifests as a non-zero exit code'); 08 (rm --force: 'Force the removal of a running container (uses SIGKILL)'); 09 (exec 'runs a new command in a running container'); 11 (engine/containers/run: 126 'can't be invoked', 127 'can't be found'); 12 (resource_constraints: 'By default, a container has no resource constraints'). Minor observations, not flagged: card 01 is close to a giveaway (-d for detach) but the section explicitly lists it at easy level. The sr3-10 STOPSIGNAL card and sr2-06 test different facts. The suggested fixes keep the balance at 6 true and 6 false (02 true to true, 03 false to false, 10 true to true). The suggested 02 replacement should be checked against sr2-07 so the two restart-policy cards are not treated as one split. They are different policies and different triggers, so they are not mirrored."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr3-12",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, https://docs.docker.com/reference/dockerfile/ (official, current)",
+     "evidence": "The Here-Documents section of https://docs.docker.com/reference/dockerfile/ has its own example 'RUN <<FILE1 cat > file1 && <<FILE2 cat > file2 / I am / first / FILE1 ...'. Here a RUN heredoc's lines end up as files file1 and file2 in the built image. The page also says 'If the command only contains a here-document, its contents is evaluated with the default shell' and 'With COPY instructions, you can replace the source parameter with a here-doc indicator to write the contents of the here-document directly to a file.'",
+     "problem": "The statement says a RUN heredoc stores its lines as a file and expects False. The official page shows a RUN heredoc whose lines are written to files in the image (cat > file1), so an expert could defend True. The answer depends on which command takes the heredoc, not on the heredoc itself.",
+     "suggestedFix": "Keep the answer False and test the COPY side instead. Statement (82 chars): \"`COPY <<EOF /app.sh` runs the heredoc lines in the default shell during the build.\" Explanation (156 chars): \"A COPY heredoc writes the here-document content to the destination file, here /app.sh. A RUN heredoc with no command is the form the default shell executes.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.docker.com/reference/dockerfile/ (official, current)",
+     "evidence": "https://docs.docker.com/reference/dockerfile/ (LABEL): 'To view an image's labels, use the docker image inspect command.' The same section says: 'Labels included in base images (images in the FROM line) are inherited by your image. If a label already exists but with a different value, the most-recently-applied value overrides any previously-set value.'",
+     "problem": "Anyone can guess the answer: an inspect command shows image metadata, and nobody who studied would answer False, so the card has no real misconception behind it. The card also leans on CLI output, which the depth rule calls trivia. LABEL has a more useful behaviour to test: inheritance from the base image.",
+     "suggestedFix": "Keep the answer True. Statement (75 chars): \"An image inherits the LABEL values set in the base image named in its FROM.\" Explanation (173 chars): \"Labels in the base image carry over to the new image. A LABEL with the same key in your Dockerfile overrides the inherited value, since the most recently applied value wins.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr3-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.docker.com/reference/dockerfile/ (official, current)",
+     "evidence": "https://docs.docker.com/reference/dockerfile/ (WORKDIR): 'If a relative path is provided, it will be relative to the path of the previous WORKDIR instruction.' The same section says: 'If the WORKDIR doesn't exist, it will be created even if it's not used in any subsequent Dockerfile instruction.'",
+     "problem": "The fact is correct, but the answer follows from what 'relative path' means: a relative path resolves from the current directory, which the previous WORKDIR set. This makes it close to a definition or truism card. The automatic creation of a missing WORKDIR teaches more, because learners often add RUN mkdir.",
+     "suggestedFix": "Keep the answer True. Statement (70 chars): \"WORKDIR creates the named directory when it is missing from the image.\" Explanation (139 chars): \"If the WORKDIR path does not exist, the builder creates it, even when no later instruction uses it, so a separate RUN mkdir is unnecessary.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (sr3-01 to sr3-12, all in docker-fundamentals-b1.json) against https://docs.docker.com/reference/dockerfile/, which loads (HTTP 200) and is the current official page. I fetched it as raw text and read the passages myself. Pinned versions: BuildKit v0.33.1 and Dockerfile frontend 1.27.1 are the latest non-prerelease tags (GitHub API, 2026-09-30); 0.34.0-rc1 and 1.28.0-rc1 are prereleases. So 'BuildKit 0.33' in sr3-11 appliesTo is current.\n\nCards that pass, with the deciding quote:\n- sr3-01: 'FROM instructions support variables that are declared by any ARG instructions that occur before the first FROM.'\n- sr3-02: 'The RUN instruction will execute any commands to create a new layer on top of the current image.'\n- sr3-03: 'Local tar archives are extracted by default' (ADD); for COPY, 'If the source is a file, the file and its metadata are copied to the destination.' The /build/building/best-practices/ ADD or COPY section states the COPY side more directly, if you want a stronger source.\n- sr3-04: 'The shell form of ENTRYPOINT ignores any CMD or docker run command line arguments.' Technically Docker still appends CMD to the /bin/sh -c argv as positional parameters, but the docs call it 'ignores', so the card stands.\n- sr3-05: 'Unlike ENV, an ARG variable is not embedded in the image and is not available in the final container.' This is a different fact from sr12-08 (ARG visible in docker history) and sr6-07 (ARG in the RUN environment).\n- sr3-07: 'The EXPOSE instruction doesn't actually publish the port.'\n- sr3-08: 'This can detect cases such as a web server stuck in an infinite loop and unable to handle new connections, even though the server process is still running.'\n- sr3-10: 'It does not affect signals sent by keyboard shortcuts such as Ctrl+C, which sends SIGINT directly to the process regardless of the STOPSIGNAL setting.' This does not duplicate sr2-06.\n- sr3-11: 'Use the syntax parser directive to declare the Dockerfile syntax version to use for the build. If unspecified, BuildKit uses a bundled version of the Dockerfile frontend.'\n\nBalance: true statements average 70.0 characters and false 70.2. The section has 6 true and 6 false, and all three replacements keep the original answers, so the balance holds. No explanation is over 240 characters. sr3-01 and sr5-12 both deal with ARG scope but test different facts (global ARG in FROM versus automatic platform ARGs needing a declaration inside the stage). No other duplicates with other sections."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr4-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current (https://docs.docker.com/build/concepts/overview/)",
+     "evidence": "\"When you invoke `docker build`, Buildx interprets the build options and sends a build request to the BuildKit backend.\" and \"BuildKit resolves the build instructions and executes the build steps.\" (https://docs.docker.com/build/concepts/overview/). The card is correct, but sr4-02 (docker-build-wraps-buildx) tests the same docker build -> Buildx -> BuildKit chain, and sr4-02's explanation says word for word that \"Buildx interprets the options and sends the build request to BuildKit\". Anyone who learns sr4-02 already knows the answer to sr4-01.",
+     "problem": "This card rests on the same client-to-backend fact as sr4-02, and sr4-02's explanation gives away its answer. It is also very easy: once you know Buildx is the client, the answer follows from the role names.",
+     "suggestedFix": "Replace with a TRUE card on a separate fact from the same page. Statement: \"BuildKit requests local context files from the client only when a build step needs them.\" Explanation: \"The legacy builder always copied the whole local context up front. BuildKit asks Buildx for files, secrets and SSH sockets at the moment a step needs them.\" Source: https://docs.docker.com/build/concepts/overview/ (\"BuildKit only requests the resources that the build needs when they're needed. The legacy builder, in comparison, always takes a copy of the local filesystem.\")"
+    },
+    {
+     "id": "docker-fundamentals-sr4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.docker.com/build/builders/drivers/)",
+     "evidence": "\"`docker-container`: creates a dedicated BuildKit container using Docker.\" (https://docs.docker.com/build/builders/drivers/). The fact is correct, but the driver's name already says it runs in a container.",
+     "problem": "Name giveaway: a player who knows nothing about the subject answers True from the driver name \"docker-container\" alone. The card teaches nothing about how this driver behaves differently from the default.",
+     "suggestedFix": "Replace with a TRUE card on behaviour, from the same page. Statement: \"The docker-container driver keeps build results in its build cache until you pass --load or an output.\" Explanation: \"Only the default docker driver loads images into the local image store automatically. Other drivers need --load, an --output option, or the default-load driver option.\" Source: https://docs.docker.com/build/builders/drivers/ (\"With other drivers, the build result remains in the build cache if you don't specify an output.\"). This avoids the multi-platform question the prompt rules out."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards. I fetched every source page as raw markdown from docs.docker.com (build/concepts/overview, build/concepts/context, build/builders/drivers, engine/deprecated, build/checks); each returned 200 and is current official documentation. The section is balanced at 6 true and 6 false. True statements average 76.8 characters and false ones 81.3, a gap inside the 5-character limit. With both replacements the gap stays inside the limit (true about 85.2, gap about 3.9).\n\nCards that passed, with the sentence that settles each:\n- sr4-02: overview page, \"The docker build command is a wrapper around Buildx.\"\n- sr4-03: context page, \"the set of files that your build can access\". An expert could point to --build-context, but a named context is itself a build context, so the false answer holds.\n- sr4-04: \"When you specify a remote Git repository, the repository and all submodules are included.\"\n- sr4-05: \"If you pass the URL to a remote tarball, the URL itself is sent to the builder ... The download operation will be performed on the host where the BuildKit daemon is running.\"\n- sr4-06: \"When you build without a filesystem context, Dockerfile instructions such as COPY can't refer to local files.\"\n- sr4-07: \"matching patterns ... are removed from the build context before it's sent to the builder.\"\n- sr4-08: \"A Dockerfile-specific ignore-file takes precedence over the .dockerignore file at the root of the build context if both exist.\"\n- sr4-09: \"In addition to the default build context ... you can also pass additional named contexts.\" I also checked the BuildKit dockerui source: the main context comes from the frontend input named \"context\", not from a --build-context, so the false answer holds.\n- sr4-11: engine/deprecated, \"Docker v23.0 now uses BuildKit by default to build Linux images\". One edge case: if the Buildx component is missing (static CLI binaries), the CLI silently falls back to the legacy builder with a deprecation warning. That is not an ordinary install, so the false answer stands.\n- sr4-12: build/checks, \"Instead of executing the build steps, this command only runs the checks and reports any issues it finds.\" Volatility may_change is right because the feature is labelled Beta.\n\nMinor points that did not need a flag:\n- sr4-05: \"before BuildKit starts\" reads a little oddly, since BuildKit is already running. \"Before the build starts\" would be clearer.\n- sr4-07: for Git contexts the builder has to apply .dockerignore after cloning, but the statement plainly means the local-directory case.\n- sr4-04: the wording is close to the source sentence but is restructured, so not a near-copy.\n\nNo overlap with r1, r3, r5, r6 or r12: I searched every raw card for Buildx, BuildKit, driver and context terms."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr5-09",
+     "verdict": "weak_card",
+     "urlStatus": "https://docs.docker.com/build/building/multi-platform/ loads (official, dateModified 2026-04-16)",
+     "evidence": "Multi-platform page: \"use the `--platform` flag to define the target platforms for the build output, such as `linux/amd64` and `linux/arm64`\". Buildx reference (https://docs.docker.com/reference/cli/docker/buildx/build/): \"When using docker-container driver with buildx, this flag can accept multiple values as an input separated by a comma. With multiple values the result will be built for all of the specified platforms and joined together into a single manifest list.\"",
+     "problem": "This is a strawman. The statement lists two architectures and then says the build targets a single one, so nobody who has studied would answer True. The only official sentence about comma-separated values also ties them to the docker-container driver, which drifts toward the docker-driver multi-platform question the prompt forbids.",
+     "suggestedFix": "Replace (answer false): \"Without --platform, `docker buildx build` targets linux/amd64 even when the BuildKit daemon runs on arm64.\" Explanation: \"The default target platform is the platform of the BuildKit daemon running the build, so an arm64 builder produces an arm64 image unless --platform says otherwise.\" Source: https://docs.docker.com/reference/cli/docker/buildx/build/ (\"The default value is the platform of the BuildKit daemon where the build runs.\")"
+    },
+    {
+     "id": "docker-fundamentals-sr5-10",
+     "verdict": "weak_card",
+     "urlStatus": "https://docs.docker.com/build/building/multi-platform/ loads (official, current)",
+     "evidence": "\"This installs the QEMU binaries and registers them with binfmt_misc, enabling QEMU to execute non-native file formats for emulation.\" and \"Docker Desktop supports running and building multi-platform images under emulation by default. No configuration is necessary as the builder uses the QEMU that's bundled within the Docker Desktop VM.\"",
+     "problem": "This is a definition card. Saying that QEMU emulation runs non-native binaries just restates what an emulator is, so the answer can be read from the word \"emulation\" and the card teaches nothing about Docker.",
+     "suggestedFix": "Replace (answer true): \"With Docker Desktop, building an arm64 image on an amd64 machine runs its RUN steps under QEMU emulation by default.\" Explanation: \"Docker Desktop's builder uses the QEMU bundled in its VM, so foreign-architecture RUN steps execute under emulation, often far slower than native or cross-compiled builds.\" Keep the same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr5-07",
+     "verdict": "weak_card",
+     "urlStatus": "https://docs.docker.com/build/building/multi-stage/ loads (official, current)",
+     "evidence": "\"You can selectively copy artifacts from one stage to another, leaving behind everything you don't want in the final image.\" and \"None of the build tools required to build the application are included in the resulting image.\"",
+     "problem": "The answer is given away by `FROM scratch`. scratch is by definition an empty image, so anyone who knows the term rejects the statement. \"automatically\" also signals a false statement. The card does not test the real multi-stage misconception, which is what COPY --from brings along.",
+     "suggestedFix": "Replace (answer false): \"In a multi-stage build, the final image includes every layer of an earlier stage that it copies a file from.\" Explanation: \"COPY --from adds only the copied files to the final stage as a new layer; the source stage's other layers, tools and caches stay behind.\" Keep the same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr5-04",
+     "verdict": "weak_card",
+     "urlStatus": "https://docs.docker.com/build/building/multi-stage/ loads (official, current)",
+     "evidence": "\"You can use the `COPY --from` instruction to copy from a separate image, either using the local image name, a tag available locally or on a Docker registry.\" Example on the page: \"COPY --from=nginx:latest /etc/nginx/nginx.conf /nginx.conf\"",
+     "problem": "The statement copies the page's own example. The `:latest` tag marks the value as an image reference, which gives the answer away, so the card is close to a strawman. Its misconception field is also wrong: \"COPY --from accepts sources declared as stages in the same Dockerfile\" is a true fact, not a misconception.",
+     "suggestedFix": "Replace (answer false): \"`COPY --from=nginx:latest` needs nginx:latest pulled with docker pull before the build starts.\" Explanation: \"When --from names an image rather than a stage, the builder resolves it itself, using a local tag or fetching it from the registry, just as FROM does.\" Misconception: \"An external image used by COPY --from must be pulled manually first.\" Keep the same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr5-03",
+     "verdict": "source_problem",
+     "urlStatus": "https://docs.docker.com/build/building/multi-stage/ loads (official, current)",
+     "evidence": "\"By default, the stages aren't named, and you refer to them by their integer number, starting with 0 for the first FROM instruction. However, you can name your stages, by adding an AS <NAME> to the FROM instruction.\" The Dockerfile reference now documents only `COPY [--from=<image|stage|context>]`.",
+     "problem": "The core fact (index 0 is the first FROM) is supported and correct. The clause \"even when that stage has a name\" is not stated on the cited page or in the Dockerfile reference, which describe indices only for unnamed stages. BuildKit does accept a numeric index for a named stage, but the whole card cannot be checked on an official page, and the explanation does not cover that clause.",
+     "suggestedFix": "Replace (answer true): \"`COPY --from=0` copies from the stage that the first FROM instruction in the Dockerfile starts.\" Explanation: \"Unnamed stages are referenced by integer, starting at 0 for the first FROM; naming stages with AS keeps COPY --from working if stages are reordered.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r5 cards. All four cited pages load and are official docs.docker.com pages: multi-stage, multi-platform (dateModified 2026-04-16), the Dockerfile reference and the buildx build reference. The answers of all 12 are correct.\n\nPassing cards and the source text that settles them:\n- 01: \"pick up where a previous stage left off by referring to it when using the FROM directive\".\n- 02: \"The source path of COPY --from is always resolved from filesystem root of the image or stage that you specify.\"\n- 05: --target stops at that stage.\n- 06: \"BuildKit only builds the stages that the target stage depends on\" versus \"The legacy Docker Engine builder processes all stages ... leading up to the selected --target\".\n- 08: \"the registry returns the manifest list, and Docker automatically selects the correct variant based on the host's architecture\".\n- 11: \"the FROM instruction is pinned to the native platform of the builder (using the --platform=$BUILDPLATFORM option)\".\n- 12: \"These arguments are defined in the global scope so are not automatically available inside build stages or for your RUN commands. To expose one of these arguments inside the build stage redefine it without value.\"\n\nSection balance is 6 true and 6 false. The suggested replacements keep each card's answer, so the balance holds.\n\nThings that are not flags:\n- Cards 11 and 12 both lean on platform ARG scope. Card 12 is also near r3-01 (a global ARG before FROM can be used in FROM), but neither card's answer gives away the other's, so I did not mark them as duplicates.\n- The plan factKeys for 02 (copy-from-stage-name) and 12 (targetplatform-cross-compile) no longer describe what those cards test, which are path resolution and ARG redeclaration. The keys need relabeling, but this is not a content error.\n- The appliesTo value \"BuildKit 0.33\" on 06, 09, 10, 11 and 12 should be checked against the Dockerfile frontend pinned in step 1."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr6-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.docker.com understanding-image-layers)",
+     "evidence": "https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/ : \"When you run a container from an image, a union filesystem is created where layers are stacked on top of each other, creating a new and unified view.\" The card's answer is correct, but it follows from the meaning of 'union filesystem' plus 'stacked layers' (definition card), and it is a near-paraphrase of that source sentence. The explanation only restates the statement. The section also has no card on the container's writable layer, which its scope names.",
+     "problem": "This is a definition card and a near-copy of the source: a player can answer it from the term 'union filesystem' alone, and it teaches nothing about how the writable layer behaves.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"With overlay2, a container's first write to a large image file copies the whole file into its writable layer.\" Explanation: \"OverlayFS copies up at file level, so the first write to an image file copies the entire file into the container layer; later writes go to that copy.\" Source: https://docs.docker.com/engine/storage/drivers/overlayfs-driver/ (\"all OverlayFS copy_up operations copy the entire file, even if the file is large and only a small part of it's being modified\")."
+    },
+    {
+     "id": "docker-fundamentals-sr6-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.docker.com/build/cache/optimize/)",
+     "evidence": "https://docs.docker.com/build/cache/optimize/ : \"The cache mount is persisted across builds, so even if you end up rebuilding the layer, you only download new or changed packages.\" The answer is correct, but the statement says that a mount named 'type=cache' 'reuses package downloads', so a player can guess True from the word cache. It also ignores a caveat: reuse depends on the package manager keeping its downloads (for example the Debian image's docker-clean apt config).",
+     "problem": "The answer can be read from the mount type's name. The fact itself is the obvious one.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"By default, concurrent builds on one builder write to the same `RUN --mount=type=cache` directory at once.\" Explanation: \"A cache mount's sharing option defaults to shared, so multiple writers use it concurrently; set sharing=locked to serialise them or private to give each its own mount.\" Source: https://docs.docker.com/reference/dockerfile/#run---mounttypecache (\"sharing: One of shared, private, or locked. Defaults to shared. A shared cache mount can be used concurrently by multiple writers.\")."
+    },
+    {
+     "id": "docker-fundamentals-sr6-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.docker.com/build/cache/optimize/)",
+     "evidence": "https://docs.docker.com/build/cache/optimize/ : \"--cache-from specifies remote caches for the build to use.\" The statement \"--cache-from imports reusable cache data from an external location\" restates the flag's name. Nobody who reads the flag would answer False, so it is a definition card with a name giveaway. The behaviour in --cache-from/--cache-to that is worth testing is the default export mode: https://docs.docker.com/build/cache/backends/ : \"In min cache mode (the default), only layers that are exported into the resulting image are cached, while in max cache mode, all layers are cached, even those of intermediate steps.\"",
+     "problem": "The answer can be read from the flag name. The card teaches no behaviour.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"With its default mode, `--cache-to` exports cache only for layers that end up in the final image.\" Explanation: \"The default mode=min caches only layers exported into the resulting image; mode=max also caches the layers of intermediate steps and stages, for more cache hits.\" Source: https://docs.docker.com/build/cache/backends/"
+    },
+    {
+     "id": "docker-fundamentals-sr6-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.docker.com/build/cache/optimize/)",
+     "evidence": "https://docs.docker.com/build/cache/optimize/ : \"When the instruction is done executing, the mounted files are not persisted in the final image, or in the build cache.\" The answer (False) is correct and supported. But 'can add ... after merely reading them' is a wording tell: 'merely' signals that the statement is false, and nobody who studied would think that reading a file copies it into the image (strawman). The trap 'a temporary build input ends up in the image' is also already used by sr3-12 (heredoc stored as a file) and sr12-10 (SSH key persisted from type=ssh), so this makes three false cards on one template, above the deck limit of two. Unused, documented bind-mount fact: https://docs.docker.com/build/cache/invalidation/ : \"For the ADD and COPY instructions, and for RUN instructions with bind mounts (RUN --mount=type=bind), the builder calculates a cache checksum from file metadata to determine whether cache is valid.\"",
+     "problem": "The wording gives the answer away ('merely'), the card is a strawman, and it makes a third use of a distractor template the deck already uses twice.",
+     "suggestedFix": "Replace (keeps answer FALSE): \"BuildKit decides cache reuse for a `RUN --mount=type=bind` step from its command text alone.\" Explanation: \"For RUN steps with bind mounts, as for COPY and ADD, the builder computes a checksum from the mounted files' metadata, so changed input files invalidate the step.\" Misconception: the plain RUN rule (command string only) also applies to bind-mounted inputs. Source: https://docs.docker.com/build/cache/invalidation/"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards; their sources are in docker-fundamentals-b2.json. Every source URL loads (HTTP 200) and is current official docs.docker.com content. The 8 unflagged cards are correct and supported:\n\n- sr6-02: the layers page says \"Each layer in an image contains a set of filesystem changes - additions, deletions, or modifications\".\n- sr6-03: the same page says layers are reused between images.\n- sr6-04: the invalidation page says \"just the command string itself is used to find a match\".\n- sr6-05: the invalidation page says \"If only the mtime of the copied files have changed, the cache is not invalidated\".\n- sr6-06: the invalidation page says \"Once the cache is invalidated, all subsequent Dockerfile commands generate new images and the cache isn't used\".\n- sr6-07: the Dockerfile reference says \"all RUN instructions following an ARG instruction use the ARG variable implicitly (as an environment variable), thus can cause a cache miss\".\n- sr6-08: the invalidation page says \"Changing the value of a secret doesn't result in cache invalidation\".\n- sr6-12: the best-practices page says --no-cache \"does not pull a fresh base image, for that, use --pull\".\n\nSmaller points I did not flag:\n- sr6-12: with the docker-container driver, BuildKit resolves the base image from the registry on every build anyway. That is driver behaviour, not something --no-cache causes, so the answer holds under the official docs.\n- sr6-04 and sr6-05 split the prompt's single RUN-cache/mtime misconception bullet into two different facts. That is acceptable.\n- \"BuildKit 0.33\" in appliesTo is a version pin I did not re-verify.\n\nOn duplicates: I compared r6 against all other sections. sr1-01 (container writes do not change the image) and sr8-07 (volumes bypass the writable layer) do not duplicate any r6 card. I worded the sr6-01 replacement so that it does not state sr1-01's fact. All four replacements keep their card's original answer, so the section's 6 true / 6 false balance is unchanged. I checked them for length: statements are 92 to 109 characters and explanations stay under the 240-character limit."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr7-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.docker.com/reference/cli/docker/image/tag/)",
+     "evidence": "https://docs.docker.com/reference/cli/docker/image/tag/ : \"If omitted, Docker defaults to Docker Hub (`docker.io`).\" The fact itself is right, but the statement opens with \"With an omitted registry host\" and then asks whether `myteam` is the registry host. That contradicts itself, so the False answer can be read from the wording alone.",
+     "problem": "Wording giveaway: the premise already says no registry host is present, so the player can see the answer without knowing how Docker parses image references.",
+     "suggestedFix": "Replacement (answer false). Statement: \"`docker pull myteam/api` downloads the image from a registry host named `myteam`.\" Explanation: \"A reference with no registry host goes to Docker Hub (docker.io). In myteam/api, myteam is the namespace and api is the repository.\" Keep the same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr7-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.docker.com/reference/cli/docker/login/)",
+     "evidence": "https://docs.docker.com/reference/cli/docker/login/ : \"Authentication credentials are stored in the configured credential store.\" and \"If you don't configure a credential store, Docker stores credentials in the `config.json` file in a base64-encoded format.\" The page never mentions the image store.",
+     "problem": "Strawman: no developer who has studied this would think registry credentials go into the daemon's image store, so the card teaches almost nothing. The page has a real and common misconception right next to it: that config.json holds the credentials encrypted.",
+     "suggestedFix": "Replacement (answer false). Statement: \"Without a configured credential store, `docker login` saves registry credentials encrypted in `config.json`.\" Explanation: \"Without a credential store, Docker writes credentials to config.json only base64-encoded, which anyone can reverse. A credential store keeps them in the OS keychain or pass instead.\" Keep the same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr7-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.docker.com/reference/cli/docker/image/push/)",
+     "evidence": "https://docs.docker.com/reference/cli/docker/image/push/ : `-a, --all-tags` \"Push all tags of an image to the repository\". The statement just says the flag name back in other words.",
+     "problem": "Name giveaway: you can tell that `--all-tags` uploads every local tag from the flag name alone. It is also a rarely used flag, which the depth rule excludes.",
+     "suggestedFix": "Replacement (answer true). Statement: \"`docker image push` takes its destination registry from the host part of the image reference.\" Explanation: \"Push has no registry flag. To publish to a self-hosted registry, you first tag the image as host:port/name, and Docker pushes to the host named in that reference.\" Evidence on the same push page: \"tag the image with the host name or IP address, and the port of the registry\"."
+    },
+    {
+     "id": "docker-fundamentals-sr7-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.docker.com/reference/cli/docker/image/pull/)",
+     "evidence": "https://docs.docker.com/reference/cli/docker/image/pull/ : \"A digest takes the place of the tag when pulling an image\" and \"Using this feature 'pins' an image to a specific version in time.\" The statement shows the `@sha256:` syntax itself and only asks whether the command accepts it. The source treats pulling by digest as the same pinning fact that sr7-06 tests.",
+     "problem": "Syntax trivia with no realistic misconception, since nobody who has studied this would answer False. It also overlaps sr7-06: knowing that a digest-pinned FROM exists already tells you a digest is a valid image reference, and the explanation repeats sr7-06's 'specific version' point.",
+     "suggestedFix": "Replacement (answer true, set volatility may_change). Statement: \"Docker-Sponsored Open Source images on Docker Hub are maintained by the sponsored projects themselves.\" Explanation: \"In the Docker-Sponsored Open Source program, the open-source projects Docker sponsors publish and maintain their own images. Docker provides the sponsorship and the badge.\" URL: https://docs.docker.com/docker-hub/image-library/trusted-content/ (\"images that are published and maintained by open-source projects sponsored by Docker\"). If the deck keeps a single trusted-content card, use \"drop\" and choose another true r7 fact instead."
+    },
+    {
+     "id": "docker-fundamentals-sr7-12",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (docs.docker.com/engine/storage/containerd/)",
+     "evidence": "https://docs.docker.com/engine/storage/containerd/ : \"The containerd image store is the default storage backend for Docker Engine 29.0 and later on fresh installations.\" and \"If you upgraded from an earlier version, your daemon continues using the legacy graph drivers (overlay2) until you enable the containerd image store.\" The page also describes an opt-in experimental \"containerd-migration\" feature, so the False answer still holds.",
+     "problem": "Duplicate of docker-fundamentals-sr7-11. Fresh install versus upgraded daemon is one two-way distinction, and the prompt states it as a single fact. sr7-11 says 'fresh Docker Engine 29 installs', which already tells the player that upgrades behave differently.",
+     "suggestedFix": "Replacement (answer false). Statement: \"Enabling the containerd image store on Docker Engine 29 deletes the images that overlay2 had stored.\" Explanation: \"Switching storage backends only hides the images and containers created with the other backend. Their data stays on disk and reappears when you switch back.\" Same URL: \"Switching storage backends temporarily hides images and containers created with the other backend\"."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards in docker-fundamentals-b2.json and opened every source URL. All of them load and are official, current docs.docker.com pages. Cards that passed: sr7-01, 03, 04, 05, 06, 10 and 11. Minor points that do not need a flag:\n(a) sr7-04: the tag page supports \"defaults to latest\", which is enough to make the statement false. Neither the tag page nor the Hub tags page states the explanation's second sentence (\"does not guarantee the newest image\"), but it follows from tags being mutable (best-practices page: \"Image tags are mutable, meaning a publisher can update a tag to point to a new image\").\n(b) sr7-05: the explanation's clause about layers not being duplicated drifts into r6 territory (r6-03, layer sharing). Consider replacing it with \"Tagging adds a new name for the same image; it does not create a copy.\"\n(c) sr7-06 is still correct even though Docker Hub now offers immutable tags for repositories. Pinning by digest holds whatever the tag settings are.\n(d) sr7-11's \"with standard settings\" correctly hedges the userns-remap exception, which the containerd page confirms (\"not available when using user namespace remapping\").\n(e) sr7-01: Docker's own wording calls `team` the namespace and `api` the repository, while the OCI distribution spec calls the whole `team/api` path the repository name. Under either reading the statement is true.\nBalance: before and after the suggested replacements the section has 6 true and 6 false cards (01, 03, 05, 08, 09, 11 true; 02, 04, 06, 07, 10, 12 false). None of the replacements overlap a card in another section: I checked r1, r5, r6, r12 and every card mentioning registry, tag, digest, login or containerd."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr8-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.docker.com/engine/storage/volumes/)",
+     "evidence": "The answer is right. The volumes page says: \"If you create multiple containers consecutively that each use anonymous volumes, each container creates its own volume. Anonymous volumes aren't reused or shared between containers automatically.\" But the card is false through the same trick as docker-fundamentals-sr9-11 (\"On Linux, two containers share a tmpfs mount when they use the same target path\"), so the deck repeats one distractor template: matching container paths make two containers share storage.",
+     "problem": "It repeats a false-statement template already used by sr9-11, which breaks the rule against repeated distractor templates. A player who has seen one card can answer the other from the pattern.",
+     "suggestedFix": "Keep it false, same factKey (anonymous-volume-generated-name). Statement: \"Docker names an anonymous volume after the container that created it.\" Explanation: \"Docker gives an anonymous volume a random name that is unique on the host. Find it in the Mounts section of docker inspect, then mount it by that name to share it.\" Source: https://docs.docker.com/engine/storage/volumes/ (\"Anonymous volumes are given a random name that's guaranteed to be unique within a given Docker host\"). Or reword sr9-11 instead."
+    },
+    {
+     "id": "docker-fundamentals-sr8-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.docker.com/engine/storage/volumes/)",
+     "evidence": "The volumes page says: \"`readonly`, `ro` | If present, causes the volume to be mounted into the container as read-only.\" The card asks whether a read-only mount can still be written through. The answer follows from the meaning of \"read-only\".",
+     "problem": "This is a definition card and a strawman. Nobody who knows what read-only means would answer True, so the card teaches nothing about Docker.",
+     "suggestedFix": "Replace with a false card (keeps the section's 6/6 balance). Statement: \"With `--mount ...,volume-subpath=logs`, Docker creates the logs subdirectory in the volume when it is missing.\" (110 chars) Explanation: \"The subdirectory named by volume-subpath must already exist in the volume. If it is missing, the mount fails and the container does not start.\" Source: https://docs.docker.com/engine/storage/volumes/ (\"The subdirectory that you specify must exist in the volume before you attempt to mount it into a container; if it doesn't exist, the mount fails.\")"
+    },
+    {
+     "id": "docker-fundamentals-sr8-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.docker.com/engine/storage/volumes/)",
+     "evidence": "The page says only \"volumes are completely managed by Docker\" and \"When you create a volume, it's stored within a directory on the Docker host.\" The statement \"Docker manages a volume's host storage path independently of the container's mount target\" is true almost by construction: the mount target is a path inside the container, so it is obviously separate from host storage. An expert could also object that the local driver with `-o type=none,o=bind,device=/path` lets the user pick the host path.",
+     "problem": "The statement is vague and close to a truism. It does not test a clear behaviour, and it could be argued against through the local driver's bind option.",
+     "suggestedFix": "Replace with a true card. Statement: \"Passing volume driver options such as `volume-opt` to `docker run` requires `--mount` instead of `-v`.\" (102 chars) Explanation: \"The -v flag has no field for driver options. Use --mount with volume-opt, or create the volume first with docker volume create and its -o options.\" Source: https://docs.docker.com/engine/storage/volumes/ (\"You must use `--mount` if you want to: Specify volume driver options\")."
+    },
+    {
+     "id": "docker-fundamentals-sr8-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.docker.com/engine/storage/volumes/)",
+     "evidence": "The page says: \"Another is to create volumes with a driver that supports writing files to an external storage system like NFS or Amazon S3.\" The answer is right, but \"a volume driver can store volume data on an external storage system\" is close to the meaning of a storage driver, so a player can guess it from the words.",
+     "problem": "Near-truism and name giveaway. It does not say anything a developer could get wrong.",
+     "suggestedFix": "Keep it true. Statement: \"On Linux, the built-in `local` volume driver can mount an NFS export as a Docker volume.\" (88 chars) Explanation: \"The local driver accepts mount options through volume-opt, for example type=nfs with a device and addr, so no third-party plugin is needed for NFS.\" Same URL, which shows `volume-driver=local,volume-opt=type=nfs,volume-opt=device=:/var/docker-nfs`."
+    },
+    {
+     "id": "docker-fundamentals-sr8-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.docker.com/engine/storage/volumes/)",
+     "evidence": "The page says: \"A given volume can be mounted into multiple containers simultaneously.\" The fact is right, but the statement \"Two running containers mount the same Docker volume at the same time\" reads as a description of an event, not as a rule about what Docker permits, so a player cannot tell what is being claimed.",
+     "problem": "The wording is unclear. With the capability verb removed, the sentence no longer states a testable fact.",
+     "suggestedFix": "Keep it true. Statement: \"Docker lets two running containers mount the same named volume at the same time.\" (80 chars) Explanation: \"One volume can be mounted into several containers simultaneously, for example read-write in a writer and read-only in a reader.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (6 true, 6 false) against https://docs.docker.com/engine/storage/volumes/ and https://docs.docker.com/reference/cli/docker/volume/prune/. Both pages load (HTTP 200) and are current. I also read /reference/cli/docker/volume/rm/ and /reference/cli/docker/container/rm/.\n\nSeven cards pass:\n- 01: \"If you start a container with a volume that doesn't yet exist, Docker creates the volume for you.\"\n- 03: \"Note volume removal is a separate step.\" docker rm -v also keeps named volumes.\n- 04: \"The anonymous volumes are cleaned up when the container exits.\" The `--volumes-from` exception matches the explanation.\n- 05: \"By default, it only removes anonymous volumes.\" `--all` needs API 1.42 or later, so it applies to Engine 29.\n- 06: \"If you mount an empty volume into a directory in the container in which files or directories exist, these files or directories are propagated (copied) into the volume by default.\"\n- 07: \"volumes, which write directly to the host filesystem.\" Small wording point: the doc says \"writable layer\", not \"writable image layer\".\n- 10: \\\"The `--mount` flag consists of multiple key-value pairs, separated by commas\\\" and \\\"The `--volume` or `-v` flag consists of three fields, separated by colon characters.\\\"\n\nNo card names a retired feature, and none needs a version in its statement.\n\nAll five fixes keep each card's answer, so the section stays 6 true / 6 false. The 08 and 12 fixes bring in new facts (volume-subpath, and --mount being required for driver options), so the plan's factKeys need updating. The proposed 02 statement is 69 characters against an average of about 85 to 100 for the rest; check the true/false length balance once all fixes are in.\n\nCross-section notes for the orchestrator:\n- 02 and sr9-11 use the same distractor template. Fix only one of them.\n- 01 (a missing named volume is created) sits next to sr9-01 (-v creates a missing host directory). The facts differ, so this is not a duplicate, but together they hint at \"Docker auto-creates missing sources\".\n- 04 (--rm removes anonymous volumes) and sr2-02 (--rm removes the container) are separate facts."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr9-11",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official and current (https://docs.docker.com/engine/storage/tmpfs/)",
+     "evidence": "\"Unlike volumes and bind mounts, you can't share tmpfs mounts between containers.\" (https://docs.docker.com/engine/storage/tmpfs/). The answer (false) is right. The problem is the wrong belief the card uses: nobody who studied mounts thinks two containers share storage just because they use the same target path. Volumes are not shared that way either; containers share a volume by its name. So the card is a strawman.",
+     "problem": "Strawman. The card is false only because of a mechanism nobody believes in (matching target paths). The real misconception is that a tmpfs mount can be shared like a volume or a bind mount.",
+     "suggestedFix": "Replacement (answer false, keeps r9 at 6/6): \"On Linux, two containers can share one tmpfs mount like a named volume.\" Explanation: \"Unlike volumes and bind mounts, a tmpfs mount belongs to a single container and cannot be shared with another one. Use a volume when containers need shared scratch data.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr9-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official and current (https://docs.docker.com/engine/storage/bind-mounts/)",
+     "evidence": "\"When you use a bind mount, a file or directory on the host machine is mounted from the host into a container.\" and \"Sharing source code or build artifacts between a development environment on the Docker host and a container.\" (https://docs.docker.com/engine/storage/bind-mounts/). The answer (true) follows straight from what a bind mount is, and the explanation just repeats that (\"exposes the live host path\"). Anyone who knows the term gets it right, so the card teaches nothing. One edge case also goes unmentioned: a single-file bind mount does not see edits made by editors that replace the file (new inode).",
+     "problem": "Definition card or truism. The answer follows from the meaning of \"bind mount\", which the rules forbid.",
+     "suggestedFix": "Replacement (answer true, keeps the balance): \"On Linux, a bind mount includes submounts of its host source path by default.\" Explanation: \"Mounts nested under the source path come along by default. The --mount option bind-recursive changes this, and with ro Docker tries to make submounts read-only too (kernel 5.12+).\" Source quote: \"When you bind mount a path that itself contains mounts, those submounts are also included in the bind mount by default.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr9-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official and current (https://docs.docker.com/engine/storage/bind-mounts/)",
+     "evidence": "The source heading reads \"Bind mounts have write access to files on the host by default.\" (https://docs.docker.com/engine/storage/bind-mounts/). The card reads \"A bind mount gives its container write access to the host source by default.\" That is the same sentence with a few words changed. The fact itself is right.",
+     "problem": "Near-copy of the source sentence, which breaks the original-wording rule. The fact (bind mounts are read-write by default) is fine and worth keeping.",
+     "suggestedFix": "Reword and keep the answer true: \"A process in a container can delete host files through a bind mount set with no options.\" Explanation: \"Bind mounts are read-write by default, so container processes can create, change or delete host files, subject to file permissions. Add ro or readonly to block writes.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards. I downloaded both source pages (bind mounts and tmpfs, both 200 and current) and read their full text. I also checked /engine/deprecated/: the only bind-related removal is the bind-nonrecursive option (removed in v29.0), and no card uses it. Every answer matches the current docs. The section balance is 6 true and 6 false, and average statement length is 76.2 for true and 73.7 for false.\n\nPassed, with the settling quote:\n- sr9-01: \"If you use --volume to bind-mount a file or directory that does not yet exist on the Docker host, Docker automatically creates the directory on the host\"\n- sr9-02: \"Bind mounts are created to the Docker daemon host, not the client.\" Docker Desktop shares host paths with its VM, but its daemon is not a remote daemon, so the card holds.\n- sr9-03: \"the pre-existing files are obscured by the mount\"\n- sr9-05: \"You can use the readonly or ro option to prevent the container from writing to the mount.\"\n- sr9-07: \"Bind propagation defaults to rprivate for both bind mounts and volumes.\" This is an advanced topic but within the section's scope.\n- sr9-08: \"Mount propagation doesn't work with Docker Desktop.\"\n- sr9-09: \"The z option indicates that the bind mount content is shared among multiple containers.\" One caveat to consider adding to the explanation: z and Z only relabel when the daemon runs with SELinux support enabled (selinux-enabled). Docker CE does not enable it by default, and without it :z does nothing.\n- sr9-10: \"When the container stops, the tmpfs mount is removed, and files written there won't be persisted.\" The page also warns that tmpfs data may be written to swap. This does not change the answer.\n- sr9-12: \"Data on a tmpfs mount counts toward the container memory limit.\" Its wording is close to the docs sentence \"usage counts against the container's memory cgroup limit\", but less of a copy than sr9-04, so I left it unflagged.\n\nDuplicates checked against the rest of the deck, none found: sr1-08 (remote daemon), sr8-08 (read-only volume), sr8-10 (-v versus --mount syntax for volumes), sr12-01 (daemon access allows bind-mounting /), sr2-12 (no default memory limit), sr11-10 and sr11-11 (Compose Watch)."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr10-03",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official; supports the card only loosely (the \"all ports\" fact is on the bridge driver page, not the overview)",
+     "evidence": "https://docs.docker.com/engine/network/drivers/bridge/ : \"Containers connected to the same user-defined bridge network effectively expose all ports to each other.\" The card relies on the same fact as docker-fundamentals-sr11-06 (factKey service-to-service-container-port, false: \"A Compose service uses a peer's published HOST_PORT for traffic on the default network\"). Both test that peers on one network reach each other's container ports directly, without host publishing. If you know one answer, you know the other.",
+     "problem": "Duplicate of sr11-06. Both cards say container-to-container traffic on a shared network uses the container port and needs no -p or HOST_PORT. The cited overview page also never states the all-ports fact.",
+     "suggestedFix": "Replace with a false card on bridge isolation. Statement: \"Containers on two different user-defined bridges reach each other directly by container IP.\" (answer false). Explanation: \"Docker isolates bridge networks from one another: containers on different bridges talk through published ports, or by connecting one container to both networks with docker network connect.\" URL: https://docs.docker.com/engine/network/drivers/bridge/ (\"containers connected to different bridge networks can only communicate with each other using published ports\")."
+    },
+    {
+     "id": "docker-fundamentals-sr10-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/engine/network/port-publishing/ : \"include the localhost IP address (127.0.0.1, or ::1) with the publish flag\". Since 127.0.0.1 is loopback by definition, a player with general IP knowledge gets True from the wording alone. The card also hints at sr10-05 (default binds to all addresses), which sits next to it in the same section.",
+     "problem": "This is a truism or give-away: anyone who knows 127.0.0.1 is loopback answers True without Docker knowledge. The \"In Docker Engine 29\" prefix adds nothing the player has to know.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Setting `\"ip\": \"127.0.0.1\"` in daemon.json makes `-p 8080:80` on the default bridge bind to localhost.\" Explanation: \"The daemon's ip option changes the default host address for ports published on the default bridge; user-defined bridges use the com.docker.network.bridge.host_binding_ipv4 driver option instead.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr10-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/engine/network/drivers/overlay/ : \"The overlay network driver creates a distributed network among multiple Docker daemon hosts.\" Card: \"The `overlay` driver creates networks spanning multiple Docker daemon hosts.\" Same page: \"Docker hosts must be part of a swarm to use overlay networks, even when connecting standalone containers.\"",
+     "problem": "The statement is the opening sentence of the source with one or two words changed, which breaks the original-wording rule. It is also a near-definition of 'overlay', so it teaches little.",
+     "suggestedFix": "Reword (answer stays true). Statement: \"An `overlay` network connects containers running on different Docker hosts that belong to one swarm.\" Explanation: \"The overlay driver builds a distributed network across the Docker daemon hosts of a swarm; standalone containers can join it when the network is created with --attachable.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr10-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/engine/network/ : \"you can attach a container to another container's networking stack directly, using the --network container:<name|id> flag format\", plus the example \"runs a Redis container, with Redis binding to 127.0.0.1, then running the redis-cli command and connecting to the Redis server over 127.0.0.1.\"",
+     "problem": "The answer can be read from the flag syntax: `container:db` plus \"use db's network stack\" makes a non-expert guess True. A hedge verb (\"lets\") also marks a true card. The useful consequence, shared localhost, is only in the explanation.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"With `--network container:redis`, a second container reaches Redis listening on 127.0.0.1 inside `redis`.\" Explanation: \"The container: mode joins the other container's whole network stack, loopback included, so services bound to localhost in one container are reachable from the other.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards against the live pages: /engine/network/, /engine/network/port-publishing/, /engine/network/drivers/bridge/, host/, none/, overlay/, macvlan/ and /engine/deprecated/. Every source URL loads, is official, and supports its card's answer and explanation. Answer split is 6 true and 6 false, and every proposed replacement keeps its card's answer, so the split holds.\n\nCards that passed:\n- sr10-01: default bridge when no --network is given. Quote: \"it is connected to the default bridge\".\n- sr10-02: embedded DNS on custom networks.\n- sr10-04: -p host:container order.\n- sr10-05: default publish on 0.0.0.0 and [::]. The \"default daemon settings\" qualifier correctly covers the daemon.json ip override.\n- sr10-07: host mode gets no container IP. Quote: \"the container doesn't get its own IP-address allocated\".\n- sr10-08: none mode keeps loopback. Quote: \"only the loopback device is created\". Nit: no IPv6 loopback, which does not change the answer.\n- sr10-10: ipvlan uses the parent MAC. The macvlan page says \"containers use the parent interface's MAC address\".\n- sr10-12: link env vars not set by default since v29.0, removal planned for v30.0.\n\nMinor points that are not flags:\n- sr10-03 should cite /engine/network/drivers/bridge/ if it is kept instead of replaced.\n- The duplicate between sr10-03 and sr11-06 can be fixed on either side. The prompt lists container-to-container traffic under r10 and CONTAINER_PORT versus HOST_PORT under r11. If r11 rewrites sr11-06 instead, sr10-03 can stay."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr11-06",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/compose/how-tos/networking/ : \"Networked service-to-service communication uses the `CONTAINER_PORT`. The host port is only used when accessing the service from outside the network.\" The deck already has docker-fundamentals-sr10-03 (\"Two containers on the same bridge need `-p` to connect over a container port\", false), whose explanation reads \"Containers on the same bridge can connect directly to one another's container ports. `-p` publishes a port through the host.\" Compose's default network is a bridge network (same page: \"This network uses the `bridge` driver\"), so if you know sr10-03 you know sr11-06.",
+     "problem": "Both cards rest on the same fact: peers on one bridge network reach each other on the container port, and the published host port is only for outside access. sr11-06 just repeats it in Compose terms. It also puts port publishing in r11, while the prompt keeps port publishing in r10.",
+     "suggestedFix": "Replace (keeps answer false). Statement: \"By default, an override file's `ports` for a service replace the `ports` list from the base Compose file.\" Explanation: \"For multi-value options such as `ports`, `expose`, `dns` and `tmpfs`, Compose concatenates the values from both files. Single-value options like `image` or `command` are replaced.\" Source: https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/ (\"For the multi-value options `ports`, `expose`, `external_links`, `dns`, `dns_search`, and `tmpfs`, Compose concatenates both sets of values\")."
+    },
+    {
+     "id": "docker-fundamentals-sr11-04",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official; does not give the precedence order (that is on /compose/how-tos/project-name/)",
+     "evidence": "https://docs.docker.com/compose/how-tos/project-name/ : \"The precedence order for each method, from highest to lowest, is as follows: 1. The `-p` command line flag. 2. The COMPOSE_PROJECT_NAME environment variable. 3. The top-level `name:` attribute in your Compose file.\" https://docs.docker.com/reference/compose-file/version-and-name/ : \"The top-level `name` property is defined by the Compose Specification as the project name to be used if you don't set one explicitly.\"",
+     "problem": "The statement says `name` applies \"when the CLI supplies none\". But if COMPOSE_PROJECT_NAME is set, it wins over `name` even when no -p flag is given, so an expert could answer False. The true reading is also close to restating what the `name` element is, so the card teaches little.",
+     "suggestedFix": "Replace (keeps answer true). Statement: \"The COMPOSE_PROJECT_NAME environment variable overrides the top-level `name` in a Compose file.\" Explanation: \"Compose takes the project name from the -p flag first, then COMPOSE_PROJECT_NAME, then the top-level `name`, and finally the base name of the project directory.\" Source: https://docs.docker.com/compose/how-tos/project-name/"
+    },
+    {
+     "id": "docker-fundamentals-sr11-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/compose/intro/compose-application-model/ : \"The Compose file, or `compose.yaml` file, follows the rules provided by the Compose Specification in how to define multi-container applications.\"",
+     "problem": "This is close to a truism or definition: nobody who has studied would answer that compose.yaml is read by anything other than the Compose Specification, so it is a strawman in the True direction. It also overlaps sr11-03 (v2 and v5 share one file format, the Compose Specification) and sr11-02 (the schema).",
+     "suggestedFix": "Replace (keeps answer true). Statement: \"When compose.yaml and docker-compose.yaml share a directory, Compose reads compose.yaml.\" Explanation: \"compose.yaml is the canonical default file name. Compose still accepts docker-compose.yaml for backwards compatibility but prefers compose.yaml when both files exist.\" Source: same URL (\"If both files exist, Compose prefers the canonical `compose.yaml`.\")."
+    },
+    {
+     "id": "docker-fundamentals-sr11-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.docker.com/reference/compose-file/develop/ : \"`sync`: Compose keeps the existing service container(s) running, but synchronizes source files with container content according to the `target` attribute.\" and \"`rebuild`: Compose rebuilds the service image based on the `build` section and recreates the service with the updated image.\"",
+     "problem": "The answer can be read from the action name: a `sync` action syncing (copying) changed files is a name giveaway. The only real content, that the container keeps running, is the other side of the sync versus rebuild split that sr11-11 already tests (rebuild does not keep the container running). This breaks the two-sides-of-one-distinction rule.",
+     "suggestedFix": "Replace (keeps answer true). Statement: \"Compose Watch ignores file changes for a service that runs a pre-built image from the `image` attribute.\" Explanation: \"Compose Watch is designed for services built from local source with the `build` attribute and does not track changes for services that only reference a pre-built image.\" Source: https://docs.docker.com/compose/how-tos/file-watch/ (\"It doesn't track changes for services that rely on pre-built images specified by the `image` attribute.\")."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards: 6 true (01, 04, 05, 08, 10, 12) and 6 false (02, 03, 06, 07, 09, 11). All four suggested replacements keep the original answer, so the balance stays 6/6. I read every source as markdown from docs.docker.com (the .md variant of each page) and all of them loaded and are current. Cards that pass, with the sentence that settles each: 02 (\\\"Compose always uses the most recent schema to validate the Compose file, regardless of the `version` field\\\"); 03 (history page: \\\"Compose v5, released in 2025, is functionally identical to Compose v2\\\" and \\\"Compose v2 and v5 uses the Compose Specification\\\"); 05 (\\\"Compose creates a network named `<project-name>_default` and attaches all services to it\\\"); this card is easy but tests a real misconception, that services land on Docker's default bridge. 07 (\\\"On startup, Compose does not wait until a container is \\\\\\\"ready\\\\\\\", only until it's running\\\"); 08 (\\\"`restart: true` ensures that if `db` is updated or restarted due to an explicit Compose operation ... the `web` service is also restarted automatically\\\"); 09 (\\\"assigned ones only start/stop when their profile is active\\\"; the explanation correctly covers the exception for an explicitly targeted service); 11 (develop spec: rebuild \\\"recreates the service with the updated image\\\"; file-watch page: \\\"replaces the running service container\\\"); 12 (merge page: \\\"all paths in the files are relative to the base Compose file (the first Compose file specified with `-f`)\\\"). A minor caveat on 12: with --project-directory, relative paths resolve from that directory instead, but the doc states the rule as written, so it is not flagged. Context for the flags: the 06 replacement adds a second merging card, but it rests on a different fact from 12 (value concatenation versus path resolution). If sr11-10 is replaced as suggested, sr11-11 can stay as the only card about watch actions. The 04 replacement cites /compose/how-tos/project-name/, which the original card did not use."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "docker-fundamentals-sr12-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.docker.com/engine/containers/run/)",
+     "evidence": "run page: \"Both flags support the value `ALL`, so to allow a container to use all capabilities except for `MKNOD`\" one would use `--cap-add=ALL --cap-drop=MKNOD`. The fact is correct, but the answer is readable from the flag wording: dropping ALL removes the capabilities.",
+     "problem": "Give-away. A player who knows nothing about Docker answers True from the words \"drop ALL\" and \"removes\". It does not test a behaviour a developer could get wrong.",
+     "suggestedFix": "Replace (answer true): \"By default, Docker starts a container's root user with a reduced set of Linux capabilities.\" Explanation: \"Docker grants container root a restricted capability set, so it holds far less power than host root; --cap-add and --cap-drop adjust that set.\" Source https://docs.docker.com/engine/security/ (\"By default, Docker starts containers with a restricted set of capabilities.\")"
+    },
+    {
+     "id": "docker-fundamentals-sr12-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.docker.com/engine/containers/run/)",
+     "evidence": "run page: \"The `--privileged` flag gives all capabilities to the container.\" and \"Docker enables access to all devices on the host, and reconfigures AppArmor or SELinux to allow the container nearly all the same access to the host as processes running outside containers on the host.\" The answer is correct.",
+     "problem": "Name give-away and near-strawman. A flag called \"privileged\" that \"keeps the normal restrictions\" reads as False to anyone. The real misconception, that privileged only means extra capabilities, goes untested.",
+     "suggestedFix": "Replace (answer false): \"On Linux, `--cap-add=ALL` gives a container the same host access as `--privileged`.\" Explanation: \"`--privileged` grants all capabilities and also opens access to all host devices and relaxes AppArmor or SELinux confinement; `--cap-add=ALL` only adds capabilities.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr12-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.docker.com/engine/security/seccomp/)",
+     "evidence": "seccomp page: the default profile \"disables around 44 system calls out of 300+\" and is \"an allowlist that denies access to system calls by default and then allows specific system calls.\" The answer is correct.",
+     "problem": "Definition card. seccomp is by definition a system-call filter, so \"a seccomp profile blocks selected system calls\" follows from the term itself. The explanation only restates the statement.",
+     "suggestedFix": "Replace (answer true): \"Docker's default seccomp profile is an allowlist: system calls missing from it fail with an error.\" Explanation: \"The default profile denies system calls by default and allows a listed set, so a syscall it does not name returns an error inside the container.\" Same URL."
+    },
+    {
+     "id": "docker-fundamentals-sr12-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.docker.com/reference/dockerfile/)",
+     "evidence": "Dockerfile reference: \"The specified user is used for `RUN` instructions and at runtime runs the relevant `ENTRYPOINT` and `CMD` commands.\" The answer is correct.",
+     "problem": "Give-away by wording. \"USER app runs the process as app\" restates the instruction's name, so a non-expert answers True without knowing anything.",
+     "suggestedFix": "Replace (answer true): \"`docker run --user 1000` overrides the user set by the image's USER instruction.\" Explanation: \"USER sets the default user for the image, but the -u or --user option of docker run replaces it for that container.\" Source https://docs.docker.com/engine/containers/run/ (\"you can override the `USER` instruction by passing the `-u` option\")."
+    },
+    {
+     "id": "docker-fundamentals-sr12-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.docker.com/reference/dockerfile/)",
+     "evidence": "Dockerfile reference: the SSH mount \"allows the build container to access SSH keys via SSH agents, with support for passphrases\"; target option: \"SSH agent socket path. Defaults to /run/buildkit/ssh_agent.${N}\". Build secrets page: \"If the credential you want to use in your build is an SSH agent socket or key, you can use the SSH mount\".",
+     "problem": "Near-strawman: anyone who knows RUN mounts are temporary rejects \"persists the key in the image\". It also repeats card 09's \"not placed in the final image\" point. The wording \"SSH agent key\" is vague, and the reference never states the not-baked claim explicitly for ssh mounts.",
+     "suggestedFix": "Replace (answer false): \"`RUN --mount=type=ssh` copies the host's private key file into the build container.\" Explanation: \"An SSH mount exposes an SSH agent socket to the RUN instruction; the private key stays in the agent on the client side.\" Same URL."
+    }
+   ],
+   "notes": "All 12 r12 cards (in raw/docker-fundamentals-b3.json) were checked against their source pages. Every source URL loads, is official and current, and supports its card. No answer is wrong.\n\nQuotes that confirm the cards that pass:\n- 01: /engine/security/ says \"Only trusted users should be allowed to control your Docker daemon\" and gives the /host = / example.\n- 02: /engine/security/rootless/ says \"with userns-remap mode, the daemon itself is running with root privileges\".\n- 06: /engine/security/apparmor/ says \"This profile is used on containers, not on the Docker daemon\".\n- 08: /reference/dockerfile/ says \"Build arguments are visible in the docker history command and in max mode provenance attestations\".\n- 09: /build/building/secrets/ says the secret is \"temporarily available inside the build container, for the duration of the build instruction\".\n- 11: /scout/explore/analysis/ says \"When an image includes an SBOM attestation, Docker Scout uses it instead of generating one\", and image analysis \"extracts the Software Bill of Material\".\n- 12: /dhi/ lists, for Community too, \"SLSA Build Level 3 provenance, signed SBOMs, VEX statements, and cryptographic signatures on every image\".\n\nThe five flags are all weak_card (give-away, definition card or near-strawman). Each replacement keeps its card's answer, so the section stays at 6 true (01,03,05,07,09,12) and 6 false (02,04,06,08,10,11).\n\nDuplicate check: sr3-05 (ARG does not persist in the image ENV) and sr6-08 (secret values stay out of the cache key) are separate facts from sr12-08 and sr12-09. Only r12 tests capabilities, seccomp, AppArmor and USER.\n\nMinor point on 08: an ARG that no later RUN uses does not show up in docker history. The docs' plain statement \"visible in docker history\" still covers the card, so it is not flagged."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "docker-fundamentals-sr10-03",
+     "docker-fundamentals-sr11-06"
+    ],
+    "why": "Both test the same fact: containers on a shared network talk to each other on the CONTAINER_PORT, and publishing a host port plays no part. sr10-03 says peers need -p; sr11-06 says Compose peers use the published HOST_PORT. Each is false for the same reason, so knowing one answers the other. sr11-06 is the sharper Compose CONTAINER_PORT versus HOST_PORT card. sr10-03 is worded awkwardly ('need -p to connect over a container port').",
+    "dropId": "docker-fundamentals-sr10-03"
+   },
+   {
+    "ids": [
+     "docker-fundamentals-sr7-11",
+     "docker-fundamentals-sr7-12"
+    ],
+    "why": "These are the two sides of one distinction the prompt states as a single fact: the containerd image store is the default only on fresh Engine 29 installs, and upgraded daemons keep overlay2 until it is enabled. 'On fresh ... installs' in sr7-11 implies that upgrades behave differently, which answers sr7-12. sr7-12 tests the real misconception (an upgrade migrates automatically), so keep it.",
+    "dropId": "docker-fundamentals-sr7-11"
+   },
+   {
+    "ids": [
+     "docker-fundamentals-sr10-05",
+     "docker-fundamentals-sr10-06"
+    ],
+    "why": "Both rest on one fact: the host IP prefix of -p controls which host address the port binds to, and leaving it out means all addresses. sr10-06 is close to a truism (writing 127.0.0.1 binds to loopback), and its statement implies the default is not loopback, which gives away sr10-05. sr10-05 carries the misconception named in the prompt.",
+    "dropId": "docker-fundamentals-sr10-06"
+   },
+   {
+    "ids": [
+     "docker-fundamentals-sr1-02",
+     "docker-fundamentals-sr2-03"
+    ],
+    "why": "Both test that runtime configuration belongs to the container and not to the image. sr1-02 (two containers from one image keep separate runtime settings) is true and directly implies that sr2-03 (-e rewrites the image's stored ENV) is false. sr1-02 is also close to a truism.",
+    "dropId": "docker-fundamentals-sr1-02"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "image-unchanged-by-runtime",
+    "ids": [
+     "docker-fundamentals-sr1-01",
+     "docker-fundamentals-sr1-02",
+     "docker-fundamentals-sr1-12",
+     "docker-fundamentals-sr2-03"
+    ],
+    "why": "sr1-12 (docker commit is needed to turn container changes into a new image) and the sr1-01 explanation (the image stays read-only) together answer the false claims that container edits or -e mutate the image. sr1-02 answers sr2-03."
+   },
+   {
+    "name": "client-daemon-remote",
+    "ids": [
+     "docker-fundamentals-sr1-06",
+     "docker-fundamentals-sr1-07",
+     "docker-fundamentals-sr1-08",
+     "docker-fundamentals-sr9-02"
+    ],
+    "why": "The sr1-06 and sr1-08 explanations teach that the CLI only sends API requests to a daemon that can be remote. That hints at sr1-07 and sets up sr9-02, whose explanation in turn restates the remote-daemon model."
+   },
+   {
+    "name": "linux-kernel-desktop-vm",
+    "ids": [
+     "docker-fundamentals-sr1-03",
+     "docker-fundamentals-sr1-10",
+     "docker-fundamentals-sr1-11"
+    ],
+    "why": "The sr1-03 explanation (Linux containers share the host's Linux kernel) implies sr1-10 is false. The sr1-10 explanation (Desktop runs its daemon inside a Linux VM) gives away sr1-11 (Desktop bundles dockerd)."
+   },
+   {
+    "name": "namespaces-cgroups",
+    "ids": [
+     "docker-fundamentals-sr1-04",
+     "docker-fundamentals-sr1-05"
+    ],
+    "why": "These are the two sides of the namespaces (isolation) versus cgroups (limits) split. Seen together, each confirms the other by elimination."
+   },
+   {
+    "name": "configured-resource-limits",
+    "ids": [
+     "docker-fundamentals-sr1-05",
+     "docker-fundamentals-sr2-12",
+     "docker-fundamentals-sr9-12"
+    ],
+    "why": "'A configured CPU quota' (sr1-05) and 'a container's configured memory limit' (sr9-12) imply that limits exist only when set. That answers sr2-12 (Docker assigns a hard memory limit by default)."
+   },
+   {
+    "name": "run-rm-cleanup",
+    "ids": [
+     "docker-fundamentals-sr2-02",
+     "docker-fundamentals-sr8-04"
+    ],
+    "why": "The sr8-04 statement 'docker run --rm removes an unshared anonymous volume when its container exits' assumes --rm removes the container, which is exactly what sr2-02 asks."
+   },
+   {
+    "name": "volume-cleanup-scope",
+    "ids": [
+     "docker-fundamentals-sr8-03",
+     "docker-fundamentals-sr8-04",
+     "docker-fundamentals-sr8-05"
+    ],
+    "why": "The named versus anonymous cleanup rules overlap. The sr8-05 explanation (plain prune covers anonymous volumes and --all adds named ones) and the sr8-04 explanation (--rm cleans anonymous volumes) together point to named volumes surviving docker rm (sr8-03)."
+   },
+   {
+    "name": "stop-signal",
+    "ids": [
+     "docker-fundamentals-sr2-06",
+     "docker-fundamentals-sr3-10",
+     "docker-fundamentals-sr2-08"
+    ],
+    "why": "The sr3-10 explanation ('STOPSIGNAL configures Docker's stop signal') confirms the 'configured stop signal' in sr2-06. The sr2-06 explanation names SIGKILL as the forced kill, which sr2-08 tests for rm --force."
+   },
+   {
+    "name": "arg-persistence",
+    "ids": [
+     "docker-fundamentals-sr3-05",
+     "docker-fundamentals-sr6-07",
+     "docker-fundamentals-sr12-08",
+     "docker-fundamentals-sr3-01"
+    ],
+    "why": "These all ask where ARG values live. sr3-05 (ARG does not stay in the image env) can push a player towards believing sr12-08 (ARG secrets stay hidden from history). The sr6-07 explanation (ARG enters the RUN environment) and the sr3-01 global ARG card blur into each other."
+   },
+   {
+    "name": "buildx-buildkit-roles",
+    "ids": [
+     "docker-fundamentals-sr4-01",
+     "docker-fundamentals-sr4-02",
+     "docker-fundamentals-sr4-10"
+    ],
+    "why": "The sr4-02 explanation ('Buildx interprets the options and sends the build request to BuildKit') is the sr4-01 statement almost word for word. sr4-01 and sr4-10 both describe BuildKit as the backend that runs builds."
+   },
+   {
+    "name": "build-target-stages",
+    "ids": [
+     "docker-fundamentals-sr5-05",
+     "docker-fundamentals-sr5-06"
+    ],
+    "why": "The sr5-06 explanation ('BuildKit builds the selected target and its dependencies') answers sr5-05 (--target makes that stage the build result)."
+   },
+   {
+    "name": "build-mount-not-in-image",
+    "ids": [
+     "docker-fundamentals-sr6-10",
+     "docker-fundamentals-sr12-09",
+     "docker-fundamentals-sr12-10"
+    ],
+    "why": "All three use the same idea, that RUN --mount content is temporary and stays out of the image. The sr12-09 explanation ('rather than placing it in the final image') answers sr12-10 (SSH key persisted) and sr6-10 (bind inputs added)."
+   },
+   {
+    "name": "build-secret-handling",
+    "ids": [
+     "docker-fundamentals-sr6-08",
+     "docker-fundamentals-sr12-09"
+    ],
+    "why": "Both are about RUN --mount=type=secret. Seeing secrets described as one-instruction temporary mounts nudges a player towards concluding that secret values are outside the cache key."
+   },
+   {
+    "name": "image-reference-parsing",
+    "ids": [
+     "docker-fundamentals-sr7-01",
+     "docker-fundamentals-sr7-02",
+     "docker-fundamentals-sr7-03"
+    ],
+    "why": "The sr7-01 explanation says 'team is the namespace' and the registry is the dotted host, which answers sr7-02 (myteam is not the registry host). sr7-02 and sr7-03 both explain the docker.io and library defaults."
+   },
+   {
+    "name": "digest-pinning",
+    "ids": [
+     "docker-fundamentals-sr7-06",
+     "docker-fundamentals-sr7-09"
+    ],
+    "why": "sr7-06 teaches that a digest pins an immutable image version. That makes sr7-09 (docker pull accepts name@sha256:...) a giveaway."
+   },
+   {
+    "name": "containerd-store-engine29",
+    "ids": [
+     "docker-fundamentals-sr7-11",
+     "docker-fundamentals-sr7-12"
+    ],
+    "why": "This is a mirrored true and false pair covering fresh installs versus upgrades. Each answers the other."
+   },
+   {
+    "name": "same-path-shared-mounts",
+    "ids": [
+     "docker-fundamentals-sr8-02",
+     "docker-fundamentals-sr8-11",
+     "docker-fundamentals-sr9-11"
+    ],
+    "why": "sr8-02 and sr9-11 share one false template (two containers share an anonymous volume or tmpfs because they use the same path), so one answers the other. sr8-11 (two containers mount one volume) sits right next to them and confuses the line between them."
+   },
+   {
+    "name": "auto-create-missing-mount-source",
+    "ids": [
+     "docker-fundamentals-sr8-01",
+     "docker-fundamentals-sr9-01"
+    ],
+    "why": "sr9-01 (-v creates a missing host directory) strongly hints that -v also creates a missing named volume (sr8-01, false 'fails')."
+   },
+   {
+    "name": "read-only-mounts",
+    "ids": [
+     "docker-fundamentals-sr8-08",
+     "docker-fundamentals-sr9-04",
+     "docker-fundamentals-sr9-05"
+    ],
+    "why": "The sr9-05 explanation ('ro makes the bind mount read-only inside the container') answers sr8-08. sr9-04 (writable by default) and sr9-05 are the default and the ro option of the same mount."
+   },
+   {
+    "name": "volume-populate-vs-bind-obscure",
+    "ids": [
+     "docker-fundamentals-sr8-06",
+     "docker-fundamentals-sr9-03"
+    ],
+    "why": "These are the two sides of one volume versus bind distinction: an empty volume is pre-populated, while a bind mount obscures the content. Shown together, they contrast and give each other away."
+   },
+   {
+    "name": "bind-propagation",
+    "ids": [
+     "docker-fundamentals-sr9-07",
+     "docker-fundamentals-sr9-08"
+    ],
+    "why": "Both statements hinge on rshared bind propagation. The sr9-07 explanation (the default is rprivate) and the sr9-08 explanation (propagation does not work with Desktop) overlap."
+   },
+   {
+    "name": "peer-traffic-and-publishing",
+    "ids": [
+     "docker-fundamentals-sr10-03",
+     "docker-fundamentals-sr11-06",
+     "docker-fundamentals-sr10-04",
+     "docker-fundamentals-sr3-07"
+    ],
+    "why": "The sr10-03 and sr11-06 explanations both say that -p or HOST_PORT is only for outside access, which also confirms sr10-04's mapping. The sr3-07 explanation (publishing needs a runtime port mapping) overlaps."
+   },
+   {
+    "name": "publish-host-address",
+    "ids": [
+     "docker-fundamentals-sr10-05",
+     "docker-fundamentals-sr10-06"
+    ],
+    "why": "sr10-06 (giving 127.0.0.1 binds loopback) implies the default is not loopback, which answers sr10-05."
+   },
+   {
+    "name": "compose-version-confusion",
+    "ids": [
+     "docker-fundamentals-sr11-01",
+     "docker-fundamentals-sr11-02",
+     "docker-fundamentals-sr11-03"
+    ],
+    "why": "The sr11-02 explanation (Compose validates against the latest schema whatever the version says) and sr11-01 (v5 reads compose.yaml per the Compose Specification) together imply that v5 uses no new file format (sr11-03)."
+   },
+   {
+    "name": "compose-watch-actions",
+    "ids": [
+     "docker-fundamentals-sr11-10",
+     "docker-fundamentals-sr11-11"
+    ],
+    "why": "This is close to a mirrored pair. The sr11-10 explanation stresses that sync works 'while the service container keeps running', and sr11-11 falsely gives rebuild that same keep-running behaviour."
+   },
+   {
+    "name": "sbom-products",
+    "ids": [
+     "docker-fundamentals-sr12-11",
+     "docker-fundamentals-sr12-12"
+    ],
+    "why": "This is a weak hint. 'DHI ship signed SBOMs' sits next to 'Scout skips images lacking an SBOM attestation' and suggests attached SBOMs are a precondition."
+   }
+  ],
+  "tells": "TELLS (statements only; counts from all 144 cards: 72 true and 72 false, 12 per section, 6 true and 6 false in each)\n\n1. A platform prefix marks false statements. 'On Linux' opens 8 false statements (sr1-03, sr9-07, sr9-11, sr10-01, sr10-07, sr10-10, sr12-02, sr12-04) and only 4 true ones (sr9-10, sr9-12, sr10-08, sr12-03). Counting 'On macOS' (sr1-10 F) and 'With Docker Desktop' (sr9-08 F), a platform qualifier is false 10 times out of 14. In r10, 3 of the 4 'On Linux' cards are false.\n\n2. Persistence and mutation verbs appear only in false statements:\n- 'persists, remain or stays' 0 true / 4 false (sr3-05, sr6-06, sr12-08, sr12-10)\n- 'update or combines' 0 true / 4 false (sr1-01, sr6-04, sr8-08, sr9-03)\n- 'automatically' 0 true / 2 false (sr5-07, sr7-12)\n- 'also' 0 true / 2 false (sr6-12, sr8-03)\n- 'own' 0 true / 2 false (sr1-03, sr10-07)\n- 'keeps' 1 true (sr1-02) / 3 false (sr6-06, sr11-11, sr12-04)\n- 'changes' 2 true / 4 false (sr1-01, sr2-03, sr3-10, sr6-04)\n- 'legacy' 0 true / 2 false (sr4-11, sr10-12)\n- one-off 'fails' (sr8-01), 'needs' (sr10-03), 'straight' (sr4-02), 'replaces' (sr4-09), all false\n\n3. Some words lean towards true:\n- 'can' 7 true (sr2-05, sr3-01, sr3-08, sr6-07, sr7-05, sr8-09, sr12-01) / 4 false (sr2-09, sr4-03, sr6-10, sr8-08)\n- 'removes' 5 true (sr2-02, sr2-08, sr8-04, sr9-10, sr12-03) / 1 false (sr8-05)\n- 'configured or selected' 4 true (sr1-05, sr2-06, sr9-12, sr12-05) / 1 false (sr5-06)\n- 'while' 4 true (sr2-01, sr3-08, sr4-12, sr8-10) / 1 false (sr5-06)\n'by default' is balanced (4 true / 5 false), as is 'Engine 29' (2 true / 3 false).\n\n4. Recurring false templates:\n(a) 'Two containers ... share the same X [because of the same path or network]' is false 3 times (sr8-02, sr9-11, sr10-03) against 2 true 'Two containers' cards (sr1-02, sr8-11). This exceeds the prompt's two-per-template cap if sr10-03 counts.\n(b) 'A runtime action modifies the image' is false twice (sr1-01, sr2-03), which is at the cap.\n(c) 'Build-time input ends up persisted in the image' is false 3 times (sr3-05 ARG in env, sr6-10 bind input added, sr12-10 SSH key persisted), and sr12-08 is its inverse. That is over the cap.\n(d) 'Feature A is given sibling B's job' (the explanation names the sibling) is false in sr3-03 (COPY given ADD's job), sr10-10 (ipvlan given macvlan's), sr11-11 (rebuild given sync's), sr12-02 (userns-remap given rootless), sr6-12 (--no-cache given --pull's) and sr4-02 (docker build vs Buildx). A player who sees two near-synonymous features named can guess false.\n(e) 'With default X, Docker does the restrictive or safe thing' is false in sr2-12 (memory limit), sr10-05 (localhost), sr12-04 (privileged keeps restrictions) and sr12-06 (AppArmor protects dockerd).\n\n5. Length: statement averages are within 5 characters in every section, but false runs longer in r1 (+4.7), r4 (+4.5), r10 (+4.5) and r6 (+4.3), right at the limit. Explanations for false cards are much longer in r7 (+25.6), r5 (+16), r6 (+13) and r11 (+11). This matters only if explanations are previewed.\n\n6. Strawmen and truisms that are answerable without knowledge:\n- sr8-08 ('read-only mount can still update files')\n- sr5-07 ('scratch automatically includes earlier tools')\n- sr5-09 ('a two-platform list targets a single architecture')\n- sr10-04 ('-p 8080:80 maps 8080 to 80')\n- sr2-01 (-d detaches)\n- sr1-02 (separate runtime settings)\n\nSIDE NOTES (accuracy, not verified on the web in this pass):\n- sr7-01: the statement calls 'team/api' the repository, while its own explanation says team is the namespace and api is the repository, following the docs format NAMESPACE/REPOSITORY. The card contradicts itself.\n- sr1-08 is marked false, but by default the CLI does use the local dockerd socket, so an expert could defend True.\n- sr10-06 carries an unneeded 'In Docker Engine 29' pin."
+ }
+}

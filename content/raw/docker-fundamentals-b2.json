@@ -1,0 +1,1077 @@
+{
+  "deck": "docker-fundamentals",
+  "block": "b2",
+  "generatedOn": "2026-10-03",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Plan changes to avoid repeated facts: r6 container-writable-overlay became layer-filesystem-diff because r1 covered container writes; r7 tags-mutable-digests-immutable became multiple-tags-one-image-id because r7-06 covers tag movement versus digest pinning; r8 named-volume-reuse-across-containers became named-volume-auto-creation because r8-11 covers sharing; r8 volume-nocopy became volume-bypasses-writable-layer, with volume-nocopy explained in r8-06.",
+  "cards": [
+    {
+      "id": "docker-fundamentals-sr5-01",
+      "section": "r5",
+      "statement": "A stage named with `FROM alpine AS build` serves as the base of a later `FROM build` stage.",
+      "answer": true,
+      "explanation": "A later `FROM build` starts from the filesystem produced by the earlier stage named `build`.",
+      "misconception": "",
+      "factKey": "named-build-stages",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "Dockerfile",
+        "FROM"
+      ],
+      "appliesTo": "Dockerfile syntax 1",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-stage builds",
+        "url": "https://docs.docker.com/build/building/multi-stage/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-02",
+      "section": "r5",
+      "statement": "`COPY --from=build app /app` reads app relative to the build stage's WORKDIR.",
+      "answer": false,
+      "explanation": "`COPY --from` resolves its source path from the source stage's filesystem root, regardless of that stage's WORKDIR.",
+      "misconception": "COPY --from resolves source paths relative to the source stage's WORKDIR.",
+      "factKey": "copy-from-stage-name",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "Dockerfile",
+        "COPY",
+        "WORKDIR"
+      ],
+      "appliesTo": "Dockerfile syntax 1",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Dockerfile reference",
+        "url": "https://docs.docker.com/reference/dockerfile/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-03",
+      "section": "r5",
+      "statement": "`COPY --from=0` reads from the first Dockerfile stage, even when that stage has a name.",
+      "answer": true,
+      "explanation": "Build stage indices start at zero, so `COPY --from=0` selects the first `FROM` stage.",
+      "misconception": "",
+      "factKey": "copy-from-stage-index",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "Dockerfile",
+        "COPY"
+      ],
+      "appliesTo": "Dockerfile syntax 1",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-stage builds",
+        "url": "https://docs.docker.com/build/building/multi-stage/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-04",
+      "section": "r5",
+      "statement": "`COPY --from=nginx:latest` reads from a stage named nginx in the same Dockerfile.",
+      "answer": false,
+      "explanation": "`COPY --from=nginx:latest` reads from the referenced image. The Dockerfile need not define an nginx stage.",
+      "misconception": "COPY --from accepts sources declared as stages in the same Dockerfile.",
+      "factKey": "copy-from-external-image",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "Dockerfile",
+        "COPY"
+      ],
+      "appliesTo": "Dockerfile syntax 1",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-stage builds",
+        "url": "https://docs.docker.com/build/building/multi-stage/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-05",
+      "section": "r5",
+      "statement": "`docker build --target test` makes the test stage the image build result.",
+      "answer": true,
+      "explanation": "`--target test` selects the named test stage as the build result, which is useful for building a test or debug stage.",
+      "misconception": "",
+      "factKey": "build-target-stage",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "docker build",
+        "--target"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-stage builds",
+        "url": "https://docs.docker.com/build/building/multi-stage/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-06",
+      "section": "r5",
+      "statement": "BuildKit builds unrelated earlier stages while producing a selected `--target`.",
+      "answer": false,
+      "explanation": "BuildKit builds the selected target and its dependencies; it skips earlier stages that the target does not need.",
+      "misconception": "BuildKit processes every preceding stage when a target stage is selected.",
+      "factKey": "buildkit-skips-unneeded-stage",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "BuildKit",
+        "--target"
+      ],
+      "appliesTo": "Docker Engine 29; BuildKit 0.33",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-stage builds",
+        "url": "https://docs.docker.com/build/building/multi-stage/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-07",
+      "section": "r5",
+      "statement": "A final `FROM scratch` stage automatically includes tools installed in an earlier build stage.",
+      "answer": false,
+      "explanation": "A `FROM scratch` stage starts empty. Build tools from an earlier stage stay out of the final image unless the Dockerfile copies them in.",
+      "misconception": "A final scratch stage inherits the earlier stage's build tools.",
+      "factKey": "final-image-excludes-builder-toolchain",
+      "topic": "Multi-stage builds",
+      "tags": [
+        "Dockerfile",
+        "FROM"
+      ],
+      "appliesTo": "Dockerfile syntax 1",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-stage builds",
+        "url": "https://docs.docker.com/build/building/multi-stage/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-08",
+      "section": "r5",
+      "statement": "When Docker pulls a multi-platform image, its manifest list guides platform variant selection.",
+      "answer": true,
+      "explanation": "A manifest list points to platform-specific manifests. Docker selects a matching variant when it pulls the image.",
+      "misconception": "",
+      "factKey": "manifest-list-selects-platform",
+      "topic": "Multi-platform images",
+      "tags": [
+        "Docker Engine",
+        "manifest list"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-platform builds",
+        "url": "https://docs.docker.com/build/building/multi-platform/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-09",
+      "section": "r5",
+      "statement": "`docker buildx build --platform linux/amd64,linux/arm64` targets a single CPU architecture.",
+      "answer": false,
+      "explanation": "A comma-separated `--platform` value requests both listed target architectures in one Buildx invocation.",
+      "misconception": "Buildx accepts a platform list but builds for just one listed architecture.",
+      "factKey": "buildx-platform-multi-output",
+      "topic": "Multi-platform images",
+      "tags": [
+        "Docker Buildx",
+        "--platform"
+      ],
+      "appliesTo": "Docker Engine 29; BuildKit 0.33",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-platform builds",
+        "url": "https://docs.docker.com/build/building/multi-platform/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-10",
+      "section": "r5",
+      "statement": "QEMU emulation runs non-native architecture binaries during a Docker build.",
+      "answer": true,
+      "explanation": "QEMU emulates another CPU architecture so build steps can execute binaries for that architecture.",
+      "misconception": "",
+      "factKey": "qemu-build-emulation",
+      "topic": "Multi-platform images",
+      "tags": [
+        "QEMU",
+        "BuildKit"
+      ],
+      "appliesTo": "Docker Engine 29; BuildKit 0.33",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-platform builds",
+        "url": "https://docs.docker.com/build/building/multi-platform/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-11",
+      "section": "r5",
+      "statement": "`FROM --platform=$BUILDPLATFORM` runs a stage on the builder's native platform.",
+      "answer": true,
+      "explanation": "`BUILDPLATFORM` identifies the build node's platform; using it in `FROM` keeps that stage on the native platform.",
+      "misconception": "",
+      "factKey": "buildplatform-native-stage",
+      "topic": "Cross-platform builds",
+      "tags": [
+        "Dockerfile",
+        "FROM",
+        "BUILDPLATFORM"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-platform builds",
+        "url": "https://docs.docker.com/build/building/multi-platform/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr5-12",
+      "section": "r5",
+      "statement": "BuildKit exposes TARGETPLATFORM to RUN instructions before a stage declares ARG TARGETPLATFORM.",
+      "answer": false,
+      "explanation": "BuildKit defines automatic platform arguments globally. A stage needs `ARG TARGETPLATFORM` before its `RUN` instructions receive that value.",
+      "misconception": "Automatic platform arguments are immediately available inside every build stage.",
+      "factKey": "targetplatform-cross-compile",
+      "topic": "Cross-platform builds",
+      "tags": [
+        "BuildKit",
+        "TARGETPLATFORM",
+        "ARG",
+        "RUN"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Dockerfile reference",
+        "url": "https://docs.docker.com/reference/dockerfile/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-01",
+      "section": "r6",
+      "statement": "A union filesystem presents an image's stacked layers as one filesystem to a container.",
+      "answer": true,
+      "explanation": "Docker stacks image layers into a unified filesystem view that the container uses.",
+      "misconception": "",
+      "factKey": "union-filesystem-layer-view",
+      "topic": "Image layers",
+      "tags": [
+        "Docker Engine"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding the image layers",
+        "url": "https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-02",
+      "section": "r6",
+      "statement": "An image layer stores the complete filesystem produced up to its Dockerfile step.",
+      "answer": false,
+      "explanation": "An image layer records filesystem changes, such as additions, modifications, and deletions, rather than a full filesystem snapshot.",
+      "misconception": "Every image layer is a full copy of the filesystem.",
+      "factKey": "layer-filesystem-diff",
+      "topic": "Image layers",
+      "tags": [
+        "Docker Engine",
+        "Dockerfile"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding the image layers",
+        "url": "https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-03",
+      "section": "r6",
+      "statement": "Images built from the same base image reuse its layers when stored on one Docker host.",
+      "answer": true,
+      "explanation": "Shared base layers can be stored once and reused across images, reducing storage and download work.",
+      "misconception": "",
+      "factKey": "layer-sharing-between-images",
+      "topic": "Image layers",
+      "tags": [
+        "Docker Engine"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding the image layers",
+        "url": "https://docs.docker.com/get-started/docker-concepts/building-images/understanding-image-layers/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-04",
+      "section": "r6",
+      "statement": "With unchanged build inputs, a cached `RUN apt-get update` reruns when the remote index changes.",
+      "answer": false,
+      "explanation": "BuildKit does not refresh a cached RUN step merely because a remote package index changed. An unchanged command and build inputs can produce a cache hit.",
+      "misconception": "A remote package index update automatically invalidates a cached RUN instruction.",
+      "factKey": "run-cache-ignores-network-changes",
+      "topic": "Build cache",
+      "tags": [
+        "BuildKit",
+        "RUN"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build cache invalidation",
+        "url": "https://docs.docker.com/build/cache/invalidation/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-05",
+      "section": "r6",
+      "statement": "Changing just a source file's mtime leaves the COPY and ADD cache checksum unchanged.",
+      "answer": true,
+      "explanation": "BuildKit checks source file metadata for COPY and ADD cache matches, but excludes modification time from the checksum.",
+      "misconception": "",
+      "factKey": "copy-add-mtime-ignored",
+      "topic": "Build cache",
+      "tags": [
+        "BuildKit",
+        "COPY",
+        "ADD"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build cache invalidation",
+        "url": "https://docs.docker.com/build/cache/invalidation/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-06",
+      "section": "r6",
+      "statement": "A cache miss in one RUN step keeps later RUN steps in that stage cached when their command text stays unchanged.",
+      "answer": false,
+      "explanation": "Once a step's cache is invalidated, later sequential Dockerfile steps rebuild because their preceding build state has changed.",
+      "misconception": "Later RUN steps remain cached as long as their command strings stay the same.",
+      "factKey": "downstream-invalidation",
+      "topic": "Build cache",
+      "tags": [
+        "BuildKit",
+        "RUN"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build cache invalidation",
+        "url": "https://docs.docker.com/build/cache/invalidation/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-07",
+      "section": "r6",
+      "statement": "Changing a declared ARG value can invalidate a later RUN step that never expands the variable.",
+      "answer": true,
+      "explanation": "A declared ARG enters the RUN environment implicitly, so changing its value can cause a cache miss even when the command text stays the same.",
+      "misconception": "",
+      "factKey": "build-arg-cache-effect",
+      "topic": "Build cache",
+      "tags": [
+        "Dockerfile",
+        "ARG",
+        "RUN"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Dockerfile reference",
+        "url": "https://docs.docker.com/reference/dockerfile/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-08",
+      "section": "r6",
+      "statement": "Changing a build secret's value invalidates the cached RUN step that consumes it.",
+      "answer": false,
+      "explanation": "BuildKit excludes secret contents from the build cache key. Changing a secret value alone does not invalidate the cached RUN step.",
+      "misconception": "BuildKit includes build secret values in cache matching.",
+      "factKey": "secret-value-cache-insensitive",
+      "topic": "Build cache",
+      "tags": [
+        "BuildKit",
+        "RUN",
+        "build secrets"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build cache invalidation",
+        "url": "https://docs.docker.com/build/cache/invalidation/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-09",
+      "section": "r6",
+      "statement": "`RUN --mount=type=cache` reuses package downloads after its RUN layer is rebuilt.",
+      "answer": true,
+      "explanation": "A cache mount persists package data across builds, letting a package manager reuse unchanged downloads when a RUN layer rebuilds.",
+      "misconception": "",
+      "factKey": "cache-mount-persists-package-cache",
+      "topic": "Build mounts",
+      "tags": [
+        "Dockerfile",
+        "RUN",
+        "BuildKit"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Optimize cache usage in builds",
+        "url": "https://docs.docker.com/build/cache/optimize/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-10",
+      "section": "r6",
+      "statement": "A `RUN --mount=type=bind` step can add its mounted input files to the image after merely reading them.",
+      "answer": false,
+      "explanation": "Bind-mounted inputs are temporary during RUN. Reading them does not put those files in the resulting image.",
+      "misconception": "Reading bind-mounted build inputs embeds them in the image.",
+      "factKey": "bind-mount-input-outside-image",
+      "topic": "Build mounts",
+      "tags": [
+        "Dockerfile",
+        "RUN",
+        "BuildKit"
+      ],
+      "appliesTo": "Dockerfile syntax 1; BuildKit 0.33",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Optimize cache usage in builds",
+        "url": "https://docs.docker.com/build/cache/optimize/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-11",
+      "section": "r6",
+      "statement": "`docker buildx build --cache-from` imports reusable cache data from an external location.",
+      "answer": true,
+      "explanation": "`--cache-from` supplies external cache data to a build, allowing another builder to reuse prior build results.",
+      "misconception": "",
+      "factKey": "external-cache-from-to",
+      "topic": "Build cache",
+      "tags": [
+        "Docker Buildx",
+        "--cache-from",
+        "--cache-to"
+      ],
+      "appliesTo": "Docker Engine 29; BuildKit 0.33",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Optimize cache usage in builds",
+        "url": "https://docs.docker.com/build/cache/optimize/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr6-12",
+      "section": "r6",
+      "statement": "`docker build --no-cache` also fetches a fresh base image from the registry.",
+      "answer": false,
+      "explanation": "`--no-cache` reruns build steps. `--pull` checks for a newer base image; the two flags serve separate purposes.",
+      "misconception": "Disabling the build cache also refreshes the base image.",
+      "factKey": "no-cache-versus-pull",
+      "topic": "Build cache",
+      "tags": [
+        "docker build",
+        "--no-cache",
+        "--pull"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Building best practices",
+        "url": "https://docs.docker.com/build/building/best-practices/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-01",
+      "section": "r7",
+      "statement": "In `registry.example.com/team/api:v2`, `team/api` identifies a repository inside the registry.",
+      "answer": true,
+      "explanation": "`registry.example.com` is the registry host, while `team` is the namespace and `api` is the repository.",
+      "misconception": "",
+      "factKey": "registry-versus-repository",
+      "topic": "Image references",
+      "tags": [
+        "Docker Engine",
+        "image reference"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image tag",
+        "url": "https://docs.docker.com/reference/cli/docker/image/tag/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-02",
+      "section": "r7",
+      "statement": "With an omitted registry host, `docker pull myteam/api` treats `myteam` as the registry host.",
+      "answer": false,
+      "explanation": "Docker uses Docker Hub (`docker.io`) when the registry host is omitted. In `myteam/api`, `myteam` is the namespace.",
+      "misconception": "The first path component of any image reference is the registry host.",
+      "factKey": "image-reference-docker-io-default",
+      "topic": "Image references",
+      "tags": [
+        "docker pull",
+        "Docker Hub"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image tag",
+        "url": "https://docs.docker.com/reference/cli/docker/image/tag/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-03",
+      "section": "r7",
+      "statement": "The image reference `alpine` resolves under Docker Hub's `library` namespace.",
+      "answer": true,
+      "explanation": "Docker uses the `library` namespace for a Docker Hub image reference that omits its namespace.",
+      "misconception": "",
+      "factKey": "image-reference-library-namespace",
+      "topic": "Image references",
+      "tags": [
+        "Docker Hub",
+        "image reference"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image tag",
+        "url": "https://docs.docker.com/reference/cli/docker/image/tag/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-04",
+      "section": "r7",
+      "statement": "When a tag is omitted, Docker selects the repository's most recently pushed tag.",
+      "answer": false,
+      "explanation": "Docker uses the tag literally named `latest` when an image reference omits its tag. That name does not guarantee the newest image.",
+      "misconception": "The default latest tag is a request for the newest image.",
+      "factKey": "omitted-tag-latest",
+      "topic": "Image references",
+      "tags": [
+        "Docker Engine",
+        "image tag"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image tag",
+        "url": "https://docs.docker.com/reference/cli/docker/image/tag/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-05",
+      "section": "r7",
+      "statement": "A Docker image can carry several tags that refer to the same local image ID.",
+      "answer": true,
+      "explanation": "Several tags may name the same local image ID; adding a tag does not duplicate that image's layers.",
+      "misconception": "",
+      "factKey": "multiple-tags-one-image-id",
+      "topic": "Tag and digest",
+      "tags": [
+        "Docker Engine",
+        "image tag"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image pull",
+        "url": "https://docs.docker.com/reference/cli/docker/image/pull/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-06",
+      "section": "r7",
+      "statement": "A Dockerfile base pinned by an image digest follows updates published under its former tag.",
+      "answer": false,
+      "explanation": "A digest-pinned `FROM` keeps using the same base image version when a publisher moves a tag. Updating the base requires changing the digest.",
+      "misconception": "A digest-pinned base image follows later updates to its tag.",
+      "factKey": "base-image-digest-pinning",
+      "topic": "Tag and digest",
+      "tags": [
+        "Dockerfile",
+        "FROM",
+        "image digest"
+      ],
+      "appliesTo": "Dockerfile syntax 1",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Building best practices",
+        "url": "https://docs.docker.com/build/building/best-practices/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-07",
+      "section": "r7",
+      "statement": "`docker login` stores registry credentials in Docker Engine's image store.",
+      "answer": false,
+      "explanation": "`docker login` authenticates to a registry and saves credentials in a configured credential store or the Docker client configuration file.",
+      "misconception": "The daemon's image store holds docker login credentials.",
+      "factKey": "docker-login-registry-credentials",
+      "topic": "Registry commands",
+      "tags": [
+        "docker login",
+        "Docker Engine"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker login",
+        "url": "https://docs.docker.com/reference/cli/docker/login/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-08",
+      "section": "r7",
+      "statement": "`docker image push --all-tags myteam/api` uploads every local tag of that repository.",
+      "answer": true,
+      "explanation": "`--all-tags` pushes the local tags for the specified image repository instead of selecting a single tag.",
+      "misconception": "",
+      "factKey": "docker-push-image-reference",
+      "topic": "Registry commands",
+      "tags": [
+        "docker image push",
+        "--all-tags"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image push",
+        "url": "https://docs.docker.com/reference/cli/docker/image/push/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-09",
+      "section": "r7",
+      "statement": "The `docker pull` command accepts `ubuntu@sha256:...` as an image reference.",
+      "answer": true,
+      "explanation": "The `@sha256:` form selects a specific published image version by digest when pulling.",
+      "misconception": "",
+      "factKey": "docker-pull-by-digest",
+      "topic": "Registry commands",
+      "tags": [
+        "docker pull",
+        "image digest"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker image pull",
+        "url": "https://docs.docker.com/reference/cli/docker/image/pull/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-10",
+      "section": "r7",
+      "statement": "Docker Hub's Verified Publisher badge identifies Docker-maintained open-source images.",
+      "answer": false,
+      "explanation": "Verified Publisher images come from commercial publishers verified by Docker; the badge does not say Docker maintains the images.",
+      "misconception": "Verified Publisher means Docker maintains the publisher's images.",
+      "factKey": "hub-trusted-content-categories",
+      "topic": "Trusted content",
+      "tags": [
+        "Docker Hub",
+        "Verified Publisher"
+      ],
+      "appliesTo": "Docker Hub",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Docker Hub program names and categories may change.",
+      "source": {
+        "title": "Trusted content",
+        "url": "https://docs.docker.com/docker-hub/image-library/trusted-content/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-11",
+      "section": "r7",
+      "statement": "On fresh Docker Engine 29 installs with standard settings, the containerd image store is the default.",
+      "answer": true,
+      "explanation": "Fresh Docker Engine 29 installations use the containerd image store by default; user namespace remapping is an exception.",
+      "misconception": "",
+      "factKey": "containerd-store-fresh-engine29",
+      "topic": "Image storage",
+      "tags": [
+        "Docker Engine",
+        "containerd image store"
+      ],
+      "appliesTo": "Docker Engine 29 fresh install",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "containerd image store with Docker Engine",
+        "url": "https://docs.docker.com/engine/storage/containerd/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr7-12",
+      "section": "r7",
+      "statement": "Upgrading to Docker Engine 29 automatically migrates an existing overlay2 store to containerd.",
+      "answer": false,
+      "explanation": "An upgraded daemon keeps using its classic overlay2 graph driver until the containerd image store is enabled.",
+      "misconception": "An Engine 29 upgrade automatically switches existing image storage to containerd.",
+      "factKey": "upgraded-engine-overlay2-until-enabled",
+      "topic": "Image storage",
+      "tags": [
+        "Docker Engine",
+        "overlay2",
+        "containerd image store"
+      ],
+      "appliesTo": "Docker Engine 29 upgraded from an earlier version",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "containerd image store with Docker Engine",
+        "url": "https://docs.docker.com/engine/storage/containerd/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-01",
+      "section": "r8",
+      "statement": "`docker run -v cache:/data` fails when the named volume cache has yet to be created.",
+      "answer": false,
+      "explanation": "Docker creates a named volume during container creation if that volume name does not exist yet.",
+      "misconception": "A named volume requires a separate docker volume create command before first use.",
+      "factKey": "named-volume-auto-creation",
+      "topic": "Volume lifecycle",
+      "tags": [
+        "docker run",
+        "Docker volumes"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-02",
+      "section": "r8",
+      "statement": "Two containers that mount anonymous volumes at `/data` receive the same volume.",
+      "answer": false,
+      "explanation": "Docker gives each new anonymous volume a unique generated name. Matching container mount paths do not make separate containers share one.",
+      "misconception": "Anonymous volumes are reused when containers choose the same mount path.",
+      "factKey": "anonymous-volume-generated-name",
+      "topic": "Volume lifecycle",
+      "tags": [
+        "Docker volumes"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-03",
+      "section": "r8",
+      "statement": "Removing a stopped container with `docker rm app` also deletes its named volume.",
+      "answer": false,
+      "explanation": "Removing a container leaves its named volume available. Removing the volume is a separate operation.",
+      "misconception": "Removing a container deletes its attached named volumes.",
+      "factKey": "named-volume-survives-removal",
+      "topic": "Volume lifecycle",
+      "tags": [
+        "docker rm",
+        "Docker volumes"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-04",
+      "section": "r8",
+      "statement": "`docker run --rm` removes an unshared anonymous volume when its container exits.",
+      "answer": true,
+      "explanation": "`--rm` cleans up an anonymous volume created for the container when it exits, unless another container still uses that volume.",
+      "misconception": "",
+      "factKey": "anonymous-volume-rm-cleanup",
+      "topic": "Volume lifecycle",
+      "tags": [
+        "docker run",
+        "--rm",
+        "Docker volumes"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-05",
+      "section": "r8",
+      "statement": "By default, `docker volume prune` removes unused named volumes.",
+      "answer": false,
+      "explanation": "Plain `docker volume prune` removes unused anonymous volumes. The `--all` option also includes unused named volumes.",
+      "misconception": "The default volume prune scope includes named volumes.",
+      "factKey": "volume-prune-default-anonymous",
+      "topic": "Volume lifecycle",
+      "tags": [
+        "docker volume prune",
+        "--all"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "docker volume prune",
+        "url": "https://docs.docker.com/reference/cli/docker/volume/prune/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-06",
+      "section": "r8",
+      "statement": "Docker copies existing container files into a newly mounted empty volume by default.",
+      "answer": true,
+      "explanation": "Docker initializes an empty volume from files already at the container destination. The `volume-nocopy` mount option suppresses that copy.",
+      "misconception": "",
+      "factKey": "volume-prepopulation",
+      "topic": "Volume mounts",
+      "tags": [
+        "Docker volumes",
+        "volume-nocopy"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-07",
+      "section": "r8",
+      "statement": "Writes to a Docker volume pass through the container's writable image layer.",
+      "answer": false,
+      "explanation": "Volume writes bypass the container's writable image layer and go to the volume's underlying storage.",
+      "misconception": "Volume data is written through the container's writable image layer.",
+      "factKey": "volume-bypasses-writable-layer",
+      "topic": "Volume mounts",
+      "tags": [
+        "Docker volumes",
+        "Docker Engine"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-08",
+      "section": "r8",
+      "statement": "A container with a read-only volume mount can still update files through that mount.",
+      "answer": false,
+      "explanation": "A read-only volume mount lets that container read the volume's files but blocks writes through that mount.",
+      "misconception": "The read-only option leaves writes to a volume available through the same mount.",
+      "factKey": "volume-read-only",
+      "topic": "Volume mounts",
+      "tags": [
+        "Docker volumes",
+        "readonly"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-09",
+      "section": "r8",
+      "statement": "A Docker volume driver can store volume data on an external storage system.",
+      "answer": true,
+      "explanation": "A volume driver may back a Docker volume with external storage such as NFS while the container still mounts a volume.",
+      "misconception": "",
+      "factKey": "volume-driver",
+      "topic": "Volume drivers",
+      "tags": [
+        "Docker volumes",
+        "volume driver"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-10",
+      "section": "r8",
+      "statement": "`--mount type=volume` uses key-value fields, while `-v` uses colon-separated fields.",
+      "answer": true,
+      "explanation": "For a volume mount, `--mount` takes comma-separated key-value fields; `-v` separates the volume name, container path, and options with colons.",
+      "misconception": "",
+      "factKey": "volume-v-versus-mount-syntax",
+      "topic": "Volume mounts",
+      "tags": [
+        "docker run",
+        "--mount",
+        "-v"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-11",
+      "section": "r8",
+      "statement": "Two running containers mount the same Docker volume at the same time.",
+      "answer": true,
+      "explanation": "Docker permits one volume to be mounted by multiple running containers simultaneously.",
+      "misconception": "",
+      "factKey": "volume-shared-simultaneously",
+      "topic": "Volume lifecycle",
+      "tags": [
+        "Docker volumes"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    },
+    {
+      "id": "docker-fundamentals-sr8-12",
+      "section": "r8",
+      "statement": "Docker manages a volume's host storage path independently of the container's mount target.",
+      "answer": true,
+      "explanation": "Docker chooses and manages the host-side storage location for a volume; the mount target names its location inside the container.",
+      "misconception": "",
+      "factKey": "volume-daemon-managed",
+      "topic": "Volume drivers",
+      "tags": [
+        "Docker volumes",
+        "Docker Engine"
+      ],
+      "appliesTo": "Docker Engine 29",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://docs.docker.com/engine/storage/volumes/"
+      }
+    }
+  ]
+}
