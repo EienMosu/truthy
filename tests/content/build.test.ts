@@ -675,6 +675,7 @@ describe("the real content: the decks added after step 2", () => {
     "typescript-fundamentals",
     "web-security",
     "docker-fundamentals",
+    "kubernetes-kcna",
     "terraform-associate",
     "github-actions",
   ];
@@ -711,7 +712,7 @@ describe("the real content: the decks added after step 2", () => {
         "DevOps",
         [
           ["docker", "Docker", ["docker-fundamentals"]],
-          ["kubernetes", "Kubernetes", []],
+          ["kubernetes", "Kubernetes", ["kubernetes-kcna"]],
           ["terraform", "Terraform", ["terraform-associate"]],
           ["github", "GitHub", ["github-actions"]],
         ],
@@ -805,6 +806,19 @@ describe("the real content: the decks added after step 2", () => {
         ["STO", "Volumes and mounts", 18],
         ["NET", "Networking and Compose", 19],
         ["SEC", "Security basics", 9],
+      ],
+    ],
+    [
+      "kubernetes-kcna",
+      "KCN",
+      "Kubernetes and Cloud Native Associate",
+      "Kubernetes and Cloud Native Associate",
+      116,
+      [
+        ["KFN", "Kubernetes fundamentals", 36],
+        ["ORC", "Container orchestration", 36],
+        ["DLV", "Application delivery", 18],
+        ["ARC", "Cloud native architecture", 26],
       ],
     ],
     [

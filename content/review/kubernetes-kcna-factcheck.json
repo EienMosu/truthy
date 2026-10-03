@@ -1,0 +1,733 @@
+{
+ "deck": "kubernetes-kcna",
+ "sections": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s1.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official kubernetes.io, current; supports card",
+     "evidence": "https://kubernetes.io/docs/concepts/overview/components/ : \"kube-apiserver: The core component server that exposes the Kubernetes HTTP API.\" The statement is a near-copy of this line and its answer is readable from the name itself (kube-apiserver exposes the API).",
+     "problem": "Name giveaway and near-copy of the source sentence: anyone who reads 'apiserver' answers True without knowing anything about the control plane. Teaches nothing at KCNA level.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"kube-apiserver scales horizontally by running more instances that share client traffic.\" Explanation: \"A highly available control plane runs several kube-apiserver instances behind a load balancer instead of one larger server; each instance serves the same Kubernetes API.\" URL: https://kubernetes.io/docs/concepts/architecture/ (\"kube-apiserver is designed to scale horizontally—that is, it scales by deploying more instances.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s1.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official kubernetes.io, current; supports card",
+     "evidence": "https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/ : \"low-level resources, such as Nodes and PersistentVolumes, are not in any namespace.\" Card s2.4-04 uses the same trick: \"Kubernetes stores a PersistentVolume in the Namespace of its bound PersistentVolumeClaim.\"",
+     "problem": "Answer is right, but the card repeats the s2.4-04 distractor template (a cluster-scoped object placed in the Namespace of a related namespaced object), which the prompt forbids. It is also close to a strawman: a Node runs Pods from many Namespaces, so 'the same Namespace as its running Pods' is self-contradictory by reasoning alone.",
+     "suggestedFix": "Replace (keeps answer FALSE). Statement: \"Deleting a Namespace leaves the Deployments and Services inside it running in the cluster.\" Explanation: \"Deleting a Namespace deletes every object in it, including Deployments, Services and Pods; the Namespace shows Terminating until the asynchronous cleanup finishes.\" URL: https://kubernetes.io/docs/tasks/administer-cluster/namespaces/ (\"This deletes everything under the namespace!\")"
+    },
+    {
+     "id": "kubernetes-kcna-s1.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official kubernetes.io, current; supports card",
+     "evidence": "https://kubernetes.io/docs/concepts/architecture/controller/ : \"Each controller tries to move the current cluster state closer to the desired state.\" Card: \"A Kubernetes controller brings current state closer to declared state.\"",
+     "problem": "Near-copy of the source sentence with two words changed, and a definition card: the answer follows from what 'controller'/'declared state' means in the Kubernetes model. Violates the original-wording and no-definition rules.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"The Job controller asks kube-apiserver to create Pods rather than starting containers on Nodes itself.\" Explanation: \"Controllers act through the API server: the Job controller creates or removes Pod objects to reach the desired state, and the kubelet on the assigned Node runs their containers.\" URL: https://kubernetes.io/docs/concepts/architecture/controller/ (\"The Job controller does not run any Pods or containers itself. Instead, the Job controller tells the API server to create or remove Pods.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s1.1-02",
+     "verdict": "duplicate",
+     "urlStatus": "200, official kubernetes.io, current; supports card",
+     "evidence": "https://kubernetes.io/docs/concepts/overview/components/ : \"etcd: Consistent and highly-available key value store for all API server data.\" Card s1.2-10 (etcd-snapshot-api-objects): \"An etcd snapshot preserves Kubernetes API objects for cluster recovery.\"",
+     "problem": "Answer is correct, but knowing that etcd stores all Kubernetes API data gives the answer of s1.2-10 directly (a snapshot of the store preserves the API objects), so the two rest on the same fact. The card is also very easy and close to the source wording.",
+     "suggestedFix": "Replace (keeps answer TRUE) and leave the etcd backup fact to s1.2-10. Statement: \"kube-controller-manager runs many logically separate controllers inside one process.\" Explanation: \"Controllers such as the Node, Job and EndpointSlice controllers are logically separate, but kube-controller-manager compiles them into one binary and runs them as a single process.\" URL: https://kubernetes.io/docs/concepts/architecture/ (\"Logically, each controller is a separate process, but to reduce complexity, they are all compiled into a single binary and run in a single process.\")"
+    }
+   ],
+   "notes": "All 10 source URLs load (kubernetes.io, current) and support their cards, including the right facts given in the explanations of false cards (03 kube-scheduler, 06 sticky identity, 07 CronJob, 08 Nodes cluster-scoped, 09 labels select, annotations do not). The section is balanced 5 true / 5 false; average lengths are about 67 (true) vs 69 (false) characters. Passed: 03, 05, 06, 07, 09, 10. Minor point on 06, not flagged: a replacement StatefulSet Pod does get a new UID, so a pedant could read 'fresh identity' as true. The docs define StatefulSet identity as ordinal plus stable network identity plus stable storage (\"The identity sticks to the Pod, regardless of which node it's (re)scheduled on\"), so the card holds. Optional wording to close the gap: \"assigns a new ordinal and hostname\". 10 handles native sidecars correctly with the word \"regular\". If all four flagged cards are replaced as suggested, the section stays 5 true / 5 false (01, 02 and 04 stay true, 08 stays false), and no replacement repeats a fact from other sections. One overlap to watch: the replacement for 04 and card 07 both mention Jobs, but they test different facts."
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s1.2-10",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official kubernetes.io, current (v1.37 docs)",
+     "evidence": "https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/ : \"All Kubernetes objects are stored in etcd. Periodically backing up the etcd cluster data is important to recover Kubernetes clusters under disaster scenarios, such as losing all control plane nodes.\" The answer is right, but kubernetes-kcna-s1.1-02 (\"etcd stores the cluster state used by the Kubernetes API.\") already teaches that etcd holds the API objects. A snapshot of that store holding them follows from the word \"snapshot\", so the card adds nothing and is close to a truism.",
+     "problem": "This card rests on the same fact as s1.1-02 (etcd holds the API objects), so knowing one answer gives the other. Version skew is in the 1.2 scope and no card in the section tests it.",
+     "suggestedFix": "Replace (answer true, keeps 5/5): statement \"During an upgrade, a node's kubelet may run an older minor version than kube-apiserver.\" Explanation: \"The version skew policy allows a kubelet up to three minor versions older than kube-apiserver but never newer than it.\" Source: https://kubernetes.io/releases/version-skew-policy/ (\"kubelet must not be newer than kube-apiserver. kubelet may be up to three minor versions older than kube-apiserver\")."
+    },
+    {
+     "id": "kubernetes-kcna-s1.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official kubernetes.io, current",
+     "evidence": "https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/ : \"Kubernetes objects can be created, updated, and deleted by storing multiple object configuration files in a directory and using kubectl apply to recursively create and update those objects as needed.\"",
+     "problem": "The answer can be read from the wording. The statement pairs \"apply\" with \"declarative configuration\" and says what the page's title says, so nobody who studied would answer False. It does not test the real difference between imperative and declarative management.",
+     "suggestedFix": "Replace (answer true, keeps 5/5): statement \"kubectl apply keeps live-object changes made by other writers in fields its configuration file does not set.\" Explanation: \"Declarative management with kubectl apply patches only the fields it manages, so direct changes to live objects survive. kubectl replace overwrites the whole object instead.\" Source: https://kubernetes.io/docs/concepts/overview/working-with-objects/object-management/ (\"Changes made directly to live objects are retained, even if they are not merged back into the configuration files.\" vs imperative: \"Updates to live objects must be reflected in configuration files, or they will be lost during the next replacement.\")."
+    },
+    {
+     "id": "kubernetes-kcna-s1.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official kubernetes.io, current",
+     "evidence": "https://kubernetes.io/docs/concepts/policy/resource-quotas/ : \"A resource quota, defined by a ResourceQuota object, provides constraints that limit aggregate resource consumption per namespace.\" The card says \"A ResourceQuota constrains aggregate resource use within a Namespace.\"",
+     "problem": "The statement repeats the source's opening sentence with only a few words changed, which the originality rule forbids. It is also nearly a definition: a learner can get it from the name \"ResourceQuota\".",
+     "suggestedFix": "Replace (answer true, keeps 5/5): statement \"Lowering a ResourceQuota below current usage leaves the existing Pods in that Namespace running.\" Explanation: \"Quota is checked when objects are created or updated, so changing a ResourceQuota does not affect existing resources. New requests that would exceed it are rejected.\" Same URL (\"Neither contention nor changes to quota will affect already created resources.\")."
+    }
+   ],
+   "notes": "I opened all 10 source URLs and each one loads (official kubernetes.io, current docs). Seven cards pass on both the answer and the source.\n- 01: settled by \"Each context has three parameters: cluster, namespace, and user.\"\n- 02: the Deployment page shows apiVersion apps/v1. A stronger source for the core versus named group split is https://kubernetes.io/docs/reference/using-api/#api-groups. This is optional; I did not flag it.\n- 04: \"it's possible (and allowed) for a container to use more resource than its request\". Only a cpu limit is a hard limit.\n- 05: \"a Pod is BestEffort only if none of the Containers ... have a CPU limit or a CPU request ... and the Pod does not have any Pod-level ... requests\". Neither Pod-level resources nor in-place resize make the opposite answer defensible.\n- 07: \"Set default request/limit for compute resources in a namespace and automatically inject them to Containers\". The page also says existing Pods stay unchanged.\n- 08: \"On their own, custom resources let you store and retrieve structured data.\" The operator pattern combines them with custom controllers.\n- 09: the workflow is control plane nodes first, then worker nodes in a separate procedure.\nWording tell (not flagged on its own): two false statements, 08 and 09, use \"also\" (\"also starts\", \"also upgrades\"), and no true statement in the section does. That is within the deck limit of two per template, but inside 1.2 \"also\" marks false. Rewording one of them, or using \"also\" in a true statement, would remove the tell. The section balance is 5 true and 5 false. All three replacements are true, so they keep it."
+  },
+  {
+   "section": "1.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s1.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, kubernetes.io v1.37 docs, current; supports the right fact",
+     "evidence": "https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/ : \"If a Pod cannot be scheduled, the scheduler tries to preempt (evict) lower priority Pods to make scheduling of the pending Pod possible.\" The answer (False) is right, but the statement is false only through a self-contradiction: a 'high-priority' Pod preempting Pods with a 'higher' priority. Nobody who studied would answer True, and the wording alone gives the answer away. The prompt bans trick wording and strawmen, and this card is rated hard (3).",
+     "problem": "Strawman built on trick wording (high-priority vs higher priority), not a realistic misconception. The real edge case a learner could get wrong is equal priority.",
+     "suggestedFix": "Keep the fact and the False answer. Statement (69 chars): \"A pending Pod can preempt running Pods whose priority equals its own.\" Explanation (132 chars): \"Preemption only targets Pods with lower priority than the pending Pod. Pods of equal or higher priority are never chosen as victims.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s1.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, kubernetes.io v1.37 docs, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/ : \"If none of the nodes are suitable, the pod remains unscheduled until the scheduler is able to place it.\" The answer (False) is right, but the claim that kube-scheduler deletes the Pod from the API is a strawman: a learner who studied would not think the scheduler deletes objects. The misconception learners really hold is that the Pod fails. https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/ : \"Pending ... This includes time a Pod spends waiting to be scheduled\".",
+     "problem": "Strawman distractor. It tests the right fact (an unschedulable Pod stays put) through a misconception almost nobody holds.",
+     "suggestedFix": "Keep the False answer. Statement (91 chars): \"A Pod that no Node can accept moves to the Failed phase once kube-scheduler stops retrying.\" Explanation (150 chars): \"kube-scheduler keeps retrying an unschedulable Pod. It stays in the Pending phase, which covers time spent waiting to be scheduled, until a Node fits.\" Source: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/ (also supported by the kube-scheduler page)."
+    },
+    {
+     "id": "kubernetes-kcna-s1.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, kubernetes.io v1.37 docs, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ : \"preferredDuringSchedulingIgnoredDuringExecution: The scheduler tries to find a node that meets the rule. If a matching node is not available, the scheduler still schedules the Pod.\" The answer is right, but the word 'preferred' tells the player the rule is soft, so 'a preferred rule blocks a Pod' can be answered from plain English alone. The prompt bans name giveaways and wording tells. The same page has a node affinity fact a learner who studied can actually get wrong: \"IgnoredDuringExecution means that if the node labels change after Kubernetes schedules the Pod, the Pod continues to run.\"",
+     "problem": "The answer can be read from the word 'preferred' in the statement, so the card does not test knowledge.",
+     "suggestedFix": "Keep the False answer, new factKey node-affinity-ignored-during-execution. Statement (105 chars): \"A running Pod is evicted when its Node later loses a label that the Pod's required node affinity matched.\" Explanation (172 chars): \"Node affinity is checked at scheduling time. If the Node labels change after placement, the Pod keeps running, which is what IgnoredDuringExecution in the rule types means.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s1.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, kubernetes.io v1.37 docs, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/ : \"kube-scheduler selects a node for the pod in a 2-step operation: Filtering Scoring\" and \"If there is more than one node with equal scores, kube-scheduler selects one of these at random.\" The card is correct, but its own words ('filters out ineligible Nodes before it scores feasible Nodes') make the order obvious by logic: only feasible Nodes are left to score after the ineligible ones are removed. A player who does not know Kubernetes would answer True.",
+     "problem": "Close to a truism. The wording gives away the order, and the opposite order would be a strawman.",
+     "suggestedFix": "Keep the True answer. Statement (102 chars): \"kube-scheduler picks the highest-scoring feasible Node and breaks ties between equal scores at random.\" Explanation (154 chars): \"After filtering and scoring, kube-scheduler assigns the Pod to the top-ranked Node; when several Nodes share the top score it picks one of them at random.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.3. The section has 5 true and 5 false cards, and every suggested fix keeps the original answer, so the balance stays 5/5. All six source URLs (kube-scheduler, assign-pod-node, taint-and-toleration, pod-priority-preemption, topology-spread-constraints, architecture/nodes) returned 200. They are current kubernetes.io docs, and the version switcher shows v1.37 as the newest. On every flagged card the answer itself is right; the problems are strawmen and give-away wording.\n\nThe six cards that pass, with the evidence that settles each:\n- 02 (requests used when filtering): \"the PodFitsResources filter checks whether a candidate Node has enough available resources to meet a Pod's specific resource requests\". The page still uses the old filter name PodFitsResources (the current plugin is NodeResourcesFit), but the card does not name the filter, so it is fine. It is close to s1.2-04 (a CPU request reserves capacity rather than capping use) but not a duplicate.\n- 03 (nodeSelector): \"Kubernetes only schedules the Pod onto nodes that have each of the labels you specify\". It passes, but it is easy and nearly guessable from the name.\n- 05 (inter-pod affinity): \"based on the labels of Pods already running on that node, instead of the node labels\".\n- 06 (toleration): \"Tolerations allow scheduling but don't guarantee scheduling\". The word \"guarantees\" is a mild tell that the statement is false, but the misconception is a real one.\n- 08 (topology spread): \"Nodes that have a label with this key and identical values are considered to be in the same topology. We call each instance of a topology ... a domain\".\n- 10 (cordon): \"Marking a node as unschedulable prevents the scheduler from placing new pods onto that Node but does not affect existing Pods on the Node\". Cordon is not in the prompt's scope list for 1.3 and leans toward 1.2 (cluster lifecycle). I kept it because the mechanism is the scheduler's unschedulable filter.\n\nNo card depends on an alpha or beta feature, and no card is made arguable by a recent version change. Preemption has been stable since v1.14 and the other rules are long-standing. For the s1.3-09 replacement, the Pending phase is also in 2.3's scope, but no 2.3 card tests it, so it is not a duplicate."
+  },
+  {
+   "section": "1.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s1.4-08",
+     "verdict": "ambiguous",
+     "urlStatus": "200, opencontainers.org/about/overview/ loads, official and current",
+     "evidence": "The card's own source says: \"To support this UX the OCI Image Format contains sufficient information to launch the application on the target platform (e.g. command, arguments, environment variables, etc).\" (https://opencontainers.org/about/overview/). image-spec config.md: \"The execution parameters which SHOULD be used as a base when running a container using the image\" (Entrypoint, Cmd, WorkingDir), and image-spec conversion.md defines how the image config becomes the OCI runtime configuration (https://github.com/opencontainers/image-spec/blob/main/conversion.md).",
+     "problem": "The Image Specification does define which process a container starts (entrypoint, arguments, environment) and how that maps into the runtime config, so an expert could defend True for \"defines how a runtime starts container processes\". The intended distinction (lifecycle and bundle execution belong to the Runtime Specification) is not cleanly captured by the wording.",
+     "suggestedFix": "Replace (answer stays False): \"The OCI Image Specification defines the registry API that clients use to push and pull images.\" Explanation: \"The OCI Distribution Specification standardizes the API for distributing images; the Image Specification defines the image itself: manifest, configuration and filesystem layers.\" Source stays https://opencontainers.org/about/overview/ (\"introduced to OCI as an effort to standardize the API to distribute container images\"). Check the deck has no other Distribution Specification card."
+    },
+    {
+     "id": "kubernetes-kcna-s1.4-05",
+     "verdict": "ambiguous",
+     "urlStatus": "200, kubernetes.io/docs/concepts/containers/images/ loads, official and current",
+     "evidence": "\"Digests are hashes of the image's content, and are immutable. Tags can be moved to point to different images, but digests are fixed.\" (https://kubernetes.io/docs/concepts/containers/images/)",
+     "problem": "The answer is right in general, but the wording \"locks its registry name to immutable image content\" is garbled (a tag does not lock a registry name), and the statement names no comparison point. Many registries offer tag immutability settings, so an expert could argue that a tag on such a registry does point at fixed content. The intended fact is tag versus digest, which the statement only hints at.",
+     "suggestedFix": "Replace (answer stays False): \"Pinning a container image by tag gives the same content guarantee as pinning it by digest.\" Explanation: \"Tags can be moved to point to different images, while a digest is a hash of the image content and stays fixed, so image@sha256:... pins one exact version.\" Same source URL."
+    },
+    {
+     "id": "kubernetes-kcna-s1.4-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io/docs/concepts/containers/runtime-class/ loads, official and current (stable since v1.20)",
+     "evidence": "\"RuntimeClass is a feature for selecting the container runtime configuration. The container runtime configuration is used to run a Pod's containers.\" (https://kubernetes.io/docs/concepts/containers/runtime-class/)",
+     "problem": "The statement \"RuntimeClass selects the container runtime configuration for a Pod\" closely paraphrases the page's opening sentence, and its answer is readable from the name (RuntimeClass, runtime). It teaches nothing about why or how RuntimeClass is used.",
+     "suggestedFix": "Replace (answer stays True): \"Pods that name different RuntimeClasses run on the same cluster with different runtime handlers.\" Explanation: \"RuntimeClass maps a Pod to a runtime handler configured on its nodes, so security-sensitive Pods can run in a runtime that uses hardware virtualization while others keep the default.\" Same URL (\"you might choose to schedule those Pods so that they run in a container runtime that uses hardware virtualization\")."
+    },
+    {
+     "id": "kubernetes-kcna-s1.4-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io/docs/concepts/workloads/pods/user-namespaces/ loads, official and current; it mentions PID namespaces only in passing",
+     "evidence": "\"When creating a pod, by default, several new namespaces are used for isolation: a network namespace to isolate the network of the container, a PID namespace to isolate the view of processes, etc.\" (https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/)",
+     "problem": "This is a definition card. A PID namespace isolating the process view follows from the term itself, and the statement paraphrases the source clause (\"a PID namespace to isolate the view of processes\"). A player who does not know the subject will guess True from the word \"namespace\". The source page is about user namespaces, not PID namespaces.",
+     "suggestedFix": "Replace (answer stays True): \"Containers in one Pod see each other's processes when the Pod enables process namespace sharing.\" Explanation: \"With process namespace sharing enabled, processes in one container are visible to the other containers of the same Pod, which helps a sidecar or a debugging tool inspect them.\" Source: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/ (\"When process namespace sharing is enabled, processes in a container are visible to all other containers in the same pod.\")."
+    },
+    {
+     "id": "kubernetes-kcna-s1.4-01",
+     "verdict": "source_problem",
+     "urlStatus": "200, but it is a CNCF Member Post by a third party (Lars Larsson, Elastisys), 2024",
+     "evidence": "The page is headed \"Member post originally published on Elastisys's blog by Lars Larsson\" and says containers \"do not require a full operating system each, but instead, run on a shared one.\" Official alternative: \"Containers are similar to VMs, but they have relaxed isolation properties to share the Operating System (OS) among the applications.\" and \"Each VM is a full machine running all the components, including its own operating system\" (https://kubernetes.io/docs/concepts/overview/)",
+     "problem": "The prompt forbids third-party blogs, and a member post republished on cncf.io is third-party content, not CNCF documentation. The answer (True) and the explanation are correct. The \"Process-isolated\" qualifier rightly leaves out sandboxed runtimes such as gVisor and Kata Containers.",
+     "suggestedFix": "Keep the statement and the explanation; change the source to \"Overview\" https://kubernetes.io/docs/concepts/overview/ (Going back in time: VM era versus container era)."
+    }
+   ],
+   "notes": "I checked all 10 section 1.4 cards (5 True, 5 False; the balance and average lengths are fine, 72.0 vs 71.0 characters). All six distinct source URLs return 200. The suggested replacements keep the 5/5 balance; with all of them applied, the average lengths are about 80 (true) and 80 (false). Cards that pass: 03 (cgroups: \"control groups constrain resources that are allocated to processes\", kubernetes.io/docs/concepts/architecture/cgroups/; definition-like but tests the core namespaces versus cgroups split), 04 (writable layer: node-pressure-eviction page \"container images (which are the read-only layers)\" and \"container writable layers\"; the source is indirect but supports the card), 07 (Images page: Always makes the runtime resolve the tag and download \"any layers that are not already cached locally. If all layers are already present, the container runtime uses the cached image\"), 09 (CRI page: \"the main protocol for the communication between the kubelet and Container Runtime\"; this one is borderline too, a close paraphrase of that sentence, but I kept it as the central KCNA fact), and 10 (runc below CRI: the OCI blog says low-level runtimes \"are usually called from high-level container runtimes such as containerd and CRI-O\"; the answer is solid). One caveat on 10: its source is a 2024 announcement for runtime-spec v1.2, and it does not mention the kubelet or CRI. A sturdier pairing would add https://kubernetes.io/docs/setup/production-environment/container-runtimes/ (\"Kubernetes 1.37 requires that you use a runtime that conforms with the Container Runtime Interface (CRI)\"). I found no duplicate factKeys against other sections; 4.2-09 (pairing CRI, CNI and CSI vendors) rests on a different fact from 1.4-09 and 1.4-10. One coverage note: the section has no card on the cgroup v2 requirement since v1.35, which the prompt highlights. A possible future True card: \"Since Kubernetes v1.35, the kubelet on a Linux node requires cgroup v2.\""
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s2.1-04",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official (kubernetes.io), current (v1.37); supports the cross-Node forwarding but not the Cluster/Local policy distinction the answer rests on",
+     "evidence": "https://kubernetes.io/docs/concepts/services-networking/service/ : \"Every node in the cluster configures itself to listen on that assigned port and to forward traffic to one of the ready endpoints associated with that Service.\" But https://kubernetes.io/docs/reference/networking/virtual-ips/ : \"Set the field to Cluster to route external traffic to all ready endpoints and Local to only route to ready node-local endpoints. If the traffic policy is Local and there are no node-local endpoints, the kube-proxy does not forward any traffic for the relevant Service.\"",
+     "problem": "The statement has no qualifier, so the answer depends on externalTrafficPolicy. With Local, a NodePort Service does need a backend Pod on the Node the client contacts, so an expert could defend True. The explanation's 'usual cluster-wide routing policy' admits the exception but the statement does not name the default. The source page only points to the Traffic Policies section and does not itself state the Local behaviour.",
+     "suggestedFix": "Statement (false): \"With the default external traffic policy, a NodePort Service needs a backend Pod on the Node a client contacts.\" Explanation: \"Under the default Cluster policy, every Node listens on the NodePort and forwards traffic to any ready endpoint, even on another Node. Only the Local policy drops traffic at Nodes that have no local endpoint.\" URL: https://kubernetes.io/docs/reference/networking/virtual-ips/"
+    },
+    {
+     "id": "kubernetes-kcna-s2.1-10",
+     "verdict": "source_problem",
+     "urlStatus": "loads, but it is a 2021 CNCF 'Member Post' guest article by Scott Lowe, first published on Kong's blog. That is a third-party blog, which the prompt forbids.",
+     "evidence": "cncf.io page (member post): \"It's important to note that the control plane is out-of-band, so it doesn't sit in-line between two communicating workloads.\" Official alternative https://istio.io/latest/docs/ops/deployment/architecture/ : \"The data plane is composed of a set of intelligent proxies (Envoy) deployed as sidecars. These proxies mediate and control all network communication between microservices.\" and \"The control plane manages and configures the proxies to route traffic.\"",
+     "problem": "The answer (false) and the explanation are correct. The source is a vendor guest post hosted on cncf.io, not official project documentation, so it breaks the source rule.",
+     "suggestedFix": "Keep the card and replace the URL with the Istio architecture page (Istio is a CNCF graduated project): https://istio.io/latest/docs/ops/deployment/architecture/"
+    },
+    {
+     "id": "kubernetes-kcna-s2.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/services-networking/service/ : \"ClusterIP Exposes the Service on a cluster-internal IP. Choosing this value makes the Service only reachable from within the cluster. This is the default that is used if you don't explicitly specify a type for a Service.\"",
+     "problem": "The name gives the answer away: a 'ClusterIP' Service getting an IP for use inside the cluster can be read from the type name alone. 'By default' is also in the wrong place. The fact worth testing is that ClusterIP is the default type, and the statement does not test it.",
+     "suggestedFix": "Statement (true): \"Kubernetes creates a Service as type ClusterIP when its manifest leaves the type field unset.\" Explanation: \"ClusterIP is the default Service type: it gets a virtual IP that only clients inside the cluster can reach. Exposing it outside needs NodePort, LoadBalancer or a Gateway.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s2.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (page names Kubernetes 1.37); supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/ : \"A CNI plugin is required to implement the Kubernetes network model.\" https://kubernetes.io/docs/concepts/cluster-administration/networking/ : \"The network plugin is configured to assign IP addresses to Pods.\"",
+     "problem": "The name gives it away: 'Container Network Interface plugin implements the network' follows from the acronym. The wording is also loose. The Pod network carries Pod-to-Pod traffic on one Node and across Nodes, not 'traffic between Nodes', which is node network traffic. A pedant could argue the qualifier makes it false.",
+     "suggestedFix": "Statement (true): \"The cluster's network plugin, called through CNI, assigns each new Pod its IP address.\" Explanation: \"Kubernetes leaves Pod addressing to the network plugin: the container runtime calls the CNI plugin, which allocates the Pod's IP and connects it to the Pod network. kube-proxy only handles Service traffic.\" URL: https://kubernetes.io/docs/concepts/cluster-administration/networking/"
+    },
+    {
+     "id": "kubernetes-kcna-s2.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/ : \"EndpointSlices track the IP addresses of backend endpoints.\" and \"By default, the control plane creates and manages EndpointSlices to have no more than 100 endpoints each.\" API reference https://kubernetes.io/docs/reference/kubernetes-api/service-resources/endpoint-slice-v1/ : endpoints.hostname \"may be used by consumers of endpoints to distinguish endpoints from each other (e.g. in DNS names)\"; addressType FQDN is listed (Deprecated).",
+     "problem": "Close to a strawman: a learner who knows an EndpointSlice tracks a Service's backends would hardly believe it stores client DNS names. There is also a technicality: EndpointSlices carry a hostname field that CoreDNS uses to build per-Pod DNS names for headless Services, plus a deprecated FQDN address type. So 'false' is not fully clean.",
+     "suggestedFix": "Statement (false): \"Kubernetes tracks the endpoints of a Service with thousands of Pods in one EndpointSlice object.\" Explanation: \"The control plane spreads a Service's endpoints across several EndpointSlices, each holding a capped number of endpoints, so a change to one Pod rewrites a small object instead of one huge list.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 2.1 (5 true: 01, 02, 03, 05, 09; 5 false: 04, 06, 07, 08, 10). Every replacement keeps its card's answer, so the 5/5 balance holds. Five cards pass: 01, 05, 06, 08 and 09. Each is supported verbatim on kubernetes.io:\n- 01 (Pod IPs): \"Each pod in a cluster gets its own unique cluster-wide IP address\". Saying \"on the cluster Pod network\" correctly leaves out hostNetwork Pods.\n- 05 (ExternalName): \"configures your cluster's DNS server to return a CNAME record ... No proxying of any kind is set up\".\n- 06 (headless Service): \"For headless Services, a cluster IP is not allocated, kube-proxy does not handle these Services, and there is no load balancing or proxying done by the platform for them\".\n- 08 (Gateway/HTTPRoute): \"The HTTPRoute kind specifies routing behavior of HTTP requests from a Gateway listener to backend network endpoints\".\n- 09 (NetworkPolicy): \"Creating a NetworkPolicy resource without a controller that implements it will have no effect\".\n\nNo answer is outright wrong. The most important flag is 04: whether it is false depends on externalTrafficPolicy, and the statement does not name the default. The only source failure is 10, a vendor guest post on cncf.io; the Istio architecture page is the replacement.\n\nI found no duplicates in the other sections. 2.3-10 (a Service with no matching Pods) and 4.2-09 (open interfaces including CNI) test different facts from 2.1-07 and 2.1-02, and my replacements do not collide with them. Card 05 credits \"the Service\" with answering DNS lookups when cluster DNS actually does; the explanation fixes this, so I did not flag it. Card 09 is marked difficulty 3 but reads more like difficulty 2.\n\nSources were checked on 2026-10-03: kubernetes.io pages show Kubernetes 1.37, and Service externalIPs shows as deprecated since v1.36, consistent with the prompt."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s2.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/security/pod-security-admission/ : \"warn: Policy violations will trigger a user-facing warning, but are otherwise allowed.\" / \"enforce: Policy violations will cause the pod to be rejected.\" The answer is correct, but the mode's own name gives it away: a player who knows nothing about Kubernetes can tell that a mode called \"warn\" does not reject, which breaks the no-name-giveaway rule.",
+     "problem": "Name giveaway. The false answer can be read from the word \"warn\" without any subject knowledge.",
+     "suggestedFix": "Replace with a FALSE card (keeps 5/5): Statement: \"The Baseline Pod Security Standard follows current Pod hardening best practices at some cost to compatibility.\" Explanation: \"Baseline blocks known privilege escalations and still allows a default Pod. The Restricted standard is the one that follows current Pod hardening best practices.\" factKey pod-security-standards-baseline-vs-restricted. URL https://kubernetes.io/docs/concepts/security/pod-security-standards/ (\"Baseline: Minimally restrictive policy which prevents known privilege escalations... Restricted: Heavily restricted policy, following current Pod hardening best practices.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s2.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/ : \"A process inside a Pod can use the identity of its associated service account to authenticate to the cluster's API server.\" The statement closely paraphrases this sentence. The answer also follows from the meaning of \"account\": an account exists to authenticate.",
+     "problem": "Definition card and near-paraphrase of the official sentence. It teaches nothing about how ServiceAccount tokens work, even though tokens are explicitly in the section scope.",
+     "suggestedFix": "Replace with a TRUE card: Statement: \"The kubelet obtains a Pod's ServiceAccount token from the TokenRequest API and refreshes it before it expires.\" Explanation: \"Since v1.22, Pods receive short-lived, audience-bound ServiceAccount tokens in a projected volume rather than long-lived tokens stored in Secrets, which limits the damage a leaked token can do.\" appliesTo Kubernetes v1.37. URL https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/ (\"The kubelet fetches time-bound tokens using the TokenRequest API... The kubelet also refreshes that token before the token expires.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s2.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/security/controlling-access/ : \"After the request is authenticated as coming from a specific user, the request must be authorized.\" Generic IAM logic already settles the answer: permissions can only be checked once the requester's identity is known, so the fact is not specific to Kubernetes.",
+     "problem": "Truism. Authentication before authorization holds by common sense in any access-control system. Card 02 already tests the Kubernetes-specific ordering (authorization before admission).",
+     "suggestedFix": "Replace with a TRUE card: Statement: \"When several authenticators are configured, the API server tries them in turn until one of them succeeds.\" Explanation: \"Kubernetes can enable several authentication modules at once, such as client certificates, bearer tokens and ServiceAccount JWTs. The first module that authenticates the request sets the requester's identity.\" Same URL (\"Multiple authentication modules can be specified, in which case each one is tried in sequence, until one of them succeeds.\")"
+    }
+   ],
+   "notes": "All 10 section 2.2 cards were checked against their source URLs. Every URL loads, is official kubernetes.io and is current. Each one supports its card, including the corrected fact in the explanation of each false card. True/false balance is 5/5 (true: 01, 03, 05, 06, 09; false: 02, 04, 07, 08, 10), and all three replacements keep it.\n\nCards that pass, with the sentence that settles each:\n- 02: \"Admission Control modules... step 3\", which comes after authorization.\n- 03: \"A Role always sets permissions within a particular namespace\".\n- 04: \"a RoleBinding can reference a ClusterRole and bind that ClusterRole to the namespace of the RoleBinding\".\n- 06: \"The values for all keys in the data field have to be base64-encoded strings\".\n- 07: \"Kubernetes Secrets are, by default, stored unencrypted in the API server's underlying data store (etcd)\".\n- 09: \"security settings that you specify for a Container override settings made at the Pod level when there is overlap\".\n- 10: Distribute = \"Ensure the security of the supply chain for container images\"; Deploy = \"Ensure appropriate restrictions on what can be deployed, who can deploy it, and where it can be deployed\". The card uses the current lifecycle phases, not the 4C model.\n\nMinor points not flagged:\n- Card 07: managed offerings such as EKS and GKE now encrypt etcd data by default. The statement names the upstream API server, though, and the explanation says \"default API server configuration\", so it holds for this upstream-only deck.\n- Card 09: factKey \"securitycontext-process-privileges\" does not match the card's fact (container setting overrides Pod setting). Suggest renaming it to securitycontext-container-overrides-pod.\n- Card 02: the explanation could also mention that admission controllers skip read-only requests, but it is correct as written.\n\nNo duplicates were found. Other sections touch only kube-apiserver as the API entry point and etcd storage and snapshots (1.1-01, 1.1-02, 1.2-10), which are different facts.\n\nReplacement text lengths were estimated, not counted exactly: all three statements are about 97 to 108 characters and all three explanations about 155 to 190, inside the 120 and 240 limits."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s2.3-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io Pod Lifecycle, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/ : \"CrashLoopBackOff state: This indicates that the backoff delay mechanism is currently in effect for a given container that is in a crash loop, failing and restarting repeatedly.\" The card is correct, but its statement only spells out the name (crash + loop + back-off = a retry delay after repeated failures). Someone who knows nothing about Kubernetes can answer True from the name alone.",
+     "problem": "The answer can be read from the name, which breaks the no-name-giveaway rule. The card teaches nothing about how the state relates to the Pod.",
+     "suggestedFix": "(True) Statement: \"While its single app container is in CrashLoopBackOff, a Pod typically still reports the Running phase.\" Explanation: \"CrashLoopBackOff is a Waiting reason on the container, not a Pod phase. The Running phase covers containers that are starting or restarting, so kubectl get shows the reason in its STATUS column instead.\" Same URL. The Running row of the phase table says \"in the process of starting or restarting\", and the note under the table says CrashLoopBackOff \"may appear in the Status field of some kubectl commands\"."
+    },
+    {
+     "id": "kubernetes-kcna-s2.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io Images, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/concepts/containers/images/ : \"The status ImagePullBackOff means that a container could not start because Kubernetes could not pull a container image ... The BackOff part indicates that Kubernetes will keep trying to pull the image, with an increasing back-off delay.\" The false claim (an application error after start) is contradicted by the name itself (ImagePull).",
+     "problem": "Strawman and name giveaway: nobody who has seen the name would answer True. The useful fact about this state, that the kubelet keeps retrying and the Pod never fails, goes untested.",
+     "suggestedFix": "(False) Statement: \"When an image pull keeps failing, the kubelet stops retrying and sets the Pod phase to Failed.\" Explanation: \"With ImagePullBackOff the container stays Waiting and the Pod stays Pending while the kubelet keeps retrying the pull with an increasing back-off delay.\" Same URL, plus pod-lifecycle Pending: \"the time spent downloading container images over the network\"."
+    },
+    {
+     "id": "kubernetes-kcna-s2.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io Assign Memory Resources, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/ : \"If the Container continues to consume memory beyond its limit, the Container is terminated.\" The example shows \"reason: OOMKilled\". The statement only expands the acronym (Out Of Memory, Killed), and the hedge \"can\" makes it even easier.",
+     "problem": "Name giveaway: the answer is readable from \"OOMKilled\" itself. The card does not test what happens to the container next.",
+     "suggestedFix": "(True) Statement: \"The kubelet restarts an OOMKilled container in place when the Pod restartPolicy permits a restart.\" Explanation: \"OOMKilled is the termination reason for a container that went over its memory limit. The kubelet treats it like any other runtime failure and restarts the container under the Pod restartPolicy.\" Same URL: \"If a terminated Container can be restarted, the kubelet restarts it, as with any other type of runtime failure.\""
+    },
+    {
+     "id": "kubernetes-kcna-s2.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io Debug Services, current; only indirectly supports the card",
+     "evidence": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/ : \"Inside the Kubernetes system is a control loop which evaluates the selector of every Service and saves the results into one or more EndpointSlice objects ... If the ENDPOINTS column is <none>, you should check that the spec.selector field of your Service actually selects for metadata.labels values on your Pods.\" The page never says that old backends are removed. The idea that the controller keeps stale backends is a strawman, and the wording (\"retains old backends\") is awkward.",
+     "problem": "Strawman: no learner who has studied this would expect stale backends to be kept. It misses the real troubleshooting point of the scope item \"a Service whose selector matches no ready Pods\": the name still resolves but connections fail.",
+     "suggestedFix": "(False) Statement: \"Cluster DNS stops resolving a ClusterIP Service name once the Service selector matches no ready Pods.\" Explanation: \"A ClusterIP Service keeps its DNS A record for its cluster IP whatever its endpoints are. With no ready Pods behind it, the name still resolves but connections to the Service fail.\" URL: https://github.com/kubernetes/dns/blob/master/docs/specification.md (2.3.1 gives the ClusterIP A record \"<service>.<ns>.svc.<zone>. <ttl> IN A <cluster-ip>\" with no readiness condition; only headless records depend on ready endpoints). The statement names ClusterIP, so the headless NXDOMAIN case does not apply."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 2.3 (5 true, 5 false); the current balance is 02, 04, 06, 08 and 09 true. I fetched every source page from kubernetes.io. All return 200, are current and are official. The four suggested replacements keep the 5/5 balance (02 and 04 true, 03 and 10 false).\n\nPassed:\n- 01: The Running phase is \"bound to a node, and all of the containers have been created\", and readiness is tracked separately.\n- 05: Event API: \"Events have a limited retention time ... Events should be treated as informative, best-effort, supplemental data.\"\n- 06: Nodes page: \"In the case that a node becomes unreachable ... the node controller sets the Ready condition to Unknown. If a node remains unreachable: triggering API-initiated eviction.\"\n- 07: Probes page: \"the kubelet restarts that container.\"\n- 08: Readiness failure removes the Pod from EndpointSlices, and \"Readiness probes run on the container during its whole lifecycle\", so the container keeps running.\n- 09: \"If a startup probe is configured, Kubernetes does not execute liveness or readiness probes until the startup probe succeeds.\"\n\nMinor points, not flagged:\n- 08's factKey \"readiness-removes-traffic\" does not match its statement, which tests that the container keeps running.\n- 06 is rated difficulty 1 but is closer to 2.\n- 2.3-07 (liveness restarts the container) sits next to the suggested 04 replacement (OOMKilled container restarted in place), but they rest on different triggers. Neither the old cards nor the replacements duplicate cards 2.1-07, 3.2-03 or 3.2-04.\n- The suggested replacement for 10 avoids overlap with 3.2-10 (DNS testing from a laptop): it tests DNS record semantics, not where to test from.\n- Alpha and beta CrashLoopBackOff tuning (ReduceDefaultCrashLoopBackOffDecay is alpha, KubeletCrashLoopBackOffMax is beta in v1.35) does not change any card's answer."
+  },
+  {
+   "section": "2.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s2.4-02",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current (kubernetes.io Ephemeral Volumes), but it does not state the container-restart fact",
+     "evidence": "https://kubernetes.io/docs/concepts/storage/volumes/: \"When a Pod is removed from a node for any reason, the data in the emptyDir is deleted permanently. Note: A container crashing does not remove a Pod from a node. The data in an emptyDir volume is safe across container crashes.\" and \"For any kind of volume in a given Pod, data is preserved across container restarts.\" The cited page https://kubernetes.io/docs/concepts/storage/ephemeral-volumes/ only says \"volumes follow the Pod's lifetime and get created and deleted along with the Pod\" and never mentions container restarts.",
+     "problem": "The answer (false) is right, but the card rests on the same fact as kubernetes-kcna-s2.4-01: ephemeral volume data lasts as long as the Pod, not the container. The source puts both sides in one paragraph, and the explanation ('Ephemeral volumes follow the Pod's lifetime') gives away card 01's answer. The cited URL also does not support the container-restart claim; the Volumes page does.",
+     "suggestedFix": "Replace (keeps answer FALSE): statement \"The kubelet stores the files of a Secret mounted as a volume on the node's local disk.\" Explanation: \"Secret volumes are backed by tmpfs, a RAM-backed filesystem, so their files never reach the node's non-volatile storage. Mounting a Secret as a volume keeps its data in memory.\" Source: https://kubernetes.io/docs/concepts/storage/volumes/ (\"secret volumes are backed by tmpfs (a RAM-backed filesystem), so they are never written to non-volatile storage.\"). If the card is kept, change its URL to https://kubernetes.io/docs/concepts/storage/volumes/ and remove 'follow the Pod's lifetime' from the explanation."
+    },
+    {
+     "id": "kubernetes-kcna-s2.4-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (kubernetes.io Volumes)",
+     "evidence": "https://kubernetes.io/docs/concepts/storage/volumes/: \"Container Storage Interface (CSI) defines a standard interface for container orchestration systems (like Kubernetes) to expose arbitrary storage systems to their container workloads.\" Deck card kubernetes-kcna-s4.2-09 (true): \"A Kubernetes cluster can pair a CRI runtime, CNI network plugin, and CSI driver from separate vendors.\"",
+     "problem": "The answer (true) is correct, but the card is a definition and gives itself away: 'Container Storage Interface' already means a standard storage interface, so a player can answer from the name alone. It is also a near-paraphrase of the source sentence, and it overlaps s4.2-09, which already teaches CSI as the pluggable storage interface.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"A storage vendor maintains its CSI driver as an out-of-tree plugin, outside the Kubernetes source code.\" Explanation: \"CSI drivers are out-of-tree plugins: vendors ship them separately instead of adding code to the Kubernetes repository. Kubernetes recommends an out-of-tree CSI driver for external storage.\" Source: https://kubernetes.io/docs/concepts/storage/volumes/ (\"These plugins enable storage vendors to create custom storage plugins without adding their plugin source code to the Kubernetes repository.\"; \"Using an out-of-tree CSI driver is the recommended way to integrate external storage with Kubernetes.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s2.4-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (kubernetes.io Persistent Volumes)",
+     "evidence": "https://kubernetes.io/docs/concepts/storage/persistent-volumes/: \"The Retain reclaim policy allows for manual reclamation of the resource. When the PersistentVolumeClaim is deleted, the PersistentVolume still exists and the volume is considered \\\"released\\\". But it is not yet available for another claim because the previous claimant's data remains on the volume.\"",
+     "problem": "The answer (true) is correct and supported, but the name gives it away: 'Retain' says the volume is kept, so a player who has not studied guesses True. The statement also says only 'Retain', not 'the Retain reclaim policy', and StatefulSet persistentVolumeClaimRetentionPolicy uses the same word. The fact worth teaching is that a Released Retain volume cannot be claimed again until someone reclaims it by hand.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"A PersistentVolume with the Retain reclaim policy stays unavailable to new claims until an administrator reclaims it.\" Explanation: \"After its claim is deleted, a Retain volume becomes Released but keeps the previous data, so no new claim can bind to it until an administrator cleans it up manually.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s2.4-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (kubernetes.io Persistent Volumes)",
+     "evidence": "https://kubernetes.io/docs/concepts/storage/persistent-volumes/: \"Claims can request specific size and access modes (e.g., they can be mounted ReadWriteOnce, ReadOnlyMany, ReadWriteMany, or ReadWriteOncePod, see AccessModes).\" and \"the user will always get at least what they asked for, but the volume may be in excess of what was requested.\"",
+     "problem": "The answer (true) is correct, but the statement nearly copies the source sentence ('Claims can request specific size and access modes'). It is also close to a definition: a storage 'claim' obviously requests storage, so nobody who studied would answer False. A real misconception sits next to it: many learners think a claim binds only to a volume of exactly the requested size.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"A PersistentVolumeClaim can bind to a PersistentVolume with more capacity than the claim requested.\" Explanation: \"Kubernetes guarantees a claim at least the capacity it asked for. When it binds to an existing PersistentVolume, that volume may be larger than the request.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s2.4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (kubernetes.io StatefulSets)",
+     "evidence": "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/: \"For each VolumeClaimTemplate entry defined in a StatefulSet, each Pod receives one PersistentVolumeClaim.\"",
+     "problem": "The answer (false) and the explanation are correct, but the statement is muddled. Pods are created from the Pod template, not from a 'claim template'. 'Each Pod ... shares a single PersistentVolumeClaim' contradicts itself ('each' against 'shares a single'), and that grammar tells the player the answer instead of testing the fact.",
+     "suggestedFix": "Reword (keeps answer FALSE): statement \"StatefulSet replicas that use a volumeClaimTemplate all mount one shared PersistentVolumeClaim.\" Explanation: \"For each volumeClaimTemplate entry, a StatefulSet gives every Pod its own PersistentVolumeClaim, so each replica keeps separate, stable storage.\" Same URL."
+    }
+   ],
+   "notes": "Pinned version: Kubernetes v1.37. All six source URLs return 200 and are current kubernetes.io pages (the Volumes page mentions v1.37). Cards that pass, with the sentence that settles each:\n- s2.4-01 (emptyDir) is supported by \\\"When a Pod is removed from a node for any reason, the data in the emptyDir is deleted permanently.\\\"\n- s2.4-03 (ConfigMap volume) is supported by \\\"The data stored in a ConfigMap can be referenced in a volume of type configMap and then consumed by containerized applications running in a Pod.\\\"\n- s2.4-04 (PersistentVolume scope) is supported on the multi-tenancy page by \\\"a PersistentVolume is a cluster-wide resource and has a lifecycle independent of workloads and namespaces\\\" and \\\"A PersistentVolumeClaim is a namespaced resource\\\".\n- s2.4-06 (StorageClass) is supported by \\\"Users request dynamically provisioned storage by including a storage class in their PersistentVolumeClaim.\\\" Neither the Immediate nor the WaitForFirstConsumer binding mode creates storage before a claim exists, so false holds.\n- s2.4-07 (ReadWriteOnce) is supported by \\\"ReadWriteOnce access mode still can allow multiple pods to access (read from or write to) that volume when the pods are running on the same node. For single pod access, please see ReadWriteOncePod.\\\"\n\nTrue/false balance is 5/5 before and after the suggested replacements: 02 stays false, 05, 08 and 09 stay true, 10 stays false. I found no wrong answers and no retired or alpha/beta features in this section. Weakest link: 01 and 02 test the same Pod-lifetime fact. Pages fetched and parsed locally in <scratch file>"
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s3.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, kubernetes.io Deployments page (v1.37), current and official",
+     "evidence": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/ : \"A Deployment's revision is created when a Deployment's rollout is triggered. This means that the new revision is created if and only if the Deployment's Pod template (.spec.template) is changed\" and \"when you roll back to an earlier revision, only the Deployment's Pod template part is rolled back.\" The answer (false) is right, but the statement contradicts itself: an earlier Pod template cannot come \"from the current manifest file\", so a learner can reject it without knowing how revisions work (strawman). It also leans on the same fact as s3.2-09, whose explanation teaches that rollout history shows the Deployment's recorded revisions.",
+     "problem": "The false statement is a strawman. It is false because of a built-in contradiction ('earlier' template 'from the current' file), not a real misconception, and it partly overlaps the rollout-history card s3.2-09.",
+     "suggestedFix": "Replace (answer false, keeps 5 true / 5 false). Statement: \"Rolling a Deployment back to an earlier revision also restores the replica count it had at that revision.\" Explanation: \"A rollback restores only the Deployment's Pod template. Scaling does not create a revision, so the Deployment keeps its current replica count after the rollback.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s3.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, argo-rollouts.readthedocs.io stable, official Argo project docs",
+     "evidence": "https://argo-rollouts.readthedocs.io/en/stable/features/bluegreen/ : \"The previewService is modified to point to the revision 2 ReplicaSet. The activeService remains pointing to revision 1.\" The answer (false) is correct, but the statement gives it away through its words: a player who knows nothing about Argo Rollouts can guess that an 'active' Service does not serve the 'preview version during testing'.",
+     "problem": "Name giveaway. The labels 'active' and 'preview' answer the card, so it does not test the blue-green mechanism. A better card would test the real point: both versions run at the moment traffic switches, which allows an instant rollback.",
+     "suggestedFix": "Replace (answer false). Statement: \"In an Argo Rollouts blue-green update, the controller scales down the old ReplicaSet before switching the active Service.\" Explanation: \"The controller points the active Service at the new ReplicaSet first and keeps the old one running for a delay (scaleDownDelaySeconds), so traffic can switch back quickly.\" Same URL; it says: \"After waiting scaleDownDelaySeconds (default 30 seconds), the revision 1 ReplicaSet is scaled down.\""
+    },
+    {
+     "id": "kubernetes-kcna-s3.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, helm.sh/docs/topics/charts (Helm 4.3.0 docs), official and current",
+     "evidence": "https://helm.sh/docs/topics/charts/ : \"A chart is a collection of files that describe a related set of Kubernetes resources.\" The card says \"packages templates and metadata for a related set of Kubernetes resources\": the page's definition with a few words changed. Anyone who knows Helm is a package manager answers True without knowing anything specific.",
+     "problem": "Near-copy of the source definition and a definition card. The answer follows from 'Helm chart = package' and teaches nothing beyond the term. The release concept, which is in this section's scope, is not tested anywhere in the deck.",
+     "suggestedFix": "Replace (answer true). Statement: \"Installing the same Helm chart twice in one cluster produces two separate releases.\" Explanation: \"A Helm release is a running instance of a chart. Each installation gets its own release name, so one chart can be deployed several times side by side in the same cluster.\" URL: https://helm.sh/docs/intro/introduction/ (\"A release is an instance of a chart running in a Kubernetes cluster. You can install one chart many times into the same cluster, and each installation creates a new release with its own release name.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s3.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, opengitops.dev, official OpenGitOps (CNCF) principles v1.0.0",
+     "evidence": "https://opengitops.dev/ : \"Pulled Automatically: Software agents automatically pull the desired state declarations from the source.\" The card says \"software agents pull desired state from its source for deployment\": the principle sentence with a word or two changed. The answer is right, but the card breaks the original-wording rule, the 'its' has an unclear referent, and the factKey 'opengitops-pulled-reconciliation' mixes two principles.",
+     "problem": "Near-copy of the official principle text. It also fails to test the contrast the section's scope names, push-based CI/CD versus pull-based GitOps.",
+     "suggestedFix": "Replace (answer true). Statement: \"Under OpenGitOps, an agent fetches desired state from the source instead of a CI pipeline pushing it into the cluster.\" Explanation: \"The Pulled Automatically principle has software agents pull desired-state declarations themselves, unlike push-based CI/CD, where a pipeline holds cluster credentials and deploys changes directly.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s3.1-10",
+     "verdict": "source_problem",
+     "urlStatus": "200, but it is a 2022 cncf.io staff blog post announcing the graduations, not current product documentation",
+     "evidence": "https://www.cncf.io/blog/2022/12/27/argo-and-flux-grown-up-gitops-for-cloud-native-generation/ only says the projects \"declaratively deploy and run applications and workflows on Kubernetes using GitOps\" and that with GitOps \"drift reconciled\". It never says either tool compares live resources with declared state. Current docs do: https://argo-cd.readthedocs.io/en/stable/ : \"Argo CD is implemented as a Kubernetes controller which continuously monitors running applications and compares the current, live state against the desired target state (as specified in the Git repo).\" and \"Argo CD reports & visualizes the differences, while providing facilities to automatically or manually sync the live state back to the desired target state.\" https://fluxcd.io/flux/ : \"Flux is a tool for keeping Kubernetes clusters in sync with sources of configuration (like Git repositories)\". The statement is true. The explanation's \"correct drift\" overstates Argo CD's default: drift is reported as OutOfSync and fixed by an automatic or manual sync, depending on configuration.",
+     "problem": "The source is a historical blog post that does not support the card's specific claim, and the prompt prefers current documentation. The explanation also implies that drift is always corrected automatically.",
+     "suggestedFix": "Change the URL to https://argo-cd.readthedocs.io/en/stable/ and narrow the card to Argo CD so that one page supports all of it (answer stays true). Statement: \"Argo CD continuously compares an application's live Kubernetes state with the target state declared in Git.\" Explanation: \"Argo CD runs as a Kubernetes controller. When live state drifts from the Git target it marks the application OutOfSync and can sync it back automatically or on request.\" If Flux must stay, keep the original statement, change the explanation to \"detect drift and sync it back\", and add https://fluxcd.io/flux/ as supporting evidence."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 3.1, found in raw/kubernetes-kcna-b3.json. All source URLs load with HTTP 200.\n\nThe section is balanced: 5 true (01, 05, 06, 08, 10) and 5 false (02, 03, 04, 07, 09). Every suggested replacement keeps the flagged card's answer, so the balance stays 5/5.\n\nCards that pass:\n- 01: \"RollingUpdate bounds extra and unavailable Pods\" is true. Source: \"You can specify maxUnavailable and maxSurge to control the rolling update process.\"\n- 02: \"Recreate starts new Pods first\" is false. Source: \"All existing Pods are killed before new ones are created when .spec.strategy.type==Recreate.\"\n- 05: the canary card is true. Source, the kubernetes.io tutorial \"Deploy a Release Using a Canary Deployment\": \"The new version (canary) receives a small percentage of traffic.\" This is a pattern definition, but acceptable at entry level.\n- 07: \"A Kustomize overlay edits base files in place\" is false. Source: \"A base has no knowledge of an overlay and can be used in multiple overlays.\" The explanation's \"does not need to modify\" could be firmer, but it is not wrong.\n- 09: \"OpenGitOps lets you edit a saved revision\" is false. Source: \"Desired state is stored in a way that enforces immutability, versioning and retains a complete version history.\"\n\nVersion and retirement checks:\n- The Deployment page is at v1.37, and no relevant behaviour changed in that version.\n- Argo CD, Argo Rollouts, Flux and Helm are all current. Helm 4.3.0 is the current docs version, and its chart and release definitions are unchanged.\n- No card relies on an alpha or beta feature or on a retired product.\n\nIf replacements 04 and 08 are adopted, recount the length balance: the false-statement average should stay within 5 characters of the true-statement average. The 08 replacement uses \"instead of\", which is not on the negation list."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s3.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official kubernetes.io kubectl reference, current; supports the explanation",
+     "evidence": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_port-forward/ : \"Forward one or more local ports to a pod. Use resource type/name such as deployment/mydeployment to select a pod.\" and \"If there are multiple pods matching the criteria, a pod will be selected automatically. The forwarding session ends when the selected pod terminates, and a rerun of the command is needed to resume forwarding.\"",
+     "problem": "The answer is right, but the false statement is a strawman: nobody who has studied kubectl would think a client-side tunnel rewrites the Service's type to NodePort. It is also marked difficulty 3, but it does not test a real distinction between two similar things. The misconception that learners actually hold is that port-forwarding to a Service load-balances across the Service's Pods like a ClusterIP does. The source states the opposite.",
+     "suggestedFix": "Replacement (answer false, difficulty 2): \"kubectl port-forward to a Service spreads connections across all of the Service's ready Pods.\" Explanation: \"kubectl port-forward picks one Pod behind the target and sends all forwarded traffic to it; the session ends when that Pod terminates and must be rerun.\" Keep the same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s3.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official kubernetes.io kubectl reference, current; supports the card",
+     "evidence": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_status/ : \"By default 'rollout status' will watch the status of the latest rollout until it's done.\"",
+     "problem": "The answer is right, but the statement (\"By default, kubectl rollout status watches the latest Deployment rollout until completion.\") reproduces the reference sentence with a few words changed, which breaks the original-wording rule. The leading \"By default\" also reads like the doc's flag-default phrasing rather than a behaviour a learner should know.",
+     "suggestedFix": "Replacement (answer true): \"kubectl rollout status blocks and reports progress until a Deployment's newest rollout completes.\" Explanation: \"Pipelines use it as a gate after an update; if another rollout starts while it waits, the command follows that newer revision instead.\" Keep the same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s3.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official kubernetes.io task page, current; it shows testing DNS from a Pod but says nothing about laptop lookups, so the false fact is only implied",
+     "evidence": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/ : \"If this fails, perhaps your Pod and Service are in different Namespaces, try a namespace-qualified name (again, from within a Pod)\" and \"If you are able to do a fully-qualified name lookup but not a relative one, you need to check that your /etc/resolv.conf file in your Pod is correct.\" The card's source https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/ only shows \"kubectl exec -i -t dnsutils -- nslookup kubernetes.default\".",
+     "problem": "The card can be answered by general reasoning: a test run in one place cannot confirm behaviour in another, and a laptop normally cannot resolve cluster.local names at all. So it is a truism, close to a strawman, and teaches no Kubernetes debugging technique. The page linked does not state the laptop claim either.",
+     "suggestedFix": "Replacement (answer false): \"A failed nslookup of a Service's short name from inside a Pod proves that cluster DNS is broken.\" Explanation: \"The Pod may sit in another Namespace or have a wrong resolv.conf search line; the docs retry with the namespace-qualified and fully qualified names first.\" URL: https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/"
+    }
+   ],
+   "notes": "I checked all 10 section 3.2 cards in raw/kubernetes-kcna-b3.json against their kubernetes.io sources. Every source URL loads, is official and is current, and all 10 answers are correct. The section balance is 5 true and 5 false, and the 3 replacements keep it.\n\nCards that pass, with the evidence:\n- 01: kubectl_logs, \"-c, --container string: Print the logs of this container\".\n- 02: kubectl_logs, \"-p, --previous: If true, print the logs for the previous instance of the container\"; it defaults to false.\n- 03: kubectl_describe, \"including related resources such as events or controllers\". Caveat: --show-events \"Defaults to true for a single object, false for multiple objects and prefix matching\". The statement's singular \"the resource being inspected\" keeps it true.\n- 04: debug-running-pod, \"events are namespaced ... you need to explicitly provide a namespace to the command\". kubectl_get also says \"you will only see results in the current namespace if you don't specify any namespace\".\n- 05: kubectl_exec, \"Execute a command in a container\".\n- 07: kubectl_debug, \"Add an ephemeral container to an already running pod\". Ephemeral containers have been stable since v1.25, so there is no alpha or beta problem.\n- 09: rollout history, \"View previous rollout revisions and configurations\".\n\nMinor issues that are not flagged:\n1. Wording tell: the hedge verb \"can\" appears only in true statements (01, 07) and in none of the false ones. A later edit should rebalance it, for example by rewording 01 as \"kubectl logs prints one chosen container's output when a Pod runs several containers\".\n2. Card 01's factKey \"kubectl-logs-current\" does not match its content, which is container selection in a multi-container Pod. Card 02 owns the current-versus-previous fact.\n\nNo duplicates: no 3.2 card rests on the same fact as a card elsewhere in the deck. 2.3-05 tests what Events are, not how they are listed, and 3.1-03 tests rollback, not the history command."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s4.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://prometheus.io/docs/concepts/data_model/ : \"Every time series is uniquely identified by its metric name and optional key-value pairs called labels.\" The statement is this sentence with 'Every' changed to 'Each' and 'key-value pairs called labels' to 'label set'.",
+     "problem": "The answer is correct, but the statement is a near-copy of the source sentence, which RULES forbid ('do not reproduce a sentence of the official page with a word or two changed'). It also reads as a definition, so a player who does not know Prometheus would still guess True. The useful consequence, label cardinality, appears only in the explanation.",
+     "suggestedFix": "Replacement (true): \"Adding a user ID label to a Prometheus metric creates one time series per distinct user ID value.\" Explanation: \"Prometheus identifies a series by metric name plus labels, so every unique label combination is a new series; unbounded values such as user IDs inflate storage.\" Source: https://prometheus.io/docs/practices/naming/ (\"every unique combination of key-value label pairs represents a new time series... such as user IDs\")."
+    },
+    {
+     "id": "kubernetes-kcna-s4.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://prometheus.io/docs/alerting/latest/alertmanager/ : \"The Alertmanager handles alerts sent by client applications such as the Prometheus server. It takes care of deduplicating, grouping, and routing them to the correct receiver integration such as email, PagerDuty, or OpsGenie.\"",
+     "problem": "The answer is correct, but the name gives it away: 'Alertmanager ... routes alerts' can be read from the product name. The statement also closely paraphrases the source's first sentence. It misses the distinction a learner actually gets wrong, which is where alerting rules are evaluated.",
+     "suggestedFix": "Replacement (true): \"Prometheus servers evaluate alerting rules, and Alertmanager sends the resulting notifications to receivers.\" Explanation: \"Alerting is split in two: rules in the Prometheus server fire alerts, then Alertmanager deduplicates, groups, silences and routes them to email, paging or chat.\" Source: https://prometheus.io/docs/alerting/latest/overview/ (\"Alerting rules in Prometheus servers send alerts to an Alertmanager. The Alertmanager then manages those alerts...\")."
+    },
+    {
+     "id": "kubernetes-kcna-s4.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://opentelemetry.io/docs/concepts/instrumentation/ : \"Libraries can leverage the OpenTelemetry API as a dependency, which will have no impact on applications using that library, unless the OpenTelemetry SDK is imported.\"",
+     "problem": "This is a truism and a definition card. 'APIs and SDKs provide code instrumentation for application telemetry' is what instrumentation libraries do by definition, so anyone answers True. It does not test the API versus SDK split that the 4.1 scope names.",
+     "suggestedFix": "Replacement (true): \"OpenTelemetry API calls inside a library start producing telemetry once the application imports an OpenTelemetry SDK.\" Explanation: \"Libraries depend only on the OpenTelemetry API, which does nothing by itself; the application picks and configures the SDK that processes and exports the telemetry.\" Same URL."
+    },
+    {
+     "id": "kubernetes-kcna-s4.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://opentelemetry.io/docs/concepts/context-propagation/ : context propagation allows \"traces to build causal information about a system across services that are arbitrarily distributed across process and network boundaries\"; \"The default propagator uses the headers specified by the W3C TraceContext specification.\"",
+     "problem": "This is a definition card. The statement restates what 'trace context propagation' means, so the answer follows from the term itself, which RULES forbid ('No strawman and no definition card'). It is labelled difficulty 3, but it is not a real distinction.",
+     "suggestedFix": "Replacement (true): \"By default, OpenTelemetry propagates trace context between services in W3C Trace Context HTTP headers.\" Explanation: \"The default propagator writes trace and span IDs into the W3C traceparent header, so a downstream service's spans join the caller's trace.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.1. All 10 source URLs load, are official and current, and support their cards, and every answer is correct. The section is balanced 5 true / 5 false (true: 02, 04, 05, 08, 09; false: 01, 03, 06, 07, 10), and every replacement I suggest keeps its card true, so the balance holds. Four cards are flagged weak_card: 02 (near-copy of the source), 04 (answer readable from the name 'Alertmanager'), 05 (truism) and 09 (definition card).\n\nCards that passed, with their evidence:\n- 01: prometheus.io overview says \"time series collection happens via a pull model over HTTP\" and \"pushing time series is supported via an intermediary gateway\". The word 'primary' in the statement covers the Pushgateway and the OTLP receiver in Prometheus 3.\n- 03: querying basics says PromQL \"lets the user select and aggregate time series data\". This card is borderline for strawman (raw logs in PromQL), but the misconception is plausible for learners who confuse PromQL with LogQL-style tools, so I kept it.\n- 06: the Collector page says \"receive, process and export telemetry data\", \"sending to one or more ... backends\".\n- 07: logging page says \"Kubernetes does not provide a native storage solution for log data.\"\n- 08: resource-metrics-pipeline page says \"only offers the minimum CPU and memory metrics to enable automatic scaling using HPA and / or VPA\", and the Metrics API is marked stable (metrics.k8s.io/v1) since v1.37, which matches appliesTo. One small wording point: 'Kubernetes autoscalers' also covers the Cluster Autoscaler, which does not use the Metrics API. Naming HPA and VPA in the statement would remove the quibble; the True answer stands.\n- 10: the OpenTelemetry primer defines an SLI as \"a measurement of a service's behavior\" and the SLO as \"attaching one or more SLIs to business value\". Its tag 'OpenTelemetry' is loose but harmless.\n\nNo card in 4.1 duplicates a card elsewhere in the deck. 3.2-01/02 (kubectl logs), 2.3-05 (Events) and 4.2-05 (HPA) rest on different facts."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s4.2-05",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, current (kubernetes.io docs, v1.37 is the latest release on kubernetes.io/releases, 1.37.1 released 2026-09-15)",
+     "evidence": "https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/ : \"If multiple metrics are specified in a HorizontalPodAutoscaler, this calculation is done for each metric, and then the largest of the desired replica counts is chosen.\" The answer is correct. The prompt, though, limits 4.2 autoscaling to \"the level of what each autoscaler scales\", and this card tests a detail of the HPA's multi-metric algorithm. That is CKA-style depth. The same page also has an exception (scale-down is skipped when a metric cannot be fetched), which makes the topic deeper than entry level.",
+     "problem": "Right answer, but the card tests the HPA replica-calculation algorithm, which is below the depth the prompt sets for 4.2. The deck has no card on what the HPA itself scales.",
+     "suggestedFix": "Replace (TRUE, keeps balance): \"A HorizontalPodAutoscaler can scale a StatefulSet as well as a Deployment.\" Explanation: \"The HorizontalPodAutoscaler changes the replica count of any scalable workload resource, such as a Deployment or StatefulSet; objects that cannot be scaled, like a DaemonSet, are excluded.\" Same URL. Source: \"a HorizontalPodAutoscaler automatically updates a workload resource (such as a Deployment or StatefulSet)\" ... \"does not apply to objects that can't be scaled (for example: a DaemonSet.)\""
+    },
+    {
+     "id": "kubernetes-kcna-s4.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (CNCF Glossary)",
+     "evidence": "https://glossary.cncf.io/microservices-architecture/ : \"Separating functionality into different microservices makes them easier to deploy, update, and scale independently.\" The answer (false) is correct. But independent deployability is what defines a microservice, so nobody who studied would answer True. The false statement also hangs on the absolute \"every\" and on \"requires\", which are the requirement and coverage tells the prompt warns about. It also rests on nearly the same fact as the loose-coupling glossary line \"Loosely coupled applications allow teams to develop features, deploy, and scale independently\".",
+     "problem": "Strawman and definition card. The false answer can be read from the absolute 'requires ... every other service', and the card states the definition of a microservice the wrong way round.",
+     "suggestedFix": "Replace (FALSE, keeps balance): \"A microservices architecture reduces operational overhead compared with running the same application as a monolith.\" Explanation: \"Splitting an app into microservices eases independent deploys and scaling, but CNCF notes it adds operational overhead: the things to deploy and track grow by an order of magnitude.\" Same URL. Source: \"While a microservices architecture solves many problems, it also creates operational overhead — the things you need to deploy and keep track of increase by order of magnitude.\""
+    },
+    {
+     "id": "kubernetes-kcna-s4.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (cncf.io Who We Are)",
+     "evidence": "https://www.cncf.io/about/who-we-are/ : \"These techniques enable loosely coupled systems that are resilient, manageable, and observable.\" The answer (false) is correct. But the statement is that definition sentence with one word flipped (loosely to tightly). The prompt forbids making a statement false through trick wording, and anyone who has read the CNCF definition answers it at once. It also uses the same source sentence as card 01.",
+     "problem": "Strawman made by flipping one word of the CNCF definition. It teaches nothing beyond recalling the word 'loosely'.",
+     "suggestedFix": "Replace (FALSE, keeps balance): \"Tightly coupled components lower the risk that a failure in one part cascades to the rest of the application.\" Explanation: \"CNCF notes that tightly coupled, interdependent components leave a system more vulnerable to cascading failures; loose coupling supports resilience.\" URL: https://glossary.cncf.io/tightly-coupled-architecture/ (\"It is generally easier to implement than more loosely coupled architectural styles, but can leave a system more vulnerable to cascading failures.\")"
+    },
+    {
+     "id": "kubernetes-kcna-s4.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (CNCF Glossary)",
+     "evidence": "https://glossary.cncf.io/immutable-infrastructure/ : \"Containers are a good example of immutable infrastructure because persistent changes to containers can only be made by creating a new version of the container or recreating the existing container from its image.\" The card is broadly supported. What it tests, though, is that a container's writable layer is lost when the container is recreated, which is a containerization (1.4) fact that holds whatever the operating philosophy. The prefix 'In immutable infrastructure' adds nothing. An expert could also object that a hotfix written to a mounted volume survives the recreate, so 'manual filesystem hotfix' is not quite unambiguous.",
+     "problem": "Near-truism about container ephemerality rather than the immutable-infrastructure principle (change by replacement, not by in-place patching). There is also a small volume-mount ambiguity.",
+     "suggestedFix": "Replace (TRUE, keeps balance): \"Under immutable infrastructure, a fix reaches running containers through a new image that replaces them.\" Explanation: \"Immutable infrastructure is not patched in place: persistent changes to a container come from building a new version of it or recreating it from its image.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.2 (5 true: 03, 05, 06, 08, 09; 5 false: 01, 02, 04, 07, 10). Every source URL loads and is official. Pinned version: kubernetes.io/releases lists v1.37 as the latest (1.37.1, 2026-09-15). The four suggested replacements keep the 5/5 balance.\n\nCards that pass:\n- **01:** cncf.io: \"public, private, and hybrid clouds\".\n- **06:** VPA page: \"automatically adjusting infrastructure resource requests and limits to match actual usage\". VPA is an add-on installed as a CRD, but the statement does not claim otherwise.\n- **07:** the node-autoscaling page says \"Cluster Autoscaler adds or removes Nodes to pre-configured Node groups\" and \"Cluster Autoscaler doesn't support auto-provisioning, the Node groups it can provision from have to be pre-configured\". GKE node auto-provisioning (built on Cluster Autoscaler) creates node pools, so there is a provider-specific counterargument. It is out of this deck's scope, and the upstream FAQ no longer documents autoprovisioning, so I kept the card.\n- **08:** knative.dev: \"Autoscaling, including scaling pods down to zero.\"\n- **10:** github.com/cncf/landscape README: \"categorize most of the projects and product offerings in the cloud native space ... with CNCF Projects representing a particularly well-traveled path.\"\n- **09:** passes, but its source is the whole kubernetes.io glossary page. It supports the card only by inference: CRI implementations \"containerd, CRI-O, and any other implementation\", and CSI \"allows vendors to create custom storage plugins for Kubernetes without adding them to the Kubernetes repository\". https://kubernetes.io/docs/concepts/extend-kubernetes/ is a slightly better anchor.\n\nOverlap check: no 4.2 card duplicates a fact from another section. The closest are s1.4-10, s2.1-02 and s2.4-09 on the individual interfaces, and s4.1-08 on the Metrics API. One warning for the replacements: if a replacement for 05 tested horizontal versus vertical scaling, it would rest on the same fact as card 06 (prompt rule 66). The suggested StatefulSet card avoids that."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-kcna-s4.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://www.cncf.io/people/end-user-technical-advisory-board/ : the board's duties include \"Provides feedback to CNCF projects on usability, reliability, and performance\". The statement repeats that phrase almost word for word, and the explanation copies \"usability, reliability, and performance\".",
+     "problem": "This is a near-copy of the source sentence, which breaks the original-wording rule. It is also close to a truism, because an advisory board that gives feedback is what the name says. A player who knows nothing can answer True.",
+     "suggestedFix": "Replacement (answer true): \"CNCF excludes consultancies and cloud native training providers from its definition of an end user.\" Explanation: \"A CNCF end user runs cloud native technology internally to build and operate its own software. Companies that sell, support, consult on or train for it do not qualify.\" URL: https://www.cncf.io/enduser/ (\"A CNCF End user is an organization that utilizes cloud native technologies internally...\", with consultancies, systems integrators and training providers listed as excluded)."
+    },
+    {
+     "id": "kubernetes-kcna-s4.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (github.com/kubernetes/community), current; supports the card",
+     "evidence": "https://github.com/kubernetes/community/blob/main/governance.md : \"Each SIG is comprised of members from multiple companies and organizations, with a common purpose of advancing the project with respect to a specific topic.\"",
+     "problem": "This is a definition card. A Special Interest Group that works on a specific area, such as networking, follows from the name. Nobody would answer False, so it teaches nothing. The real entry-level distinction, SIG versus working group, is not tested anywhere in the deck.",
+     "suggestedFix": "Replacement (answer true): \"Kubernetes working groups are temporary and disband once they reach their stated goals.\" Explanation: \"Working groups bring several SIGs together on a cross-cutting topic. They own no code; SIGs and their subprojects own the project's code and docs.\" URL: https://github.com/kubernetes/community/blob/main/committee-steering/governance/wg-governance.md (\"It does not own any code\", \"It is temporary in nature and will be disbanded after reaching its stated goal(s)\")."
+    },
+    {
+     "id": "kubernetes-kcna-s4.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://kubernetes.io/community/code-of-conduct/ : \"For incidents occurring in the Kubernetes community, contact the Kubernetes Code of Conduct Committee via the committee's published contact address.\" and \"Kubernetes follows the CNCF Code of Conduct.\"",
+     "problem": "This is a strawman. Common sense says nobody files a harassment report on a public issue tracker, so the card tests common sense rather than knowledge of the community. A Steering Committee variant would be ambiguous, because the CoCC charter says \"Steering committee members may also act in limited cases to enforce the code of conduct\".",
+     "suggestedFix": "Replacement (answer false): \"Kubernetes follows a code of conduct of its own, written separately from the CNCF Code of Conduct.\" Explanation: \"Kubernetes adopts the CNCF Code of Conduct. Its own Code of Conduct Committee enforces it in the Kubernetes community and takes reports at the committee's published contact address.\" Keep the URL https://kubernetes.io/community/code-of-conduct/."
+    },
+    {
+     "id": "kubernetes-kcna-s4.3-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official; supports the card only loosely (it never says that adoption alone is insufficient, and the criteria sit in the linked graduation template)",
+     "evidence": "https://contribute.cncf.io/projects/lifecycle/ : \"Projects can find the criteria for Graduation by reviewing the Graduation application template\" and \"If the vote passes (2/3 supermajority vote of the TOC)...\". https://github.com/cncf/toc/blob/main/.github/ISSUE_TEMPLATE/template-graduation-application.md : \"Project maintainers from at least 2 organizations that demonstrates survivability.\"",
+     "problem": "The word \"sufficient\" makes the false answer readable from the wording, because no single criterion is ever sufficient for a formal status. The explanation is vague (\"other criteria\") and teaches no concrete fact. The card is marked difficulty 3, but it is easy.",
+     "suggestedFix": "Replacement (answer false): \"A CNCF project can graduate with all of its maintainers employed by a single company.\" Explanation: \"CNCF graduation criteria require maintainers from at least two organizations, so the project survives if one company leaves. A governance review and verified production adopters are also required.\" URL: https://github.com/cncf/toc/blob/main/.github/ISSUE_TEMPLATE/template-graduation-application.md (set volatility to may_change, because the template is revised from time to time)."
+    }
+   ],
+   "notes": "I opened all ten source URLs. They all load, are official and are current. Passing cards and the sentence that settles each:\n- 01: cncf.io/about/who-we-are, \"CNCF is part of the nonprofit Linux Foundation\".\n- 02: cncf.io/people/governing-board, \"The GB does not make technical decisions for the CNCF other than working with the TOC to set the overall scope\".\n- 03: github.com/cncf/toc, the TOC is responsible for \"approving new projects within the scope of the CNCF set by the Governing Board\".\n- 04: contribute.cncf.io/community/tags lists the five current TAGs and \"TAG Observability → TAG Operational Resilience\".\n- 08: KEP README, \"a way to propose, communicate and coordinate on new efforts\".\n- 09: release-team README, \"embedded within SIG Release and is responsible for the day to day work required to successfully release\".\n\nMinor issues on cards I did not flag:\n- 02's factKey (\"governing-board-member-representation\") and 04's factKey (\"tag-technical-advice\") do not match what the cards test.\n- 08 is marked difficulty 3 but is easy for anyone who expands the KEP acronym. It is borderline as a give-away, but it tests the core purpose of a KEP at entry level, so I let it pass.\n- 09's explanation reuses the source's \"day-to-day work\" phrasing.\n\nDeck checks:\n- No duplicates with other sections. Only 4.2-01, 4.2-04 and 4.2-10 touch CNCF, and they test different facts.\n- The four replacements keep the section at 5 true and 5 false: 05 and 07 stay true, 06 and 10 stay false.\n- None of the replacements mirrors card 02 or 03.\n- I did not use a Steering Committee version for 10: the CoCC charter lets steering members enforce the code in limited cases, so that card would be ambiguous."
+  }
+ ],
+ "scan": {
+  "cardsRead": 130,
+  "duplicates": [
+   {
+    "ids": [
+     "kubernetes-kcna-s1.1-02",
+     "kubernetes-kcna-s1.2-10"
+    ],
+    "why": "Both cards test that etcd holds the Kubernetes API objects (the cluster state). If you know s1.1-02 (etcd stores the cluster state), you know s1.2-10 is true, because an etcd snapshot preserves the API objects. Both are true and easy. s1.2-10 adds no fact of its own about backups: it says nothing about restore steps or what a snapshot leaves out.",
+    "dropId": "kubernetes-kcna-s1.2-10"
+   },
+   {
+    "ids": [
+     "kubernetes-kcna-s2.4-01",
+     "kubernetes-kcna-s2.4-02"
+    ],
+    "why": "Both cards rest on one fact: an ephemeral volume such as emptyDir lives as long as the Pod, not the container. s2.4-01's explanation says this outright ('lasts for its Pod's time on a Node'), which answers s2.4-02 (a container restart does not recreate the volume). s2.4-02 tests the realistic misconception (container restart versus Pod removal). s2.4-01 comes close to defining 'ephemeral'.",
+    "dropId": "kubernetes-kcna-s2.4-01"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "cluster-scoped-namespace-template",
+    "ids": [
+     "kubernetes-kcna-s1.1-08",
+     "kubernetes-kcna-s2.4-04"
+    ],
+    "why": "Both are false through the same template, 'Kubernetes places/stores a cluster-scoped object (Node, PersistentVolume) in the Namespace of a related namespaced object'. Once the player sees one answer, the other is easy to guess."
+   },
+   {
+    "name": "resource-requests-reservation",
+    "ids": [
+     "kubernetes-kcna-s1.2-04",
+     "kubernetes-kcna-s1.3-02"
+    ],
+    "why": "s1.2-04's explanation calls a CPU request 'a reservation', which hints at s1.3-02 (the scheduler uses requests to filter Nodes). s1.3-02 in turn frames requests as placement input, not a runtime cap."
+   },
+   {
+    "name": "quota-vs-limitrange",
+    "ids": [
+     "kubernetes-kcna-s1.2-06",
+     "kubernetes-kcna-s1.2-07"
+    ],
+    "why": "These are the two sides of the ResourceQuota versus LimitRange split. s1.2-06's explanation ('rather than one container at a time') points to the per-container object that s1.2-07 tests."
+   },
+   {
+    "name": "cri-kubelet-runc",
+    "ids": [
+     "kubernetes-kcna-s1.4-09",
+     "kubernetes-kcna-s1.4-10"
+    ],
+    "why": "s1.4-10's explanation says runc is called by containerd or CRI-O and is not the kubelet's CRI endpoint, so CRI must sit between the kubelet and a higher-level runtime (s1.4-09 is true). s1.4-09's explanation makes the false answer of s1.4-10 easy."
+   },
+   {
+    "name": "open-interfaces-giveaway",
+    "ids": [
+     "kubernetes-kcna-s4.2-09",
+     "kubernetes-kcna-s1.4-09",
+     "kubernetes-kcna-s2.1-02",
+     "kubernetes-kcna-s2.4-09"
+    ],
+    "why": "s4.2-09's explanation ('CRI, CNI, and CSI define interfaces for runtimes, networking, and storage') answers the CRI card (s1.4-09), the CNI card (s2.1-02) and the CSI card (s2.4-09). Each of those three also supports s4.2-09."
+   },
+   {
+    "name": "namespaces-vs-cgroups",
+    "ids": [
+     "kubernetes-kcna-s1.4-02",
+     "kubernetes-kcna-s1.4-03"
+    ],
+    "why": "These are the two sides of one distinction: namespaces isolate what a process can see, cgroups limit what it can use. Seeing one card tells the player which role belongs to the other."
+   },
+   {
+    "name": "container-writable-layer",
+    "ids": [
+     "kubernetes-kcna-s1.4-04",
+     "kubernetes-kcna-s4.2-03"
+    ],
+    "why": "s1.4-04's explanation (changes go to a separate writable layer) gives s4.2-03 (recreating from the image discards a manual hotfix). s4.2-03's explanation ('absent from a new container created from the original image') gives the false answer of s1.4-04."
+   },
+   {
+    "name": "statefulset-per-pod-identity",
+    "ids": [
+     "kubernetes-kcna-s1.1-06",
+     "kubernetes-kcna-s2.4-10"
+    ],
+    "why": "Both test StatefulSet per-Pod stickiness. s2.4-10's explanation ('gives each Pod its own PersistentVolumeClaim') and s1.1-06's explanation ('preserves each Pod's stable identity') each point to the other card's false answer."
+   },
+   {
+    "name": "api-request-stage-order",
+    "ids": [
+     "kubernetes-kcna-s2.2-01",
+     "kubernetes-kcna-s2.2-02"
+    ],
+    "why": "Both test the order of one pipeline (authentication, then authorization, then admission). Seeing 'authenticate, then check permissions' together with 'admission before authorization' lets the player work out the chain."
+   },
+   {
+    "name": "rbac-namespace-scope",
+    "ids": [
+     "kubernetes-kcna-s2.2-03",
+     "kubernetes-kcna-s2.2-04"
+    ],
+    "why": "s2.2-04's explanation (a RoleBinding stays scoped to its Namespace, and a ClusterRoleBinding is cluster-wide) reinforces s2.2-03 (a Role is namespaced). s2.2-03 hints that namespaced RBAC objects do not grant access cluster-wide."
+   },
+   {
+    "name": "secret-encoding-vs-encryption",
+    "ids": [
+     "kubernetes-kcna-s2.2-06",
+     "kubernetes-kcna-s2.2-07"
+    ],
+    "why": "base64 encoding (true) next to 'encrypts Secret data in etcd by default' (false) is the classic encoded-not-encrypted pair. Each card prompts the other's answer."
+   },
+   {
+    "name": "probe-failure-actions",
+    "ids": [
+     "kubernetes-kcna-s2.3-07",
+     "kubernetes-kcna-s2.3-08",
+     "kubernetes-kcna-s2.3-01"
+    ],
+    "why": "s2.3-07 (liveness restarts the container) and s2.3-08 (readiness failure leaves the container running) form a mirrored pair about what each probe does on failure. s2.3-08's explanation ('unready while the kubelet keeps it running') also gives away s2.3-01 (Running phase does not mean ready)."
+   },
+   {
+    "name": "backoff-states",
+    "ids": [
+     "kubernetes-kcna-s2.3-02",
+     "kubernetes-kcna-s2.3-03"
+    ],
+    "why": "s2.3-03's explanation ('Pull attempts continue with increasing delay') shows what 'BackOff' means, which answers s2.3-02 (CrashLoopBackOff is a retry delay). s2.3-02 in turn hints that ImagePullBackOff is about pulling."
+   },
+   {
+    "name": "endpointslice-backends",
+    "ids": [
+     "kubernetes-kcna-s2.1-07",
+     "kubernetes-kcna-s2.3-10"
+    ],
+    "why": "s2.3-10's explanation (the controller reconciles backend endpoints from the Pod selector) shows that EndpointSlices record backend endpoints, not client DNS names (s2.1-07). s2.1-07's explanation hints that stale backends get removed."
+   },
+   {
+    "name": "deployment-strategies",
+    "ids": [
+     "kubernetes-kcna-s3.1-01",
+     "kubernetes-kcna-s3.1-02"
+    ],
+    "why": "These are the two sides of the RollingUpdate versus Recreate distinction. s3.1-01's explanation ('replace replicas gradually') makes the contrast with Recreate (old Pods are removed first) easy."
+   },
+   {
+    "name": "deployment-revisions",
+    "ids": [
+     "kubernetes-kcna-s3.1-03",
+     "kubernetes-kcna-s3.2-09"
+    ],
+    "why": "s3.2-09's explanation (rollout history shows recorded revisions and configurations) answers s3.1-03 (a rollback uses a recorded revision, not the manifest file). s3.1-03's explanation does the same for s3.2-09."
+   },
+   {
+    "name": "gitops-reconciliation",
+    "ids": [
+     "kubernetes-kcna-s3.1-08",
+     "kubernetes-kcna-s3.1-10",
+     "kubernetes-kcna-s1.1-04"
+    ],
+    "why": "s3.1-08's explanation (software agents fetch desired state) and s1.1-04 (controllers move current state toward declared state) both give away s3.1-10 (Argo CD and Flux reconcile against a declared source). The three are worded almost the same way."
+   },
+   {
+    "name": "opengitops-principles",
+    "ids": [
+     "kubernetes-kcna-s3.1-08",
+     "kubernetes-kcna-s3.1-09"
+    ],
+    "why": "Two cards on OpenGitOps principles open with the same 'In OpenGitOps,' phrasing. s3.1-08's explanation names a principle, which tells the player the list includes versioning and immutability."
+   },
+   {
+    "name": "exec-vs-debug",
+    "ids": [
+     "kubernetes-kcna-s3.2-05",
+     "kubernetes-kcna-s3.2-07"
+    ],
+    "why": "This is a mirrored tool pair: exec runs in an existing Pod, debug adds an ephemeral container or a new Pod. s3.2-05's explanation ('It does not create a diagnostic Pod') and s3.2-07's statement ('add an ephemeral diagnostic container to an existing Pod') each hint at the other."
+   },
+   {
+    "name": "prometheus-data-model",
+    "ids": [
+     "kubernetes-kcna-s4.1-02",
+     "kubernetes-kcna-s4.1-03"
+    ],
+    "why": "s4.1-03's explanation ('PromQL queries Prometheus time series') reinforces s4.1-02 (series identified by name and labels). Together they define the data model. This is a weak hint."
+   },
+   {
+    "name": "cncf-board-vs-toc",
+    "ids": [
+     "kubernetes-kcna-s4.3-02",
+     "kubernetes-kcna-s4.3-03",
+     "kubernetes-kcna-s4.3-06"
+    ],
+    "why": "s4.3-02 (Governing Board, false) and s4.3-03 (TOC admits projects, true) are the two sides of the business versus technical governance split. s4.3-02's explanation ('technical direction belongs to the technical community') gives away s4.3-03. s4.3-03's explanation ('evaluates and accepts projects') hints that graduation needs more than adoption (s4.3-06)."
+   },
+   {
+    "name": "kubernetes-sig-structure",
+    "ids": [
+     "kubernetes-kcna-s4.3-07",
+     "kubernetes-kcna-s4.3-09"
+    ],
+    "why": "s4.3-07's explanation (SIGs organise work by technical area) makes 'the Release Team sits within SIG Release' (s4.3-09) easy to accept."
+   },
+   {
+    "name": "cncf-definition-strawmen",
+    "ids": [
+     "kubernetes-kcna-s4.2-01",
+     "kubernetes-kcna-s4.2-04"
+    ],
+    "why": "Both are false paraphrases of the same CNCF cloud native definition sentence (any cloud, loosely coupled). Seeing one shows the player the source and the template of the other."
+   }
+  ],
+  "tells": "Statement length is balanced overall: true statements average 76.3 characters, false ones 76.7, and every section is within the 5-character limit. Four sections are close to it: 4.1 (+4.2), 4.2 (-4.2), 4.3 (+3.8), 2.3 (+3.6). The usual hedge words are also balanced ('can' 8 true / 7 false, 'by default' 3 true / 2 false, 'before' 3/3, 'after' 5/4). The exploitable patterns are elsewhere.\n\n1) Difficulty predicts the answer. Easy cards are 40 true and 12 false; hard cards (difficulty 3) are 5 true and 21 false. If the game shows difficulty, or lets the player infer it, 'hard means False' is right 81% of the time.\n\n2) Action and creation verbs mark false statements. 'creates' appears 0 times in true statements and 5 in false (s1.1-07, s2.1-08, s2.4-06, s3.1-07, s4.2-07). 'new', 'newly' or 'fresh' appears 2 true / 6 false (true: s1.2-07, s3.1-05; false: s1.1-06, s1.1-07, s1.2-08, s2.3-07, s3.2-05, s4.2-07).\n\n3) Overreach words mark false statements:\n- 'also': 0 true / 2 false (s1.2-08, s1.2-09), the same 'doing X also does Y' template twice in section 1.2.\n- 'whole': 0/2 (s2.2-04, s2.3-07).\n- 'guarantees': 0/1 (s1.3-06).\n- 'every other service' and 'requires': 0/1 (s4.2-02).\n- 'needs': 0/2 (s2.1-04, s4.2-07).\n- 'may': 0/2 (s2.2-10, s3.1-09).\n- 'same': 0/2 (s1.1-08, s3.2-10).\n- 'confines': s4.2-01.\n- 'durable' or 'stores as system of record' or 'built-in cluster-wide store': 0 true / 3 false (s2.3-05, s4.1-06, s4.1-07). This is a recurring 'overclaims persistence or storage' template.\n\n4) A role-swap template carries far more than the allowed two false cards. 'Component A does B's job' makes 10 false cards: s1.1-03 (cloud-controller-manager as scheduler), s1.1-07 (Job as CronJob), s1.1-09 (annotations as labels), s1.4-08 (Image Spec as Runtime Spec), s1.4-10 (runc as CRI endpoint), s2.1-08 (HTTPRoute as Gateway listener), s2.1-10 (control plane in the data path), s4.1-06 (Collector as store), s4.1-10 (SLO as SLI), s4.3-02 (Governing Board as TOC). A second template, 'Kubernetes places a cluster-scoped X in the Namespace of Y', is used twice (s1.1-08, s2.4-04).\n\n5) Many false cards can be answered by common sense or logic, without Kubernetes knowledge:\n- s1.3-07 contradicts itself: a 'high-priority' Pod 'preempts running Pods with a higher priority'. The card is false through one comparative word.\n- Strawmen: s4.2-02 (rebuild every other service), s4.2-04 (resilience from tight coupling), s4.2-01 (public cloud only), s3.2-10 (a laptop DNS test proves Pod DNS), s3.2-06 (port-forward changes the Service type), s4.3-10 (conduct reports on a public issue tracker), s2.3-10 (retains stale backends), s1.3-09 (scheduler deletes the Pod).\n- Name giveaways: s2.3-03 (ImagePullBackOff described as an application error after start) and s4.3-04 (TAG Observability, guessable only from the volatility hint).\n\n6) Easy true cards read as canonical definitions, near truisms, so 'sounds like the textbook job of X' predicts True: s1.1-01, s1.1-02, s1.4-02, s1.4-03, s2.1-03 ('By default a ClusterIP Service receives an IP for access inside the cluster'), s2.4-03, s2.4-09 ('lets', the only 'lets' card, true), s3.1-06, s4.1-05, s4.3-01, s4.3-07.\n\n7) Naming CNCF in the statement leans false: 3 true / 6 false in sections 4.2 and 4.3 (false: s4.2-01, s4.2-04, s4.2-10, s4.3-02, s4.3-04, s4.3-06).\n\nSide note, not a tell: s4.2-07's explanation states flatly that Cluster Autoscaler 'does not create new Node groups'. Node auto-provisioning exists for some providers, so an expert could dispute this card; recheck it."
+ }
+}
