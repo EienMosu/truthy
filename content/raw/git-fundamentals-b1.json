@@ -1,0 +1,1266 @@
+{
+  "deck": "git-fundamentals",
+  "block": "b1",
+  "generatedOn": "2026-10-03",
+  "sourceCheck": "Checked on 2026-10-03. Version pinned: Git 2.56.0, released 2026-09-28, as shown at https://git-scm.com/ and in the reference version lists; 2.55.0 is dated 2026-06-29. A page's last-updated version is not the release pin. Cards use appliesTo Git 2.56.\n\nhttps://git-scm.com/docs/BreakingChanges still describes Git 3.0 as upcoming, with no planned release date. Its announced default changes are master to main, sha1 to sha256, files to reftable, and safe.bareRepository from all to explicit. It explicitly retains git checkout, git switch and git restore. https://git-scm.com/docs/git-init currently specifies master as the initial branch name, overridable with init.defaultBranch or --initial-branch; sha1 as the object-format default, with sha256 available if enabled; and files as the ref-storage default.\n\nhttps://git-scm.com/docs/merge-strategies specifies ort for merging one branch and octopus for merging multiple branches. recursive has meant ort since Git 2.50.0; the former recursive implementation was the two-head default through Git 2.33.0. https://git-scm.com/docs/git-pull specifies --ff-only when no integration method is selected, so divergent history is refused with pull.rebase and pull.ff unset and no other integration override. The current page additionally documents pull.squash; that excluded feature will not be tested. https://git-scm.com/docs/git-rebase identifies the merge backend as the default. https://git-scm.com/docs/gitglossary identifies FETCH_HEAD and MERGE_HEAD as pseudorefs, rather than treating every uppercase reference as one.\n\nDisagreements and overbroad passages found in Pro Git: 2.5 and 3.5 describe pull primarily as fetch followed by merge; the current pull default instead refuses divergence. 2.4 describes restore broadly as an alternative to reset; the Reset, restore and revert section of https://git-scm.com/docs/git distinguishes restoring files, moving branch history, and creating reversing commits, with pathspec reset handled separately. 7.7 uses sweeping language about reset --hard being dangerous; it does not justify claiming that other commands preserve uncommitted data, and 2.4 itself warns about destructive restore and checkout operations. 10.7 describes unreachable-object cleanup in terms of a few months; git-gc instead specifies pruning policy through gc.pruneExpire and retained reachability. 7.1 similarly presents a few months as a reflog lookup limit, whereas git-reflog makes expiration configurable. Its claim of an empty reflog immediately after cloning is not adopted as a documented guarantee. 10.3 presents refs as files under .git/refs; that describes loose refs in the files backend, not packed-refs or reftable. 7.8 presents recursive as the normal merge strategy; current merge-strategies uses ort. 3.3 discusses safe deletion in terms of the current branch; git-branch checks the configured upstream first. 2.2 simplifies recursive ignore matching and negation; gitignore also anchors middle slashes and blocks re-inclusion beneath an excluded parent.\n\nSection qualifications: all twelve subject areas remain supported, but unconditional wording is avoided. r1 uses commit tree snapshots and separately tests packfile deltas; gitdatamodel does not document packfiles, so that card cites Pro Git 10.4. r2 ranges use git log semantics, not git diff endpoint notation. r4 uses the current git-switch --merge description of saving and reapplying local edits, not an assumption that it creates a history merge commit. r9 follows git-worktree for private HEAD/index state; its private-ref list is broader than gitglossary's HEAD/refs/bisect description, so cards avoid testing the disputed extra namespaces. r11 qualifies fetch behavior by the standard remote-tracking refspec. r12 does not adopt an unconditional annotated-tag merge rule: git-merge's MERGING TAG prose is broader than its --ff option qualification about tags outside refs/tags/. The plan instead tests its documented tag-unwrapping route to fast-forward integration. Merge-revert behavior will use git-revert's -m paragraph, not the externally redirected how-to. Excluded experimental and recently added features are not planned.\n\nOpened https://git-scm.com/ and these reference pages under https://git-scm.com/docs/: git, BreakingChanges, gitdatamodel, gitglossary, gitrevisions, git-init, git-add, git-diff, git-commit, git-rm, gitignore, git-check-ignore, git-branch, git-switch, git-checkout, git-merge, merge-strategies, git-rebase, git-reset, git-restore, git-revert, git-reflog, git-gc, git-fsck, git-stash, git-worktree, git-cherry-pick, git-bisect, git-remote, git-fetch, git-pull, git-push, git-tag, git-describe, git-commit-tree, git-symbolic-ref, git-log, git-rev-parse, gitrepository-layout.\n\nOpened the second-edition book index at https://git-scm.com/book/en/v2 and these chapter paths under https://git-scm.com/book/en/v2/: Git-Basics-Recording-Changes-to-the-Repository, Git-Basics-Undoing-Things, Git-Basics-Working-with-Remotes, Git-Basics-Tagging, Git-Branching-Branches-in-a-Nutshell, Git-Branching-Basic-Branching-and-Merging, Git-Branching-Branch-Management, Git-Branching-Branching-Workflows, Git-Branching-Remote-Branches, Git-Branching-Rebasing, Git-Tools-Revision-Selection, Git-Tools-Stashing-and-Cleaning, Git-Tools-Rewriting-History, Git-Tools-Reset-Demystified, Git-Tools-Advanced-Merging, Git-Internals-Git-Objects, Git-Internals-Git-References, Git-Internals-Packfiles, Git-Internals-Maintenance-and-Data-Recovery.",
+  "plan": [
+    {
+      "section": "r1",
+      "facts": [
+        "blob-excludes-file-name",
+        "tree-links-subdirectories",
+        "commit-identifies-tree-snapshot",
+        "commit-links-to-parents",
+        "commit-author-committer-fields",
+        "tag-is-core-object-type",
+        "object-id-includes-type",
+        "objects-immutable-after-creation",
+        "unchanged-files-reuse-blobs",
+        "default-object-format-sha1",
+        "loose-object-file-granularity",
+        "packfile-delta-compression"
+      ]
+    },
+    {
+      "section": "r2",
+      "facts": [
+        "branch-ref-advances-on-commit",
+        "head-symbolic-branch-reference",
+        "detached-commit-moves-head",
+        "local-branch-ref-namespace",
+        "pseudorefs-multiple-object-ids",
+        "caret-parent-versus-tilde-ancestor",
+        "at-shorthand-head",
+        "upstream-revision-follows-configuration",
+        "previous-checkout-shorthand",
+        "three-dot-symmetric-revision-range",
+        "revision-path-committed-object",
+        "ambiguous-tag-precedes-branch"
+      ]
+    },
+    {
+      "section": "r3",
+      "facts": [
+        "add-captures-content-at-staging-time",
+        "plain-commit-uses-index",
+        "plain-diff-shows-unstaged-changes",
+        "commit-a-excludes-untracked-files",
+        "rm-cached-preserves-working-file",
+        "ignore-rules-preserve-tracked-status",
+        "ignore-middle-slash-anchors-pattern",
+        "ignore-globstar-matches-zero-directories",
+        "ignore-excluded-parent-blocks-negation",
+        "ignore-trailing-slash-matches-nested-directories",
+        "ignore-project-rules-precede-global-file",
+        "check-ignore-identifies-matching-rule"
+      ]
+    },
+    {
+      "section": "r4",
+      "facts": [
+        "branch-creation-keeps-current-branch",
+        "switch-create-is-transactional",
+        "switch-updates-working-tree",
+        "switch-detach-selects-inspection-commit",
+        "switch-protects-overlapping-local-edits",
+        "switch-merge-keeps-edits-uncommitted",
+        "switch-guesses-unique-remote-branch",
+        "checkout-switches-and-restores-files",
+        "branch-delete-checks-upstream-first",
+        "branch-rename-preserves-history",
+        "branch-merged-tests-reachability",
+        "default-initial-branch-master"
+      ]
+    },
+    {
+      "section": "r5",
+      "facts": [
+        "merge-fast-forward-advances-tip",
+        "merge-three-way-uses-common-ancestor",
+        "merge-ff-only-rejects-divergence",
+        "merge-squash-omits-merge-ancestry",
+        "merge-ort-default-one-branch",
+        "merge-recursive-is-ort-alias",
+        "merge-ours-strategy-versus-option",
+        "merge-octopus-refuses-complex-conflicts",
+        "merge-diff3-includes-base-context",
+        "merge-conflict-index-stages",
+        "merge-add-marks-resolution",
+        "merge-abort-dirty-start-limits"
+      ]
+    },
+    {
+      "section": "r6",
+      "facts": [
+        "rebase-replays-onto-new-base",
+        "rebase-drops-clean-upstream-cherry-picks",
+        "rebase-onto-selects-transplant-range",
+        "rebase-merge-backend-default",
+        "rebase-recreates-merge-structure",
+        "rebase-fixup-discards-folded-message",
+        "rebase-autosquash-reorders-marked-commits",
+        "rebase-update-refs-skips-checked-out-branches",
+        "rebase-abort-restores-original-branch",
+        "rebase-conflict-ours-is-rebased-series",
+        "commit-amend-replaces-tip",
+        "progit-shared-history-rebase-advice"
+      ]
+    },
+    {
+      "section": "r7",
+      "facts": [
+        "reset-soft-preserves-staged-state",
+        "reset-mixed-unstages-difference-to-target",
+        "reset-hard-may-overwrite-untracked-obstructions",
+        "reset-pathspec-keeps-branch-tip",
+        "reset-merge-preserves-unstaged-edits",
+        "reset-keep-aborts-overlapping-edits",
+        "restore-default-source-selection",
+        "restore-source-keeps-branch-tip",
+        "restore-staged-worktree-updates-both",
+        "revert-records-new-history",
+        "revert-requires-clean-working-tree",
+        "revert-merge-changes-later-integration"
+      ]
+    },
+    {
+      "section": "r8",
+      "facts": [
+        "reflog-records-reference-updates",
+        "head-reflog-records-branch-switches",
+        "reflog-ordinal-counts-ref-moves",
+        "reflog-unrecorded-edits-unrecoverable",
+        "reflogs-remain-local",
+        "reflog-expiration-removes-log-entries",
+        "orig-head-records-pre-operation-tip",
+        "detached-commits-remain-temporarily-recoverable",
+        "gc-preserves-index-referenced-objects",
+        "gc-auto-runs-from-ordinary-commands",
+        "dangling-versus-unreachable-objects",
+        "fsck-recovery-requires-new-reference"
+      ]
+    },
+    {
+      "section": "r9",
+      "facts": [
+        "stash-default-saves-tracked-changes",
+        "stash-untracked-versus-ignored-inclusion",
+        "stash-keep-index-retains-staging",
+        "stash-pop-conflict-retains-entry",
+        "stash-branch-starts-at-original-base",
+        "stash-entries-use-ref-and-reflog",
+        "stash-dropped-entry-object-recovery",
+        "worktrees-share-object-database",
+        "worktrees-keep-private-head-and-index",
+        "worktree-add-protects-occupied-branch",
+        "worktree-remove-checks-cleanliness",
+        "worktree-lock-protects-prunable-metadata"
+      ]
+    },
+    {
+      "section": "r10",
+      "facts": [
+        "cherry-pick-applies-change-not-snapshot",
+        "cherry-pick-no-commit-updates-index",
+        "cherry-pick-mainline-selects-change-base",
+        "cherry-pick-x-public-provenance-advice",
+        "cherry-pick-skip-versus-abort",
+        "cherry-pick-becomes-empty-stops",
+        "bisect-searches-bounded-history",
+        "bisect-supports-custom-terms",
+        "bisect-skip-can-leave-ambiguity",
+        "bisect-run-exit-code-contract",
+        "bisect-reset-restores-original-checkout",
+        "bisect-first-parent-finds-integration-point"
+      ]
+    },
+    {
+      "section": "r11",
+      "facts": [
+        "remote-tracking-ref-is-last-known-state",
+        "remote-origin-is-conventional-name",
+        "fetch-standard-refspec-updates-remote-tracking",
+        "fetch-records-fetch-head",
+        "fetch-prune-removes-stale-tracking-refs",
+        "branch-u-configures-upstream",
+        "pull-default-fast-forward-only",
+        "pull-rebase-integrates-fetched-history",
+        "push-simple-checks-upstream-name",
+        "push-rejects-non-fast-forward-updates",
+        "force-with-lease-explicit-expectation-check",
+        "push-delete-removes-remote-branch"
+      ]
+    },
+    {
+      "section": "r12",
+      "facts": [
+        "annotated-tag-stores-metadata-object",
+        "tag-message-implies-annotation",
+        "tag-s-requests-signature",
+        "describe-default-uses-annotated-tags",
+        "lightweight-tag-can-name-any-object",
+        "push-default-omits-tags",
+        "push-follow-tags-selects-reachable-annotated-tags",
+        "fetch-auto-follows-tags-in-fetched-history",
+        "tag-published-retagging-advice",
+        "tag-delete-local-versus-remote",
+        "tag-checkout-detaches-head",
+        "merge-unwrapped-tag-target-permits-fast-forward"
+      ]
+    }
+  ],
+  "notes": "",
+  "cards": [
+    {
+      "id": "git-fundamentals-sr1-01",
+      "section": "r1",
+      "statement": "A Git blob stores the file's name as metadata alongside its contents.",
+      "answer": false,
+      "explanation": "A blob contains file data, not a filename field.",
+      "misconception": "Blobs carry filename metadata.",
+      "factKey": "blob-excludes-file-name",
+      "topic": "Git objects",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitdatamodel",
+        "url": "https://git-scm.com/docs/gitdatamodel"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-02",
+      "section": "r1",
+      "statement": "A Git tree represents a subdirectory by referring to another tree object's ID.",
+      "answer": true,
+      "explanation": "A directory tree links to subtree objects instead of embedding their full structures.",
+      "misconception": "",
+      "factKey": "tree-links-subdirectories",
+      "topic": "Git objects",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitdatamodel",
+        "url": "https://git-scm.com/docs/gitdatamodel"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-03",
+      "section": "r1",
+      "statement": "A Git commit identifies its project's snapshot through a top-level tree ID.",
+      "answer": true,
+      "explanation": "The commit points to the tree representing the complete recorded project state.",
+      "misconception": "",
+      "factKey": "commit-identifies-tree-snapshot",
+      "topic": "Commit structure",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitdatamodel",
+        "url": "https://git-scm.com/docs/gitdatamodel"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-04",
+      "section": "r1",
+      "statement": "A Git commit records the IDs of its child commits.",
+      "answer": false,
+      "explanation": "Commit ancestry links point backward to parents, rather than forward to children.",
+      "misconception": "Commits store forward links to their descendants.",
+      "factKey": "commit-links-to-parents",
+      "topic": "Commit structure",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-commit-tree",
+        "url": "https://git-scm.com/docs/git-commit-tree"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-05",
+      "section": "r1",
+      "statement": "Git uses a single identity field for both author and committer in a commit.",
+      "answer": false,
+      "explanation": "A commit has separate author and committer fields, including their respective timestamps.",
+      "misconception": "Author and committer share one stored identity.",
+      "factKey": "commit-author-committer-fields",
+      "topic": "Commit structure",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-commit-tree",
+        "url": "https://git-scm.com/docs/git-commit-tree"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-06",
+      "section": "r1",
+      "statement": "Git includes tag alongside commit, tree and blob as a core object type.",
+      "answer": true,
+      "explanation": "Tag is a distinct object type, rather than an extra field added to a commit object.",
+      "misconception": "",
+      "factKey": "tag-is-core-object-type",
+      "topic": "Git objects",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitglossary",
+        "url": "https://git-scm.com/docs/gitglossary"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-07",
+      "section": "r1",
+      "statement": "Git uses an object's type as part of the input that determines its ID.",
+      "answer": true,
+      "explanation": "Git hashes an object's type together with its content when calculating its identity.",
+      "misconception": "",
+      "factKey": "object-id-includes-type",
+      "topic": "Object identity",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitdatamodel",
+        "url": "https://git-scm.com/docs/gitdatamodel"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-08",
+      "section": "r1",
+      "statement": "Git edits an existing blob in place when a tracked file changes.",
+      "answer": false,
+      "explanation": "Stored objects are immutable; recording different content involves a different object.",
+      "misconception": "A stored blob changes as its working file changes.",
+      "factKey": "objects-immutable-after-creation",
+      "topic": "Object identity",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitglossary",
+        "url": "https://git-scm.com/docs/gitglossary"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-09",
+      "section": "r1",
+      "statement": "Git duplicates an unchanged file's blob when another file changes in a new commit.",
+      "answer": false,
+      "explanation": "Git reuses the existing blob ID for a file whose contents stay the same.",
+      "misconception": "A new commit needs fresh blobs for unchanged files.",
+      "factKey": "unchanged-files-reuse-blobs",
+      "topic": "Object storage",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitdatamodel",
+        "url": "https://git-scm.com/docs/gitdatamodel"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-10",
+      "section": "r1",
+      "statement": "In Git 2.56, git init uses sha1 as its built-in default object format.",
+      "answer": true,
+      "explanation": "Git 2.56 defaults to sha1 for new repositories; --object-format selects another enabled format.",
+      "misconception": "",
+      "factKey": "default-object-format-sha1",
+      "topic": "Repository initialization",
+      "tags": [
+        "Git",
+        "git init"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Git 3.0 is announced to change the default object format to sha256.",
+      "source": {
+        "title": "Git Reference: git-init",
+        "url": "https://git-scm.com/docs/git-init"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-11",
+      "section": "r1",
+      "statement": "Git stores a commit's tree and blobs together in one loose object file.",
+      "answer": false,
+      "explanation": "Git stores a loose object in its own file, rather than grouping a commit with its referenced objects.",
+      "misconception": "Loose storage bundles a complete commit snapshot into one object file.",
+      "factKey": "loose-object-file-granularity",
+      "topic": "Object storage",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrepository-layout",
+        "url": "https://git-scm.com/docs/gitrepository-layout"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr1-12",
+      "section": "r1",
+      "statement": "Git stores some related object versions as deltas inside packfiles.",
+      "answer": true,
+      "explanation": "Within a packfile, Git can represent an object using another object plus differences, reducing duplicated data.",
+      "misconception": "",
+      "factKey": "packfile-delta-compression",
+      "topic": "Object storage",
+      "tags": [
+        "Git"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pro Git, 2nd ed., 10.4: Packfiles",
+        "url": "https://git-scm.com/book/en/v2/Git-Internals-Packfiles"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-01",
+      "section": "r2",
+      "statement": "Committing on an attached branch advances that branch's ref to the new commit.",
+      "answer": true,
+      "explanation": "The branch reference moves as new commits extend its history.",
+      "misconception": "",
+      "factKey": "branch-ref-advances-on-commit",
+      "topic": "Branch references",
+      "tags": [
+        "Git",
+        "git commit"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-commit",
+        "url": "https://git-scm.com/docs/git-commit"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-02",
+      "section": "r2",
+      "statement": "HEAD points to the current branch's ref in an attached checkout.",
+      "answer": true,
+      "explanation": "Attached HEAD is a symbolic reference naming the active branch.",
+      "misconception": "",
+      "factKey": "head-symbolic-branch-reference",
+      "topic": "HEAD state",
+      "tags": [
+        "Git",
+        "HEAD"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-symbolic-ref",
+        "url": "https://git-scm.com/docs/git-symbolic-ref"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-03",
+      "section": "r2",
+      "statement": "With detached HEAD, a new commit advances the previously checked-out branch.",
+      "answer": false,
+      "explanation": "Committing while detached moves HEAD to the new commit; existing branch tips stay unchanged.",
+      "misconception": "Detached commits extend the previously active branch.",
+      "factKey": "detached-commit-moves-head",
+      "topic": "HEAD state",
+      "tags": [
+        "Git",
+        "HEAD",
+        "git commit"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-checkout",
+        "url": "https://git-scm.com/docs/git-checkout"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-04",
+      "section": "r2",
+      "statement": "Git stores local branch references in the refs/remotes/ namespace.",
+      "answer": false,
+      "explanation": "Local branch references belong to the refs/heads/ namespace.",
+      "misconception": "Local branches belong in the remote-tracking namespace.",
+      "factKey": "local-branch-ref-namespace",
+      "topic": "Reference namespaces",
+      "tags": [
+        "Git",
+        "refs/heads/",
+        "refs/remotes/"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrepository-layout",
+        "url": "https://git-scm.com/docs/gitrepository-layout"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-05",
+      "section": "r2",
+      "statement": "Git's pseudorefs accept several object IDs in a single reference.",
+      "answer": true,
+      "explanation": "Git's glossary identifies FETCH_HEAD and MERGE_HEAD as pseudorefs, which can hold multiple object IDs.",
+      "misconception": "",
+      "factKey": "pseudorefs-multiple-object-ids",
+      "topic": "Reference kinds",
+      "tags": [
+        "Git",
+        "FETCH_HEAD",
+        "MERGE_HEAD"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitglossary",
+        "url": "https://git-scm.com/docs/gitglossary"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-06",
+      "section": "r2",
+      "statement": "In revision syntax, M^2 follows two first-parent links from merge commit M.",
+      "answer": false,
+      "explanation": "For a merge commit M, M^2 selects the second parent; M~2 follows the first parent twice.",
+      "misconception": "The number after a caret counts first-parent generations.",
+      "factKey": "caret-parent-versus-tilde-ancestor",
+      "topic": "Revision ancestry",
+      "tags": [
+        "Git",
+        "gitrevisions"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrevisions",
+        "url": "https://git-scm.com/docs/gitrevisions"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-07",
+      "section": "r2",
+      "statement": "In Git's revision syntax, @ resolves to the same commit as the HEAD reference.",
+      "answer": true,
+      "explanation": "The @ shorthand substitutes for HEAD in revision notation.",
+      "misconception": "",
+      "factKey": "at-shorthand-head",
+      "topic": "Revision shorthand",
+      "tags": [
+        "Git",
+        "HEAD"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrevisions",
+        "url": "https://git-scm.com/docs/gitrevisions"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-08",
+      "section": "r2",
+      "statement": "For local topic tracking origin/main, topic@{upstream} identifies origin/topic.",
+      "answer": false,
+      "explanation": "When topic tracks origin/main, topic@{upstream} resolves to origin/main, regardless of the local branch name.",
+      "misconception": "Upstream syntax derives the remote branch from the local name.",
+      "factKey": "upstream-revision-follows-configuration",
+      "topic": "Revision shorthand",
+      "tags": [
+        "Git",
+        "gitrevisions"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrevisions",
+        "url": "https://git-scm.com/docs/gitrevisions"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-09",
+      "section": "r2",
+      "statement": "Git accepts @{-1} for the branch or commit visited before the current checkout.",
+      "answer": true,
+      "explanation": "@{-1} follows checkout history, making it useful for returning to the previous checkout.",
+      "misconception": "",
+      "factKey": "previous-checkout-shorthand",
+      "topic": "Revision shorthand",
+      "tags": [
+        "Git",
+        "git switch",
+        "git checkout"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrevisions",
+        "url": "https://git-scm.com/docs/gitrevisions"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-10",
+      "section": "r2",
+      "statement": "For divergent tips A and B, git log A...B selects history unique to either side.",
+      "answer": true,
+      "explanation": "In git log, A...B includes commits reachable from A or B and excludes commits reachable from both.",
+      "misconception": "",
+      "factKey": "three-dot-symmetric-revision-range",
+      "topic": "Revision ranges",
+      "tags": [
+        "Git",
+        "git log"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-log",
+        "url": "https://git-scm.com/docs/git-log"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-11",
+      "section": "r2",
+      "statement": "Git resolves HEAD:README.md by looking up README.md in the index.",
+      "answer": false,
+      "explanation": "HEAD:README.md identifies that path in the tree recorded by HEAD.",
+      "misconception": "A revision followed by a path selects the staged version.",
+      "factKey": "revision-path-committed-object",
+      "topic": "Revision paths",
+      "tags": [
+        "Git",
+        "HEAD"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrevisions",
+        "url": "https://git-scm.com/docs/gitrevisions"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr2-12",
+      "section": "r2",
+      "statement": "In revision arguments, branch release takes precedence over a tag named release.",
+      "answer": false,
+      "explanation": "Git resolves an ambiguous short ref name by checking tags before branches.",
+      "misconception": "Branch names outrank tag names during revision resolution.",
+      "factKey": "ambiguous-tag-precedes-branch",
+      "topic": "Reference resolution",
+      "tags": [
+        "Git",
+        "gitrevisions"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitrevisions",
+        "url": "https://git-scm.com/docs/gitrevisions"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-01",
+      "section": "r3",
+      "statement": "After git add stages a file, later edits to that file enter the staged version.",
+      "answer": false,
+      "explanation": "git add captures content at invocation time. Further edits need another staging operation.",
+      "misconception": "Staging tracks subsequent edits to the working file.",
+      "factKey": "add-captures-content-at-staging-time",
+      "topic": "Staging changes",
+      "tags": [
+        "Git",
+        "git add"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-add",
+        "url": "https://git-scm.com/docs/git-add"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-02",
+      "section": "r3",
+      "statement": "A plain git commit builds its new snapshot from the contents prepared in the index.",
+      "answer": true,
+      "explanation": "The index supplies the proposed project state for a commit made with no content-selection options or paths.",
+      "misconception": "",
+      "factKey": "plain-commit-uses-index",
+      "topic": "Staging changes",
+      "tags": [
+        "Git",
+        "git commit"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-commit",
+        "url": "https://git-scm.com/docs/git-commit"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-03",
+      "section": "r3",
+      "statement": "Plain git diff shows the changes staged for the next commit.",
+      "answer": false,
+      "explanation": "Plain git diff compares the working tree with the index, showing unstaged changes.",
+      "misconception": "Plain git diff displays the staged patch.",
+      "factKey": "plain-diff-shows-unstaged-changes",
+      "topic": "Reviewing changes",
+      "tags": [
+        "Git",
+        "git diff"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-diff",
+        "url": "https://git-scm.com/docs/git-diff"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-04",
+      "section": "r3",
+      "statement": "git commit -a includes a newly created file that Git still lists as untracked.",
+      "answer": false,
+      "explanation": "git commit -a stages tracked modifications and deletions; an untracked new file needs to be added first.",
+      "misconception": "The -a option starts tracking new files.",
+      "factKey": "commit-a-excludes-untracked-files",
+      "topic": "Staging changes",
+      "tags": [
+        "Git",
+        "git commit -a"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-commit",
+        "url": "https://git-scm.com/docs/git-commit"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-05",
+      "section": "r3",
+      "statement": "git rm --cached leaves the removed path's working-tree file in place.",
+      "answer": true,
+      "explanation": "git rm --cached removes the index entry while retaining the local file.",
+      "misconception": "",
+      "factKey": "rm-cached-preserves-working-file",
+      "topic": "Tracking files",
+      "tags": [
+        "Git",
+        "git rm --cached"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-rm",
+        "url": "https://git-scm.com/docs/git-rm"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-06",
+      "section": "r3",
+      "statement": "Adding a tracked file's path to .gitignore removes that file from the index.",
+      "answer": false,
+      "explanation": ".gitignore governs untracked paths; matching an existing tracked file leaves its tracked status unchanged.",
+      "misconception": "Ignore rules untrack existing files.",
+      "factKey": "ignore-rules-preserve-tracked-status",
+      "topic": "Ignore behavior",
+      "tags": [
+        "Git",
+        ".gitignore"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitignore",
+        "url": "https://git-scm.com/docs/gitignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-07",
+      "section": "r3",
+      "statement": "In a root .gitignore, doc/output.log also matches nested/doc/output.log.",
+      "answer": false,
+      "explanation": "In a root .gitignore, the slash in doc/output.log makes the pattern relative to the repository root.",
+      "misconception": "A pattern needs a leading slash to be anchored.",
+      "factKey": "ignore-middle-slash-anchors-pattern",
+      "topic": "Ignore patterns",
+      "tags": [
+        "Git",
+        ".gitignore"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitignore",
+        "url": "https://git-scm.com/docs/gitignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-08",
+      "section": "r3",
+      "statement": "In .gitignore, src/**/test.js matches src/test.js as well as deeper matching paths.",
+      "answer": true,
+      "explanation": "In .gitignore, /**/ matches zero or more directory levels.",
+      "misconception": "",
+      "factKey": "ignore-globstar-matches-zero-directories",
+      "topic": "Ignore patterns",
+      "tags": [
+        "Git",
+        ".gitignore"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitignore",
+        "url": "https://git-scm.com/docs/gitignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-09",
+      "section": "r3",
+      "statement": "A later !build/keep.txt rule re-includes the file while build/ keeps its parent directory excluded.",
+      "answer": false,
+      "explanation": "In .gitignore, an excluded parent blocks re-inclusion of files beneath it, even with a later negated pattern.",
+      "misconception": "File negation overrides an excluded parent.",
+      "factKey": "ignore-excluded-parent-blocks-negation",
+      "topic": "Ignore patterns",
+      "tags": [
+        "Git",
+        ".gitignore"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitignore",
+        "url": "https://git-scm.com/docs/gitignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-10",
+      "section": "r3",
+      "statement": "A build/ pattern in the root .gitignore also matches a directory named src/build.",
+      "answer": true,
+      "explanation": "In .gitignore, build/ targets directories named build, including nested ones.",
+      "misconception": "",
+      "factKey": "ignore-trailing-slash-matches-nested-directories",
+      "topic": "Ignore patterns",
+      "tags": [
+        "Git",
+        ".gitignore"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitignore",
+        "url": "https://git-scm.com/docs/gitignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-11",
+      "section": "r3",
+      "statement": "A repository's .gitignore rules outrank conflicting patterns in core.excludesFile.",
+      "answer": true,
+      "explanation": "Patterns in .gitignore take priority over the global exclusion file specified by core.excludesFile.",
+      "misconception": "",
+      "factKey": "ignore-project-rules-precede-global-file",
+      "topic": "Ignore precedence",
+      "tags": [
+        "Git",
+        ".gitignore",
+        "core.excludesFile"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: gitignore",
+        "url": "https://git-scm.com/docs/gitignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr3-12",
+      "section": "r3",
+      "statement": "git check-ignore -v identifies the ignore rule responsible for excluding a path.",
+      "answer": true,
+      "explanation": "git check-ignore -v reports the matching pattern and its source, helping diagnose why a path is ignored.",
+      "misconception": "",
+      "factKey": "check-ignore-identifies-matching-rule",
+      "topic": "Ignore diagnostics",
+      "tags": [
+        "Git",
+        "git check-ignore"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-check-ignore",
+        "url": "https://git-scm.com/docs/git-check-ignore"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-01",
+      "section": "r4",
+      "statement": "git branch topic makes topic the current branch as soon as it creates it.",
+      "answer": false,
+      "explanation": "git branch topic creates the branch reference while leaving the active branch unchanged.",
+      "misconception": "Creating a branch with git branch also activates it.",
+      "factKey": "branch-creation-keeps-current-branch",
+      "topic": "Creating branches",
+      "tags": [
+        "Git",
+        "git branch"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-branch",
+        "url": "https://git-scm.com/docs/git-branch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-02",
+      "section": "r4",
+      "statement": "git switch -c makes creation of the new branch conditional on a successful switch.",
+      "answer": true,
+      "explanation": "If the switch fails, git switch -c leaves the proposed new branch uncreated.",
+      "misconception": "",
+      "factKey": "switch-create-is-transactional",
+      "topic": "Creating branches",
+      "tags": [
+        "Git",
+        "git switch -c"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-switch",
+        "url": "https://git-scm.com/docs/git-switch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-03",
+      "section": "r4",
+      "statement": "With a clean index and working tree, a branch switch updates tracked files to the destination snapshot.",
+      "answer": true,
+      "explanation": "A successful branch checkout makes the working files reflect the selected branch.",
+      "misconception": "",
+      "factKey": "switch-updates-working-tree",
+      "topic": "Switching branches",
+      "tags": [
+        "Git",
+        "git checkout"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-checkout",
+        "url": "https://git-scm.com/docs/git-checkout"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-04",
+      "section": "r4",
+      "statement": "git switch --detach selects a specified earlier commit for inspection with detached HEAD.",
+      "answer": true,
+      "explanation": "Provide a commit as the start point to inspect that historical version using git switch --detach.",
+      "misconception": "",
+      "factKey": "switch-detach-selects-inspection-commit",
+      "topic": "Switching branches",
+      "tags": [
+        "Git",
+        "git switch --detach"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-switch",
+        "url": "https://git-scm.com/docs/git-switch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-05",
+      "section": "r4",
+      "statement": "Plain git switch discards local edits when they conflict with the destination branch's files.",
+      "answer": false,
+      "explanation": "git switch refuses an ordinary switch that would lose local changes.",
+      "misconception": "Ordinary branch switching overwrites conflicting local edits.",
+      "factKey": "switch-protects-overlapping-local-edits",
+      "topic": "Local change protection",
+      "tags": [
+        "Git",
+        "git switch"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-switch",
+        "url": "https://git-scm.com/docs/git-switch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-06",
+      "section": "r4",
+      "statement": "git switch --merge adds a merge commit containing local edits to the destination branch's history.",
+      "answer": false,
+      "explanation": "git switch --merge carries local edits across the switch by saving and reapplying them; they remain uncommitted.",
+      "misconception": "Switching with --merge adds local edits to branch history.",
+      "factKey": "switch-merge-keeps-edits-uncommitted",
+      "topic": "Local change protection",
+      "tags": [
+        "Git",
+        "git switch --merge"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-switch",
+        "url": "https://git-scm.com/docs/git-switch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-07",
+      "section": "r4",
+      "statement": "With --guess, git switch creates a missing local branch from a uniquely matching remote-tracking branch.",
+      "answer": true,
+      "explanation": "git switch --guess uses the uniquely matching remote-tracking branch as the new branch's starting point and upstream.",
+      "misconception": "",
+      "factKey": "switch-guesses-unique-remote-branch",
+      "topic": "Switching branches",
+      "tags": [
+        "Git",
+        "git switch"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-switch",
+        "url": "https://git-scm.com/docs/git-switch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-08",
+      "section": "r4",
+      "statement": "git checkout serves both branch switching and restoration of selected working-tree files.",
+      "answer": true,
+      "explanation": "git checkout interprets branch arguments as branch switches and path arguments as requests to restore files.",
+      "misconception": "",
+      "factKey": "checkout-switches-and-restores-files",
+      "topic": "Switching branches",
+      "tags": [
+        "Git",
+        "git checkout"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-checkout",
+        "url": "https://git-scm.com/docs/git-checkout"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-09",
+      "section": "r4",
+      "statement": "git branch -d judges an upstream-tracking branch's merged status against HEAD.",
+      "answer": false,
+      "explanation": "git branch -d checks the configured upstream; it uses HEAD when the branch has no upstream.",
+      "misconception": "Safe deletion checks the current branch even when an upstream is configured.",
+      "factKey": "branch-delete-checks-upstream-first",
+      "topic": "Branch deletion",
+      "tags": [
+        "Git",
+        "git branch -d"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-branch",
+        "url": "https://git-scm.com/docs/git-branch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-10",
+      "section": "r4",
+      "statement": "git branch -m preserves the existing commit history associated with the renamed branch.",
+      "answer": true,
+      "explanation": "git branch -m moves the branch name and its configuration and reflog, leaving commits intact.",
+      "misconception": "",
+      "factKey": "branch-rename-preserves-history",
+      "topic": "Branch management",
+      "tags": [
+        "Git",
+        "git branch -m"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-branch",
+        "url": "https://git-scm.com/docs/git-branch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-11",
+      "section": "r4",
+      "statement": "git branch --merged lists branches according to whether their file contents match the current branch.",
+      "answer": false,
+      "explanation": "git branch --merged selects branches whose tips are reachable from HEAD, rather than comparing file contents.",
+      "misconception": "Matching snapshots determine whether a branch is merged.",
+      "factKey": "branch-merged-tests-reachability",
+      "topic": "Branch management",
+      "tags": [
+        "Git",
+        "git branch --merged"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Git Reference: git-branch",
+        "url": "https://git-scm.com/docs/git-branch"
+      }
+    },
+    {
+      "id": "git-fundamentals-sr4-12",
+      "section": "r4",
+      "statement": "In Git 2.56, an unconfigured git init chooses main as its default initial branch name.",
+      "answer": false,
+      "explanation": "Git 2.56 defaults to master for git init. init.defaultBranch or --initial-branch overrides that choice.",
+      "misconception": "The announced Git 3.0 branch-name default already applies in Git 2.56.",
+      "factKey": "default-initial-branch-master",
+      "topic": "Repository initialization",
+      "tags": [
+        "Git",
+        "git init",
+        "init.defaultBranch"
+      ],
+      "appliesTo": "Git 2.56",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Git 3.0 is announced to change the built-in initial branch name from master to main.",
+      "source": {
+        "title": "Git Reference: git-init",
+        "url": "https://git-scm.com/docs/git-init"
+      }
+    }
+  ]
+}

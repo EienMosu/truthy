@@ -532,6 +532,7 @@ describe("the real content", () => {
         [
           ["nextjs", "Next.js", ["nextjs-rendering"]],
           ["react", "React", []],
+          ["javascript", "JavaScript", []],
           ["typescript", "TypeScript", []],
           ["web", "Web platform", []],
         ],
@@ -543,7 +544,9 @@ describe("the real content", () => {
           ["docker", "Docker", []],
           ["kubernetes", "Kubernetes", []],
           ["terraform", "Terraform", []],
+          ["git", "Git", []],
           ["github", "GitHub", []],
+          ["linux", "Linux", []],
         ],
       ],
     ]);
@@ -658,10 +661,9 @@ describe("the real content: Solutions Architect Associate", () => {
   });
 });
 
-// Eight decks entered after step 2 shipped: a second Google Cloud deck, the first Azure deck, three Frontend
-// platforms and the first DevOps platforms. This pins what the deploy builds from every reviewed file in the
-// repository, which the blocks above never build all at once. Kubernetes is in the catalog, but its reviewed
-// file is not in the repository yet, so its platform has no deck.
+// Fourteen decks entered after step 2 shipped: a second Google Cloud deck, the first Azure deck, four Frontend
+// platforms with two more Web platform decks, and the DevOps platforms. This pins what the deploy builds from
+// every reviewed file in the repository, which the blocks above never build all at once.
 describe("the real content: the decks added after step 2", () => {
   function readContent(path: string): unknown {
     return JSON.parse(readFileSync(new URL(`../../content/${path}`, import.meta.url), "utf8"));
@@ -672,12 +674,17 @@ describe("the real content: the decks added after step 2", () => {
     "gcp-ace",
     "azure-az-900",
     "react-fundamentals",
+    "javascript-fundamentals",
     "typescript-fundamentals",
     "web-security",
+    "web-accessibility",
+    "web-performance",
     "docker-fundamentals",
     "kubernetes-kcna",
     "terraform-associate",
+    "git-fundamentals",
     "github-actions",
+    "linux-command-line",
   ];
   const output = buildDecks({
     catalog: readContent("catalog.json"),
@@ -703,8 +710,9 @@ describe("the real content: the decks added after step 2", () => {
         [
           ["nextjs", "Next.js", ["nextjs-rendering"]],
           ["react", "React", ["react-fundamentals"]],
+          ["javascript", "JavaScript", ["javascript-fundamentals"]],
           ["typescript", "TypeScript", ["typescript-fundamentals"]],
-          ["web", "Web platform", ["web-security"]],
+          ["web", "Web platform", ["web-security", "web-accessibility", "web-performance"]],
         ],
       ],
       [
@@ -714,7 +722,9 @@ describe("the real content: the decks added after step 2", () => {
           ["docker", "Docker", ["docker-fundamentals"]],
           ["kubernetes", "Kubernetes", ["kubernetes-kcna"]],
           ["terraform", "Terraform", ["terraform-associate"]],
+          ["git", "Git", ["git-fundamentals"]],
           ["github", "GitHub", ["github-actions"]],
+          ["linux", "Linux", ["linux-command-line"]],
         ],
       ],
     ]);
@@ -765,6 +775,21 @@ describe("the real content: the decks added after step 2", () => {
       ],
     ],
     [
+      "javascript-fundamentals",
+      "JSC",
+      "Fundamentals",
+      "JavaScript Fundamentals",
+      134,
+      [
+        ["VAL", "Values and equality", 23],
+        ["FNC", "Scope, closures and this", 23],
+        ["CLS", "Classes and modules", 22],
+        ["ASY", "Iteration and async", 33],
+        ["ERR", "Errors and collections", 21],
+        ["SYN", "Destructuring and operators", 12],
+      ],
+    ],
+    [
       "typescript-fundamentals",
       "TSC",
       "Fundamentals",
@@ -791,6 +816,36 @@ describe("the real content: the decks added after step 2", () => {
         ["CKS", "Cookies and CSRF", 18],
         ["XSS", "XSS and CSP", 19],
         ["FRM", "Framing, integrity and HTTPS", 29],
+      ],
+    ],
+    [
+      "web-accessibility",
+      "ACC",
+      "Accessibility",
+      "Web Accessibility",
+      121,
+      [
+        ["WCG", "WCAG 2.2", 20],
+        ["SEM", "Semantics and names", 19],
+        ["ARI", "WAI-ARIA", 19],
+        ["KEY", "Keyboard and focus", 20],
+        ["FRM", "Forms and images", 21],
+        ["VIS", "Contrast, updates and motion", 22],
+      ],
+    ],
+    [
+      "web-performance",
+      "CWV",
+      "Performance",
+      "Web Performance",
+      122,
+      [
+        ["MET", "Metrics and measurement", 21],
+        ["LCP", "Largest Contentful Paint", 21],
+        ["RSP", "Layout shifts and responsiveness", 21],
+        ["LDG", "Rendering and resource loading", 19],
+        ["IMG", "Images and fonts", 19],
+        ["CAC", "Caching and the bfcache", 21],
       ],
     ],
     [
@@ -837,6 +892,20 @@ describe("the real content: the decks added after step 2", () => {
       ],
     ],
     [
+      "git-fundamentals",
+      "GIT",
+      "Fundamentals",
+      "Git Fundamentals",
+      122,
+      [
+        ["OBJ", "Objects, refs and the index", 31],
+        ["BRM", "Branches and merging", 20],
+        ["HIS", "Rewriting and undoing", 30],
+        ["TLS", "Stash, worktrees and other tools", 21],
+        ["REM", "Remotes and tags", 20],
+      ],
+    ],
+    [
       "github-actions",
       "GHA",
       "Actions",
@@ -848,6 +917,21 @@ describe("the real content: the decks added after step 2", () => {
         ["ACT", "Building actions", 26],
         ["ENT", "Actions for the enterprise", 27],
         ["SEC", "Security and optimization", 18],
+      ],
+    ],
+    [
+      "linux-command-line",
+      "LNX",
+      "Command line",
+      "Linux Command Line",
+      119,
+      [
+        ["FIL", "Filesystem and links", 19],
+        ["PRM", "Permissions and users", 19],
+        ["PRC", "Processes and signals", 19],
+        ["SHL", "Shell and redirection", 21],
+        ["TOL", "Tools, ssh and packages", 31],
+        ["SYS", "systemd and the journal", 10],
       ],
     ],
   ];

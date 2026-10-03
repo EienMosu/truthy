@@ -1,0 +1,1084 @@
+{
+ "deck": "git-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr1-04",
+     "verdict": "weak_card",
+     "urlStatus": "https://git-scm.com/docs/git-commit-tree loads (200, last updated in 2.55.0), official and current; it supports the card only indirectly",
+     "evidence": "git-commit-tree: \"A commit encapsulates: all parent object ids, author name, email and date, committer name and email and the commit time.\" gitdatamodel (https://git-scm.com/docs/gitdatamodel): \"Like all other objects, commits can never be changed after they're created.\" gitglossary (https://git-scm.com/docs/gitglossary), merge: \"a successful merge results in the creation of a new commit representing the result of the merge, and having as parents the tips of the merged branches.\"",
+     "problem": "The answer is right, but the card is close to a strawman. Anyone who has studied the object model knows a commit lists its parents. A child is created after its parent, and sr1-08 already teaches that objects never change, so that card also gives this answer away (the parent could never record a later child). The explanation says only that links point backward and does not give this reason. The source is a plumbing page that lists the fields without addressing children.",
+     "suggestedFix": "Replace and keep the answer False. Statement: \"A Git merge commit records the merge base as a parent, alongside the tips of the branches it joins.\" Explanation: \"A merge commit's parents are the tips of the merged branches. Git does not store the merge base in the commit; it works the base out from the commit graph when it needs it.\" Source: https://git-scm.com/docs/gitglossary (entry \"merge\"). factKey: merge-commit-parents-are-tips."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards: 6 have the answer True (02, 03, 06, 07, 10, 12) and 6 False (01, 04, 05, 08, 09, 11). On 2026-10-04 every source URL loaded on git-scm.com (200), and each is official and current. Key quotes from the source pages:\n\n- **sr1-01, 02, 03, 09 (gitdatamodel, last updated in 2.56.0):**\n  - Blob: \"A blob object contains a file's contents.\"\n  - Tree entries: \"The filename ... The file type ... The object ID with the contents of the file, directory, or gitlink.\"\n  - Commit: \"stored as the tree ID of the commit's top-level directory\".\n  - Unchanged files: \"that commit will create 2 new blobs, and use the previous blob ID for the other 998 files.\"\n  - Pro Git 10.2 backs sr1-01 directly: \"you aren't storing the filename in your system — just the content\".\n- **sr1-05 (git-commit-tree):** lists the author and the committer as separate fields. gitdatamodel agrees.\n- **sr1-06 (gitglossary):** object type is \"One of the identifiers \"commit\", \"tree\", \"tag\" or \"blob\"\".\n- **sr1-07 (gitdatamodel):** \"a cryptographic hash of its type and contents\". Pro Git also includes the size in the header. The statement says only that the type is \"part of the input\", so it holds.\n- **sr1-08 (gitglossary, entry \"object\"):** \"Consequently, an object cannot be changed.\"\n- **sr1-10 (git-init, last updated in 2.54.0):** \"The valid values are sha1 and (if enabled) sha256. sha1 is the default.\" The words \"built-in default\" correctly allow for init.defaultObjectFormat and GIT_DEFAULT_HASH, which can change the default. The card is version-pinned and marked may_change, which is right because Git 3.0 is announced to switch the default to sha256.\n- **sr1-11 (gitrepository-layout):** \"A newly created object is stored in its own file. ... Objects found here are often called unpacked (or loose) objects.\"\n- **sr1-12 (Pro Git 10.4):** \"When Git packs objects, it looks for files that are named and sized similarly, and stores just the deltas from one version of the file to the next.\"\n\n**Duplicates:** I checked r1 against every other section and found none. sr6-11 (--amend) tests the parent of the new commit, not immutability. The r12 tag cards test what an annotated tag records, not the object type.\n\n**Minor points that do not need a flag:**\n- sr1-01's explanation is thin; it could add that the tree entry holds the name.\n- sr1-08 and sr1-11 are on the easy side, but each targets a misconception learners really hold, so they stay.\n- sr1-04 could cite gitdatamodel, which lists the required commit fields more directly than the plumbing page git-commit-tree. This does not matter if the card is replaced as suggested."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr2-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, https://git-scm.com/docs/git-commit (gitrevisions/git-commit pages current, 2.56.0)",
+     "evidence": "git-commit DESCRIPTION: \"The new commit is a direct child of HEAD, usually the tip of the current branch, and the branch is updated to point to it (unless no branch is associated with the working tree, in which case HEAD is \\\"detached\\\" as described in git-checkout[1]).\" One sentence covers both sides: attached commit moves the branch, detached commit moves only HEAD.",
+     "problem": "Card 01 (attached commit advances the branch, true) and card sr2-03 (detached commit advances the previous branch, false) are the two sides of one distinction, which the prompt counts as one fact. Card 01 is also close to a truism for daily Git users: committing on a branch moves that branch. Keep sr2-03, which tests the misconception, and replace 01. The section's 'which commands still work in detached HEAD' scope has no card yet.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"With HEAD detached, git branch -u origin/main fails for lack of a current branch to configure.\" Explanation: \"gitglossary says commands that update or inquire about the current branch, such as git branch --set-upstream-to, do not work on a detached HEAD, since there is no real current branch.\" URL: https://git-scm.com/docs/gitglossary (entry \"detached HEAD\"). factKey: detached-head-current-branch-commands-fail."
+    },
+    {
+     "id": "git-fundamentals-sr2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://git-scm.com/docs/git-symbolic-ref (plumbing page; supports it only indirectly)",
+     "evidence": "git-symbolic-ref: \"Typically you would give HEAD as the <name> argument to see which branch your working tree is on.\" gitglossary symref: \"instead of containing the SHA-1 id itself, it is of the format ref: refs/some/thing ... HEAD is a prime example of a symref.\" (https://git-scm.com/docs/gitglossary)",
+     "problem": "\"HEAD points to the current branch's ref in an attached checkout\" is a definition card. 'Attached' means HEAD is attached to a branch, and the 'current branch' is the one HEAD names, so the answer comes from the wording. It also never tests the planned fact (HEAD is a symbolic ref holding a ref name, not an ID). The cited page is a plumbing reference. gitglossary's symref entry is the right source.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"On a branch, HEAD holds the branch's ref name, such as refs/heads/main, rather than a commit ID.\" Explanation: \"gitglossary calls HEAD the prime example of a symref: it contains ref: refs/heads/<name>, and Git dereferences it to the branch, which holds the commit ID.\" URL: https://git-scm.com/docs/gitglossary"
+    },
+    {
+     "id": "git-fundamentals-sr2-05",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://git-scm.com/docs/gitglossary (current)",
+     "evidence": "gitglossary pseudoref: \"A ref that has different semantics than normal refs. These refs can be read via normal Git commands, but cannot be written to by commands like git-update-ref[1].\" FETCH_HEAD \"may refer to multiple object IDs\"; MERGE_HEAD \"contains all commit IDs which are being merged.\"",
+     "problem": "The glossary defines a pseudoref by its different semantics: it can be read but git update-ref cannot write it. Holding several IDs is described separately for each of the two pseudorefs, never as a property of pseudorefs in general. 'Accept' suggests that pseudorefs can be written, which the glossary denies, so an expert could answer False. The explanation's claim that FETCH_HEAD holds several fetched IDs also overlaps sr11-04 (fetch records ref names and IDs in FETCH_HEAD). The prompt keeps FETCH_HEAD-from-fetch in r11 and only the pseudoref concept in r2.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"gitglossary defines a pseudoref as a ref that normal commands read but git update-ref refuses to write.\" Explanation: \"gitglossary lists FETCH_HEAD and MERGE_HEAD as pseudorefs: refs with semantics different from normal refs, which ordinary commands can read but git update-ref cannot write.\" URL: https://git-scm.com/docs/gitglossary"
+    },
+    {
+     "id": "git-fundamentals-sr2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://git-scm.com/docs/gitrevisions (last updated in 2.56.0)",
+     "evidence": "gitrevisions: \"A branch B may be set up to build on top of a branch X (configured with branch.<name>.merge) at a remote R (configured with branch.<name>.remote). B@{u} refers to the remote-tracking branch for the branch X taken from remote R, typically found at refs/remotes/R/X.\"",
+     "problem": "The statement says outright that topic tracks origin/main and then asks whether topic@{upstream} is origin/topic. Anyone who reads 'upstream' as 'the tracked branch' gets the answer from the sentence itself, without knowing the syntax. The fact is correct; the statement gives away the answer.",
+     "suggestedFix": "Replace (keeps answer FALSE). Statement: \"When topic tracks origin/main, topic@{upstream} resolves to the local branch named main.\" Explanation: \"B@{upstream} refers to the remote-tracking branch for the configured upstream, here refs/remotes/origin/main, set through branch.<name>.remote and branch.<name>.merge.\" URL unchanged: https://git-scm.com/docs/gitrevisions"
+    },
+    {
+     "id": "git-fundamentals-sr2-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://git-scm.com/docs/gitrepository-layout (current; describes the files ref layout)",
+     "evidence": "gitrepository-layout: \"refs/heads/name records tip-of-the-tree commit objects of branch name\" and \"refs/remotes/name records tip-of-the-tree commit objects of branches copied from a remote repository.\"",
+     "problem": "The answer can be read from the word 'remotes': saying local branches live in refs/remotes/ is a strawman that nobody who has seen origin/main would accept. The source page also describes the on-disk files layout, which the prompt asks storage cards to avoid or qualify. A more realistic namespace misconception is that clone creates a local branch for every source branch.",
+     "suggestedFix": "Replace (keeps answer FALSE). Statement: \"After git clone, Git creates a local branch under refs/heads/ for each branch of the source repository.\" Explanation: \"git clone creates remote-tracking branches under refs/remotes/origin/ for each source branch, plus one local branch forked from the source's currently active branch.\" URL: https://git-scm.com/docs/git-clone (\"creates remote-tracking branches for each branch in the cloned repository ... and creates and checks out an initial branch that is forked from the cloned repository's currently active branch\"; \"references to the remote branch heads under refs/remotes/origin\")."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards (all in git-fundamentals-b1.json) against the pages fetched on 2026-10-04. All source URLs return 200. gitrevisions shows \"last updated in 2.56.0\", which matches the pinned Git 2.56.\n\nSection balance: the original section has 6 true and 6 false cards. Every suggested replacement keeps its card's answer (01, 02 and 05 stay true; 04 and 08 stay false).\n\nCards that pass:\n- 03 (detached commit): the git-checkout DETACHED HEAD section shows that commit e is \"referenced only by HEAD\" while master stays at d.\n- 06 (M^2 vs ~2): gitrevisions says \"^<n> means the <n>th parent\" and \"~<n> ... following only the first parents\".\n- 07 (@): gitrevisions says \"@ alone is a shortcut for HEAD\".\n- 09 (@{-1}): gitrevisions says \"the <n>th branch/commit checked out before the current one\".\n- 11 (<rev>:<path>): gitrevisions says it \"names the blob or tree at the given path in the tree-ish object named by the part before the colon\".\n- 12 (ambiguous ref): gitrevisions checks refs/tags/<refname> before refs/heads/<refname>. The statement is limited to \"revision arguments\", which shuts out the objection that git checkout/git switch prefer a branch for their branch argument.\n\nMinor point, not flagged: card 10 cites git-log, which supports it (\"The resulting set of commits is the symmetric difference between the two operands\", with the equivalent A B --not merge-base form). The prompt asks for ranges as gitrevisions defines them, so https://git-scm.com/docs/gitrevisions is the better URL (\"reachable from either one of r1 (left side) or r2 (right side) but not from both\").\n\nDeck-level: card 09 uses the hedge verb \"accepts\" in a true statement. Count it in the deck-wide hedge balance."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr3-10",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://git-scm.com/docs/gitignore (last updated in 2.55.0, current 2.56 reference)",
+     "evidence": "gitignore: \"If there is a separator at the beginning or middle (or both) of the pattern, then the pattern is relative to the directory level of the particular .gitignore file itself. Otherwise the pattern may also match at any level below the .gitignore level.\" and \"frotz/ matches frotz and a/frotz that is a directory\". The answer (True) is correct, but the prompt lists this as one distinction (\"a separator at the beginning or middle versus only at the end\") and its rule says \"The two sides of one distinction are one fact.\" sr3-07 (doc/output.log does not match nested/doc/output.log, False) already tests the middle-slash side. sr3-10 tests the end-only side with the opposite answer, so the two cards form a mirrored pair: if you know the rule, you can answer both.",
+     "problem": "This card rests on the same separator-position fact as git-fundamentals-sr3-07 and mirrors it. Meanwhile the section items $GIT_COMMON_DIR/info/exclude, trailing /** and command-line precedence have no card.",
+     "suggestedFix": "Replace with a TRUE card (keeps 6 true / 6 false; true average length ~82 vs false ~77). Statement: \"Repository-only ignore patterns that stay out of commits belong in $GIT_COMMON_DIR/info/exclude.\" Explanation: \"gitignore puts patterns specific to one repository, which other clones do not need, in $GIT_COMMON_DIR/info/exclude; .gitignore files are committed and shared via clone.\" factKey: ignore-info-exclude-repo-local. Source: https://git-scm.com/docs/gitignore (\"Patterns which are specific to a particular repository but which do not need to be shared with other related repositories ... should go into the $GIT_COMMON_DIR/info/exclude file.\")"
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (6 true, 6 false) against the live git-scm.com pages, fetched 2026-10-04: git-add (last updated in 2.56.0), git-commit (2.55.0), git-diff (2.56.0), git-rm (2.50.0), gitignore (2.55.0) and git-check-ignore (2.52.0). Every page loaded and is the current reference, and every answer is correct. Quotes that settle the passing cards:\n- sr3-01: git-add says it \"adds the content of the specified file(s) at the time the add command is run; if you want subsequent changes included in the next commit, then you must run git add again\".\n- sr3-02: git-commit says \"Create a new commit containing the current contents of the index\".\n- sr3-03: git-diff says the plain form shows \"the changes you made relative to the index ... what you could tell Git to further add to the index but you still haven't\".\n- sr3-04: git-commit -a says \"new files you have not told Git about are not affected\".\n- sr3-05: git-rm --cached says \"remove paths only from the index. Working tree files, whether modified or not, will be left alone\".\n- sr3-06: gitignore says \"Files already tracked by Git are not affected\" and, in NOTES, use git rm --cached to stop tracking.\n- sr3-07: gitignore says a separator at the beginning or middle makes the pattern relative to the .gitignore's level, and \"doc/frotz/ matches doc/frotz directory, but not a/doc/frotz\".\n- sr3-08: gitignore says \"a/**/b\" matches \"a/b\", \"a/x/b\", \"a/x/y/b\".\n- sr3-09: gitignore says \"It is not possible to re-include a file if a parent directory of that file is excluded\".\n- sr3-11: gitignore's precedence list puts per-directory .gitignore files above $GIT_COMMON_DIR/info/exclude and core.excludesFile.\n- sr3-12: git-check-ignore -v says it will \"print the exclude pattern together with the path\".\n\nBorderline but passed:\n- sr3-12 is easy, and \"check-ignore\" plus \"-v\" points a guesser towards True. A stronger fact would be that tracked files are not shown by default, but that would duplicate sr3-06, so I kept the card.\n- sr3-02 is close to the definition of the index, but the section explicitly lists \"the index as the proposed next commit\".\n- sr3-09's phrasing \"while build/ keeps its parent directory excluded\" is a little awkward but unambiguous.\n\nI found no overlap with other sections. I compared against r2-11 (HEAD:path), r5 index stages, r7 reset and restore, r8 gc and the index, r9 stash -u/-a and worktree indexes; none tests an r3 fact.\n\nCoverage: no card tests command-line pattern precedence, a lone *, leading **/, trailing /** or $GIT_COMMON_DIR/info/exclude. The suggested replacement for sr3-10 adds info/exclude."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr4-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, git-checkout last updated in 2.55.0, supports the card",
+     "evidence": "https://git-scm.com/docs/git-checkout: \"Switch to <branch>. This sets the current branch to <branch> and updates the files in your working directory.\" The card is accurate, but it says only that switching branches changes the files, which any developer who uses Git every day already knows. The 'clean index and working tree' qualifier also points to True.",
+     "problem": "Truism or strawman for the target audience: nobody who has switched a branch would answer False, so it teaches nothing. The opening qualifier gives the answer away.",
+     "suggestedFix": "Replace (keeps True). Statement: \"git branch -D removes a local branch even when its commits are reachable from no other branch.\" Explanation: \"-D is short for --delete --force, which deletes the branch whatever its merged status. The commits stay recoverable through the HEAD reflog for a while.\" Source: https://git-scm.com/docs/git-branch (\"-D Shortcut for --delete --force\")."
+    },
+    {
+     "id": "git-fundamentals-sr4-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, git-switch last updated in 2.55.0, supports the card",
+     "evidence": "https://git-scm.com/docs/git-switch: \"--detach Switch to a commit for inspection and discardable experiments.\" Example: \"git switch --detach HEAD~3\" for \"temporary inspection or experiment without creating a new branch\".",
+     "problem": "Name giveaway: the statement says --detach gives a detached HEAD, so the answer can be read from the option name. Its wording is also close to the source sentence.",
+     "suggestedFix": "Replace (keeps True). Statement: \"git switch --detach origin/main lets you inspect a remote-tracking branch's commit without creating a local branch.\" Explanation: \"--detach accepts any commit, including a remote-tracking branch, and leaves HEAD detached there. No local branch is created unless you add one later with git switch -c.\" Source: https://git-scm.com/docs/git-switch."
+    },
+    {
+     "id": "git-fundamentals-sr4-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, git-branch at 2.56.0, supports the card",
+     "evidence": "https://git-scm.com/docs/git-branch: \"-m --move Move/rename a branch, together with its config and reflog.\" and \"If <old-branch> had a corresponding reflog, it is renamed to match <new-branch>, and a reflog entry is created to remember the branch renaming.\"",
+     "problem": "Truism: renaming a label obviously leaves the commits as they are, so no developer who studied would answer False. The useful fact, that the config and reflog move with the branch, appears only in the explanation.",
+     "suggestedFix": "Replace (keeps True). Statement: \"git branch -m carries the branch's reflog and its branch.<name> settings over to the new name.\" Explanation: \"Renaming moves the branch's configuration, such as its upstream, and renames its reflog, adding an entry that records the rename. Commits are untouched.\" Source: https://git-scm.com/docs/git-branch."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards against git-switch (last updated 2.55.0), git-branch (2.56.0), git-checkout (2.55.0) and git-init (2.54.0) on git-scm.com today. Every source URL loads and is official. All 12 answers are correct.\n\nCards that pass, with the deciding quote:\n- 01: git-branch says \"this will create the new branch, but it will not switch the working tree to it\".\n- 02: git-switch -c says it is \"the transactional equivalent of git branch + git switch ... the branch is not reset/created unless git switch is successful\".\n- 05: git-switch says \"The operation is aborted however if the operation leads to loss of local changes, unless told otherwise with --discard-changes or --merge\".\n- 06: Since 2.55, git-switch --merge reads \"the conflicting local changes are automatically stashed before the switch and reapplied afterwards\". The example says they \"are not registered in your index file\". The explanation's \"saving and reapplying ... remain uncommitted\" matches the new wording.\n- 07: --guess covers a tracking branch \"in exactly one remote\" and is \"equivalent to git switch -c <branch> --track <remote>/<branch>\". The explanation's \"starting point and upstream\" is correct. Minor point: the statement does not test that --guess is the default. checkout.defaultRemote can also resolve a branch name found on several remotes, but \"uniquely matching\" stays true.\n- 08: the git-checkout NAME line reads \"Switch branches or restore working tree files\".\n- 09: git-branch -d says \"fully merged in its upstream branch, or in HEAD if no upstream was set\". The answer False is correct. The wording \"upstream-tracking branch\" is a little awkward but readable.\n- 11: --merged says \"Only list branches whose tips are reachable from <commit> (HEAD if not specified)\".\n- 12: git-init says \"currently master, but this will change to main when Git 3.0 is released\". The card is volatility may_change, which is correct.\n\nAnswer balance: the section is 6 True and 6 False, and every replacement keeps True, so the balance holds.\n\nI found no duplicates. Nearby cards rest on different facts:\n- r2-03 tests commits made on a detached HEAD.\n- r9-10 tests git worktree add refusing a branch that is checked out elsewhere.\n- r12-11 tests checking out a tag.\n\nGap: the r4 scope item \"refusal to delete the current branch or a branch checked out in another worktree\" has no card. git-branch today states that refusal only in the --delete-merged list, which the prompt excludes, so I did not propose a replacement that rests on it."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr5-03",
+     "verdict": "weak_card",
+     "urlStatus": "https://git-scm.com/docs/git-merge loads (HTTP 200, official, last updated in 2.54.0, no changes 2.55.0 to 2.56.0) and supports the answer",
+     "evidence": "git-merge: \"With --ff-only, resolve the merge as a fast-forward when possible. When not possible, refuse to merge and exit with a non-zero status.\" (https://git-scm.com/docs/git-merge)",
+     "problem": "The answer is right but you can read it from the option name: anyone who sees \"--ff-only\" guesses it will not create a merge commit, so the card is a name giveaway and close to a strawman. It also reuses the false template of git-fundamentals-sr11-07 (\"... resolves divergent histories by creating a merge commit\"), and both cards rest on the same idea: ff-only refuses divergent history.",
+     "suggestedFix": "Replace with a false card on the pre-merge check the section lists. Statement (97 chars): \"By default, git merge folds incoming changes into uncommitted edits when both touch the same file.\" Answer: false. Explanation (141 chars): \"git merge stops without doing anything when local uncommitted changes overlap files it needs to update, so commit or stash those edits first.\" Source: https://git-scm.com/docs/git-merge (PRE-MERGE CHECKS: \"git pull and git merge will stop without doing anything when local uncommitted changes overlap with files that git pull/git merge may need to update.\")"
+    },
+    {
+     "id": "git-fundamentals-sr5-02",
+     "verdict": "weak_card",
+     "urlStatus": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging loads (HTTP 200, official Pro Git 2nd ed.) and supports the card",
+     "evidence": "Pro Git 3.2: \"In this case, Git does a simple three-way merge, using the two snapshots pointed to by the branch tips and the common ancestor of the two.\" (https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging)",
+     "problem": "This is a definition card: the term \"three-way merge\" already names its three inputs (the base and the two tips), so the answer follows from the wording and teaches nothing beyond the term. The qualifier \"for branches with a single merge base\" points to the more interesting fact (what happens with several merge bases), but the card does not test it.",
+     "suggestedFix": "Replace with a true card on the merge base. Statement (103 chars): \"With several merge bases, ort merges those bases into one tree and uses it as the reference for the merge.\" Answer: true. Explanation (about 150 chars): \"merge-strategies says ort builds a merged tree of the common ancestors and uses it as the reference tree for its 3-way merge, reported to cause fewer conflicts.\" Source: https://git-scm.com/docs/merge-strategies (ort: \"When there is more than one common ancestor that can be used for 3-way merge, it creates a merged tree of the common ancestors and uses that as the reference tree for the 3-way merge.\")"
+    }
+   ],
+   "notes": "I checked all 12 r5 cards (6 true, 6 false) against the pages that load today: git-merge (last updated in 2.54.0, unchanged in 2.56.0), merge-strategies (last updated in 2.50.0), the merge.conflictStyle entry of git-config, and Pro Git 3.2. I confirmed each of these 10 cards and found no problem:\n- sr5-01: git-merge FAST-FORWARD MERGE says \"the HEAD (along with the index) is updated to point at the named commit, without creating an extra merge commit\".\n- sr5-04: --squash does not \"make a commit, move the HEAD, or record $GIT_DIR/MERGE_HEAD\".\n- sr5-05: ort \"is the default merge strategy when pulling or merging one branch\".\n- sr5-06: recursive \"is now a synonym for ort ... redirected to mean ort in v2.50.0\". Minor point: appliesTo could be \"Git 2.50 and later\" as the prompt suggests, but the statement pins 2.56, so it is correct.\n- sr5-07: under -X ours, \"Changes from the other tree that do not conflict with our side are reflected in the merge result\". This applies to text; the binary-file exception does not touch the card because it says \"text regions\".\n- sr5-08: octopus \"refuses to do a complex merge that needs manual resolution\".\n- sr5-09: git-config says \"diff3 adds a ||||||| marker and the original text before the ======= marker\".\n- sr5-10: \"stage 1 stores the version from the common ancestor, stage 2 from HEAD, and stage 3 from MERGE_HEAD\".\n- sr5-11: Pro Git 3.2 says \"run git add on each file to mark it as resolved. Staging the file marks it as resolved in Git.\"\n- sr5-12: git merge --abort \"will in some cases be unable to reconstruct these changes\".\n\nTwo cards are flagged as weak:\n- sr5-03 is a giveaway from the option name and repeats sr11-07's false template \"... creating a merge commit\".\n- sr5-02 is a definition card on \"three-way\".\n\nWith both proposed replacements, the section stays 6 true and 6 false. Average statement length becomes about 94.5 characters for true and 92.3 for false, inside the 5-character limit. One hedge \"can\" remains on each side (sr5-12 true, sr5-08 false).\n\nsr5-01 is close to a definition card for \"fast-forward\", but it is still acceptable as the easy card for a topic the section lists, so I did not flag it.\n\nThe section is missing these listed topics, which could replace any card later dropped: --no-ff, zdiff3, and MERGE_HEAD as the other branch head during a conflicted merge.\n\nWithin the section I found no duplicates. Outside it, sr2-05 (MERGE_HEAD as a pseudoref), sr12-12 (merging an annotated tag), sr7-05 (reset --merge) and sr6-10 (ours and theirs during a rebase) each rest on different facts."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr6-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, Pro Git 2nd ed. 3.6 Rebasing loads (official, current)",
+     "evidence": "https://git-scm.com/book/en/v2/Git-Branching-Rebasing: \"With the rebase command, you can take all the changes that were committed on one branch and replay them on a different branch.\" The card is true and supported, but its answer follows from the meaning of \"rebasing topic onto main\" (definition card). The section's listed fact \"why the rebased commits get new IDs\" is tested by no card in r6. The same page says: \"When you rebase stuff, you're abandoning existing commits and creating new ones that are similar but different.\"",
+     "problem": "This is a definition card. Anyone who knows what the words \"rebase onto main\" mean gets it right, so it teaches nothing. The section's new-commit-IDs fact is left untested.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"Rebased commits get new commit IDs even when each replayed change applies cleanly.\" Explanation: \"Each replayed commit records a new parent, and a commit ID is a hash of the commit's content, so the rebased commits get new IDs even when their changes are identical.\" Source: https://git-scm.com/book/en/v2/Git-Branching-Rebasing"
+    },
+    {
+     "id": "git-fundamentals-sr6-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, git-rebase reference (last updated in 2.54.0, no changes 2.55.0 to 2.56.0)",
+     "evidence": "https://git-scm.com/docs/git-rebase: \"By default, a rebase will simply drop merge commits from the todo list, and put the rebased commits into a single, linear branch. With --rebase-merges, the rebase will instead try to preserve the branching structure within the commits that are to be rebased, by recreating the merge commits.\" The card is correct, but the option name --rebase-merges already says that it recreates merges.",
+     "problem": "Name giveaway. The answer can be read from the option name, and the section's real point (by default rebase drops merge commits) goes untested.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"By default, git rebase drops merge commits from the todo list and replays the range as one linear series.\" Explanation: \"Merge commits are dropped unless you pass --rebase-merges (or set rebase.rebaseMerges), which recreates them; manual conflict resolutions in those merges must be redone.\" Same URL."
+    },
+    {
+     "id": "git-fundamentals-sr6-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, git-commit reference loads",
+     "evidence": "https://git-scm.com/docs/git-commit: \"--amend Replace the tip of the current branch by creating a new commit. ... The new commit has the same parents and author as the current one\". The answer (false) and the explanation are correct.",
+     "problem": "Strawman. After an amend, git log shows a single commit, so no developer who has amended believes it adds a child commit after the tip. The realistic misconception is that amend edits the existing commit in place and keeps its ID. The qualifier \"when you revise the latest commit message\" also adds nothing.",
+     "suggestedFix": "Replace (keeps answer FALSE). Statement: \"git commit --amend edits the tip commit in place, so the branch keeps pointing at the same commit ID.\" Explanation: \"--amend replaces the tip of the current branch with a new commit that has the same parents; the old commit is no longer on the branch.\" Same URL."
+    },
+    {
+     "id": "git-fundamentals-sr6-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, Pro Git 7.6 Rewriting History loads; also confirmed on git-rebase",
+     "evidence": "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History: \"Type git rebase --abort, and your repo will be returned to the state it was in before you started the rebase.\" https://git-scm.com/docs/git-rebase: \"--abort Abort the rebase operation and reset HEAD to the original branch.\" The card is true and supported.",
+     "problem": "Name giveaway. \"--abort returns the branch to its starting state\" can be read from the word abort, so a player who knows no Git answers True. The realistic misconception (that abort keeps the commits already replayed) is not tested.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"When a rebase stops on a conflict, git rebase --abort also abandons the commits it had already replayed.\" Explanation: \"--abort resets HEAD to the original branch, so commits replayed before the conflict are left behind; git rebase --quit is the option that keeps HEAD where it is.\" Source: https://git-scm.com/docs/git-rebase"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (all in git-fundamentals-b2.json) against the current text of the pages, downloaded on 2026-10-04. git-rebase: \"last updated in 2.54.0\", \"2.55.0 → 2.56.0 no changes\". git-commit, Pro Git 3.6 and Pro Git 7.6 also checked. All four URLs load with HTTP 200 and are official. I found no wrong answers.\n\nCards that pass, with the deciding quote:\n- 02: \"commits which are clean cherry-picks (as determined by git log --cherry-mark ...) are detected and dropped as a preliminary step (unless --reapply-cherry-picks or --keep-base is passed)\".\n- 03: Pro Git 3.6 shows \"git rebase --onto master server client\".\n- 04: \"--merge Using merging strategies to rebase (default)\". The word \"unconfigured\" covers rebase.backend.\n- 06: Pro Git 7.6 todo help: \"f, fixup <commit> = like \\\"squash\\\", but discard this commit's log message\". The word \"plain\" correctly excludes fixup -C/-c.\n- 07: \"they are moved right after the commit they modify\". The card avoids the forbidden question of whether --autosquash needs interactive mode.\n- 08: \"Any branches that are checked out in a worktree are not updated in this way.\" This card tests an exception, but the core behaviour of --update-refs would be a name giveaway, so I accepted it.\n- 10: \"the side reported as ours is the so-far rebased series, starting with <upstream>, and theirs is the working branch. In other words, the sides are swapped.\"\n- 12: Pro Git: \"Do not rebase commits that exist outside your repository and that people may have based work on.\" The word \"preserving\" is a loose paraphrase and close to common sense, but the prompt explicitly allows this advice card, so I passed it.\n\nOverlap check: there is no duplicate with r10-05 (cherry-pick --skip versus --abort), r5-07 (-X ours) or r11-08 (pull --rebase).\n\nBalance: the section is 6 true and 6 false, and every suggested replacement keeps its card's answer. With the replacements, the section would also cover two listed facts it currently misses: why rebased commits get new IDs, and merge commits being dropped by default."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr7-09",
+     "verdict": "weak_card",
+     "urlStatus": "https://git-scm.com/docs/git-restore loads (HTTP 200, official, 'git-restore last updated in 2.55.0'); it supports the card",
+     "evidence": "git-restore DESCRIPTION: \"The command can also be used to restore the content in the index with --staged, or restore both the working tree and the index with --staged --worktree.\" OPTIONS: \"Specifying --staged will only restore the index. Specifying both restores both.\" (https://git-scm.com/docs/git-restore)",
+     "problem": "The answer can be read from the option names: a statement that --staged plus --worktree replaces the staged and the working versions is true by the wording, and it is a near-copy of the page's own sentence. A player who does not know Git answers True. The fact itself is correct.",
+     "suggestedFix": "Replacement (answer True, keeps the section at 6 true / 6 false). Statement: \"git restore --source deletes a tracked file from the working tree when that file is absent from the source.\" Explanation: \"git restore makes the restored location match its source, so a tracked path that does not exist in the source is removed rather than left alone.\" factKey restore-removes-paths-missing-from-source; source https://git-scm.com/docs/git-restore (\"If a path is tracked but does not exist in the restore source, it will be removed to match the source.\")"
+    }
+   ],
+   "notes": "I checked all 12 r7 cards (6 true, 6 false) against the live pages on 2026-10-04: git-reset (last updated in 2.54.0), git-restore (2.55.0), git-revert (2.54.0), the \"Reset, restore and revert\" section of git(1) (2.56.0) and Pro Git 7.7 Reset Demystified. Every URL loads with HTTP 200 and supports its card. Only one card is flagged.\n\nQuotes that settle the passing cards:\n- **sr7-01 (false):** Reset Demystified says the soft reset moves the branch back \"without changing the index or working directory\". git-reset says \"--soft: Leave your working tree files and the index unchanged.\"\n- **sr7-02 (true):** git-reset says \"--mixed: Leave your working directory unchanged. Update the index to match the new HEAD, so nothing will be staged.\"\n- **sr7-03 (true):** git-reset says --hard \"may overwrite untracked files\".\n- **sr7-04 (true):** git-reset says \"In this mode, git reset updates only the index (without updating the HEAD or working tree files).\"\n- **sr7-05 (false):** git-reset says --merge \"keep[s] those which are different between the index and working tree\", and the example notes \"git reset --merge keeps your local changes.\"\n- **sr7-06 (false):** git-reset says \"--keep ... If a file that is different between <commit> and HEAD has local changes, reset is aborted.\"\n- **sr7-07 (false):** git-restore says \"By default, if --staged is given, the contents are restored from HEAD, otherwise from the index.\"\n- **sr7-08 (false):** git(1) says of git restore: \"This command does not update your branch.\"\n- **sr7-10 (true):** git(1) says \"git-revert[1] is about making a new commit that reverts the changes made by other commits.\"\n- **sr7-11 (true):** git-revert says \"This requires your working tree to be clean (no modifications from the HEAD commit).\" With --no-commit, git-revert says the index does not have to match HEAD, so the card's \"usual commit-producing form\" qualifier is accurate.\n- **sr7-12 (false):** git-revert -m says \"later merges will only bring in tree changes introduced by commits that are not ancestors of the previously reverted merge.\"\n\nNone of these cards duplicates a card in another section. The nearest ones (sr8-07 ORIG_HEAD, sr4-08 checkout restoring files) test different facts.\n\nMinor points, not flagged:\n1. **sr7-02:** The word \"edits\" in the statement has no actor; it means the changes made by the commit that was undone. Clearer, same answer: \"After git reset --mixed HEAD~1 on a clean tree, the undone commit's changes to files that existed before it remain in the working tree, unstaged.\"\n2. **sr7-11:** The manual's wording is stricter than how Git behaves. In practice the sequencer refuses only a dirty index or local changes that the revert would overwrite. Edits to unrelated files in the working tree usually do not stop a revert. The card is safe because it is framed as what the manual says, and the prompt asks for this qualifier. Still, the explanation's \"tracked content matches HEAD\" teaches the documented rule, not the observed behaviour.\n3. **sr7-05 and sr7-06:** Both are false cards about reset modes and local edits, but they rest on different facts (--merge keeps unrelated unstaged edits; --keep aborts on overlapping edits). There is no mirrored pair.\n4. **sr7-04 and sr7-08:** Both are about a command leaving the branch tip in place, one true and one false, but for different commands. That is acceptable.\n\nAll statements are within 120 characters and all explanations within 240."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr8-10",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official (git-gc, last updated in 2.52.0, '2.53.0 → 2.56.0 no changes'), but stale on this point",
+     "evidence": "git-gc (https://git-scm.com/docs/git-gc) supports the card: \"When common porcelain operations that create objects are run, they will check whether the repository has grown substantially since the last maintenance, and if so run git gc automatically.\" In Git 2.56 that no longer matches what happens. The Git 2.54.0 release notes say: \"'git maintenance' starts using the 'geometric' strategy by default.\" git-maintenance (https://git-scm.com/docs/git-maintenance, last updated in 2.56.0) says: \"maintenance.auto: This boolean config option controls whether some commands run git maintenance run --auto after doing their normal work. Defaults to true.\" It also says geometric \"is a full replacement for the gc strategy ... This is the default strategy for manual maintenance.\" The v2.56.0 source agrees: run-command.c prepare_auto_maintenance() pushes \"maintenance\", \"run\", \"--auto\", and builtin/gc.c picks geometric_strategy for unscheduled runs. That strategy has no TASK_GC (it runs geometric-repack, commit-graph, pack-refs, rerere-gc, reflog-expire and worktree-prune). So by default, ordinary commands in 2.56 do not invoke git gc --auto. Also, the statement nearly gives its answer away: \"With gc.auto enabled ... automatically invoke git gc --auto\".",
+     "problem": "The mechanism the card names is out of date for the pinned version. Since Git 2.54, ordinary commands run git maintenance run --auto with the geometric strategy, which does not call git gc. An expert would answer False, even though the stale git-gc page says True. The repeated auto/--auto wording also hints at the answer.",
+     "suggestedFix": "Rewrite without naming the mechanism (answer stays True, so the section's balance holds). Statement: \"Commands that write objects, such as git commit, can start repository housekeeping on their own once it is due.\" Explanation: \"After writing objects, common commands check whether the repository has grown enough to need housekeeping and run it, by default in the background; gc.auto set to 0 turns this off.\" Source stays https://git-scm.com/docs/git-gc. git maintenance itself stays out of scope."
+    },
+    {
+     "id": "git-fundamentals-sr8-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official Pro Git 2.4 Undoing Things",
+     "evidence": "Pro Git 2.4 (https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things): \"Remember, anything that is committed in Git can almost always be recovered. ... However, anything you lose that was never committed is likely never to be seen again.\" The page supports the answer.",
+     "problem": "The statement answers itself: \"can recover file edits discarded before Git recorded their contents\" amounts to asking whether Git can recover what it never stored. Anyone can answer False from the wording alone, so the card does not test the real misconception, which is that the reflog is a full undo history that also covers working-tree changes.",
+     "suggestedFix": "Keep the fact but drop the self-answering clause (answer stays False). Statement: \"The HEAD reflog records working-tree edits, so it can restore changes you discarded with git restore.\" Explanation: \"Reflogs record only where refs such as HEAD pointed. Edits discarded before they were committed are in no reflog, and Pro Git warns that anything lost that was never committed is likely gone.\" Source stays https://git-scm.com/book/en/v2/Git-Basics-Undoing-Things."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (in git-fundamentals-b2.json). Every source URL loaded with HTTP 200 on git-scm.com, and I compared each card with the current reference page. Two cards are flagged; 10 pass.\n\nQuotes that settle the passing cards:\n- 01 and 02, git-reflog: \\\"record when the tips of branches and other references were updated in the local repository\\\" and \\\"in addition the HEAD reflog records branch switching\\\".\n- 03, gitrevisions: \\\"<refname>@{<n>} ... specifies the n-th prior value of that ref\\\".\n- 05, Pro Git 7.1: \\\"reflog information is strictly local\\\".\n- 06, git-reflog: \\\"The 'expire' subcommand prunes older reflog entries ... are removed from the reflog\\\". It does not say outright that the objects survive, but git-gc lists reflog pruning and removing unreachable objects as separate tasks.\n- 07, gitrevisions: ORIG_HEAD \\\"is created by commands that move your HEAD in a drastic way (git am, git merge, git rebase, git reset), to record the position of the HEAD before their operation\\\".\n- 08, git-checkout: \\\"Eventually commit f ... will be deleted by the routine Git garbage collection process, unless we create a reference before that happens\\\".\n- 09, git-gc NOTES: \\\"it will keep ... objects referenced by the index, remote-tracking branches, reflogs\\\".\n- 11, git-fsck: dangling means \\\"present in the database but never directly used\\\". gitglossary (https://git-scm.com/docs/gitglossary) states it more clearly and would be a slightly better source, but this is not worth a flag.\n- 12, Pro Git 10.7: \\\"you can recover it by creating a new branch at that commit\\\" and, after fsck, \\\"You can recover it the same way, by adding a branch that points to that SHA-1\\\".\n\nMain finding (card 10): the git-gc reference page is stale for Git 2.56. Git 2.54 switched maintenance to the geometric strategy by default, and in the v2.56.0 source (run-command.c, builtin/gc.c) auto maintenance runs git maintenance run --auto with a strategy that has no gc task. That makes any card saying ordinary commands invoke git gc --auto debatable. Card 09 (gc keeps objects referenced by the index) is unaffected because it is about git gc itself.\n\nBalance: as written, the section has 6 true (01, 02, 07, 09, 10, 12) and 6 false (03, 04, 05, 06, 08, 11). Both fixes keep their card's answer, so the 6/6 balance holds.\n\nDuplicates: none found. I checked against r2-03 (detached commits), r2-09 (@{-1}), r4-10 (branch -m moves the reflog), r9-06 and r9-07 (stash reflog and fsck recovery), and r12-11 (tag checkout).\n\nMinor wording, not flagged: card 07's \\\"whole-branch reset\\\" is an unusual way to say a reset without a pathspec but is accurate. Card 09's \\\"can retain\\\" puts a hedge verb on a true statement."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr9-11",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://git-scm.com/docs/git-worktree (last updated in 2.56.0)",
+     "evidence": "The fact is right. git-worktree says: \"Only clean worktrees (no untracked files and no modification in tracked files) can be removed. Unclean worktrees or ones with submodules can be removed with --force.\" The problem is the wording. The card uses the same false template as sr9-10 (\"Plain git worktree add can check out a branch...\") and sr4-05 (\"Plain git switch discards local edits...\"): a plain command is said to do the unsafe thing that it actually refuses without --force. That is three false statements on one template, and the prompt allows at most two. Across the deck, a statement that opens with \"Plain\" is false 6 times (sr3-03, sr4-05, sr6-06, sr7-07, sr9-10, sr9-11) and true only twice (sr3-02, sr12-11), so the word already tells the player the answer. The section topic \"git worktree add <path> creating a branch named after the last path component\" has no card yet. git-worktree covers it: \"In its simplest form, git worktree add <path> automatically creates a new branch whose name is the final component of <path> ... git worktree add -d <path> creates a new worktree with a detached HEAD\".",
+     "problem": "This is the third false statement on the \"a plain command does what it actually refuses\" template, and it adds to the deck-wide pattern where \"Plain\" marks a false statement. The fact itself is correct, and sr9-10 already tests the same refuse-unless-forced safeguard idea. Meanwhile the section topic about the branch name taken from the last path component is not covered.",
+     "suggestedFix": "Replace the card and keep it false. Statement (93 chars): \"Given only a path such as ../hotfix, git worktree add gives the new worktree a detached HEAD.\" Explanation (175 chars): \"With no branch argument, git worktree add creates a branch named after the last path component (hotfix) from HEAD and checks it out; only -d or --detach gives a detached HEAD.\" Source: https://git-scm.com/docs/git-worktree (DESCRIPTION and the add command). The new false average length is 83.5 against 79.0 for the true cards, which is within 5."
+    },
+    {
+     "id": "git-fundamentals-sr9-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://git-scm.com/docs/git-stash (last updated in 2.56.0)",
+     "evidence": "git-stash DESCRIPTION: \"The latest stash you created is stored in refs/stash; older stashes are found in the reflog of this reference and can be named using the usual reflog syntax (e.g. stash@{0} is the most recently created stash, stash@{1} is the one before it...)\". The card says: \"Git stores the latest stash entry in refs/stash and earlier entries in that ref's reflog.\" The DISCUSSION section supports the explanation: \"A stash entry is represented as a commit\".",
+     "problem": "The fact is correct, but the statement copies the source sentence's structure and only swaps synonyms (\"older stashes\" becomes \"earlier entries\", \"reflog of this reference\" becomes \"that ref's reflog\"). That breaks the rule against reproducing an official sentence with a word or two changed.",
+     "suggestedFix": "Reword it and keep it true. Statement (102 chars): \"stash@{1} is resolved through the reflog of refs/stash, the ref that points to the newest stash entry.\" Explanation (155 chars): \"Each stash entry is a commit object. refs/stash points at the newest one, and older entries stay addressable as stash@{n} through the reflog of refs/stash.\" Keep the URL https://git-scm.com/docs/git-stash."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (6 true, 6 false) against https://git-scm.com/docs/git-stash, https://git-scm.com/docs/git-worktree (both last updated in 2.56.0) and https://git-scm.com/book/en/v2/Git-Tools-Stashing-and-Cleaning. All three loaded with HTTP 200. Every answer is correct; I flagged two cards for wording only.\n\nQuotes that settle the cards that pass:\n- 01 and 02, Pro Git 7.3: \"By default, git stash will stash only modified and staged tracked files ... including untracked files in the stash will still not include explicitly ignored files; to additionally include ignored files, use --all\".\n- 03, git-stash: \"All changes already added to the index are left intact.\"\n- 04, git-stash: \"Applying the state can fail with conflicts; in this case, it is not removed from the stash list.\"\n- 05, git-stash: \"starting from the commit at which the <stash> was originally created\".\n- 07, git-stash EXAMPLES: \"a list of stash entries that are still in your repository, but not reachable any more: git fsck --unreachable | ...\".\n- 08 and 09, git-worktree: \"sharing everything except per-worktree files such as HEAD, index, etc.\"\n- 10, git-worktree: \"By default, add refuses to create a new worktree when <commit-ish> is a branch name and is already checked out by another worktree ... This option overrides these safeguards.\"\n- 12, git-worktree: \"lock it to prevent its administrative files from being pruned automatically\".\n\nCards I passed with minor reservations:\n- 08 is easy and sits close to the page's own description (\"working trees attached to the same repository\"). The page also never says \"object database\" in so many words, though \"sharing everything except per-worktree files\" covers it.\n- 11's remove check ignores files that .gitignore excludes, but the card says \"untracked\", so it holds.\n- 07 sits close to sr8-12, which assumes git fsck finds dangling commits. The prompt places both in their sections deliberately.\n\nCoverage gaps: the section has no card on git stash push --staged, on git worktree prune by itself, or (before my suggested fix) on the branch named after the last path component.\n\nDeck-wide tell for the orchestrator: a statement that opens with \"Plain\" is false 6 times and true twice. The false template \"a plain command does the unsafe thing it actually refuses\" appears 3 times (sr4-05, sr9-10, sr9-11), above the limit of two. My fix for sr9-11 resolves this within r9. The other sections' reviewers may want to rebalance \"Plain\" too."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr10-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads (Pro Git 2nd ed. 7.10 Debugging with Git, git-scm.com); official and current",
+     "evidence": "https://git-scm.com/book/en/v2/Git-Tools-Debugging-with-Git: \"The bisect command does a binary search through your commit history to help you identify as quickly as possible which commit introduced an issue.\" https://git-scm.com/docs/git-bisect (last updated in 2.56.0): \"git bisect picks a commit between those two endpoints and asks you whether the selected commit is \\\"good\\\" or \\\"bad\\\".\" The card is correct, but the statement restates what the command name and its one-line description already say (bisect = cut in two, between good and bad). No learner who has heard of bisect would answer False, so it works as a definition card or near-truism. Meanwhile the section's scope item \"refs/bisect/bad left at the first bad commit\" is not tested by any r10 card. git-bisect: \"The reference refs/bisect/bad will be left pointing at that commit.\"",
+     "problem": "Definition card: the answer can be read from the name \"bisect\" and the command's own summary line, so it teaches nothing beyond the term. One scope item of the section (refs/bisect/bad left at the first bad commit) has no card.",
+     "suggestedFix": "Replace with a TRUE card (keeps the 6/6 balance). Statement: \"When a git bisect session ends, Git leaves refs/bisect/bad pointing at the first bad commit it identified.\" Explanation: \"After the last step, bisect prints the first bad commit and keeps refs/bisect/bad on it, so you can still name it as bisect/bad, for example in git show, after the search.\" Source: https://git-scm.com/docs/git-bisect (factKey bisect-leaves-refs-bisect-bad, difficulty 2)."
+    }
+   ],
+   "notes": "I opened all 4 source URLs and each returned 200: git-scm.com/docs/git-cherry-pick (last updated in 2.56.0), git-scm.com/docs/git-bisect (last updated in 2.56.0), Pro Git 5.3 Maintaining a Project and Pro Git 7.10 Debugging with Git. The section has 6 true and 6 false cards. 11 of 12 cards pass. Key evidence for the cards that pass:\n- 01: Pro Git 5.3 says cherry-pick \"takes the patch that was introduced in a commit and tries to reapply it on the branch you're currently on\". git-cherry-pick says \"apply the change each one introduces, recording a new commit for each\". Only the non-default --ff yields the source snapshot.\n- 02: -n \"applies the changes necessary to cherry-pick each named commit to your working tree and the index, without making any commit\".\n- 03: -m \"specifies the parent number ... of the mainline and allows cherry-pick to replay the change relative to the specified parent\". This does not duplicate r7-12 (revert -m and later merges).\n- 04: the -x paragraph says \"cherry-picking between two publicly visible branches ... adding this information can be useful\". The line is added \"only for cherry picks without conflicts\", which matches the explanation.\n- 05: \"--skip Skip the current commit and continue with the rest of the sequence.\" versus \"--abort Cancel the operation and return to the pre-sequence state.\"\n- 06: for --empty, \"stop: The cherry-pick will stop when the commit is applied ... This is the default behavior.\" Also \"Commits which are made empty due to a previous commit will cause the cherry-pick to fail.\" The hedge \"may drop\" reads slightly oddly, but no default drops such a commit. The card is distinct from r6-02 (rebase drops upstream cherry-picks).\n- 08: \"the terms \\\"old\\\" and \\\"new\\\" can be used in place of \\\"good\\\" and \\\"bad\\\", or you can choose your own terms.\"\n- 09: \"if you skip a commit adjacent to the one you are looking for, Git will be unable to tell exactly which of those commits was the first bad one.\"\n- 10: exit 0 is good, \"1 and 127 (inclusive), except 125\" is bad, 125 skips the revision, and \"Any other exit code will abort the bisect process\".\n- 11: Pro Git 7.10 says \"reset your HEAD to where you were before you started\". The reference page wording is stronger and could become the source: \"By default, this will return your tree to the commit that was checked out before git bisect start.\" This is optional, not a flag.\n- 12: --first-parent says \"the merge commit will be identified as introduction of the bug and its ancestors will be ignored\".\n\nCoverage gaps, which are not defects of the existing cards: no r10 card tests cherry-pick ranges such as A..B, --continue, the new commit ID, or refs/bisect/bad. The fix suggested for 07 covers refs/bisect/bad. No retired features, version-dependent defaults or experimental options (--reset-when-found) are used in this section."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr11-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://git-scm.com/docs/git-fetch (last updated in 2.56.0)",
+     "evidence": "git-fetch DESCRIPTION: \"The names of refs that are fetched, together with the object names they point at, are written to .git/FETCH_HEAD.\" (https://git-scm.com/docs/git-fetch). The answer is right, but the card has two problems. The statement repeats this source sentence with a few words swapped (\"ref names and their object IDs\"), which the original-wording rule forbids. And the answer can be read from the name: a player who sees \"git fetch ... in FETCH_HEAD\" guesses True without knowing Git.",
+     "problem": "The statement is a near-copy of the git-fetch sentence, and the name FETCH_HEAD gives the answer away. A True guess needs no knowledge.",
+     "suggestedFix": "Keep it True and test what FETCH_HEAD is for. Statement (106 chars): \"After git fetch <url> maint with no remote configured, git log FETCH_HEAD shows the fetched maint history.\" Explanation: \"git fetch writes what it fetched to FETCH_HEAD, so you can inspect a branch from a URL you never added as a remote. Those fetched objects are later removed by Git's housekeeping.\" Source: https://git-scm.com/docs/git-fetch (EXAMPLES, \"Peek at a remote's branch\")."
+    },
+    {
+     "id": "git-fundamentals-sr11-08",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://git-scm.com/docs/git-pull (last updated in 2.56.0)",
+     "evidence": "git-pull: \"git pull --rebase runs git rebase\" and \"true: rebase the current branch on top of the upstream branch after fetching. If there is a remote-tracking branch corresponding to the upstream branch and the upstream branch was rebased since last fetched, the rebase uses that information to avoid rebasing non-local changes.\" (https://git-scm.com/docs/git-pull). The statement says that --rebase \"performs its integration by rebasing\", so the answer is in the option name.",
+     "problem": "This is a name giveaway close to a truism. Saying that --rebase rebases teaches nothing, and nobody who studied would answer False.",
+     "suggestedFix": "Keep it True and test the non-obvious behaviour of pull --rebase. Statement (115 chars): \"If upstream was rebased since your last fetch, git pull --rebase skips the old upstream commits instead of replaying them.\" Explanation: \"git pull --rebase uses the remote-tracking branch's earlier position to tell which commits are yours, so commits from the rewritten upstream are not rebased as local work. pull.rebase=true makes this the default.\" Source: https://git-scm.com/docs/git-pull. Avoid pull.rebase=merges as the replacement, because r6-05 already tests --rebase-merges."
+    },
+    {
+     "id": "git-fundamentals-sr11-11",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://git-scm.com/docs/git-push (last updated in 2.56.0)",
+     "evidence": "git-push: \"--force-with-lease=<refname>:<expect> will protect <refname> (alone), if it is going to be updated, by requiring its current value to be the same as the specified value <expect>\". Also: \"supplying this option without an expected value ... interacts very badly with anything that implicitly runs git fetch on the remote to be pushed to in the background ... this is trivially defeated if some background process is updating refs in the background.\" (https://git-scm.com/docs/git-push)",
+     "problem": "This is a strawman. The statement denies the whole definition of a lease, so no learner who knows what --force-with-lease is for would answer True. The wording \"can directly overwrite\" is also odd. The section asks for the background fetch caveat, which no card in r11 tests.",
+     "suggestedFix": "Keep it False and test the background fetch caveat. Statement (114 chars): \"Plain git push --force-with-lease still protects others' commits when a cron job runs git fetch in the background.\" Explanation: \"Without an expected value the lease is checked against your remote-tracking ref. A background fetch moves that ref, so git-push says the protection is trivially defeated. Pair it with --force-if-includes.\" Source: https://git-scm.com/docs/git-push."
+    },
+    {
+     "id": "git-fundamentals-sr11-12",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://git-scm.com/book/en/v2/Git-Branching-Remote-Branches",
+     "evidence": "Pro Git 3.5: \"You can delete a remote branch using the --delete option to git push.\" and \"Basically all this does is to remove the pointer from the server.\" git-push: \"--delete All listed refs are deleted from the remote repository. This is the same as prefixing all refs with a colon.\" and \"If <src> is empty, it deletes the <dst> ref from the remote repository. For example, git push origin :dev will delete the dev branch.\" (https://git-scm.com/docs/git-push). The explanation of r12-10 already says \"Use git push --delete with an explicit remote tag ref to delete its remote counterpart\".",
+     "problem": "This is a name giveaway: --delete deletes. The explanation of r12-10 also gives the same answer away.",
+     "suggestedFix": "Keep it True and test the equivalent refspec form, which is not a giveaway. Statement (94 chars): \"Pushing an empty source, as in git push origin :topic, deletes the branch topic on the remote.\" Explanation: \"A refspec with an empty <src> deletes the <dst> ref on the remote, the same as git push --delete. Your local branch topic stays in place.\" Source: https://git-scm.com/docs/git-push (<refspec> and --delete)."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards: 6 True and 6 False. Every source URL returned 200 on git-scm.com and is current. git-fetch, git-pull and git-push say \"last updated in 2.56.0\". I read git-fetch, git-pull, git-push, git-branch, git-config and Pro Git 3.5 in full text.\n\nPassed: 01, 02, 03, 05, 06, 07, 09 and 10.\n- 01 (last known position): Pro Git says remote-tracking branches are \"bookmarks ... where the branches in your remote repositories were the last time you connected to them\".\n- 02 (origin is only a name): Pro Git's note \"'origin' is not special\", with git clone -o booyah as the example. It is borderline easy, but the book addresses this exact misconception.\n- 03 (fetch leaves the local branch alone): git-fetch maps fetch = +refs/heads/*:refs/remotes/origin/*, and \"By default git fetch refuses to update the head which corresponds to the current branch\".\n- 05 (prune): git-fetch says --prune \"Before fetching, remove any remote-tracking references that no longer exist on the remote\" and fetch.prune \"will automatically behave as if the --prune option was given\".\n- 06 (branch -u): git-branch says -u \"Set up <branch-name>'s tracking information\".\n- 07 (pull default): git-pull says --ff-only \"fails if your local branch has diverged from the remote branch. This is the default\", and the statement pins Git 2.56.\n- 09 (simple): git-config push.default says \"When pushing back to the same remote you pull from, the current branch must also have an upstream tracking branch with the same name\".\n- 10 (fast-forward): git-push PUSH RULES says \"only fast-forward updates are allowed, which means the destination must be an ancestor of the source commit\".\n\nCoverage gaps the replacements partly fill: no r11 card tests the + refspec prefix (\"The + is optional and does the same thing as --force\", while --force applies to every pushed ref), --force-if-includes, or the background fetch caveat. The replacement for 11 covers the background caveat. If the authors would rather keep 12 as it is, the + prefix is a good True card in its place.\n\nThe replacement statements stay close in length to the originals, so the True and False length balance holds. Each replacement keeps its card's answer, so the section stays at 6 True and 6 False."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "git-fundamentals-sr12-12",
+     "verdict": "explanation_error",
+     "urlStatus": "https://git-scm.com/docs/git-merge loads (200, official, 2.56 docs current) and supports the statement, but the page contradicts itself on annotated tags, and the explanation copies the stale half",
+     "evidence": "git-merge, MERGING TAG: \"When merging an annotated (and possibly signed) tag, Git always creates a merge commit even if a fast-forward merge is possible ... you can \"unwrap\" the tag yourself ... git merge v1.2.3^0\". The same page, under --ff: \"--ff is the default unless merging an annotated (and possibly signed) tag that is not stored in its natural place in the refs/tags/ hierarchy, in which case --no-ff is assumed.\" Git 2.17.0 release notes (github.com/git/git Documentation/RelNotes/2.17.0): \"Update \"git merge\" to default to --no-ff only when merging a tag object that does *not* sit at its usual place in refs/tags/ hierarchy, and allow fast-forwarding otherwise.\" Current builtin/merge.c merging_a_throwaway_tag(): \"We want to allow such a 'just to catch up' merge to fast-forward\" (forced FF_NO only when the tag is not at refs/tags/<name>).",
+     "problem": "The statement is true: v1.2^0 is a plain commit, so git merge --ff can fast-forward. The explanation says ^0 is what makes the fast-forward possible (\"permitting a fast-forward\"). That suggests plain git merge v1.2 could not fast-forward. Since Git 2.17, an annotated tag stored in refs/tags fast-forwards by default. Only a throwaway tag (for example one pulled by URL and not stored under refs/tags) forces --no-ff. The MERGING TAG paragraph of git-merge is stale and disagrees with the --ff paragraph on the same page. The scope item 'merging an annotated tag creating a merge commit' rests on that stale paragraph.",
+     "suggestedFix": "Keep the statement (answer true) and replace the explanation: \"v1.2^0 peels the tag to the commit it points to, so git merge sees a plain commit and fast-forwards when the current tip is its ancestor. git-merge suggests ^0 to catch up to a tagged release.\" (196 chars). No card in the deck should claim that merging an annotated tag always creates a merge commit."
+    },
+    {
+     "id": "git-fundamentals-sr12-03",
+     "verdict": "weak_card",
+     "urlStatus": "https://git-scm.com/docs/git-tag loads (200, official, current) and supports the card",
+     "evidence": "git-tag: \"-s --sign Make a cryptographically signed tag, using the default signing key.\" and \"Tag objects (created with -a, -s, or -u) are called \"annotated\" tags\".",
+     "problem": "The answer can be read from the option itself (-s / --sign means sign). Nobody who studied would answer False, so the card is close to a name giveaway and a definition. The useful fact about -s is that a signed tag is a tag object, so it is an annotated tag. That fact is not tested elsewhere in the section.",
+     "suggestedFix": "Replace (answer true): \"git tag -s writes a tag object, so a signed tag also counts as an annotated tag.\" (79 chars). Explanation: \"git-tag calls the tag objects made with -a, -s or -u annotated tags. -s also adds a cryptographic signature through the backend that gpg.format selects.\" (155 chars). Source: https://git-scm.com/docs/git-tag"
+    }
+   ],
+   "notes": "I checked all 12 r12 cards. Six are true (02, 03, 05, 08, 11, 12) and six are false (01, 04, 06, 07, 09, 10). True and false statements both average 84.8 characters. Every source URL returned 200 on git-scm.com, and the version list there shows 2.56.0 as the latest. Quotes that settle the 10 cards that pass:\n- 01: Pro Git 2.6: annotated tags \"contain the tagger name, email, and date; have a tagging message\". git-tag says tag objects \"contain a creation date, the tagger name and e-mail\". git-tag's \"On Backdating Tags\" section shows the date comes from GIT_COMMITTER_DATE, not from the commit.\n- 02: git-tag: \"If -m <msg> or -F <file> ... is given and -a, -s, and -u <key-id> are absent, -a is implied.\"\n- 04: git-describe: \"By default (without --all or --tags) git describe only shows annotated tags.\"\n- 05: git-tag: \"a tag reference that points directly at the given object (i.e., a lightweight tag)\" and \"simply a name for an object (usually a commit object)\". The synopsis takes <commit> | <object>. Pro Git calls a lightweight tag \"a pointer to a specific commit\"; the reference page wins.\n- 06: Pro Git 2.6: \"By default, the git push command doesn't transfer tags to remote servers.\" push.followTags is off by default.\n- 07: git-push --follow-tags: \"also push annotated tags in refs/tags that are missing from the remote but are pointing at commit-ish that are reachable from the refs being pushed\". --tags: \"All refs under refs/tags are pushed\".\n- 08: git-fetch: \"By default, any tag that points into the histories being fetched is also fetched\".\n- 09: git-tag \"On Re-tagging\": \"The sane thing. Just admit you screwed up, and use a different name\" versus \"The insane thing ... just use git tag -f again\".\n- 10: Pro Git 2.6: \"Note that this does not remove the tag from any remote servers\" and \"git push origin --delete <tagname>\".\n- 11: git-checkout: \"Otherwise, if it refers to a valid commit, your HEAD becomes \\\"detached\\\"\". The DETACHED HEAD example uses \"git checkout v2.0\". The word \"unambiguous\" covers the case where a branch has the same name.\n\nWider issue for the deck owner: the prompt's r12 scope item \"merging an annotated tag creating a merge commit\" rests on a stale paragraph of git-merge (MERGING TAG). Since Git 2.17, git merge forces --no-ff only for a tag object that is not stored at refs/tags/<name>. A tag in its natural place fast-forwards by default, as the --ff paragraph of the same page says (2.17.0 release notes; builtin/merge.c merging_a_throwaway_tag). Card 12 avoided a false claim, but its explanation still implies ^0 is needed. Any future card on this fact should be dropped or limited to the ^0 or --ff-only unwrap.\n\nMinor points that did not need a flag:\n- Card 07 uses \"automatically\" in a false statement, and card 10 uses \"can\" in a false statement. These count toward the deck-wide wording-tell balance.\n- Card 10's explanation says \"explicit remote tag ref\", but Pro Git's plain form is git push origin --delete <tagname>.\n\nI did not run git. I checked current behaviour from the git-scm pages, the git/git release notes and builtin/merge.c on master."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "git-fundamentals-sr3-07",
+     "git-fundamentals-sr3-10"
+    ],
+    "why": "Both cards test the same .gitignore rule from its two sides: a slash at the beginning or middle anchors the pattern to the .gitignore's directory, while a slash only at the end leaves it matching at any depth. The prompt says the two sides of one distinction are one fact. sr3-07 (F, doc/output.log does not match nested/doc/output.log) targets the real misconception that only a leading slash anchors. sr3-10 (T, build/ also matches src/build) is the easier side, and its explanation adds nothing sr3-07 does not teach.",
+    "dropId": "git-fundamentals-sr3-10"
+   },
+   {
+    "ids": [
+     "git-fundamentals-sr2-01",
+     "git-fundamentals-sr2-03"
+    ],
+    "why": "Both cards answer the question of which ref a new commit advances, one per side of the attached/detached split: with attached HEAD the branch advances (sr2-01, T), with detached HEAD only HEAD moves and the previous branch stays put (sr2-03, F). The word 'attached' in sr2-01 already signals that detached behaves differently. sr2-01 is close to a truism for a daily Git user, while sr2-03 tests the real misconception.",
+    "dropId": "git-fundamentals-sr2-01"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "content-addressed-objects",
+    "ids": [
+     "git-fundamentals-sr1-07",
+     "git-fundamentals-sr1-08",
+     "git-fundamentals-sr1-09"
+    ],
+    "why": "sr1-07 (T) explains that an ID is the hash of type plus content. That implies identical content reuses the same blob ID (sr1-09, F) and that changed content needs a new object instead of an in-place edit (sr1-08, F)."
+   },
+   {
+    "name": "tag-object-type",
+    "ids": [
+     "git-fundamentals-sr1-06",
+     "git-fundamentals-sr12-01",
+     "git-fundamentals-sr12-03"
+    ],
+    "why": "The statement of sr12-03 ('signature on the new tag object') and the explanation of sr12-01 ('An annotated tag object records...') both state that tag is an object type, which is the whole of sr1-06 (T)."
+   },
+   {
+    "name": "attached-vs-detached-commit",
+    "ids": [
+     "git-fundamentals-sr2-01",
+     "git-fundamentals-sr2-02",
+     "git-fundamentals-sr2-03"
+    ],
+    "why": "sr2-01 and sr2-02 both qualify with 'attached'. Together with sr2-02's symbolic-ref explanation, that hints that a detached commit does not advance the old branch (sr2-03, F). This is the mirrored pair also listed under duplicates."
+   },
+   {
+    "name": "detached-commits-off-branch",
+    "ids": [
+     "git-fundamentals-sr2-03",
+     "git-fundamentals-sr8-08"
+    ],
+    "why": "The statement of sr8-08 says a branch switch 'leaves [detached commits] outside branch history', which gives away that detached commits never advanced the previous branch (sr2-03, F)."
+   },
+   {
+    "name": "detached-head-entry",
+    "ids": [
+     "git-fundamentals-sr4-04",
+     "git-fundamentals-sr12-11"
+    ],
+    "why": "sr4-04 says selecting a specific commit for inspection gives detached HEAD. sr12-11's explanation uses the same framing ('selects the tagged commit for inspection rather than attaching HEAD'). Either card hints the other's True answer."
+   },
+   {
+    "name": "fetch-head-pseudoref",
+    "ids": [
+     "git-fundamentals-sr2-05",
+     "git-fundamentals-sr11-04"
+    ],
+    "why": "sr2-05's explanation names FETCH_HEAD as a pseudoref that holds several object IDs, which is the substance of sr11-04 (fetch records ref names and object IDs in FETCH_HEAD). sr11-04's explanation in turn hints sr2-05. Both rest on the same gitglossary FETCH_HEAD entry."
+   },
+   {
+    "name": "refs-namespaces",
+    "ids": [
+     "git-fundamentals-sr2-04",
+     "git-fundamentals-sr11-01",
+     "git-fundamentals-sr11-03"
+    ],
+    "why": "sr11-03's explanation says fetch updates refs/remotes/origin/*. sr11-01 calls these remote-tracking bookmarks. Both reveal that refs/remotes is not where local branches live (sr2-04, F)."
+   },
+   {
+    "name": "differently-named-upstream",
+    "ids": [
+     "git-fundamentals-sr2-08",
+     "git-fundamentals-sr11-09"
+    ],
+    "why": "Both cards turn on a local branch whose upstream has a different name. sr2-08's explanation ('regardless of the local branch name') and sr11-09's ('simple requires ... to share a name') hint or mislead each other when dealt together."
+   },
+   {
+    "name": "checkout-history",
+    "ids": [
+     "git-fundamentals-sr2-09",
+     "git-fundamentals-sr8-02"
+    ],
+    "why": "sr2-09's explanation says '@{-1} follows checkout history', which strongly hints that Git's HEAD reflog records branch switches (sr8-02, T)."
+   },
+   {
+    "name": "gitignore-slash-anchoring",
+    "ids": [
+     "git-fundamentals-sr3-07",
+     "git-fundamentals-sr3-10"
+    ],
+    "why": "A mirrored pair: a middle slash anchors (sr3-07, F) and a trailing slash alone does not (sr3-10, T). Each explanation answers the other card."
+   },
+   {
+    "name": "untracking-tracked-files",
+    "ids": [
+     "git-fundamentals-sr3-05",
+     "git-fundamentals-sr3-06"
+    ],
+    "why": "sr3-05 (git rm --cached removes the index entry) is the well-known step needed after adding a tracked file to .gitignore, so it hints that .gitignore alone does not untrack the file (sr3-06, F)."
+   },
+   {
+    "name": "switch-local-edits",
+    "ids": [
+     "git-fundamentals-sr4-05",
+     "git-fundamentals-sr4-06"
+    ],
+    "why": "sr4-06's explanation ('--merge carries local edits across the switch') implies a plain switch does not. sr4-05's explanation ('refuses an ordinary switch that would lose local changes') frames --merge as the opt-in. Each hints the other."
+   },
+   {
+    "name": "ff-only-divergence",
+    "ids": [
+     "git-fundamentals-sr5-03",
+     "git-fundamentals-sr11-07"
+    ],
+    "why": "sr11-07's explanation ('uses --ff-only for pull, refusing divergent history') states the answer to sr5-03 (merge --ff-only never creates a merge commit on divergence)."
+   },
+   {
+    "name": "ort-recursive",
+    "ids": [
+     "git-fundamentals-sr5-05",
+     "git-fundamentals-sr5-06"
+    ],
+    "why": "sr5-06's explanation (recursive is another name for ort) combined with the well-known fact that recursive was the default gives away sr5-05 (ort is the default). sr5-05 in turn makes sr5-06's false premise easy to spot."
+   },
+   {
+    "name": "redundant-commit-handling",
+    "ids": [
+     "git-fundamentals-sr6-02",
+     "git-fundamentals-sr10-06"
+    ],
+    "why": "A mirrored pair of false cards. sr6-02 gives rebase cherry-pick's behaviour (keep already-applied commits) and sr10-06 gives cherry-pick rebase's behaviour (drop them). The explanations swap the answers."
+   },
+   {
+    "name": "occupied-worktree-branch",
+    "ids": [
+     "git-fundamentals-sr6-08",
+     "git-fundamentals-sr9-10"
+    ],
+    "why": "Both cards test that a branch checked out in another worktree is protected. sr9-10's explanation ('refuses an occupied branch') strongly hints sr6-08 (F), and the reverse also holds."
+   },
+   {
+    "name": "abort-restores-start",
+    "ids": [
+     "git-fundamentals-sr6-09",
+     "git-fundamentals-sr10-05"
+    ],
+    "why": "sr10-05's explanation ('--abort restores the pre-sequence state') hints by analogy that rebase --abort restores the starting state (sr6-09, T)."
+   },
+   {
+    "name": "reset-modes-index",
+    "ids": [
+     "git-fundamentals-sr7-01",
+     "git-fundamentals-sr7-02"
+    ],
+    "why": "sr7-02's explanation ('A mixed reset makes the index match the selected commit') shows that this is mixed's job and not soft's (sr7-01, F). sr7-01's explanation says soft leaves the index alone, which points to mixed. Effectively a mirrored soft/mixed pair."
+   },
+   {
+    "name": "path-ops-keep-branch-tip",
+    "ids": [
+     "git-fundamentals-sr7-04",
+     "git-fundamentals-sr7-08"
+    ],
+    "why": "Both test that file-level commands leave the branch tip alone: pathspec reset (T) and restore --source rewinding the branch (F). The explanations answer each other."
+   },
+   {
+    "name": "restore-sources",
+    "ids": [
+     "git-fundamentals-sr7-07",
+     "git-fundamentals-sr7-09"
+    ],
+    "why": "sr7-07's explanation lays out what --staged does and what the worktree default is. That makes sr7-09 (--staged --worktree replaces both) a direct inference."
+   },
+   {
+    "name": "reflog-records-ref-moves",
+    "ids": [
+     "git-fundamentals-sr8-01",
+     "git-fundamentals-sr8-03",
+     "git-fundamentals-sr8-04"
+    ],
+    "why": "sr8-01's explanation ('A reflog records reference updates, so previous branch positions remain available') answers sr8-03 (HEAD@{1} is the previous recorded value, not the first parent) and sr8-04 (the reflog cannot recover edits Git never recorded)."
+   },
+   {
+    "name": "fsck-unreachable-recovery",
+    "ids": [
+     "git-fundamentals-sr8-12",
+     "git-fundamentals-sr9-07"
+    ],
+    "why": "sr8-12's statement ('a dangling commit found by git fsck ... recovered') gives away sr9-07 (git fsck can locate a dropped stash commit), and the reverse also holds."
+   },
+   {
+    "name": "stash-as-commits",
+    "ids": [
+     "git-fundamentals-sr9-06",
+     "git-fundamentals-sr9-07"
+    ],
+    "why": "sr9-07's statement ('dropped stash entry whose commit objects remain') reveals that stash entries are commits. sr9-06's explanation (commits kept addressable by refs/stash and its reflog) hints that a dropped entry survives as an unreachable commit."
+   },
+   {
+    "name": "worktree-shared-vs-private",
+    "ids": [
+     "git-fundamentals-sr9-08",
+     "git-fundamentals-sr9-09"
+    ],
+    "why": "Two sides of the shared-versus-per-worktree split: the object database is shared (T) and the index is private (F statement). Dealt together, the contrast gives both away."
+   },
+   {
+    "name": "cherry-pick-applies-diff",
+    "ids": [
+     "git-fundamentals-sr10-01",
+     "git-fundamentals-sr10-03",
+     "git-fundamentals-sr10-06"
+    ],
+    "why": "sr10-03 ('replays the merge's difference from the selected parent') and sr10-06's statement ('becomes empty because its changes already exist') both say cherry-pick applies a change, not a snapshot (sr10-01, F)."
+   },
+   {
+    "name": "remote-deletion",
+    "ids": [
+     "git-fundamentals-sr11-12",
+     "git-fundamentals-sr12-10"
+    ],
+    "why": "sr12-10's explanation ('Use git push --delete ... to delete its remote counterpart') gives away sr11-12 (T)."
+   },
+   {
+    "name": "tag-transfer-defaults",
+    "ids": [
+     "git-fundamentals-sr12-06",
+     "git-fundamentals-sr12-07",
+     "git-fundamentals-sr12-08"
+    ],
+    "why": "sr12-07's explanation (--follow-tags and --tags add tags) implies a plain push sends none (sr12-06, F). sr12-06 and sr12-08 form a push-versus-fetch contrast pair (push does not send tags, fetch follows them) that hints each other."
+   },
+   {
+    "name": "annotated-only-defaults",
+    "ids": [
+     "git-fundamentals-sr12-04",
+     "git-fundamentals-sr12-07"
+    ],
+    "why": "Both are false through the same template, 'X picks lightweight tags'. sr12-04's explanation ('--tags extends to lightweight') and sr12-07's ('--follow-tags adds annotated tags') answer each other."
+   },
+   {
+    "name": "annotated-tag-message",
+    "ids": [
+     "git-fundamentals-sr12-01",
+     "git-fundamentals-sr12-02"
+    ],
+    "why": "sr12-01's explanation says the annotated tag object records the message. That hints that supplying a message with -m makes the tag annotated (sr12-02, T)."
+   },
+   {
+    "name": "git3-defaults-pending",
+    "ids": [
+     "git-fundamentals-sr1-10",
+     "git-fundamentals-sr4-12"
+    ],
+    "why": "Both are 'In Git 2.56, git init default ...' cards about the Git 3.0 changes. sr4-12's misconception ('the announced Git 3.0 default already applies') and its explanation tell the player that Git 3.0 defaults are not active yet, which answers sr1-10 (sha1 is still the default)."
+   },
+   {
+    "name": "fast-forward-ancestry",
+    "ids": [
+     "git-fundamentals-sr5-01",
+     "git-fundamentals-sr11-10",
+     "git-fundamentals-sr12-12"
+    ],
+    "why": "sr12-12's explanation ('fast-forward when the current tip is its ancestor') and sr5-01 define fast-forward. sr11-10's explanation says push requires a fast-forward. Together they give away sr11-10's ancestor rule and sr5-01."
+   }
+  ],
+  "tells": "IDs below drop the 'git-fundamentals-' prefix.\n\nLengths are fine: the gap between true and false statements is within 4 characters in every section (r1 T71.8/F68.5, r3 79.7/77.3, r4 92.3/88.2, r10 91.8/88.2; the others are within 3). Difficulty is 5/5/2 per section and every section is 6 true / 6 false. The batches differ: average statement length is b1 78, b2 94, b3 86, and average explanation length is b1 88, b2 107, b3 104.\n\nContent-template tells, which are the strongest:\n(1) 'Git is safe' heuristic. Statements that say a command discards data, deletes early or bypasses a safeguard are false 13 times: sr3-06, sr4-05, sr6-08, sr7-05, sr7-06, sr8-06, sr8-08, sr9-04, sr9-10, sr9-11, sr10-05, sr11-11 and sr5-03 (--ff-only creating a merge commit). They are true only 3 times: sr5-12, sr7-03, sr7-09. A player who always answers 'Git protects you' scores about 13 of 16.\n(2) Scope creep: 'a local command also leaks to the remote, or the reverse'. False 5 of 5: sr8-05 (push sends reflog), sr11-06 (branch -u pushes), sr12-06 (push sends tags), sr12-10 (tag -d deletes on remote), sr11-03 (fetch moves the current branch). No true card crosses that boundary unexpectedly; only sr12-08 comes close. This is more than the prompt's limit of two false cards per template.\n(3) Wider side-effect template, where a command 'also' changes another area: sr3-01, sr3-04, sr4-01, sr4-06, sr5-04 and sr7-08 add 6 more false cards. The true counterweights are sr8-10, sr10-02 and sr12-08.\n(4) Option confused with its sibling. False 7 times: sr5-07 (-X ours as the ours strategy), sr6-06 (fixup as squash), sr7-07 (worktree restore source as --staged's), sr9-02 (-u as -a), sr10-05 (--skip as --abort), sr12-07 (--follow-tags as --tags), sr5-06 (recursive versus ort). No true card uses this form.\n(5) 'Picks lightweight tags' is false twice in the same section (sr12-04, sr12-07). That is at the template limit, and both are in r12.\n(6) Name-giveaway or definitional true cards, where the option name states the answer: sr4-04 (--detach gives detached HEAD), sr9-03 (--keep-index), sr11-08 (pull --rebase rebases), sr11-12 (push --delete deletes), sr12-03 (tag -s signs), sr6-03 (--onto), sr10-07 (bisect narrows between good and bad), and the truism sr4-10 (a rename keeps commits). All 8 are true. sr8-04 (the reflog cannot recover edits Git never recorded) is close to a strawman in the other direction.\n(7) Statements that cite a source as advising or requiring something are true 3 of 4: sr6-12, sr7-11, sr10-04 are true, only sr12-09 is false.\n(8) 'In Git 2.56,' prefix: 2 true (sr1-10, sr5-05) and 4 false (sr4-12, sr5-06, sr6-04, sr11-07). That is mildly false-leaning and signals the 'old default' trap.\n\nWord tells:\n- 'Plain/plain' qualifier: 6 false (sr3-03, sr4-05, sr6-06, sr7-07, sr9-10, sr9-11) against 2 true (sr3-02, sr12-11).\n- Timing absolutes 'immediately' or 'as soon as': 3 false, 0 true (sr4-01, sr5-11, sr8-08).\n- 'even': 3 false (sr5-07, sr6-08, sr8-11) against 1 true (sr8-09).\n- 'both': 5 true (sr4-08, sr5-02, sr7-02, sr7-09, sr10-02) against 1 false (sr1-05).\n- Restrictive 'single, fixed or required name' false template: sr1-05, sr10-08 ('reserves ... fixed pair', an awkward and obviously constructed phrase), sr11-02.\n- Balanced and fine: 'can' 9 true / 9 false, 'requires|must' 2/2, 'automatic' 2/2, 'by default' 1/1 in b2 and 3/3 as a b3 opener, 'directly' 1/1, 'ordinary/standard/normal' 4/5.\n\nHow b3 (GPT-6.1 Sol) differs from b1 and b2:\n- b3 puts 'can' in 12 of 48 statements, against 6 in b2 and 0 in b1. The count is balanced 6/6, but the meaning is not. In true b3 cards 'can' expresses possibility: sr9-07, sr10-09, sr10-12, sr11-05, sr12-05, sr12-12. In false b3 cards it means permission to break a rule: sr9-10 (can check out an occupied branch), sr10-05 (can roll back), sr10-10 (can classify 125 as bad), sr11-11 ('can directly overwrite'), sr12-04 (can select lightweight), sr12-10 (can delete remote). That makes 'can + forbidden action = false' a six-card template.\n- b3 opens 6 statements with 'By default,', which b1 and b2 never do: sr9-01 T, sr10-06 F, sr11-04 T, sr12-04 F, sr12-06 F, sr12-08 T. Within r12 the split is 2 false to 1 true.\n- b3 leads with 'git <cmd>' in 24 of 48 statements, against 11 in b1 and 18 in b2. The split is 12/12, so this is a style difference, not a tell.\n- 'Plain git <cmd>' is used for 2 false and 1 true card in b3 alone, continuing the false-leaning use from b1 and b2.\n- b3 favours abstract, slightly stilted verbs in false statements that a careful reader can flag as constructed: 'reserves its classification labels for the fixed pair' (sr10-08), 'chooses the first bad commit as its default return destination' (sr10-11), 'sends the local branch's commits to the newly selected upstream' (sr11-06).\n- b3 explanations habitually end by naming the override (--force overrides or permits in sr9-10 and sr9-11, --tags in sr12-04 and sr12-07, 'use -a' in sr9-02, 'Use git push --delete' in sr12-10, fetch.prune in sr11-05, pull.rebase in sr11-08). This does not affect guessing, but it is what makes the r12 and r11 explanations give away neighbouring cards (see the conflict groups).\n- b3 relies on 'directly' as a filler word in a false statement (sr11-11).\n\nNot tells, but noted:\n- sr2-05 and sr11-04 both rest on the gitglossary FETCH_HEAD entry ('may refer to multiple object IDs').\n- sr12-12 tests the annotated-tag merge rule only indirectly, through ^0 unwrapping."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "git-fundamentals-sr1-04",
+    "reason": "weak_card: close to a strawman. sr1-08 (objects never change) already gives the answer away. r1 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "git-fundamentals-sr2-01",
+    "reason": "duplicate of sr2-03 (scan and verifier): it is the attached side of the same commit-advances-which-ref distinction, and close to a truism. sr2-03 is kept."
+   },
+   {
+    "id": "git-fundamentals-sr2-04",
+    "reason": "weak_card: a strawman that the word 'remotes' gives away, and it leans on the files ref layout. One rewrite is enough to keep r2 at 9 cards, and sr2-02 got it."
+   },
+   {
+    "id": "git-fundamentals-sr2-08",
+    "reason": "weak_card: the statement gives the answer away (it says topic tracks origin/main). r2 stays at 9 cards through the sr2-02 rewrite."
+   },
+   {
+    "id": "git-fundamentals-sr3-10",
+    "reason": "duplicate of sr3-07 (scan and verifier): the two sides of one separator-position rule, as a mirrored pair. r3 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "git-fundamentals-sr4-03",
+    "reason": "weak_card: a truism ('a branch switch updates files'), and the clean-tree qualifier points to True. r4 is held at 10 cards (4T/6F) through the sr4-10 rewrite."
+   },
+   {
+    "id": "git-fundamentals-sr4-04",
+    "reason": "weak_card: name giveaway (--detach gives detached HEAD). The suggested replacement uses 'lets' plus 'without', so it is no clean fix."
+   },
+   {
+    "id": "git-fundamentals-sr5-02",
+    "reason": "weak_card: definition card (the term three-way names the three inputs). r5 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "git-fundamentals-sr5-03",
+    "reason": "weak_card: name giveaway from --ff-only, and it reuses sr11-07's 'creates a merge commit' false template."
+   },
+   {
+    "id": "git-fundamentals-sr6-01",
+    "reason": "weak_card: definition card (the answer follows from 'rebase onto main'). r6 is held at 9 cards (4T/5F) through the sr6-05 rewrite."
+   },
+   {
+    "id": "git-fundamentals-sr6-09",
+    "reason": "weak_card: name giveaway (--abort returns to the starting state)."
+   },
+   {
+    "id": "git-fundamentals-sr6-11",
+    "reason": "weak_card: a strawman (nobody who has amended believes it adds a child commit)."
+   },
+   {
+    "id": "git-fundamentals-sr7-09",
+    "reason": "weak_card: the option names --staged --worktree give the answer away, and it is a near-copy of the git-restore sentence. r7 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "git-fundamentals-sr8-04",
+    "reason": "weak_card: answers itself ('recover edits discarded before Git recorded their contents'). r8 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "git-fundamentals-sr8-10",
+    "reason": "ambiguous, and no clean card is possible. git-maintenance (last updated in 2.56.0) says some commands run 'git maintenance run --auto', and geometric is now the default strategy. The git-gc paragraph the card rests on is therefore stale for 2.56. A mechanism-free rewrite would have to cite git-maintenance, which the prompt puts out of scope, and its gc.auto=0 claim could not be confirmed on any page. Dropping it leaves r8 at 5T/5F."
+   },
+   {
+    "id": "git-fundamentals-sr9-06",
+    "reason": "weak_card: the statement reproduces the git-stash DESCRIPTION sentence with synonyms swapped. r9 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "git-fundamentals-sr9-11",
+    "reason": "weak_card: the third false card on the 'plain command does the unsafe thing it refuses' template, and it adds to the false-leaning 'Plain' tell."
+   },
+   {
+    "id": "git-fundamentals-sr10-07",
+    "reason": "weak_card: definition card (bisect narrows between good and bad). r10 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "git-fundamentals-sr11-04",
+    "reason": "weak_card: a near-copy of the git-fetch sentence, and the name FETCH_HEAD gives the answer away. r11 is held at 9 cards (4T/5F) through the sr11-12 rewrite."
+   },
+   {
+    "id": "git-fundamentals-sr11-08",
+    "reason": "weak_card: name giveaway (pull --rebase rebases)."
+   },
+   {
+    "id": "git-fundamentals-sr11-11",
+    "reason": "weak_card: a strawman that denies the definition of a lease. The suggested replacement opens with 'Plain' in a false statement, the deck's strongest tell. Rewriting it as a false card would also push r11 to 3T/6F."
+   },
+   {
+    "id": "git-fundamentals-sr12-03",
+    "reason": "weak_card: name giveaway (-s/--sign signs). r12 keeps 11 cards (5T/6F)."
+   }
+  ],
+  "source": [
+   {
+    "id": "git-fundamentals-sr2-10",
+    "title": "Git Reference: gitrevisions",
+    "url": "https://git-scm.com/docs/gitrevisions"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "git-fundamentals-sr2-02",
+    "reason": "weak_card, rewritten instead of dropped: dropping 01, 02, 04 and 08 would leave r2 with 8 cards. The verifier's replacement tests HEAD as a symref, shortened so that r2 true and false lengths stay within 5 (T 77.0 / F 74.0). Checked on gitglossary (symref: 'of the format ref: refs/some/thing ... HEAD is a prime example of a symref'; detached HEAD: 'Normally the HEAD stores the name of a branch').",
+    "statement": "On a branch, HEAD holds refs/heads/<branch> rather than a commit ID.",
+    "answer": true,
+    "explanation": "gitglossary calls HEAD the prime example of a symref: it holds ref: refs/heads/<branch>, and Git dereferences it to that branch, which holds the commit ID.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: gitglossary",
+    "sourceUrl": "https://git-scm.com/docs/gitglossary"
+   },
+   {
+    "id": "git-fundamentals-sr2-05",
+    "reason": "ambiguous: the glossary defines pseudorefs by their write restriction, not by holding several IDs. The new card follows the verifier's fix, shortened for length balance. gitglossary (last updated in 2.56.0): 'These refs can be read via normal Git commands, but cannot be written to by commands like git-update-ref'; FETCH_HEAD and MERGE_HEAD are the listed pseudorefs. The card is attributed to gitglossary because the git-update-ref page still calls HEAD and ORIG_HEAD pseudorefs.",
+    "statement": "gitglossary describes pseudorefs as refs that git update-ref is unable to write.",
+    "answer": true,
+    "explanation": "gitglossary lists FETCH_HEAD and MERGE_HEAD as pseudorefs: refs whose semantics differ from normal refs, readable through ordinary Git commands but not writable with git update-ref.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: gitglossary",
+    "sourceUrl": "https://git-scm.com/docs/gitglossary"
+   },
+   {
+    "id": "git-fundamentals-sr4-10",
+    "reason": "weak_card, rewritten instead of dropped: dropping 03, 04 and 10 would leave r4 at 3T/6F. The verifier's replacement is used. git-branch (last updated in 2.56.0): '-m --move Move/rename a branch, together with its config and reflog' and 'If <old-branch> had a corresponding reflog, it is renamed to match <new-branch>, and a reflog entry is created to remember the branch renaming.'",
+    "statement": "git branch -m carries the branch's reflog and its branch.<name> settings over to the new name.",
+    "answer": true,
+    "explanation": "Renaming moves the branch's configuration, such as its upstream, and renames its reflog, adding an entry that records the rename. The commits themselves are untouched.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: git-branch",
+    "sourceUrl": "https://git-scm.com/docs/git-branch"
+   },
+   {
+    "id": "git-fundamentals-sr6-05",
+    "reason": "weak_card, rewritten instead of dropped: dropping 01, 05, 09 and 11 would leave r6 with 8 cards (3T/5F). The verifier's replacement is reworded so that it does not copy the source sentence. git-rebase (last updated in 2.54.0): 'By default, a rebase will simply drop merge commits from the todo list, and put the rebased commits into a single, linear branch. With --rebase-merges ... recreating the merge commits. Any resolved merge conflicts or manual amendments in these merge commits will have to be resolved/re-applied manually.' The page also names rebase.rebaseMerges.",
+    "statement": "By default, git rebase linearizes the replayed range, leaving its merge commits out of the new history.",
+    "answer": true,
+    "explanation": "Rebase drops merge commits from the todo list unless --rebase-merges or rebase.rebaseMerges asks it to recreate them; manual resolutions in those merges must then be redone.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: git-rebase",
+    "sourceUrl": "https://git-scm.com/docs/git-rebase"
+   },
+   {
+    "id": "git-fundamentals-sr11-12",
+    "reason": "weak_card, rewritten instead of dropped: dropping 04, 08, 11 and 12 would leave r11 with 8 cards (3T/5F). The verifier's replacement (empty-source refspec) is used, shortened for length balance. git-push: 'If <src> is empty, it deletes the <dst> ref from the remote repository. For example, git push origin :dev will delete the dev branch.' --delete: 'This is the same as prefixing all refs with a colon.'",
+    "statement": "git push origin :topic, with its empty source, deletes the branch topic on the remote.",
+    "answer": true,
+    "explanation": "A refspec with an empty <src> deletes the <dst> ref from the remote repository, the same as git push --delete origin topic.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: git-push",
+    "sourceUrl": "https://git-scm.com/docs/git-push"
+   },
+   {
+    "id": "git-fundamentals-sr12-12",
+    "reason": "explanation_error: the old explanation implied that only ^0 makes a fast-forward possible. git-merge's --ff paragraph says --no-ff is assumed only for an annotated tag outside refs/tags/. The new explanation relies only on what the page states consistently: the MERGING TAG section advises unwrapping with ^0, and gitrevisions says '<rev>^0 means the commit itself and is used when <rev> is the object name of a tag object that refers to a commit object'. The statement is unchanged.",
+    "statement": "git merge --ff v1.2^0 can fast-forward to the commit behind an annotated v1.2 tag.",
+    "answer": true,
+    "explanation": "v1.2^0 peels the annotated tag to the commit it points to, so git merge sees a plain commit and fast-forwards when the current tip is its ancestor. git-merge suggests ^0 to catch up to a tagged release.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: git-merge",
+    "sourceUrl": "https://git-scm.com/docs/git-merge"
+   },
+   {
+    "id": "git-fundamentals-sr2-10",
+    "reason": "source: the prompt requires range cards to rest on gitrevisions. gitrevisions (last updated in 2.56.0) defines r1...r2 as 'reachable from either one of r1 (left side) or r2 (right side) but not from both'. The statement and explanation are unchanged.",
+    "statement": "For divergent tips A and B, git log A...B selects history unique to either side.",
+    "answer": true,
+    "explanation": "In git log, A...B includes commits reachable from A or B and excludes commits reachable from both.",
+    "misconception": "",
+    "sourceTitle": "Git Reference: gitrevisions",
+    "sourceUrl": "https://git-scm.com/docs/gitrevisions"
+   },
+   {
+    "id": "git-fundamentals-sr3-03",
+    "reason": "tell: removes 'Plain', which marked false statements (5F/2T after the drops; 2F/2T after these rewrites). The fact and the answer are unchanged.",
+    "statement": "git diff by itself shows the changes staged for the next commit.",
+    "answer": false,
+    "explanation": "On its own, git diff compares the working tree with the index, showing unstaged changes.",
+    "misconception": "git diff with no arguments displays the staged patch.",
+    "sourceTitle": "Git Reference: git-diff",
+    "sourceUrl": "https://git-scm.com/docs/git-diff"
+   },
+   {
+    "id": "git-fundamentals-sr4-05",
+    "reason": "tell: removes 'Plain' (false-leaning). The form 'git switch <branch>' keeps the no-option qualifier. The fact and the answer are unchanged.",
+    "statement": "git switch <branch> discards local edits that conflict with the destination branch's files.",
+    "answer": false,
+    "explanation": "git switch refuses an ordinary switch that would lose local changes.",
+    "misconception": "Ordinary branch switching overwrites conflicting local edits.",
+    "sourceTitle": "Git Reference: git-switch",
+    "sourceUrl": "https://git-scm.com/docs/git-switch"
+   },
+   {
+    "id": "git-fundamentals-sr9-10",
+    "reason": "tell: removes 'Plain' (false-leaning). The form '<path> <branch>' with no --force keeps the default-behaviour qualifier, and 'can' stays so that the hedge balance holds. The fact and the answer are unchanged.",
+    "statement": "git worktree add <path> <branch> can take a branch already checked out in another worktree.",
+    "answer": false,
+    "explanation": "git worktree add refuses an occupied branch by default; --force overrides that safeguard.",
+    "misconception": "Ordinary worktree creation permits duplicate branch checkouts.",
+    "sourceTitle": "Git Reference: git-worktree",
+    "sourceUrl": "https://git-scm.com/docs/git-worktree"
+   },
+   {
+    "id": "git-fundamentals-sr4-01",
+    "reason": "tell: removes the timing absolute 'as soon as' (3F/0T in the deck). The fact and the answer are unchanged. git-branch: 'it will not switch the working tree to it'.",
+    "statement": "After git branch topic, HEAD points to the newly created topic branch.",
+    "answer": false,
+    "explanation": "git branch topic creates the branch reference while leaving the active branch unchanged.",
+    "misconception": "Creating a branch with git branch also activates it.",
+    "sourceTitle": "Git Reference: git-branch",
+    "sourceUrl": "https://git-scm.com/docs/git-branch"
+   },
+   {
+    "id": "git-fundamentals-sr5-11",
+    "reason": "tell: removes the timing absolute 'as soon as'. The fact and the answer are unchanged. Pro Git 3.2: 'run git add on each file to mark it as resolved'.",
+    "statement": "Deleting a file's conflict markers in your editor marks that path as resolved in Git's index.",
+    "answer": false,
+    "explanation": "After editing a conflicted file, run git add on that path to mark its resolution in the index.",
+    "misconception": "Editing away conflict markers also resolves the index entry.",
+    "sourceTitle": "Pro Git, 2nd ed., 3.2: Basic Branching and Merging",
+    "sourceUrl": "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "content-addressed-objects",
+    "ids": [
+     "git-fundamentals-sr1-07",
+     "git-fundamentals-sr1-08",
+     "git-fundamentals-sr1-09"
+    ]
+   },
+   {
+    "name": "tag-object-type",
+    "ids": [
+     "git-fundamentals-sr1-06",
+     "git-fundamentals-sr12-01",
+     "git-fundamentals-sr12-12"
+    ]
+   },
+   {
+    "name": "attached-vs-detached-commit",
+    "ids": [
+     "git-fundamentals-sr2-02",
+     "git-fundamentals-sr2-03"
+    ]
+   },
+   {
+    "name": "detached-commits-off-branch",
+    "ids": [
+     "git-fundamentals-sr2-03",
+     "git-fundamentals-sr8-08"
+    ]
+   },
+   {
+    "name": "refs-namespaces",
+    "ids": [
+     "git-fundamentals-sr11-01",
+     "git-fundamentals-sr11-03"
+    ]
+   },
+   {
+    "name": "checkout-history",
+    "ids": [
+     "git-fundamentals-sr2-09",
+     "git-fundamentals-sr8-02"
+    ]
+   },
+   {
+    "name": "untracking-tracked-files",
+    "ids": [
+     "git-fundamentals-sr3-05",
+     "git-fundamentals-sr3-06"
+    ]
+   },
+   {
+    "name": "switch-local-edits",
+    "ids": [
+     "git-fundamentals-sr4-05",
+     "git-fundamentals-sr4-06"
+    ]
+   },
+   {
+    "name": "ort-recursive",
+    "ids": [
+     "git-fundamentals-sr5-05",
+     "git-fundamentals-sr5-06"
+    ]
+   },
+   {
+    "name": "redundant-commit-handling",
+    "ids": [
+     "git-fundamentals-sr6-02",
+     "git-fundamentals-sr10-06"
+    ]
+   },
+   {
+    "name": "occupied-worktree-branch",
+    "ids": [
+     "git-fundamentals-sr6-08",
+     "git-fundamentals-sr9-10"
+    ]
+   },
+   {
+    "name": "reset-modes-index",
+    "ids": [
+     "git-fundamentals-sr7-01",
+     "git-fundamentals-sr7-02"
+    ]
+   },
+   {
+    "name": "path-ops-keep-branch-tip",
+    "ids": [
+     "git-fundamentals-sr7-04",
+     "git-fundamentals-sr7-08"
+    ]
+   },
+   {
+    "name": "reflog-records-ref-moves",
+    "ids": [
+     "git-fundamentals-sr8-01",
+     "git-fundamentals-sr8-03"
+    ]
+   },
+   {
+    "name": "fsck-unreachable-recovery",
+    "ids": [
+     "git-fundamentals-sr8-12",
+     "git-fundamentals-sr9-07"
+    ]
+   },
+   {
+    "name": "worktree-shared-vs-private",
+    "ids": [
+     "git-fundamentals-sr9-08",
+     "git-fundamentals-sr9-09"
+    ]
+   },
+   {
+    "name": "cherry-pick-applies-diff",
+    "ids": [
+     "git-fundamentals-sr10-01",
+     "git-fundamentals-sr10-03",
+     "git-fundamentals-sr10-06"
+    ]
+   },
+   {
+    "name": "remote-deletion",
+    "ids": [
+     "git-fundamentals-sr11-12",
+     "git-fundamentals-sr12-10"
+    ]
+   },
+   {
+    "name": "tag-transfer-defaults",
+    "ids": [
+     "git-fundamentals-sr12-06",
+     "git-fundamentals-sr12-07",
+     "git-fundamentals-sr12-08"
+    ]
+   },
+   {
+    "name": "annotated-only-defaults",
+    "ids": [
+     "git-fundamentals-sr12-04",
+     "git-fundamentals-sr12-07"
+    ]
+   },
+   {
+    "name": "annotated-tag-message",
+    "ids": [
+     "git-fundamentals-sr12-01",
+     "git-fundamentals-sr12-02"
+    ]
+   },
+   {
+    "name": "git3-defaults-pending",
+    "ids": [
+     "git-fundamentals-sr1-10",
+     "git-fundamentals-sr4-12"
+    ]
+   },
+   {
+    "name": "fast-forward-ancestry",
+    "ids": [
+     "git-fundamentals-sr5-01",
+     "git-fundamentals-sr11-10",
+     "git-fundamentals-sr12-12"
+    ]
+   }
+  ],
+  "sectionBalance": "Per section after the edits: cards left, true/false split, average statement length in characters (true / false).\n- r1: 11 cards, 6T/5F, 71.8 / 72.2\n- r2: 9 cards, 5T/4F, 77.0 / 74.0\n- r3: 11 cards, 5T/6F, 79.4 / 78.0\n- r4: 10 cards, 4T/6F, 92.2 / 87.3\n- r5: 10 cards, 5T/5F, 92.0 / 92.6\n- r6: 9 cards, 4T/5F, 97.5 / 95.6\n- r7: 11 cards, 5T/6F, 91.4 / 93.7\n- r8: 10 cards, 5T/5F, 93.2 / 93.6\n- r9: 10 cards, 5T/5F, 77.0 / 81.4\n- r10: 11 cards, 5T/6F, 90.0 / 88.2\n- r11: 9 cards, 4T/5F, 90.5 / 87.4\n- r12: 11 cards, 5T/6F, 88.2 / 84.8\n\nDeck: 122 cards (22 dropped), 58T/64F.",
+  "notes": "**What happened to the flagged cards.** The verifiers found no wrong answers.\n- Dropped: 21 weak or duplicate cards, plus sr8-10 (ambiguous).\n- Rewritten instead of dropped, only where dropping would break the section minimum of 9 cards or the 4–6 per 10 split: sr2-02, sr4-10, sr6-05 and sr11-12. Each uses the verifier's replacement.\n- In r2, r6 and r11, other true replacements were available. I chose these because they cover scope items the sections lacked: HEAD as a symref, merge commits dropped by default, and push deletion via refspec.\n- Other rewrites:\n  - sr2-05 (ambiguous): rewritten.\n  - sr12-12 (explanation_error): new explanation, same statement.\n  - sr2-10: source moved to gitrevisions, as the prompt requires for range cards.\n  - 5 tell rewrites, described below.\n\n**Pages checked on 2026-10-04:**\n- gitglossary (2.56.0)\n- git-branch (2.56.0)\n- git-rebase (2.54.0)\n- git-push (2.55.0)\n- git-merge (2.54.0)\n- gitrevisions (2.56.0)\n- git-maintenance (2.56.0)\n- git-update-ref (2.53.0)\n\n**Findings for the deck owner:**\n1. **sr8-10 was dropped, not rewritten.** git-maintenance says some commands run `git maintenance run --auto`, and geometric is now a strategy. The git-gc paragraph about porcelain running `git gc --auto` is stale for 2.56. Any card here would have to rest on git maintenance, which the prompt excludes. The r8 scope item \"git gc --auto run by ordinary commands\" should be removed from the prompt.\n2. **git-merge contradicts itself.** Its MERGING TAG section says merging an annotated tag always creates a merge commit. Its --ff paragraph says --no-ff is assumed only for an annotated tag that is not stored in refs/tags/. The r12 scope item \"merging an annotated tag creating a merge commit\" should be removed. No card should claim that behaviour either way.\n3. **git-update-ref still calls HEAD and ORIG_HEAD pseudorefs,** which contradicts gitglossary. That is why the new sr2-05 is worded as gitglossary's definition.\n\n**Tells:**\n- The 5 tell rewrites (sr3-03, sr4-05, sr9-10 removing \"Plain\"; sr4-01, sr5-11 removing \"as soon as\") keep each card's fact and answer.\n- \"Plain\" is now 2T/2F. Timing absolutes are now 0T/1F: sr8-08 keeps \"immediately\", because that word is what makes the card false.\n- Wording tells still open: \"automatically\" 0T/2F (sr8-05, sr12-07); \"even\" 1T/3F; \"can\" 9T/7F; \"by default\" 4T/4F.\n- The content-level \"Git protects you\" heuristic is now weaker, because sr5-03, sr9-11 and sr11-11 were dropped. It is still the main tell left in the deck and cannot be fixed by rewording.\n\n**Conflict groups:** the scan's groups are kept with dropped members removed. Groups left with one member were deleted: detached-head-entry, fetch-head-pseudoref, differently-named-upstream, gitignore-slash-anchoring, ff-only-divergence, abort-restores-start, restore-sources and stash-as-commits. Changed groups:\n- attached-vs-detached-commit now holds the new sr2-02 with sr2-03 (HEAD holding a branch name hints at the detached case).\n- sr12-12 was added to tag-object-type, because its new explanation says the annotated tag peels to a commit.\n- refs-namespaces keeps sr11-01 and sr11-03 even though sr2-04 is gone."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "git-fundamentals-sr2-02",
+    "decision": "keep",
+    "statement": "On a branch, HEAD holds refs/heads/<branch> rather than a commit ID.",
+    "answer": true,
+    "explanation": "gitglossary calls HEAD the prime example of a symref: it holds ref: refs/heads/<branch>, and Git dereferences it to that branch, which holds the commit ID.",
+    "reason": "Both lenses keep. Checked on gitglossary (last updated in 2.56.0). symref: 'instead of containing the SHA-1 id itself, it is of the format ref: refs/some/thing ... HEAD is a prime example of a symref'. detached HEAD: 'Normally the HEAD stores the name of a branch'. Statement 68 chars."
+   },
+   {
+    "id": "git-fundamentals-sr2-05",
+    "decision": "fixed",
+    "statement": "gitglossary describes pseudorefs as refs that git update-ref treats as read-only.",
+    "answer": true,
+    "explanation": "gitglossary lists FETCH_HEAD and MERGE_HEAD as pseudorefs: refs with different semantics from normal refs, readable through ordinary Git commands but not writable with git update-ref.",
+    "reason": "Wording lens is right: 'is unable to write' is a disguised negation, which RULES ban. I kept its 'treats as read-only' phrasing but dropped 'Git commands read normally'. Its 112-char version would push the r2 true average to 83.4 against a false average of 74.0, which breaks the 5-char balance. At 81 chars it is 77.2 against 74.0. The fact matches gitglossary (2.56.0) word for word: 'These refs can be read via normal Git commands, but cannot be written to by commands like git-update-ref'. The known pseudorefs are FETCH_HEAD and MERGE_HEAD. Explanation taken from the wording lens."
+   },
+   {
+    "id": "git-fundamentals-sr4-10",
+    "decision": "keep",
+    "statement": "git branch -m carries the branch's reflog and its branch.<name> settings over to the new name.",
+    "answer": true,
+    "explanation": "Renaming moves the branch's configuration, such as its upstream, and renames its reflog, adding an entry that records the rename. The commits themselves are untouched.",
+    "reason": "Both lenses keep. git-branch (2.56.0): '-m --move Move/rename a branch, together with its config and reflog' and 'If <old-branch> had a corresponding reflog, it is renamed to match <new-branch>, and a reflog entry is created to remember the branch renaming.'"
+   },
+   {
+    "id": "git-fundamentals-sr6-05",
+    "decision": "keep",
+    "statement": "By default, git rebase linearizes the replayed range, leaving its merge commits out of the new history.",
+    "answer": true,
+    "explanation": "Rebase drops merge commits from the todo list unless --rebase-merges or rebase.rebaseMerges asks it to recreate them; manual resolutions in those merges must then be redone.",
+    "reason": "Both lenses keep. git-rebase: 'By default, a rebase will simply drop merge commits from the todo list, and put the rebased commits into a single, linear branch. With --rebase-merges ... recreating the merge commits. Any resolved merge conflicts or manual amendments ... re-applied manually.' The page also defines rebase.rebaseMerges as the config that sets --rebase-merges by default."
+   },
+   {
+    "id": "git-fundamentals-sr11-12",
+    "decision": "keep",
+    "statement": "git push origin :topic, with its empty source, deletes the branch topic on the remote.",
+    "answer": true,
+    "explanation": "A refspec with an empty <src> deletes the <dst> ref from the remote repository, the same as git push --delete origin topic.",
+    "reason": "Both lenses keep. git-push: 'If <src> is empty, it deletes the <dst> ref from the remote repository. For example, git push origin :dev will delete the dev branch.' --delete: 'same as prefixing all refs with a colon'."
+   },
+   {
+    "id": "git-fundamentals-sr12-12",
+    "decision": "keep",
+    "statement": "git merge --ff v1.2^0 can fast-forward to the commit behind an annotated v1.2 tag.",
+    "answer": true,
+    "explanation": "v1.2^0 peels the annotated tag to the commit it points to, so git merge sees a plain commit and fast-forwards when the current tip is its ancestor. git-merge suggests ^0 to catch up to a tagged release.",
+    "reason": "Both lenses keep. git-merge MERGING TAG: when 'synchronizing with an upstream release point ... you can \"unwrap\" the tag yourself ... git merge v1.2.3^0'. --ff: 'when possible resolve the merge as a fast-forward'. gitrevisions: '<rev>^0 means the commit itself and is used when <rev> is the object name of a tag object that refers to a commit object.' The explanation stays clear of the always-merge-commit rule, which applies to the tag object."
+   },
+   {
+    "id": "git-fundamentals-sr2-10",
+    "decision": "keep",
+    "statement": "For divergent tips A and B, git log A...B selects history unique to either side.",
+    "answer": true,
+    "explanation": "In git log, A...B includes commits reachable from A or B and excludes commits reachable from both.",
+    "reason": "Both lenses keep. gitrevisions defines the symmetric difference as 'the set of commits that are reachable from either one of r1 (left side) or r2 (right side) but not from both'. The source is now gitrevisions, as the prompt requires."
+   },
+   {
+    "id": "git-fundamentals-sr3-03",
+    "decision": "keep",
+    "statement": "git diff by itself shows the changes staged for the next commit.",
+    "answer": false,
+    "explanation": "On its own, git diff compares the working tree with the index, showing unstaged changes.",
+    "reason": "Both lenses keep. git-diff: the no-argument form shows 'the changes you made relative to the index (staging area for the next commit) ... what you could tell Git to further add to the index but you still haven't.' The 'Plain' tell is gone."
+   },
+   {
+    "id": "git-fundamentals-sr4-05",
+    "decision": "keep",
+    "statement": "git switch <branch> discards local edits that conflict with the destination branch's files.",
+    "answer": false,
+    "explanation": "git switch refuses an ordinary switch that would lose local changes.",
+    "reason": "Both lenses keep. git-switch: 'The operation is aborted however if the operation leads to loss of local changes, unless told otherwise with --discard-changes or --merge.' The statement uses neither option."
+   },
+   {
+    "id": "git-fundamentals-sr9-10",
+    "decision": "keep",
+    "statement": "git worktree add <path> <branch> can take a branch already checked out in another worktree.",
+    "answer": false,
+    "explanation": "git worktree add refuses an occupied branch by default; --force overrides that safeguard.",
+    "reason": "Both lenses keep. git-worktree: 'By default, add refuses to create a new worktree when <commit-ish> is a branch name and is already checked out by another worktree ... This option overrides these safeguards.' The command form shown has no --force, so the answer is clear."
+   },
+   {
+    "id": "git-fundamentals-sr4-01",
+    "decision": "keep",
+    "statement": "After git branch topic, HEAD points to the newly created topic branch.",
+    "answer": false,
+    "explanation": "git branch topic creates the branch reference while leaving the active branch unchanged.",
+    "reason": "Both lenses keep. git-branch (2.56.0): 'this will create the new branch, but it will not switch the working tree to it; use git switch <new-branch>'. The timing absolute is gone."
+   },
+   {
+    "id": "git-fundamentals-sr5-11",
+    "decision": "keep",
+    "statement": "Deleting a file's conflict markers in your editor marks that path as resolved in Git's index.",
+    "answer": false,
+    "explanation": "After editing a conflicted file, run git add on that path to mark its resolution in the index.",
+    "reason": "Both lenses keep. Pro Git 3.2: 'run git add on each file to mark it as resolved. Staging the file marks it as resolved in Git.' The timing absolute is gone."
+   }
+  ]
+ }
+}

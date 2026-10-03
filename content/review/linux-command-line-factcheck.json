@@ -1,0 +1,1047 @@
+{
+ "deck": "linux-command-line",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org hier(7) from man-pages-6.19 (official, current)",
+     "evidence": "hier(7) https://man7.org/linux/man-pages/man7/hier.7.html: \"/dev Special or device files, which refer to physical devices.\" The fact is right, but the name /dev already gives the answer away. A player who knows nothing reads \"devices ... /dev\" and answers True.",
+     "problem": "Name giveaway that is close to a truism: the directory name gives the answer (rule: the answer must not be readable from the name). It teaches nothing an everyday shell user does not already know.",
+     "suggestedFix": "Keep True. Statement: \"The kernel and systemd-udevd jointly maintain the device nodes in `/dev`, which is usually a devtmpfs mount.\" Explanation: \"UAPI.9 describes /dev as usually a devtmpfs instance managed by the kernel and a userspace component such as systemd-udevd; other programs should not write there.\" URL: https://uapi-group.org/specifications/specs/linux_file_system_hierarchy/"
+    },
+    {
+     "id": "linux-command-line-sr1-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, refspecs.linuxfoundation.org FHS 3.0 ch03s17 (official)",
+     "evidence": "FHS 3.0 https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s17.html: \"/srv contains site-specific data which is served by this system.\" hier(7): \"/srv This directory contains site-specific data that is served by this system.\" The statement says \"site-specific data served by the host\".",
+     "problem": "Near-copy of the source sentence with a word or two changed, which the rule against reproducing official sentences forbids. The fact itself is correct and supported.",
+     "suggestedFix": "Keep True. Statement: \"FHS names `/srv` as the default location for files a host publishes to clients, such as FTP or web content.\" Explanation: \"FHS 3.0 says /srv holds data for services this system provides and leaves its internal layout, for example per protocol like /srv/www, to the site.\" Same URL."
+    },
+    {
+     "id": "linux-command-line-sr1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, refspecs.linuxfoundation.org FHS 3.0 ch03s07 (official)",
+     "evidence": "FHS 3.0 https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s07.html: section heading \"3.7. /etc : Host-specific system configuration\"; \"No binaries may be located under /etc.\" The statement \"FHS places host-specific system configuration under `/etc`\" repeats the heading word for word.",
+     "problem": "It copies the source heading and is a very easy fact for the deck's audience (developers and operators who use a shell every day), so it teaches almost nothing.",
+     "suggestedFix": "Keep True. Statement: \"FHS forbids storing executable binaries under `/etc`, which holds the host's static configuration files.\" Explanation: \"FHS 3.0 defines /etc for static, local configuration files and states that no binaries may be located under it; programs belong in directories such as /usr/bin.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (sr1-01 to sr1-12, all in b1). All source URLs returned 200 and are allowed official sources. The colophons show hier(7) from man-pages-6.19, df(1) from coreutils-9.11 and mount(8) from the util-linux upstream Git repository. UAPI.9 is version 0.1, work in progress. No answer is wrong. The section is balanced at 6 true (01, 02, 05, 07, 09, 11) and 6 false (03, 04, 06, 08, 10, 12), and all three replacements keep True.\n\nVerified passes, with the sentence that settles each:\n- sr1-01: mount(8) says \"The previous contents (if any) and owner and mode of dir become invisible, and as long as this filesystem remains mounted...\".\n- sr1-03: UAPI.9 says \"/bin/; /sbin/; /usr/sbin/ These compatibility symlinks point to /usr/bin/\".\n- sr1-04: FHS ch04 says \"/usr is shareable, read-only data\".\n- sr1-05: FHS ch05 says \"/var contains variable data files. This includes spool directories and files\".\n- sr1-06: FHS ch05s15 says \"Files and directories located in /var/tmp must not be deleted when the system is booted\". UAPI.9 agrees: \"generally not flushed at boot-up\".\n- sr1-07: UAPI.9 says \"/run/ A tmpfs file system for system packages to place runtime data, socket files, and similar. This directory is flushed on boot\".\n- sr1-08: FHS ch03s14 says /root is \"the recommended default location\".\n- sr1-10: hier(7) calls /proc a \"pseudo-filesystem\". UAPI.9 says \"mostly an API to interface with the kernel and not a place where normal files may be stored\".\n- sr1-12: df(1) says \"df displays the amount of space available on the file system containing each file name argument\".\n\nMinor points I did not flag:\n- sr1-04's explanation does not name /home as the right place for home directories. It is acceptable but could add it.\n- sr1-05 is easy, and the /var name hints at \"variable\" data, but less directly than /dev does for sr1-09.\n- sr1-03's misconception (\"separate copies\") is weak but plausible, so I kept it.\n\nNo duplicates with other sections. sr5-10 (/proc/PID/cwd), sr12-03 (unit file precedence) and sr12-12 (journal under /var/log/journal) rest on different facts. The section leaves out /tmp, /opt, /home, /sys and du, which is a coverage gap but not a defect."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7.org ln(1) from coreutils-9.11 tarball (current man7 build)",
+     "evidence": "https://man7.org/linux/man-pages/man1/ln.1.html: \"ln [OPTION]... [-T] TARGET LINK_NAME\" and \"In the 1st form, create a link to TARGET with the name LINK_NAME.\" The answer (false) is right, but the operand names give it away.",
+     "problem": "The operand names give the answer away. 'source' reads as the existing file and 'alias' as the new name, so a player who does not know ln's argument order can still see that 'creates source as a new link to alias' is backwards. The card tests the wording, not the TARGET LINK_NAME order.",
+     "suggestedFix": "Keep it false and use neutral operand names. Statement: \"`ln alpha beta` makes alpha a new hard-link name for the existing file beta.\" Explanation: \"ln takes the existing TARGET first and the new LINK_NAME second, so `ln alpha beta` adds the name beta for the file alpha.\" Same URL."
+    },
+    {
+     "id": "linux-command-line-sr2-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7.org readlink(1) from coreutils-9.11 tarball",
+     "evidence": "https://man7.org/linux/man-pages/man1/readlink.1.html: \"readlink - print resolved symbolic links or canonical file names\" ... \"Print value of a symbolic link or canonical file name\"; \"realpath(1) is a better command for canonicalization functionality.\"",
+     "problem": "The answer can be read from the command's name. 'readlink can print a symbolic link's stored target' is what the word readlink says, so nobody answers False. The real lesson, that plain readlink prints the stored text as-is (a relative target stays relative) while -f and realpath canonicalize, is only in the explanation.",
+     "suggestedFix": "Keep it true and test the stored-text versus canonical-path difference. Statement: \"For a link storing `../lib/x.so`, GNU `readlink link` prints `../lib/x.so` rather than an absolute path.\" Explanation: \"Without options, readlink prints the value stored in the link as it is. `readlink -f` or realpath resolve it to a canonical absolute path.\" Same URL."
+    },
+    {
+     "id": "linux-command-line-sr2-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7.org path_resolution(7), man-pages project",
+     "evidence": "https://man7.org/linux/man-pages/man7/path_resolution.7.html: \"If the pathname does not start with the '/' character, the starting lookup directory of the resolution process is the current working directory of the process\" and \"Pathnames not starting with a '/' are called relative pathnames.\"",
+     "problem": "This is close to a definition card. A relative pathname means one resolved from the working directory, and cat's working directory is the shell's own, which every daily shell user knows. It teaches nothing beyond the term itself. The same page has a non-obvious true fact in the section's '. and ..' scope.",
+     "suggestedFix": "Keep it true. Statement: \"On Linux, `/../etc/passwd` names the same file as `/etc/passwd`.\" Explanation: \"Path resolution cannot walk up past the root: /.. is the same as /, so extra .. components at the top of a path lead back to the root.\" Same URL (section '. and ..': \"One cannot walk up past the root: \"/..\" is the same as \"/\".\")."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards (all in b1). The section is balanced at 6 true and 6 false, and the average statement lengths are 84.2 (true) and 85.2 (false). Every man7.org source loaded (HTTP 200). Colophons: path_resolution(7), symlink(7), link(2) and rename(2) are from the man-pages project, and ln, readlink and rm are from the coreutils-9.11 tarball. bash(1) is from upstream Git, but its tilde-expansion text is long stable. docs.kernel.org fs.html loaded. gnu.org refused connections (ECONNREFUSED), so the coreutils manual node for readlink could not be opened; the man7 readlink(1) page is enough to settle the card.\n\nCards that pass, with the deciding evidence:\n- 02: bash(1) Tilde Expansion says the tilde \"is replaced with the value of the shell parameter HOME. If HOME is unset, the tilde expands to the home directory of the user executing the shell instead.\"\n- 03: symlink(7) says \"Changes to a file are independent of the name used to reference the file.\"\n- 04: link(2) EXDEV says \"link() does not work across different mounts, even if the same filesystem is mounted on both.\" Bind mounts make no exception, so false holds.\n- 05: link(2) says \"EPERM oldpath is a directory\", with no privilege exception; the kernel's vfs_link check is unconditional. ln(1) -d only says \"allow the superuser to attempt\", so true holds.\n- 06: ln(1) says \"Symbolic links can hold arbitrary text.\"\n- 07: ln(1) says \"a relative link is interpreted in relation to its parent directory.\"\n- 10: symlink(7) says \"The mv(1) and rm(1) commands do not follow symbolic links named as arguments\" and \"In no case will rm(1) affect the file referred to by slink.\"\n- 11: rename(2) says \"Open file descriptors for oldpath are also unaffected.\" The 'can leave' hedge is soft, and 'same-filesystem' is redundant because rename() fails with EXDEV across mounts, but the card is not wrong.\n- 12: fs.html says \"When set to \"1\" hardlinks cannot be created by users if they do not already own the source file, or do not have read/write access to it.\" The card states no default value, as the prompt requires.\n\nDuplicates: none found within r2 or against the other 132 cards. 04 (cross-filesystem) and 05 (directories) are separate facts in the prompt's own trap list.\n\nCoverage gap, not flagged: no r2 card tests 'mv across filesystems copies and deletes', symlinks having their own inode, the inode link count, deleting one name of a hard-linked file, or protected_symlinks. These are all listed in the section scope, and the flagged replacements could cover one of them instead if the editor prefers."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7.org chmod(1) from coreutils-9.11 tarball (current)",
+     "evidence": "https://man7.org/linux/man-pages/man1/chmod.1.html: \"The operator + causes the selected file mode bits to be added to the existing file mode bits of each file; - causes them to be removed; and = causes them to be added and causes unmentioned bits to be removed\". The fact is correct, but the statement just restates what + means: anyone who reads `g+w` as \"group plus write\" can answer True without knowing anything about chmod. No realistic learner believes + wipes the existing bits. The real trap is the = operator.",
+     "problem": "Answer can be read from the wording (+ means add), so it is close to a definition card. It does not test the + versus = distinction a learner actually gets wrong.",
+     "suggestedFix": "Keep the answer True and test = instead. Statement: \"`chmod g=w report` removes any read permission the group class previously had on report.\" Explanation: \"The = operator sets a class's bits to exactly those listed and clears the rest, so g=w leaves the group with write only, while g+w would add write and keep read.\" Same URL."
+    },
+    {
+     "id": "linux-command-line-sr3-01",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, man7.org path_resolution(7), man-pages-6.19 (current)",
+     "evidence": "path_resolution(7) only says \"The first group of three is used when the effective user ID of the calling process equals the owner ID of the file. The second group of three is used when the group ID of the file either equals the effective group ID ... When neither holds, the third group is used.\" It never says what happens when both of the first two conditions hold, so the page does not settle precedence. acl(5) does: https://man7.org/linux/man-pages/man5/acl.5.html, ACCESS CHECK ALGORITHM: \"1. If the effective user ID of the process matches the user ID of the file object owner, then if the ACL_USER_OBJ entry contains the requested permissions, access is granted, else access is denied.\" The answer (False) is correct.",
+     "problem": "The cited page does not explicitly support the precedence rule the card tests (owner class only, never combined with group). It has to be inferred.",
+     "suggestedFix": "Change the URL to https://man7.org/linux/man-pages/man5/acl.5.html (ACCESS CHECK ALGORITHM; ACL_USER_OBJ is the owner class of a minimal ACL). Optional wording fix, still False: \"When a file's owner is also in its group, Linux grants the owner the union of the owner and group permission bits.\""
+    },
+    {
+     "id": "linux-command-line-sr3-02",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, man7.org path_resolution(7), man-pages-6.19 (current)",
+     "evidence": "path_resolution(7) supports only the execute half: \"the last [bit gives] execute permission in case of ordinary files, or search permission in case of directories.\" Nothing on the page says what directory read permission does, so the explanation's right fact (\"Directory read permission instead permits listing the names it contains\") has no support there. The GNU coreutils manual covers both halves (https://www.gnu.org/software/coreutils/manual/html_node/Mode-Structure.html): \"permission to read the file. For directories, this means permission to list the contents of the directory.\" and \"permission to execute the file ... For directories, this means permission to access files in the directory.\" gnu.org refused connections from here; this text was read from the Web Archive copy of that page.",
+     "problem": "The answer is correct, but the cited page does not support the read-means-list half of the explanation.",
+     "suggestedFix": "Change the URL to https://www.gnu.org/software/coreutils/manual/html_node/Mode-Structure.html, which supports both halves. Keep the statement and the explanation."
+    },
+    {
+     "id": "linux-command-line-sr3-11",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, man7.org bash(1), GNU Bash 5.3 (from upstream Git)",
+     "evidence": "bash(1) ARGUMENTS only says \"the first argument is treated as the name of a file containing shell commands ... Bash reads and executes commands from this file, then exits.\" It never mentions the execute bit, so the claim \"execute bits clear\" has to be inferred. The Bash manual's Shell Scripts section comes closer (https://www.gnu.org/software/bash/manual/html_node/Shell-Scripts.html): \"When such a file is used as the first non-option argument when invoking Bash ... Bash reads and executes commands from the file\" and \"A shell script may be made executable by using the chmod command to turn on the execute bit.\" That presents the execute bit as optional and needed only for running the script by name. The answer (True) is correct.",
+     "problem": "The cited page does not directly say that `bash script.sh` works without execute permission. The card is also at the border of r8 (sourcing versus executing, shebang), though it fits r3's \"x on a file\".",
+     "suggestedFix": "Change the URL to https://www.gnu.org/software/bash/manual/html_node/Shell-Scripts.html. Optional explanation: \"Passed as an argument, the script is only opened and read by Bash, so read permission is enough. The execute bit matters when you run ./script.sh or find it through PATH.\""
+    }
+   ],
+   "notes": "I checked all 12 r3 cards in linux-command-line-b1.json (sr3-01 to sr3-12). Six are True and six False. The average statement length is 86.3 characters for True and 87.5 for False, and every explanation is 240 characters or less. Hedge words are balanced: \"can\" appears in 3 True and 3 False statements, and \"grants\" in 2 of each. Every source loaded with HTTP 200. The man7.org pages are current: chmod(1) is from coreutils-9.11, path_resolution, unlink, umask, chown and chmod(2) are from man-pages-6.19, and bash(1) is Bash 5.3.\n\nCards that pass, with the sentence that settles each:\n- sr3-03: unlink(2) says EACCES means \"Write access to the directory containing path is not allowed ... or one of the directories in path did not allow search permission\".\n- sr3-05: chmod(1) says \"the third selects permissions for other users in the file's group\". With 640, the omitted leading digit is assumed to be 0.\n- sr3-06: chmod(1) defines X as \"execute/search only if the file is a directory or already has execute permission for some user\".\n- sr3-07: umask(2) says the bits in the umask \"are turned off from the mode argument\". A default ACL cannot add bits either: \"bits absent in the mode argument are turned off\".\n- sr3-08: chown(2) says \"Only a privileged process (Linux: one with the CAP_CHOWN capability) may change the owner of a file.\"\n- sr3-09: chown(2) says \"The owner of a file may change the group of the file to any group of which that owner is a member.\"\n- sr3-10: chmod(1) says \"chmod doesn't change the permissions of symbolic links ... for each symbolic link listed on the command line, chmod changes the permissions of the pointed-to file.\" The coreutils 9.11 page now documents -h/--no-dereference, but the statement uses no option, so it stays False. The explanation's \"leaves symbolic-link permissions alone\" is slightly absolute given -h, but it is acceptable.\n- sr3-12: chmod(2) says \"The effective UID of the calling process must match the owner of the file, or the process must be privileged.\" The immutable attribute and read-only mounts are edge cases, and the statement's \"can\" covers them.\n\nWording nits, not flagged:\n- sr3-09: \"select a group\" is vague; \"change the file's group to a group they belong to\" is clearer. Its explanation sentence \"This operation uses the existing membership\" adds nothing.\n- sr3-01: \"matching group mode bits\" is clumsy.\n\nDuplicates: I compared every r3 card with all 132 other cards in the deck and found none. sr3-08 (only a privileged process may change the owner) and r4-06 (chown clears the setuid bit) test different facts. sr3-11 (bash script.sh needs no execute bit) and r8-11 (exit status 126) also test different facts.\n\nAccess: gnu.org refused connections from this machine (ECONNREFUSED). I read the coreutils Mode-Structure and Bash Shell-Scripts pages through the Web Archive."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org passwd(5), COLOPHON: Linux man-pages 6.19 (2025-09-21)",
+     "evidence": "https://man7.org/linux/man-pages/man5/passwd.5.html: \"These days many people run some version of the shadow password suite, where /etc/passwd has an 'x' character in the password field, and the encrypted passwords are in /etc/shadow, which is readable by the superuser only.\" The answer is right and the source supports it, but the qualifier 'for local accounts that use shadow passwords' gives the answer away: anyone who knows only what the word 'shadow' implies can answer False. If the qualifier is dropped, the statement turns ambiguous, because passwd(5) says only 'many' systems use shadow passwords and still describes hashes kept in /etc/passwd.",
+     "problem": "Wording give-away. The words 'use shadow passwords' tell the player the hashes are kept somewhere else, so the card tests the meaning of a term instead of the file layout.",
+     "suggestedFix": "Replacement (answer false, same factKey area): statement \"An `x` in the password field of `/etc/passwd` marks an account that can log in without a password.\" Explanation: \"The x means the password hash is kept in /etc/shadow, which only root can read. An empty password field, not x, is what can allow login without a password.\" Keep the source https://man7.org/linux/man-pages/man5/passwd.5.html."
+    },
+    {
+     "id": "linux-command-line-sr4-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org execve(2), COLOPHON: man-pages-6.19",
+     "evidence": "https://man7.org/linux/man-pages/man2/execve.2.html: \"If the set-user-ID bit is set on the program file referred to by path, then the effective user ID of the calling process is changed to that of the owner of the program file.\" and \"The process's real UID and real GID, as well as its supplementary group IDs, are unchanged by a call to execve().\" The answer is right, but 'set user ID ... can run with an effective UID different' can be read straight from the bit's name. The hedge 'can' together with 'different' makes it close to a definition card.",
+     "problem": "Near-definition / name give-away. The answer follows from what 'setuid' means, and the abstract wording ('can', 'different from') does not teach which UID changes to what.",
+     "suggestedFix": "Replacement (answer true): statement \"When alice runs a root-owned setuid program, the process gets effective UID 0 while its real UID stays alice's.\" (111 chars). Explanation: \"execve(2) sets the effective UID to the file owner's UID and leaves the real UID unchanged, so the program acts with the owner's rights.\" Same source URL."
+    },
+    {
+     "id": "linux-command-line-sr4-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org inode(7), COLOPHON: man-pages-6.19",
+     "evidence": "https://man7.org/linux/man-pages/man7/inode.7.html: \"The sticky bit (S_ISVTX) on a directory means that a file in that directory can be renamed or deleted only by the owner of the file, by the owner of the directory, and by a privileged process.\" The answer (false) is right and well supported. But the distractor, that a directory bit controls reading the contents of files, is not a confusion that someone who has studied the sticky bit would plausibly hold, and the card never tests what the bit actually does on /tmp.",
+     "problem": "Strawman-leaning distractor. It tests what the sticky bit does not do, not its real job as the restricted deletion flag, which the section brief names explicitly ('the sticky bit as the restricted deletion flag on /tmp').",
+     "suggestedFix": "Replacement (answer false): statement \"With the sticky bit on /tmp, any user who can write to /tmp can delete another user's file stored there.\" (104 chars). Explanation: \"With the sticky bit set on a directory, only the file's owner, the directory's owner or a privileged process can rename or delete a file in it.\" Same source URL. This does not clash with sr3-03 (directory w/x governs deletion), because sr3-03's explanation already points to the sticky bit as the exception."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards (6 true, 6 false; the balance holds) against their man7.org pages. Every URL returned 200. Pinned versions from each page's COLOPHON: execve(2), inode(7), chown(2), capabilities(7), credentials(7) and passwd(5) come from man-pages 6.19; sudoers(5) from Sudo 1.9.18 (upstream Git, 2026-05-23); su(1) from a util-linux 2.43 development snapshot from Git; usermod(8) and newgrp(1) from shadow-utils 4.19.0.\n\nCards that pass, with the deciding quote:\n- sr4-02: execve(2) says \"Linux (like most other modern UNIX systems) ignores the set-user-ID and set-group-ID bits on scripts.\"\n- sr4-03: execve(2) says the effective-ID change is not performed if \"the underlying filesystem is mounted nosuid\". Its NOTES say kernels either refuse execution with EPERM or ignore the bits, which matches the explanation; \"depending on kernel behavior\" would read better as \"depending on the kernel version\".\n- sr4-04: inode(7) says \"files created there inherit their group ID from the directory, not from the effective group ID of the creating process\".\n- sr4-06: chown(2) says \"When the owner or group of an executable file is changed by an unprivileged user, the S_ISUID and S_ISGID mode bits are cleared ... since Linux 2.2.13, root is treated like other users.\" The section list does not name this fact explicitly, but it is a special-bit behaviour operators run into, so I judged it in scope.\n- sr4-07: capabilities(7) says \"Linux divides the privileges traditionally associated with superuser into distinct units, known as capabilities\". It is rated difficulty 3 but reads as medium at most.\n- sr4-08: sudoers(5) says \"it validates the invoking user's credentials, not the target user's (or root's) credentials. This can be changed via the rootpw, targetpw and runaspw flags\", and targetpw \"is off by default\". One residual risk: some distributions have shipped an /etc/sudoers containing \"Defaults targetpw\" (historically openSUSE). Read as \"the default file a distribution installs\", the phrase \"default sudoers policy\" could be argued the other way. Rewording it to \"With sudoers' built-in defaults\" would close that gap. sudo-rs (Ubuntu) also asks for the invoking user's password, so the card is not distribution-bound.\n- sr4-09: su(1) under --login says \"change to the target user's home directory\".\n- sr4-11: usermod(8) says \"If the user is currently a member of a group which is not listed, the user will be removed from the group. This behaviour can be changed via the -a option, which appends the user to the current supplementary group list.\"\n- sr4-12: the answer is correct. credentials(7) supports it only by inference: \"A child process created by fork(2) inherits copies of its parent's user and groups IDs. During an execve(2), a process's real user and group ID and supplementary group IDs are preserved\", and setgroups(2) is the call that modifies the list. No allowed page states outright that editing /etc/group leaves running shells unchanged; initgroups(3) and newgrp(1) do not say it either. I did not flag it, because no better official URL exists. The explanation would be stronger if it named the remedy, for example: \"New membership applies at the next login, or in a new shell started with newgrp.\"\n\nDuplicates: none found within r4 or against r1-r3 and r5-r12. The closest neighbours (sr3-03 directory-based deletion, sr3-08 chown privilege) rest on different facts. Uncovered parts of the section brief, which is acceptable for breadth: the octal values 4000/2000/1000, s versus S and t versus T in ls -l, the id/groups commands and primary versus supplementary groups.\n\nMethod note: web search and fetch were not loaded; I opened every page with curl on man7.org. Read-only, no files edited."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr5-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org proc_pid_cwd(5), man-pages-6.19",
+     "evidence": "https://man7.org/linux/man-pages/man5/proc_pid_cwd.5.html: \"/proc/pid/cwd: This is a symbolic link to the current working directory of the process.\" The card is correct, but its answer can be read straight from the name: cwd is the standard abbreviation of \"current working directory\", so anyone who expands it rejects \"directory that contains the process's executable\" without knowing anything about /proc.",
+     "problem": "Name giveaway. The false statement is settled by the file name itself, which the prompt's rules forbid.",
+     "suggestedFix": "Replace (keeps answer false). Statement (108 chars): \"On Linux, `/proc/PID/environ` of a running Bash shows the variables exported in that shell after it started.\" Explanation (178): \"/proc/PID/environ holds the initial environment set when the program was started by execve(). Changes the process makes later, such as a shell's new exports, do not appear there.\" Source: https://man7.org/linux/man-pages/man5/proc_pid_environ.5.html (\"contains the initial environment that was set when the currently executing program was started via execve(2) ... this file will not reflect those changes\"). factKey proc-pid-environ-initial-only."
+    },
+    {
+     "id": "linux-command-line-sr5-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org signal(7), man-pages-6.19",
+     "evidence": "https://man7.org/linux/man-pages/man7/signal.7.html: \"Cont   Default action is to continue the process if it is currently stopped.\" and \"SIGCONT ... Continue if stopped\". The answer is right, but the distractor (a stopped process resumes \"simply because CPU time becomes available\") is not a misconception a learner who studied would hold. Learners confuse \"stopped\" with \"terminated\", or T with D or S states, not with waiting for the scheduler. The wording (\"Linux can resume ... simply because\") also hints at the answer.",
+     "problem": "Strawman. The false reason is contrived, so the card teaches little about the stopped state.",
+     "suggestedFix": "Replace (keeps answer false). Statement (100 chars): \"In procps-ng `ps` output, state T marks a process in uninterruptible sleep, usually waiting for I/O.\" Explanation (147): \"In ps, T means stopped by a job-control signal; the process stays stopped until it gets SIGCONT. Uninterruptible sleep, usually I/O, is shown as D.\" Source: https://man7.org/linux/man-pages/man1/ps.1.html, PROCESS STATE CODES (\"D uninterruptible sleep (usually I/O)\", \"T stopped by job control signal\"). The SIGCONT part is also in signal(7)."
+    },
+    {
+     "id": "linux-command-line-sr5-12",
+     "verdict": "source_problem",
+     "urlStatus": "200, man7.org pidfd_open(2), man-pages-6.19",
+     "evidence": "The cited page only implies PID reuse: https://man7.org/linux/man-pages/man2/pidfd_open.2.html says \"Even if the child has already terminated by the time of the pidfd_open() call, its PID will not have been recycled\". It never says that a PID is reused once the process is gone. pidfd_send_signal(2) says it directly: https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html: \"the sender may accidentally send a signal to the wrong process if the originally intended target process has terminated and its PID has been recycled for another process.\"",
+     "problem": "The cited source only supports the explanation's right fact (PIDs are recycled after reaping) by inference. The card's answer (false) is correct.",
+     "suggestedFix": "Change the source URL to https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html (title \"pidfd_send_signal(2) - Linux manual page\"). Keep the statement and explanation."
+    }
+   ],
+   "notes": "I checked all 12 r5 cards (6 true, 6 false; average statement length 86.3 for true and 86.7 for false; all statements are 120 characters or fewer and all explanations 240 or fewer). I fetched every source URL with curl and all returned 200. The man-pages pages come from man-pages-6.19. ps(1) is from procps-ng Git (2026-08-04) and renice(1) is from util-linux Git (2026-08-04); systemd.xml is the v262 source on GitHub.\n\nThe 9 cards that pass, each with the source sentence that settles it:\n- 01: chdir(2): \"A child process created via fork(2) inherits its parent's current working directory.\"\n- 02: execve(2) NOTES: \"there is no new process; many attributes of the calling process remain unchanged (in particular, its PID)\". A non-leader thread calling execve takes over the leader's PID, but the PID itself stays the same, so the answer holds.\n- 03: systemd.xml v262: \"When run as first process on boot (as PID 1), it acts as init system\". This card is easy and close to a definition, and \"its system service manager\" reads awkwardly. The freedesktop systemd.html page would be the nicer URL, but I did not flag it.\n- 04: ps(1): \"report a snapshot of the current processes ... If you want a repetitive update ... use top instead.\"\n- 05: wait(2) NOTES: \"The kernel maintains a minimal set of information about the zombie process (PID, termination status, resource usage information) in order to allow the parent to later perform a wait\".\n- 07: PR_SET_CHILD_SUBREAPER(2const): \"that process will be reparented to the nearest still living ancestor subreaper\".\n- 08: nice(2): \"A higher nice value means a lower priority\". The \"normal scheduling\" qualifier correctly excludes real-time policies.\n- 09: renice(1) NOTES: \"an unprivileged user can only increase the \\\"nice value\\\"\" for processes they own.\n- 11: credentials(7): \"when a process in the background attempts to read from the terminal, its process group is sent a SIGTTIN signal\". The word \"can\" covers the exceptions (SIGTTIN ignored or blocked, orphaned process group, where the read fails with EIO).\n\nOverlap checks against r2, r6, r7 and r8:\n- 01 (child inherits cwd) is distinct from sr2-01 (relative lookup from the cwd) and sr7-11 (cd in $( ) does not reach the parent).\n- 06 and 11 do not repeat sr6-04 (Ctrl-Z sends SIGTSTP) or sr6-08 (bg).\n\nOne weak link I did not flag: 09 (unprivileged users can only raise nice) combined with general knowledge hints at 08's direction, but neither card's explanation gives the other away.\n\nThe sr5-06 replacement keeps the section's balance at 6 true and 6 false. It uses ps state codes, which the prompt's \"process states\" scope covers, and it is not output-column trivia. The sr5-10 replacement on /proc/PID/environ does not duplicate the r8 environment cards: they test export and inheritance, while this one tests that the /proc file is only a snapshot taken at execve."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr6-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads (man7.org bash.1, from Bash's upstream Git repository)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html (SIGNALS): \"If the huponexit shell option has been set using shopt, bash sends a SIGHUP to all jobs when an interactive login shell exits.\"",
+     "problem": "The answer is right, but the option's name gives it away. huponexit reads as 'HUP on exit', so a player who has never met the option can expand the name and answer True. The one point that takes knowledge, that only a login shell does this, is folded into the statement as a qualifier, so the card never tests it.",
+     "suggestedFix": "Replacement (True): \"On SIGHUP, an interactive Bash resends the signal to its stopped jobs as well as its running ones.\" Explanation: \"Bash exits on SIGHUP by default, but an interactive shell first resends it to all its jobs and sends SIGCONT to stopped ones so they receive it.\" Same URL (SIGNALS section). The other way to keep huponexit in the deck is a False card on the non-login case, but that would shift the section's balance to 5 true and 7 false."
+    },
+    {
+     "id": "linux-command-line-sr6-12",
+     "verdict": "weak_card",
+     "urlStatus": "loads (man7.org bash.1)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html (EXIT STATUS): \"When a command terminates on a fatal signal N, bash uses the value of 128+N as the exit status.\" The card says: \"For a command terminated by fatal signal N, Bash reports an exit status of 128+N.\"",
+     "problem": "The answer is right, but the statement repeats the manual's sentence with only the word order and a verb changed. That breaks the original-wording rule. It also tests the formula as written instead of asking the player to apply it.",
+     "suggestedFix": "Replacement (True): \"In Bash, `echo $?` prints 137 right after a foreground command is killed with SIGKILL.\" Explanation: \"Bash sets the exit status of a command that a fatal signal N ends to 128+N. SIGKILL is signal 9 on Linux, so the status is 137.\" Same URL. signal(7) lists SIGKILL as 9 on every Linux architecture."
+    },
+    {
+     "id": "linux-command-line-sr6-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads (man7.org bash.1)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html (disown): \"Without options, remove each id from the table of active jobs.\" and \"If the -h option is supplied, disown does not remove the jobs from the table but marks each id so that SIGHUP is not sent to the job if the shell receives a SIGHUP.\"",
+     "problem": "The answer (False) is right, but the misconception is close to a strawman. Few people who have used disown think it kills the job, and the statement itself says disown only removes a job-table entry, which hints that nothing is terminated. The confusion people really have is between plain disown and disown -h.",
+     "suggestedFix": "Replacement (False): \"In Bash, `disown -h %1` removes job 1 from the job table, so `jobs` stops listing it.\" Explanation: \"With -h, Bash disown keeps the job in the table and only marks it so that SIGHUP is not sent to it when the shell receives SIGHUP; plain disown removes it.\" Same URL."
+    }
+   ],
+   "notes": "Checked all 12 r6 cards. The section has 6 true and 6 false cards, and both groups average 89 characters. Every source URL returned HTTP 200 on 2026-10-04. signal(7), kill(2) and termios(3type) are from man-pages-6.19, nohup(1) is from the coreutils tarball, and bash(1) and kill(1) (util-linux) are from upstream Git repositories.\n\nCards that passed, with the sentence that settles each:\n- 01: kill(1) says \"If no signal is specified, the TERM signal is sent.\" The Bash builtin says the same: \"If sigspec is not supplied, then kill sends SIGTERM.\" So the answer holds whichever kill runs. The words \"positive process ID\" are unneeded but harmless.\n- 02: signal(7) says \"The signals SIGKILL and SIGSTOP cannot be caught, blocked, or ignored.\"\n- 03: bash(1) says \"^C sends SIGINT to all processes in that process group\". termios VINTR also maps Ctrl-C to SIGINT.\n- 04: termios says \"VSUSP (032, SUB, Ctrl-Z) ... Send SIGTSTP signal.\"\n- 05: kill(2) says \"If sig is 0, then no signal is sent, but existence and permission checks are still performed\".\n- 06: nohup(1) says \"Run COMMAND, ignoring hangup signals\". Nothing on the page backgrounds the command.\n- 07: bash(1) says \"The shell does not wait for the command to finish\". This card is easy and close to basic knowledge, but it is specific to the subject, so I did not flag it.\n- 08: bash(1) says \"Resume each suspended job jobspec in the background, as if it had been started with &\".\n- 11: bash(1) says \"When bash is interactive, in the absence of any traps, it ignores SIGTERM\".\n\nDuplicates: no r6 card rests on the same fact as a card elsewhere in the deck. sr5-06 (a stopped process needs a continuation signal) is close to sr6-08 (bg resumes a job) but is a different fact. sr12-08 covers SIGTERM followed by SIGKILL for systemd services, not kill's default signal. sr5-11 (SIGTTIN) does not overlap sr6-03.\n\nIf sr6-10 is replaced as suggested, the section no longer tests huponexit. The suggested replacement keeps the related SIGHUP job behaviour in scope."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr7-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK; man7.org bash(1), GNU Bash 5.3 (2025 April 7), taken from upstream Git on 2026-08-03; it supports the fact",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, REDIRECTION: \"If the first character of the redirection operator is '>', the redirection refers to the standard output (file descriptor 1).\" and the general format \"[n]>word\". The fact itself is right (2> is fd 2, standard error), but the target file is named `errors`. A player who does not know file descriptors can guess from that word that the stream is the error stream, so the false answer can be read from the wording. That breaks the rule against wording tells.",
+     "problem": "The filename 'errors' gives away that 2> means standard error, so you can answer the false statement without knowing the descriptor numbers.",
+     "suggestedFix": "Replacement, answer false. Statement: \"In Bash, `cmd 2> out.txt` writes the command's standard output to out.txt.\" Explanation: \"2> redirects file descriptor 2, standard error, to out.txt, and standard output (descriptor 1) keeps its destination. A bare > or 1> is what redirects standard output.\" Keep the bash(1) URL."
+    },
+    {
+     "id": "linux-command-line-sr7-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK; man7.org tee(1), GNU coreutils 9.11 (April 2026) per the page footer, not 9.12; it supports the fact",
+     "evidence": "https://man7.org/linux/man-pages/man1/tee.1.html, NAME: \"tee - read from standard input and write to standard output and files\"; DESCRIPTION: \"Copy standard input to each FILE, and also to standard output.\" The statement restates tee's one-line definition with a hedge verb (\"can save ... while sending\"). It is a definition card and a near-copy of the source's NAME line. Nothing in it tests behaviour an operator can get wrong.",
+     "problem": "This is a definition card. It paraphrases tee's NAME/DESCRIPTION line, so it teaches nothing beyond what tee is, and it is a near-copy of the source.",
+     "suggestedFix": "Replacement, answer true. Statement: \"By default, GNU `tee out.log` overwrites an existing out.log rather than appending to it.\" Explanation: \"tee copies standard input to standard output and to each named file, truncating those files first; the -a (--append) option adds to the end of them instead.\" Source: https://man7.org/linux/man-pages/man1/tee.1.html (\"-a, --append  append to the given FILEs, do not overwrite\")."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards, all in linux-command-line-b2.json. The split is 6 true (01, 05, 07, 08, 10, 12) and 6 false (02, 03, 04, 06, 09, 11). Average statement length is 91.2 characters for true cards and 89.5 for false ones. Every statement is 120 characters or less and every explanation 240 or less.\n\nSources: both URLs return 200. bash(1) on man7.org says GNU Bash 5.3, 2025 April 7, and was taken from upstream Git on 2026-08-03. tee(1) is from coreutils 9.11, not 9.12.\n\nWhat each card rests on, quoted from https://man7.org/linux/man-pages/man1/bash.1.html unless noted:\n- 01: Appending Redirected Output, \"opens the file ... for appending\".\n- 03: \"ls 2>&1 > dirlist directs only the standard output to file dirlist, because the standard error was directed to the standard output before the standard output was redirected\".\n- 04: Pipelines, \"The standard output of command1 is connected via a pipe to the standard input of command2\", with |& as the explicit way to add stderr.\n- 05: Pipelines, \"the value of the last (rightmost) command to exit with a non-zero status\". The explanation's reading, position and not timing, is right.\n- 06: Redirecting Output, \"if it does exist it is truncated to zero size\", and redirection happens \"Before a command is executed\".\n- 08: Here Documents, \"If any part of word is quoted ... the lines in the here-document are not expanded\".\n- 09: Here Strings, \"supplied as a single string, with a newline appended\".\n- 10: Command Substitution, \"with any trailing newlines deleted\". This also holds for the Bash 5.3 ${ cmd;} form, so the card is not ambiguous.\n- 11: \"Command substitution ... invoked in a subshell environment ... Changes made to the subshell environment cannot affect the shell's execution environment\". The card names $( ), as the version rule asks after Bash 5.3 added ${ cmd; }.\n- 12: Redirecting Output, \"If the redirection operator is >| ... bash attempts the redirection even if the file named by word exists\".\n\nI also ran 09, 06, 05 and 12 in GNU bash 5.3.20 to confirm them:\n- 09: `cat <<< ''` produced exactly one byte, \\n.\n- 06: `sort data > data` left a 0-byte file.\n- 05: with pipefail, `(exit 3)|(exit 5)|true` gave 5 and `false|(exit 4)|(exit 2)` gave 2.\n- 12: with set -C, `>` was refused and `>|` overwrote the file.\n\nI found no duplicates in other sections. Pipeline status, pipefail and command substitution appear only in r7, as the rules require. The only cards elsewhere that touch pipes are sr10-03 (find -print0 | xargs -0) and sr6-03 (Ctrl-C to the foreground process group), and they rest on different facts.\n\nMinor notes, not flagged:\n- sr7-09 is marked difficulty 1, but the newline a here-string appends is closer to medium.\n- No card covers < input, &> or |&, or /dev/null, so the section leans toward output redirection. That is acceptable, but a replacement could fill one of these gaps."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr8-03",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, man7.org bash(1), taken from upstream Bash Git on 2026-08-03 (GNU Bash 5.3). The page loads and is official and current.",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html (COMMAND EXECUTION) says only: \"bash searches each element of the PATH for a directory containing an executable file by that name.\" Its PATH variable entry says \"a colon-separated list of directories in which the shell looks for commands\". Neither passage says the search goes from first to last or stops at the first match, so the fact that settles the card (the first match wins) cannot be quoted from the cited page. https://man7.org/linux/man-pages/man7/environ.7.html (man-pages 6.19) does say it: \"The list of prefixes is searched from beginning to end, by checking the pathname formed by catenating a prefix, a slash, and the filename, until a file with execute permission is found.\" The answer (false) is correct. A minor edge is Bash's hash table: a command already hashed keeps its remembered path. That does not make \"last match wins\" true.",
+     "problem": "The answer and explanation are correct, but the cited bash(1) page does not state the search order or the first-match rule that the explanation of this false statement relies on. environ(7) states it explicitly.",
+     "suggestedFix": "Change source.url to https://man7.org/linux/man-pages/man7/environ.7.html (title \"environ(7) — Linux manual page\") and keep the statement and the answer (false). Optional rewording of the explanation (answer stays false): \"Bash and other programs search PATH from beginning to end and run the first matching file with execute permission, so an earlier directory wins over a later one.\""
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (all in raw/linux-command-line-b2.json) against bash(1) on man7.org (upstream Git, 2026-08-03, footer GNU Bash 5.3) and environ(7) (man-pages-6.19). Both pages load. Each passing card has a quote on the cited page that settles it:\n- 01: environ(7) says export places variables in the shell's environment and \\\"a child process created via fork(2) ... inherits a copy of its parent's environment\\\". Bash's export entry is stronger: \\\"marked for automatic export to the environment of subsequently executed commands\\\". environ(7) is enough here.\n- 02: source \\\"reads and execute commands from filename in the current shell environment\\\".\n- 04: single quotes preserve \\\"the literal value of each character within the quotes\\\".\n- 05: \\\"$@\\\" is equivalent to \\\"$1\\\" \\\"$2\\\" ..., and a quoted parameter with no value \\\"produces a null field, which is retained\\\".\n- 06: unquoted parameter expansions are scanned for word splitting, and an unset IFS behaves as space, tab and newline.\n- 07: the word \\\"is regarded as a pattern, and replaced with a sorted list of filenames\\\", which the shell does in pathname expansion.\n- 08: a leading \\\".\\\" \\\"must be matched explicitly, unless the shell option dotglob is set\\\".\n- 09: \\\"If no matching filenames are found, and the shell option nullglob is not enabled, the word is left unchanged.\\\"\n- 10: brace expansion is like pathname expansion \\\"but the filenames generated need not exist\\\".\n- 11: \\\"If a command is found but is not executable, the return status is 126.\\\"\n- 12: \\\"command2 is executed if, and only if, command1 returns an exit status of zero\\\".\nI found no version dependency (no Bash 5.2 or 5.3 change applies; globskipdots is not touched). The cards stay within the r8 depth. Balance is 6 true and 6 false. Average statement length is 92.3 characters for true and 88.0 for false, within the 5-character rule. Hedge words are mixed: \\\"can\\\" appears on two true cards and one false card, and \\\"lets\\\" on one false card.\nCross-deck check: no duplicates. sr7-08 (a quoted here-doc delimiter keeps $HOME literal) is close to sr8-04 (single quotes keep $HOME literal), but they test different mechanisms. sr7-11 ($() runs in a subshell) and sr8-02 (source runs in the current shell) are also different facts.\nMinor observations I did not flag:\n- sr8-09 names both nullglob and failglob in the statement, which slightly hints that the default is the literal pattern.\n- sr8-12 (&& running after a failure) is on the easy edge, but it is a real beginner confusion.\n- The section scope lists set -e, the shebang, \\\"$*\\\" and bracket expressions, and none of the 12 cards covers them. That is acceptable for a 12-card section."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr9-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads (man7.org sed.1, from sed-4.10 tarball)",
+     "evidence": "https://man7.org/linux/man-pages/man1/sed.1.html: \"d      Delete pattern space.  Start next cycle.\" The answer (false) is right, but no learner who has studied sed would think the delete command first prints the line, so this is a strawman. It also tests d, which is not on r9's sed list (s/// with and without g, -n with p, addresses, -i), and the section has no card on the g flag that r9 names explicitly.",
+     "problem": "Strawman: the answer follows from the meaning of 'delete'. It also uses a sed command outside the section's listed scope, while the listed s/// g-flag fact is missing from the section.",
+     "suggestedFix": "Replace with a card that is also false. Statement: \"In GNU sed, `s/a/b/` without the g flag replaces every a on each input line.\" Explanation: \"Without a flag, s replaces only the first match in the pattern space. The g flag applies the replacement to every match on the line.\" Source: https://www.gnu.org/software/sed/manual/html_node/The-_0022s_0022-Command.html (g: \"Apply the replacement to all matches to the regexp, not just the first.\"). sed.1 on man7 does not document the s flags."
+    },
+    {
+     "id": "linux-command-line-sr9-12",
+     "verdict": "weak_card",
+     "urlStatus": "loads (man7.org gawk.1, from gawk upstream Git 2026-08-03)",
+     "evidence": "https://man7.org/linux/man-pages/man1/gawk.1.html: \"Similarly, all the END rule statements execute when all the input is exhausted (or when an exit statement is executed).\" The answer (true) is right, but the claim that END runs once after all input can be read from the keyword's name. The vague qualifier \"normal\" also hides the one interesting part, the exit case.",
+     "problem": "Name giveaway or near-truism: END running once at the end of input follows from the word END. Nothing here tests a real behaviour that a daily shell user could get wrong.",
+     "suggestedFix": "Replace with a card that is also true. Statement: \"In gawk, running `exit` in a main rule stops reading input, yet the END rules still run before gawk terminates.\" Explanation: \"exit in a main rule skips the rest of the input but still runs END. An exit inside END itself ends the program immediately.\" Same source URL (gawk.1), plus https://www.gnu.org/software/gawk/manual/html_node/Exit-Statement.html."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (all from b3) against the man7.org pages. The colophons say grep.1 came from grep upstream Git (fetched 2026-08-04), sed.1 from the sed-4.10 tarball and gawk.1 from gawk upstream Git (fetched 2026-08-03). gnu.org refused connections from this environment (ECONNREFUSED), so I confirmed the GNU manual wording only through search results.\n\nEvidence for the cards that pass:\n- 01 (grep -F): grep.1 says \"Interpret PATTERNS as fixed strings, not regular expressions.\"\n- 02 (+ in BRE): regex(7) says \"'|', '+', and '?' are ordinary characters\" in basic REs, and grep.1 says \"GNU BREs can use the escape sequences \\?, \\+, and \\|\". regex(7) is a stronger source than grep.1 here.\n- 03 (-c): grep.1 says \"print a count of matching lines\".\n- 04 (-r): grep.1 says \"following symbolic links only if they are on the command line\", and -R says \"Follow all symbolic links, unlike -r\".\n- 05 (exit status): grep.1 says \"the exit status is 0 if a line is selected, 1 if no lines were selected, and 2 if an error occurred\".\n- 07 (-n): sed.1 says \"-n ... suppress automatic printing of pattern space\" and \"p Print the current pattern space\".\n- 08 (-i): sed.1 says \"-i[SUFFIX] ... edit files in place (makes backup if SUFFIX supplied)\".\n- 09 (RS): gawk.1 says \"RS The input record separator, by default a newline.\"\n- 10 ($NF): gawk.1 supports this only by inference (\"NF ... number of fields\", \"referenced by its position: $1, $2\"). https://www.gnu.org/software/gawk/manual/html_node/Fields.html states $NF as the last field and would be a stronger URL. I did not flag it.\n- 11 (FNR): gawk.1 says \"FNR The input record number in the current input file.\"\n\nThe section has 6 true and 6 false cards, and the two replacements keep that balance. I found no duplicates with other sections: the deck mentions grep, sed and awk only in r9.\n\nCoverage gap, not flagged as a card defect: r9 has no card on grep -i, -v, -l, -q or -w, on egrep/fgrep obsolescence (the warnings since grep 3.8), on awk -F, on pattern-action pairs, or on the s/// g flag. The sr9-06 replacement fills the g-flag gap."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr10-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/sort.1.html (coreutils-9.11 tarball, official, current)",
+     "evidence": "sort(1): \"-n, --numeric-sort compare according to string numerical value\". The statement itself says sort -n orders lines \"by their numeric values\", so \"placing 2 first\" follows by arithmetic and the answer can be read from the wording. The answer (True) is correct, but the card works as a definition card. The section's -k and -t content is not tested anywhere, and sort(1) supports a real trap: \"KEYDEF is F[.C][OPTS][,F[.C][OPTS]] for start and stop position ... the stop position defaults to the line's end.\"",
+     "problem": "This is a give-away or definition card. Once the statement says sort -n compares numeric values, nothing is left to know. The -k/-t trap, which the section requires and the deck does not cover, would teach more.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"GNU `sort -t, -k2` uses a key that runs from the second comma-separated field to the end of the line.\" (101 chars). Explanation: \"A key given as -k2 with no stop position extends to the end of the line, so later fields still affect the order; write -k2,2 to compare the second field alone.\" (159 chars). factKey sort-key-stop-defaults-line-end. Source: same sort.1 URL (KEYDEF paragraph)."
+    },
+    {
+     "id": "linux-command-line-sr10-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/sort.1.html (coreutils-9.11 tarball)",
+     "evidence": "sort(1): \"*** WARNING *** The locale specified by the environment affects sort order. Set LC_ALL=C to get the traditional sort order that uses native byte values.\" The answer (False) is correct. But the false statement claims that forcing the C locale applies \"the current user's language-specific collation rules\". Overriding the locale in order to get the user's own locale makes no sense, so almost nobody who studied would answer True. The listed misconception (\"The C locale selects the user's normal language-specific sort order\") is not one learners really hold. Difficulty 3 also overstates it.",
+     "problem": "This is a strawman false statement. The real misconception is the opposite one: that sort compares bytes no matter which locale is set.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"GNU sort compares lines by raw byte values, whatever locale the user's environment sets.\" (about 85 chars). Explanation: \"GNU sort collates according to the locale in the environment, so order can differ between locales; setting LC_ALL=C gives the traditional order based on native byte values.\" (172 chars). Same URL. Difficulty 2."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards in raw/linux-command-line-b3.json. The section is balanced at 6 true (01, 03, 05, 06, 09, 12) and 6 false (02, 04, 07, 08, 10, 11). Both suggested replacements keep their card's answer, so the balance holds.\n\n**Sources.** All sources are man7.org pages and all returned HTTP 200:\n- find(1) and xargs(1) come from the upstream findutils Git repository.\n- sort, uniq, cut, tr, wc and tail come from the coreutils-9.11 tarball, as the prompt expects.\n- gnu.org refused connections during this run (ECONNREFUSED), so I could not cross-check the coreutils manual nodes. The man7 pages were enough to settle every card.\n\n**Quotes that settle the passing cards:**\n- **01:** \"Two expressions in a row are taken to be joined with an implied -a; expr2 is not evaluated if expr1 is false.\"\n  - Minor nit: \"adjacent preceding test\" is clumsy. A reader could think of `-name x -o -print`, but with an operator in between the test is not adjacent, so I did not flag it.\n  - Suggested wording: \"In GNU `find . -name '*.log' -print`, find skips -print for files whose -name test is false.\"\n- **02:** \"the total number of invocations of the command will be much less than the number of matched files.\"\n  - The difficulty of 3 is generous; 2 fits better.\n- **03:** \"find /tmp -name core -type f -print0 | xargs -0 /bin/rm -f ... names containing spaces or newlines are correctly handled.\"\n- **04:** \"The use of the -delete action on the command line automatically turns on the -depth option.\"\n- **05:** \"executes the command (default is echo)\".\n- **08:** \"'uniq' does not detect repeated lines unless they are adjacent.\"\n- **09:** cut's -d and -f behaviour is unchanged by the coreutils 9.11 multibyte rework. The statement correctly limits itself to lines that contain the delimiter, because lines without it are printed whole unless -s is given.\n- **10:** tr(1): \"Translate, squeeze, and/or delete characters ... STRING1 and STRING2 specify arrays of characters\". The page supports this, though less directly than the GNU manual would.\n- **11:** wc(1): \"-l, --lines print the newline counts\".\n- **12:** \"-F same as --follow=name --retry\" and \"Use --follow=name in that case. That causes tail to track the named file in a way that accommodates renaming, removal and creation.\"\n\n**Duplicates.** I found none in the deck. sr7-06 (`sort data > data`) tests redirection truncation, not sort itself.\n\n**Coverage gap (not a card defect).** Several topics in the section's SECTIONS list have no card:\n- find: quoting -name patterns, -type, -mtime and -newer\n- xargs -n and -I\n- sort -t and -u\n- head\n\nThe -k/-t replacement for card 06 closes part of this gap.\n\n**Wording balance.** The hedge word \"can\" appears in true cards 03 and 12 and in false card 08, so it is acceptably balanced. Every statement names GNU, as the implementation scope rule requires."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr11-08",
+     "verdict": "source_problem",
+     "urlStatus": "200, loads (man.openbsd.org/scp, OpenBSD-current)",
+     "evidence": "https://man.openbsd.org/scp: \"scp uses the SFTP protocol over an ssh(1) connection for data transfer\" and \"-O Use the legacy SCP protocol for file transfers instead of the SFTP protocol.\" The page never names OpenSSH 9.0, which is the pinned fact of the statement and of appliesTo. https://www.openssh.com/txt/release-9.0: \"This release switches scp(1) from using the legacy scp/rcp protocol to using the SFTP protocol by default.\" ... \"the scp(1) client may be instructed to use the legacy scp/rcp using the -O flag.\"",
+     "problem": "Answer (true) and explanation are correct, but the cited man page does not support the version claim \"Since OpenSSH 9.0\". man.openbsd.org also shows OpenBSD-current rather than a released OpenSSH, so a player cannot check the whole card on it.",
+     "suggestedFix": "Keep statement, answer (true) and explanation; change source to https://www.openssh.com/txt/release-9.0 (title: OpenSSH 9.0 release notes), which states both the SFTP default switch and the -O fallback."
+    },
+    {
+     "id": "linux-command-line-sr11-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads (man.openbsd.org/ssh)",
+     "evidence": "https://man.openbsd.org/ssh: \"ssh automatically maintains and checks a database containing identification for all hosts it has ever been used with. Host keys are stored in ~/.ssh/known_hosts\". The fact is correct, but it is close to the meaning of the file name: \"known hosts\" plus \"check identity\" lets a player who does not know the subject guess True. https://man.openbsd.org/ssh_config: \"If this flag is set to ask (the default), new host keys will be added to the user known host files only after the user has confirmed that is what they really want to do\".",
+     "problem": "The answer can be read from the name known_hosts, so the card teaches little. The behaviour the section actually names (StrictHostKeyChecking ask, the default) is untested; only accept-new is covered (sr11-06).",
+     "suggestedFix": "Replacement (answer true, keeps 6/6 balance): statement \"With OpenSSH's default StrictHostKeyChecking setting, ssh asks before adding a new host's key to known_hosts.\" Explanation: \"StrictHostKeyChecking defaults to ask: ssh shows the unknown host key and records it in known_hosts only after the user confirms; a changed key for a known host is refused.\" Source: https://man.openbsd.org/ssh_config"
+    }
+   ],
+   "notes": "I checked all 12 r11 cards (all in b3). They split 6 true and 6 false. Average statement length is 91.8 characters for true cards and 90.5 for false ones, and every explanation is 240 characters or less. All the source URLs return 200.\n\nThe 10 cards that pass:\n- 01, 02, 03 (GNU tar): tar.1 on man7.org says \"-t, --list  List the contents of an archive\", \"-J, --xz  Filter the archive through xz(1)\" and \"-P, --absolute-names  Don't strip leading slashes from file names when creating archives\". Note that this tar.1 comes from GNU tar Git, not from the 1.35 release.\n- 04 (ssh-copy-id): the page says it adds keys \"by appending them to the remote user's ~/.ssh/authorized_keys\" and notes \"it does not need the private key\". The page's COLOPHON says openssh-9.9p2.\n- 06 (accept-new): ssh_config says accept-new \"will automatically add new host keys ... but will not permit connections to hosts with changed host keys\".\n- 07 (ssh -L): ssh(1) says forwarding works \"by allocating a socket to listen to ... a TCP port on the local side\", and the connection to host:hostport is made \"from the remote machine\".\n- 09 (APT dependencies): apt-get(8) on trixie says \"All packages required by the package(s) specified for installation will also be retrieved and installed.\"\n- 10 (apt update): apt(8) says \"update is used to download package information from all configured sources\".\n- 11 (apt for scripts): apt(8) says apt \"is designed as an end-user tool and it may change behavior between versions\" and \"you should prefer using these commands\" (apt-get, apt-cache) \"in your scripts\".\n- 12 (DNF5): the Fedora Changes/SwitchToDnf5 page is still worded as a proposal (\"Targeted release: Fedora Linux 41\"). https://docs.fedoraproject.org/en-US/quick-docs/dnf/ states it directly: \"Current Fedora releases (since 41) use DNF5 by default\". That would be a stronger source but is not required.\n\nOther checks:\n- No other section of the deck has a card on tar, ssh, scp, apt, dpkg, rpm or dnf, so there are no duplicates.\n- No section r11 card tests dpkg or rpm, ssh-keygen, -R forwarding or tar -C. These subtopics are in scope but untested. That is a coverage gap, not a defect.\n- ssh(1) contains the outdated sentence \"Any new hosts are automatically added to the user's file\". It conflicts with ssh_config(5), which says the default is ask. Cite ssh_config for any host-key default."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "linux-command-line-sr12-11",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official systemd v262 man source (github.com/systemd/systemd/blob/v262/man/journalctl.xml)",
+     "evidence": "journalctl.xml v262: \"The argument may be empty, in which case logs for the current boot will be shown.\" and \"If the 32-character ID is specified, it may optionally be followed by offset ... If offset is not specified, a value of zero is assumed, and the logs for the boot given by ID are shown.\"",
+     "problem": "The statement says the caller can view the previous boot \"by leaving the boot offset unspecified\". An expert can call that true: `journalctl -b <previous boot ID>` leaves the offset unspecified and shows the previous boot. The intended fact, that an empty argument means the current boot, needs the statement to say there is no ID and no offset. The explanation does say \"neither a boot ID nor an offset\", but the statement does not.",
+     "suggestedFix": "Keep the answer false. Statement: \"Running `journalctl -b` with no boot ID or offset shows the log messages recorded during the previous boot.\" (107 chars). Explanation: \"With no argument, journalctl -b shows the current boot; journalctl -b -1 selects the boot before it.\" Same URL."
+    },
+    {
+     "id": "linux-command-line-sr12-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official systemd v262 man source (systemctl.xml)",
+     "evidence": "systemctl.xml v262, daemon-reload: \"Reload the systemd manager configuration. This will rerun all generators, reload all unit files, and recreate the entire dependency tree.\" systemd.unit.xml v262: \"Use systemctl daemon-reload or an equivalent command to reload unit configuration while the unit is already loaded. In this case, all configuration settings are flushed out and replaced with the new configuration\"",
+     "problem": "The statement gives itself away. Saying that `daemon-reload` \"can update the definitions\" after edits is readable from the command's name, and the hedge \"can\" marks it as true. It does not test the actual trap: systemd keeps using a loaded unit's old configuration until a reload is run.",
+     "suggestedFix": "Keep the answer true. Statement: \"Once a unit is loaded, systemd keeps its old configuration after a hand edit until `systemctl daemon-reload` runs.\" (114 chars). Explanation: \"A loaded unit keeps its in-memory configuration until daemon-reload rereads the unit files, flushes the old settings and replaces them with the edited ones.\" URL: https://github.com/systemd/systemd/blob/v262/man/systemd.unit.xml"
+    },
+    {
+     "id": "linux-command-line-sr12-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official systemd v262 man source (systemd.target.xml)",
+     "evidence": "systemd.target.xml v262: \"Target units are used to group units and to set synchronization points for ordering dependencies with other unit files.\" and \"They merely group units, allowing a single target name to be used in Wants= and Requires= settings\". systemctl.xml v262, isolate: \"Start the unit specified on the command line and its dependencies and stop all others, unless they have IgnoreOnIsolate=yes\"",
+     "problem": "The statement is close to a definition (the page's first sentence says targets group units) and uses the hedge \"can\" on a true card, so almost nobody would answer false. It also leaves out the section's target topic, targets in place of SysV runlevels, which no other r12 card covers.",
+     "suggestedFix": "Keep the answer true. Statement: \"`systemctl isolate multi-user.target` stops running units that multi-user.target does not pull in as dependencies.\" (114 chars). Explanation: \"isolate starts the named target with its dependencies and stops every other unit unless it sets IgnoreOnIsolate=yes, which is how systemd moves between targets in place of runlevels.\" (182 chars). URL: https://github.com/systemd/systemd/blob/v262/man/systemctl.xml"
+    }
+   ],
+   "notes": "All 12 source URLs (github.com/systemd/systemd/blob/v262/man/*.xml) return 200 and are official v262 man sources, which the prompt allows. I read the raw XML of each page and checked every card against it.\n\nThe 9 cards that pass, with the sentence that settles each:\n- 02 (timer has no ExecStart=): \"For each timer file, a matching unit file must exist, describing the unit to activate when the timer elapses.\"\n- 03 (/etc over /usr/lib): \"Unit files found in directories listed earlier override files with the same name\", and /etc/systemd/system comes before /usr/lib in the system load-path table.\n- 04 (systemctl edit makes a drop-in): \"If --full is specified, a replacement for the main unit file will be created or edited. Otherwise, a drop-in file will be created or edited.\" The default name is override.conf.\n- 06 (enable does not start): \"Note that this does not have the effect of also starting any of the units being enabled.\"\n- 07 (mask blocks dependency activation): mask \"prohibits all kinds of activation of the unit, including enablement and manual activation.\"\n- 08 (SIGTERM then SIGKILL): KillSignal= \"Defaults to SIGTERM\" and is \"usually followed by SIGKILL\".\n- 09 (Restart=on-failure ignores SIGTERM): systemd.service treats SIGHUP, SIGINT, SIGTERM and SIGPIPE as clean \"except for Type=oneshot\", and on-failure excludes those four signals. Type=simple is therefore the right scope.\n- 10 (journalctl -u): adds _SYSTEMD_UNIT matches \"along with additional matches for messages from systemd and messages about coredumps\".\n- 12 (Storage=volatile): \"If volatile, journal log data will be stored only in memory, i.e. below the /run/log/journal hierarchy\".\n\nBalance is 6 true and 6 false. Average length is 97.5 for true statements and 98.5 for false ones. With all three proposed replacements it would be about 104 against 99.8, still within the 5-character rule. No r12 fact is duplicated in another section: r6 tests SIGKILL as uncatchable, and r5 tests systemd as PID 1.\n\nMinor points that do not need a flag:\n- 12 is close to a definition card (\"volatile\" suggests non-persistent), but the section lists it explicitly and a learner could plausibly answer true.\n- 10 is easy, but it is in scope.\n- 11's explanation leaves out the --directory exception, which is harmless at this depth.\n- No card covers socket or mount units, is-active/is-enabled, -p/-k/--since, or the removal of SysV scripts in 260. That is a coverage gap, not a defect."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "linux-command-line-sr7-08",
+     "linux-command-line-sr8-04"
+    ],
+    "why": "Both cards rest on the rule that single quotes around $HOME stop it from expanding. sr7-08 uses a single-quoted here-doc delimiter (<<'EOF') with literal $HOME, and sr8-04 single-quotes '$HOME' as an argument. A learner who knows one can answer the other by analogy, so they are opposite-answer twins in practice. Dropping sr8-04 removes the overlap; it is close to a strawman ('can expand' inside single quotes is something few who studied would believe). The alternative is to keep sr8-04 for r8 and rewrite sr7-08 with a double-quoted or backslash-quoted delimiter (\"EOF\" or \\EOF), which tests the here-doc rule in its own right.",
+    "dropId": "linux-command-line-sr8-04"
+   },
+   {
+    "ids": [
+     "linux-command-line-sr3-08",
+     "linux-command-line-sr3-09"
+    ],
+    "why": "chown(2) states these two as one distinction: only a privileged process may change a file's owner, while the owner may change the group to one of their own groups. The prompt says the two sides of one distinction are one fact. sr3-08 (an owner giving the file away with chown is False) is the classic trap. sr3-09 (an owner using chgrp to pick one of their own groups is True) is the other side, and it is easier to guess.",
+    "dropId": "linux-command-line-sr3-09"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "stderr-fd-two",
+    "ids": [
+     "linux-command-line-sr7-02",
+     "linux-command-line-sr7-03"
+    ],
+    "why": "The sr7-03 statement ('command 2>&1 > log sends standard error into log') treats fd 2 as standard error, which is the answer to sr7-02 (whether 2> selects standard output: False)."
+   },
+   {
+    "name": "single-quote-literal",
+    "ids": [
+     "linux-command-line-sr7-08",
+     "linux-command-line-sr8-04"
+    ],
+    "why": "sr7-08 (True) shows single quoting keeping $HOME literal, which gives away sr8-04 (single-quoted $HOME expands: False). This is also listed as a duplicate."
+   },
+   {
+    "name": "shell-does-globbing",
+    "ids": [
+     "linux-command-line-sr8-07",
+     "linux-command-line-sr8-08",
+     "linux-command-line-sr8-09"
+    ],
+    "why": "sr8-09 says Bash passes an unmatched *.log on as a literal argument. sr8-08 says 'Bash's default * expansion', and its explanation mentions 'Bash's default filename-expansion settings'. Both tell the player that the shell, not ls, expands patterns, which answers sr8-07 (False)."
+   },
+   {
+    "name": "nohup-vs-ampersand",
+    "ids": [
+     "linux-command-line-sr6-06",
+     "linux-command-line-sr6-07"
+    ],
+    "why": "The sr6-06 explanation says that with a plain nohup command 'the shell still waits for the command to finish', so a separate operator is needed for background running. That points straight at sr6-07 (& lets the shell continue: True). sr6-07 in turn hints that backgrounding is &'s job, not nohup's."
+   },
+   {
+    "name": "stopped-job-resume",
+    "ids": [
+     "linux-command-line-sr5-06",
+     "linux-command-line-sr6-08"
+    ],
+    "why": "sr6-08 (bg %1 can resume a stopped job: True) shows that a stopped job needs an explicit resume command. That answers sr5-06 (a stopped process resumes when CPU time becomes available: False). The sr5-06 explanation ('needs a continuation signal') in turn supports sr6-08."
+   },
+   {
+    "name": "foreground-process-group",
+    "ids": [
+     "linux-command-line-sr5-11",
+     "linux-command-line-sr6-03",
+     "linux-command-line-sr6-08"
+    ],
+    "why": "The sr5-11 explanation ('Terminal input normally belongs to the foreground process group') and the sr6-08 explanation ('remains outside the terminal's foreground process group') both point to the terminal-to-foreground-group link that sr6-03 tests (Ctrl-C sends SIGINT to the foreground process group). sr6-08 also hints at sr5-11's background-read behaviour."
+   },
+   {
+    "name": "nice-direction",
+    "ids": [
+     "linux-command-line-sr5-08",
+     "linux-command-line-sr5-09"
+    ],
+    "why": "The sr5-08 explanation says a higher nice value means lower priority. With that, sr5-09 (an unprivileged user may raise the nice value of their own process) becomes an easy True, since giving up priority is harmless. In the other direction, sr5-09 shows that ordinary users may raise nice values, which hints that raising them is not a privilege grab."
+   },
+   {
+    "name": "boot-lifetime-storage",
+    "ids": [
+     "linux-command-line-sr1-06",
+     "linux-command-line-sr1-07",
+     "linux-command-line-sr12-12"
+    ],
+    "why": "The sr1-07 explanation says /run holds runtime data cleared at boot. The sr1-06 explanation says /var/tmp files survive reboots, so /var is the persistent side. Together they answer sr12-12 (Storage=volatile keeps journals under /var/log/journal: False; the answer is /run/log/journal)."
+   },
+   {
+    "name": "usr-holds-programs",
+    "ids": [
+     "linux-command-line-sr1-03",
+     "linux-command-line-sr1-04"
+    ],
+    "why": "The sr1-03 statement ('/bin holds separate copies of the executables in /usr/bin') and its explanation tell the player that /usr holds installed executables, which answers sr1-04 (/usr as the parent of home directories: False)."
+   },
+   {
+    "name": "rename-open-descriptor",
+    "ids": [
+     "linux-command-line-sr2-11",
+     "linux-command-line-sr10-12"
+    ],
+    "why": "sr10-12 explains that tail -F follows the name and reopens it after rotation, which implies that an open descriptor keeps pointing at the renamed file. That is the fact sr2-11 tests (True)."
+   },
+   {
+    "name": "symlink-stored-text",
+    "ids": [
+     "linux-command-line-sr2-07",
+     "linux-command-line-sr2-09"
+    ],
+    "why": "The sr2-09 explanation ('retaining a relative target as relative text') shows that a symlink stores only the literal target text, with no record of the creator's working directory. That hints at sr2-07 (relative target resolved from the creation working directory: False)."
+   },
+   {
+    "name": "directory-search-bit",
+    "ids": [
+     "linux-command-line-sr3-02",
+     "linux-command-line-sr3-03"
+    ],
+    "why": "The sr3-03 explanation ('needs write and search permission on the containing directory') calls the directory permission 'search', which points to x, not r. That hints at sr3-02 (the read bit grants traversal: False)."
+   },
+   {
+    "name": "unlink-directory-control",
+    "ids": [
+     "linux-command-line-sr3-03",
+     "linux-command-line-sr4-05"
+    ],
+    "why": "The sr4-05 explanation describes the sticky bit as adding 'deletion and renaming restrictions' to a directory. This shows that deletion is controlled at the directory level, which answers sr3-03 (a file's own write bit authorizes removing its name: False)."
+   },
+   {
+    "name": "owner-may-change",
+    "ids": [
+     "linux-command-line-sr3-08",
+     "linux-command-line-sr3-09",
+     "linux-command-line-sr3-12",
+     "linux-command-line-sr4-06"
+    ],
+    "why": "Three statements share the template 'a file's owner can <change attribute>', with answers F (chown), T (chgrp) and T (chmod), so seeing them together invites guessing by contrast. The sr4-06 explanation ('including changes performed by root') also hints that ownership changes are root's job, which helps answer sr3-08."
+   },
+   {
+    "name": "setuid-exceptions",
+    "ids": [
+     "linux-command-line-sr4-01",
+     "linux-command-line-sr4-02",
+     "linux-command-line-sr4-03"
+    ],
+    "why": "sr4-01 (True) carefully says 'setuid ELF executable', which signals that interpreter scripts (sr4-02) and other cases behave differently. The sr4-02 and sr4-03 explanations ('Linux ignores the set-user-ID bit on interpreter scripts', 'confer no privilege') frame both as exceptions to the sr4-01 rule. A player can read the general rule and its exceptions off one another."
+   },
+   {
+    "name": "sigterm-sigkill-escalation",
+    "ids": [
+     "linux-command-line-sr6-01",
+     "linux-command-line-sr6-02",
+     "linux-command-line-sr12-08"
+    ],
+    "why": "sr12-08 (systemd sends SIGTERM first and uses SIGKILL on a service that fails to stop) presents SIGTERM as the polite default and SIGKILL as the unstoppable fallback. That hints at sr6-01 (kill's default is SIGTERM) and at sr6-02 (a process can catch SIGKILL to clean up: False)."
+   },
+   {
+    "name": "subshell-vs-current-shell",
+    "ids": [
+     "linux-command-line-sr7-11",
+     "linux-command-line-sr8-02"
+    ],
+    "why": "The sr7-11 explanation (a cd inside $() runs in a subshell and leaves the outer shell unchanged) and the sr8-02 explanation (source runs in the current shell context) state the same contrast from opposite sides, so each card supports the other's answer."
+   },
+   {
+    "name": "redirect-truncation",
+    "ids": [
+     "linux-command-line-sr7-01",
+     "linux-command-line-sr7-06",
+     "linux-command-line-sr7-12"
+    ],
+    "why": "The sr7-06 statement says 'With Bash noclobber off'. sr7-12 explains that noclobber protects existing files from > and that >| overrides it. sr7-01 says >> preserves the existing content. Together they tell the player that plain > truncates the target, which answers sr7-06 (sort data > data preserves contents: False)."
+   },
+   {
+    "name": "host-key-change",
+    "ids": [
+     "linux-command-line-sr11-05",
+     "linux-command-line-sr11-06"
+    ],
+    "why": "The sr11-05 explanation says known_hosts exists to detect 'an unexpected key change', which hints that no checking mode quietly accepts a changed key. That answers sr11-06 (accept-new accepts a changed key: False)."
+   },
+   {
+    "name": "unit-override-location",
+    "ids": [
+     "linux-command-line-sr12-03",
+     "linux-command-line-sr12-04"
+    ],
+    "why": "sr12-03 (True: /etc/systemd/system wins over /usr/lib/systemd/system, 'letting local configuration override the packaged definition') shows that local overrides live outside the vendor file. That hints at sr12-04 (systemctl edit opens the vendor unit file by default: False)."
+   },
+   {
+    "name": "install-links",
+    "ids": [
+     "linux-command-line-sr12-06",
+     "linux-command-line-sr12-07"
+    ],
+    "why": "The sr12-07 explanation ('Disabling removes installation links but leaves other activation routes available') shows that enable and disable only manage [Install] links. That hints at sr12-06 (enable brings the service into the running state: False)."
+   },
+   {
+    "name": "terminal-control-keys",
+    "ids": [
+     "linux-command-line-sr6-03",
+     "linux-command-line-sr6-04"
+    ],
+    "why": "These are a near-mirrored true/false pair on one template, 'With normal settings, the terminal driver sends/uses <signal> ... on Ctrl-<key>': Ctrl-C/SIGINT is True and Ctrl-Z/SIGSTOP is False. Dealt together, they invite contrast guessing between SIGSTOP and SIGTSTP."
+   },
+   {
+    "name": "counts-as-template",
+    "ids": [
+     "linux-command-line-sr9-03",
+     "linux-command-line-sr10-11"
+    ],
+    "why": "Both are b3 false cards on one template: a counting option 'counts X as separate/another <unit>' (grep -c and wc -l). Seeing one makes the other easy to spot as the same distractor."
+   }
+  ],
+  "tells": "All 144 cards read (b1 48, b2 48, b3 48). Each section has 6 true and 6 false cards. All 144 ids and factKeys are unique. Within each section, the average length of true and false statements is within 5 characters (largest gap: r8, where true statements are 4.3 characters longer; r4, where false are 3.3 longer). Hedge 'can' is balanced across the deck (20 true, 20 false), and so is 'by default/default' (8 true, 8 false). The exploitable tells are in narrower wording and in templates.\n\nWORD TELLS (statement text):\n1. 'even when / even if / including' marks True 7 of 8 times. True: sr1-07, sr2-05, sr3-11, sr3-12, sr8-05, sr9-01, sr12-07. False: sr10-08 only. This is the strongest wording tell: a statement that adds a reassuring scope clause is almost always true.\n2. FHS verb tell in r1. Every 'FHS places ... under /x' statement is True (sr1-02, sr1-05, sr1-11, 3 of 3). Every FHS statement with another verb ('uses', 'treats', 'assigns') is False (sr1-04, sr1-06, sr1-08, 3 of 3). A player can answer all six FHS cards from the verb alone.\n3. A tool-possessive subject (\"Bash's\", \"GNU tar's\", \"OpenSSH's\", \"GNU chmod's\") marks False 5 of 6: sr7-03, sr8-07, sr8-08, sr11-02, sr11-07 are False, and only sr3-06 is True.\n4. 'retain / preserve / keep' leans True, 7 of 10. True: sr3-04, sr4-11, sr5-05, sr6-08, sr8-05, sr10-03, sr10-12. False: sr5-12, sr7-06, sr12-12.\n5. 'treats/counts/stores X as <noun>' leans False, 6 of 8. False: sr1-06, sr1-10, sr9-03, sr10-10, sr10-11, sr11-11. True: sr8-06, sr8-09.\n6. 'the caller' leans True, 4 of 5. True: sr2-05, sr4-01, sr6-01, sr10-05. False: sr12-11.\n7. Minimiser words mark False 2 of 2 ('alone' in sr2-12, 'simply because' in sr5-06). 'direct/directly' marks False 2 of 2 (sr4-02, sr12-04). 'automatically' marks False 2 of 3 (sr4-12 and sr6-06 False, sr4-04 True).\n8. 'In Bash,' leans slightly True within b2: 9 true, 6 false.\n\nRECURRING FALSE TEMPLATES (the prompt allows at most two false statements per template):\nA. Reversal of a direction or order, 8 false cards: sr2-08 (ln operand order), sr5-08 (nice direction), sr8-03 (PATH first vs last), sr8-12 (&& runs on failure), sr10-04 (parent before children with -delete), sr10-07 (LC_ALL=C gives the user's collation), sr11-07 (-L listener on the remote side), sr12-11 (-b with no offset gives the previous boot). A player who flips 'first/last/higher/remote/previous' claims to False will often be right.\nB. Sibling swap, where an option or item is given the job of its nearest neighbour, 7 false cards: sr1-08 (/ for /root), sr4-08 (target vs invoking user's password), sr6-04 (SIGSTOP for SIGTSTP), sr7-02 (stdout for stderr), sr9-10 ($NF as NF), sr11-02 (-J as gzip instead of xz), sr11-04 (private key for public key).\nC. '<X> can <break a documented restriction>', 11 false cards: sr2-04, sr3-01, sr3-07, sr3-08, sr4-02, sr4-03, sr5-02, sr6-02, sr7-11, sr8-04, sr11-06. The word 'can' is balanced, but in these false cards it always claims an override of a well-known prohibition, while true 'can' cards describe ordinary capabilities.\nD. 'X counts Y as another/separate unit', 2 cards, both in b3: sr9-03, sr10-11. 'X keeps/preserves ... until Z', 2 cards: sr5-12, sr7-06. Each is at the limit of two.\nE. Parallel-template pairs with opposite answers, which invite contrast guessing: sr6-03/sr6-04 ('With normal settings, the terminal driver ... on Ctrl-'), and sr3-08/sr3-09/sr3-12 ('A file's owner can ...').\n\nB3 (GPT-6.1 Sol) VERSUS B1/B2 (GPT-6 Pro) WORDING HABITS:\n1. Subject prefix. In b3, 23 of 48 statements open with 'GNU' and 13 open with 'GNU `cmd`'. In b1 the counts are 4 and 1; in b2 they are 2 and 2. b3 never uses 'Linux' as a subject, while b1 and b2 use it 22 times. b2's equivalent habit is the 'In Bash,' opener (15 times). These prefixes are balanced by answer, so they are style differences rather than tells, but b3 reads visibly different.\n2. Precondition guards on true statements. b3 true cards often carry lawyer-like scoping clauses: sr9-04 'when that symlink appears as a command-line operand', sr9-05 'After a successful scan with zero matching lines', sr9-09 'With default input settings', sr9-12 'In a normal multi-file run', sr10-05 'when the caller supplies input but omits a command name', sr10-09 'from input lines that contain a colon', sr12-03 'For matching system unit filenames', sr12-08 'With default kill settings ... that fails to stop'. b3 false cards rarely carry such guards; where they have a leading clause, it only names the option under test (sr12-09, sr12-11, sr12-12). Within b3, leading condition clauses split 9 true to 6 false, and trailing guards split about 8 true to 2 false. A practised player can read 'heavily hedged precondition' as True.\n3. Longer statements. Mean length is 92.7 characters for true and 91.7 for false in b3, against 83 to 89 in b1 and b2. The maximum is 116 in b3 against 106 in b1 and b2. r12 is the longest section (about 98 on average).\n4. Explanation style. b3 explanations are shorter on average (113 characters, against 126 in b1 and 137 in b2). Only 21 of 48 have two sentences, against 35 in b1 and 45 in b2. 19 of 48 begin with a lowercase flag or command ('-J selects xz', 'tr maps', 'grep -c counts', 'accept-new adds', 'journalctl -b selects'); b1 has none and b2 has 5. b3 joins clauses with semicolons more often (5, against 2 and 1). b3 almost never uses the b1/b2 habit 'rather than' (1, against 11 and 7). Some b3 explanations are terse to the point of not standing alone (sr9-02, sr11-02, sr11-06).\n5. 'default' density. b3 uses 'default/by default' in 10 statements (6 true, 4 false), against 1 in b1 and 5 in b2, so the word's frequency jumps across the batch boundary.\n6. b3 false statements favour the 'counts/treats X as <unit>' frame (sr9-03, sr10-10, sr10-11, sr11-11). b1 and b2 false statements favour '<X> can <override a prohibition>' (template C, 10 of its 11 cards come from b1 and b2)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "linux-command-line-sr1-09",
+    "reason": "weak_card: the directory name /dev gives the answer away. Dropping it leaves r1 at 10 cards, 4 true and 6 false, once sr1-02 is rewritten."
+   },
+   {
+    "id": "linux-command-line-sr1-11",
+    "reason": "weak_card: a near-copy of the FHS /srv sentence. Dropping it together with sr1-09 still leaves r1 at 10 cards and 4/6."
+   },
+   {
+    "id": "linux-command-line-sr2-01",
+    "reason": "weak_card: close to a definition (a relative path starts at the working directory). r2 is still 9 cards, 4 true and 5 false."
+   },
+   {
+    "id": "linux-command-line-sr2-08",
+    "reason": "weak_card: the operand names 'source' and 'alias' give away the ln argument order."
+   },
+   {
+    "id": "linux-command-line-sr2-09",
+    "reason": "weak_card: the answer can be read from the command name readlink."
+   },
+   {
+    "id": "linux-command-line-sr3-04",
+    "reason": "weak_card: it restates what + means in chmod, so it is close to a definition. r3 keeps 10 cards, 4 true and 6 false."
+   },
+   {
+    "id": "linux-command-line-sr3-09",
+    "reason": "Scan duplicate: it is the other side of sr3-08's chown(2) owner/group distinction, and it is the easier side to guess."
+   },
+   {
+    "id": "linux-command-line-sr4-01",
+    "reason": "weak_card: the setuid bit's name gives the answer away and the wording is close to a definition. r4 is still 9 cards, 5 true and 4 false."
+   },
+   {
+    "id": "linux-command-line-sr4-05",
+    "reason": "weak_card: the strawman distractor (the sticky bit controls reading) never tests restricted deletion."
+   },
+   {
+    "id": "linux-command-line-sr4-10",
+    "reason": "weak_card: the qualifier 'use shadow passwords' gives away where the hashes are kept."
+   },
+   {
+    "id": "linux-command-line-sr5-06",
+    "reason": "weak_card: the strawman reason (it resumes when CPU time is available) is not a misconception a learner holds. r5 keeps 10 cards, 6 true and 4 false."
+   },
+   {
+    "id": "linux-command-line-sr5-10",
+    "reason": "weak_card: cwd expands to 'current working directory', so the name settles the card."
+   },
+   {
+    "id": "linux-command-line-sr6-09",
+    "reason": "weak_card: close to a strawman, since the statement itself says disown only removes a job-table entry. r6 is still 9 cards, 4 true and 5 false."
+   },
+   {
+    "id": "linux-command-line-sr6-10",
+    "reason": "weak_card: the option name huponexit ('HUP on exit') gives away the answer."
+   },
+   {
+    "id": "linux-command-line-sr6-12",
+    "reason": "weak_card: it restates the bash(1) 128+N sentence almost word for word."
+   },
+   {
+    "id": "linux-command-line-sr7-02",
+    "reason": "weak_card: the target file name 'errors' gives away that 2> is standard error. r7 keeps 10 cards, 5 true and 5 false."
+   },
+   {
+    "id": "linux-command-line-sr7-07",
+    "reason": "weak_card: a definition card that paraphrases tee's NAME line."
+   },
+   {
+    "id": "linux-command-line-sr8-04",
+    "reason": "Scan duplicate of sr7-08 (single quotes keep $HOME literal), and close to a strawman. r8 keeps 11 cards, 6 true and 5 false."
+   },
+   {
+    "id": "linux-command-line-sr9-06",
+    "reason": "weak_card: a strawman (d 'prints before deleting'), and the d command is outside r9's listed sed scope. r9 keeps 10 cards, 5 true and 5 false."
+   },
+   {
+    "id": "linux-command-line-sr9-12",
+    "reason": "weak_card: END running once after all input can be read from the keyword."
+   },
+   {
+    "id": "linux-command-line-sr10-06",
+    "reason": "weak_card: the statement says sort -n compares numeric values, so placing 2 before 10 follows from it. r10 keeps 10 cards, 5 true and 5 false."
+   },
+   {
+    "id": "linux-command-line-sr10-07",
+    "reason": "weak_card: a strawman, since nobody sets LC_ALL=C to get their own language's collation."
+   },
+   {
+    "id": "linux-command-line-sr11-05",
+    "reason": "weak_card: the answer can be read from the name known_hosts. r11 keeps 11 cards, 5 true and 6 false."
+   },
+   {
+    "id": "linux-command-line-sr12-01",
+    "reason": "weak_card: close to the definition of a target, and the true statement carries the hedge 'can'. r12 keeps 10 cards, 4 true and 6 false."
+   },
+   {
+    "id": "linux-command-line-sr12-05",
+    "reason": "weak_card: the hedge 'can update definitions' and the command name daemon-reload give the answer away."
+   }
+  ],
+  "source": [
+   {
+    "id": "linux-command-line-sr3-01",
+    "title": "acl(5): Linux manual page",
+    "url": "https://man7.org/linux/man-pages/man5/acl.5.html"
+   },
+   {
+    "id": "linux-command-line-sr3-02",
+    "title": "GNU Coreutils manual: Structure of File Mode Bits",
+    "url": "https://www.gnu.org/software/coreutils/manual/html_node/Mode-Structure.html"
+   },
+   {
+    "id": "linux-command-line-sr3-11",
+    "title": "Bash Reference Manual: Shell Scripts",
+    "url": "https://www.gnu.org/software/bash/manual/html_node/Shell-Scripts.html"
+   },
+   {
+    "id": "linux-command-line-sr5-12",
+    "title": "pidfd_send_signal(2): Linux manual page",
+    "url": "https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html"
+   },
+   {
+    "id": "linux-command-line-sr8-03",
+    "title": "environ(7): Linux manual page",
+    "url": "https://man7.org/linux/man-pages/man7/environ.7.html"
+   },
+   {
+    "id": "linux-command-line-sr11-08",
+    "title": "OpenSSH 9.0 release notes",
+    "url": "https://www.openssh.com/txt/release-9.0"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "linux-command-line-sr1-02",
+    "reason": "weak_card that had to be rewritten: dropping sr1-02, sr1-09 and sr1-11 would leave r1 at 3 true and 6 false. This uses the verifier's replacement, shortened to one fact. Confirmed in FHS 3.0 section 3.7: \"No binaries may be located under /etc\" and \"it must be static and cannot be an executable binary\".",
+    "statement": "FHS forbids placing executable binaries under the `/etc` configuration hierarchy.",
+    "answer": true,
+    "explanation": "FHS 3.0 limits /etc to static, local files that control how programs operate, and states that no binaries may be located under it.",
+    "misconception": "",
+    "sourceTitle": "FHS 3.0, /etc: Host-specific system configuration",
+    "sourceUrl": "https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch03s07.html"
+   },
+   {
+    "id": "linux-command-line-sr3-01",
+    "reason": "source_problem: path_resolution(7) does not settle precedence when the owner is also in the group. acl(5) does. Its ACCESS CHECK ALGORITHM says that if the effective UID matches the owner, access is granted only if ACL_USER_OBJ contains the requested permissions, else denied. Its CORRESPONDENCE section says the owner permissions correspond to ACL_USER_OBJ. The statement now uses the verifier's clearer wording, which drops the clumsy 'can combine' and keeps False.",
+    "statement": "When a file's owner is also in its group, Linux grants the owner the union of the owner and group permission bits.",
+    "answer": false,
+    "explanation": "Linux checks the owner class first: for the file's owner, only the owner permission bits decide access, even when the group bits would grant more.",
+    "misconception": "Owner and group permission bits combine when the owner belongs to the file's group.",
+    "sourceTitle": "acl(5): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man5/acl.5.html"
+   },
+   {
+    "id": "linux-command-line-sr3-02",
+    "reason": "source_problem: path_resolution(7) does not support the read-means-list half. The GNU coreutils Mode-Structure node supports both halves: \"For directories, this means permission to list the contents of the directory\" for read, and \"permission to access files in the directory\" for execute. gnu.org refused connections, so I read it through the Web Archive. The statement is unchanged and the explanation is aligned to the page.",
+    "statement": "A directory's read bit grants permission to traverse that directory during pathname lookup.",
+    "answer": false,
+    "explanation": "For a directory, the execute bit grants access to the files inside it during lookup, while the read bit lets a user list the names it contains.",
+    "misconception": "Directory read permission also provides search permission.",
+    "sourceTitle": "GNU Coreutils manual: Structure of File Mode Bits",
+    "sourceUrl": "https://www.gnu.org/software/coreutils/manual/html_node/Mode-Structure.html"
+   },
+   {
+    "id": "linux-command-line-sr3-11",
+    "reason": "source_problem: bash(1) never mentions the execute bit. The Bash manual's Shell Scripts node says Bash \"reads and executes commands from the file\" given as the first argument, and that a script \"may be made executable\" with chmod for running it through PATH (read through the Web Archive). The statement is reworded with the same fact and answer, which removes the true-card hedge 'can' and the 'even when' tell.",
+    "statement": "`bash script.sh` runs the commands in a readable script whose mode is 0644.",
+    "answer": true,
+    "explanation": "Given as an argument, the file is opened and read by Bash, so read permission is enough. The execute bit matters when the script itself is run as a command, for example found through PATH.",
+    "misconception": "",
+    "sourceTitle": "Bash Reference Manual: Shell Scripts",
+    "sourceUrl": "https://www.gnu.org/software/bash/manual/html_node/Shell-Scripts.html"
+   },
+   {
+    "id": "linux-command-line-sr5-12",
+    "reason": "source_problem: pidfd_open(2) only implies PID reuse. pidfd_send_signal(2) states it: \"the originally intended target process has terminated and its PID has been recycled for another process\". The explanation now matches that page; the statement is unchanged.",
+    "statement": "Linux keeps a terminated process's PID reserved until the next system boot.",
+    "answer": false,
+    "explanation": "Once a process has terminated, Linux can recycle its PID for another process, so a stored PID may later refer to an unrelated process.",
+    "misconception": "Process IDs remain reserved for the entire boot, even after the processes disappear.",
+    "sourceTitle": "pidfd_send_signal(2): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man2/pidfd_send_signal.2.html"
+   },
+   {
+    "id": "linux-command-line-sr8-03",
+    "reason": "source_problem: bash(1) does not state the search order. environ(7) PATH does: it is used by sh(1) and other programs, and \"The list of prefixes is searched from beginning to end ... until a file with execute permission is found.\" The statement is unchanged and the explanation is aligned.",
+    "statement": "When Bash searches PATH for an executable, it chooses the last matching directory's executable.",
+    "answer": false,
+    "explanation": "PATH is searched from beginning to end, and the first directory holding a matching file with execute permission wins, so earlier entries take precedence.",
+    "misconception": "Later PATH entries take precedence over earlier matching entries during a search.",
+    "sourceTitle": "environ(7): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man7/environ.7.html"
+   },
+   {
+    "id": "linux-command-line-sr12-11",
+    "reason": "ambiguous: 'leaving the boot offset unspecified' is also true of `-b <previous boot ID>`. The rewrite names a bare -b. journalctl.xml v262 says \"The argument may be empty, in which case logs for the current boot will be shown\" and \"-1 the boot before last\". I wrote 'bare' instead of the verifier's 'with no boot ID or offset' to avoid a negation.",
+    "statement": "Running a bare `journalctl -b` shows the log messages recorded during the previous boot.",
+    "answer": false,
+    "explanation": "With an empty argument, journalctl -b shows the current boot. An offset such as journalctl -b -1 selects the boot before it.",
+    "misconception": "Omitting journalctl's boot argument selects the previous boot.",
+    "sourceTitle": "journalctl: Official manual source, systemd v262",
+    "sourceUrl": "https://github.com/systemd/systemd/blob/v262/man/journalctl.xml"
+   },
+   {
+    "id": "linux-command-line-sr9-01",
+    "reason": "tell: 'even when/including' marks True 7 of 8 times, and the 'treats X as' frame leans False. This removes 'including' and gives a true card the 'treats' frame. The fact (grep -F matches the pattern literally) and the answer (True) are unchanged. grep.1 says: \"Interpret PATTERNS as fixed strings, not regular expressions.\"",
+    "statement": "GNU `grep -F 'a.b' file` treats the dot in the pattern as an ordinary character to match.",
+    "answer": true,
+    "explanation": "With -F, GNU grep interprets the supplied pattern literally, including punctuation with special regex meanings.",
+    "misconception": "",
+    "sourceTitle": "grep(1): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/grep.1.html"
+   },
+   {
+    "id": "linux-command-line-sr2-05",
+    "reason": "tell: removes 'even when the caller is root' (the 'even when' clause marks True). The fact is unchanged: link() refuses directories with no privilege exception (link(2): \"EPERM oldpath is a directory\"). The answer stays True.",
+    "statement": "On Linux, the link() call returns an error when a root process asks it to hard-link a directory.",
+    "answer": true,
+    "explanation": "Linux forbids directory hard links through link(). Administrative privilege does not provide an exception to that restriction.",
+    "misconception": "",
+    "sourceTitle": "link(2): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man2/link.2.html"
+   },
+   {
+    "id": "linux-command-line-sr3-12",
+    "reason": "tell: removes the true-card hedge 'can' and the 'even when' clause. The fact (only ownership or privilege decides chmod, not the write bit) and the answer (True) are unchanged. chmod(2) says: \"The effective UID of the calling process must match the owner of the file, or the process must be privileged.\"",
+    "statement": "On Linux, permission to chmod a file depends on owning it rather than on having its write bit set.",
+    "answer": true,
+    "explanation": "chmod(2) requires the caller's effective UID to match the file's owner, or privilege, so an owner can change the mode of a read-only file.",
+    "misconception": "",
+    "sourceTitle": "chmod(2): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man2/chmod.2.html"
+   },
+   {
+    "id": "linux-command-line-sr12-07",
+    "reason": "tell: removes the 'even when' clause. The fact (mask blocks activation pulled in as a dependency) and the answer (True) are unchanged. systemctl.xml v262 says mask \"prohibits all kinds of activation of the unit, including enablement and manual activation\".",
+    "statement": "systemd refuses to start a masked service when another unit pulls it in as a dependency.",
+    "answer": true,
+    "explanation": "Masking points the unit file to /dev/null, blocking activation. Disabling removes installation links but leaves other activation routes available.",
+    "misconception": "",
+    "sourceTitle": "systemctl: Official manual source, systemd v262",
+    "sourceUrl": "https://github.com/systemd/systemd/blob/v262/man/systemctl.xml"
+   },
+   {
+    "id": "linux-command-line-sr4-02",
+    "reason": "tell: after the drops, r4's false statements averaged 7.5 characters longer than its true ones, which breaks the 5-character form rule. The shortened statement also removes the hedge 'can' from a false card that belongs to the '<X> can <break a prohibition>' false template. The fact (Linux ignores setuid on interpreter scripts, per execve(2)) and the answer (False) are unchanged.",
+    "statement": "On Linux, the setuid bit gives a directly executed Bash script its owner's effective UID.",
+    "answer": false,
+    "explanation": "Linux ignores the set-user-ID bit on interpreter scripts. Setting that bit on a Bash script does not provide its owner's effective UID.",
+    "misconception": "The setuid bit on a directly executed interpreter script changes its effective UID.",
+    "sourceTitle": "execve(2): Linux manual page",
+    "sourceUrl": "https://man7.org/linux/man-pages/man2/execve.2.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "shell-does-globbing",
+    "ids": [
+     "linux-command-line-sr8-07",
+     "linux-command-line-sr8-08",
+     "linux-command-line-sr8-09"
+    ]
+   },
+   {
+    "name": "nohup-vs-ampersand",
+    "ids": [
+     "linux-command-line-sr6-06",
+     "linux-command-line-sr6-07"
+    ]
+   },
+   {
+    "name": "foreground-process-group",
+    "ids": [
+     "linux-command-line-sr5-11",
+     "linux-command-line-sr6-03",
+     "linux-command-line-sr6-08"
+    ]
+   },
+   {
+    "name": "nice-direction",
+    "ids": [
+     "linux-command-line-sr5-08",
+     "linux-command-line-sr5-09"
+    ]
+   },
+   {
+    "name": "boot-lifetime-storage",
+    "ids": [
+     "linux-command-line-sr1-06",
+     "linux-command-line-sr1-07",
+     "linux-command-line-sr12-12"
+    ]
+   },
+   {
+    "name": "usr-holds-programs",
+    "ids": [
+     "linux-command-line-sr1-03",
+     "linux-command-line-sr1-04"
+    ]
+   },
+   {
+    "name": "rename-open-descriptor",
+    "ids": [
+     "linux-command-line-sr2-11",
+     "linux-command-line-sr10-12"
+    ]
+   },
+   {
+    "name": "directory-search-bit",
+    "ids": [
+     "linux-command-line-sr3-02",
+     "linux-command-line-sr3-03"
+    ]
+   },
+   {
+    "name": "owner-may-change",
+    "ids": [
+     "linux-command-line-sr3-08",
+     "linux-command-line-sr3-12",
+     "linux-command-line-sr4-06"
+    ]
+   },
+   {
+    "name": "setuid-exceptions",
+    "ids": [
+     "linux-command-line-sr4-02",
+     "linux-command-line-sr4-03"
+    ]
+   },
+   {
+    "name": "sigterm-sigkill-escalation",
+    "ids": [
+     "linux-command-line-sr6-01",
+     "linux-command-line-sr6-02",
+     "linux-command-line-sr12-08"
+    ]
+   },
+   {
+    "name": "subshell-vs-current-shell",
+    "ids": [
+     "linux-command-line-sr7-11",
+     "linux-command-line-sr8-02"
+    ]
+   },
+   {
+    "name": "redirect-truncation",
+    "ids": [
+     "linux-command-line-sr7-01",
+     "linux-command-line-sr7-06",
+     "linux-command-line-sr7-12"
+    ]
+   },
+   {
+    "name": "unit-override-location",
+    "ids": [
+     "linux-command-line-sr12-03",
+     "linux-command-line-sr12-04"
+    ]
+   },
+   {
+    "name": "install-links",
+    "ids": [
+     "linux-command-line-sr12-06",
+     "linux-command-line-sr12-07"
+    ]
+   },
+   {
+    "name": "terminal-control-keys",
+    "ids": [
+     "linux-command-line-sr6-03",
+     "linux-command-line-sr6-04"
+    ]
+   },
+   {
+    "name": "counts-as-template",
+    "ids": [
+     "linux-command-line-sr9-03",
+     "linux-command-line-sr10-11"
+    ]
+   },
+   {
+    "name": "script-execute-bit",
+    "ids": [
+     "linux-command-line-sr3-11",
+     "linux-command-line-sr8-11"
+    ]
+   }
+  ],
+  "sectionBalance": "Section, cards left, true/false, then the average statement length (true vs false):\n- r1: 10 cards, 4T/6F, 81.5 vs 78.7.\n- r2: 9 cards, 4T/5F, about 87 vs 86 after the sr2-05 reword.\n- r3: 10 cards, 4T/6F, 87.8 vs 90.5.\n- r4: 9 cards, 5T/4F, 86.0 vs 89.8 after the sr4-02 reword.\n- r5: 10 cards, 6T/4F, 86.3 vs 85.5.\n- r6: 9 cards, 4T/5F, 88.8 vs 88.8.\n- r7: 10 cards, 5T/5F, 90.4 vs 88.8.\n- r8: 11 cards, 6T/5F, 92.3 vs 87.6.\n- r9: 10 cards, 5T/5F, about 89 vs 85.\n- r10: 10 cards, 5T/5F, 94.4 vs 92.2.\n- r11: 11 cards, 5T/6F, 90.2 vs 90.5.\n- r12: 10 cards, 4T/6F, 97.0 vs 96.7.\n\nTotal: 119 cards, 57 true and 62 false. No section has fewer than 9 cards or a split worse than 4 to 6 per 10. The true/false length gap is within 5 characters in every section.",
+  "notes": "How the rules were applied:\n- Every weak_card and scan duplicate is dropped, with one exception. In r1 all three flagged cards were true, so dropping all of them would have left r1 at 3 true and 6 false. sr1-02 was therefore rewritten with the verifier's replacement, the FHS \"no binaries under /etc\" rule, confirmed on FHS 3.0 section 3.7.\n- No verifier returned wrong_answer.\n- sr12-11 (ambiguous) was rewritten as \"a bare `journalctl -b`\". This avoids the boot-ID loophole and the negation \"no boot ID\".\n- Source fixes are listed in \"source\". Five of them also appear in \"rewrite\" because their explanation or statement changed: sr3-01, sr3-02, sr3-11, sr5-12 and sr8-03. sr11-08 is a URL change only.\n- For sr3-01 and sr3-11, I used the verifiers' optional wording so the rewrites meet the rewrite rules (no true-card hedge, no 'even when').\n- gnu.org refused connections (ECONNREFUSED). I confirmed the coreutils Mode-Structure and Bash Shell-Scripts text on Web Archive copies of those exact URLs and cited the official gnu.org URLs.\n- All other pages were fetched directly and returned 200: FHS ch03s07, acl(5), pidfd_send_signal(2), environ(7), OpenSSH release-9.0, journalctl.xml and systemctl.xml v262, chmod(2), link(2) and grep(1).\n- Titles in my rewrites use a colon instead of the em dash used in the raw files.\n\nTell rewrites (5, each keeping the fact and the answer):\n- sr9-01, sr2-05, sr3-12 and sr12-07 remove the strongest wording tell, 'even when/including' marking True. After the edits the remaining 'even when/including' statements are sr1-07 and sr8-05 (true) and sr10-08 (false).\n- sr9-01 also gives a true card the 'treats X as' frame, which had leaned False.\n- sr4-02 restores r4's length balance, which the drops had pushed to a 7.5-character gap, and it removes 'can' from a template-C false card.\n\nConflict groups:\n- I removed the scan groups that the drops emptied: stderr-fd-two, single-quote-literal, stopped-job-resume, symlink-stored-text, unlink-directory-control and host-key-change. I removed sr3-09 from owner-may-change and sr4-01 from setuid-exceptions.\n- I added script-execute-bit (sr3-11 and sr8-11). The new sr3-11 explanation says the execute bit matters when a script is run as a command, which hints at sr8-11's status 126.\n\nCoverage lost by the drops, worth refilling later: the sticky bit (r4 now has no sticky-bit card), the ln TARGET LINK_NAME order, 128+N, huponexit, disown -h, the sort locale and -k, the sed s///g flag, the /etc/passwd vs /etc/shadow split, and StrictHostKeyChecking ask. The verifiers' suggested replacements for these are good candidates. Each still needs its own source check, which I did not do because those cards were dropped rather than rewritten."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "linux-command-line-sr1-02",
+    "decision": "keep",
+    "statement": "FHS forbids placing executable binaries under the `/etc` configuration hierarchy.",
+    "answer": true,
+    "explanation": "FHS 3.0 limits /etc to static, local files that control how programs operate, and states that no binaries may be located under it.",
+    "reason": "Both lenses keep it. FHS 3.0 section 3.7 says \"No binaries may be located under /etc\", and its footnote limits 'executable binary' to machine code, so scripts in /etc are not a counterexample."
+   },
+   {
+    "id": "linux-command-line-sr3-01",
+    "decision": "fixed",
+    "statement": "Linux grants a file owner who is also in the file's group the union of the owner and group bits.",
+    "answer": false,
+    "explanation": "Linux checks the owner class first: for the file's owner, only the owner permission bits decide access, even when the group bits would grant more.",
+    "reason": "Applied the wording lens's shorter statement (96 instead of 114 chars). It keeps the same fact and answer. With it, r3 averages 85.3 for true and 87.5 for false, inside the 5-char rule. Checked acl(5) ACCESS CHECK ALGORITHM step 1: when the effective UID matches the owner, ACL_USER_OBJ alone grants or denies access."
+   },
+   {
+    "id": "linux-command-line-sr3-02",
+    "decision": "keep",
+    "statement": "A directory's read bit grants permission to traverse that directory during pathname lookup.",
+    "answer": false,
+    "explanation": "For a directory, the execute bit grants access to the files inside it during lookup, while the read bit lets a user list the names it contains.",
+    "reason": "Both lenses keep it. The coreutils Mode-Structure node says read on a directory means listing its contents and execute means access to the files in it."
+   },
+   {
+    "id": "linux-command-line-sr3-11",
+    "decision": "keep",
+    "statement": "`bash script.sh` runs the commands in a readable script whose mode is 0644.",
+    "answer": true,
+    "explanation": "Given as an argument, the file is opened and read by Bash, so read permission is enough. The execute bit matters when the script itself is run as a command, for example found through PATH.",
+    "reason": "Both lenses keep it. The Bash manual's Shell Scripts node says Bash reads and executes commands from a file given as its argument, and ties the execute bit to the PATH case."
+   },
+   {
+    "id": "linux-command-line-sr5-12",
+    "decision": "fixed",
+    "statement": "Linux keeps a terminated process's PID reserved until the next system boot.",
+    "answer": false,
+    "explanation": "Once a terminated process has been removed from the kernel process table, Linux can recycle its PID for another process, so a stored PID may later name an unrelated one.",
+    "reason": "Fact lens fix. 'Once a process has terminated' was wrong for zombies: wait(2) NOTES says a zombie keeps its PID and its process-table slot until a wait removes it. I phrased the fix as removal from the process table rather than 'reaped by its parent's wait'. That stays exact (orphaned zombies are reaped by init or a subreaper) and does not give away sr5-05, which tests whether the zombie keeps its status for the parent. pidfd_send_signal(2) confirms that PIDs are recycled."
+   },
+   {
+    "id": "linux-command-line-sr8-03",
+    "decision": "keep",
+    "statement": "When Bash searches PATH for an executable, it chooses the last matching directory's executable.",
+    "answer": false,
+    "explanation": "PATH is searched from beginning to end, and the first directory holding a matching file with execute permission wins, so earlier entries take precedence.",
+    "reason": "Both lenses keep it. environ(7) PATH says the list is searched from beginning to end until a file with execute permission is found."
+   },
+   {
+    "id": "linux-command-line-sr12-11",
+    "decision": "keep",
+    "statement": "Running a bare `journalctl -b` shows the log messages recorded during the previous boot.",
+    "answer": false,
+    "explanation": "With an empty argument, journalctl -b shows the current boot. An offset such as journalctl -b -1 selects the boot before it.",
+    "reason": "Both lenses keep it. journalctl.xml v262 says an empty argument shows the current boot and that -1 is the boot before last."
+   },
+   {
+    "id": "linux-command-line-sr9-01",
+    "decision": "keep",
+    "statement": "GNU `grep -F 'a.b' file` treats the dot in the pattern as an ordinary character to match.",
+    "answer": true,
+    "explanation": "With -F, GNU grep interprets the supplied pattern literally, including punctuation with special regex meanings.",
+    "reason": "Both lenses keep it. grep(1) says -F interprets PATTERNS as fixed strings, not regular expressions."
+   },
+   {
+    "id": "linux-command-line-sr2-05",
+    "decision": "keep",
+    "statement": "On Linux, the link() call returns an error when a root process asks it to hard-link a directory.",
+    "answer": true,
+    "explanation": "Linux forbids directory hard links through link(). Administrative privilege does not provide an exception to that restriction.",
+    "reason": "Both lenses keep it. link(2) lists 'EPERM oldpath is a directory' with no privilege condition, unlike the protected_hardlinks EPERM case."
+   },
+   {
+    "id": "linux-command-line-sr3-12",
+    "decision": "fixed",
+    "statement": "For an unprivileged process, permission to chmod a file depends on owning it rather than on its write bit.",
+    "answer": true,
+    "explanation": "chmod(2) requires the caller's effective UID to match the file's owner, unless the caller is privileged, so an owner can change the mode of a read-only file.",
+    "reason": "Applied the wording lens fix. A process with CAP_FOWNER can chmod files it does not own, so the statement now names the unprivileged caller. Confirmed on chmod(2): \"The effective UID of the calling process must match the owner of the file, or the process must be privileged (Linux: it must have the CAP_FOWNER capability).\" The statement is 106 chars, and r3 averages stay within 5 chars (85.3 true, 87.5 false)."
+   },
+   {
+    "id": "linux-command-line-sr12-07",
+    "decision": "keep",
+    "statement": "systemd refuses to start a masked service when another unit pulls it in as a dependency.",
+    "answer": true,
+    "explanation": "Masking points the unit file to /dev/null, blocking activation. Disabling removes installation links but leaves other activation routes available.",
+    "reason": "Both lenses keep it. systemctl.xml v262 says mask \"prohibits all kinds of activation of the unit\" and calls it a stronger version of disable."
+   },
+   {
+    "id": "linux-command-line-sr4-02",
+    "decision": "keep",
+    "statement": "On Linux, the setuid bit gives a directly executed Bash script its owner's effective UID.",
+    "answer": false,
+    "explanation": "Linux ignores the set-user-ID bit on interpreter scripts. Setting that bit on a Bash script does not provide its owner's effective UID.",
+    "reason": "Both lenses keep it. execve(2) says Linux ignores the set-user-ID and set-group-ID bits on scripts."
+   }
+  ]
+ }
+}

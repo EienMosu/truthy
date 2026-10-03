@@ -1,0 +1,879 @@
+{
+ "deck": "javascript-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 r1 cards (sr1-01 to sr1-12, all in javascript-fundamentals-b1.json). Every source URL loaded and supports its card, and I flagged none. Six cards are true and six false. The average statement length is 68.7 characters for true and 73.7 for false, inside the 5-character limit but only just. The difficulty mix is 5 easy, 5 medium and 2 hard. Every statement is at most 94 characters and every explanation at most 181.\n\nThe quote that settles each card:\n- 01 (typeof): \"typeof null === \\\"object\\\"\", and the table lists Null -> \"object\".\n- 02 (typeof): \"typeof new Number(1) === \\\"object\\\"\".\n- 03 (Number): \"A number literal like `37` in JavaScript code is a floating-point value, not an integer. There is no separate integer type in common everyday use.\"\n- 04 (MAX_SAFE_INTEGER): \"you can still perform meaningful arithmetic on numbers larger than that, just without integer-level precision. The largest representable number in JavaScript is actually Number.MAX_VALUE\". So the false answer holds. Even 2^53 is exactly representable.\n- 05 (BigInt): \"cannot be mixed with a Number value in operations; they must be coerced to the same type\". This does not duplicate sr2-03, which tests the separate fact that Number(8n) converts without throwing.\n- 06 (Symbol): \"Every Symbol.for(\\\"key\\\") call will always return the same Symbol for a given value of \\\"key\\\"\".\n- 07 (Data_structures): \"The length of a string is the number of UTF-16 code units in it\".\n- 08 (isWellFormed): \"Returns true if this string does not contain any lone surrogates, false otherwise\". The page's example \"ab\\\\uD800\" logs false.\n- 09 (toWellFormed): \"with all lone surrogates replaced with the Unicode replacement character U+FFFD\".\n- 10 (sumPrecise): MDN says \"TypeError: If numbers is not an iterable, or if any of the numbers in the iterable is not of the number type\". ES2026 21.3.2.34 says \"If any value is not a Number it throws a TypeError exception\", and its step \"If next is not a Number ... TypeError\" covers BigInt.\n- 11 (rawJSON): \"When serialized to JSON, the raw JSON object is treated as if it is already a piece of JSON.\" MDN only shows nested examples. ES2026 25.5.4.2 SerializeJSONProperty returns the rawJSON string for any value that has [[IsRawJSON]], so the top-level call in the statement does return '9007199254740993'. https://tc39.es/ecma262/2026/multipage/structured-data.html#sec-serializejsonproperty is an optional stronger URL for this card.\n- 12 (ES2026 25.5.2.4 InternalizeJSONProperty): \"Let context be OrdinaryObjectCreate(%Object.prototype%). If parseRecord is a JSON Parse Record and SameValue(parseRecord.[[Value]], val) is true, then If val is not an Object, then ... CreateDataPropertyOrThrow(context, \\\"source\\\", ...)\". The step then ends \"Return ? Call(reviver, holder, « name, val, context »)\".\n\nOne conflict between sources affects sr1-12. MDN's JSON.parse page says context \"is only passed when reviving primitive values, but not when value is an object or array\". The ES2026 spec, which the prompt says decides, always passes a context object and adds source only for unchanged primitives. The card's explanation follows the spec and the card cites the spec, so it stands. The answer is False under either reading. Do not swap this card's source to MDN JSON.parse, because that page contradicts the explanation's first sentence.\n\nThe ES2026 edition is checked at the spec page: tc39.es/ecma262/2026 is titled \"ECMAScript® 2026 Language Specification\" and contains sec-json.rawjson and sec-math.sumprecise. Every edition-specific card (08, 09, 10, 11, 12) names its edition in the statement and in appliesTo.\n\nMinor cases I judged acceptable rather than flagging:\n- sr1-01 is very well known to daily JS developers, but the prompt lists it in this section.\n- In sr1-06, \"from the registry\" slightly hints at the answer, but the misconception it tests (that Symbol.for acts like Symbol()) is realistic.\n- sr1-04's explanation could name Number.MAX_VALUE as the right fact. What it says now is correct."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official MDN, supports the card",
+     "evidence": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Equality_comparisons_and_sameness: \"Triple equals (===) will do the same comparison as double equals ... but without type conversion; if the types differ, false is returned.\" The page uses the near-identical example `num === str // false` with 0 and \"0\".",
+     "problem": "This is a definition card. The answer follows from what `===` means (strict equality, no type conversion), and every developer who writes JavaScript daily knows it. It teaches nothing, and it is close to MDN's own `0 === \"0\"` example. The section also has no card on unary plus or Number() string parsing, which the prompt lists ('unary plus and Number() versus parseInt'). The replacement fills that gap.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Unary plus on the empty string, `+''`, evaluates to the Number `0`.\" Explanation: \"Number conversion treats an empty or whitespace-only string as 0, so +'' and Number('') both give 0, while parseInt('') returns NaN because it finds no digits.\" Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number#number_coercion (\"Empty or whitespace-only strings are converted to 0.\"). No other card in the deck tests this fact."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards (6 true, 6 false). Average statement length is 74.3 for true and 70.3 for false, inside the 5-character rule. The difficulty mix is 5 easy, 5 medium and 2 hard. Every source URL loads and is official MDN. Each one supports its card, including the right fact for the false ones.\n\nKey quotes:\n- sr2-01: Boolean page, \"All objects become true\" and \"[] is truthy, because all objects are truthy\".\n- sr2-02: Addition page, \"If one side is a string, the other operand is also converted to a string and they are concatenated\".\n- sr2-03: Number page, \"Number(x) uses the same algorithm ... except that BigInts don't throw a TypeError, but return their number value\".\n- sr2-04: parseInt page, \"ignores it and all succeeding characters and returns the integer value parsed up to that point\".\n- sr2-05: Symbol.toPrimitive page, \"look up this symbol ... before falling back to using the object's valueOf() and toString() methods\".\n- sr2-06: Data_structures page, \"[Symbol.toPrimitive](\"number\") -> valueOf() -> toString()\".\n- sr2-07: Symbol.toPrimitive page, \"Date.prototype[Symbol.toPrimitive]() treats \"default\" as if it's \"string\"\".\n- sr2-08: String() page, \"Symbol values are converted to \"Symbol(description)\" ... instead of throwing\".\n- sr2-09: Equality page, \"If one of the operands is null or undefined, the other must also be null or undefined to return true\".\n- sr2-11: Object.is page, example \"Object.is(+0, -0); // false\".\n- sr2-12: Equality_comparisons page, \"It's used by Array.prototype.includes()\" plus the [NaN].includes(NaN) example.\n\nI also checked each card against the ES2026 abstract operations: ToPrimitive and OrdinaryToPrimitive, IsLooselyEqual, SameValue and SameValueZero, and Date.prototype[@@toPrimitive]. I found no reading, version difference or exception under which an expert would defend the opposite answer.\n\nMinor observations, not flagged:\n- sr2-04 ('24px') and sr2-02 ('5' + 2) are close to MDN's own examples ('15px' and \"2\" + 2) with the values changed. They are acceptable as easy cards.\n- The sr2-09 explanation is correct but vague. A sharper version would be: \"null is loosely equal only to undefined and to itself, so null == 0 is false.\"\n- Three of the 12 cards cover ToPrimitive order (sr2-05, sr2-06, sr2-07). They rest on different facts, and sr2-05 and sr2-06 share the \"tries X before Y\" false template, which stays within the two-use limit.\n- Nothing in r2 overlaps another section. sr2-03 (explicit Number(8n)) and sr1-05 (BigInt + Number TypeError) are separate facts."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr3-03",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official MDN (Statements/function), current",
+     "evidence": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function: \"Function declarations in JavaScript are hoisted to the top of the enclosing function or global scope. You can use the function before you declared it\" but the same page says \"in strict mode, block-level function declarations are scoped to that block and are hoisted to the top of the block.\"",
+     "problem": "The statement says that any function declaration is callable earlier in its enclosing function body. The deck assumes module code, which is strict mode, and in strict mode a declaration inside a nested block (if, for, a bare {}) is hoisted only to the top of that block. Code in the function body before the block gets a ReferenceError. An expert could therefore defend False for block-level declarations. The answer holds only for declarations placed directly in the function body.",
+     "suggestedFix": "Keep answer True and the same URL. Statement: \"A function declared at the top level of a function body is callable from lines above the declaration.\" Explanation: \"Function declarations placed directly in a function body are initialized before the body runs, so earlier lines can call them. In strict code, a declaration inside a nested block is hoisted only within that block.\""
+    }
+   ],
+   "notes": "I checked all 12 r3 cards. The split is 6 True (01, 03, 05, 07, 08, 12) and 6 False (02, 04, 06, 09, 10, 11). Average statement length is 84.2 characters for True and 86.7 for False, within the 5-character rule. Every statement is at most 120 characters and every explanation at most 240. Difficulty mix is 5 easy, 5 medium, 2 hard, close to the 40/40/20 target.\n\nAll source URLs load (current MDN) and support their cards:\n- var page (01, 02, 10): \\\"other block constructs ... do not create scopes for var\\\"; \\\"Only a variable's declaration is hoisted, not its initialization\\\"; \\\"In both Node.js CommonJS modules and native ECMAScript modules, top-level variable declarations are scoped to the module, and are not added as properties to the global object.\\\"\n- let page (04, 12): typeof on a let in its temporal dead zone throws a ReferenceError; \\\"there is only one block shared by all case clauses\\\".\n- const page (05): \\\"in the case where the content is an object, this means the object's contents (e.g., its properties) can be altered.\\\"\n- Closures guide (06, 07, 11): 06 is supported by the loop example (\\\"the item variable object (shared by all three closures) has been left pointing to the last entry\\\"), 07 by the makeCounter text (\\\"Each closure references a different version of the privateCounter variable\\\"), 11 by \\\"lexical scoping uses the location where a variable is declared within the source code\\\".\n- for page (08): \\\"A new lexical scope is created with new let-declared variables.\\\"\n- Strict mode page (09): \\\"Assigning to an undeclared variable throws a ReferenceError.\\\"\n\nSmall points I did not flag:\n- 02: the explanation \\\"A function's var binding starts as undefined\\\" has an edge case. A var with the same name as a parameter starts with the parameter's value. MDN uses the same general wording, so I left it.\n- 11: the caller-scope (dynamic scoping) misconception is mild but realistic.\n- 03 and sr5-07 are the two sides of hoisting (function declarations versus class declarations). The prompt places them deliberately in r3 and r5, so I did not treat them as duplicates. The suggested 03 rewrite still tests only function declarations.\n\nNo r3 card repeats a fact from another section: module strictness and module this are in r6, class TDZ in r5, catch scope in r10, arrow this in r4. Coverage gap: no r3 card tests function expressions against declarations or tests globalThis directly; sr3-10 touches globalThis only indirectly. No files were edited."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr4-12",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official MDN, current; supports the card only for strict functions",
+     "evidence": "MDN Function.prototype.call (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call), thisArg: \"If the function is not in strict mode, null and undefined will be replaced with the global object, and primitive values will be converted to objects.\" MDN this (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this): \"If the function is called with this set to a primitive value, this gets substituted with the primitive value's wrapper object.\" ES2026 OrdinaryCallBindThis: a strict function gets thisArgument unchanged, a sloppy one gets ToObject(thisArgument).",
+     "problem": "The answer flips with the mode of f. The deck convention says cards assume an ES module, but the player never sees that convention, and the card's whole point is the strict versus sloppy difference. The explanation itself says \"In strict code\", so the statement should too. A developer who knows that this gets boxed, and assumes a classic script, would correctly answer False. The coordinator's concern is confirmed.",
+     "suggestedFix": "Keep True and name the mode. Statement: \"In strict mode, `function f(){return this;}` called as `f.call(7)` returns the primitive Number `7`.\" Explanation: \"Strict functions receive call's thisArg unchanged, so this is the primitive 7. A sloppy-mode function would get a Number wrapper object instead, through this substitution.\" Keep the same URL."
+    },
+    {
+     "id": "javascript-fundamentals-sr4-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official MDN, current; supports the card",
+     "evidence": "MDN Function.prototype.bind (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind): \"The bind() method of Function instances creates a new function that, when called, calls this function with its this keyword set to the provided value...\"",
+     "problem": "This is close to a strawman for the stated audience of developers who write JavaScript every day. Almost anyone who has studied bind knows it returns a new function and does not call f, so the card teaches little next to the other bind cards (sr4-05, sr4-06, sr4-08).",
+     "suggestedFix": "Replace with a False card on call's argument passing. Statement: \"`f.call(obj, [1, 2])` passes 1 and 2 to the ordinary function `f` as two separate arguments.\" Explanation: \"call forwards its extra arguments one by one, so f receives the whole array [1, 2] as its first argument. Spreading an array-like into separate arguments is what apply does.\" Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call (\"the function arguments are passed to call() individually as a list, while for apply() they are combined in one object, typically an array\"). This keeps the 6 True / 6 False balance. It sits next to sr4-03 (apply with an array-like), but sr4-03 tests array-likes, not call's argument style. If that feels too close, choose \"drop\" and pick another fact."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards (sr4-01 to sr4-12, all in raw/javascript-fundamentals-b1.json). Every source URL loads, is official current MDN, and supports its card, including the correct fact in each False card's explanation. Quotes that settle the cards that pass:\n- sr4-01: this page, \"if the function call is in the form obj.f(), then this refers to obj\".\n- sr4-02: Classes page, \"When a static or instance method is called without a value for this ... the this value will be undefined inside the method ... because code within the class body is always executed in strict mode\". This holds in any mode, so the card is robust.\n- sr4-03: apply page, \"any kind of object which is array-like ... a custom object like { 'length': 2, '0': 'eat', '1': 'bananas' }\".\n- sr4-05: bind page, \"The newly bound thisArg value is ignored, because the target function of boundFn2, which is boundFn, already has a bound this\".\n- sr4-06: bind page, \"inserted at the start of the arguments passed to the target function, followed by whatever arguments are passed to the bound function\".\n- sr4-07: new page, \"If the constructor function returns a non-primitive, this return value becomes the result of the whole new expression\".\n- sr4-08: bind page, \"When a bound function is used to construct a value, the provided this is ignored\".\n- sr4-09 and sr4-10: Arrow functions page, the setTimeout-inside-a-method example and \"arguments is a reference to the arguments of the enclosing scope\".\n- sr4-11: Arrow functions page, \"cannot be used as constructors and will throw an error when called with new ... TypeError: Foo is not a constructor\".\n\nCross-deck check: no other section rests on the same facts as r4. Class strictness is tested in r6 only as module strictness (sr6-05), and module top-level this is in r6 (sr6-06).\n\nThe section is balanced, 6 True and 6 False, and both proposed fixes keep that. One coverage gap that is not a flag: no card tests the sloppy-mode globalThis versus strict-mode undefined split for a plain call of an ordinary function. The section list names it, but sr4-02 and the fixed sr4-12 partly cover the idea.\n\nOn the coordinator's sr4-12 concern: the deck rule (\"every card is about code in an ES module (so strict mode)\") technically makes the card correct. I still flag it as ambiguous, because its answer is exactly the strict versus sloppy difference and that context should be inside the statement."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr5-01",
+     "verdict": "source_problem",
+     "urlStatus": "MDN Inheritance_and_the_prototype_chain loads (200), official and current",
+     "evidence": "The cited MDN guide only shows shadowing with a defined value: \"Is there a 'b' own property on o? Yes, and its value is 2. The prototype also has a 'b' property, but it's not visited. This is called Property Shadowing\". The nearest it gets to the undefined case is a note about hasOwnProperty checks: \"It is not enough to check whether a property is undefined. The property might very well exist, but its value just happens to be set to undefined.\" Nothing on the page says that an own property holding undefined stops the lookup. The ES2026 spec settles it (https://tc39.es/ecma262/2026/#sec-ordinaryget, 10.1.8.1): \"If desc is undefined, then ... Return ? parent.[[Get]](P, Receiver). If IsDataDescriptor(desc) is true, return desc.[[Value]].\" So lookup climbs the chain only when there is no own property at all. The answer True is correct.",
+     "problem": "The answer and explanation are right, but the cited page does not support the card's real point, that an own property whose value is undefined still shadows. The prompt says to cite the ES2026 spec with an anchor when MDN is silent.",
+     "suggestedFix": "Keep the card and change the source to https://tc39.es/ecma262/2026/#sec-ordinaryget (title \"ECMAScript 2026, 10.1.8.1 OrdinaryGet\")."
+    },
+    {
+     "id": "javascript-fundamentals-sr5-02",
+     "verdict": "weak_card",
+     "urlStatus": "MDN Object/create loads (200), official and current",
+     "evidence": "MDN's summary line (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create): \"The Object.create() static method creates a new object, using an existing object as the prototype of the newly created object.\" The card says \"For an object `parent`, `Object.create(parent)` uses `parent` as the new object's prototype.\" That is a close paraphrase of this one-line definition. Cards sr5-04 (Object.create(C.prototype) instanceof C) and sr7-02 (for...in over Object.create({x: 1})) already assume this fact.",
+     "problem": "This is a definition card: it repeats MDN's one-line description of Object.create almost word for word. Every daily JavaScript developer would answer True, so it teaches nothing that sr5-04 and sr7-02 do not already assume. Meanwhile the section's listed topic \"the prototype property of constructor functions\" (with Object.getPrototypeOf) has no card.",
+     "suggestedFix": "Replace with a TRUE card (keeps the 6/6 balance). Statement: \"Given `function F(){}`, `Object.getPrototypeOf(new F())` returns `F.prototype`.\" Explanation: \"new uses the constructor's prototype property as the new instance's [[Prototype]]. F.prototype is not F's own prototype, which is Function.prototype.\" Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Inheritance_and_the_prototype_chain (\"Every instance created from a constructor function will automatically have the constructor's prototype property as its [[Prototype]] — that is, Object.getPrototypeOf(new Box()) === Box.prototype\"). factKey: constructor-prototype-property-instance-proto."
+    }
+   ],
+   "notes": "I checked all 12 r5 cards (all in batch b2) against their MDN source pages, MDN's own markdown on GitHub, and the ES2026 spec (https://tc39.es/ecma262/2026/, titled \"ECMAScript® 2026 Language Specification\"). Every answer is correct, so there is no wrong_answer or ambiguous flag.\n\nTwo cards are flagged:\n- sr5-01 cites a source that does not show the undefined case. The spec's OrdinaryGet section does.\n- sr5-02 is a near-definition card. I suggest a replacement on the prototype property of constructor functions, which the section lists and no card covers.\n\nCards that passed, with the sentence that settles each:\n- sr5-03: Object/hasOwn says \"The method returns false if the property is inherited\", with the example Object.hasOwn(example, \"toString\") giving false.\n- sr5-04: instanceof \"tests to see if the prototype property of a constructor appears anywhere in the prototype chain of an object\". C's body never needs to run.\n- sr5-05: the Object page says a null-prototype object \"doesn't inherit any object methods from Object.prototype\", and shows nullProtoObj.valueOf() throwing \"is not a function\".\n- sr5-06: Public_class_fields says \"Public instance fields exist on every created instance of a class\", added with [[DefineOwnProperty]].\n- sr5-07: Classes says class declarations \"have the same temporal dead zone restrictions as let or const and behave as if they are not hoisted\". The ReferenceError detail comes from the linked let TDZ page; acceptable.\n- sr5-08: Super_not_called gives the error type ReferenceError for touching this before super().\n- sr5-09: Static_initialization_blocks says a block \"contains statements to be evaluated during class initialization\".\n- sr5-10: static says \"Static properties cannot be directly accessed on instances of the class\". The Classes page shows p1.displayName giving undefined.\n- sr5-11: in says \"The operator returns true if the property is defined, and false otherwise\" (the branded check). The TypeError applies only to a primitive on the right; {} is an object, so the card is safe.\n- sr5-12: Private_elements says \"Private elements with the same name within different classes are entirely different and do not interoperate with each other.\" The card does not claim subclass instances lack the base class's private fields.\n\nRule checks:\n- True and false are balanced 6/6. Average statement length is 84.8 for true and 85.2 for false.\n- The longest statement is 94 characters and the longest explanation 161, both within limits.\n- No negations, absolutes or proposals below stage 4.\n- No duplicates with other sections. sr10-05 (TypeError instanceof Error) tests subclassing, not chain lookup without the constructor running. sr11-08 (Object.groupBy null prototype) and sr4-02 (extracted static method's this) rest on different facts.\n\nCoverage gaps the section lists but no card tests (no change needed): methods on the prototype, class bodies always in strict mode, and the TypeError on reading a missing private element. The last one is partly touched by sr5-11's explanation."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr6-04",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules)",
+     "evidence": "The cited Modules guide only says: \"Modules are only executed once, even if they have been referenced in multiple `<script>` tags.\" That sentence is about script tags, not about several importers. The MDN import() page states the card's actual fact: \"This aggressive caching ensures that a piece of JavaScript code is never executed more than once, even if it is imported multiple times.\" (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import#module_namespace_object). The answer (false) is correct: under ES2026 Cyclic Module Record Evaluate, a module that is already evaluated returns its existing promise and is not re-run.",
+     "problem": "The answer and explanation are right, but the cited page backs the fact only indirectly (multiple <script> tags), not for a second importer of the same resolved module.",
+     "suggestedFix": "Keep the card and change source.url to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import#module_namespace_object (title \"import() - MDN\"), which says module code \"is never executed more than once, even if it is imported multiple times\"."
+    },
+    {
+     "id": "javascript-fundamentals-sr6-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import)",
+     "evidence": "MDN import(): \"Returns a promise which: If the referenced module is loaded and evaluated successfully, fulfills to a module namespace object: an object containing all exports from moduleName.\" and \"with the default export available as a key called `default`.\" The card's explanation (\"Dynamic import of a module containing just export const x = 1; returns a promise for its namespace object, where x is an exported property.\") repeats the statement almost word for word.",
+     "problem": "The fact is correct, but the explanation adds no reason or context, which the explanation rule for true cards requires. The `export const x = 1` setup is padding that has no bearing on the fact. The bare `import()` (with no specifier) is also not valid code. The misconception worth testing, that import() hands back the default export rather than the namespace object, is never brought out.",
+     "suggestedFix": "Replace with a true card. Statement (119 chars): \"`await import(\"./m.js\")` fulfills with the module namespace object, so a default export is read from its `default` key.\" Explanation (182 chars): \"import() returns a promise for the module namespace object, a sealed null-prototype object holding every export; a default export sits under the key default, not as the value itself.\" Keep the answer true and the factKey dynamic-import-namespace-promise. Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (all in javascript-fundamentals-b2.json). The section has 6 true and 6 false. Average statement length is 87.2 chars for true and 84.3 for false, so the balance is within limits. All source URLs return 200. I confirmed them against the MDN source markdown (mdn/content main) and nodejs.org/api/modules.md. Cards that pass, with the evidence that settles each: 01 (import page: \"you can give the identifier any name you like\"); 02 (import page: \"the module exporting it may re-assign it and the imported value would change\"); 03 (import page example: \"myValue = 3; // TypeError: Assignment to constant variable.\"); 05 (Strict mode page: \"The entire contents of JavaScript modules are automatically in strict mode\"); 06 (this page: \"`this` is always `undefined` at the top level\"); 08 (Modules guide: \"Top level await is a feature available within modules\"); 09 (import.meta page: \"The spec doesn't specify any properties to be defined on it, but hosts usually implement ... url\"); 10 (import/with page: \"JSON modules only have one default export. You cannot do named imports from them\"); 11 (Lexical grammar page: hashbang \"is only valid at the absolute start of a script or module\". The ES2023 edition comes from the finished proposals list, which the prompt allows); 12 (nodejs.org exports shortcut: \"if a new value is assigned to `exports`, it is no longer bound to `module.exports`\"). No duplicates with other sections: sr3-10 (module var is not a global property) and sr4-02 (extracted static method) test different facts from r6-05 and r6-06. The deck has one CommonJS card, within the limit of three. Minor remarks that I did not flag: r6-01 is easy and close to obvious for daily users, but it is acceptable at difficulty 1. r6-06's misconception (\"this is the namespace object\") is less common than \"this is globalThis\", but it is still plausible as the ESM counterpart of module.exports. MDN's import/with page now says ECMAScript defines type \"text\". That is the living draft, and no card here depends on it."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr7-10",
+     "verdict": "duplicate",
+     "urlStatus": "200, MDN Iterator.from() page loads, is current and supports the card",
+     "evidence": "MDN Iterator/concat (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Iterator/concat): \"Iterators which are not also iterable cannot be passed directly to this method; they must first be wrapped using Iterator.from().\" Its example even uses the same object: \"const nonIterable = { next() { return { done: true }; }, }; const it = Iterator.concat(nonIterable ...\". MDN Iterator/from: \"If object is an iterable, its [Symbol.iterator]() method is called to obtain the iterator. Otherwise, object is assumed to be an iterator ... a new Iterator object is created that wraps the original iterator.\"",
+     "problem": "The card is correct: per ES2026 27.1.3.2.2 / GetIteratorFlattenable, a next-only object is wrapped and inherits the helpers. The problem is that it forms one two-way distinction with sr7-12 (Iterator.from accepts a bare iterator, Iterator.concat rejects it), and both cards use the identical fragment `{next(){return {done:true};}}`. The prompt says the two sides of one distinction are one fact, and having both side by side cues the answer to each. This also leaves a listed r7 topic, generator objects as both iterator and iterable, without a card.",
+     "suggestedFix": "Replace (answer stays true, which keeps the 6/6 balance; true and false average lengths stay within 5 chars): statement \"For a generator object `g`, `g[Symbol.iterator]()` returns `g` itself.\" Explanation: \"Generator objects are iterable iterators: they have a next() method plus a Symbol.iterator method that returns the same object, so for...of and spread accept them directly.\" Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols (\"generatorObject[Symbol.iterator]() === generatorObject // true\"). appliesTo ES2026, difficulty 2."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards in javascript-fundamentals-b2.json. The section splits 6 true and 6 false, average statement length is 89.2 (true) versus 84.8 (false), and difficulty is 5 easy, 5 medium, 2 hard. Every statement is at most 120 characters and every explanation at most 240.\n\nCoordinator's question on sr7-12, confirmed correct. Iterator.concat is in the ES2026 edition itself, not only in the draft or a proposal:\n- https://tc39.es/ecma262/2026/multipage/control-abstraction-objects.html returns 200 and is titled \"ECMAScript® 2026 Language Specification\". It contains \"27.1.3.2.1 Iterator.concat ( ...items )\": \"If item is not an Object, throw a TypeError exception. Let method be ? GetMethod(item, %Symbol.iterator%). If method is undefined, throw a TypeError exception.\"\n- The TC39 finished-proposals list gives \"Iterator Sequencing\" an expected publication year of 2026.\n- The card's answer (false, throws a TypeError at call time) is right. MDN Iterator/concat says the same in its \"Concatenating non-iterable objects\" example.\n- The explanation's \"inputs must implement the iterable protocol\" is a necessary condition, not a sufficient one: string primitives are iterable but are also rejected because they are not Objects. It is still accurate as written.\n\nCards that pass, with the evidence for each:\n- **01:** Iteration_protocols says \"other types (such as Object) are not\" built-in iterables. MDN Errors/is_not_iterable lists `for (const x of nonIterable1)` with `{}` as a TypeError. That page would be a slightly more direct source for the TypeError half, but the current one is acceptable.\n- **02:** for...in \"iterates over all enumerable string properties ... including inherited enumerable properties\".\n- **03:** next() returns an IteratorResult object with done and value. The word \"yielded\" is slightly generator-flavoured but not misleading.\n- **04:** \"When called, generator functions do not initially execute their code.\"\n- **05:** Generator/next: \"The value will be assigned as a result of a yield expression.\"\n- **06:** Generator/return: \"if the yield expression is wrapped in a try...finally block, the control flow doesn't exit the function body, but proceeds to the finally block instead\".\n- **07:** The yield* page's example `yield* [1, 2]` yields 1, then 2.\n- **08:** \"Each Generator may only be iterated once.\"\n- **09:** Iterator/map: \"they are lazy, meaning that they only produce the next value when requested\". The edition is right: Sync Iterator helpers are listed for 2025.\n- **11:** Correct. Array.prototype has no take, so the call throws a TypeError. The cited MDN Iterator page supports the card only indirectly (\"These methods are iterator helpers, not iterable helpers ... There is no shared prototype to install these methods on\", and the Array Iterator from values() inherits from Iterator). It does not literally say arrays lack take. That is acceptable, so I did not flag it.\n\nDuplicates: no r7 card duplicates another section. sr9-06 (an async generator's next returns a promise) tests a different fact from sr7-03, though sr9-06's explanation mentions the result object. MDN Specifications tables link the ES2027 draft, as the prompt warns; all edition claims here come from the finished-proposals list.\n\nI made no file edits. Downloaded pages are in a scratch folder"
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr8-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, MDN official and current, supports the card",
+     "evidence": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then: \"returns a value: p gets fulfilled with the returned value as its value.\" The card is correct, but it tests the most basic promise-chaining fact. A developer who writes JavaScript every day knows that `.then(() => 7)` yields 7, so the card is close to a truism and has no realistic misconception behind it. The section also has no card on catch as then(undefined, onRejected), which the prompt lists, and this card's factKey (a handler's return value decides the next promise) fits that recovery case better.",
+     "problem": "A near-truism at difficulty 1. The only realistic wrong answer would come from confusing then with finally, and sr8-05 already covers that contrast. The prompt's \"catch as then(undefined, onRejected)\" item has no card in the section.",
+     "suggestedFix": "Replace (answer stays true). Statement (100 chars): \"`Promise.reject(new Error('x')).catch(() => 7)` returns a promise that fulfills with the Number `7`.\" Explanation (158 chars): \"catch(f) acts like then(undefined, f): the rejection handler's return value decides the new promise, so returning 7 recovers the chain and fulfills it with 7.\" Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch (\"It is a shortcut for then(undefined, onRejected).\" / \"If onRejected is called, the returned promise will resolve based on the return value of this call\"). After the swap, true statements average 91 chars and false ones 89.8, still within 5."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (sr8-01 to sr8-12, all in raw/javascript-fundamentals-b2.json). The section is balanced at 6 true (02, 03, 07, 08, 09, 12) and 6 false (01, 04, 05, 06, 10, 11). Statement lengths average 89.0 for true and 89.8 for false. Every source URL loads, is a current MDN page and supports its card, including the right fact behind each false statement. The sentences that settle each card: Promise() constructor, \"The executor is called synchronously (as soon as the Promise is constructed)\" and \"Only the first call to resolveFunc or rejectFunc affects the promise's eventual state\" (01, 02). then(), \"returns another pending promise: p is pending and becomes fulfilled/rejected with that promise's value\" (04). finally(), \"Promise.resolve(2).finally(() => 77) returns a promise eventually fulfilled with the value 2\" (05). Using promises, \"Promise.all() immediately rejects the returned promise. The other operations continue to run\" (06). allSettled(), outcome objects with status \"rejected\" and reason (07). any(), \"Already rejected, if the iterable passed is empty\" (08). race(), \"An empty iterable causes the returned promise to be forever pending\" (09). all(), \"Already fulfilled, if the iterable passed is empty\" (10). withResolvers(), \"A plain object containing the following properties: promise, resolve, reject\" (11). try(), \"Promise.try() also calls the function synchronously\" (12). The edition-tagged cards (11 ES2024, 12 ES2025) name their edition in the statement and in appliesTo, and neither turns on the year. I found no duplicates with other sections. sr10-11 tests AggregateError's errors property without Promise.any. The r9 cards cover async functions, await and ordering, not r8 facts, and no r8 card depends on microtask tick counts. Optional observations, not flagged: three of the 12 cards (08, 09, 10) test empty-iterable results, which the prompt names but which narrows breadth. Two prompt items, a throw inside the executor rejecting the promise and finally receiving no argument, have no card. If another card is ever rewritten, an executor-throw card would improve coverage. In sr8-07, \\\"outcome record\\\" is not MDN's term (MDN says outcome object), and the name allSettled hints at the answer a little, though not enough to call it a give-away."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr9-10",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (200), official MDN, current",
+     "evidence": "MDN Microtask_guide (https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide): \"JavaScript promises and the Mutation Observer API both use the microtask queue to run their callbacks\" and \"those newly-added microtasks execute before the next task is run\". That ordering only holds when the reaction job is actually queued during the task, meaning the promise is already settled. The statement says the task \"schedules ... a promise reaction\". An expert can read that as registering a then() on a pending promise, for example `fetch(u).then(a); setTimeout(b, 0)`. In that case the timer callback b usually runs first, so the card's False answer can be defended the other way. The explanation's word \"queues\" is precise, but the statement's \"schedules\" is not.",
+     "problem": "The statement does not say the promise is already settled, so 'schedules a promise reaction' also covers a then() on a pending promise. In that case the zero-delay timer can run first and the answer flips.",
+     "suggestedFix": "Replacement (answer false): \"When a task runs `setTimeout(b, 0)` and then `Promise.resolve().then(a)`, `b` runs before `a`.\" Explanation: \"`a` is a promise reaction on an already settled promise, so it runs as a microtask once the task's code ends. `b` is a timer callback, a later task, so `a` runs first although it was scheduled second.\" Keep the Microtask_guide URL."
+    },
+    {
+     "id": "javascript-fundamentals-sr9-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official MDN, current",
+     "evidence": "MDN async function (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function) contrasts sequentialStart (\"const slow = resolveAfter2Seconds(); console.log(await slow); ... const fast = resolveAfter1Second();\", 3 s in total) with concurrent1 (\"await Promise.all([resolveAfter2Seconds(), resolveAfter1Second()])\", 2 s). The card is true, but its wording gives the answer away: the functions are named startA()/startB(), the statement says they \"start both\", and both calls sit inside the array literal. Ordinary argument evaluation makes it true, so it never tests the real trap, that sequential awaits serialize the work.",
+     "problem": "The answer can be read from the wording and from plain evaluation order, which makes it close to a truism. It does not test the sequential-await versus Promise.all distinction the section names.",
+     "suggestedFix": "Replacement (answer true): \"In `const a = await slowA(); const b = await slowB();`, `slowB()` starts once `slowA()`'s promise has fulfilled.\" Explanation: \"Each await suspends the function before the next line runs, so the two operations run one after the other. To let them overlap, call both first and await them together with Promise.all.\" Keep the async_function URL."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (all in javascript-fundamentals-b3.json) against their source pages, which all loaded: MDN async_function, await, AsyncGenerator/next, for-await...of, Array/fromAsync, Window/queueMicrotask and Microtask_guide, plus the HTML Standard #perform-a-microtask-checkpoint. I also checked them against the spec model.\n\nThe 10 cards I did not flag pass:\n- 01: MDN async_function says \\\"An async function always returns a promise\\\".\n- 02: the await page says \\\"If the value is not a Promise, await converts the value to a resolved Promise\\\", with the `await 20` gives 20 example.\n- 03: \\\"If the promise is rejected, the await expression throws the rejected value\\\", plus the try/catch example.\n- 04: \\\"Control exits the function and returns to the caller\\\". The explanation's \\\"resumes the caller\\\" is loose wording but not wrong.\n- 06: the Return value section says next() returns \\\"A Promise which when resolved returns an Object\\\" with done and value.\n- 07: \\\"If the iterable is a sync iterable that yields promises, for await...of would produce a sequence of resolved values\\\".\n- 08: \\\"Array.fromAsync() iterates the iterable lazily, and doesn't retrieve the next value until the current one is settled\\\". ES2026 is named and the card is not false through the year.\n- 09: queueMicrotask runs \\\"after the current task has completed its work and when there is no other code waiting to be run\\\".\n- 11: the HTML Standard says \\\"While the event loop's microtask queue is not empty: Let oldestMicrotask be the result of dequeuing...\\\". The checkpoint reentrancy flag does not change the answer.\n- 12: Microtask_guide says \\\"microtasks will be executed until the microtask queue is empty, and then the browser may choose to update rendering\\\". The current HTML Standard also queues rendering as a task on the rendering task source, so rendering cannot fall between microtasks of one checkpoint.\n\nOther checks:\n- **Balance:** 6 true and 6 false. Average statement length is 90.2 for true and 93.7 for false, within 5 characters. All statements are 120 characters or less and all explanations 240 or less.\n- **Duplicates:** none with r6 (top-level await), r7 (sync generators) or r8 (Promise.all, then adoption). r9-09, 10 and 11 test separate ordering facts: after the current stack, before the next task, and draining newly queued microtasks.\n- **Scope:** no card uses \\\"macrotask\\\", microtask tick counts, Node-specific ordering or rAF.\n- **Section gap (not a defect):** no card covers \\\"then callbacks never run synchronously on a settled promise\\\", although the section list names it."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr10-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official MDN, supports the card",
+     "evidence": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError : \"TypeError is a subclass of Error.\" The fact is correct, but the statement `new TypeError('bad') instanceof Error` gives itself away: a player who knows no JavaScript reads \"TypeError ... instanceof Error\" and answers True from the name alone. That breaks the prompt's 'No name giveaway' rule and is close to a truism.",
+     "problem": "The answer can be read from the constructor's name (TypeError contains 'Error'), so the card teaches nothing and plays as a free point.",
+     "suggestedFix": "Replace with a TRUE card (keeps 6 true / 6 false) about another situation that raises a built-in error. Statement: \"Calling `JSON.parse('{bad}')` throws a SyntaxError.\" Explanation: \"JSON.parse reports text that is not valid JSON by throwing a SyntaxError at run time. JSON requires double-quoted property names, so the unquoted name bad is rejected.\" Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse (Exceptions: \"SyntaxError: Thrown if the string to parse is not valid JSON.\")"
+    },
+    {
+     "id": "javascript-fundamentals-sr10-11",
+     "verdict": "source_problem",
+     "urlStatus": "200, official MDN, only partly supports the card",
+     "evidence": "The cited constructor page https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/AggregateError describes the parameter only as \"An iterable of errors, may not actually be Error instances\" and does not say that the errors property becomes an array. The property page https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/errors states: \"An Array containing values in the same order as the iterable passed as the first argument of the AggregateError() constructor\", and its example passes a new Set(...). The ES2026 spec (https://tc39.es/ecma262/2026/#sec-aggregate-error, 20.5.7.1.1) confirms it: \"Let errorsList be ? IteratorToList(? GetIterator(errors, sync)) ... [[Value]]: CreateArrayFromList(errorsList)\".",
+     "problem": "The answer (true) and the explanation are correct, but the cited URL does not show the Set-to-array conversion that the card tests.",
+     "suggestedFix": "Change source to https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/errors (title \"AggregateError: errors - MDN\"). Keep statement, answer and explanation."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards in raw/javascript-fundamentals-b3.json. The section is balanced at 6 true (01, 03, 05, 07, 09, 11) and 6 false (02, 04, 06, 08, 10, 12). Every source URL loaded with status 200, and the ES2026 pages are titled \"ECMAScript® 2026 Language Specification\".\n\nCards that passed, with the evidence:\n- 01: The throw page says \"The `throw` keyword can be followed by any kind of expression\". The try...catch page says `exceptionVar` \"holds the exception value\". There is no string example, but the card is supported.\n- 02: Not_a_function says \"the value is not actually a function\", error type TypeError. Spec EvaluateCall throws a TypeError when the value is not callable.\n- 03: Invalid_array_length lists \"Negative length, via the constructor\" with `new Array(-1)`, error type RangeError.\n- 04: ES2026 16.2.1.7.1 ParseModule \"returns a Source Text Module Record or a non-empty List of SyntaxError objects\", so the module never evaluates. Neither MDN SyntaxError nor try...catch says this outright, so citing the spec is justified.\n- 06: try...catch says \"This binding is only available in the catch block's scope\". Annex B var redeclaration does not change that.\n- 07: MDN's nested-try example shows a rethrow reaching the outer catch.\n- 08: try...catch says \"if the last statement executed in the finally block is itself a control flow statement, that statement will override the effect of the previous one\".\n- 09: try...catch says the parameter is optional: \"you can omit the exceptionVar and its surrounding parentheses\".\n- 10: Error/cause says \"The value of cause can be of any type\". Spec InstallErrorCause stores the value as given.\n- 12: Error/isError says \"Error.isError() accepts Error objects constructed in another realm — instanceof Error returns false for these\". It is named as ES2026 in the statement and in appliesTo, as the rules require.\n\nDuplicate check against other sections:\n- sr8-08 uses AggregateError as the result of Promise.any; 11 tests the errors array, so they are different facts.\n- sr9-03 (await plus try...catch) is a different fact from 07.\n- The r3 TDZ and strict-mode ReferenceError cards differ from 02, which is about a non-callable value.\n- I found no Error.isError or finally-override card outside r10.\n\nSection coverage: \"finally running after return or throw\" and Error.isError on objects that only inherit Error.prototype have no card of their own. 08 covers the first only indirectly. ReferenceError appears only as the wrong answer in 02.\n\nOn the replacement for 05: I did not choose a \"finally runs after return\" card, because card 08's explanation already implies it and a reviewer could call the two the same fact. The suggested JSON.parse SyntaxError card does not overlap the r1 reviver cards (sr1-12)."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "javascript-fundamentals-sr11-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official MDN, current",
+     "evidence": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set: \"A value in the set may only occur once; it is unique in the set's collection.\" The card's answer follows directly from what a set is. Adding a duplicate primitive leaves the size unchanged by definition, so the card teaches nothing specific to JavaScript. Object identity for keys is already tested in sr11-01, and SameValueZero belongs to r2, so this card has no non-trivial angle left.",
+     "problem": "The card is a definition truism. Anyone who knows the word \"Set\" answers True, so it breaks the rules against truisms and definition cards. The facts themselves are correct.",
+     "suggestedFix": "Replace with a TRUE card on Map versus object key types, which keeps the section at 6 true and 6 false. Statement: \"`new Map([[1, 'a'], ['1', 'b']]).size` evaluates to 2.\" Explanation: \"A Map keeps each key as its original value, so the number 1 and the string '1' are two distinct keys. A plain object would convert 1 to the property key '1' and keep one entry.\" factKey map-number-string-keys-distinct. URL: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map (\"A Map's keys can be any value (including functions, objects, or any primitive).\" versus \"The keys of an Object must be either a String or a Symbol.\")."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards in javascript-fundamentals-b3.json. The section has 6 true and 6 false cards. Every source URL loads and is a current MDN page. For the ES2026 upsert and Map.set behaviour, I also checked the cards against the pinned ES2026 spec (https://tc39.es/ecma262/2026/, title \\\"ECMAScript® 2026 Language Specification\\\").\n\n- **sr11-01:** MDN Map says \\\"for object keys, equality is based on object identity. They are compared by reference, not by value.\\\"\n- **sr11-02:** MDN Map says insertion order \\\"corresponds to the order in which each key-value pair was first inserted into the map by the set() method\\\". Its example shows that `map.set('a', 97)` keeps 'a' first. Spec 24.1.3.11 sets p.[[Value]] in place.\n- **sr11-04:** MDN WeakMap says keys \\\"must be objects or non-registered symbols\\\".\n- **sr11-05:** MDN WeakMap says \\\"if a WeakMap exposed any method to obtain a list of its keys, the list would depend on the state of garbage collection\\\". Its instance methods are delete, get, getOrInsert, getOrInsertComputed, has and set, with no keys().\n- **sr11-06:** MDN WeakRef says deref returns \\\"undefined if the target object has been reclaimed\\\".\n- **sr11-07:** MDN FinalizationRegistry says \\\"A conforming JavaScript implementation ... is not required to call cleanup callbacks.\\\"\n- **sr11-08:** MDN Object.groupBy says it returns \\\"A null-prototype object with properties for all groups\\\".\n- **sr11-09:** MDN Map.groupBy says \\\"The values returned by callbackFn are used as keys for the Map\\\", and its example uses objects as keys.\n- **sr11-10:** MDN Set has a set-like section with an example where Map is set-like and `a.union(b)` gives Set(4) {1, 2, 3, 4}.\n- **sr11-11:** Spec 24.1.3.7 Map.prototype.getOrInsert returns p.[[Value]] when SameValue finds the key, so an existing undefined value is returned and not overwritten. The MDN page agrees: it gives the has()/get() equivalent and says \\\"If the key is not present, it inserts\\\".\n- **sr11-12:** Spec 24.3.3.5 returns the existing value before it calls the callback. MDN agrees: \\\"If the key is not present, it inserts a new entry with the key and a default value computed from a given callback\\\".\n\nI found no duplicates with other sections. The only related cards are sr10-11 (an AggregateError built from a Set) and sr12-02 (destructuring a Set), and each rests on a different fact. The only flag is sr11-03, a definition truism. Its suggested replacement tests Map key types, a topic named in the section scope that no other card in the deck covers."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [],
+   "notes": "All 12 r12 cards (javascript-fundamentals-sr12-01 to -12, all in javascript-fundamentals-b3.json) pass. Each source URL loaded, is current MDN, and supports the whole card, including the right fact the explanation gives for each false card. Quotes that settle each card: 01 Destructuring: \"The default value is used when the property is not present, or has value undefined. It is not used if the property has value null.\" 02: \"Array destructuring calls the iterable protocol of the right-hand side. Therefore, any iterable, not necessarily arrays, can be destructured.\" 03: object rest \"copies all enumerable own properties of the object that are not already picked off by the destructuring pattern\", so rest is {renamed: 2} and rest.x is undefined (false is correct). 04: \"destructuring null or undefined throws a TypeError ... This happens even when the pattern is empty. const {} = null; // TypeError\". This also matches the ES2026 spec, where ObjectBindingPattern runs RequireObjectCoercible. 05 Spread_syntax: \"All primitives can be spread in objects. Only strings have enumerable own properties\". {...42} is {} (false is correct; even read as a statement-level block, the result is a SyntaxError, not a TypeError). 06 Spread_syntax: shallow copy, \"Each array element retains its identity without getting copied\", plus the shallow-cloning of objects. 07: \"Object.assign() triggers setters on the target object, whereas spread syntax does not\" (spec: Object.assign uses Set). 08 Array: \"Some methods do not mutate the existing array ... toReversed(), toSorted(), toSpliced(), and with()\", with the table pairing sort, reverse and splice to them. 09 toSorted: \"If omitted, the array elements are converted to strings, then sorted according to each character's Unicode code point value\". '20' < '3', so the result is [20, 3]. 10 Optional_chaining: \"Optional chaining cannot be used on a non-declared root object ... undeclaredVar?.prop; // ReferenceError\". 11 Nullish_coalescing: \"returns its right-hand side operand when its left-hand side operand is null or undefined\", with the example 0 ?? 42 giving 0. 12 Logical_OR_assignment: \"No assignment is performed if the left-hand side is not falsy\", and the example const x = 1; x ||= console.log(...) logs nothing. Balance is 6 true (01, 02, 04, 07, 10, 11) and 6 false (03, 05, 06, 08, 09, 12). Average statement length is 80.5 for true cards and 80.3 for false ones. All statements are under 120 characters and all explanations under 240. The ES2023 cards (08, 09) name the edition in the statement and in appliesTo, and neither is false because of the year. A grep of r1 to r11 found no card on destructuring, spread, shallow copies, Object.assign, sort, ?. or ??, so there are no duplicates. Borderline points that are not flagged: 08 bundles the four copying methods, but they share one property that MDN states as a group; it is easy (difficulty 1) but not a strawman. 04 has a redundant \"for null\" at the end and could read \"`const {} = null` throws a TypeError even though the pattern is empty.\" 07 has slightly awkward wording (\"when it copies the setter's property name\"). Sub-topics of the section left uncovered (?? needing parentheses next to && or ||, an optional chain as an assignment target, spread in calls requiring an iterable) are a coverage choice, not a defect."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "javascript-fundamentals-sr5-02",
+     "javascript-fundamentals-sr5-04",
+     "javascript-fundamentals-sr7-02"
+    ],
+    "why": "sr5-02 tests that Object.create(parent) makes parent the new object's prototype. The true answers of sr5-04 (Object.create(C.prototype) instanceof C is true because C.prototype is in the chain) and sr7-02 (for...in over Object.create({x:1}) sees the inherited 'x') only hold because of that fact, and both explanations say so. Knowing either one gives sr5-02. sr5-02 is also close to a definition card: the API name says what it does.",
+    "dropId": "javascript-fundamentals-sr5-02"
+   },
+   {
+    "ids": [
+     "javascript-fundamentals-sr11-11",
+     "javascript-fundamentals-sr11-12"
+    ],
+    "why": "Borderline. Both test that the ES2026 upsert methods leave an existing entry alone: getOrInsert does not overwrite a present key (sr11-11) and getOrInsertComputed does not run its callback for a present key (sr11-12). Both are false and use the same template, 'In ES2026, <upsert> stores/runs ... when the key is already present'. The only extra in sr11-11 is the edge case that a key mapped to undefined still counts as present, which is closer to an obscure detail than a real distinction. Keep sr11-12: it tests the trap the prompt names (the callback runs only when the key is missing).",
+    "dropId": "javascript-fundamentals-sr11-11"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "object-create-prototype",
+    "ids": [
+     "javascript-fundamentals-sr5-02",
+     "javascript-fundamentals-sr5-04",
+     "javascript-fundamentals-sr5-05",
+     "javascript-fundamentals-sr7-02"
+    ],
+    "why": "sr5-04's explanation (C.prototype found in the chain), sr7-02's explanation (x belongs to the prototype) and sr5-05's explanation ('Object.create(null) creates an object with no prototype') each spell out what Object.create does with its argument, which is the answer to sr5-02."
+   },
+   {
+    "name": "bind-returns-callable",
+    "ids": [
+     "javascript-fundamentals-sr4-04",
+     "javascript-fundamentals-sr4-05",
+     "javascript-fundamentals-sr4-06",
+     "javascript-fundamentals-sr4-08"
+    ],
+    "why": "The statements of sr4-05 (f.bind(a).bind(b)()), sr4-06 (f.bind(null,'a')('b')) and sr4-08 (new (C.bind({}))()) all show bind returning a function that is called later. That gives away sr4-04 (bind immediately runs f, false). sr4-05 and sr4-08 also overlap: one says the bound this stays fixed, the other says new ignores it."
+   },
+   {
+    "name": "arrow-lexical-bindings",
+    "ids": [
+     "javascript-fundamentals-sr4-09",
+     "javascript-fundamentals-sr4-10"
+    ],
+    "why": "sr4-09's explanation ('An arrow captures this from its surrounding scope') strongly hints sr4-10's answer (an arrow does not get its own arguments object), since this and arguments are lexical for the same reason."
+   },
+   {
+    "name": "function-vs-class-hoisting",
+    "ids": [
+     "javascript-fundamentals-sr3-03",
+     "javascript-fundamentals-sr5-07"
+    ],
+    "why": "These are a mirrored true and false pair on one distinction: a function declaration is usable before its position (true), a class declaration is not (false). The prompt names this as a single trap."
+   },
+   {
+    "name": "temporal-dead-zone",
+    "ids": [
+     "javascript-fundamentals-sr3-04",
+     "javascript-fundamentals-sr5-07",
+     "javascript-fundamentals-sr5-08"
+    ],
+    "why": "sr5-07's explanation says that accessing an uninitialized class binding throws a ReferenceError, and sr5-08 states that accessing an uninitialized this throws a ReferenceError. Together they push hard on sr3-04 (typeof in the TDZ throws rather than returning 'undefined')."
+   },
+   {
+    "name": "surrounding-function-scope-template",
+    "ids": [
+     "javascript-fundamentals-sr3-01",
+     "javascript-fundamentals-sr10-06"
+    ],
+    "why": "Both statements end with the same predicate, 'belongs to the surrounding function's scope'. It is true for a var in an if block (sr3-01) and false for a catch binding (sr10-06), so the two read as a mirrored pair."
+   },
+   {
+    "name": "closure-binding-capture",
+    "ids": [
+     "javascript-fundamentals-sr3-06",
+     "javascript-fundamentals-sr3-07",
+     "javascript-fundamentals-sr3-08"
+    ],
+    "why": "sr3-08's explanation (callbacks retain the binding of their iteration) and sr3-07's (closures retain distinct variables) both teach that closures capture bindings rather than values, which is the answer to sr3-06."
+   },
+   {
+    "name": "implicit-global-creation",
+    "ids": [
+     "javascript-fundamentals-sr3-09",
+     "javascript-fundamentals-sr3-10"
+    ],
+    "why": "Both use the same false template, '<code> creates a global property / globalThis.score'. Under the module and strict-mode context of the deck, one answer suggests the other."
+   },
+   {
+    "name": "primitive-conversion-order",
+    "ids": [
+     "javascript-fundamentals-sr2-05",
+     "javascript-fundamentals-sr2-06",
+     "javascript-fundamentals-sr2-07"
+    ],
+    "why": "sr2-05 and sr2-06 share the false template 'tries `A` before `B`'. sr2-05's explanation describes the Symbol.toPrimitive-then-fallback structure that sr2-06 tests, and sr2-07's explanation names Date's Symbol.toPrimitive method, which hints sr2-05."
+   },
+   {
+    "name": "bigint-typeerror",
+    "ids": [
+     "javascript-fundamentals-sr1-05",
+     "javascript-fundamentals-sr1-10",
+     "javascript-fundamentals-sr2-03"
+    ],
+    "why": "All three statements read 'BigInt ... throws a TypeError' (two true, one false). sr1-05's explanation ('Convert the operands to a common numeric type') implies that explicit Number() conversion works, which is the answer to sr2-03."
+   },
+   {
+    "name": "large-integer-precision",
+    "ids": [
+     "javascript-fundamentals-sr1-04",
+     "javascript-fundamentals-sr1-11"
+    ],
+    "why": "sr1-11's 9007199254740993 example and its 'rather than rounding through a Number value' explanation sit right next to sr1-04's safe versus representable integer distinction. Dealt together, one frames the other."
+   },
+   {
+    "name": "import-binding-semantics",
+    "ids": [
+     "javascript-fundamentals-sr6-02",
+     "javascript-fundamentals-sr6-03"
+    ],
+    "why": "These are the two halves of 'read-only live bindings'. Each explanation describes the binding model that frames the other card, so a player can solve one from the other."
+   },
+   {
+    "name": "iterator-result-object",
+    "ids": [
+     "javascript-fundamentals-sr7-03",
+     "javascript-fundamentals-sr7-10",
+     "javascript-fundamentals-sr7-12",
+     "javascript-fundamentals-sr9-06"
+    ],
+    "why": "The statements of sr7-10 and sr7-12 contain {next(){return {done:true};}}, which shows next() returning a result object. sr9-06's explanation says next() fulfills with 'an iteration result object containing value and done'. Both give away sr7-03 (next returns a bare Number, false)."
+   },
+   {
+    "name": "iterator-from-vs-concat-same-object",
+    "ids": [
+     "javascript-fundamentals-sr7-10",
+     "javascript-fundamentals-sr7-12"
+    ],
+    "why": "This is a mirrored pair: the identical non-iterable iterator object is accepted by Iterator.from (true) and rejected by Iterator.concat (false). It is the prompt's single Iterator.concat versus Iterator.from trap split over two cards."
+   },
+   {
+    "name": "iterable-protocol-consumers",
+    "ids": [
+     "javascript-fundamentals-sr7-01",
+     "javascript-fundamentals-sr12-02"
+    ],
+    "why": "sr12-02's explanation ('reads values through the source's iterator. A Set supplies that iterator') hints that a plain object without an iterator fails in for...of (sr7-01), and sr7-01's explanation hints the reverse."
+   },
+   {
+    "name": "class-field-placement",
+    "ids": [
+     "javascript-fundamentals-sr5-06",
+     "javascript-fundamentals-sr5-10"
+    ],
+    "why": "These are the two sides of one distinction: instance fields become own properties of each instance (sr5-06), static fields live on the constructor, not the instance (sr5-10). Each explanation states the other side."
+   },
+   {
+    "name": "promise-handler-return-value",
+    "ids": [
+     "javascript-fundamentals-sr8-03",
+     "javascript-fundamentals-sr8-04",
+     "javascript-fundamentals-sr8-05"
+    ],
+    "why": "sr8-03 (a then handler's returned value becomes the fulfillment value) and sr8-05 (a finally callback's return value is ignored) form a contrast pair with the same 'fulfills with <value>' template. sr8-04's adoption rule rests on the same handler-return mechanism."
+   },
+   {
+    "name": "synchronous-callback-invocation",
+    "ids": [
+     "javascript-fundamentals-sr8-02",
+     "javascript-fundamentals-sr8-12"
+    ],
+    "why": "Both are true and use the same template, 'X calls its function before/during the call returns' (executor, Promise.try). Knowing one makes the other easy to guess."
+   },
+   {
+    "name": "promise-combinator-empty-input",
+    "ids": [
+     "javascript-fundamentals-sr8-08",
+     "javascript-fundamentals-sr8-09",
+     "javascript-fundamentals-sr8-10"
+    ],
+    "why": "All three use the template 'Passing an empty array to `Promise.X()` produces ...'. The 'success condition' and 'no candidate' reasoning in the explanations transfers between any, all and race."
+   },
+   {
+    "name": "async-value-7-mirror",
+    "ids": [
+     "javascript-fundamentals-sr9-01",
+     "javascript-fundamentals-sr9-02"
+    ],
+    "why": "These are adjacent mirrored statements with the same ending, 'produces/evaluates to the Number value `7`': false for calling an async function, true for await 7. Each explanation states the promise wrapping and unwrapping that answers the other."
+   },
+   {
+    "name": "async-returns-promise",
+    "ids": [
+     "javascript-fundamentals-sr9-01",
+     "javascript-fundamentals-sr9-06"
+    ],
+    "why": "Both are false with the template '<async call> returns a plain value'. sr9-06's explanation ('returns a promise that fulfills with ...') gives sr9-01's answer, and the reverse holds too."
+   },
+   {
+    "name": "await-concurrency",
+    "ids": [
+     "javascript-fundamentals-sr9-04",
+     "javascript-fundamentals-sr9-05",
+     "javascript-fundamentals-sr9-08"
+    ],
+    "why": "sr9-04 (await suspends only its own function), sr9-05 (Promise.all starts both operations before awaiting) and sr9-08 (Array.fromAsync waits sequentially) all test sequential versus overlapping work. sr9-05's explanation ('Their operations can overlap') hints sr9-04 and contrasts with sr9-08."
+   },
+   {
+    "name": "microtask-checkpoint",
+    "ids": [
+     "javascript-fundamentals-sr9-09",
+     "javascript-fundamentals-sr9-10",
+     "javascript-fundamentals-sr9-11",
+     "javascript-fundamentals-sr9-12"
+    ],
+    "why": "sr9-11's explanation ('keeps taking microtasks until its queue is empty') gives sr9-12's answer. sr9-12's statement presupposes several microtasks in one checkpoint, which hints sr9-11. sr9-09's and sr9-10's explanations both describe microtasks running after the current task and before the next task."
+   },
+   {
+    "name": "upsert-existing-key",
+    "ids": [
+     "javascript-fundamentals-sr11-11",
+     "javascript-fundamentals-sr11-12"
+    ],
+    "why": "Both are false with the same template (ES2026 upsert acting 'when the key is already present'). Each explanation says that an existing entry is returned untouched, which answers the other card."
+   }
+  ],
+  "tells": "Read all 144 cards (b1 r1-r4, b2 r5-r8, b3 r9-r12). Each section is 6 true and 6 false. Average statement length is balanced: true minus false is within 5 characters in every section (r1 is -5.0, at the limit; r7 is +4.3; r2 is +4.0). Batch averages: b1 T76/F78, b2 T88/F86, b3 T84/F85. No statement is over 120 characters and no explanation over 240. Length is not a usable tell.\n\n1. \"In ES2026, ...\" opener predicts False: 2 true (sr1-10, sr1-11) versus 6 false (sr1-12, sr7-12, sr9-08, sr10-12, sr11-11, sr11-12). In b3 it is 0 true and 4 false: every b3 card that opens \"In ES2026\" is false. \"Since ES20xx\" is balanced (8 true, 7 false; b3 3/3).\n\n2. A conditional \"when\" clause in the statement predicts False: 3 true (sr4-01, sr6-05, sr12-07) versus 10 false (sr3-06, sr3-11, sr4-10, sr5-09, sr8-06, sr9-10, sr11-01, sr11-11, sr11-12, sr12-12). In b3: 1 true, 5 false. \"already\" occurs only in b3 and only in false cards (sr11-11, sr11-12).\n\n3. Overwrite, extra-work and reset verbs predict False. overrides/replaces/updates/reruns/restarts/changes/mutate/cancels/stores give 10 false (sr5-12, sr6-12, sr6-03, sr9-12, sr6-04, sr7-08, sr8-01, sr12-08, sr8-06, sr11-11) versus 1 true (sr11-04). The family \"X also does extra work\" (applies the initializer early, runs at first instance, evaluates compute(), creates a global property) adds sr3-02, sr5-09, sr12-12, sr3-09, sr3-10, all false. Rule of thumb: \"the engine does more, or overwrites something\" means False.\n\n4. Recurring false templates at or over the limit of 2:\n- \"returns/produces a bare value instead of the wrapper (promise or result object)\": sr7-03, sr9-01, sr9-06. That is 3, over the limit.\n- \"tries `A` before `B`\": sr2-05, sr2-06, both false.\n- \"inherits ... from `Object.prototype`\": sr5-05, sr11-08, both false. \"inherits\" never appears in a true statement.\n- \"creates a global property / globalThis.x\": sr3-09, sr3-10, both false.\n- \"contains an Error object / a new copy\" (wrapping or copying claimed): sr10-10, sr12-06, both false. These are b3's only \"contains\" statements.\n- \"(upsert) ... when the key is already present\": sr11-11, sr11-12, both false.\n\n5. \"throws\" leans True: 6 true (sr1-05, sr1-10, sr5-08, sr10-03, sr12-04, sr12-10) versus 3 false (sr2-03, sr10-02, sr12-05). A named error type in the statement is right about 2 times in 3.\n\n6. Hedge words appear in only 2 statements, both true: sr4-03 and sr6-08, both \"accepts\". Requirement and coverage words appear in 2 true (sr8-08, sr9-05) and 3 false (sr6-12, sr8-06, sr8-10). The counts are small but the hedge direction is the classic tell. \"browser\" occurs only in 2 b3 false statements (sr9-10, sr9-12).\n\n7. Repeated sentence frames inside one section:\n- \"Passing an empty array to `Promise.X()` produces ...\" appears 3 times in r8 (sr8-08 T, sr8-09 T, sr8-10 F).\n- \"`typeof X` evaluates to the string 'object'/'number'\" (sr1-01 T, sr1-02 F).\n- \"... the Number value `7`\" (sr9-01 F, sr9-02 T, adjacent).\n- \"... belongs to the surrounding function's scope\" (sr3-01 T, sr10-06 F).\n\n8. Difficulty and answer correlate by batch. In b1, difficulty-3 cards are 6 true and 2 false. In b3, difficulty-1 cards are 12 true and 8 false, and difficulty-3 cards are 3 true and 5 false. This matters if difficulty is shown to the player.\n\nb3 wording habits that differ from b1 and b2 (GPT-6.1 Sol versus GPT-6 Pro):\n- b3 opens statements with a code-context clause (For/In/After/With/When/If/Inside) 23 times, versus 10 in b1 and 15 in b2. Specifically \"For `code`, ...\" appears 8 times in b3 with 2 true and 6 false (false: sr9-01, sr10-02, sr10-08, sr10-10, sr12-03, sr12-06; true: sr10-11, sr11-03), versus 3 in b1 and 1 in b2. In b3, \"For `...`,\" therefore leans False.\n- \"In ES2026\" is all false in b3 (see 1).\n- b3 is heavier on \"when\" and \"already\" conditionals that set up a \"does it do extra work\" false claim (sr11-11, sr11-12, sr9-10, sr12-12).\n- b3 almost never uses \"produces\" (1 card, false), while b1 and b2 use it 10 times, balanced. b3 never uses b2's \"Given `...`,\" opener.\n- b3 explanations often open with the API name (\"Map.prototype.getOrInsert ...\", \"WeakMap ...\", \"Object spread ...\") and use \"so\" (10, versus 3 in b1 and 4 in b2), \"already\" and \"while\". b3 false explanations end with \"rather than\" 4 times and true explanations use \"accepts\" (sr9-02, sr10-01, sr10-09, sr11-04, and sr12-05 false). Players see these only after answering, so they are not answer tells.\n\nQuality notes, sceptical pass (no factual errors found in the answers):\n- Near-truisms or strawmen: sr4-04 (bind immediately runs f), sr2-10 (5 === '5' is false), sr11-03 (Set ignores a duplicate add), sr3-07 (each factory call gets its own let), sr5-02 (a definition card, see duplicates).\n- sr6-07's explanation restates the statement and adds nothing. Its \"module containing just export const x = 1\" detail is irrelevant.\n- sr11-11 rests on an edge case (an existing key mapped to undefined) rather than a core distinction."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "javascript-fundamentals-sr2-10",
+    "reason": "weak_card: a definition card. `5 === '5'` is false by the meaning of strict equality and is near MDN's own example. Dropping it leaves r2 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr4-04",
+    "reason": "weak_card: a strawman (bind immediately runs f) for daily JS developers. sr4-05, sr4-06 and sr4-08 also give it away (bind-returns-callable group). Dropping it leaves r4 with 11 cards, 6T/5F."
+   },
+   {
+    "id": "javascript-fundamentals-sr5-02",
+    "reason": "weak_card and the scan's duplicate: a definition card for Object.create that sr5-04, sr5-05 and sr7-02 already presuppose. Dropping it leaves r5 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr6-07",
+    "reason": "weak_card: the explanation only restates the statement, the `export const x = 1` setup is padding, and the bare `import()` is invalid code. Dropping it leaves r6 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr7-10",
+    "reason": "duplicate: it and sr7-12 are the two sides of the single Iterator.from versus Iterator.concat distinction and use the identical object fragment. Dropping it leaves r7 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr8-03",
+    "reason": "weak_card: a near-truism (`.then(() => 7)` fulfills with 7) with no realistic misconception, and it mirrors sr8-05. Dropping it leaves r8 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr9-05",
+    "reason": "weak_card: the wording (startA/startB, 'starts both') and plain argument evaluation give the answer away. Dropping it leaves r9 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr10-05",
+    "reason": "weak_card: a name giveaway. `new TypeError(...) instanceof Error` can be answered from the constructor name alone. Dropping it leaves r10 with 11 cards, 5T/6F."
+   },
+   {
+    "id": "javascript-fundamentals-sr11-03",
+    "reason": "weak_card: a definition truism (a Set ignores a duplicate add). Dropping it leaves r11 with 10 cards, 5T/6F before the next drop."
+   },
+   {
+    "id": "javascript-fundamentals-sr11-11",
+    "reason": "the scan's duplicate of sr11-12 (same 'upsert leaves an existing key alone' fact and false template). Its only extra is the obscure undefined-value edge case. Dropping it leaves r11 with 10 cards, 5T/5F."
+   }
+  ],
+  "source": [
+   {
+    "id": "javascript-fundamentals-sr5-01",
+    "title": "ECMAScript 2026, 10.1.8.1 OrdinaryGet",
+    "url": "https://tc39.es/ecma262/2026/multipage/ordinary-and-exotic-objects-behaviours.html#sec-ordinaryget"
+   },
+   {
+    "id": "javascript-fundamentals-sr6-04",
+    "title": "import() - MDN",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import#module_namespace_object"
+   },
+   {
+    "id": "javascript-fundamentals-sr10-11",
+    "title": "AggregateError: errors - MDN",
+    "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/errors"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "javascript-fundamentals-sr3-03",
+    "reason": "ambiguous: in strict code a function declaration inside a nested block is hoisted only to the top of that block, so 'a function declaration' in general could be defended as False. The statement now names the top level of the function body. MDN function page: 'Function declarations in JavaScript are hoisted to the top of the enclosing function or global scope. You can use the function before you declared it' and 'In strict mode, block-level function declarations are scoped to that block and are hoisted to the top of the block.'",
+    "statement": "A function declared at the top level of a function body is callable from lines above the declaration.",
+    "answer": true,
+    "explanation": "A function declaration directly in a function body is hoisted to the top of that function, so earlier lines can call it. In strict mode, one inside a nested block is hoisted only to the top of that block.",
+    "misconception": "",
+    "sourceTitle": "function - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function"
+   },
+   {
+    "id": "javascript-fundamentals-sr4-12",
+    "reason": "ambiguous: the answer flips with the mode of f, so the mode now sits inside the statement. MDN call(), thisArg: 'If the function is not in strict mode, null and undefined will be replaced with the global object, and primitive values will be converted to objects.'",
+    "statement": "In strict mode, `function f(){return this;}` called as `f.call(7)` returns the primitive Number `7`.",
+    "answer": true,
+    "explanation": "In strict mode, call passes its thisArg to f unchanged, so this is the primitive 7. A non-strict function would receive a Number wrapper object instead.",
+    "misconception": "",
+    "sourceTitle": "Function.prototype.call() - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call"
+   },
+   {
+    "id": "javascript-fundamentals-sr9-10",
+    "reason": "ambiguous: 'schedules a promise reaction' also covers a then() on a pending promise, where the timer can run first. The rewrite uses an already fulfilled promise and also drops the 'when' and 'browser' tells. MDN Microtask_guide: 'Promises use the microtask queue for their callbacks', setTimeout() callbacks are tasks, and microtasks run 'before the next task is run'. The page's example logs main, microtask, timeout.",
+    "statement": "If a task runs `setTimeout(b, 0); Promise.resolve().then(a);`, `b` runs before `a`.",
+    "answer": false,
+    "explanation": "Promise.resolve() is already fulfilled, so a is queued as a microtask and runs once the task's code ends. b is a timer callback, which runs in a later task, so a runs first.",
+    "misconception": "A zero-delay timer scheduled first runs before a promise reaction queued later in the same task.",
+    "sourceTitle": "Using microtasks in JavaScript with queueMicrotask() - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide"
+   },
+   {
+    "id": "javascript-fundamentals-sr10-12",
+    "reason": "tell: an 'In ES2026,' opener marked False (2T/6F in the deck, every b3 instance false). Switched to the 'Since ES2026,' frame. Fact and answer unchanged.",
+    "statement": "Since ES2026, `Error.isError()` returns false for an Error created in another realm.",
+    "answer": false,
+    "explanation": "Error.isError recognizes genuine Error objects across realms and returns true for them. It uses an internal brand rather than the current realm's Error.prototype chain.",
+    "misconception": "Error.isError shares instanceof Error's rejection of errors from another realm.",
+    "sourceTitle": "Error.isError() - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/isError"
+   },
+   {
+    "id": "javascript-fundamentals-sr9-08",
+    "reason": "tell: an 'In ES2026,' opener marked False. Switched to the 'Since ES2026,' frame. Fact and answer unchanged.",
+    "statement": "Since ES2026, `Array.fromAsync()` requests the next sync-iterator value while its yielded promise is pending.",
+    "answer": false,
+    "explanation": "Array.fromAsync requests and awaits a sync iterable's values one at a time. It waits for each yielded promise to settle before requesting another value.",
+    "misconception": "Array.fromAsync eagerly retrieves every input before it starts awaiting input values.",
+    "sourceTitle": "Array.fromAsync() - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/fromAsync"
+   },
+   {
+    "id": "javascript-fundamentals-sr4-10",
+    "reason": "tell: a conditional 'when' clause marked False (3T/10F). Removed 'when called' and shortened the statement. Fact and answer unchanged.",
+    "statement": "An arrow defined inside a regular function gets its own `arguments` object.",
+    "answer": false,
+    "explanation": "The arrow uses the enclosing regular function's arguments binding. Passing different arguments to the arrow does not replace that enclosing arguments object.",
+    "misconception": "An arrow creates an arguments object for its own call.",
+    "sourceTitle": "Arrow function expressions - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions"
+   },
+   {
+    "id": "javascript-fundamentals-sr12-12",
+    "reason": "tell: a 'When' conditional opener marked False. Reframed with 'With', which a true r12 card also uses. Fact and answer unchanged.",
+    "statement": "With a truthy `x`, the expression `x ||= compute()` evaluates the `compute()` call.",
+    "answer": false,
+    "explanation": "For a truthy x, ||= skips its right-hand side and makes no assignment. The compute() call is therefore skipped.",
+    "misconception": "Logical OR assignment evaluates its right-hand side even when the existing value is truthy.",
+    "sourceTitle": "Logical OR assignment (||=) - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Logical_OR_assignment"
+   },
+   {
+    "id": "javascript-fundamentals-sr8-06",
+    "reason": "tell: a 'When' conditional opener marked False. Reworded without the conditional. Fact and answer unchanged.",
+    "statement": "Rejection of the `Promise.all()` result cancels the other operations represented by its inputs.",
+    "answer": false,
+    "explanation": "Promise.all rejection does not cancel its input operations. Pending operations can continue independently of the rejected aggregate promise.",
+    "misconception": "Promise.all cancels remaining input operations when it rejects.",
+    "sourceTitle": "Using promises - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises"
+   },
+   {
+    "id": "javascript-fundamentals-sr5-01",
+    "reason": "source_problem: the MDN guide never shows an own undefined property shadowing. ES2026 OrdinaryGet does: 'If desc is undefined, then ... Return ? parent.[[Get]](P, Receiver). If IsDataDescriptor(desc) is true, return desc.[[Value]].' Statement, answer and explanation unchanged.",
+    "statement": "An own property whose value is `undefined` shadows a same-named property on the prototype.",
+    "answer": true,
+    "explanation": "Property lookup stops at an own property even when its value is undefined. JavaScript does not continue up the prototype chain looking for a different value.",
+    "misconception": "",
+    "sourceTitle": "ECMAScript 2026, 10.1.8.1 OrdinaryGet",
+    "sourceUrl": "https://tc39.es/ecma262/2026/multipage/ordinary-and-exotic-objects-behaviours.html#sec-ordinaryget"
+   },
+   {
+    "id": "javascript-fundamentals-sr6-04",
+    "reason": "source_problem: the Modules guide covers only multiple script tags. The import() page, under 'Module namespace object', says module code 'is never executed more than once, even if it is imported multiple times.' Statement, answer and explanation unchanged.",
+    "statement": "A module reruns its top-level initialization for another importer of the same resolved module.",
+    "answer": false,
+    "explanation": "Importers of the same resolved module share its evaluation. Another import reuses that module instead of rerunning its top-level initialization.",
+    "misconception": "A module repeats its initialization for each importer.",
+    "sourceTitle": "import() - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import#module_namespace_object"
+   },
+   {
+    "id": "javascript-fundamentals-sr10-11",
+    "reason": "source_problem: the constructor page does not say errors becomes an array. The errors property page does: 'An Array containing values in the same order as the iterable passed as the first argument', and its example passes a new Set(...). Statement, answer and explanation unchanged.",
+    "statement": "For `new AggregateError(new Set(['a', 'b']))`, `errors` is an array containing 'a' and 'b'.",
+    "answer": true,
+    "explanation": "AggregateError collects the values from its constructor's errors iterable into an array. Its errors property holds that array even when the input iterable is a Set.",
+    "misconception": "",
+    "sourceTitle": "AggregateError: errors - MDN",
+    "sourceUrl": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError/errors"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "object-create-prototype",
+    "ids": [
+     "javascript-fundamentals-sr5-04",
+     "javascript-fundamentals-sr5-05",
+     "javascript-fundamentals-sr7-02"
+    ]
+   },
+   {
+    "name": "bind-returns-callable",
+    "ids": [
+     "javascript-fundamentals-sr4-05",
+     "javascript-fundamentals-sr4-06",
+     "javascript-fundamentals-sr4-08"
+    ]
+   },
+   {
+    "name": "arrow-lexical-bindings",
+    "ids": [
+     "javascript-fundamentals-sr4-09",
+     "javascript-fundamentals-sr4-10"
+    ]
+   },
+   {
+    "name": "function-vs-class-hoisting",
+    "ids": [
+     "javascript-fundamentals-sr3-03",
+     "javascript-fundamentals-sr5-07"
+    ]
+   },
+   {
+    "name": "temporal-dead-zone",
+    "ids": [
+     "javascript-fundamentals-sr3-04",
+     "javascript-fundamentals-sr5-07",
+     "javascript-fundamentals-sr5-08"
+    ]
+   },
+   {
+    "name": "surrounding-function-scope-template",
+    "ids": [
+     "javascript-fundamentals-sr3-01",
+     "javascript-fundamentals-sr10-06"
+    ]
+   },
+   {
+    "name": "closure-binding-capture",
+    "ids": [
+     "javascript-fundamentals-sr3-06",
+     "javascript-fundamentals-sr3-07",
+     "javascript-fundamentals-sr3-08"
+    ]
+   },
+   {
+    "name": "implicit-global-creation",
+    "ids": [
+     "javascript-fundamentals-sr3-09",
+     "javascript-fundamentals-sr3-10"
+    ]
+   },
+   {
+    "name": "primitive-conversion-order",
+    "ids": [
+     "javascript-fundamentals-sr2-05",
+     "javascript-fundamentals-sr2-06",
+     "javascript-fundamentals-sr2-07"
+    ]
+   },
+   {
+    "name": "bigint-typeerror",
+    "ids": [
+     "javascript-fundamentals-sr1-05",
+     "javascript-fundamentals-sr1-10",
+     "javascript-fundamentals-sr2-03"
+    ]
+   },
+   {
+    "name": "large-integer-precision",
+    "ids": [
+     "javascript-fundamentals-sr1-04",
+     "javascript-fundamentals-sr1-11"
+    ]
+   },
+   {
+    "name": "import-binding-semantics",
+    "ids": [
+     "javascript-fundamentals-sr6-02",
+     "javascript-fundamentals-sr6-03"
+    ]
+   },
+   {
+    "name": "iterator-result-object",
+    "ids": [
+     "javascript-fundamentals-sr7-03",
+     "javascript-fundamentals-sr7-12",
+     "javascript-fundamentals-sr9-06"
+    ]
+   },
+   {
+    "name": "iterable-protocol-consumers",
+    "ids": [
+     "javascript-fundamentals-sr7-01",
+     "javascript-fundamentals-sr12-02"
+    ]
+   },
+   {
+    "name": "class-field-placement",
+    "ids": [
+     "javascript-fundamentals-sr5-06",
+     "javascript-fundamentals-sr5-10"
+    ]
+   },
+   {
+    "name": "promise-handler-return-value",
+    "ids": [
+     "javascript-fundamentals-sr8-04",
+     "javascript-fundamentals-sr8-05"
+    ]
+   },
+   {
+    "name": "synchronous-callback-invocation",
+    "ids": [
+     "javascript-fundamentals-sr8-02",
+     "javascript-fundamentals-sr8-12"
+    ]
+   },
+   {
+    "name": "promise-combinator-empty-input",
+    "ids": [
+     "javascript-fundamentals-sr8-08",
+     "javascript-fundamentals-sr8-09",
+     "javascript-fundamentals-sr8-10"
+    ]
+   },
+   {
+    "name": "async-value-7-mirror",
+    "ids": [
+     "javascript-fundamentals-sr9-01",
+     "javascript-fundamentals-sr9-02"
+    ]
+   },
+   {
+    "name": "async-returns-promise",
+    "ids": [
+     "javascript-fundamentals-sr9-01",
+     "javascript-fundamentals-sr9-06"
+    ]
+   },
+   {
+    "name": "await-concurrency",
+    "ids": [
+     "javascript-fundamentals-sr9-04",
+     "javascript-fundamentals-sr9-08"
+    ]
+   },
+   {
+    "name": "microtask-checkpoint",
+    "ids": [
+     "javascript-fundamentals-sr9-09",
+     "javascript-fundamentals-sr9-10",
+     "javascript-fundamentals-sr9-11",
+     "javascript-fundamentals-sr9-12"
+    ]
+   },
+   {
+    "name": "strict-mode-this-and-assignment",
+    "ids": [
+     "javascript-fundamentals-sr4-12",
+     "javascript-fundamentals-sr4-02"
+    ]
+   }
+  ],
+  "sectionBalance": "Cards left per section, true/false after edits:\n- r1: 12 (6T/6F). True minus false average statement length is -5.0, unchanged and at the limit.\n- r2: 11 (5T/6F), +4.9.\n- r3: 12 (6T/6F), +2.0.\n- r4: 11 (6T/5F), about -1.6.\n- r5: 11 (5T/6F), -1.8.\n- r6: 11 (5T/6F), -0.9.\n- r7: 11 (5T/6F), +1.8.\n- r8: 11 (5T/6F), -1.8.\n- r9: 11 (5T/6F), about -4.0.\n- r10: 11 (5T/6F), -1.3.\n- r11: 10 (5T/5F), +1.4.\n- r12: 12 (6T/6F), about -1.0.\nDeck total: 134 cards, 64 true and 70 false. Every section has at least 10 cards and stays inside 4-6 per 10.",
+  "notes": "Files are unchanged (read-only run). I applied every verifier flag.\n- **Drops:** all weak_card and duplicate flags, plus the scan's sr11-11 duplicate, are dropped. No section went below 9 cards or outside 4-6 per 10, so none of them needed a replacement.\n- **Ambiguous cards (sr3-03, sr4-12, sr9-10):** rewritten, each checked word by word against the cited page today.\n  - sr3-03: MDN function page, the enclosing-function hoisting sentence and the strict block-level sentence.\n  - sr4-12: MDN call() thisArg, \"If the function is not in strict mode ... primitive values will be converted to objects\".\n  - sr9-10: MDN Microtask_guide. \"Promises use the microtask queue\", setTimeout callbacks are tasks, microtasks run \"before the next task is run\", and the example logs main, microtask, timeout. I shortened the verifier's sr9-10 wording to keep r9's length balance (a \"When\" version made false cards 6 characters longer on average). The \"If ...\" opener also matches true card sr12-10, and it removes the \"browser\" and \"when\" tells.\n- **Source fixes, each confirmed on the page:**\n  - sr5-01: the ES2026 multipage 10.1.8.1 OrdinaryGet page (title \"ECMAScript® 2026 Language Specification\") returns desc.[[Value]] for an own data property and climbs the chain only when desc is undefined.\n  - sr6-04: import() #module_namespace_object, \"never executed more than once, even if it is imported multiple times\".\n  - sr10-11: AggregateError/errors, \"An Array containing values in the same order as the iterable\", with a Set example.\n- **Tell rewrites (5, fact and answer kept):**\n  - The \"In ES2026\" opener predicted False. sr10-12 and sr9-08 now use \"Since ES2026\", so \"In ES2026\" is 2T/3F instead of 2T/6F. \"Since ES20xx\" is now 7T/9F.\n  - The \"when\" clause predicted False. sr4-10, sr12-12 and sr8-06 lose it, and sr9-10 loses it through its rewrite. \"when\" drops from 3T/10F to about 3T/5F.\n  - Edition-named cards as a whole still lean False (9T/12F). Fixing that would need new facts, not rewording.\n- **Conflict groups:** iterator-from-vs-concat-same-object and upsert-existing-key are removed, because each had only one member left. Dropped ids were removed from the other groups. object-create-prototype is kept with its 3 remaining members, which share the Object.create setup; it is low priority. I added strict-mode-this-and-assignment (sr4-12, sr4-02): the rewritten sr4-12 now names strict-mode this handling, and that frames sr4-02's strict plain-call answer.\n- **Coverage gaps from the drops:**\n  - r2 has no unary plus / Number('') card.\n  - r5 has no constructor .prototype card.\n  - r6 has no dynamic import() card.\n  - r7 has no Iterator.from card.\n  - r8 has no catch-recovery card.\n  - r10 has no JSON.parse SyntaxError card.\n  - r11 has no Map key types card.\n  Each verifier's suggested replacement would fill its section's gap if a later pass wants 12 per section. I did not verify them, because the rules only allow a replacement when dropping breaks the count or the balance."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "javascript-fundamentals-sr3-03",
+    "decision": "fixed",
+    "statement": "A function declaration at the top level of a function body is callable from lines above it.",
+    "answer": true,
+    "explanation": "A function declaration directly in a function body is hoisted to the top of that function, so earlier lines can call it. In strict mode, one inside a nested block is hoisted only to the top of that block.",
+    "reason": "Merged the fact lens fix. 'A function declared' could also describe a const-bound function expression, which is in the TDZ, so the card returns to the exact term 'function declaration'. The wording lens had no objection. Confirmed on MDN function page: 'Function declarations in JavaScript are hoisted to the top of the enclosing function or global scope. You can use the function before you declared it' and 'In strict mode, block-level function declarations are scoped to that block and are hoisted to the top of the block.'"
+   },
+   {
+    "id": "javascript-fundamentals-sr4-12",
+    "decision": "keep",
+    "statement": "In strict mode, `function f(){return this;}` called as `f.call(7)` returns the primitive Number `7`.",
+    "answer": true,
+    "explanation": "In strict mode, call passes its thisArg to f unchanged, so this is the primitive 7. A non-strict function would receive a Number wrapper object instead.",
+    "reason": "Both lenses keep. MDN call(), thisArg: in non-strict functions primitive values are converted to objects, and strict mode does not substitute this."
+   },
+   {
+    "id": "javascript-fundamentals-sr9-10",
+    "decision": "keep",
+    "statement": "If a task runs `setTimeout(b, 0); Promise.resolve().then(a);`, `b` runs before `a`.",
+    "answer": false,
+    "explanation": "Promise.resolve() is already fulfilled, so a is queued as a microtask and runs once the task's code ends. b is a timer callback, which runs in a later task, so a runs first.",
+    "reason": "Both lenses keep. The answer does not depend on the number of microtask ticks. MDN Microtask guide: promises use the microtask queue, setTimeout callbacks go to the task queue, and the example logs main, microtask, then timeout."
+   },
+   {
+    "id": "javascript-fundamentals-sr10-12",
+    "decision": "keep",
+    "statement": "Since ES2026, `Error.isError()` returns false for an Error created in another realm.",
+    "answer": false,
+    "explanation": "Error.isError recognizes genuine Error objects across realms and returns true for them. It uses an internal brand rather than the current realm's Error.prototype chain.",
+    "reason": "Both lenses keep the card. The fact matches MDN Error.isError(), which describes a branded check that accepts Error objects from another realm. The wording lens noted a deck-level imbalance in the 'Since ES2026,' frame (0 true / 2 false). Its fix is to move the true cards sr1-10 and sr1-11 to the same frame, not to change this card, so that is flagged for the deck-level pass."
+   },
+   {
+    "id": "javascript-fundamentals-sr9-08",
+    "decision": "fixed",
+    "statement": "Since ES2026, `Array.fromAsync()` takes the next value from a sync iterable before the previous promise settles.",
+    "answer": false,
+    "explanation": "Array.fromAsync iterates lazily: it awaits each promise a sync iterable yields and takes the next value only after that one settles, unlike Promise.all, which reads every value first.",
+    "reason": "Merged the wording lens fix. 'its yielded promise' was unclear and 'sync-iterator value' was jargon. The fact lens confirmed the fact. Checked on MDN Array.fromAsync(): 'Array.fromAsync() iterates the iterable lazily, and doesn't retrieve the next value until the current one is settled. Promise.all() retrieves all values in advance and awaits them all' and 'If Array.fromAsync() is called with a non-async iterable object, each element to be added to the array is first awaited.' The statement is under 120 characters and the explanation under 240."
+   },
+   {
+    "id": "javascript-fundamentals-sr4-10",
+    "decision": "keep",
+    "statement": "An arrow defined inside a regular function gets its own `arguments` object.",
+    "answer": false,
+    "explanation": "The arrow uses the enclosing regular function's arguments binding. Passing different arguments to the arrow does not replace that enclosing arguments object.",
+    "reason": "Both lenses keep. MDN Arrow functions: 'Arrow functions do not have their own arguments object', and arguments refers to the enclosing scope's arguments."
+   },
+   {
+    "id": "javascript-fundamentals-sr12-12",
+    "decision": "keep",
+    "statement": "With a truthy `x`, the expression `x ||= compute()` evaluates the `compute()` call.",
+    "answer": false,
+    "explanation": "For a truthy x, ||= skips its right-hand side and makes no assignment. The compute() call is therefore skipped.",
+    "reason": "Both lenses keep. MDN Logical OR assignment: no assignment if the left-hand side is not falsy, and the example with a truthy x logs nothing."
+   },
+   {
+    "id": "javascript-fundamentals-sr8-06",
+    "decision": "keep",
+    "statement": "Rejection of the `Promise.all()` result cancels the other operations represented by its inputs.",
+    "answer": false,
+    "explanation": "Promise.all rejection does not cancel its input operations. Pending operations can continue independently of the rejected aggregate promise.",
+    "reason": "Both lenses keep. MDN Using promises: 'The other operations continue to run, but their outcomes are not available via the return value of Promise.all().'"
+   },
+   {
+    "id": "javascript-fundamentals-sr5-01",
+    "decision": "keep",
+    "statement": "An own property whose value is `undefined` shadows a same-named property on the prototype.",
+    "answer": true,
+    "explanation": "Property lookup stops at an own property even when its value is undefined. JavaScript does not continue up the prototype chain looking for a different value.",
+    "reason": "Both lenses keep. ES2026 10.1.8.1 OrdinaryGet returns desc.[[Value]] when an own data descriptor exists, and goes to the parent only when desc is undefined. The prompt allows the spec where MDN is silent."
+   },
+   {
+    "id": "javascript-fundamentals-sr6-04",
+    "decision": "keep",
+    "statement": "A module reruns its top-level initialization for another importer of the same resolved module.",
+    "answer": false,
+    "explanation": "Importers of the same resolved module share its evaluation. Another import reuses that module instead of rerunning its top-level initialization.",
+    "reason": "Both lenses keep. MDN import(), Module namespace object: code 'is never executed more than once, even if it is imported multiple times.'"
+   },
+   {
+    "id": "javascript-fundamentals-sr10-11",
+    "decision": "keep",
+    "statement": "For `new AggregateError(new Set(['a', 'b']))`, `errors` is an array containing 'a' and 'b'.",
+    "answer": true,
+    "explanation": "AggregateError collects the values from its constructor's errors iterable into an array. Its errors property holds that array even when the input iterable is a Set.",
+    "reason": "Both lenses keep. MDN AggregateError: errors says the value is 'An Array containing values in the same order as the iterable passed as the first argument', and the page's example passes a Set."
+   }
+  ]
+ }
+}
