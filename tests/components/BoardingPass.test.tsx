@@ -154,6 +154,13 @@ describe("PassSlip", () => {
     const { container } = render(<PassSlip answer={false} correct explanation="Explained." source={source} />);
     expect(container.querySelector("[data-tone]")?.getAttribute("data-tone")).toBe("sunk");
   });
+
+  // Overpass draws a backtick as an accent with no width over the next letter ("`x" reads as an x with a grave).
+  it("sets a code fragment of the explanation in the mono face, without its backticks", () => {
+    const { container } = render(<PassSlip answer={false} correct explanation="Only `docker start` starts it again." source={source} />);
+    expect(screen.getByText(/starts it again\.$/).textContent).toBe("Only docker start starts it again.");
+    expect(container.querySelector("code")?.textContent).toBe("docker start");
+  });
 });
 
 describe("PassStub", () => {

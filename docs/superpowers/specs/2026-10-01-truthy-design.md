@@ -159,7 +159,7 @@ The catalog plus, for each deck, `cardCount`, per-section `cardCount`, a `versio
 }
 ```
 
-Card ids are stable for the life of a card. Pipeline-only fields (misconception, factKey, topic, tags, volatility, revision) are not shipped. `appliesTo` is shown on the card when it is not empty (for example "Next.js 16 with cacheComponents: true").
+Card ids are stable for the life of a card. Pipeline-only fields (misconception, factKey, topic, tags, volatility, revision) are not shipped. `appliesTo` is shown on the card when it is not empty (for example "Next.js 16 with cacheComponents: true"). A statement or an explanation marks a code fragment with backticks, as Markdown does ("An `asserts x is string` function"); the fragment is shown in the mono face without its backticks (`src/content/text.ts`), and a screen reader hears it without them.
 
 ### Loading
 

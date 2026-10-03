@@ -12,6 +12,7 @@ const PURE: readonly { files: string[]; mayImport: readonly string[] }[] = [
   { files: sources("src/input"), mayImport: ["./"] },
   { files: ["src/progress/progress.ts"], mayImport: ["zod", ...CONTENT_TYPES, "./"] },
   { files: ["src/content/play.ts"], mayImport: ["./schema"] },
+  { files: ["src/content/text.ts"], mayImport: [] },
 ];
 
 const FORBIDDEN: readonly { name: string; pattern: RegExp }[] = [
@@ -90,9 +91,10 @@ describe("the scanner", () => {
 });
 
 describe("pure modules", () => {
-  it("covers the engine, the input rules, the progress rules and the shared play types", () => {
+  it("covers the engine, the input rules, the progress rules, the shared play types and how card text marks code", () => {
     expect(PURE.flatMap((entry) => entry.files).sort()).toEqual([
       "src/content/play.ts",
+      "src/content/text.ts",
       "src/engine/deal.ts",
       "src/engine/rng.ts",
       "src/engine/round.ts",

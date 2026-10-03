@@ -8,6 +8,7 @@ import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { Answered } from "@/src/engine/round";
 import { PassLower } from "./BoardingPass";
+import { CardText } from "./CardText";
 import { pad2 } from "./format";
 import { BookIcon, ChevronIcon } from "./icons";
 
@@ -133,7 +134,9 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
         <span>Card {number}</span>
         <span>You said {word(item.given)}</span>
       </div>
-      <p className={STATEMENT}>{item.statement}</p>
+      <p className={STATEMENT}>
+        <CardText text={item.statement} />
+      </p>
       <div className="flex min-h-(--size-touch-min) items-center justify-between gap-(--space-12)">
         <span className={`flex items-center gap-(--space-8) ${MONO_DATA}`}>
           Answer <b className={ANSWER_WORD}>{word(item.answer)}</b>
@@ -167,7 +170,9 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
       >
         <div className="overflow-hidden">
           <div ref={whyRef} className="mb-(--space-12) border-l-(length:--stroke-quote) border-(--color-rule) pl-(--space-12)">
-            <p className={EXPLANATION}>{item.explanation}</p>
+            <p className={EXPLANATION}>
+              <CardText text={item.explanation} />
+            </p>
             <a
               href={item.source.url}
               target="_blank"

@@ -5,7 +5,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress } from "@/src/progress/progress";
-import { DECK_ID, cardByStatement, harness, memoryStorage, type Harness } from "./fixtures";
+import { DECK, DECK_ID, INDEX, cardByStatement, fakeNetwork, harness, memoryStorage, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -108,6 +108,19 @@ describe("PlayScreen: starting", () => {
   it("plays the whole deck as ALL, Whole deck", async () => {
     const { container } = await start(harness({ route: { deckId: DECK_ID, sectionId: "ALL" }, mode: "classic" }));
     expect(container.querySelector('[data-leg="to"]')?.textContent).toBe("ALLWhole deck");
+  });
+
+  // The decks mark code with backticks, which Overpass draws as an accent with no width over the next letter.
+  it("sets a code fragment of the statement in the mono face, without its backticks", async () => {
+    const coded = {
+      ...DECK,
+      cards: DECK.cards.map((card) => ({ ...card, text: { en: { ...card.text.en, statement: `\`docker run\` ${card.text.en.statement}` } } })),
+    };
+    const setup = harness();
+    setup.services.fetcher = fakeNetwork({ "/decks/index.json": INDEX, [`/decks/${DECK_ID}.json`]: coded }).fetcher;
+    await start(setup);
+    expect(statementText()).toMatch(/^docker run Statement SEC \d+\.$/);
+    expect(document.querySelector("[data-statement] p:last-of-type code")?.textContent).toBe("docker run");
   });
 
   it("shows the appliesTo line only on a card that has one", async () => {

@@ -9,6 +9,7 @@ import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Variants 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import { AnswerButtons } from "@/components/AnswerButtons";
+import { CardText } from "@/components/CardText";
 import {
   BoardingPass,
   BoardingPassPlaceholder,
@@ -29,6 +30,7 @@ import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { EASE, EASE_IN, FALL } from "@/components/easing";
 import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
+import { plainText } from "@/src/content/text";
 import { SWIPE } from "@/src/input/swipe";
 import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
@@ -95,7 +97,7 @@ export function timedStatus(round: RoundState): string {
 export function timedCardText(round: RoundState): string {
   const card = currentCard(round);
   if (round.index === 0 || isDecided(round) || !card) return "";
-  return `Card ${round.index + 1}. ${card.text.en.statement}`;
+  return `Card ${round.index + 1}. ${plainText(card.text.en.statement)}`;
 }
 
 // Timed: when the stamp has held, the answered card leaves towards the side that was answered while the next
@@ -643,7 +645,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
                       }
                     >
                       <PassStatement ref={attachStatement} appliesTo={card.appliesTo} muted={timeUp}>
-                        {card.text.en.statement}
+                        <CardText text={card.text.en.statement} />
                       </PassStatement>
                     </BoardingPass>
                   </CardSlot>

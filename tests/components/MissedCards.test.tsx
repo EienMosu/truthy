@@ -159,6 +159,21 @@ describe("MissedCards", () => {
     });
   });
 
+  it("sets the code fragments of a statement and its explanation in the mono face, without their backticks", () => {
+    const missed: MissedCard = {
+      ...MISSED[0]!,
+      statement: "`docker exec` can start a stopped container.",
+      explanation: "It runs a command in a running container; `docker start` starts it.",
+    };
+    render(<MissedCards missed={[missed]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Why, card 03" }));
+    const item = screen.getByRole("listitem");
+    expect(item.textContent).toContain("docker exec can start a stopped container.");
+    expect(item.textContent).toContain("It runs a command in a running container; docker start starts it.");
+    expect(item.textContent).not.toContain("`");
+    expect([...item.querySelectorAll("code")].map((code) => code.textContent)).toEqual(["docker exec", "docker start"]);
+  });
+
   it("shows one calm line instead of an empty list when nothing was missed", () => {
     const { container } = render(<MissedCards missed={[]} />);
     expect(screen.getByRole("region", { name: "Missed cards" }).textContent).toBe("No missed cards");

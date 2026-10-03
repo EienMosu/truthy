@@ -690,4 +690,17 @@ describe("timedCardText", () => {
     for (let now = 2000; now <= 61_000; now += 1000) up = reduce(up, { type: "tick", now });
     expect(timedCardText(up)).toBe("");
   });
+
+  it("reads a code fragment as it is shown, without its backticks", () => {
+    const pool = DECK.cards
+      .filter((card) => card.section === "SEC")
+      .map((card) => ({ ...card, text: { en: { ...card.text.en, statement: `\`docker run\` ${card.text.en.statement}` } } }));
+    const question = reduce(startRound({ mode: "timed", route: { deckId: DECK_ID, sectionId: "SEC" }, pool, history: {}, seed: 1 }), { type: "tick", now: 0 });
+    const first = question.cards[0];
+    if (!first) throw new Error("no card");
+    const second = reduce(reduce(question, { type: "answer", value: first.answer, at: 500 }), { type: "tick", now: 1200 });
+    const card = second.cards[second.index];
+    if (second.index !== 1 || !card) throw new Error("the second card was not dealt");
+    expect(timedCardText(second)).toBe(`Card 2. docker run ${card.text.en.statement.slice("`docker run` ".length)}`);
+  });
 });

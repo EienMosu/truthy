@@ -7,6 +7,7 @@
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import type { CSSProperties, ReactNode, Ref } from "react";
 import { EASE, EASE_IN, FALL } from "./easing";
+import { CardText } from "./CardText";
 import { Stamp } from "./Stamp";
 import { BookIcon, CheckIcon, CloudIcon, CrossIcon } from "./icons";
 
@@ -454,7 +455,7 @@ export function PassSlip({ answer, correct, explanation, source, animateStamp = 
             <Stamp verdict={!correct ? "wrong" : newBest ? "new-best" : "correct"} animate={animateStamp} />
           </div>
           <p className="m-0 mt-(--space-10) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight) text-(--color-ink)">
-            {explanation}
+            <CardText text={explanation} />
           </p>
           <a
             href={source.url}

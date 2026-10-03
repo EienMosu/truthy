@@ -4,6 +4,7 @@
 // to answer right or wrong without depending on the random deal).
 import { readFileSync } from "node:fs";
 import { expect, type Locator, type Page } from "@playwright/test";
+import { plainText } from "../src/content/text";
 
 /**
  * A little over the 250 ms settle time of spec section 8: input is ignored until a new card has settled,
@@ -103,12 +104,15 @@ export async function startRound(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/play$/);
 }
 
-/** The right answer of every statement of a deck, read from the built deck file the app serves. */
+/**
+ * The right answer of every statement of a deck, read from the built deck file the app serves. Each statement is
+ * keyed as it is shown (statementOnScreen): a code fragment without its backticks.
+ */
 export async function deckAnswers(page: Page, deckId: string): Promise<Map<string, boolean>> {
   const response = await page.request.get(`/decks/${deckId}.json`);
   expect(response.ok()).toBe(true);
   const deck = (await response.json()) as { cards: { answer: boolean; text: { en: { statement: string } } }[] };
-  return new Map(deck.cards.map((card) => [card.text.en.statement, card.answer]));
+  return new Map(deck.cards.map((card) => [plainText(card.text.en.statement), card.answer]));
 }
 
 /** The statement on the card (the last paragraph of the statement block). */
