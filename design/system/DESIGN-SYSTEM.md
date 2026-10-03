@@ -228,7 +228,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Field cell:** padding 9 0 11; from the second cell on, a 1.5px `rule` divider and `padding-left` 12. `field-label` over a 20 tall value box (margin-top 3) holding the value (`field-value-pass`; codes in Mono 600 16) or the blank.
   - **Blank:** three dashes, each 14 × 3, radius 2, gap 5, colour `rule`, labelled "not chosen" for screen readers.
 - **Four layouts, one per stage:**
-  1. **Choosing the destination** (steps 2 and 3): `elevation.small`, one row of Area / Platform / Deck (1fr 1.35fr 0.8fr), padding 0 16.
+  1. **Choosing the destination** (steps 2 and 3): `elevation.small`, one row of Area / Platform / Deck (0.9fr 1.45fr 0.8fr; the mockup's 1fr 1.35fr 0.8fr cut "Web platform" and "Google Cloud" at 320), padding 0 16.
   2. **Choosing the route** (steps 4 and 5, `elevation.small`): area and platform fold into one quiet line (30 tall, padding 8 10 0): "Cloud · AWS" in `pass-line`. Under it Deck / Section / Class (0.75fr 1.1fr 1.15fr). A section shows its code ("SEC"); the whole deck shows "Whole deck" in Sans.
   3. **Ready** (step 6): the full boarding pass of 5.2 without its lower part: `elevation.ticket`, 44 carrier band with the cloud glyph and "BOARDING PASS", legs (deck code and "AWS Cloud / Practitioner" to section code and name; for a deck without sections `ALL` / "Whole deck"), field grid Class / Cards / Gate (Cards is the number of cards in the chosen section or deck), 18 of space below. 358 × 210 at y 120.
   4. **Boarding** (step 7): the pass grows downward into the first card of the round: statement, perforation and stub exactly as on a game ticket (120 to 728). The second field becomes Card "01 / 10" (Classic) or "01" (other classes).
@@ -534,7 +534,7 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 | Inline mono link | 13.5 (reference source) vs 13 (result Why) | **13.5** |
 | Header icon stroke | 2.4 (reference X, mode-select ←) vs 2.2 (browse-c Back ←) | **2.4** |
 | Field value | Mono 600 15 (reference ticket) vs Sans 800 16 (browse-c pass) | **Mono 600 15** on the ticket; the pass keeps its own role as a separate component |
-| Field grid | 1.1 / 1 / 1 fr, cells 8 / 7, label gap 2 (reference) vs 1 / 1.35 / 0.8 fr, cells 9 / 11, gap 3 (pass) | Reference on the ticket; the pass keeps its own |
+| Field grid | 1.1 / 1 / 1 fr, cells 8 / 7, label gap 2 (reference) vs 1 / 1.35 / 0.8 fr, cells 9 / 11, gap 3 (pass) | Reference on the ticket; the pass keeps its own, since the new decks at 0.9 / 1.45 / 0.8 fr (5.4) |
 | Carrier band | 44 tall, 16 / 12 type, padding 16, gap 10 (reference) vs 30, 14 / 11, padding 14, gap 8 (pass) | **Reference**; compact variant for the pass |
 | Stamp size | 24 (reference, New best on the slip) vs 28 (stub stamps: Timed, Time is up) vs 22 (New best on results) | **24** base; the other two are documented variants |
 | Waypoint size | r7 / 13 (reference, result-classic) vs r6 / 11 (streak, result-timed) vs r2.6 / 9 (lives) | **r7 / 13**; smaller only when density requires it |

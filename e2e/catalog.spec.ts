@@ -59,3 +59,41 @@ test("every area and platform of the index is listed in order with its number of
     await atStep(page, "Choose an area");
   }
 });
+
+/** How far the text of a pass value runs past its box, in px (0 or less: shown whole). The ellipsis is drawn over a text laid out in full. */
+async function overrun(value: Locator): Promise<number> {
+  return value.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getBoundingClientRect().width - element.getBoundingClientRect().width;
+  });
+}
+
+// The pass names the area and the platform in full while the deck is chosen, on the narrowest phone the game is
+// made for: "Web platform" and "Google Cloud" are the longest platform names. A value that does not fit is cut
+// with an ellipsis (design system 5.4), which no name of the catalog should need.
+test.describe("on a 320 by 568 screen", () => {
+  test.use({ viewport: { width: 320, height: 568 } });
+
+  test("the pass shows every area and platform name whole while the deck is chosen", async ({ page }) => {
+    const index = (await (await page.request.get("/decks/index.json")).json()) as Index;
+    await openHome(page);
+    for (const area of index.areas) {
+      for (const platform of area.platforms.filter((candidate) => candidate.decks.length > 0)) {
+        const decks = area.platforms.reduce((sum, candidate) => sum + candidate.decks.length, 0);
+        await placeCard(page, area.title, decks).click();
+        await atStep(page, "Choose a platform");
+        await placeCard(page, platform.title, platform.decks.length).click();
+        await atStep(page, "Choose a deck");
+        const pass = page.locator('[data-fill-in-pass="destination"]');
+        await expect(pass.locator('[data-pass-value="platform"]')).toHaveText(platform.title);
+        expect(await overrun(pass.locator('[data-pass-value="area"]')), area.title).toBeLessThanOrEqual(0.5);
+        expect(await overrun(pass.locator('[data-pass-value="platform"]')), platform.title).toBeLessThanOrEqual(0.5);
+        await page.getByRole("button", { name: "Back to platforms" }).click();
+        await atStep(page, "Choose a platform");
+        await page.getByRole("button", { name: "Back to areas" }).click();
+        await atStep(page, "Choose an area");
+      }
+    }
+  });
+});

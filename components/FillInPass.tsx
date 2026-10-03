@@ -318,8 +318,10 @@ export function FillInPass({
       >
         {ready ? <TicketBand /> : <CompactBand />}
         <div aria-live="polite">
+          {/* The platform column takes a tenth of the area column's share (the browse-c mockup has 1 / 1.35 / 0.8):
+              at 320 px "Web platform" and "Google Cloud" then fit whole, and "Frontend" still fits its column. */}
           {stage === "destination" ? (
-            <dl className="m-0 grid grid-cols-[1fr_1.35fr_0.8fr] px-(--space-16)">
+            <dl className="m-0 grid grid-cols-[0.9fr_1.45fr_0.8fr] px-(--space-16)">
               <Field field="area" label="Area" value={values.area} now={now === "area"} first hidden={hide("area")} onJump={onJump} />
               <Field field="platform" label="Platform" value={values.platform} now={now === "platform"} hidden={hide("platform")} onJump={onJump} />
               <Field field="deck" label="Deck" value={values.deck?.code} code now={now === "deck"} hidden={hide("deck")} onJump={onJump} />
