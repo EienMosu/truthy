@@ -30,17 +30,38 @@ describe("the wording of the original decks", () => {
     expect(right / cards.length).toBeLessThanOrEqual(0.56);
   });
 
-  // "automatically" marked 10 of 11 statements False and "suits" 11 of 11 True, so the word alone gave the answer.
-  it.each(["automatically", "requires", "primarily", "measures", "suits", "helps", "supports"])(
-    "uses '%s' on True and on False statements alike",
-    (word) => {
-      const pattern = new RegExp(`\\b${word}\\b`, "i");
-      const cards = ORIGINAL_DECKS.flatMap((deck) => reviewedCards(deck)).filter((card) => pattern.test(card.statement));
-      if (cards.length < 5) return;
-      const trueShare = cards.filter((card) => card.answer).length / cards.length;
-      expect(Math.max(trueShare, 1 - trueShare)).toBeLessThanOrEqual(0.8);
-    },
-  );
+  // "automatically" marked 10 of 11 statements False and "suits" 8 of 8 True, so the word alone gave the answer.
+  // Rewording those words away only moves the tell to others ("supported", "serve as"), so every word the four
+  // decks use often is held to the same rule, not a fixed list. A word names the subject rather than the claim
+  // when it is on the list below: "file" is in nearly every storage card, whatever its answer.
+  const TOPIC_WORDS = new Set(["file"]);
+
+  it("uses no frequent word mostly on True or mostly on False statements", () => {
+    const counts = new Map<string, { true: number; false: number }>();
+    for (const card of ORIGINAL_DECKS.flatMap((deck) => reviewedCards(deck))) {
+      for (const word of new Set(card.statement.toLowerCase().match(/[a-z0-9]+/g) ?? [])) {
+        const count = counts.get(word) ?? { true: 0, false: 0 };
+        count[card.answer ? "true" : "false"] += 1;
+        counts.set(word, count);
+      }
+    }
+    const telling = [...counts]
+      .filter(([word, count]) => !TOPIC_WORDS.has(word) && count.true + count.false >= 8)
+      .filter(([, count]) => Math.max(count.true, count.false) / (count.true + count.false) > 0.8)
+      .map(([word, count]) => `${word}: ${count.true} True, ${count.false} False`);
+    expect(telling).toEqual([]);
+  });
+
+  // A frame tells as much as a word: "X is a ... service" was on six True cards and no False one, and
+  // "X serves as Y" on seven False cards and no True one. Two uses or fewer cannot lean either way.
+  it.each([
+    ["is a ... service", /\b(is|are) (a|an|the)\b[^.,;:]*\bservices?\b/i],
+    ["serves as", /\bserv(e|es|ing) as\b/i],
+  ])("uses the '%s' frame on True and on False statements alike", (_, frame) => {
+    const cards = ORIGINAL_DECKS.flatMap((deck) => reviewedCards(deck)).filter((card) => frame.test(card.statement));
+    const trueShare = cards.filter((card) => card.answer).length / cards.length;
+    expect(cards.length < 3 || Math.max(trueShare, 1 - trueShare) <= 0.8, cards.map((card) => card.id).join(", ")).toBe(true);
+  });
 });
 
 describe("the statements of the original decks", () => {
