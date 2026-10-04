@@ -21,7 +21,7 @@ export interface ModeInfo {
 export const MODE_TABLE: readonly ModeInfo[] = [
   { id: "classic", name: "Classic", description: "Correct answers out of 10 cards.", unit: "of 10", offered: true },
   { id: "streak", name: "Streak", description: "Correct answers in a row, until the first wrong one.", unit: "in a row", offered: true },
-  { id: "lives", name: "Three lives", description: "Correct answers before the third wrong one.", unit: "cards", offered: true },
+  { id: "lives", name: "Three lives", description: "Cards answered until the third wrong one.", unit: "cards", offered: true },
   { id: "timed", name: "Timed", description: "Correct answers in one minute, wrong ones cost nothing.", unit: "correct", offered: true },
 ];
 

@@ -7,7 +7,7 @@ describe("MODE_TABLE", () => {
     expect(MODE_TABLE.map((m) => [m.id, m.name, m.description, m.unit])).toEqual([
       ["classic", "Classic", "Correct answers out of 10 cards.", "of 10"],
       ["streak", "Streak", "Correct answers in a row, until the first wrong one.", "in a row"],
-      ["lives", "Three lives", "Correct answers before the third wrong one.", "cards"],
+      ["lives", "Three lives", "Cards answered until the third wrong one.", "cards"],
       ["timed", "Timed", "Correct answers in one minute, wrong ones cost nothing.", "correct"],
     ]);
   });

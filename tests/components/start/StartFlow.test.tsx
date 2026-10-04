@@ -247,14 +247,14 @@ describe("StartFlow: choosing a route", () => {
     await toClasses();
     expect(screen.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Your best: 9 of 10." })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Streak. Correct answers in a row, until the first wrong one. Your best: 12 in a row." })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Three lives. Correct answers before the third wrong one. Your best: 21 cards." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Three lives. Cards answered until the third wrong one. Your best: 21 cards." })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Timed. Correct answers in one minute, wrong ones cost nothing. Not played yet." })).toBeTruthy();
     expect(screen.queryAllByRole("group", { name: /not available yet/ })).toHaveLength(0);
   });
 
   it.each([
     ["streak", /^Streak\./, "Streak", "Correct answers in a row, until the first wrong one."],
-    ["lives", /^Three lives\./, "Three lives", "Correct answers before the third wrong one."],
+    ["lives", /^Three lives\./, "Three lives", "Cards answered until the third wrong one."],
     ["timed", /^Timed\./, "Timed", "Correct answers in one minute, wrong ones cost nothing."],
   ] as const)("hands the chosen class to /play: %s", async (mode, buttonName, name, rule) => {
     await start();
