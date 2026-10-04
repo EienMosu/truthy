@@ -36,6 +36,70 @@ describe("the statements of the original decks", () => {
   });
 });
 
+// Words that carry no content of their own, left out when an explanation is compared with its statement.
+const FILLER = new Set(
+  "the a an of to in on for and or is are be by with as at from that this it its can will not no only into than then so such these those which when while their there they them aws amazon rather instead does do did has have".split(" "),
+);
+
+function contentWords(text: string): string[] {
+  return (text.toLowerCase().match(/[a-z0-9]+/g) ?? [])
+    .filter((word) => word.length > 2 && !FILLER.has(word))
+    .map((word) => {
+      const suffix = ["ing", "ed", "es", "s"].find((end) => word.endsWith(end) && word.length - end.length >= 4);
+      return suffix ? word.slice(0, -suffix.length) : word;
+    });
+}
+
+// Characters the two texts have in common, found the way Python's difflib does it: the longest common run,
+// then the same search to the left and to the right of it.
+function matchingCharacters(a: string, b: string): number {
+  if (!a || !b) return 0;
+  let best = 0;
+  let endA = 0;
+  let endB = 0;
+  let previous = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const current = new Array<number>(b.length + 1).fill(0);
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] !== b[j - 1]) continue;
+      const run = (previous[j - 1] ?? 0) + 1;
+      current[j] = run;
+      if (run > best) [best, endA, endB] = [run, i, j];
+    }
+    previous = current;
+  }
+  if (best === 0) return 0;
+  return best + matchingCharacters(a.slice(0, endA - best), b.slice(0, endB - best)) + matchingCharacters(a.slice(endA), b.slice(endB));
+}
+
+// An explanation restates its statement when most of its content words come from the statement and it adds
+// four or fewer of its own, or when the two texts are mostly the same characters in the same order.
+function restates(card: ReviewedCard): boolean {
+  const statementWords = new Set(contentWords(card.statement));
+  const explanationWords = contentWords(card.explanation);
+  const overlap = explanationWords.filter((word) => statementWords.has(word)).length / Math.max(1, explanationWords.length);
+  const added = new Set(explanationWords.filter((word) => !statementWords.has(word))).size;
+  const statement = card.statement.toLowerCase();
+  const explanation = card.explanation.toLowerCase();
+  const similarity = (2 * matchingCharacters(statement, explanation)) / (statement.length + explanation.length);
+  return (overlap >= 0.6 && added <= 4) || similarity >= 0.6;
+}
+
+describe("the explanations of the original decks", () => {
+  it("give a True card the reason or the mechanism behind it, not the statement again", () => {
+    // A False card always corrects the statement; a True card's explanation is where the player learns why.
+    const restated = ORIGINAL_DECKS.flatMap((deck) => reviewedCards(deck)).filter((card) => card.answer && restates(card));
+    expect(restated.map((card) => card.id)).toEqual([]);
+  });
+
+  it("flags an explanation that only rewords its statement", () => {
+    const card = reviewedCards("nextjs-rendering").find((entry) => entry.id === "nextjs-rendering-sr6-03");
+    if (!card) throw new Error("nextjs-rendering-sr6-03 is missing");
+    expect(restates({ ...card, explanation: "A GET Route Handler can use force-static to cache its response." })).toBe(true);
+    expect(restates(card)).toBe(false);
+  });
+});
+
 describe("the conflict groups of the original decks", () => {
   // In each pair the True card's explanation settles the other card, so the two must never be dealt in one round.
   it.each([
