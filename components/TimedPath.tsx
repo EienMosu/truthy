@@ -4,6 +4,7 @@
 // "9 correct · 2 wrong". The clock reads the seconds rounded up, so it says "1:00" at the start and "0:00"
 // only when the time is up.
 import type { ReactNode } from "react";
+import { useReducedMotion } from "motion/react";
 import { PathFrame, Plane, RouteLine, headingAt, pointAt } from "./FlightPath";
 import { TIMED } from "@/src/engine/round";
 
@@ -39,7 +40,11 @@ export interface TimedPathProps {
 }
 
 export function TimedPath({ remainingMs, correct, wrong, className }: TimedPathProps): ReactNode {
-  const t = Math.min(1, Math.max(0, 1 - remainingMs / TIMED.roundMs));
+  // With reduced motion the plane does not glide: it and the flown line move once a second, as the clock does,
+  // the way the other planes move once a card. Time up still puts it on the destination.
+  const reduced = useReducedMotion() ?? false;
+  const shownMs = reduced ? wholeSeconds(remainingMs) * 1000 : remainingMs;
+  const t = Math.min(1, Math.max(0, 1 - shownMs / TIMED.roundMs));
   const end = pointAt(1);
 
   return (
