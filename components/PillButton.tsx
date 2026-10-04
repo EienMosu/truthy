@@ -21,7 +21,9 @@ const BASE =
   "font-(family-name:--type-button-family) text-(length:--type-button-size) font-(--type-button-weight) " +
   "leading-(--type-button-line-height) tracking-(--type-button-letter-spacing) " +
   "transition-[translate,scale,box-shadow] duration-(--duration-t1) ease-(--easing-ease) " +
-  "active:translate-y-(--space-2) active:scale-[0.98] active:shadow-(--elevation-press) " +
+  // The press only while the pill takes presses: an aria-disabled pill still matches :active under a held
+  // Space (Chromium and WebKit), and it must not look pressed when nothing happens (design system 5.8).
+  "not-aria-disabled:active:translate-y-(--space-2) not-aria-disabled:active:scale-[0.98] not-aria-disabled:active:shadow-(--elevation-press) " +
   "disabled:cursor-default disabled:opacity-(--opacity-disabled) disabled:shadow-none " +
   "aria-disabled:pointer-events-none aria-disabled:opacity-(--opacity-disabled) aria-disabled:shadow-none";
 
