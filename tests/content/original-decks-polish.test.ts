@@ -21,6 +21,19 @@ function reviewedCards(deck: string): ReviewedCard[] {
   return file.cards as ReviewedCard[];
 }
 
+describe("the conflict groups of the original decks", () => {
+  // In each pair the True card's explanation settles the other card, so the two must never be dealt in one round.
+  it.each([
+    ["aws-clf-c02-t3.2-03", "aws-clf-c02-t3.2-01"],
+    ["aws-clf-c02-t2.1-09", "aws-clf-c02-t2.1-10"],
+    ["aws-clf-c02-t4.1-08", "aws-clf-c02-t4.1-04"],
+  ])("keep %s and %s out of one round", (first, second) => {
+    const cards = new Map(reviewedCards("aws-clf-c02").map((card) => [card.id, card]));
+    const shared = cards.get(first)?.conflictGroups.filter((group) => cards.get(second)?.conflictGroups.includes(group));
+    expect(shared?.length).toBeGreaterThan(0);
+  });
+});
+
 describe("the sources of the original decks", () => {
   it("give each link one title, so the same page reads the same on every card", () => {
     const titles = new Map<string, Set<string>>();
