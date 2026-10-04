@@ -592,8 +592,8 @@ describe("StartFlow: a history entry from before an update", () => {
 describe("StartFlow: continue", () => {
   it("offers the last route and class, and lands on the ready pass with them filled in", async () => {
     await start(harness(storedProgress({ last: LAST_CLF_SEC })));
-    const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Classic." });
-    expect(line.textContent).toBe("Continue where you left offCLF → SEC · Classic");
+    const line = screen.getByRole("button", { name: "Continue: AWS Cloud Practitioner, Security and compliance, Classic." });
+    expect(line.textContent).toBe("AWS Cloud PractitionerCLF → SEC · Classic");
     settle();
     fireEvent.click(line);
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));
@@ -609,7 +609,7 @@ describe("StartFlow: continue", () => {
   it("retraces a whole-deck route of a deck without sections without a section step", async () => {
     await start(harness(storedProgress({ last: { route: { deckId: "gcp-cdl", sectionId: "ALL" }, mode: "classic", score: null, total: null } })));
     settle();
-    fireEvent.click(screen.getByRole("button", { name: "Continue: Cloud Digital Leader, Whole deck, Classic." }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue: Google Cloud Digital Leader, Whole deck, Classic." }));
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));
     expect(document.querySelector("[data-leg='section']")?.textContent).toBe("ALLWhole deck");
     expect(h.history.entries.map((e) => (e as { truthyStart: { step: number } }).truthyStart.step)).toEqual([1, 2, 3, 5, 6]);
@@ -622,8 +622,8 @@ describe("StartFlow: continue", () => {
 
   it("shows the score of the last round when it was finished", async () => {
     await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, score: 7, total: 10 } })));
-    const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." });
-    expect(line.textContent).toBe("Continue where you left offCLF → SEC · Classic · last 7 of 10");
+    const line = screen.getByRole("button", { name: "Continue: AWS Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." });
+    expect(line.textContent).toBe("AWS Cloud PractitionerCLF → SEC · Classic · last 7 of 10");
   });
 
   it("is not shown when the last route is gone from the index", async () => {
@@ -633,8 +633,8 @@ describe("StartFlow: continue", () => {
 
   it("continues a round of another class with its own score", async () => {
     await start(harness(storedProgress({ last: { ...LAST_CLF_SEC, mode: "lives", score: 21, total: 21 } })));
-    const line = screen.getByRole("button", { name: "Continue: Cloud Practitioner, Security and compliance, Three lives. Last score 21 cards." });
-    expect(line.textContent).toBe("Continue where you left offCLF → SEC · Three lives · last 21 cards");
+    const line = screen.getByRole("button", { name: "Continue: AWS Cloud Practitioner, Security and compliance, Three lives. Last score 21 cards." });
+    expect(line.textContent).toBe("AWS Cloud PractitionerCLF → SEC · Three lives · last 21 cards");
     settle();
     fireEvent.click(line);
     await waitFor(() => expect(heading()).toBe("Your pass is ready"));

@@ -84,7 +84,7 @@ async function expectLeftRound(page: Page, className: ClassName, cards: number):
   expect(progress.records).toEqual({});
   expect((progress.last as { score: number | null } | null)?.score).toBeNull();
   await expect(
-    page.getByRole("button", { name: `Continue: Cloud Practitioner, Security and compliance, ${className}.`, exact: true }),
+    page.getByRole("button", { name: `Continue: AWS Cloud Practitioner, Security and compliance, ${className}.`, exact: true }),
   ).toBeVisible();
 }
 

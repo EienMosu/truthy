@@ -678,7 +678,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
             <motion.div key="continue" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
               <ContinueLine
                 deckCode={returning.found.deck.code}
-                deckTitle={returning.found.deck.title}
+                deckName={deckPassName(returning.found.platform, returning.found.deck)}
                 sectionCode={returning.found.section?.id ?? WHOLE_DECK}
                 sectionTitle={returning.found.section?.title ?? "Whole deck"}
                 modeLabel={modeInfo(returning.mode).name}

@@ -115,7 +115,7 @@ test("passing the best shows New best on the slip, then on the result, and the s
   await page.getByRole("button", { name: "Choose another route" }).click();
   await expect(stepTitle(page)).toHaveText("Choose an area");
   const continueLine = page.getByRole("button", {
-    name: "Continue: Cloud Practitioner, Security and compliance, Streak. Last score 3 in a row.",
+    name: "Continue: AWS Cloud Practitioner, Security and compliance, Streak. Last score 3 in a row.",
     exact: true,
   });
   await expect(continueLine).toBeVisible();
