@@ -612,7 +612,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   useLayoutEffect(() => {
     if (!travel || travel.to) return;
     const frame = layerRef.current?.offsetParent;
-    const target = mainRef.current?.querySelector<HTMLElement>(`[data-trip] [data-pass-value="${travel.field}"]`);
+    // The new layout's field: the block of the old layout, fading out over it, holds the same fields.
+    const target = mainRef.current?.querySelector<HTMLElement>(`[data-trip] [data-pass-block]:not([data-leaving]) [data-pass-value="${travel.field}"]`);
     const box = target && frame ? layoutBox(target, frame) : null;
     // Only a name that keeps its typeface travels; the class becomes Mono on the ready pass and fades in with it.
     if (!target || !box || getComputedStyle(target).fontFamily !== travel.from.fontFamily) {
