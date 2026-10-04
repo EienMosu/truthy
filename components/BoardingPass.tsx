@@ -194,9 +194,19 @@ export function PassStatement({ children, appliesTo, ref, id, muted = false, liv
       aria-live={live ? "polite" : undefined}
       className="flex min-h-(--size-statement-min) flex-col justify-center px-(--size-ticket-inset) pt-(--space-18) pb-(--space-24) outline-none"
     >
+      {/*
+        The line shows the qualifier alone, as the spec's example does ("Next.js 16 with cacheComponents: true"):
+        with "Applies to " in front it took two lines on a 390 px phone and three at 320 (review finding U95).
+        A screen reader hears the whole phrase. It is never cut, since its end can decide the answer
+        ("cacheComponents: false"); a qualifier still longer than the line wraps into lines of even length.
+      */}
       {appliesTo ? (
-        <p className="m-0 mb-(--space-6) font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) leading-(--type-mono-data-line-height) font-(--type-mono-data-weight) text-(--color-ink-muted)">
-          Applies to {appliesTo}
+        <p
+          data-applies-to=""
+          className="m-0 mb-(--space-6) font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) leading-(--type-mono-data-line-height) font-(--type-mono-data-weight) text-balance text-(--color-ink-muted)"
+        >
+          <span className="sr-only">{`Applies to ${appliesTo}`}</span>
+          <span aria-hidden="true">{appliesTo}</span>
         </p>
       ) : null}
       <p className={`m-0 wrap-break-word font-(family-name:--type-card-statement-family) text-(length:--type-card-statement-size) leading-(--type-card-statement-line-height) font-(--type-card-statement-weight) tracking-(--type-card-statement-letter-spacing) ${muted ? "text-(--color-ink-muted)" : "text-(--color-ink)"}`}>
