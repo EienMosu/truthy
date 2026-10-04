@@ -307,9 +307,10 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const nextRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
-  // When the answer on screen was given, on the monotonic clock (its own `at` is on the wall clock, for the
-  // card history).
-  const answeredAt = useRef<number | null>(null);
+  // Which card was answered when, on the monotonic clock (the answer's own `at` is on the wall clock, for the
+  // card history). Only the first answer to a card sets it: the answer row keeps its last props while it
+  // leaves, so a second tap on it calls answer() again, and the reducer ignores that answer.
+  const answeredAt = useRef<{ index: number; at: number } | null>(null);
   // Timed: when RoundView saw the time run out, whether True or False has focus, and whether they had it then.
   const timeUpAt = useRef<number | null>(null);
   const answerRowFocused = useRef(false);
@@ -465,16 +466,16 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
       if (round.phase !== "question" || confirming) return;
       const at = monotonic();
       if (at - shownAt.current < SWIPE.settleMs) return;
-      answeredAt.current = at;
+      if (answeredAt.current?.index !== round.index) answeredAt.current = { index: round.index, at };
       dispatch({ type: "answer", value, at: now() });
     },
-    [round.phase, confirming, now, monotonic, dispatch],
+    [round.phase, round.index, confirming, now, monotonic, dispatch],
   );
 
   // The action (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer
   // (or as the moment time ran out).
   const next = useCallback(() => {
-    const since = answered ? answeredAt.current : timeUp ? timeUpAt.current : null;
+    const since = answered ? (answeredAt.current?.at ?? null) : timeUp ? timeUpAt.current : null;
     if (since === null || monotonic() - since < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
   }, [answered, timeUp, monotonic, dispatch]);
