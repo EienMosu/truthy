@@ -4,7 +4,7 @@
 - 4 domains, 14 task statements. The weightings and task wording below came from WebFetch of the five official docs.aws.amazon.com pages. I did not open the PDF, so the headings are exact but the bullets are fetched-and-summarised text.
 - The exam has 65 questions (50 scored, 15 unscored), pass mark 720 of 1000, with compensatory scoring. Weightings are per domain only; the guide gives no per-task weights.
 - Domain 1 has 3 tasks, Domain 2 has 2, Domain 3 has 5, Domain 4 has 4. Each "Knowledge of" and "Skills in" list is long, so the outline gives a depth note per task rather than a full dump. Fetch the page URL for the full bullets.
-- The in-scope services appendix exists and I opened it. It has 16 categories and is described as "non-exhaustive and is subject to change".
+- The in-scope services appendix exists and I opened it. It has 16 categories and says the list is incomplete and may change.
 - Unverified: the PDF version, the "Technologies and Concepts" page, the "Mentions of AWS Services" page and the out-of-scope page. I did not open any of them. Their URLs are inferred from the nav links on the main page and the filename pattern of the pages I did open.
 - Gotcha for the card writer: Task 4.1 to 4.4 repeat the same cost-management bullets (Cost Explorer, Budgets, CUR, cost allocation tags), so cost-management cards belong in one place. Task 2.2 mentions "AWS Managed Services (AMS)" but gives Comprehend and Polly as examples, which are AI services. Treat that as official wording that card writers should not over-read.
 
@@ -13,12 +13,12 @@
 Retrieved 2026-10-01 from docs.aws.amazon.com.
 
 ## Exam code status
-- Main page title: "AWS Certified Solutions Architect - Associate (SAA-C03)". It says the exam "validates a candidate's ability to design solutions based on the AWS Well-Architected Framework."
+- Main page title: "AWS Certified Solutions Architect - Associate (SAA-C03)". It describes the exam as a check of the candidate's ability to design solutions on the AWS Well-Architected Framework.
 - The aws.amazon.com certification page also lists SAA-C03, with no replacement or retirement notice.
 - Searching for SAA-C04 on aws.amazon.com and docs.aws.amazon.com found nothing. I found no replacement announcement (not proof that none exists).
 - The exam guide has no revision date. The AWS blog post "Updated AWS Certified Solutions Architect - Associate" only came up as a search hit, and I did not open it.
 - Exam format: 65 questions, 130 min, 150 USD, multiple choice or multiple response. 50 are scored and 15 unscored. Minimum passing score is 720 on a 100-1000 scale.
-- The guide says it "does not provide a comprehensive list of the content on the exam".
+- The guide warns that its list of exam content is not complete.
 
 ## Source pages (opened first-hand via WebFetch)
 - Main guide: https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html
@@ -113,7 +113,7 @@ URL: .../solutions-architect-associate-03-domain4.html
 
 ## Service references
 - In-Scope AWS Services (opened first-hand): https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/saa-03-in-scope-services.html
-  - Intro wording: "This list is non-exhaustive and is subject to change."
+  - The intro says the list is incomplete and may change.
   - 16 categories: Analytics, Application Integration, AWS Cost Management, Compute, Containers, Database, Developer Tools, Front-End Web and Mobile, Machine Learning, Management and Governance, Media Services, Migration and Transfer, Networking and Content Delivery, Security Identity and Compliance, Serverless, Storage.
 - Linked from the main page's nav list but NOT opened (URLs inferred from the main page's relative links and the filename pattern of the pages I opened, unverified):
   - Technologies and Concepts: https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/saa-technologies-concepts.html (the search tool also returned this exact URL)
