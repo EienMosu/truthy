@@ -9,6 +9,7 @@
 // the game ticket (the hand-off to /play, which shows its ticket in the same place).
 import { motion } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
+import { FIELD_COLUMNS } from "./BoardingPass";
 import { EASE } from "./easing";
 import { LogoMark } from "./Logo";
 import { CloudIcon } from "./icons";
@@ -269,7 +270,7 @@ function ReadyBody({ values, sectionChoosable, onJump }: { values: FillInPassVal
           onJump={onJump}
         />
       </div>
-      <dl className="mx-(--size-ticket-inset) my-0 grid grid-cols-[1.1fr_1fr_1fr] border-y-(length:--stroke-rule) border-(--color-rule)">
+      <dl className={`mx-(--size-ticket-inset) my-0 grid ${FIELD_COLUMNS} border-y-(length:--stroke-rule) border-(--color-rule)`}>
         {cells.map((cell, i) => (
           <div
             key={cell.label}
@@ -340,7 +341,9 @@ export function FillInPass({
                 </span>
                 {values.platform ? <LineWord field="platform" value={values.platform} hidden={hide("platform")} onJump={onJump} /> : null}
               </div>
-              <dl className="m-0 grid grid-cols-[0.75fr_1.1fr_1.15fr] px-(--space-16)">
+              {/* Deck, Section and Class are short (a code, "Whole deck", "Three lives"): each column is at least as
+                  wide as its value, so none is cut, as "Whole deck" was at 320 px (review finding U33). */}
+              <dl className="m-0 grid grid-cols-[minmax(max-content,0.75fr)_minmax(max-content,1.1fr)_minmax(max-content,1.15fr)] px-(--space-16)">
                 <Field field="deck" label="Deck" value={values.deck?.code} code now={now === "deck"} first hidden={hide("deck")} onJump={onJump} />
                 <Field
                   field="section"
