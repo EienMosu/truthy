@@ -165,7 +165,9 @@ function Field({ field, label, value, code = false, now, first = false, choosabl
       <dt className={`${FIELD_LABEL} ${now ? "font-(--font-weight-mono-semibold) text-(--color-ink)" : "text-(--color-ink-muted)"}`}>
         {label}
       </dt>
-      <dd className="relative m-0 mt-[3px] h-(--space-20)">
+      {/* A div in a list of terms holds only its term and value, so the way back is inside the value. The value
+          is positioned only while it holds the dashes: the way back then covers the whole field (review U69). */}
+      <dd className={`m-0 mt-[3px] h-(--space-20) ${filled ? "" : "relative"}`}>
         {filled ? (
           <span data-pass-value={field} className={code ? PASS_CODE : PASS_VALUE} style={hidden ? { opacity: 0 } : undefined}>
             {value}
@@ -173,10 +175,10 @@ function Field({ field, label, value, code = false, now, first = false, choosabl
         ) : (
           <Blank now={now} />
         )}
+        {filled && !now && choosable ? (
+          <button type="button" aria-label={changeLabel(field, value)} className={WAY_BACK} onClick={() => onJump(field)} />
+        ) : null}
       </dd>
-      {filled && !now && choosable ? (
-        <button type="button" aria-label={changeLabel(field, value)} className={WAY_BACK} onClick={() => onJump(field)} />
-      ) : null}
     </div>
   );
 }
@@ -274,10 +276,12 @@ function ReadyBody({ values, sectionChoosable, onJump }: { values: FillInPassVal
             className={["relative pt-(--space-8) pb-[7px]", i > 0 ? "border-l-(length:--stroke-rule) border-(--color-rule) pl-(--space-12)" : ""].join(" ")}
           >
             <dt className={`${FIELD_LABEL} text-(--color-ink-muted)`}>{cell.label}</dt>
-            <dd className={TICKET_VALUE}>{cell.value}</dd>
-            {cell.field && cell.text ? (
-              <button type="button" aria-label={changeLabel(cell.field, cell.text)} className={WAY_BACK} onClick={() => onJump("mode")} />
-            ) : null}
+            <dd className={TICKET_VALUE}>
+              {cell.value}
+              {cell.field && cell.text ? (
+                <button type="button" aria-label={changeLabel(cell.field, cell.text)} className={WAY_BACK} onClick={() => onJump("mode")} />
+              ) : null}
+            </dd>
           </div>
         ))}
       </dl>
