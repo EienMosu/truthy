@@ -328,6 +328,20 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const streak = round.mode === "streak" ? scoreOf("streak", round.answers) : 0;
   const newBest = last?.correct === true && ticket.best !== null && ticket.best >= 1 && streak === ticket.best + 1;
 
+  // What the live regions say (the status, and in Timed the card announcer). While the leave sheet is open
+  // <main> is inert and its live regions are not exposed, so a change under the sheet (time running out, the
+  // next Timed card) would never be heard: they keep what they said when the sheet opened, and take what
+  // they say now one render after it has closed, when they can be heard again.
+  const spoken = {
+    status: timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : "",
+    card: timed ? timedCardText(round) : "",
+  };
+  const [heldSpoken, setHeldSpoken] = useState<typeof spoken | null>(null);
+  useEffect(() => {
+    if (!confirming) setHeldSpoken(null);
+  }, [confirming]);
+  const said = heldSpoken ?? spoken;
+
   // The Timed clock: ticks and page visibility reach the round until time is up, the round is left or the
   // screen goes away. It keeps running while the "Leave round?" sheet is open.
   useClock(timed && !decided, dispatch, services);
@@ -469,7 +483,10 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // The close control (and Escape): before the first answer it leaves at once, after it it asks once.
   const requestLeave = () => {
     if (round.answers.length === 0) onLeave();
-    else setConfirming(true);
+    else {
+      setHeldSpoken(spoken);
+      setConfirming(true);
+    }
   };
   const requestLeaveRef = useRef(requestLeave);
   useLayoutEffect(() => {
@@ -696,13 +713,13 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
           </AnimatePresence>
         </div>
         <p role="status" className="sr-only">
-          {timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : ""}
+          {said.status}
         </p>
         {/* Timed: each card is a new element (the swap keys it), and a live region that arrives with its text
             is not reliably read, so new cards are announced from here, outside the card. */}
         {timed ? (
           <p data-card-announcer="" aria-live="polite" aria-atomic="true" className="sr-only">
-            {timedCardText(round)}
+            {said.card}
           </p>
         ) : null}
       </main>
