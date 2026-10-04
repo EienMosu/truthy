@@ -90,22 +90,45 @@ test("Enter on a result action waits for the actions to arrive too", async ({ pa
 // A player who keeps tapping where True is when the minute ends: the taps answer cards until time is up, one
 // of them opens the result about 0.4 s later ("See results" lies there), and the taps that follow must not
 // leave it. Real time: the round runs its whole minute.
+type TapClock = { resultAt: number | null; taps: number[] };
+
 test("taps every 200 ms through time up end on the result, not on the start screen", async ({ page }) => {
   test.setTimeout(120_000);
+  // The page notes when the result arrives and when each tap lands, so the taps are timed on its clock. Timed on
+  // the test's clock, a slow runner once pushed the last tap past the result's one-second guard.
+  await page.addInitScript(() => {
+    const clock: TapClock = { resultAt: null, taps: [] };
+    (window as unknown as { tapClock: TapClock }).tapClock = clock;
+    document.addEventListener("pointerdown", () => clock.taps.push(performance.now()), true);
+    new MutationObserver(() => {
+      const arrived = [...document.querySelectorAll("h1, h2")].some((heading) => heading.textContent === "Round complete");
+      if (clock.resultAt === null && arrived) clock.resultAt = performance.now();
+    }).observe(document, { subtree: true, childList: true });
+  });
+  const readClock = () => page.evaluate(() => (window as unknown as { tapClock: TapClock }).tapClock);
   await openPendingRound(page, "timed");
   const trueButton = page.getByRole("button", { name: "True", exact: true });
   await expect(page.locator("[data-statement]")).toBeFocused();
   const { x, y } = await centreOf(trueButton);
 
-  let resultAt: number | null = null;
+  const tapsOnResult = ({ resultAt, taps }: TapClock) => taps.filter((at) => resultAt !== null && at > resultAt).map((at) => Math.round(at - (resultAt ?? 0)));
   const started = Date.now();
-  // Until the result appears, and for 800 ms after it (four more taps).
-  while (resultAt === null || Date.now() - resultAt < 800) {
+  let seen: TapClock | null = null;
+  // Until the result appears, and for 500 ms after it on the page's clock (two or three more taps). The margin
+  // to the one-second guard is for a tap the runner delivers late.
+  for (;;) {
+    const clock = await readClock();
+    // A new page has a new clock: a tap left the result.
+    if (seen !== null && clock.resultAt === null) throw new Error(`A tap left the result. Taps on it, in ms after it arrived: ${tapsOnResult(seen).join(", ")}`);
+    if (clock.resultAt !== null) seen = clock;
+    if (clock.resultAt !== null && (await page.evaluate(() => performance.now())) - clock.resultAt > 500) break;
     if (Date.now() - started > 75_000) throw new Error("The round did not end");
     await page.touchscreen.tap(x, y);
     await page.waitForTimeout(200);
-    if (resultAt === null && (await resultHeading(page).count()) > 0) resultAt = Date.now();
   }
+  const onResult = tapsOnResult(await readClock());
+  expect(onResult.length, "taps that land on the result").toBeGreaterThanOrEqual(1);
+  expect(Math.max(...onResult), "every tap lands inside the result's one-second guard").toBeLessThan(1000);
   await page.waitForTimeout(300);
 
   await expect(page).toHaveURL(/\/play$/);

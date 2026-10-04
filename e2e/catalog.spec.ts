@@ -76,6 +76,8 @@ test.describe("on a 320 by 568 screen", () => {
   test.use({ viewport: { width: 320, height: 568 } });
 
   test("the pass shows every area and platform name whole while the deck is chosen", async ({ page }) => {
+    // Four settled steps for each of the fifteen platforms: past the default 30 s on the CI's WebKit.
+    test.setTimeout(120_000);
     const index = (await (await page.request.get("/decks/index.json")).json()) as Index;
     await openHome(page);
     for (const area of index.areas) {

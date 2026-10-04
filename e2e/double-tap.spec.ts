@@ -102,14 +102,16 @@ async function doubleTap(page: Page, button: Locator, gap: number): Promise<void
   const { x, y } = await centreOf(button);
   await page.touchscreen.tap(x, y);
   await page.waitForTimeout(gap);
-  // The second tap really lands on the continue line, so the spec cannot pass for want of a target.
+  await page.touchscreen.tap(x, y);
+  // The second tap landed on the continue line, so the spec cannot pass for want of a target. The line stays
+  // where it was on step 1, so it is measured after the taps: measured between them, a slow runner stretched
+  // the gap past the settle time.
   const line = await page.getByRole("button", { name: /^Continue: / }).boundingBox();
   expect(line).not.toBeNull();
   if (line) {
     expect(y).toBeGreaterThanOrEqual(line.y);
     expect(y).toBeLessThanOrEqual(line.y + line.height);
   }
-  await page.touchscreen.tap(x, y);
 }
 
 for (const gap of [100, 200]) {
