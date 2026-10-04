@@ -21,6 +21,28 @@ function reviewedCards(deck: string): ReviewedCard[] {
   return file.cards as ReviewedCard[];
 }
 
+describe("the wording of the original decks", () => {
+  // A player who answers True whenever a statement says "can" must not beat a coin flip by much: before the
+  // rewording that rule scored 66% on Cloud Digital Leader and 67% on Next.js Rendering.
+  it.each(ORIGINAL_DECKS)("gives no edge to answering True on 'can' in %s", (deck) => {
+    const cards = reviewedCards(deck);
+    const right = cards.filter((card) => /\bcan\b/i.test(card.statement) === card.answer).length;
+    expect(right / cards.length).toBeLessThanOrEqual(0.56);
+  });
+
+  // "automatically" marked 10 of 11 statements False and "suits" 11 of 11 True, so the word alone gave the answer.
+  it.each(["automatically", "requires", "primarily", "measures", "suits", "helps", "supports"])(
+    "uses '%s' on True and on False statements alike",
+    (word) => {
+      const pattern = new RegExp(`\\b${word}\\b`, "i");
+      const cards = ORIGINAL_DECKS.flatMap((deck) => reviewedCards(deck)).filter((card) => pattern.test(card.statement));
+      if (cards.length < 5) return;
+      const trueShare = cards.filter((card) => card.answer).length / cards.length;
+      expect(Math.max(trueShare, 1 - trueShare)).toBeLessThanOrEqual(0.8);
+    },
+  );
+});
+
 describe("the statements of the original decks", () => {
   it("leave the version and the setting to the Applies to line instead of repeating them first", () => {
     // The card shows "Applies to <appliesTo>" right above the statement, so a statement that opens with
