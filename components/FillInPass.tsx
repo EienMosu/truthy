@@ -398,8 +398,8 @@ export function FillInPass({
 
   // The body goes from the old block's height to the new one's, then back to its own height, so a later change
   // inside a layout (a name that wraps after a turn of the phone) is never cut. It clips only while it moves:
-  // at rest the quiet line's words reach a little above it.
-  // The move outlasts the fading copy it is measured from, so its end is a timer of its own.
+  // at rest the quiet line's words reach a little above it. The move outlasts the fading copy it is measured
+  // from, so its end is a timer of its own.
   const morphEnd = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const leavingId = leaving?.id;
   useLayoutEffect(() => {
