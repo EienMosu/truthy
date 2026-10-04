@@ -1,6 +1,6 @@
 # Truthy
 
-A mobile-first true or false card game that teaches IT. Pick what to study by filling in a boarding pass, then swipe right for true or left for false and learn why from a short explanation and a link to the official source. Everything runs on the device: decks are static JSON, progress lives in local storage, there is no account and no backend.
+A mobile-first true or false card game that teaches IT. Pick what to study by filling in a boarding pass (an area, a platform, a deck such as AWS Cloud Practitioner, React or Kubernetes, a section and a class), then answer each statement by swiping right for true or left for false, with the True and False buttons, or with the arrow keys, and learn why from a short explanation and a link to the official source. There are four classes: Classic (ten cards, score at the end), Streak (until the first wrong answer), Three lives (until the third wrong answer) and Timed (as many as you can in 60 seconds). Everything runs on the device: decks are static JSON, progress lives in local storage, there is no account and no backend.
 
 Play it on your phone at https://truthy-five.vercel.app
 
@@ -23,9 +23,9 @@ Node 24 and pnpm 10. The build needs no network: the fonts are committed in `app
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm test:watch` | Unit tests in watch mode |
 | `pnpm typecheck` | Strict TypeScript over app, scripts and tests |
-| `pnpm e2e` | End-to-end tests (Playwright) at phone size in Chromium and WebKit, against the production build |
+| `pnpm e2e` | End-to-end tests (Playwright) at phone size in Chromium and WebKit, against the production build: it builds first and serves on port 3100 (another with `E2E_PORT`); outside CI it reuses a server already running there |
 
-Before the first `pnpm e2e`, install the browsers once with `pnpm exec playwright install chromium webkit`.
+Before the first `pnpm e2e`, install the browsers once with `pnpm exec playwright install chromium webkit`. [docs/testing.md](docs/testing.md) describes the gates and how the specs are written.
 
 ## Before you push
 
