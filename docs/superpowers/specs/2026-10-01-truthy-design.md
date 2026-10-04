@@ -20,7 +20,7 @@ Truthy is a mobile-first web game. The player picks what to study by filling in 
 | Content language | English, card text keyed by language (`text.en`) | user |
 | Design language | Boarding Pass (round 1 design d10) | user, chosen from 40 directions |
 | Start flow | "Filling in the pass" (prototype browse-c), one decision per screen | user |
-| Stack | Next.js like The Slow Wire, on Vercel | user |
+| Stack | Next.js on Vercel | user |
 | Decks | Static JSON built from the repository, no API key, no runtime server | approved recommendation |
 | Repository | One repository, public | user |
 | Accidental swipes | Prevention rules only in v1. A "Mis-swiped?" flag is reconsidered after the first play test | user |
@@ -49,7 +49,7 @@ Accounts, sync, leaderboards, any backend; Turkish or other languages; the nativ
 
 ### Stack
 
-The same skeleton as The Slow Wire: Next.js 16 (App Router), React 19, TypeScript in strict mode, Tailwind CSS 4, zod, Vitest, pnpm, deployed on Vercel from `main`. Two additions: Motion for transitions, Playwright for end-to-end tests.
+Next.js 16 (App Router), React 19, TypeScript in strict mode, Tailwind CSS 4, zod, Vitest, pnpm, deployed on Vercel from `main`. Two additions: Motion for transitions, Playwright for end-to-end tests.
 
 ### Rendering
 
