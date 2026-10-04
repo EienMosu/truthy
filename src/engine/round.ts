@@ -128,8 +128,11 @@ export function isDecided(state: RoundState): boolean {
 }
 
 // Pure: returns a new state, or the very same state when the event does not apply.
+// An event whose time is not a finite number does not apply: one NaN would make the Timed clock NaN for good,
+// and a clock that is never 0 never ends the round.
 export function reduce(state: RoundState, event: RoundEvent): RoundState {
   if (state.phase === "finished") return state;
+  if (!Number.isFinite(timeOf(event))) return state;
   switch (event.type) {
     case "answer":
       return state.phase === "question" ? recordAnswer(state, event.value, event.at) : state;
@@ -144,6 +147,19 @@ export function reduce(state: RoundState, event: RoundEvent): RoundState {
       return { ...state, phase: "finished", abandoned: true };
     default:
       return state;
+  }
+}
+
+// The moment an event happened; 0 for the events that carry no time.
+function timeOf(event: RoundEvent): number {
+  switch (event.type) {
+    case "answer":
+    case "visibility":
+      return event.at;
+    case "tick":
+      return event.now;
+    default:
+      return 0;
   }
 }
 
