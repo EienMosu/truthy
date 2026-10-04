@@ -352,15 +352,18 @@ describe("deal: relaxing the constraints when the pool is too small", () => {
     }
   });
 
-  it("lets missed cards over the cap in (recency) before giving up the balance", () => {
+  it("lets missed cards over the cap in (recency) before giving up the balance, and still keeps three missed per ten", () => {
     // Missed: m1 to m3 True (oldest), m4 and m5 False. Never seen: eight True, two False.
-    // Within the cap there are only two False cards, so the balance needs m4 and m5.
+    // Within the cap there are only two False cards, so the balance needs m4 and m5. They take the places of
+    // m2 and m3 (spec section 6: at most three missed per ten), and the oldest miss, m1, keeps its place.
     const wrong = cards("m", 5, (i) => i < 3);
     const unseen = cards("u", 10, (i) => i < 8);
     const history: History = Object.fromEntries(wrong.map((c, i) => [c.id, missed(i + 1)]));
-    const dealt = deal([...wrong, ...unseen], history, createRng(3), { count: 10 });
-    expect(trueCount(dealt)).toBe(6);
-    expect(withPrefix(dealt, "m").sort()).toEqual(["m1", "m2", "m3", "m4", "m5"]);
+    for (let seed = 1; seed <= 20; seed++) {
+      const dealt = deal([...wrong, ...unseen], history, createRng(seed), { count: 10 });
+      expect(trueCount(dealt), `seed ${seed}`).toBe(6);
+      expect(withPrefix(dealt, "m").sort(), `seed ${seed}`).toEqual(["m1", "m4", "m5"]);
+    }
   });
 
   // Step 2 of choose: the missed cards over the cap join, last in line, and only as many as the deal needs. A card is
@@ -399,7 +402,8 @@ describe("deal: relaxing the constraints when the pool is too small", () => {
 
   it("takes only as many missed cards over the cap as the balance needs, the oldest first", () => {
     // Missed: m1 to m3 True (within the cap), m4 to m7 False (over it, oldest first). Never seen: u1 to u9 True, f1 False.
-    // Four False cards are needed: f1, m4, m5 and m6. m7 stays out.
+    // Four False cards are needed: f1, m4, m5 and m6. m7 stays out, and so do m1 to m3: the never seen True
+    // cards fill the rest, so the deal holds three missed cards, the cap.
     const wrong = [
       ...cards("m", 3, () => true),
       ...[4, 5, 6, 7].map((n) => card(`m${n}`, false)),
@@ -409,7 +413,7 @@ describe("deal: relaxing the constraints when the pool is too small", () => {
     for (let seed = 1; seed <= 20; seed++) {
       const dealt = deal([...wrong, ...unseen], history, createRng(seed), { count: 10 });
       expect(ids(dealt), `seed ${seed}`).toContain("f1");
-      expect(withPrefix(dealt, "m").sort(), `seed ${seed}`).toEqual(["m1", "m2", "m3", "m4", "m5", "m6"]);
+      expect(withPrefix(dealt, "m").sort(), `seed ${seed}`).toEqual(["m4", "m5", "m6"]);
     }
   });
 

@@ -13,6 +13,7 @@ export interface DealOptions {
   count: number; // how many cards to deal
   avoid?: readonly Card[]; // cards whose conflict groups must not be repeated (unbounded modes pass the last ten; Classic passes nothing)
   before?: readonly boolean[]; // the answers of the cards dealt just before this deal, oldest first: the run limit holds across the join
+  budget?: number; // the steps one search may take, SEARCH_BUDGET unless a test sets another
 }
 
 export function deal(pool: readonly Card[], history: History, rng: Rng, options: DealOptions): Card[] {
@@ -22,9 +23,19 @@ export function deal(pool: readonly Card[], history: History, rng: Rng, options:
   return dealRanked(rankByPriority(cards, history, rng, size), size, rng, options);
 }
 
+// How a deal is chosen beyond its cards: the conflict groups to keep clear of, the answers just before it,
+// the bound on the search and whether an unshown card is overdue (dealChunk only).
+interface Setting {
+  avoid?: readonly Card[];
+  before?: readonly boolean[];
+  budget?: number;
+  overdue?: boolean;
+}
+
 // Chooses `size` cards from a ranking and puts them in order.
-function dealRanked(ranking: Ranking, size: number, rng: Rng, options: Pick<DealOptions, "avoid" | "before">): Card[] {
-  return arrange(choose(ranking, size, options.avoid ?? []), rng, joinOf(options.before ?? []));
+function dealRanked(ranking: Ranking, size: number, rng: Rng, setting: Setting): Card[] {
+  const chosen = choose(ranking, size, setting.avoid ?? [], setting.budget ?? SEARCH_BUDGET, setting.overdue ?? false);
+  return arrange(chosen, rng, joinOf(setting.before ?? []));
 }
 
 // Where a deal joins the cards before it: their last answer and the length of the run of equal answers
@@ -47,7 +58,16 @@ export const CHUNK = 10;
 // may be dealt. First in line are the cards the round has not shown, ranked by the stored history. Behind
 // them stand the cards it may bring back: every card outside the last min(CHUNK, route size - 1) dealt,
 // the one shown longest ago first. Never empty for a pool with a card in it.
-export function dealChunk(pool: readonly Card[], history: History, rng: Rng, dealt: readonly Card[]): Card[] {
+// A card the round has still not shown once it has dealt the route twice over is overdue: the chunk then
+// takes one unshown card even if a rule has to give way for it (see choose), so that every card of the
+// route is shown, late at worst, never not at all.
+export function dealChunk(
+  pool: readonly Card[],
+  history: History,
+  rng: Rng,
+  dealt: readonly Card[],
+  budget: number = SEARCH_BUDGET,
+): Card[] {
   const cards = uniqueById(pool);
   const lastDealtAt = new Map<string, number>();
   dealt.forEach((card, position) => lastDealtAt.set(card.id, position));
@@ -61,8 +81,17 @@ export function dealChunk(pool: readonly Card[], history: History, rng: Rng, dea
   return dealRanked({ ...rankByPriority(unshown, history, rng, size), comeBack }, size, rng, {
     avoid: lastTen,
     before: lastTen.map((card) => card.answer),
+    budget,
+    overdue: unshown.length > 0 && dealt.length >= OVERDUE_AFTER_PASSES * cards.length,
   });
 }
+
+// How many times a round deals the whole route before a card it has not shown is overdue. A card can be
+// locked out for good: a conflict group of the chunk before keeps it out of one chunk, the balance keeps it
+// out of the next, and the round settles into those two chunks over and over (without this rule, a card of
+// the 28 card section "OWASP Top 10:2025" of Web Security was still unshown after 300 cards in 113 of 120 rounds).
+// Two passes give every other card its turn first.
+const OVERDUE_AFTER_PASSES = 2;
 
 // The first card with each id wins, so a card can never be dealt twice.
 function uniqueById(pool: readonly Card[]): Card[] {
@@ -105,6 +134,8 @@ interface Ranking {
   withinCap: Card[];
   overCap: Card[];
   comeBack: Card[]; // dealChunk only: cards the round has shown and may bring back, the one shown longest ago first
+  missed: ReadonlySet<string>; // the ids of the missed cards among withinCap and overCap
+  missedCap: number; // how many missed cards a deal of this size holds at most, unless the rules need more
 }
 
 function rankByPriority(cards: readonly Card[], history: History, rng: Rng, size: number): Ranking {
@@ -117,6 +148,8 @@ function rankByPriority(cards: readonly Card[], history: History, rng: Rng, size
     withinCap: [...missed.slice(0, missedCap), ...unseen, ...seenRight],
     overCap: missed.slice(missedCap),
     comeBack: [],
+    missed: new Set(missed.map((card) => card.id)),
+    missedCap,
   };
 }
 
@@ -135,49 +168,93 @@ function balanceFor(size: number): Balance {
 
 // Picks `size` cards, relaxing the rules in the order of the spec only as far as needed:
 // 1. every rule, without the missed cards over the cap;
-// 2. recency: the missed cards over the cap may join, last in line;
+// 2. recency: the missed cards over the cap may join, last in line, and only as many as the rules need
+//    (searchOverCap);
 // 3. recency again, in a round that goes on: a card the round has shown may come back, last in line;
 // 4. conflict groups, then 5. answer balance (relaxStepByStep).
-function choose(ranking: Ranking, size: number, avoid: readonly Card[]): Card[] {
+// When an unshown card is overdue and the chunk chosen so far holds none, no deal that keeps every rule
+// holds one (the search takes the unshown cards first whenever it can), so the first unshown card goes in
+// and the fallback relaxes the rest of the chunk around it: conflict groups before the balance, as always.
+function choose(ranking: Ranking, size: number, avoid: readonly Card[], budget: number, overdue: boolean): Card[] {
   const balance = balanceFor(size);
   const unshown = [...ranking.withinCap, ...ranking.overCap];
   const everyCard = [...unshown, ...ranking.comeBack];
-  return (
-    searchWithAllRules(ranking.withinCap, size, avoid, balance) ??
-    searchWithAllRules(unshown, size, avoid, balance) ??
-    (ranking.comeBack.length > 0 ? searchWithAllRules(everyCard, size, avoid, balance) : null) ??
-    relaxStepByStep(everyCard, size, avoid, balance)
-  );
+  const search = (ranked: readonly Card[], limits: Limits = {}) =>
+    searchWithAllRules(ranked, size, avoid, balance, { budget, missed: ranking.missed, ...limits });
+  const chosen =
+    search(ranking.withinCap) ??
+    searchOverCap(ranking, unshown, search) ??
+    (ranking.comeBack.length > 0 ? search(everyCard) : null) ??
+    relaxStepByStep(everyCard, size, avoid, balance);
+  if (!overdue || chosen.some((card) => unshown.includes(card))) return chosen;
+  return relaxStepByStep(everyCard, size, avoid, balance, unshown.slice(0, 1));
 }
 
-// A bound on the work the search may do. Real decks need a few dozen steps; the bound only matters
-// for pools where no deal keeps every rule, and then the relaxed fallback takes over.
-const SEARCH_BUDGET = 20_000;
+// Step 2. A deal that keeps the missed cards within the cap, a newer miss taking the place of an older one
+// that cannot go, comes before a deal over it; over the cap, the fewer missed cards the better.
+// The deal found with no limit holds as many missed cards as any limit can need, so the limits tried run
+// from the cap up to one below that.
+function searchOverCap(
+  ranking: Ranking,
+  unshown: readonly Card[],
+  search: (ranked: readonly Card[], limits?: Limits) => Card[] | null,
+): Card[] | null {
+  if (ranking.overCap.length === 0) return null; // the same cards as step 1, which found nothing
+  const loosest = search(unshown);
+  if (loosest === null) return null;
+  const held = loosest.filter((card) => ranking.missed.has(card.id)).length;
+  for (let limit = ranking.missedCap; limit < held; limit++) {
+    const found = search(unshown, { missedLimit: limit });
+    if (found !== null) return found;
+  }
+  return loosest;
+}
+
+// A bound on the work one search may do. With the cut in canStillFinish, a search on the built decks takes
+// about three steps on average and never more than about 8,000 (measured over every route, 300 card rounds
+// and three kinds of history); before the cut, searches of more than 15,000 steps occurred and the bound
+// ran out on pools that had a deal keeping every rule. It still matters for pools where no deal keeps every rule and
+// the cut cannot tell early (False cards in a ring, each sharing a group with the next). When it runs out,
+// the next step of choose takes over, which may skip a deal that keeps every rule.
+export const SEARCH_BUDGET = 20_000;
+
+// What else a search must keep to: the steps it may take, and at most `missedLimit` of the `missed` cards.
+interface Limits {
+  budget?: number;
+  missed?: ReadonlySet<string>;
+  missedLimit?: number;
+}
 
 // Depth-first over the ranked cards: at each card, first try to take it, then try to leave it out.
 // The first full deal found keeps as many high-ranked cards as possible, so leaving out a higher card
 // in favour of a lower one (relaxing recency) is the first thing that gives way.
-// Returns null when no deal keeps both the conflict groups and the balance.
+// Returns null when no deal keeps both the conflict groups and the balance (or the search ran out of steps).
 function searchWithAllRules(
   ranked: readonly Card[],
   size: number,
   avoid: readonly Card[],
   balance: Balance,
+  limits: Limits = {},
 ): Card[] | null {
-  const trueAfter = suffixCounts(ranked, true);
-  const falseAfter = suffixCounts(ranked, false);
   const usedGroups = new Set(avoid.flatMap((card) => card.conflictGroups));
   const picked: Card[] = [];
+  const missed = limits.missed ?? new Set<string>();
+  const missedLimit = limits.missedLimit ?? Infinity;
   let trues = 0;
-  let budget = SEARCH_BUDGET;
+  let missedTaken = 0;
+  let budget = limits.budget ?? SEARCH_BUDGET;
+
+  const isMissed = (card: Card): boolean => missed.has(card.id);
 
   const canTake = (card: Card): boolean =>
     !card.conflictGroups.some((group) => usedGroups.has(group)) &&
+    !(isMissed(card) && missedTaken >= missedLimit) &&
     balanceAllows(card.answer, trues, picked.length - trues, size, balance);
 
   const take = (card: Card) => {
     picked.push(card);
     if (card.answer) trues++;
+    if (isMissed(card)) missedTaken++;
     for (const group of card.conflictGroups) usedGroups.add(group);
   };
 
@@ -185,16 +262,45 @@ function searchWithAllRules(
   const putBack = (card: Card) => {
     picked.pop();
     if (card.answer) trues--;
+    if (isMissed(card)) missedTaken--;
     for (const group of card.conflictGroups) usedGroups.delete(group);
   };
 
+  // Whether ranked[from..] can still fill the deal: an upper bound on what those cards can add, so that a
+  // branch that cannot finish is cut at once rather than searched through. A card with a group in use can
+  // never be taken; the cards with groups add at most one card for each group still free (each card taken
+  // uses up at least one); missed cards add no more than the limit leaves; and each answer adds no more
+  // than the balance leaves.
   const canStillFinish = (from: number): boolean => {
+    const loose = [0, 0]; // cards with no group, by answer (0 False, 1 True)
+    const grouped = [0, 0]; // cards with groups, by answer
+    const groupsOf = [new Set<string>(), new Set<string>()];
+    const allGroups = new Set<string>();
+    let takeable = 0;
+    let missedLeft = 0;
+    for (let i = from; i < ranked.length; i++) {
+      const card = ranked[i];
+      if (card === undefined || card.conflictGroups.some((group) => usedGroups.has(group))) continue;
+      const answer = card.answer ? 1 : 0;
+      takeable++;
+      if (isMissed(card)) missedLeft++;
+      if (card.conflictGroups.length === 0) {
+        loose[answer]! += 1;
+        continue;
+      }
+      grouped[answer]! += 1;
+      for (const group of card.conflictGroups) {
+        groupsOf[answer]!.add(group);
+        allGroups.add(group);
+      }
+    }
+    const need = size - picked.length;
     const falses = picked.length - trues;
-    return (
-      ranked.length - from >= size - picked.length &&
-      trues + (trueAfter[from] ?? 0) >= balance.minTrue &&
-      falses + (falseAfter[from] ?? 0) >= size - balance.maxTrue
-    );
+    const cardsLeft = loose[0]! + loose[1]! + Math.min(grouped[0]! + grouped[1]!, allGroups.size);
+    const withinMissedLimit = takeable - Math.max(0, missedLeft - (missedLimit - missedTaken));
+    const truesLeft = Math.min(loose[1]! + Math.min(grouped[1]!, groupsOf[1]!.size), balance.maxTrue - trues);
+    const falsesLeft = Math.min(loose[0]! + Math.min(grouped[0]!, groupsOf[0]!.size), size - balance.minTrue - falses);
+    return Math.min(cardsLeft, withinMissedLimit, truesLeft + falsesLeft) >= need;
   };
 
   const visit = (from: number): boolean => {
@@ -213,25 +319,22 @@ function searchWithAllRules(
   return visit(0) ? picked : null;
 }
 
-// counts[i] is how many of ranked[i..] have the given answer.
-function suffixCounts(ranked: readonly Card[], answer: boolean): number[] {
-  const counts = new Array<number>(ranked.length + 1).fill(0);
-  for (let i = ranked.length - 1; i >= 0; i--) {
-    counts[i] = (counts[i + 1] ?? 0) + (ranked[i]?.answer === answer ? 1 : 0);
-  }
-  return counts;
-}
-
 interface Rules {
   conflicts: boolean; // keep conflict groups apart (within the deal and against `avoid`)
   balance: boolean; // keep the number of True cards inside the balance
 }
 
 // The fallback when no deal keeps every rule. Three passes over the ranked cards, each adding to the
-// cards already picked: all rules, then without conflict groups, then without the balance.
-function relaxStepByStep(ranked: readonly Card[], size: number, avoid: readonly Card[], balance: Balance): Card[] {
-  const picked: Card[] = [];
-  const pickedIds = new Set<string>();
+// cards already picked (`first`, if given): all rules, then without conflict groups, then without the balance.
+function relaxStepByStep(
+  ranked: readonly Card[],
+  size: number,
+  avoid: readonly Card[],
+  balance: Balance,
+  first: readonly Card[] = [],
+): Card[] {
+  const picked: Card[] = [...first];
+  const pickedIds = new Set<string>(first.map((card) => card.id));
 
   const breaks = (card: Card, rules: Rules): boolean => {
     if (rules.conflicts && sharesGroup(card, [...avoid, ...picked])) return true;
