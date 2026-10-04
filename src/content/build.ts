@@ -79,6 +79,12 @@ function parseCatalog(raw: unknown): Catalog {
       }
     }
   }
+  // A card's history belongs to the deck whose id, followed by "-", starts the card id (pruneDeck and the
+  // seen bar go by it), so a deck id that starts another deck id that way would claim that deck's history.
+  for (const id of deckIds) {
+    const other = [...deckIds].find((candidate) => candidate.startsWith(`${id}-`));
+    if (other !== undefined) throw new DeckBuildError(`catalog: deck id ${id} is a prefix of deck ${other}`);
+  }
   return catalog;
 }
 
