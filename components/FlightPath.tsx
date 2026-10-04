@@ -281,30 +281,38 @@ function CompletedMarks({ results, total, ring }: { results: readonly boolean[];
   const wrongScale = Math.max(scale, 6 / 13);
   const lifted = wrongScale > scale;
   const marks = results.slice(0, total).map((correct, i) => ({ correct, i }));
-  const order = lifted ? [...marks.filter((mark) => mark.correct), ...marks.filter((mark) => !mark.correct)] : marks;
+  const below = lifted ? marks.filter((mark) => mark.correct) : marks;
+  const above = lifted ? marks.filter((mark) => !mark.correct) : [];
   const ringAt = ring === undefined || ring < 0 || ring >= total ? null : pointAt(waypointT(ring, total));
+  // The ring sits 3.5 outside its dot, as in the live header, while that leaves it clear of the next dot. On a
+  // long route it moves to the middle of the space between the two dots, so the marks still never touch.
+  const gap = total <= 1 ? Infinity : 264 / (total - 1);
+  const ringOffset = Math.min(3.5, (gap - 2 * 7 * scale) / 2);
+  const mark = ({ correct, i }: { correct: boolean; i: number }) => (
+    <Mark
+      key={i}
+      verdict={correct ? "correct" : "wrong"}
+      at={pointAt(waypointT(i, total))}
+      scale={correct ? scale : wrongScale}
+      plain={correct ? plainCorrect : false}
+    />
+  );
   return (
     <>
-      {order.map(({ correct, i }) => (
-        <Mark
-          key={i}
-          verdict={correct ? "correct" : "wrong"}
-          at={pointAt(waypointT(i, total))}
-          scale={correct ? scale : wrongScale}
-          plain={correct ? plainCorrect : false}
-        />
-      ))}
+      {below.map(mark)}
+      {/* Under an enlarged wrong square, so the ring never crosses the square's x. */}
       {ringAt === null ? null : (
         <circle
           data-ring="reached"
           cx={ringAt.x}
           cy={ringAt.y}
-          r={round2(7 * scale + 3.5)}
+          r={round2(7 * scale + ringOffset)}
           fill="none"
           className="stroke-(--color-ink)"
           strokeWidth="1.4"
         />
       )}
+      {above.map(mark)}
     </>
   );
 }
