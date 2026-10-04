@@ -126,7 +126,7 @@ export function verdict(page: Page): Locator {
   return page.locator("main").getByRole("status");
 }
 
-/** What the live region says after an answer (task 11's verdictText). */
+/** What the live region says after an answer (verdictText in components/play/PlayScreen.tsx). */
 export function verdictFor(given: boolean, truth: boolean): string {
   return `${given === truth ? "Correct" : "Not quite"}. The answer is ${truth ? "True" : "False"}.`;
 }

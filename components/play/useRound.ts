@@ -85,7 +85,7 @@ export interface UseRoundResult {
   dispatch: (event: RoundEvent) => void;
   /** After a load error: try loading again. */
   retry: () => void;
-  /** A new round on the same route and mode, dealt with the card history as stored now (task 12: "Play again"). */
+  /** A new round on the same route and mode, dealt with the card history as stored now ("Play again"). */
   restart: () => void;
   /** The progress store on the device, for recording a round. */
   progressStore: () => ProgressStore;

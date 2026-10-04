@@ -17,7 +17,7 @@ The specs act like a player: they find buttons by role and accessible name and r
 
 Things to know when writing one:
 
-- Every spec file sets `reducedMotion` itself. Headless Chromium on a Mac with "Reduce motion" turned on in System Settings reports `prefers-reduced-motion: reduce`, so a spec that wants the movement says `test.use({ reducedMotion: "no-preference" })`.
+- Every spec file that looks at the game sets `reducedMotion` itself; `e2e/install.spec.ts` only reads the links in `<head>`, the manifest and the icons, so it does not. Headless Chromium on a Mac with "Reduce motion" turned on in System Settings reports `prefers-reduced-motion: reduce`, so a spec that wants the movement says `test.use({ reducedMotion: "no-preference" })`.
 - Both projects run in the light colour scheme (`colorScheme: "light"` in `playwright.config.ts`), so no spec depends on the machine's appearance setting. `e2e/night.spec.ts` asks for `colorScheme: "dark"` and checks the colours the browser computes against the night values in `design/system/tokens.json`; `e2e/theme.spec.ts` does the same for the theme switch (`expectThemePage` and `tokenRgb` in `e2e/helpers.ts`).
 - A new card ignores input for 250 ms (spec section 8). `waitForCard` waits 300 ms after the card appears; a spec that drives input by hand must do the same, or a test that expects "no answer" passes for the wrong reason.
 - The start flow ignores presses on a step's options, the continue line and "Start round" for 250 ms after a step change. Wait with `atStep(page, title)` before pressing them; Back and the pass fields never wait.
