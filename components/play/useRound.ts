@@ -130,7 +130,14 @@ export async function prepareRound(pending: PendingRound, services: PlayServices
   store.save(progress);
 
   const pool = poolFor(deck, pending.route.sectionId);
-  if (pool.length === 0) return null;
+  if (pool.length === 0) {
+    // An older copy on the device (the deck named in the index did not load) can lack a section the index
+    // already has. That route is not gone, the deck did not load: the player gets the message and Try again.
+    if (deck.hash !== found.deck.hash) {
+      throw new LoadError(`Could not load the deck "${deck.id}": the copy on the device has no cards for ${pending.route.sectionId}.`);
+    }
+    return null;
+  }
   const route: Route = { deckId: pending.route.deckId, sectionId: pending.route.sectionId };
   const round = startRound({ mode: pending.mode, route, pool, history: progress.cards, seed: services.randomSeed() });
   return { round, ticket: ticketFor(found, pending.mode, bestFor(progress, route, pending.mode)) };
