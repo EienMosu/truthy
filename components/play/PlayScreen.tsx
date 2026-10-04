@@ -90,14 +90,16 @@ export function timedStatus(round: RoundState): string {
 }
 
 /**
- * What the Timed card announcer says: "Card 2. <statement>" from the second card on, until time is up.
+ * What the Timed card announcer says: "Card 2. <statement>" from the second card on, until time is up,
+ * with "Applies to <appliesTo>." before the statement when the card has one, as the card shows it above.
  * The first card is read through focus (the statement takes it); at time up the status speaks. The text
  * stays the same through the stamp, so a card is announced once.
  */
 export function timedCardText(round: RoundState): string {
   const card = currentCard(round);
   if (round.index === 0 || isDecided(round) || !card) return "";
-  return `Card ${round.index + 1}. ${plainText(card.text.en.statement)}`;
+  const appliesTo = card.appliesTo ? `Applies to ${card.appliesTo}. ` : "";
+  return `Card ${round.index + 1}. ${appliesTo}${plainText(card.text.en.statement)}`;
 }
 
 // Timed: when the stamp has held, the answered card leaves towards the side that was answered while the next

@@ -2,7 +2,7 @@
 
 // The missed cards of a finished round (design system 5.15), on the sunk lower part of the result ticket:
 // a header row, then a scrolling list. Each card shows its number in the round, what the player said, the
-// statement and the right answer (ink, not red: the word carries it), and a "Why" disclosure that reveals
+// version or setting it applies to (when it has one), the statement and the right answer (ink, not red: the word carries it), and a "Why" disclosure that reveals
 // the explanation and the source. With no missed cards there is one calm line instead of an empty list.
 import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
@@ -20,6 +20,8 @@ export interface MissedCard {
   given: boolean;
   /** The right answer. */
   answer: boolean;
+  /** The card's appliesTo, when it has one. Some statements are only right under that version or setting. */
+  appliesTo?: string;
   statement: string;
   explanation: string;
   source: { title: string; url: string };
@@ -35,6 +37,7 @@ export function missedCards(answers: readonly Answered[]): MissedCard[] {
             number: i + 1,
             given: answered.given,
             answer: answered.card.answer,
+            appliesTo: answered.card.appliesTo || undefined,
             statement: answered.card.text.en.statement,
             explanation: answered.card.text.en.explanation,
             source: answered.card.source,
@@ -134,6 +137,9 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
         <span>Card {number}</span>
         <span>You said {word(item.given)}</span>
       </div>
+      {/* The same line the play card shows above the statement. Without it a card such as "a route's
+          revalidate export remains supported", False only with cacheComponents on, would read wrong here. */}
+      {item.appliesTo ? <p className={`m-0 mt-(--space-6) ${MONO_DATA}`}>Applies to {item.appliesTo}</p> : null}
       <p className={STATEMENT}>
         <CardText text={item.statement} />
       </p>
