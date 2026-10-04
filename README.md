@@ -8,7 +8,7 @@ The design specification is in [docs/superpowers/specs/2026-10-01-truthy-design.
 
 ## Requirements
 
-Node 24 and pnpm 10.
+Node 24 and pnpm 10. The build needs no network: the fonts are committed in `app/fonts/`.
 
 ## Scripts
 
@@ -37,4 +37,4 @@ git config core.hooksPath .githooks
 
 ## License
 
-The code is licensed under [MIT](LICENSE). The card content in `content/` is licensed under [CC BY 4.0](content/LICENSE.md); the documentation pages the cards link to belong to their owners.
+The code is licensed under [MIT](LICENSE). The card content in `content/` is licensed under [CC BY 4.0](content/LICENSE.md); the documentation pages the cards link to belong to their owners. The Overpass and Overpass Mono fonts in `app/fonts/` are by The Overpass Project Authors, under the [SIL Open Font License 1.1](app/fonts/OFL.txt); the files there are static cuts of the four weights the game uses, reduced to the latin characters and the arrows.

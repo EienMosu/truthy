@@ -4,15 +4,15 @@ import { describe, expect, it, vi } from "vitest";
 import { THEME_COLOR, themeScript } from "@/src/app-state/theme";
 import { NEXT_FONT_VARIABLES, tokensToCss } from "@/src/tokens/build";
 
-// Records the options app/layout.tsx passes to next/font/google.
+// Records the options app/layout.tsx passes to next/font/local, by the variable each family is exposed as.
 const fontCalls = vi.hoisted(() => new Map<string, unknown>());
-vi.mock("next/font/google", () => {
-  const font = (name: string, className: string) => (options: unknown) => {
-    fontCalls.set(name, options);
-    return { className, variable: `${className}-variable`, style: { fontFamily: name } };
-  };
-  return { Overpass: font("Overpass", "font-overpass"), Overpass_Mono: font("Overpass Mono", "font-overpass-mono") };
-});
+vi.mock("next/font/local", () => ({
+  default: (options: { variable: string }) => {
+    fontCalls.set(options.variable, options);
+    const className = options.variable.replace(/^--/, "");
+    return { className, variable: `${className}-variable`, style: { fontFamily: className } };
+  },
+}));
 
 const { default: RootLayout, metadata, viewport } = await import("@/app/layout");
 
@@ -60,24 +60,31 @@ describe("the theme the player chose", () => {
 });
 
 describe("fonts", () => {
-  it("loads Overpass 600 and 800 under the variable name the tokens point at", () => {
-    expect(fontCalls.get("Overpass")).toMatchObject({
-      subsets: ["latin"],
-      weight: ["600", "800"],
-      variable: NEXT_FONT_VARIABLES.sans,
+  it("loads Overpass 600 and 800 from app/fonts under the variable name the tokens point at", () => {
+    expect(fontCalls.get(NEXT_FONT_VARIABLES.sans ?? "")).toEqual({
+      src: [
+        { path: "./fonts/overpass-600.woff2", weight: "600", style: "normal" },
+        { path: "./fonts/overpass-800.woff2", weight: "800", style: "normal" },
+      ],
+      variable: "--font-overpass",
+      display: "swap",
     });
   });
 
-  it("loads Overpass Mono 400 and 600 under the variable name the tokens point at", () => {
-    expect(fontCalls.get("Overpass Mono")).toMatchObject({
-      subsets: ["latin"],
-      weight: ["400", "600"],
-      variable: NEXT_FONT_VARIABLES.mono,
+  it("loads Overpass Mono 400 and 600 from app/fonts under the variable name the tokens point at", () => {
+    expect(fontCalls.get(NEXT_FONT_VARIABLES.mono ?? "")).toEqual({
+      src: [
+        { path: "./fonts/overpass-mono-400.woff2", weight: "400", style: "normal" },
+        { path: "./fonts/overpass-mono-600.woff2", weight: "600", style: "normal" },
+      ],
+      variable: "--font-overpass-mono",
+      display: "swap",
     });
   });
 
   it("puts both font variable classes on <html>, where --font-sans and --font-mono resolve", () => {
     expect(renderLayout()).toMatch(/^<html lang="en" class="font-overpass-variable font-overpass-mono-variable">/);
+    expect(fontCalls.size).toBe(2);
     expect(renderLayout()).toContain("<body>");
   });
 });

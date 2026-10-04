@@ -18,7 +18,8 @@ async function expectCodeShown(scope: Locator): Promise<void> {
     elements.map((element) => ({ family: getComputedStyle(element).fontFamily, width: element.getBoundingClientRect().width })),
   );
   for (const face of faces) {
-    expect(face.family).toMatch(/^"?Overpass Mono\b/);
+    // next/font/local names the face after the constant in app/layout.tsx that loads it.
+    expect(face.family).toMatch(/^"?overpassMono"?,/);
     expect(face.width).toBeGreaterThan(0);
   }
 }

@@ -1,21 +1,27 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Overpass, Overpass_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 import { THEME_COLOR, themeScript } from "@/src/app-state/theme";
 import { APP_DESCRIPTION, APP_NAME } from "@/src/meta";
 
-// Self-hosted by next/font. The variable names are the ones app/tokens.css points --font-sans and
-// --font-mono at (NEXT_FONT_VARIABLES in src/tokens/build.ts). Only the four static weights the design uses.
-const overpass = Overpass({
-  subsets: ["latin"],
-  weight: ["600", "800"],
+// The font files are in app/fonts, so the build needs no network. The variable names are the ones app/tokens.css
+// points --font-sans and --font-mono at (NEXT_FONT_VARIABLES in src/tokens/build.ts). Only the four static weights
+// the design uses, each cut to Google's latin range plus the arrows U+2190 to U+2193: Google's own latin files leave
+// out the left and right arrows the screens draw, which then came from a stretched Arial. Licence: app/fonts/OFL.txt.
+const overpass = localFont({
+  src: [
+    { path: "./fonts/overpass-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/overpass-800.woff2", weight: "800", style: "normal" },
+  ],
   variable: "--font-overpass",
   display: "swap",
 });
-const overpassMono = Overpass_Mono({
-  subsets: ["latin"],
-  weight: ["400", "600"],
+const overpassMono = localFont({
+  src: [
+    { path: "./fonts/overpass-mono-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/overpass-mono-600.woff2", weight: "600", style: "normal" },
+  ],
   variable: "--font-overpass-mono",
   display: "swap",
 });
@@ -32,7 +38,8 @@ export const viewport: Viewport = {
   // until the player chooses one with the theme switch (src/app-state/theme.ts).
   colorScheme: "light dark",
   // The top sky band of each theme, --color-sky-1 in app/tokens.css (tests/app/layout.test.tsx checks they agree).
-  // With a chosen theme, the theme script and the switch give both tags the chosen theme's colour.
+  // With a chosen theme, the theme script and the switch keep both tags' content and set media to "all" on the
+  // chosen theme's tag and "not all" on the other (applyTheme in src/app-state/theme.ts says why the content stays).
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
     { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
