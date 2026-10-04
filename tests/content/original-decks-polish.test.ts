@@ -21,6 +21,21 @@ function reviewedCards(deck: string): ReviewedCard[] {
   return file.cards as ReviewedCard[];
 }
 
+describe("the statements of the original decks", () => {
+  it("leave the version and the setting to the Applies to line instead of repeating them first", () => {
+    // The card shows "Applies to <appliesTo>" right above the statement, so a statement that opens with
+    // "In Next.js 16 with cacheComponents: false, ..." says it twice and costs a line on a small phone.
+    const repeated = ORIGINAL_DECKS.flatMap((deck) => reviewedCards(deck)).filter((card) => {
+      if (!card.appliesTo) return false;
+      const version = card.appliesTo.split(" with ")[0] ?? "";
+      const opensWithVersion = card.statement.toLowerCase().startsWith(`in ${version.toLowerCase()}`);
+      const repeatsSetting = card.appliesTo.includes("cacheComponents") && card.statement.includes("cacheComponents");
+      return opensWithVersion || repeatsSetting;
+    });
+    expect(repeated.map((card) => card.id)).toEqual([]);
+  });
+});
+
 describe("the conflict groups of the original decks", () => {
   // In each pair the True card's explanation settles the other card, so the two must never be dealt in one round.
   it.each([
