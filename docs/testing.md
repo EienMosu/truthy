@@ -43,4 +43,4 @@ Locally an already running `pnpm start --port 3100` is reused (rebuild it after 
 E2E_PORT=3200 pnpm e2e
 ```
 
-A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact.
+A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact after every run that was not cancelled. In CI a failed test runs once more, so the report tells a flaky test from a broken one, but a test that passes only on its retry still fails the run (`failOnFlakyTests`), and the failed attempt's trace is in the artifact.
