@@ -17,16 +17,18 @@ export interface LeaveDialogProps {
   onStay: () => void;
   /** "Leave round". */
   onLeave: () => void;
+  /** The round is decided: leaving records it with its score, so the sheet says that instead. */
+  decided?: boolean;
   /** A clock in ms that never goes back, for the scrim's settle time. In the browser: performance.now. */
   now?: () => number;
 }
 
 const browserNow = () => performance.now();
 
-export function LeaveDialog({ open, onStay, onLeave, now = browserNow }: LeaveDialogProps) {
+export function LeaveDialog({ open, onStay, onLeave, decided = false, now = browserNow }: LeaveDialogProps) {
   return (
     <AnimatePresence>
-      {open ? <Sheet key="leave" onStay={onStay} onLeave={onLeave} now={now} /> : null}
+      {open ? <Sheet key="leave" onStay={onStay} onLeave={onLeave} decided={decided} now={now} /> : null}
     </AnimatePresence>
   );
 }
@@ -34,10 +36,11 @@ export function LeaveDialog({ open, onStay, onLeave, now = browserNow }: LeaveDi
 interface SheetProps {
   onStay: () => void;
   onLeave: () => void;
+  decided: boolean;
   now: () => number;
 }
 
-function Sheet({ onStay, onLeave, now }: SheetProps) {
+function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
   const reduced = useReducedMotion() ?? false;
   const titleId = useId();
   const bodyId = useId();
@@ -123,7 +126,9 @@ function Sheet({ onStay, onLeave, now }: SheetProps) {
             id={bodyId}
             className="m-0 mt-(--space-8) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight)"
           >
-            Your answers so far stay in your history. This round won&apos;t set a record.
+            {decided
+              ? "This round is over and its score is kept. Leaving skips its result."
+              : "Your answers so far stay in your history. This round won't set a record."}
           </p>
           <div className="mt-(--space-20) flex flex-col gap-(--space-4)">
             <PillButton ref={stayRef} onClick={onStay}>

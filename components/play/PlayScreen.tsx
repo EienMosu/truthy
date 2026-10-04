@@ -34,7 +34,7 @@ import { plainText } from "@/src/content/text";
 import { SWIPE } from "@/src/input/swipe";
 import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
-import { saveLeftRound } from "./leave";
+import { leavesSomething, saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
 import { gapAboveRow, keyScroll, slipScroll, spanInTicket, statementScroll, visibleHeight } from "./ticketScroll";
 import { useClock } from "./useClock";
@@ -149,16 +149,17 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     goHome();
   }, [goHome, services]);
 
-  // A round in progress with answers that are not in the card history yet. Leaving any other way than the
-  // close control (the phone's back gesture, the browser's back button) unmounts this screen; the cleanup
-  // below then leaves the round the same way, so those answers are not lost.
+  // A round in progress with answers that are not in the card history yet, or a decided round whose result
+  // has not been opened. Leaving any other way than the close control (the phone's back gesture, the
+  // browser's back button) unmounts this screen; the cleanup below then leaves the round the same way, so
+  // nothing is lost.
   const unsaved = useRef<RoundState | null>(null);
   // Set once pagehide has saved the round: from then on it is never saved again.
   const savedOnHide = useRef(false);
   useEffect(() => {
     const round = status.kind === "ready" ? status.round : null;
     unsaved.current =
-      round && round.phase !== "finished" && !round.abandoned && round.answers.length > 0 && !savedOnHide.current ? round : null;
+      round && round.phase !== "finished" && !round.abandoned && leavesSomething(round) && !savedOnHide.current ? round : null;
   });
   useEffect(
     () => () => {
@@ -195,13 +196,14 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     };
   }, [progressStore, dispatch, goHome]);
 
-  // Leaving: the round is abandoned, the answers given so far go into the card history (no record),
-  // and the player goes back to the start. Without answers nothing is recorded.
+  // Leaving: the round is abandoned, the answers given so far go into the card history (no record, unless the
+  // round was decided, see saveLeftRound), and the player goes back to the start. A round with no answers that
+  // was not decided records nothing.
   const leave = useCallback(
     (round: RoundState) => {
       unsaved.current = null;
       dispatch({ type: "abandon" });
-      if (round.answers.length > 0) {
+      if (leavesSomething(round)) {
         saveLeftRound(round, progressStore());
       }
       leaveToStart();
@@ -702,6 +704,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
       </main>
       <LeaveDialog
         open={confirming}
+        decided={decided}
         onStay={() => {
           restoreFocus.current = true;
           setConfirming(false);

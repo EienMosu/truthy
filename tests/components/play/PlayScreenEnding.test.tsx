@@ -190,17 +190,18 @@ describe("PlayScreen ending: leaving", () => {
     expect(progress.last?.score).toBeNull();
   });
 
-  it("leaving a decided round asks too and sets no record", async () => {
+  // Owner decision D1: after the deciding answer only the result is left, so leaving records the round.
+  it("leaving a decided round asks too and records it as its result would", async () => {
     await decidedStreak();
     fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
     const dialog = screen.getByRole("dialog", { name: "Leave round?" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Leave round" }));
     expect(router.replace).toHaveBeenCalledWith("/");
     const progress = stored();
-    expect(progress.records).toEqual({});
+    expect(progress.records).toEqual({ "test-deck/SEC#streak": 2 });
     expect(Object.values(progress.cards)).toHaveLength(3);
     for (const entry of Object.values(progress.cards)) expect(entry.seen).toBe(1);
-    expect(progress.last).toEqual(LEFT_ROUND);
+    expect(progress.last).toEqual({ ...LEFT_ROUND, score: 2, total: 3 });
     expect(screen.queryByRole("heading", { name: "Round complete" })).toBeNull();
   });
 
@@ -217,11 +218,11 @@ describe("PlayScreen ending: leaving", () => {
     expect(stored().records).toEqual({ "test-deck/SEC#streak": 2 });
   });
 
-  it("unmounting on a decided round keeps the answers and sets no record", async () => {
+  it("unmounting on a decided round records it as its result would", async () => {
     const view = await decidedStreak();
     view.unmount();
     const progress = stored();
-    expect(progress.records).toEqual({});
+    expect(progress.records).toEqual({ "test-deck/SEC#streak": 2 });
     expect(Object.values(progress.cards)).toHaveLength(3);
     for (const entry of Object.values(progress.cards)) expect(entry.seen).toBe(1);
   });

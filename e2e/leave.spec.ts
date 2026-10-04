@@ -119,12 +119,17 @@ async function decidedStreak(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
 }
 
-// Spec sections 2 and 6: a round that is left sets no record, also once it is decided. Only "See results"
-// finishes it. (The plan lists the proposal to count such a round as finished; it is not built.)
-test("back on a decided Streak round keeps the answers and sets no record", async ({ page }) => {
+// Spec section 6 (owner decision D1): a round that is left once it is decided is recorded as its result
+// would record it, with its score.
+test("back on a decided Streak round records it with its score", async ({ page }) => {
   await decidedStreak(page);
   await page.goBack();
-  await expectLeftRound(page, "Streak", 3);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(stepTitle(page)).toHaveText("Choose an area");
+  const progress = await storedProgress(page);
+  expect(Object.keys(progress.cards)).toHaveLength(3);
+  expect(progress.records).toEqual({ "aws-clf-c02/SEC#streak": 2 });
+  expect((progress.last as { score: number | null } | null)?.score).toBe(2);
 });
 
 test("the close button on a decided round asks, and Keep playing leads to See results", async ({ page }) => {
