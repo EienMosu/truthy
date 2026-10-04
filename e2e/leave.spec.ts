@@ -59,7 +59,7 @@ test("leaving after an answer asks once, Keep playing stays, Leave round goes ho
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await expect(stepTitle(page)).toHaveText("Your pass is ready");
   await page.getByRole("button", { name: "Back to classes" }).click();
-  await expect(page.getByRole("button", { name: "Classic. 10 cards, score at the end. Not played yet." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Not played yet." })).toBeVisible();
 });
 
 test("leaving before any answer goes home at once and leaves nothing to continue", async ({ page }) => {

@@ -33,7 +33,7 @@ export const CLF_SECURITY: RoutePick = {
   platform: /^AWS, \d+ decks?$/,
   deck: /^CLF, Cloud Practitioner, \d+ cards, /,
   section: /^SEC, Security and compliance, \d+ cards$/,
-  mode: /^Classic\. 10 cards, score at the end\. /,
+  mode: /^Classic\. Correct answers out of 10 cards\. /,
 };
 
 /** Cloud, Google Cloud, Cloud Digital Leader (a deck without sections), Classic. */
@@ -41,7 +41,7 @@ export const CDL_WHOLE: RoutePick = {
   area: /^Cloud, \d+ decks?$/,
   platform: /^Google Cloud, \d+ decks?$/,
   deck: /^CDL, Cloud Digital Leader, \d+ cards, /,
-  mode: /^Classic\. 10 cards, score at the end\. /,
+  mode: /^Classic\. Correct answers out of 10 cards\. /,
 };
 
 export const CLF_ID = "aws-clf-c02";

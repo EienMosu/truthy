@@ -70,5 +70,5 @@ test("the browser's back button on the result goes home with the round recorded"
   await atHome(page);
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await page.getByRole("button", { name: "Back to classes" }).click();
-  await expect(page.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 6 of 10." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Your best: 6 of 10." })).toBeVisible();
 });

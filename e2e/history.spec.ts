@@ -38,7 +38,7 @@ async function expectNoRecordButHistory(page: Page): Promise<void> {
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await atStep(page, "Your pass is ready");
   await page.getByRole("button", { name: "Back to classes" }).click();
-  await expect(page.getByRole("button", { name: "Classic. 10 cards, score at the end. Not played yet." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Not played yet." })).toBeVisible();
 }
 
 test("back from a round is the start at step 1, and one more back leaves the site; the answers stay, no record", async ({ page }) => {

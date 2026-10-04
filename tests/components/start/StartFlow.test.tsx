@@ -181,7 +181,7 @@ describe("StartFlow: choosing a route", () => {
     expect(passText()).toContain("Security and compliance");
     expect(passText()).toContain("ClassClassic");
     expect(passText()).toContain("Cards47");
-    expect(screen.getByText("10 cards, score at the end. Swipe right for true, left for false.")).toBeTruthy();
+    expect(screen.getByText("Correct answers out of 10 cards. Swipe right for true, left for false.")).toBeTruthy();
 
     settle();
     fireEvent.click(screen.getByRole("button", { name: "Start round" }));
@@ -245,17 +245,17 @@ describe("StartFlow: choosing a route", () => {
       ),
     );
     await toClasses();
-    expect(screen.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 9 of 10." })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Streak. Keep going until the first wrong answer. Your best: 12 in a row." })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Three lives. The round ends on the third wrong answer. Your best: 21 cards." })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Timed. 60 seconds, as many cards as you can. Not played yet." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Your best: 9 of 10." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Streak. Correct answers in a row, until the first wrong one. Your best: 12 in a row." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Three lives. Correct answers before the third wrong one. Your best: 21 cards." })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Timed. Correct answers in one minute, wrong ones cost nothing. Not played yet." })).toBeTruthy();
     expect(screen.queryAllByRole("group", { name: /not available yet/ })).toHaveLength(0);
   });
 
   it.each([
-    ["streak", /^Streak\./, "Streak", "Keep going until the first wrong answer."],
-    ["lives", /^Three lives\./, "Three lives", "The round ends on the third wrong answer."],
-    ["timed", /^Timed\./, "Timed", "60 seconds, as many cards as you can."],
+    ["streak", /^Streak\./, "Streak", "Correct answers in a row, until the first wrong one."],
+    ["lives", /^Three lives\./, "Three lives", "Correct answers before the third wrong one."],
+    ["timed", /^Timed\./, "Timed", "Correct answers in one minute, wrong ones cost nothing."],
   ] as const)("hands the chosen class to /play: %s", async (mode, buttonName, name, rule) => {
     await start();
     await toClasses();
@@ -270,7 +270,7 @@ describe("StartFlow: choosing a route", () => {
   it("says Classic has not been played on a new route", async () => {
     await start();
     await toClasses();
-    expect(screen.getByRole("button", { name: "Classic. 10 cards, score at the end. Not played yet." }).textContent).toContain("Best–not played");
+    expect(screen.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Not played yet." }).textContent).toContain("Best–not played");
   });
 
   it("starts the round only once when Start round is pressed twice", async () => {
