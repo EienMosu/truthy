@@ -239,6 +239,7 @@ function Loading({ onLeave }: { onLeave: () => void }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col" aria-busy="true">
       <SkyBackdrop />
+      <h1 className="sr-only">Your round</h1>
       <Header onLeave={onLeave} />
       <section className="relative mt-(--space-12) min-h-0 flex-1">
         <BoardingPassPlaceholder />
@@ -586,6 +587,8 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     <>
       <main className="flex min-h-0 flex-1 flex-col" inert={confirming}>
         <SkyBackdrop />
+        {/* The page's heading, for those who move by headings: the route and the class, as on the ticket. */}
+        <h1 className="sr-only">{`${ticket.deckName}, ${ticket.sectionName}: ${ticket.modeLabel} round`}</h1>
         <Header onLeave={requestLeave} closeRef={closeRef}>
           {round.mode === "streak" ? (
             <StreakPath streak={streak} best={ticket.best} answered={last ? (last.correct ? "correct" : "wrong") : null} />
