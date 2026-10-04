@@ -75,9 +75,12 @@ export function browserStepHistory(): StepHistory | undefined {
 }
 
 // Whether the entry right behind /play is the start flow's first entry. The start flow sets it when it
-// opens /play after taking its step entries out of the history; it lasts as long as the page (a reload of
-// /play starts without it). Only the browser sets it.
+// opens /play after taking its step entries out of the history; it lasts as long as the page. Only the
+// browser sets it. /play also writes it into its own history entry (markPlayEntry), which a reload keeps.
 let startEntryBehind = false;
+
+// The key of that mark in the /play entry's history state.
+const START_BEHIND_KEY = "truthyStartBehind";
 
 /**
  * The start flow is opening /play: `behind` says whether it moved back to its first entry first. Set on
@@ -88,11 +91,23 @@ export function markStartEntryBehind(behind: boolean): void {
 }
 
 /**
+ * /play has opened: when the start flow's first entry is right behind it, the /play entry carries that in
+ * its history state, so a reload of /play (which starts the page, and this module, afresh) still knows it.
+ */
+export function markPlayEntry(): void {
+  if (typeof window === "undefined" || !startEntryBehind) return;
+  window.history.replaceState(withEntryState(window.history.state, { [START_BEHIND_KEY]: true }), "");
+}
+
+/**
  * Leaves /play for the start with the browser's back, when the start flow's first entry is right behind
  * it, so the history does not grow a second start entry. False when it is not (the caller then opens /).
  */
 export function browserBackToStart(): boolean {
-  if (typeof window === "undefined" || !startEntryBehind) return false;
+  if (typeof window === "undefined") return false;
+  const state: unknown = window.history.state;
+  const marked = typeof state === "object" && state !== null && (state as Record<string, unknown>)[START_BEHIND_KEY] === true;
+  if (!startEntryBehind && !marked) return false;
   window.history.back();
   return true;
 }

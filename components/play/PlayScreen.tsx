@@ -142,6 +142,11 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     if (!services.backToStart?.()) router.replace("/");
   }, [router, services]);
   const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome);
+  // Once, as /play opens: its history entry is told whether the start's entry is behind it (review finding
+  // U26: a reload of /play forgot it, and leaving then added a second start entry).
+  useEffect(() => {
+    services.markPlayEntry?.();
+  }, [services]);
   // The player's own ways home (Leave round, Choose another route, Close results): the start then focuses its
   // step 1 title. A page load of /play without a round goes home too, but that is not a way back.
   const leaveToStart = useCallback(() => {
