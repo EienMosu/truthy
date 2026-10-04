@@ -26,8 +26,14 @@ export interface PageVisibility {
 
 /** The play screen's window on the outside world: the app services plus the clock and the dice. Tests pass fakes; the app uses browserPlayServices. */
 export interface PlayServices extends AppServices {
-  /** The clock in ms since the epoch: answer times (card history) and the swipe settle time. */
+  /** The clock in ms since the epoch: answer times (card history) and the Timed clock. */
   now: () => number;
+  /**
+   * A clock in ms that never goes back, for the screen's guards: the settle time of a card, the arrival of
+   * the action row and of the result's actions. The wall clock can be set back (by hand, or by a large time
+   * correction), and a guard on it would then drop every press until it caught up again.
+   */
+  monotonic: () => number;
   /** A fresh 32-bit seed for dealing a round. */
   randomSeed: () => number;
   /**
@@ -46,6 +52,7 @@ export interface PlayServices extends AppServices {
 export const browserPlayServices: PlayServices = {
   ...browserAppServices,
   now: () => Date.now(),
+  monotonic: () => performance.now(),
   backToStart: browserBackToStart,
   markReturnToStart: markReturnFromPlay,
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,

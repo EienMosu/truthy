@@ -42,7 +42,7 @@ import { browserPlayServices, useRound, type PlayServices, type TicketInfo } fro
 import { useSwipe } from "./useSwipe";
 
 export interface PlayScreenProps {
-  /** The outside world. Defaults to the browser (fetch, localStorage, sessionStorage, Date.now, crypto). Pass a stable object. */
+  /** The outside world. Defaults to the browser (fetch, localStorage, sessionStorage, Date.now, performance.now, crypto). Pass a stable object. */
   services?: PlayServices;
 }
 
@@ -217,7 +217,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   const { round, ticket } = status;
   if (round.phase === "finished") {
     return (
-      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={leaveToStart} now={services.now} />
+      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={leaveToStart} now={services.monotonic} />
     );
   }
 
@@ -282,7 +282,7 @@ interface RoundViewProps {
 }
 
 function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProps) {
-  const { now } = services;
+  const { now, monotonic } = services;
   const reduced = useReducedMotion() ?? false;
   const [confirming, setConfirming] = useState(false);
   // The card index whose "Next card" has arrived (see NEXT_ARRIVES_MS); until then the row takes no taps.
@@ -301,6 +301,9 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const nextRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
+  // When the answer on screen was given, on the monotonic clock (its own `at` is on the wall clock, for the
+  // card history).
+  const answeredAt = useRef<number | null>(null);
   // Timed: when RoundView saw the time run out, whether True or False has focus, and whether they had it then.
   const timeUpAt = useRef<number | null>(null);
   const answerRowFocused = useRef(false);
@@ -344,7 +347,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // is dealt.
   useEffect(() => {
     if (round.phase !== "question") return;
-    shownAt.current = now();
+    shownAt.current = monotonic();
     const scroller = scrollerRef.current;
     const statement = statementRef.current;
     if (scroller) {
@@ -360,7 +363,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
       scroller.scrollTo?.({ top, behavior: timed && !reducedRef.current ? "smooth" : "instant" });
     }
     if (!timed || round.index === 0) statement?.focus({ preventScroll: true });
-  }, [round.cards, round.index, round.phase, now, timed]);
+  }, [round.cards, round.index, round.phase, monotonic, timed]);
 
   // Timed: when the stub is stamped (an answer, or time up), the ticket scrolls to its end, which is the stub.
   // On a short phone (320 by 568) the stub lies under the action row while the card is a question; this shows
@@ -397,9 +400,9 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // Time is up: note the moment (See results counts its arrival from it) and whether True or False had focus.
   useEffect(() => {
     if (!timeUp) return;
-    timeUpAt.current = now();
+    timeUpAt.current = monotonic();
     focusedAtTimeUp.current = answerRowFocused.current;
-  }, [timeUp, now]);
+  }, [timeUp, monotonic]);
 
   // The action row arrives 420 ms after the answer (or after time ran out) and starts to take taps. Focus
   // moves to it then, or at once with reduced motion (Enter on it still waits for the arrival, see next
@@ -428,25 +431,26 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
 
   // The one answer path: swipe, buttons and keys all come here. Ignored outside the question phase,
   // while the dialog is open, and for 250 ms after a card appears (so a double tap on "Next card"
-  // cannot answer the next card).
+  // cannot answer the next card). The guards run on the monotonic clock; the answer keeps the wall clock's
+  // time, which the card history stores.
   const answer = useCallback(
     (value: boolean) => {
       if (round.phase !== "question" || confirming) return;
-      const at = now();
+      const at = monotonic();
       if (at - shownAt.current < SWIPE.settleMs) return;
-      dispatch({ type: "answer", value, at });
+      answeredAt.current = at;
+      dispatch({ type: "answer", value, at: now() });
     },
-    [round.phase, confirming, now, dispatch],
+    [round.phase, confirming, now, monotonic, dispatch],
   );
 
   // The action (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer
   // (or as the moment time ran out).
-  const answeredAt = last?.at;
   const next = useCallback(() => {
-    const since = answeredAt ?? (timeUp ? timeUpAt.current : null);
-    if (since === null || now() - since < NEXT_ARRIVES_MS) return;
+    const since = answered ? answeredAt.current : timeUp ? timeUpAt.current : null;
+    if (since === null || monotonic() - since < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
-  }, [answeredAt, timeUp, now, dispatch]);
+  }, [answered, timeUp, monotonic, dispatch]);
 
   // A held key: the system repeats its keydown, and a repeat is not a new press. It is cancelled before
   // anything sees it (capture on window), so it neither answers a card nor presses the focused True, False or
@@ -523,7 +527,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const swipe = useSwipe<HTMLDivElement>({
     enabled: round.phase === "question" && !confirming,
     cardShownAt: () => shownAt.current,
-    now,
+    now: monotonic,
     onSwipe: answer,
   });
 
@@ -705,6 +709,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
       <LeaveDialog
         open={confirming}
         decided={decided}
+        now={monotonic}
         onStay={() => {
           restoreFocus.current = true;
           setConfirming(false);

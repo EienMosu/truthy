@@ -140,6 +140,7 @@ export function harness(pending: PendingRound | null = { route: { deckId: DECK_I
     localStorage: () => local,
     sessionStorage: () => session,
     now: () => time,
+    monotonic: () => time,
     randomSeed: () => 12345,
     ticker: (onTick) => {
       // A wrapper per subscription, so the same function subscribed twice counts twice.
