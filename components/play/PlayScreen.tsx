@@ -357,8 +357,10 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // page), only as far up as lets the statement's text end above True and False, which hide what lies under
   // them; a text taller than the stage starts at its top. In Timed only the first card takes focus; later
   // ones are announced by the card announcer (a live region that stays mounted, see timedCardText), so focus
-  // stays on the pill the player used. Timed glides back up from the stamped stub (below) while the new card
-  // is dealt.
+  // stays on the pill the player used. A player who answers by key or by swipe has focus on the first card's
+  // statement, which leaves with that card: focus goes to the ticket (it stays mounted and is a stop in the
+  // Tab order) rather than falling to the page for the rest of the minute. Timed glides back up from the
+  // stamped stub (below) while the new card is dealt.
   useEffect(() => {
     if (round.phase !== "question") return;
     shownAt.current = monotonic();
@@ -376,7 +378,12 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
           : 0;
       scroller.scrollTo?.({ top, behavior: timed && !reducedRef.current ? "smooth" : "instant" });
     }
-    if (!timed || round.index === 0) statement?.focus({ preventScroll: true });
+    if (!timed || round.index === 0) {
+      statement?.focus({ preventScroll: true });
+    } else {
+      const focused = document.activeElement;
+      if (!focused || focused === document.body || focused.closest("[data-statement]")) scroller?.focus({ preventScroll: true });
+    }
   }, [round.cards, round.index, round.phase, monotonic, timed]);
 
   // Timed: when the stub is stamped (an answer, or time up), the ticket scrolls to its end, which is the stub.
