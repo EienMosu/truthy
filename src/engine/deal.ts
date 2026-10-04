@@ -213,9 +213,9 @@ function searchOverCap(
 // A bound on the work one search may do. With the cut in canStillFinish, a search on the built decks takes
 // about three steps on average and never more than about 8,000 (measured over every route, 300 card rounds
 // and three kinds of history); before the cut, searches of more than 15,000 steps occurred and the bound
-// ran out on pools that had a deal keeping every rule. It still matters for pools where no deal keeps every rule and
-// the cut cannot tell early (False cards in a ring, each sharing a group with the next). When it runs out,
-// the next step of choose takes over, which may skip a deal that keeps every rule.
+// ran out on pools that had a deal keeping every rule. It still matters for pools where no deal keeps
+// every rule and the cut cannot tell early (False cards in a ring, each sharing a group with the next).
+// When it runs out, the next step of choose takes over, which may skip a deal that keeps every rule.
 export const SEARCH_BUDGET = 20_000;
 
 // What else a search must keep to: the steps it may take, and at most `missedLimit` of the `missed` cards.
