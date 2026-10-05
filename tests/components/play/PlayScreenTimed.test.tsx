@@ -534,7 +534,8 @@ describe("PlayScreen Timed: leaving", () => {
     expect(router.replace).toHaveBeenCalledWith("/");
   }
 
-  it("leaving at time up sets no record, like leaving earlier", async () => {
+  // Owner decision D1: at time up only the result is left, so leaving records the round; earlier it does not.
+  it("leaving at time up records the round as its result would, leaving earlier sets no record", async () => {
     await start();
     const first = cardByStatement(statementText());
     await answerAndOn(true);
@@ -542,10 +543,10 @@ describe("PlayScreen Timed: leaving", () => {
     expect(stubStamps()).toEqual(["time-up"]);
     await leaveThroughTheSheet();
     const atTimeUp = stored();
-    expect(atTimeUp.records).toEqual({});
+    expect(atTimeUp.records).toEqual({ "test-deck/SEC#timed": 1 });
     expect(Object.keys(atTimeUp.cards)).toEqual([first.id]);
     expect(atTimeUp.cards[first.id]?.seen).toBe(1);
-    expect(atTimeUp.last).toEqual(LEFT);
+    expect(atTimeUp.last).toEqual({ ...LEFT, score: 1, total: 1 });
 
     cleanup();
     router.replace.mockReset();
@@ -560,14 +561,19 @@ describe("PlayScreen Timed: leaving", () => {
     expect(earlier.last).toEqual(LEFT);
   });
 
-  it("leaving at time up with nothing answered leaves at once and saves nothing", async () => {
+  // Owner decision D1: the minute ran out, so the round is decided and recorded even with nothing answered,
+  // as its result would record it. With no answer to lose the close button still leaves at once.
+  it("leaving at time up with nothing answered leaves at once and records the round of 0", async () => {
     await start();
     runToTimeUp();
     fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(router.replace).toHaveBeenCalledWith("/");
-    // Loading the round stores the pruned, empty progress; leaving adds nothing to it.
-    expect(stored()).toEqual(emptyProgress());
+    expect(stored()).toEqual({
+      ...emptyProgress(),
+      records: { "test-deck/SEC#timed": 0 },
+      last: { ...LEFT, score: 0, total: 0 },
+    });
   });
 
   it("keeps the clock running while the leave sheet is open", async () => {

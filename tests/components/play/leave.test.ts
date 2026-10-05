@@ -29,7 +29,8 @@ describe("saveLeftRound", () => {
     expect(progress.last).toEqual({ route: ROUTE, mode: "classic", score: null, total: null });
   });
 
-  it("saves a decided round that is left as abandoned: the answers are kept, no record is set", () => {
+  // Owner decision D1: a round left after its deciding answer is recorded as its result would record it.
+  it("records a decided round that is left as its result would: the answers, the record and the score", () => {
     const storage = memoryStorage();
     let round = startRound({ mode: "streak", route: ROUTE, pool: poolFor(DECK, "SEC"), history: {}, seed: 12345 });
     for (let i = 0; i < 3; i += 1) {
@@ -41,10 +42,10 @@ describe("saveLeftRound", () => {
     expect(isDecided(round)).toBe(true);
     saveLeftRound(round, createLocalStore(storage));
     const progress = parseProgress(storage.getItem(PROGRESS_KEY));
-    expect(progress.records).toEqual({});
+    expect(progress.records).toEqual({ "test-deck/SEC#streak": 3 });
     expect(Object.values(progress.cards)).toHaveLength(4);
     for (const answer of round.answers) expect(progress.cards[answer.card.id]?.seen).toBe(1);
-    expect(progress.last).toEqual({ route: ROUTE, mode: "streak", score: null, total: null });
+    expect(progress.last).toEqual({ route: ROUTE, mode: "streak", score: 3, total: 4 });
   });
 
   it("does not throw when the store cannot save", () => {

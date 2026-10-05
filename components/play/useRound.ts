@@ -2,12 +2,12 @@
 // the deck, prune the stored progress for that deck, deal with startRound, then run the round on
 // useReducer(reduce). Everything that touches the network, storage, the clock or randomness comes in
 // through PlayServices, so the play screen runs in tests without a browser.
-import { useCallback, useEffect, useReducer, useState } from "react";
-import { WHOLE_DECK, deckPassName, findRoute, type Route, type RouteInIndex } from "@/src/content/schema";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { WHOLE_DECK, deckPassName, findRoute, type DeckIndex, type Route, type RouteInIndex } from "@/src/content/schema";
 import { LoadError, createDeckCache, loadDeck, loadIndex, poolFor } from "@/src/content/load";
 import { modeInfo } from "@/src/app-state/modes";
 import { readPending, type PendingRound } from "@/src/app-state/pending";
-import { browserAppServices, browserBackToStart, markReturnFromPlay, type AppServices } from "@/src/app-state/services";
+import { browserAppServices, browserBackToStart, markPlayEntry, markReturnFromPlay, type AppServices } from "@/src/app-state/services";
 import type { Mode } from "@/src/content/play";
 import { reduce, startRound, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { bestFor, pruneDeck } from "@/src/progress/progress";
@@ -26,8 +26,14 @@ export interface PageVisibility {
 
 /** The play screen's window on the outside world: the app services plus the clock and the dice. Tests pass fakes; the app uses browserPlayServices. */
 export interface PlayServices extends AppServices {
-  /** The clock in ms since the epoch: answer times (card history) and the swipe settle time. */
+  /** The clock in ms since the epoch: answer times (card history) and the Timed clock. */
   now: () => number;
+  /**
+   * A clock in ms that never goes back, for the screen's guards: the settle time of a card, the arrival of
+   * the action row and of the result's actions. The wall clock can be set back (by hand, or by a large time
+   * correction), and a guard on it would then drop every press until it caught up again.
+   */
+  monotonic: () => number;
   /** A fresh 32-bit seed for dealing a round. */
   randomSeed: () => number;
   /**
@@ -35,6 +41,8 @@ export interface PlayServices extends AppServices {
    * did. Left out (tests) or false: the screen replaces /play with / instead.
    */
   backToStart?: () => boolean;
+  /** /play has opened: notes on its history entry whether backToStart can go back, so a reload keeps it. */
+  markPlayEntry?: () => void;
   /** Tells the start that the player is coming back from a round by a control, so it takes the focus. */
   markReturnToStart?: () => void;
   /** Calls onTick about every TICK_MS while subscribed. Returns the unsubscribe. In the browser: setInterval. */
@@ -46,7 +54,9 @@ export interface PlayServices extends AppServices {
 export const browserPlayServices: PlayServices = {
   ...browserAppServices,
   now: () => Date.now(),
+  monotonic: () => performance.now(),
   backToStart: browserBackToStart,
+  markPlayEntry,
   markReturnToStart: markReturnFromPlay,
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   ticker: (onTick) => {
@@ -105,11 +115,40 @@ export function ticketFor(found: RouteInIndex, mode: Mode, best: number | null):
   };
 }
 
+/**
+ * How long a round after the first in this page (Play again, Try again) waits for the index to be fetched
+ * again before it goes on with the index the last round was dealt from. The fetch goes on behind it and
+ * caches what it brings, so a deck update still shows up; only a slow or silent network is not waited for.
+ */
+export const INDEX_REFRESH_MS = 1500;
+
+// The fetched index, or `known` when the fetch takes longer than INDEX_REFRESH_MS or fails.
+async function indexOr(fetching: Promise<DeckIndex>, known: DeckIndex): Promise<DeckIndex> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const waited = new Promise<DeckIndex>((resolve) => {
+    timer = setTimeout(() => resolve(known), INDEX_REFRESH_MS);
+  });
+  try {
+    return await Promise.race([fetching.catch(() => known), waited]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export interface PreparedRound {
+  round: RoundState;
+  ticket: TicketInfo;
+  /** The index the round was dealt from, for the next round in this page (see INDEX_REFRESH_MS). */
+  index: DeckIndex;
+}
+
 // Loads everything a round needs and deals it. Null means "this route cannot be played any more": go home.
-// Throws LoadError when the index or the deck cannot be loaded and nothing is cached.
-export async function prepareRound(pending: PendingRound, services: PlayServices): Promise<{ round: RoundState; ticket: TicketInfo } | null> {
+// Throws LoadError when the index or the deck cannot be loaded and nothing is cached. `known` is the index
+// the last round in this page was dealt from, if any.
+export async function prepareRound(pending: PendingRound, services: PlayServices, known: DeckIndex | null = null): Promise<PreparedRound | null> {
   const local = services.localStorage();
-  const index = await loadIndex(services.fetcher, local);
+  const fetching = loadIndex(services.fetcher, local);
+  const index = known ? await indexOr(fetching, known) : await fetching;
   const found = findRoute(index, pending.route);
   if (found === null) return null;
   const deck = await loadDeck(found.deck, createDeckCache(local), services.fetcher);
@@ -123,10 +162,17 @@ export async function prepareRound(pending: PendingRound, services: PlayServices
   store.save(progress);
 
   const pool = poolFor(deck, pending.route.sectionId);
-  if (pool.length === 0) return null;
+  if (pool.length === 0) {
+    // An older copy on the device (the deck named in the index did not load) can lack a section the index
+    // already has. That route is not gone, the deck did not load: the player gets the message and Try again.
+    if (deck.hash !== found.deck.hash) {
+      throw new LoadError(`Could not load the deck "${deck.id}": the copy on the device has no cards for ${pending.route.sectionId}.`);
+    }
+    return null;
+  }
   const route: Route = { deckId: pending.route.deckId, sectionId: pending.route.sectionId };
   const round = startRound({ mode: pending.mode, route, pool, history: progress.cards, seed: services.randomSeed() });
-  return { round, ticket: ticketFor(found, pending.mode, bestFor(progress, route, pending.mode)) };
+  return { round, ticket: ticketFor(found, pending.mode, bestFor(progress, route, pending.mode)), index };
 }
 
 type Action = RoundEvent | { type: "start"; round: RoundState } | { type: "clear" };
@@ -143,6 +189,8 @@ export function useRound(services: PlayServices, goHome: () => void): UseRoundRe
   const [round, send] = useReducer(roundReducer, null);
   const [load, setLoad] = useState<LoadState>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+  // The index the last round was dealt from: Play again does not wait the whole fetch timeout for it again.
+  const knownIndex = useRef<DeckIndex | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,7 +200,7 @@ export function useRound(services: PlayServices, goHome: () => void): UseRoundRe
       goHome();
       return;
     }
-    prepareRound(pending, services).then(
+    prepareRound(pending, services, knownIndex.current).then(
       (prepared) => {
         if (cancelled) return;
         if (prepared === null) {
@@ -160,6 +208,7 @@ export function useRound(services: PlayServices, goHome: () => void): UseRoundRe
           goHome();
           return;
         }
+        knownIndex.current = prepared.index;
         send({ type: "start", round: prepared.round });
         setLoad({ kind: "ready", ticket: prepared.ticket });
       },

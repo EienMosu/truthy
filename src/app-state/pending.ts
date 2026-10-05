@@ -36,22 +36,24 @@ export function savePending(pending: PendingRound, storage: Pick<Storage, "setIt
   }
 }
 
-// The copy in memory, for when storage is unavailable, throws or holds nothing.
+// The copy in memory of the last round handed over on this page, or null.
 function fromMemory(): PendingRound | null {
   return typeof window === "undefined" || inMemory === null ? null : { route: { ...inMemory.route }, mode: inMemory.mode };
 }
 
-// The stored pending round, or null when there is none or it is not valid. Where storage cannot give a
-// round back, the copy in memory. Never throws.
+// The pending round, or null when there is none or it is not valid. The copy in memory comes first: on this
+// page it is always the latest round handed over, also when its write failed and storage still holds an
+// earlier one. After a reload the copy is empty and storage gives the round back. Never throws.
 export function readPending(storage: Pick<Storage, "getItem"> | undefined = browserSessionStorage()): PendingRound | null {
-  if (!storage) return fromMemory();
+  const mine = fromMemory();
+  if (mine || !storage) return mine;
   let value: unknown;
   try {
     const text = storage.getItem(PENDING_KEY);
-    if (text === null) return fromMemory();
+    if (text === null) return null;
     value = JSON.parse(text);
-  } catch (error) {
-    return error instanceof SyntaxError ? null : fromMemory();
+  } catch {
+    return null;
   }
   const parsed = PendingSchema.safeParse(value);
   return parsed.success ? parsed.data : null;

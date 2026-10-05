@@ -47,10 +47,14 @@ describe("LeaveDialog", () => {
   });
 
   it("keeps playing on Escape and on a tap outside the sheet", () => {
-    const { onStay, onLeave } = setup();
+    let time = 0;
+    const onStay = vi.fn();
+    const onLeave = vi.fn();
+    render(<LeaveDialog open onStay={onStay} onLeave={onLeave} now={() => time} />);
     fireEvent.keyDown(screen.getByRole("button", { name: "Keep playing" }), { key: "Escape" });
     const scrim = document.querySelector("[data-scrim]");
     if (!scrim) throw new Error("no scrim");
+    time = 250; // the scrim takes taps once the sheet has settled (review finding U64)
     fireEvent.click(scrim);
     expect(onStay).toHaveBeenCalledTimes(2);
     expect(onLeave).not.toHaveBeenCalled();

@@ -34,7 +34,7 @@ import { plainText } from "@/src/content/text";
 import { SWIPE } from "@/src/input/swipe";
 import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
-import { saveLeftRound } from "./leave";
+import { leavesSomething, saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
 import { gapAboveRow, keyScroll, slipScroll, spanInTicket, statementScroll, visibleHeight } from "./ticketScroll";
 import { useClock } from "./useClock";
@@ -42,7 +42,7 @@ import { browserPlayServices, useRound, type PlayServices, type TicketInfo } fro
 import { useSwipe } from "./useSwipe";
 
 export interface PlayScreenProps {
-  /** The outside world. Defaults to the browser (fetch, localStorage, sessionStorage, Date.now, crypto). Pass a stable object. */
+  /** The outside world. Defaults to the browser (fetch, localStorage, sessionStorage, Date.now, performance.now, crypto). Pass a stable object. */
   services?: PlayServices;
 }
 
@@ -53,6 +53,14 @@ export interface PlayScreenProps {
  * against the second tap, not the animation, so it is the same with reduced motion.
  */
 export const NEXT_ARRIVES_MS = 420;
+
+/**
+ * How long after the leave sheet has closed the play screen's live regions keep what they said when it
+ * opened (see `said` in RoundView). Long enough for a few rendered frames to pass after <main> stops being
+ * inert, so the regions are in the accessibility tree before their text changes, and short enough that the
+ * news is heard at once.
+ */
+export const SPOKEN_RELEASE_MS = 150;
 
 /** The keys the round acts on. Held down, only the first keydown counts (see the repeat guard in RoundView). */
 const HELD_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight", "Enter", "Escape"]);
@@ -142,6 +150,11 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     if (!services.backToStart?.()) router.replace("/");
   }, [router, services]);
   const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome);
+  // Once, as /play opens: its history entry is told whether the start's entry is behind it (review finding
+  // U26: a reload of /play forgot it, and leaving then added a second start entry).
+  useEffect(() => {
+    services.markPlayEntry?.();
+  }, [services]);
   // The player's own ways home (Leave round, Choose another route, Close results): the start then focuses its
   // step 1 title. A page load of /play without a round goes home too, but that is not a way back.
   const leaveToStart = useCallback(() => {
@@ -149,16 +162,17 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     goHome();
   }, [goHome, services]);
 
-  // A round in progress with answers that are not in the card history yet. Leaving any other way than the
-  // close control (the phone's back gesture, the browser's back button) unmounts this screen; the cleanup
-  // below then leaves the round the same way, so those answers are not lost.
+  // A round in progress with answers that are not in the card history yet, or a decided round whose result
+  // has not been opened. Leaving any other way than the close control (the phone's back gesture, the
+  // browser's back button) unmounts this screen; the cleanup below then leaves the round the same way, so
+  // nothing is lost.
   const unsaved = useRef<RoundState | null>(null);
   // Set once pagehide has saved the round: from then on it is never saved again.
   const savedOnHide = useRef(false);
   useEffect(() => {
     const round = status.kind === "ready" ? status.round : null;
     unsaved.current =
-      round && round.phase !== "finished" && !round.abandoned && round.answers.length > 0 && !savedOnHide.current ? round : null;
+      round && round.phase !== "finished" && !round.abandoned && leavesSomething(round) && !savedOnHide.current ? round : null;
   });
   useEffect(
     () => () => {
@@ -195,13 +209,14 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     };
   }, [progressStore, dispatch, goHome]);
 
-  // Leaving: the round is abandoned, the answers given so far go into the card history (no record),
-  // and the player goes back to the start. Without answers nothing is recorded.
+  // Leaving: the round is abandoned, the answers given so far go into the card history (no record, unless the
+  // round was decided, see saveLeftRound), and the player goes back to the start. A round with no answers that
+  // was not decided records nothing.
   const leave = useCallback(
     (round: RoundState) => {
       unsaved.current = null;
       dispatch({ type: "abandon" });
-      if (round.answers.length > 0) {
+      if (leavesSomething(round)) {
         saveLeftRound(round, progressStore());
       }
       leaveToStart();
@@ -215,7 +230,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   const { round, ticket } = status;
   if (round.phase === "finished") {
     return (
-      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={leaveToStart} now={services.now} />
+      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={leaveToStart} now={services.monotonic} />
     );
   }
 
@@ -237,6 +252,7 @@ function Loading({ onLeave }: { onLeave: () => void }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col" aria-busy="true">
       <SkyBackdrop />
+      <h1 className="sr-only">Your round</h1>
       <Header onLeave={onLeave} />
       <section className="relative mt-(--space-12) min-h-0 flex-1">
         <BoardingPassPlaceholder />
@@ -280,7 +296,7 @@ interface RoundViewProps {
 }
 
 function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProps) {
-  const { now } = services;
+  const { now, monotonic } = services;
   const reduced = useReducedMotion() ?? false;
   const [confirming, setConfirming] = useState(false);
   // The card index whose "Next card" has arrived (see NEXT_ARRIVES_MS); until then the row takes no taps.
@@ -299,6 +315,10 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const nextRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
+  // Which card was answered when, on the monotonic clock (the answer's own `at` is on the wall clock, for the
+  // card history). Only the first answer to a card sets it: the answer row keeps its last props while it
+  // leaves, so a second tap on it calls answer() again, and the reducer ignores that answer.
+  const answeredAt = useRef<{ index: number; at: number } | null>(null);
   // Timed: when RoundView saw the time run out, whether True or False has focus, and whether they had it then.
   const timeUpAt = useRef<number | null>(null);
   const answerRowFocused = useRef(false);
@@ -323,6 +343,24 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const streak = round.mode === "streak" ? scoreOf("streak", round.answers) : 0;
   const newBest = last?.correct === true && ticket.best !== null && ticket.best >= 1 && streak === ticket.best + 1;
 
+  // What the live regions say (the status, and in Timed the card announcer). While the leave sheet is open
+  // <main> is inert and its live regions are not exposed, so a change under the sheet (time running out, the
+  // next Timed card) would never be heard: they keep what they said when the sheet opened, and take what
+  // they say now SPOKEN_RELEASE_MS after it has closed. A browser builds its accessibility tree once per
+  // rendered frame, so a change made in the same frame as the end of inert reaches it as a region that
+  // already holds the new text, which is never announced; the wait puts several frames between the two.
+  const spoken = {
+    status: timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : "",
+    card: timed ? timedCardText(round) : "",
+  };
+  const [heldSpoken, setHeldSpoken] = useState<typeof spoken | null>(null);
+  useEffect(() => {
+    if (confirming) return;
+    const timer = setTimeout(() => setHeldSpoken(null), SPOKEN_RELEASE_MS);
+    return () => clearTimeout(timer);
+  }, [confirming]);
+  const said = heldSpoken ?? spoken;
+
   // The Timed clock: ticks and page visibility reach the round until time is up, the round is left or the
   // screen goes away. It keeps running while the "Leave round?" sheet is open.
   useClock(timed && !decided, dispatch, services);
@@ -338,11 +376,13 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // page), only as far up as lets the statement's text end above True and False, which hide what lies under
   // them; a text taller than the stage starts at its top. In Timed only the first card takes focus; later
   // ones are announced by the card announcer (a live region that stays mounted, see timedCardText), so focus
-  // stays on the pill the player used. Timed glides back up from the stamped stub (below) while the new card
-  // is dealt.
+  // stays on the pill the player used. A player who answers by key or by swipe has focus on the first card's
+  // statement, which leaves with that card: focus goes to the ticket (it stays mounted and is a stop in the
+  // Tab order) rather than falling to the page for the rest of the minute. Timed glides back up from the
+  // stamped stub (below) while the new card is dealt.
   useEffect(() => {
     if (round.phase !== "question") return;
-    shownAt.current = now();
+    shownAt.current = monotonic();
     const scroller = scrollerRef.current;
     const statement = statementRef.current;
     if (scroller) {
@@ -357,8 +397,13 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
           : 0;
       scroller.scrollTo?.({ top, behavior: timed && !reducedRef.current ? "smooth" : "instant" });
     }
-    if (!timed || round.index === 0) statement?.focus({ preventScroll: true });
-  }, [round.cards, round.index, round.phase, now, timed]);
+    if (!timed || round.index === 0) {
+      statement?.focus({ preventScroll: true });
+    } else {
+      const focused = document.activeElement;
+      if (!focused || focused === document.body || focused.closest("[data-statement]")) scroller?.focus({ preventScroll: true });
+    }
+  }, [round.cards, round.index, round.phase, monotonic, timed]);
 
   // Timed: when the stub is stamped (an answer, or time up), the ticket scrolls to its end, which is the stub.
   // On a short phone (320 by 568) the stub lies under the action row while the card is a question; this shows
@@ -395,9 +440,9 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // Time is up: note the moment (See results counts its arrival from it) and whether True or False had focus.
   useEffect(() => {
     if (!timeUp) return;
-    timeUpAt.current = now();
+    timeUpAt.current = monotonic();
     focusedAtTimeUp.current = answerRowFocused.current;
-  }, [timeUp, now]);
+  }, [timeUp, monotonic]);
 
   // The action row arrives 420 ms after the answer (or after time ran out) and starts to take taps. Focus
   // moves to it then, or at once with reduced motion (Enter on it still waits for the arrival, see next
@@ -426,25 +471,26 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
 
   // The one answer path: swipe, buttons and keys all come here. Ignored outside the question phase,
   // while the dialog is open, and for 250 ms after a card appears (so a double tap on "Next card"
-  // cannot answer the next card).
+  // cannot answer the next card). The guards run on the monotonic clock; the answer keeps the wall clock's
+  // time, which the card history stores.
   const answer = useCallback(
     (value: boolean) => {
       if (round.phase !== "question" || confirming) return;
-      const at = now();
+      const at = monotonic();
       if (at - shownAt.current < SWIPE.settleMs) return;
-      dispatch({ type: "answer", value, at });
+      if (answeredAt.current?.index !== round.index) answeredAt.current = { index: round.index, at };
+      dispatch({ type: "answer", value, at: now() });
     },
-    [round.phase, confirming, now, dispatch],
+    [round.phase, round.index, confirming, now, monotonic, dispatch],
   );
 
   // The action (the button and Enter) is ignored until it has arrived, timed on the same clock as the answer
   // (or as the moment time ran out).
-  const answeredAt = last?.at;
   const next = useCallback(() => {
-    const since = answeredAt ?? (timeUp ? timeUpAt.current : null);
-    if (since === null || now() - since < NEXT_ARRIVES_MS) return;
+    const since = answered ? (answeredAt.current?.at ?? null) : timeUp ? timeUpAt.current : null;
+    if (since === null || monotonic() - since < NEXT_ARRIVES_MS) return;
     dispatch({ type: "next" });
-  }, [answeredAt, timeUp, now, dispatch]);
+  }, [answered, timeUp, monotonic, dispatch]);
 
   // A held key: the system repeats its keydown, and a repeat is not a new press. It is cancelled before
   // anything sees it (capture on window), so it neither answers a card nor presses the focused True, False or
@@ -463,7 +509,11 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // The close control (and Escape): before the first answer it leaves at once, after it it asks once.
   const requestLeave = () => {
     if (round.answers.length === 0) onLeave();
-    else setConfirming(true);
+    else {
+      // A sheet opened again before the regions were released keeps what they last said, not what is new.
+      setHeldSpoken(said);
+      setConfirming(true);
+    }
   };
   const requestLeaveRef = useRef(requestLeave);
   useLayoutEffect(() => {
@@ -521,7 +571,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const swipe = useSwipe<HTMLDivElement>({
     enabled: round.phase === "question" && !confirming,
     cardShownAt: () => shownAt.current,
-    now,
+    now: monotonic,
     onSwipe: answer,
   });
 
@@ -556,6 +606,8 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     <>
       <main className="flex min-h-0 flex-1 flex-col" inert={confirming}>
         <SkyBackdrop />
+        {/* The page's heading, for those who move by headings: the route and the class, as on the ticket. */}
+        <h1 className="sr-only">{`${ticket.deckName}, ${ticket.sectionName}: ${ticket.modeLabel} round`}</h1>
         <Header onLeave={requestLeave} closeRef={closeRef}>
           {round.mode === "streak" ? (
             <StreakPath streak={streak} best={ticket.best} answered={last ? (last.correct ? "correct" : "wrong") : null} />
@@ -690,18 +742,20 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
           </AnimatePresence>
         </div>
         <p role="status" className="sr-only">
-          {timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : ""}
+          {said.status}
         </p>
         {/* Timed: each card is a new element (the swap keys it), and a live region that arrives with its text
             is not reliably read, so new cards are announced from here, outside the card. */}
         {timed ? (
           <p data-card-announcer="" aria-live="polite" aria-atomic="true" className="sr-only">
-            {timedCardText(round)}
+            {said.card}
           </p>
         ) : null}
       </main>
       <LeaveDialog
         open={confirming}
+        decided={decided}
+        now={monotonic}
         onStay={() => {
           restoreFocus.current = true;
           setConfirming(false);

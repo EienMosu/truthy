@@ -24,7 +24,7 @@ Truthy is a mobile-first web game. The player picks what to study by filling in 
 | Decks | Static JSON built from the repository, no API key, no runtime server | approved recommendation |
 | Repository | One repository, public | user |
 | Accidental swipes | Prevention rules only in v1. A "Mis-swiped?" flag is reconsidered after the first play test | user |
-| Leaving a round | One confirmation once a card has been answered; the round sets no record; card history is kept | approved recommendation |
+| Leaving a round | One confirmation once a card has been answered; a round left before its deciding answer sets no record, one left after it (or at time up) is recorded as opening its result would record it; card history is kept | approved recommendation, the recording after the deciding answer an owner decision |
 | Timed mode and hidden tab | The clock pauses while the page is hidden | approved recommendation |
 | Timed mode, card on screen at time up | Not counted, not recorded as wrong | approved recommendation |
 | three.js | Only as an optional web-only signature moment, after the core ships | approved recommendation |
@@ -214,7 +214,7 @@ Every mode ends on a result screen with the mode's score, the comparison with th
 
 ### Leaving a round
 
-The close control asks for one confirmation once at least one card has been answered; before the first answer it leaves at once, because there is nothing to lose. A round that is left sets no record. This holds in every state of a round: after the deciding answer or at time up the round is still left without a record, and only "See results" finishes it. Answers already given stay in the card history, also when the player leaves with the browser or system back gesture. A reload in the middle of a round does not resume it: a new round is dealt, the round that was reloaded sets no record, and the answers given before the reload stay in the card history. The same holds when the page goes away in the middle of a round (the tab is closed, the player goes to another site).
+The close control asks for one confirmation once at least one card has been answered; before the first answer it leaves at once, because there is nothing to lose. A round that is left before its deciding answer sets no record. A round that is left after it, or at time up, before its result is opened, is recorded exactly as opening the result would record it: its score, its record and its answers. Answers already given stay in the card history, also when the player leaves with the browser or system back gesture. A reload in the middle of a round does not resume it: a new round is dealt, the round that was reloaded sets no record, and the answers given before the reload stay in the card history. The same holds when the page goes away in the middle of a round (the tab is closed, the player goes to another site).
 
 ## 7. Progress
 
