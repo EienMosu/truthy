@@ -39,7 +39,7 @@ test("progress survives a reload", async ({ page }) => {
   await atHome(page);
   await page.getByRole("button", { name: CONTINUE_CLF_SECURITY }).click();
   await page.getByRole("button", { name: "Back to classes" }).click();
-  await expect(page.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 9 of 10." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Your best: 9 of 10." })).toBeVisible();
 });
 
 const GARBAGE = ["{not json", "null", '{"version":1,"cards":"x","records":[],"last":7}', '{"version":2}'];

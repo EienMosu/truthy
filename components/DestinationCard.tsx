@@ -25,7 +25,7 @@ export interface DestinationCardProps {
   code?: boolean;
   /** Place cards: the mono line under the name ("3 decks"). Unavailable cards: the reason ("No decks yet"). */
   sub?: string;
-  /** Deck, section and class cards: the line under the name ("Cloud Practitioner", "10 cards, score at the end."). */
+  /** Deck, section and class cards: the line under the name ("Cloud Practitioner", "Correct answers out of 10 cards."). */
   detail?: string;
   /** Deck cards: the share of the deck seen, in whole percent. 0 reads "Not started". */
   seenPercent?: number;

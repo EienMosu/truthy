@@ -125,7 +125,7 @@ for (const gap of [100, 200]) {
     await doubleTap(page, page.getByRole("button", { name: "Choose another route" }), gap);
     await page.waitForTimeout(600);
     await expect(stepTitle(page)).toHaveText("Choose an area");
-    await expect(page.getByRole("button", { name: /^Continue: Cloud Practitioner, Security and compliance, Streak\./ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Continue: AWS Cloud Practitioner, Security and compliance, Streak\./ })).toBeVisible();
   });
 }
 

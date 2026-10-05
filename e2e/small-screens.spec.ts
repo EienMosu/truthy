@@ -53,7 +53,7 @@ async function expectReadableContinueLine(
     { route: { deckId: CLF_ID, sectionId: "SEC" }, mode: last.mode, score: last.score, total: last.total },
   );
   await page.goto("/");
-  const line = page.getByRole("button", { name: `Continue: Cloud Practitioner, Security and compliance, ${last.name}. Last score ${last.text}.` });
+  const line = page.getByRole("button", { name: `Continue: AWS Cloud Practitioner, Security and compliance, ${last.name}. Last score ${last.text}.` });
   await expect(line).toBeVisible();
   await expect(line.locator("em")).toHaveText(last.text);
   await page.waitForTimeout(SETTLE_MS);
@@ -190,18 +190,20 @@ test.describe("on a 320 by 568 screen", () => {
   }
 
   // The continue line after a round of each class: the line stays inside the page and inside its 60 px
-  // row, the route and the class are shown whole, and the score, which no longer fits beside them at this
-  // width, is either shown whole or not at all, never cut and never left behind as a stray "·".
+  // row, and the route, the class and the score are each shown whole: the score, which no longer fits beside
+  // them at this width, takes the second line, never cut and never left behind as a stray "·" (review
+  // finding U61).
   for (const last of LAST_ROUNDS) {
     test(`the continue line after a ${last.name} round fits the width`, async ({ page }) => {
-      await expectReadableContinueLine(page, last, 320, "whole or hidden");
+      await expectReadableContinueLine(page, last, 320, "whole");
     });
   }
 });
 
-// The continue line on the phone the design is drawn for (390) and on a common smaller one (360): the whole
-// line is readable, the route, the class and the last score, each shown whole.
-for (const width of [360, 390] as const) {
+// The continue line on the phone the design is drawn for (390), on a common smaller one (360) and at 340 (the
+// review found the score left out on every screen under 344): the whole line is readable, the route, the
+// class and the last score, each shown whole.
+for (const width of [340, 360, 390] as const) {
   test.describe(`the continue line on a ${width} px screen`, () => {
     test.use({ viewport: { width, height: 780 } });
 
@@ -880,7 +882,7 @@ for (const viewport of [
       );
       await openHome(page);
       await page.waitForTimeout(SETTLE_MS);
-      await tapLikeAPlayer(page, page.getByRole("button", { name: /^Continue: Cloud Practitioner, Security and compliance, Classic\./ }));
+      await tapLikeAPlayer(page, page.getByRole("button", { name: /^Continue: AWS Cloud Practitioner, Security and compliance, Classic\./ }));
       await expect(page.locator("[data-step]:not([inert]) h2")).toHaveText("Your pass is ready");
       await page.waitForTimeout(SETTLE_MS);
       await tapLikeAPlayer(page, page.getByRole("button", { name: "Start round" }));

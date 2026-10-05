@@ -156,7 +156,7 @@ export function canShow(index: DeckIndex, step: Step, choice: Choice): boolean {
 
 // ---------- history entries ----------
 
-interface Entry {
+export interface Entry {
   step: Step;
   choice: Choice;
 }
@@ -165,6 +165,17 @@ const HISTORY_KEY = "truthyStart";
 
 function entryState(entry: Entry): Record<string, unknown> {
   return { [HISTORY_KEY]: entry };
+}
+
+/**
+ * How many of the flow's entries lie behind `entry`: one per step on its path. Whether the path has the
+ * section step comes from the index; for a deck it no longer has, only a chosen section says so, and a whole
+ * deck counts as none, so a stale entry never moves the browser back past the flow's first entry.
+ */
+export function entriesBehind(index: DeckIndex, entry: Entry): number {
+  const deck = resolve(index, entry.choice).deck;
+  const hasSections = entry.step === 4 || (deck ? deck.sections.length > 0 : entry.choice.sectionId !== undefined && entry.choice.sectionId !== WHOLE_DECK);
+  return pathTo(entry.step, hasSections).length - 1;
 }
 
 function readEntry(state: unknown): Entry | null {
@@ -195,6 +206,11 @@ const PANEL: Variants = {
 const ITEM: Variants = {
   hidden: (dir: Direction) => ({ opacity: 0, y: 24 * dir }),
   shown: { opacity: 1, y: 0, transition: { duration: 0.24, ease: EASE } },
+};
+/** The step title is an item too, and on its way out it fades within the panel's 140 ms, in 80 (design system 7). */
+const TITLE: Variants = {
+  ...ITEM,
+  gone: { opacity: 0, transition: { duration: 0.08, ease: EASE_OUT } },
 };
 /** Reduced motion: the old step fades out, then the new one fades in. Text never overlaps. */
 const PANEL_REDUCED: Variants = {
@@ -358,9 +374,13 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   });
 
   // History: a reload starts at step 1 (the current entry is overwritten); back and forward restore an entry.
+  // The entry a reload overwrote is kept until the index is known, to take out the entries behind it (below).
+  // Read once: React runs this effect twice in development, and the second run finds the entry overwritten.
+  const reloadedOn = useRef<Entry | null | undefined>(undefined);
   useEffect(() => {
     const history = services.history();
     if (!history) return;
+    if (reloadedOn.current === undefined) reloadedOn.current = readEntry(history.state);
     history.replace(entryState({ step: 1, choice: {} }));
     return history.listen((state) => {
       const entry = readEntry(state);
@@ -378,6 +398,31 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       setView((v) => ({ ...entry, dir, focusId: dir < 0 && focusKey ? current.choice[focusKey] : undefined, seq: v.seq + 1 }));
     });
   }, [services]);
+
+  // A reload in the middle of the flow leaves the entries of the steps before it in the history, each with
+  // its old choices: back from step 1 would bring an old pass back instead of leaving the site (review
+  // finding U27). Once the index says which steps lay on that path, the browser moves back to the flow's
+  // first entry, as Start round does; the entries left ahead are dropped by the next step. While it moves,
+  // the flow takes no step forward, which would land among the entries being left.
+  const rewinding = useRef(false);
+  useEffect(() => {
+    const entry = reloadedOn.current;
+    const history = services.history();
+    if (!index || !entry || !history) return;
+    reloadedOn.current = null;
+    const behind = entriesBehind(index, entry);
+    if (behind === 0) return;
+    rewinding.current = true;
+    const arrived = () => {
+      stop();
+      clearTimeout(timer);
+      rewinding.current = false;
+    };
+    const stop = history.listen(arrived);
+    // A browser that never reports the move must not hold the flow.
+    const timer = setTimeout(arrived, 1000);
+    history.go(-behind);
+  }, [index, services]);
 
   // The settle time, as on the play screen (spec section 8): a step change starts it, and so do step 1's
   // options when they first appear (the index is loaded). Arriving from /play, the continue line appears
@@ -450,7 +495,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
 
   /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */
   function forward(step: Step, choice: Choice, field: PassFieldName, source?: HTMLElement | null) {
-    if (!settled()) return;
+    if (!settled() || rewinding.current) return;
     const name = source?.querySelector<HTMLElement>("[data-card-name]");
     const frame = layerRef.current?.offsetParent;
     if (!reduced && name && frame) {
@@ -503,7 +548,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   }, []);
 
   function continueLast() {
-    if (!index || !progress || !settled()) return;
+    if (!index || !progress || !settled() || rewinding.current) return;
     const target = continueTarget(index, progress);
     if (!target) return;
     const choice: Choice = {
@@ -536,7 +581,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
 
   function startRound() {
     const { deckId, sectionId, mode } = view.choice;
-    if (boarding || !deckId || !sectionId || !mode || !settled()) return;
+    if (boarding || !deckId || !sectionId || !mode || !settled() || rewinding.current) return;
     savePending({ route: { deckId, sectionId }, mode }, services.sessionStorage());
     latest.current = { ...latest.current, boarding: true }; // the move back below is ours, not the player's
     setBoarding(true);
@@ -572,7 +617,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   useLayoutEffect(() => {
     if (!travel || travel.to) return;
     const frame = layerRef.current?.offsetParent;
-    const target = mainRef.current?.querySelector<HTMLElement>(`[data-trip] [data-pass-value="${travel.field}"]`);
+    // The new layout's field: the block of the old layout, fading out over it, holds the same fields.
+    const target = mainRef.current?.querySelector<HTMLElement>(`[data-trip] [data-pass-block]:not([data-leaving]) [data-pass-value="${travel.field}"]`);
     const box = target && frame ? layoutBox(target, frame) : null;
     // Only a name that keeps its typeface travels; the class becomes Mono on the ready pass and fades in with it.
     if (!target || !box || getComputedStyle(target).fontFamily !== travel.from.fontFamily) {
@@ -678,7 +724,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
             <motion.div key="continue" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
               <ContinueLine
                 deckCode={returning.found.deck.code}
-                deckTitle={returning.found.deck.title}
+                deckName={deckPassName(returning.found.platform, returning.found.deck)}
                 sectionCode={returning.found.section?.id ?? WHOLE_DECK}
                 sectionTitle={returning.found.section?.title ?? "Whole deck"}
                 modeLabel={modeInfo(returning.mode).name}
@@ -861,7 +907,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
         exit="gone"
         custom={dir}
       >
-        <motion.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={item} custom={dir}>
+        <motion.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={reduced ? undefined : TITLE} custom={dir}>
           {STEP_TITLE[step]}
         </motion.h2>
         {/* The list scrolls when it is taller than the screen; its margin and padding leave room for the focus ring.

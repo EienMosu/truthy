@@ -38,7 +38,7 @@ test("a returning player continues to the ready pass, and each round is compared
   // One step back shows the record on the Classic card; choosing it again returns to the ready pass.
   await page.getByRole("button", { name: "Back to classes" }).click();
   await atStep(page, "Choose how to play");
-  await page.getByRole("button", { name: "Classic. 10 cards, score at the end. Your best: 7 of 10." }).click();
+  await page.getByRole("button", { name: "Classic. Correct answers out of 10 cards. Your best: 7 of 10." }).click();
   await atStep(page, "Your pass is ready");
 
   // Round 2: 10 of 10 beats the record.

@@ -5,10 +5,10 @@ import { MODES, type Mode } from "@/src/content/play";
 describe("MODE_TABLE", () => {
   it("lists the four classes in the order of the class step, with their exact copy", () => {
     expect(MODE_TABLE.map((m) => [m.id, m.name, m.description, m.unit])).toEqual([
-      ["classic", "Classic", "10 cards, score at the end.", "of 10"],
-      ["streak", "Streak", "Keep going until the first wrong answer.", "in a row"],
-      ["lives", "Three lives", "The round ends on the third wrong answer.", "cards"],
-      ["timed", "Timed", "60 seconds, as many cards as you can.", "correct"],
+      ["classic", "Classic", "Correct answers out of 10 cards.", "of 10"],
+      ["streak", "Streak", "Correct answers in a row, until the first wrong one.", "in a row"],
+      ["lives", "Three lives", "Cards answered until the third wrong one.", "cards"],
+      ["timed", "Timed", "Correct answers in one minute, wrong ones cost nothing.", "correct"],
     ]);
   });
 

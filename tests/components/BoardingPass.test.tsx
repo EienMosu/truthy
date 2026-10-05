@@ -79,8 +79,9 @@ describe("PassStatement", () => {
 
   it("shows appliesTo as one small line above the statement when it is set", () => {
     const { container } = render(<PassStatement appliesTo="Next.js 16">The cache is opt-in.</PassStatement>);
-    const lines = [...container.querySelectorAll("[data-statement] p")].map((line) => line.textContent);
-    expect(lines).toEqual(["Applies to Next.js 16", "The cache is opt-in."]);
+    const lines = [...container.querySelectorAll("[data-statement] p")].map((line) => line.querySelector("[aria-hidden]")?.textContent ?? line.textContent);
+    expect(lines).toEqual(["Next.js 16", "The cache is opt-in."]);
+    expect(screen.getByText("Applies to Next.js 16").className).toContain("sr-only");
   });
 
   it("shows no appliesTo line when it is empty", () => {

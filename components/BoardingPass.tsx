@@ -70,8 +70,16 @@ const FIELD_LABEL =
   "font-(family-name:--type-field-label-family) text-(length:--type-field-label-size) font-(--type-field-label-weight) " +
   "leading-(--type-field-label-line-height) tracking-(--type-field-label-letter-spacing) text-(--color-ink-muted)";
 const FIELD_VALUE =
-  "m-0 mt-(--space-2) font-(family-name:--type-field-value-family) text-(length:--type-field-value-size) " +
+  "m-0 mt-(--space-2) whitespace-nowrap font-(family-name:--type-field-value-family) text-(length:--type-field-value-size) " +
   "font-(--type-field-value-weight) leading-(--type-field-value-line-height) tracking-(--type-field-value-letter-spacing)";
+/**
+ * The columns of the field grid: 1.1 / 1 / 1 of the width (design system 5.2), but never narrower than a value
+ * on one line. A value is never split: on a 320 px phone "01 / 10" and "Three lives" broke over two lines,
+ * and "Three lives" did at 360 too (review finding U29); a column that needs more takes it from the others.
+ * The ready pass of the start flow uses the same columns, so its fields stay in place when it becomes the ticket.
+ */
+export const FIELD_COLUMNS = "grid-cols-[minmax(max-content,1.1fr)_minmax(max-content,1fr)_minmax(max-content,1fr)]";
+
 const LEG_CODE =
   "block font-(family-name:--type-leg-code-family) text-(length:--type-leg-code-size) font-(--type-leg-code-weight) " +
   "leading-(--type-leg-code-line-height) tracking-(--type-leg-code-letter-spacing)";
@@ -123,7 +131,7 @@ export function BoardingPass({ from, to, fields, children, lower, jolt = false, 
             <span className={legName}>{to.name}</span>
           </div>
         </div>
-        <dl className="mx-(--size-ticket-inset) my-0 grid grid-cols-[1.1fr_1fr_1fr] border-y-(length:--stroke-rule) border-(--color-rule)">
+        <dl className={`mx-(--size-ticket-inset) my-0 grid ${FIELD_COLUMNS} border-y-(length:--stroke-rule) border-(--color-rule)`}>
           {fields.map((field, i) => (
             <div
               key={field.label}
@@ -186,9 +194,19 @@ export function PassStatement({ children, appliesTo, ref, id, muted = false, liv
       aria-live={live ? "polite" : undefined}
       className="flex min-h-(--size-statement-min) flex-col justify-center px-(--size-ticket-inset) pt-(--space-18) pb-(--space-24) outline-none"
     >
+      {/*
+        The line shows the qualifier alone, as the spec's example does ("Next.js 16 with cacheComponents: true"):
+        with "Applies to " in front it took two lines on a 390 px phone and three at 320 (review finding U95).
+        A screen reader hears the whole phrase. It is never cut, since its end can decide the answer
+        ("cacheComponents: false"); a qualifier still longer than the line wraps into lines of even length.
+      */}
       {appliesTo ? (
-        <p className="m-0 mb-(--space-6) font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) leading-(--type-mono-data-line-height) font-(--type-mono-data-weight) text-(--color-ink-muted)">
-          Applies to {appliesTo}
+        <p
+          data-applies-to=""
+          className="m-0 mb-(--space-6) font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) leading-(--type-mono-data-line-height) font-(--type-mono-data-weight) text-balance text-(--color-ink-muted)"
+        >
+          <span className="sr-only">{`Applies to ${appliesTo}`}</span>
+          <span aria-hidden="true">{appliesTo}</span>
         </p>
       ) : null}
       <p className={`m-0 wrap-break-word font-(family-name:--type-card-statement-family) text-(length:--type-card-statement-size) leading-(--type-card-statement-line-height) font-(--type-card-statement-weight) tracking-(--type-card-statement-letter-spacing) ${muted ? "text-(--color-ink-muted)" : "text-(--color-ink)"}`}>

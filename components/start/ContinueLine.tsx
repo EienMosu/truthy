@@ -7,8 +7,11 @@ import { ChevronIcon } from "@/components/icons";
 export interface ContinueLineProps {
   /** "CLF". */
   deckCode: string;
-  /** "Cloud Practitioner", for the accessible name. */
-  deckTitle: string;
+  /**
+   * The deck's name on the pass ("AWS Cloud Practitioner", "React Fundamentals"; deckPassName), on the line and
+   * in the accessible name. The bare deck title would not do: six decks are titled "Fundamentals".
+   */
+  deckName: string;
   /** "SEC", or "ALL" for the whole deck. */
   sectionCode: string;
   /** "Security and compliance", or "Whole deck". */
@@ -21,10 +24,10 @@ export interface ContinueLineProps {
   ref?: Ref<HTMLButtonElement>;
 }
 
-/** "Continue: Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." */
-export function continueLabel({ deckTitle, sectionTitle, modeLabel, lastScore }: Omit<ContinueLineProps, "onContinue" | "ref" | "deckCode" | "sectionCode">): string {
+/** "Continue: AWS Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10." */
+export function continueLabel({ deckName, sectionTitle, modeLabel, lastScore }: Omit<ContinueLineProps, "onContinue" | "ref" | "deckCode" | "sectionCode">): string {
   const score = lastScore ? ` Last score ${lastScore}.` : "";
-  return `Continue: ${deckTitle}, ${sectionTitle}, ${modeLabel}.${score}`;
+  return `Continue: ${deckName}, ${sectionTitle}, ${modeLabel}.${score}`;
 }
 
 /** " · " in a 3ch box, the width the mono line pulls itself to the left by. */
@@ -37,7 +40,7 @@ function Separator() {
 }
 
 export function ContinueLine(props: ContinueLineProps) {
-  const { deckCode, sectionCode, modeLabel, lastScore, onContinue, ref } = props;
+  const { deckCode, deckName, sectionCode, modeLabel, lastScore, onContinue, ref } = props;
   return (
     <button
       ref={ref}
@@ -52,21 +55,27 @@ export function ContinueLine(props: ContinueLineProps) {
       <span aria-hidden="true" className="grid size-(--size-continue-icon) flex-none place-items-center rounded-full bg-(--color-surface-raised)">
         <LogoMark width={26} />
       </span>
-      <span aria-hidden="true" className="@container flex min-w-0 flex-1 flex-col gap-[3px]">
-        <span className="font-(family-name:--type-emphasis-family) text-(length:--type-emphasis-size) font-(--type-emphasis-weight) leading-[1.2] tracking-(--type-emphasis-letter-spacing)">
-          Continue where you left off
+      <span aria-hidden="true" className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        {/*
+          The deck's name on the pass, on one line: a name longer than the column ends in an ellipsis (the
+          accessible name has all of it). One line leaves room in the 60 px row for two lines below it, so the
+          last score always has a line to go to, on a 320 px phone too (review finding U61).
+        */}
+        <span
+          data-continue="deck"
+          className="truncate font-(family-name:--type-emphasis-family) text-(length:--type-emphasis-size) font-(--type-emphasis-weight) leading-[1.2] tracking-(--type-emphasis-letter-spacing)"
+        >
+          {deckName}
         </span>
         {/*
           The mono line is three parts that are never cut: the route, the class and the last score. A part
-          that does not fit after the others moves to the next line, and the line box shows at most two lines
-          (one while the title above needs two, below a 208 px column: the title is 201 px wide), so a part
-          that would not fit in the 60 px row is left out whole. The accessible name always has all of it.
+          that does not fit after the others moves to the next line, and the line box shows at most two lines.
           Each separator sits in the 3ch before its part; the row is pulled 3ch to the left and clipped, so
           the separator of a part that starts a line is outside the box and never shows as a stray "·".
         */}
         <span
           data-continue="line"
-          className="block max-h-[1lh] overflow-hidden font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) font-(--type-mono-data-weight) leading-(--type-mono-data-line-height) text-(--color-ink-muted) @min-[208px]:max-h-[2lh]"
+          className="block max-h-[2lh] overflow-hidden font-(family-name:--type-mono-data-family) text-(length:--type-mono-data-size) font-(--type-mono-data-weight) leading-(--type-mono-data-line-height) text-(--color-ink-muted)"
         >
           <span className="-ml-[3ch] flex flex-wrap whitespace-nowrap">
             <span data-continue="route" className="ml-[3ch] min-w-0 overflow-hidden text-ellipsis">

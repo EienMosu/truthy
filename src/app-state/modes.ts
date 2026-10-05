@@ -7,7 +7,10 @@ export interface ModeInfo {
   id: Mode;
   /** The class name: on the class card, the pass, the ticket and the continue line. */
   name: string;
-  /** The rule in one sentence: on the class card and the ready pass. */
+  /**
+   * What the class scores, in one sentence: on the class card and the ready pass. It names what counts, so a
+   * player knows it before a first round puts a best and its unit on the class card (review finding U140).
+   */
   description: string;
   /** The unit of a best on the class card: "of 10", "in a row", "cards", "correct". */
   unit: string;
@@ -16,10 +19,10 @@ export interface ModeInfo {
 }
 
 export const MODE_TABLE: readonly ModeInfo[] = [
-  { id: "classic", name: "Classic", description: "10 cards, score at the end.", unit: "of 10", offered: true },
-  { id: "streak", name: "Streak", description: "Keep going until the first wrong answer.", unit: "in a row", offered: true },
-  { id: "lives", name: "Three lives", description: "The round ends on the third wrong answer.", unit: "cards", offered: true },
-  { id: "timed", name: "Timed", description: "60 seconds, as many cards as you can.", unit: "correct", offered: true },
+  { id: "classic", name: "Classic", description: "Correct answers out of 10 cards.", unit: "of 10", offered: true },
+  { id: "streak", name: "Streak", description: "Correct answers in a row, until the first wrong one.", unit: "in a row", offered: true },
+  { id: "lives", name: "Three lives", description: "Cards answered until the third wrong one.", unit: "cards", offered: true },
+  { id: "timed", name: "Timed", description: "Correct answers in one minute, wrong ones cost nothing.", unit: "correct", offered: true },
 ];
 
 /** The row of the mode. Throws for a mode the table does not know. */
