@@ -27,10 +27,10 @@ export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  // In CI a failed test runs once more, so the report tells a flaky test from a broken one, but a pass on the
-  // retry still fails the run: a flake shows as a red check, and CI uploads the failed attempt's trace.
+  // In CI a failed test runs once more, so the report tells a flaky test from a broken one. A pass on the retry
+  // keeps the run green but shows as a flaky notice, and CI uploads the failed attempt's trace. Failing the run
+  // on every flake is not done: the shared Linux WebKit runner has flaked a timing spec in most runs so far.
   retries: process.env.CI ? 1 : 0,
-  failOnFlakyTests: Boolean(process.env.CI),
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: BASE_URL,

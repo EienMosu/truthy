@@ -2,16 +2,21 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
+  WITHIN_ARRIVAL_MS,
+  WITHIN_SETTLE_MS,
   answerCard,
   centreOf,
   chooseRoute,
   deckAnswers,
   expectUnanswered,
   inClass,
+  installTapClock,
   openHome,
+  quickDoubleTap,
   seeResults,
   startRound,
   stepTitle,
+  tapTwice,
   verdict,
   verdictFor,
   waitForCard,
@@ -19,61 +24,9 @@ import {
 
 test.use({ reducedMotion: "no-preference" });
 
-// Review finding U138: the two taps of a double tap are two calls from the test, and on a busy machine they can
-// land further apart than the spec waits between them. A second tap after the 250 ms settle time is a fair press
-// on whatever has arrived, not the double tap these specs are about, so the page times the taps itself and an
-// attempt whose taps were too far apart is played again from the start. Each spec names how far apart its taps
-// may be: 50 ms short of the guard it is about (the 250 ms settle time, or Next card's 420 ms arrival).
-const WITHIN_SETTLE_MS = 200;
-const WITHIN_ARRIVAL_MS = 370;
-
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    const taps: number[] = [];
-    Object.assign(window, { __taps: taps });
-    window.addEventListener("touchstart", (event) => taps.push(event.timeStamp), { capture: true });
-  });
+  await installTapClock(page);
 });
-
-/** Taps twice at (x, y), `gap` ms apart as far as the test can ask, and returns how far apart the page saw them. */
-async function tapTwice(page: Page, x: number, y: number, gap: number): Promise<number> {
-  await page.evaluate(() => (window as unknown as { __taps: number[] }).__taps.splice(0));
-  await page.touchscreen.tap(x, y);
-  await page.waitForTimeout(gap);
-  await page.touchscreen.tap(x, y);
-  const taps = await page.evaluate(() => [...(window as unknown as { __taps: number[] }).__taps]);
-  expect(taps).toHaveLength(2);
-  return (taps[1] ?? 0) - (taps[0] ?? 0);
-}
-
-/**
- * Runs `attempt` (which sets the scene and double taps, returning tapTwice's measure) until its taps were at most
- * `within` ms apart, three times at most, then `check`. Each further attempt starts from an empty device.
- */
-async function quickDoubleTap(
-  page: Page,
-  within: number,
-  attempt: () => Promise<number>,
-  check: () => Promise<void>,
-): Promise<void> {
-  const seen: number[] = [];
-  for (let i = 0; i < 3; i += 1) {
-    if (i > 0) {
-      await page.evaluate(() => {
-        localStorage.clear();
-        sessionStorage.clear();
-      });
-    }
-    const apart = Math.round(await attempt());
-    if (apart <= within) {
-      await check();
-      return;
-    }
-    seen.push(apart);
-    test.info().annotations.push({ type: "slow double tap", description: `${apart} ms apart, played again` });
-  }
-  throw new Error(`The two taps were never within ${within} ms of each other: ${seen.join(", ")} ms`);
-}
 
 // Spec section 8: input is ignored for 250 ms after a new card appears. "Next card" and the True button
 // share the same spot, so a quick double tap on "Next card" must not answer the next card unseen.

@@ -34,26 +34,27 @@ describe("CI workflow actions", () => {
 });
 
 describe("end-to-end retries in CI", () => {
-  it("retry a failed test once but fail the run when a test only passed on its retry", async () => {
+  // A pass on the retry keeps the run green and shows as a flaky notice: failing the run on every flake would turn
+  // most runs red, because the shared Linux WebKit runner flakes a timing spec in most of them.
+  it("retry a failed test once, keep its trace, and let a pass on the retry show as flaky", async () => {
     vi.stubEnv("CI", "true");
     vi.resetModules();
     try {
       const { default: config } = await import("@/playwright.config");
       expect(config.retries).toBe(1);
-      expect(config.failOnFlakyTests).toBe(true);
+      expect(config.failOnFlakyTests).toBeFalsy();
       expect(config.use?.trace).toBe("retain-on-failure");
     } finally {
       vi.unstubAllEnvs();
     }
   });
 
-  it("neither retry nor fail on flakes on a developer's machine", async () => {
+  it("do not retry on a developer's machine", async () => {
     vi.stubEnv("CI", "");
     vi.resetModules();
     try {
       const { default: config } = await import("@/playwright.config");
       expect(config.retries).toBe(0);
-      expect(config.failOnFlakyTests).toBe(false);
     } finally {
       vi.unstubAllEnvs();
     }

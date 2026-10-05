@@ -2,16 +2,20 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
+  WITHIN_ARRIVAL_MS,
   answerCard,
   atStep,
   chooseRoute,
   deckAnswers,
   expectMissed,
   inClass,
+  installTapClock,
   openHome,
+  quickDoubleTap,
   seeResults,
   startRound,
   stepTitle,
+  tapTwice,
   verdict,
   verdictFor,
   waitForQuestion,
@@ -128,29 +132,39 @@ test("passing the best shows New best on the slip, then on the result, and the s
 
 // "See results" comes in where True and False were, so a second tap on the answer that ends the Streak must
 // not reach it before it has arrived: the verdict stays on screen. A tap once it has arrived opens the result.
+// The page times the two taps, and an attempt whose taps landed past the 420 ms arrival is played again
+// (quickDoubleTap, review finding U138).
 for (const gap of [150, 300]) {
   test(`a double tap on the wrong answer keeps the verdict (taps ${gap} ms apart)`, async ({ page }) => {
-    const answers = await startStreak(page);
-    const { statement, truth } = await waitForQuestion(page, answers);
-    const wrongButton = page.getByRole("button", { name: truth ? "False" : "True", exact: true });
-    const box = await wrongButton.boundingBox();
-    if (box === null) throw new Error("The wrong answer is not on screen");
-    const x = box.x + box.width / 2;
-    const y = box.y + box.height / 2;
+    await installTapClock(page);
+    let scene: { statement: string; truth: boolean; x: number; y: number } | null = null;
+    await quickDoubleTap(
+      page,
+      WITHIN_ARRIVAL_MS,
+      async () => {
+        const answers = await startStreak(page);
+        const { statement, truth } = await waitForQuestion(page, answers);
+        const wrongButton = page.getByRole("button", { name: truth ? "False" : "True", exact: true });
+        const box = await wrongButton.boundingBox();
+        if (box === null) throw new Error("The wrong answer is not on screen");
+        scene = { statement, truth, x: box.x + box.width / 2, y: box.y + box.height / 2 };
+        return tapTwice(page, scene.x, scene.y, gap);
+      },
+      async () => {
+        if (scene === null) throw new Error("No attempt was played");
+        const { statement, truth, x, y } = scene;
+        await page.waitForTimeout(100);
 
-    await page.touchscreen.tap(x, y);
-    await page.waitForTimeout(gap);
-    await page.touchscreen.tap(x, y);
-    await page.waitForTimeout(100);
+        await expect(page).toHaveURL(/\/play$/);
+        await expect(verdict(page)).toHaveText(verdictFor(!truth, truth));
+        await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
+        await expect(page.getByRole("heading", { name: "Round complete" })).toHaveCount(0);
+        expect(await page.locator("[data-statement] > p").last().textContent()).toContain(statement);
 
-    await expect(page).toHaveURL(/\/play$/);
-    await expect(verdict(page)).toHaveText(verdictFor(!truth, truth));
-    await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Round complete" })).toHaveCount(0);
-    expect(await page.locator("[data-statement] > p").last().textContent()).toContain(statement);
-
-    await page.waitForTimeout(Math.max(0, 500 - gap - 100));
-    await page.touchscreen.tap(x, y);
-    await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+        await page.waitForTimeout(Math.max(0, 500 - gap - 100));
+        await page.touchscreen.tap(x, y);
+        await expect(page.getByRole("heading", { name: "Round complete" })).toBeFocused();
+      },
+    );
   });
 }
