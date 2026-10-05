@@ -140,7 +140,7 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
       {/* The same line the play card shows above the statement. Without it a card such as "a route's
           revalidate export remains supported", False only with cacheComponents on, would read wrong here. */}
       {item.appliesTo ? <p className={`m-0 mt-(--space-6) ${MONO_DATA}`}>Applies to {item.appliesTo}</p> : null}
-      <p className={STATEMENT}>
+      <p data-missed-statement="" className={STATEMENT}>
         <CardText text={item.statement} />
       </p>
       <div className="flex min-h-(--size-touch-min) items-center justify-between gap-(--space-12)">
