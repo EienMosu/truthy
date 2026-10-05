@@ -363,7 +363,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Start step 1, index failed with nothing cached:** a `surface-raised` card (radius 16, padding 20, `elevation.small`) saying "The decks didn't load" (`emphasis`) over "Check your connection and try again." (`body`), and "Try again" (ink pill) in the foot zone.
 - **Play, loading the round:** the game screen with its header (the close button works) and an empty boarding pass in the stage; no action row; a screen reader hears "Loading your round".
 - **Play, deck failed with nothing cached:** the header, a `surface-raised` card (radius 16, padding 20, `elevation.ticket`) saying "This deck didn't load" (`step-title`) over "Check your connection and try again.", and "Try again" (ink pill) in the action row.
-- A fetch gives up after 8 seconds and then uses the cached copy when there is one (spec section 5, "Loading").
+- A fetch gives up after 8 seconds and then uses the cached copy when there is one. A round after the first in the same page (Play again, Try again) waits at most 1.5 seconds for the index and then deals from the one the last round used (spec section 5, "Loading").
 
 ### 5.16 Bottom sheet (section picker)
 - **Purpose:** after a deck is chosen, pick Whole deck or one section, without leaving the step. **Not part of the final start flow:** start.html makes the section its own step with section cards (5.3), so the flow stays one decision per screen and needs no overlay. Build the sheet only if the client asks for it back.

@@ -167,7 +167,7 @@ Card ids are stable for the life of a card. Pipeline-only fields (misconception,
 
 ### Loading
 
-The app fetches `index.json` on start and a deck file when a round on that deck starts. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A fetch that fails or does not answer within 8 seconds falls back to the cached copy; without one, the screen that needed the data shows a plain message with a retry action.
+The app fetches `index.json` on start and a deck file when a round on that deck starts. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A fetch that fails or does not answer within 8 seconds falls back to the cached copy; without one, the screen that needed the data shows a plain message with a retry action. A round after the first in the same page ("Play again", or "Try again" once a round has been dealt) waits at most 1.5 seconds for the index, then deals from the index the last round was dealt from; the fetch goes on behind it and still caches what it brings, so a deck update shows up in a later round.
 
 ## 6. Game engine
 
