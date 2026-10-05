@@ -1,7 +1,7 @@
 "use client";
 
 // The fill-in pass of the start flow (design system 5.4): what the player has chosen so far, written onto
-// one pass that becomes the round's boarding pass. Three layouts in step 1 of the game:
+// one pass that becomes the round's boarding pass. Three layouts, one per stage of the start flow:
 //   "destination" (steps 2 and 3): compact band, then Area / Platform / Deck.
 //   "route" (steps 4 and 5): area and platform fold into one quiet line over Deck / Section / Class.
 //   "ready" (step 6): the full boarding pass without its lower part (legs, Class / Cards / Gate).

@@ -19,9 +19,11 @@ describe("CI workflow", () => {
     ]);
   });
 
-  it("keeps the Playwright traces of a failed run", () => {
+  it("keeps the Playwright traces of every failed attempt, also when the run passed on a retry", () => {
     const text = readFileSync(".github/workflows/ci.yml", "utf8");
-    expect(text).toContain("if: failure()");
+    expect(text).toContain("if: ${{ !cancelled() }}");
+    expect(text).not.toContain("if: failure()");
     expect(text).toContain("path: test-results/");
+    expect(text).toContain("if-no-files-found: ignore");
   });
 });

@@ -39,7 +39,7 @@ Implement against these roles only. Primitives exist so tooling can alias them.
 | `ink` | `#10233f` | `#e6e3da` | Text, icons, primary pill fill, focus ring |
 | `ink-muted` | `#56667c` | `#9ba4b3` | Secondary text, field labels, radio ring |
 | `rule` | `#c9d3dc` | `#3c4759` | 1.5px dividers, perforations, blank dashes, grab bar (decorative only) |
-| `accent` | `#f5b400` | `#e0a52c` | Carrier band, plane, progress dot, logo mark, focus ring on filled pills |
+| `accent` | `#f5b400` | `#e0a52c` | Carrier band, plane, progress dot, logo mark |
 | `on-accent` | = ink | `#141c2b` | Text and glyphs on amber (band, plane arrow) |
 | `true` | `#1d5cc0` | `#6f9ae0` | True pill, True hint and intent stamp, links (source, Why) |
 | `false` | `#b3321c` | `#e2836f` | False pill, False hint and intent stamp |
@@ -47,7 +47,7 @@ Implement against these roles only. Primitives exist so tooling can alias them.
 | `wrong` | `#b3321c` | `#e2836f` | Not quite stamp, wrong waypoint (same value as `false`) |
 | `on-dark` | `#fdfbf5` | `#0f1a2c` | Labels on True, False and ink pills |
 | `cloud` | `#ffffff` | `#2c3a55` | Cloud shapes, drawn at opacity 0.7 |
-| `scrim` | `rgba(16,35,63,.32)` | none | Behind the bottom sheet (browse-c, day only) |
+| `scrim` | `rgba(16,35,63,.32)` | `rgba(0,0,0,.6)` | Behind the bottom sheet (browse-c, and the "Leave round?" sheet of the game) |
 | `press` | `rgba(16,35,63,.05)` | `rgba(230,227,218,.06)` | Pressed tint on fill-in pass fields and the continue line |
 | `surface-sunk-clear` | `rgba(238,243,245,0)` | `rgba(29,38,54,0)` | Top of the 28px fade at the bottom of the missed-cards list |
 
@@ -74,11 +74,10 @@ Notes:
 | on-dark / false | 5.99 | 6.40 | False pill label |
 | on-dark / ink | 15.21 | 13.59 | Next card, Play again, Start round |
 | on-accent / accent | 8.55 | 7.79 | Carrier band |
-| ink / sky-1 | 10.17 | 14.20 | Route labels, titles on the sky |
-| **ink-muted / sky-1** | **3.78 (fails)** | 7.25 | Start-flow tagline, see Accessibility |
-| ink-muted / sky-2 | 4.36 (fails for small text) | 6.76 | Same tagline where it crosses into sky-2 |
-| **accent ring / sky-3, sky-4** | **1.56, 1.61 (fails 3:1)** | 7.16, 6.99 | Focus ring on filled pills, see Accessibility |
-| ink-muted / sky-3 | 4.96 | 6.24 | "Your pass is ready" line (start step 6) |
+| ink / sky-1 | 10.17 | 14.20 | Route labels, titles on the sky, the start-flow tagline |
+| ink / sky-2 | 11.73 | 13.24 | Same tagline where it crosses into sky-2 |
+| ink ring / sky-3, sky-4 | 13.32, 13.80 | 12.22, 11.94 | The focus ring (2px, offset 2), filled pills included, see Accessibility |
+| ink / sky-3 | 13.32 | 12.22 | "Your pass is ready" line (start step 6) |
 | ink-muted / sky-4 | 5.13 | 6.09 | Continue line route (start step 1) |
 | ink / surface-raised (stub stamp) | 15.21 | 10.48 | "Time is up" stamp |
 | rule / surface-raised | 1.47 | 1.43 | Decorative only, never the only signal |
@@ -96,8 +95,8 @@ Brightness order in night is deliberate: amber (luminance 0.44) stays brighter t
 | **Overpass** | All text except codes and small data | SemiBold 600, ExtraBold 800 |
 | **Overpass Mono** | Codes, field labels, small data, inline links, score | Regular 400, SemiBold 600 |
 
-- Both are distributed under the **SIL Open Font License 1.1** on Google Fonts. The upstream Red Hat / Delve Fonts release has also been offered under LGPL 2.1. Ship the OFL text with the app. Before release, check the LICENSE file of the exact files you bundle and any Reserved Font Name clause. The OFL allows bundling, embedding and subsetting. It forbids selling the fonts on their own. If you modify the fonts, rename the family.
-- Bundle the **four static files** on iOS (`UIAppFonts` in Info.plist) and Android (`res/font`). Web loads the same four weights from Google Fonts: `Overpass:wght@600;800` and `Overpass+Mono:wght@400;600`. Nothing depends on a variable axis.
+- Both are distributed under the **SIL Open Font License 1.1** on Google Fonts. The upstream Red Hat / Delve Fonts release has also been offered under LGPL 2.1. Ship the OFL text with the app: web keeps it next to the font files in `app/fonts/OFL.txt`. The Google Fonts release ("Copyright 2021 The Overpass Project Authors") declares no Reserved Font Name, so a subset may keep the family name. The OFL allows bundling, embedding and subsetting. It forbids selling the fonts on their own.
+- Bundle the **four static files** on iOS (`UIAppFonts` in Info.plist) and Android (`res/font`). Web bundles the same four weights too, as woff2 files in `app/fonts/` loaded with `next/font/local`, so the build needs no network. They are static cuts of the Google Fonts variable files at 600 and 800 (Overpass) and 400 and 600 (Overpass Mono), reduced to Google's latin range **plus the arrows U+2190 to U+2193**. Google's own latin files leave out ← and →, which the gate, the route line, the swipe hints and the pills draw, and the browser then took them from a stretched Arial. Natives bundle full files, which have the arrows. Nothing depends on a variable axis.
 - **Weight trap.** Some web rules set no weight (`.explain`, `.mc-exp p`), so they compute to 400. Overpass 400 is not loaded, so the browser renders SemiBold 600. Natives must ask for **600** explicitly, or they will fall back to a system Regular.
 - Fallbacks: `system-ui, sans-serif` and `ui-monospace, monospace`.
 
@@ -110,7 +109,7 @@ Sizes are px on web, pt on iOS and sp on Android. Letter spacing is in em (`toke
 | `logo` | Sans 800 | 36 | 1 | -0.025em | browse-c `.logo b` |
 | `screen-title` | Sans 800 | 24 | 1.1 | -0.015em | mode-select `.top h1` |
 | `step-title` | Sans 800 | 22 | normal (36px row) | -0.015em | browse-c `.st-h` |
-| `tagline` | Sans 600 | 17 | 1.4 | 0 | browse-c `.tag`, ink-muted. Also the "Your pass is ready" line (start `.ready-t`, max-width 320) |
+| `tagline` | Sans 600 | 17 | 1.4 | 0 | browse-c `.tag`, drawn in ink (the reference's ink-muted failed contrast on sky-1, see Accessibility). Also the "Your pass is ready" line (start `.ready-t`, max-width 320) |
 | **`card-statement`** | Sans 600 | 25 | 1.28 | -0.012em | reference `.statement` |
 | `card-name` | Sans 800 | 26 | 1.2 | -0.015em | browse-c `.nm` |
 | `answer-value` | Sans 800 | 26 | normal | -0.01em | reference `.res .ans b` |
@@ -153,9 +152,9 @@ Inline link (source): Mono 600 13.5, colour `true`, underline 1.5px thick with a
 - **Safe zones.** The contract keeps the top 50px and the bottom 30px free of interactive content. The 52/34 padding stands in for the status bar and the home indicator. Natively, use the system safe-area insets and keep at least the same visual distance (see Open questions).
 - **Game, result and mode screens:** header row 56 → stage (flex, `margin-top` 12) → actions row 64 (`margin-top` 12). The ticket content inset is **20**. Measured on the reference: header at y 52, ticket at y 120 to 728 (carrier 44, legs 96, field grid 52, statement 188, stub 228), actions at y 746 to 810.
 - **Start flow (start.html):** three stacked zones, each holding one state at a time in the same place.
-  - **Top zone, 176:** the theme switch (5.5) sits at its top right on steps 1 to 6. Step 1 shows the logo (36 top padding, logo, 14 gap, tagline with `max-width` 300). Steps 2 to 6 show the Back pill, a 12 gap and the fill-in pass (aligned to the top; from step 6 the pass is full size and overflows the zone, with an 8 top margin). Step 7 replaces the Back pill with the 56 flight-path header and the pass becomes the first card, at the same y as a game ticket (120).
+  - **Top zone, 176:** the theme switch (5.5) sits at its top right on steps 1 to 6. Step 1 shows the logo (36 top padding, logo, 14 gap, tagline with `max-width` 300). Steps 2 to 6 show the Back pill, a 12 gap and the fill-in pass (aligned to the top; from step 6 the pass is full size and overflows the zone, with an 8 top margin). On "Start round" the Back pill and the theme switch fade out and the ready pass unrolls an empty paper down to the height of a game ticket (5.4, "Boarding"); `/play` then opens and shows its own header and ticket in the same place (the pass sits at the y of a game ticket, 120).
   - **Main area:** `margin-top` 20, the step title row 36, then the scrolling card list. The list's margin (8 −8 0) and padding (6 8 24) leave room for the focus ring. Step 6 has 112 of top padding so its title clears the full pass; on a screen under 600 tall it has 88 (the title then sits about 7 under the pass), so a three-line rule ends above Start round at 320 × 568. On step 1, when the continue line shows, the list stops 76 above the bottom.
-  - **Foot zone:** absolute, 16 from each side, 38 from the bottom, 60 tall (the same place as a game's action row). It holds the continue line (step 1, returning players), "Start round →" (step 6) or the True/False pair (step 7). Steps 2 to 5 leave it empty. It lies over the bottom of the list, so only what it holds takes a tap: where it is empty, a tap reaches the card under it.
+  - **Foot zone:** absolute, 16 from each side, 38 from the bottom, 60 tall (the same place as a game's action row). It holds the continue line (step 1, returning players) or "Start round →" (step 6). Steps 2 to 5 leave it empty. It lies over the bottom of the list, so only what it holds takes a tap: where it is empty, a tap reaches the card under it.
   - **Short screens** (under 568 tall: a phone held sideways, a page zoomed to 200% and more): the three zones no longer fit, so the start screen scrolls as one column, the page padding scrolling with it. The top zone is as tall as what it holds (the full pass from step 6, so step 6 needs no top padding), the list takes its own height, and the foot zone follows the list (4 above the bottom padding) and takes no room while it is empty. A step that arrives starts at the top of the column; when that moves the column, the Back pill and the pass fields ignore presses for the settle time (250), since they now lie where the finger just was. Going back from the keyboard (Escape, or Enter or Space on Back or a pass field), the card chosen before is scrolled into view with its focus ring; going back by a press, the column stays at its top, so the Back pill stays under the finger and a second tap never lands on a card. Start round scrolls the column back to its top, so the pass unrolls in view. Every control then comes on screen by scrolling. The orientation is not locked.
 - **4/8 grid.** Structure sits on 4: gutters 16 and 20, gaps 12, heights 44 / 48 / 56 / 60 / 64 / 104 / 108 / 128 / 176 (the section card's 90 is the one exception). Text cells use small optical values (7, 9, 11, 14, 18, 22) to put text on its baseline. Keep these exactly; do not round them to the grid. The spacing steps actually used are 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24.
 - **Touch targets:** at least **48 × 48** everywhere. Round buttons 48, pills 60, quiet and Back pills 48, sheet rows ≥ 56, area cards ≥ 104, deck cards ≥ 128, section cards ≥ 90, class cards ≥ 108, continue line 60. Filled pass fields are as tall as their cell (56); the area and platform words on the route pass are 22 tall with their hit area extended 13 above and below (48), and to the right to at least 48 wide; it lies above the fields, so a tap just under a word is the word's, and under the words the Deck, Section and Class fields keep 43 of their 56 (the pass line is not made taller). The Why link and the source link are 48 tall (the Why link adds 8px side padding with a −8 right margin). The swipe hint row (32) is not interactive.
@@ -179,7 +178,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   1. **Shadow box:** a plain rounded rectangle (r16) behind the whole ticket with `elevation.ticket`. The shadow does **not** follow the notches.
   2. **Main part:** top corners r16, bottom corners square, paper `surface-raised`, with notches cut at the bottom edge.
   3. **Carrier band:** 44 tall, padding 0 16, gap 10, fill `accent`, text `on-accent`. It holds the cloud glyph (22 × 16), "Truthy" (`carrier-title`) and, pushed right, the uppercase label "BOARDING PASS" (`carrier-label`).
-  4. **Legs:** a three-column grid (1fr, auto, 1fr), bottom-aligned, gap 8, padding 14 20 12. From: `leg-code` plus `leg-name` (margin-top 6). A fly arrow (40 × 16, stroke 2, `padding-bottom` 26) sits between. To: right-aligned.
+  4. **Legs:** a three-column grid (1fr, 40, 1fr), top-aligned, gap 8, padding 14 20 12. From: `leg-code` plus `leg-name` (margin-top 6). The middle column stays empty: the reference's fly arrow collapses to no height there, so the approved screens show none, and the build draws none. Top alignment keeps a code where it is when one name takes one line and the other two. To: right-aligned.
   5. **Field grid** (`meta`): three columns (1.1fr 1fr 1fr), margin 0 20, 1.5px `rule` lines above and below. Cells have padding 8 0 7. From the second cell on, cells have `padding-left` 12 and a 1.5px `rule` divider on the left. Each cell is `field-label` over `field-value` (margin-top 2). Content per screen: Class / Card / Gate (game; Gate reads "Closed" in ink-muted when the time is up), Class / Cards / Gate (mode, start step 6), Class / Cards / Missed (result Classic, Streak), Class / Correct / Missed (result Three lives), Class / Time / Answered (result Timed).
   6. **Statement** (game), **score block** (results) or nothing (mode-select). A word of the statement longer than its line (an identifier such as `suppressHydrationWarning` at 320) breaks inside the line (`overflow-wrap: break-word`) and is never cut off at the pass edge. A code fragment (between backticks in the deck) is set in Overpass Mono at 0.92 em with normal tracking, without its backticks, here, on the answer slip and in the missed cards: Overpass draws a backtick as an accent with no width over the next letter.
   7. **Perforation:** a 2px dashed line at the bottom edge of the main part, inset 18 (notch 12 + 6) from each side, dashes 7 on and 5 off, colour `rule`.
@@ -208,7 +207,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 ### 5.3 Destination card (start flow)
 - **Purpose:** one large, calm choice per row: an area, a platform or a deck.
 - **Anatomy:** a two-column grid (main, then the stub, 64 wide) with radius 16. Paper `surface-raised` and `elevation.small`. Notches of radius **7** are cut at the top and bottom edges on the stub line. A vertical perforation (1.5 wide, dashes 5 on and 5 off, `rule`) runs between them, inset 12 at the top and bottom.
-  - Main: padding 18 12 18 20, a column centred vertically with gap 4. Name in `card-name`, sub-line in Mono 400 12.5 ink-muted ("3 decks", "1 deck").
+  - Main: padding 18 12 18 20, a column centred vertically with gap 4. Name in `card-name`, sub-line in `mono-data` (Mono 400 12) ink-muted ("3 decks", "1 deck").
   - Stub: a right chevron (16, stroke 2.2, ink), centred.
 - **Variants:**
   - **Area / platform:** at least 104 tall.
@@ -217,7 +216,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Section** (start step 4): stub 80, at least 90 tall, padding 14 top and bottom, main gap 2. The code in `deck-code` (or "Whole deck" in `card-name` for the first card) over the name in Sans 600 16 / 1.25, ink ("All 4 sections" under Whole deck). Stub: "Cards", count, chevron, as on the deck card. Whole deck always comes first.
   - **Class** (start step 5): stub 80, at least 108 tall, padding 16 top and bottom. The class name in `card-name` over its one-line rule in Sans 600 16 / 1.25, **ink-muted** ("10 cards, score at the end."). Stub: "Best" (`field-label`), the value (Mono 600 16) and its unit (`field-label`: "of 10", "in a row", "cards"). Never played: an ink-muted "–" over "not played". No chevron: the class card is the last choice before the ready step.
   - **Not available** ("No decks yet"): at least 84 tall, a single column with no stub, notches, shadow or icon. Fill `surface-sunk`, name in ink-muted. It is not a button and does nothing when tapped; it is a labelled group ("DevOps, no decks yet").
-- **States:** pressed scales to 0.98 (`motion.transition.press`). Focus uses the 3px ink ring. While the chosen name is travelling, the card hides its own name.
+- **States:** pressed scales to 0.98 (`motion.transition.press`). Focus uses the ink ring (2px, offset 2). While the chosen name is travelling, the card hides its own name.
 - **Used by:** browse-c steps 1 to 3, start steps 1 to 5.
 
 ### 5.4 Fill-in pass (start flow)
@@ -227,15 +226,15 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Compact carrier band** (steps 2 to 5): 30 tall, padding 0 14, gap 8, `accent`. A 20 × 14 logo mark (ink ticket with an `accent` check), "Truthy" in Sans 800 14, and "YOUR PASS" in Mono 600 11, 0.06em.
   - **Field cell:** padding 9 0 11; from the second cell on, a 1.5px `rule` divider and `padding-left` 12. `field-label` over a 20 tall value box (margin-top 3) holding the value (`field-value-pass`; codes in Mono 600 16) or the blank.
   - **Blank:** three dashes, each 14 × 3, radius 2, gap 5, colour `rule`, labelled "not chosen" for screen readers.
-- **Four layouts, one per stage:**
+- **Three layouts, one per stage, and the boarding that ends the flow:**
   1. **Choosing the destination** (steps 2 and 3): `elevation.small`, one row of Area / Platform / Deck (0.9fr 1.45fr 0.8fr; the mockup's 1fr 1.35fr 0.8fr cut "Web platform" and "Google Cloud" at 320), padding 0 16.
   2. **Choosing the route** (steps 4 and 5, `elevation.small`): area and platform fold into one quiet line (30 tall, padding 8 10 0): "Cloud · AWS" in `pass-line`. Under it Deck / Section / Class (0.75fr 1.1fr 1.15fr). A section shows its code ("SEC"); the whole deck shows "Whole deck" in Sans.
   3. **Ready** (step 6): the full boarding pass of 5.2 without its lower part: `elevation.ticket`, 44 carrier band with the cloud glyph and "BOARDING PASS", legs (deck code and "AWS Cloud / Practitioner" to section code and name; for a deck without sections `ALL` / "Whole deck"), field grid Class / Cards / Gate (Cards is the number of cards in the chosen section or deck), 18 of space below. 358 × 210 at y 120.
-  4. **Boarding** (step 7): the pass grows downward into the first card of the round: statement, perforation and stub exactly as on a game ticket (120 to 728). The second field becomes Card "01 / 10" (Classic) or "01" (other classes).
+  - **Boarding** ("Start round"): an empty paper unrolls below the ready pass, down to the height of a game ticket (120 to 728): it scales from 0 to its full height from the top (360, ease), carrying the ticket shadow. Then `/play` opens, and the play screen draws the first card with its statement, stub and the class's header in the same place. There is no seventh step: the round is never played on the start screen.
 - **Field states:** blank; **now** (the field being chosen: dashes and label switch to `ink`, label weight 600); filled (value shown, ellipsised on overflow). Changes are announced politely.
-- **Filled fields are ways back.** Each filled field (and each word on the quiet line, and each leg on the ready pass) is a button that returns to its step, labelled "Change deck, now CLF". Pressed: `press` tint, radius 6 (8 on the legs). Going back clears every choice made on or after that step. Fields are inert on step 7.
+- **Filled fields are ways back.** Each filled field (and each word on the quiet line, and each leg on the ready pass) is a button that returns to its step, labelled "Change deck, now CLF". Pressed: `press` tint, radius 6 (8 on the legs). Going back clears every choice made on or after that step. Fields are inert while the pass unrolls.
 - **Behaviour:** choosing a card sends its name travelling into its field (see Motion). Back sends it back to its card. A deck without sections (CDL) skips step 4: Section reads "Whole deck" and Back from the class step returns to the deck step.
-- **Used by:** start, start-night (all four layouts); browse-c (layout 1 only, drawn above the sheet's scrim).
+- **Used by:** start, start-night (all three layouts); browse-c (layout 1 only, drawn above the sheet's scrim).
 
 ### 5.4a Continue line (start step 1)
 - **Purpose:** one tap back into the last route for a returning player, without adding a second decision to the first screen.
@@ -250,19 +249,19 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Variants:**
   - **Raised** (header): `surface-raised` with `elevation.small`. The X icon (16, stroke 2.4) means leave or close ("Leave round", "Close results"). The ← icon (18 × 16, stroke 2.4) means back ("Back to sections", mode-select).
   - **Sunk** (on paper, the sheet close): `surface-sunk` with no shadow.
-- **States:** pressed scales to 0.92 (t1, ease). Focus uses the 3px ink ring, offset 3.
+- **States:** pressed scales to 0.92 (t1, ease). Focus uses the ink ring (2px, offset 2).
 - **Theme switch** (raised, start steps 1 to 6): at the top right of the start flow's top zone, its centre in line with the logo row on step 1 (top 32) and with the Back pill row from step 2 (top 0). It moves between the two with a transform (step timing; at once with reduced motion) and fades out with the Back pill when the round starts. The icon shows what a press gives: a moon (18, stroke 2) while the day theme is shown, a sun (18, stroke 2) while the night theme is shown. The label states the action: "Switch to dark theme", "Switch to light theme". A press flips the theme on screen and keeps the choice on the device. Not on the game or result screens.
-- **Used by:** game-*, result-*, mode-select, start step 7 (Leave round), the browse-c sheet, start steps 1 to 6 (theme switch).
+- **Used by:** game-*, result-*, mode-select, the browse-c sheet, start steps 1 to 6 (theme switch).
 
 ### 5.6 Back pill (start flow)
 - 48 tall, padding 0 20 0 14, radius 24, `surface-raised`, `elevation.small`, gap 8. It holds a left arrow (18, stroke 2.2) and "Back" (`button-back`). It is aligned to the start of the row.
 - Pressed scales to 0.96. Its accessible label names the destination ("Back to areas", "Back to platforms"). Escape also triggers it.
-- **Used by:** browse-c steps 2 and 3, start steps 2 to 6 (on step 7 it gives way to the Leave round button, which returns to step 6).
+- **Used by:** browse-c steps 2 and 3, start steps 2 to 6 (it fades out when the round starts; "Leave round" on `/play` returns to step 1 of the start flow).
 
 ### 5.7 Primary pill button
 - 60 tall, radius 30, full width (or flex 1 in a pair), gap 10, label `button`, `elevation.button`.
 - **Ink variant:** fill `ink`, text `on-dark`. Used for "Next card →", "See results →" (after every deciding answer, Classic's last card included: Classic after the last card, Streak after a wrong answer, Three lives after the third wrong answer, Time is up), "Start round →" (start step 6) and "Play again" (with a leading replay icon, 18, stroke 2.2).
-- **States:** pressed moves down 2px, scales to 0.98 and switches to `elevation.press` (t1, ease). Focus ring colour `accent` (`focus-on-fill`).
+- **States:** pressed moves down 2px, scales to 0.98 and switches to `elevation.press` (t1, ease). Focus uses the ink ring (2px, offset 2) like every other control: the amber `focus-on-fill` ring of the approved screens failed 3:1 against the day sky (see Accessibility).
 - In the game answer state the Next row replaces the True/False row: it rises 12px and fades in after a 360ms delay. Focus moves to it at 420ms.
 - On the result, "Play again", "Choose another route" (5.9) and "Close results" take presses only one second after the result appears; they look the same before. "Choose another route" lies where "See results" was, and a second tap, or a player still tapping when a Timed minute ends, must not leave the result unseen.
 - **Used by:** game-*, mode-select, result-*, start (Start round).
@@ -272,7 +271,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - False: fill `false`, X icon (16, stroke 3), label "False". True: fill `true`, check icon (18, stroke 3), label "True". Text `on-dark`.
 - States are the same as the primary pill. **Disabled** (Timed, during the stamp beat): opacity 0.45, no shadow, ignores taps.
 - They are a full alternative to the swipe and always visible in the question state.
-- **Used by:** game-*, start step 7 (the first card).
+- **Used by:** game-*.
 
 ### 5.9 Quiet button
 - 48 tall, radius 24, no fill and no shadow. Label `button-quiet` in `ink`, gap 8, with a leading route icon (20 × 14).
@@ -288,7 +287,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Wrong:** a 13 × 13 square (rx 2) in `wrong` with a `surface-raised` x (stroke 1.8).
   - **Future:** a circle of r4 filled `surface-raised` with a 1.6 `ink` stroke. The destination is r5.
   - **Plane:** a circle of r12 in `accent` with an arrow (stroke 2, `on-accent`), rotated along the curve.
-  - In the answer state the plane fades out (t2) and the current card shows its done or wrong mark.
+  - In the answer state the plane fades out (t2) and the current card shows its done or wrong mark. The card just answered draws a done mark in `correct` rather than `ink` (the `correct` waypoint of 2.1); once the next card is dealt it turns ink like the others.
 - **Variants:**
   - **Count** (Classic, night): 10 waypoints. Label "Card **4** of 10" and "2 correct · 1 wrong".
   - **Streak:** done dots are r6 (tick stroke 1.6), spaced 24 apart along the curve. The best target at the end is a ring (r7 paper with ink stroke, around an r3 ink centre). Label "Streak **8**" and "Best **12**". After a wrong answer it reads "Streak ended at **8**".
@@ -299,9 +298,9 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Streak at or past the best** (game-streak-record): the old best keeps its ring where it was reached (ring radius = dot + 3.5, stroke 1.4) and the line runs on past it. Labels "Streak **13**" and "Previous best **12**" once the best is beaten; "Best **12**" while it is only equalled.
   - **Lives, a life lost** (game-lives, game-lives-out): the heart turns to the lost outline and its slash is drawn through as the Not quite stamp lands (300, delay 380), for every life, the last included. After the last life: labels "**No** lives left" and "**21** answered". The wrong square replaces the plane.
   - **Timed, time up** (game-timed-up): the solid line reaches the destination, every quarter mark is ink, the plane sits on the destination. Label "**0:00** left" and the tally.
-  - **Start round** (start step 7): ten open waypoints and the plane on the first, "Card **1** of 10" and "0 correct · 0 wrong". The mock draws this Classic header for every class; a real round shows its own class header at card 1 (see Open questions).
+  - **Card 1** (drawn by the mock on its start step 7; the build shows it on `/play`): ten open waypoints and the plane on the first, "Card **1** of 10" and "0 correct · 0 wrong". The mock draws this Classic header for every class; a real round shows its own class header at card 1 (see Open questions).
   - **Completed** (results): the whole curve is solid (2.4), with every card resolved at t = i / (n − 1). Marks scale so they never touch: scale 1 up to 10 cards (r7 / 13), 6/7 up to 17 cards (r6 / 11, tick stroke 1.6), and from 18 cards a radius of min(6, 0.35 × 264 / (n − 1)) (21 cards: r4.6). Done marks carry their tick from radius 5. A wrong square never drops below side 6 and always carries its x (scale max(scale, 6/13)); where that makes it larger than its neighbours it is drawn over them. On Streak the card where the previous best was reached is ringed. Labels "**Arrived** · 10 of 10", "**Ended** · 14 cards", "**Out of lives**", "**Time up** · 17 cards".
-- **Used by:** game-*, result-*, start step 7.
+- **Used by:** game-*, result-*.
 
 ### 5.11 Stamp
 - **Purpose:** the verdict. It is the only tilted element and the only celebration.
@@ -326,7 +325,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - Content: the radio mark (24 circle, 2px `ink-muted` ring), `option-title`, `body-small` description, and on the right "Your best" in Mono 600 13 / 1.3. "Not played" is shown in Mono 400 ink-muted. Screen readers hear "Your best:" before the value, which is visually hidden.
 - Rows are separated by 1.5px `rule` lines inset 12. The lines are hidden next to the selected row.
 - **Selected:** fill `surface-sunk`, border `ink`. The mark fills `ink` and shows a paper check (14) that pops from scale 0.4 to 1 (t2, spring).
-- Selecting a row writes its class into the Class field on the pass. Focus: 3px ink ring, offset 2.
+- Selecting a row writes its class into the Class field on the pass. Focus: the ink ring (2px, offset 2).
 - **Used by:** mode-select only. The start flow picks the class with class cards (5.3) instead.
 
 ### 5.14 Score block
@@ -340,9 +339,27 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - Statement: `list-statement`, margin-top 6.
   - Foot: at least 48 tall. "Answer" (`mono-data`, ink-muted) followed by the word in Sans 800 17, ink (not red). The **Why** button sits on the right.
 - **Why button:** at least 48 tall, padding 0 8, `mono-data-strong` in `true`, underlined 1.5 with a 3px offset, with a chevron-down (12, stroke 1.8). It reports whether it is expanded.
-- **Expanded:** the chevron rotates 180deg (t2). The explanation (15 / 1.45, ink, with a 2px `rule` line on its left, `padding-left` 12, margin-bottom 12) grows from 0 to full height (t3, ease). The list then scrolls the opened item into view after 380ms (instantly with reduced motion), with 16px under it; an item taller than the list scrolls only until its explanation reaches the top of the list, so the explanation always shows from its first line.
+- **Expanded:** the chevron rotates 180deg (t2). The explanation (15 / 1.45, ink, with a 2px `rule` line on its left, `padding-left` 12, margin-bottom 12) grows from 0 to full height (t3, ease). Under the explanation, inside the same rule line, sits the card's source link: at least 48 tall, a book icon, the source title underlined (`mono-data-strong` in `true`) and a trailing →; it opens in a new tab and says so to screen readers. A closed row is inert, so its link takes no focus. The list then scrolls the opened item into view after 380ms (instantly with reduced motion), with 16px under it; an item taller than the list scrolls only until its explanation reaches the top of the list, so the explanation always shows from its first line.
+- **No missed cards:** a round with none shows one calm line, "No missed cards" (`list-statement`), in place of the header row and the list.
 - **Short screens:** on a screen 600px tall or less (a 320 × 568 phone) the result ticket hides the leg names under the codes (they stay for screen readers) and its legs row takes padding 8 20 8, so the list's header row ("3 to review" or "No missed cards") shows above "Play again" before any scroll. Taller screens keep the ticket as approved.
 - **Used by:** result-classic, result-timed, result-streak, result-lives, result-classic-night.
+
+### 5.15a Leave dialog ("Leave round?")
+- **Purpose:** the one confirmation before leaving a round once a card has been answered (spec section 6). Before the first answer the close control leaves at once.
+- **Anatomy:** a modal sheet at the bottom of the frame (inset by the gutter and the bottom padding) over `scrim` across the whole screen. Paper `surface-raised`, radius 16, padding 20, `elevation.sheet`. "Leave round?" in `step-title`, then "Your answers so far stay in your history. This round won't set a record." in `body` (margin-top 8), then a column (margin-top 20, gap 4) of the ink pill "Keep playing" over the quiet button "Leave round".
+- **Behaviour:** "Keep playing" has focus when it opens and focus stays inside. "Keep playing", Escape and a tap on the scrim close it and the round goes on; "Leave round" returns to start step 1 without a record. The play screen behind is inert while it is open.
+- **Motion:** the sheet rises 24 and fades in, the scrim fades in (360, ease); the reverse on close. Reduced motion: a 140 fade.
+- **Night:** the scrim is black at 60% and the sheet shadow is the night ticket shadow pointing up (2.1 Notes).
+
+### 5.15b Applies-to line
+- One small line above a card's statement when the card's `appliesTo` is not empty: "Applies to Next.js 16 with cacheComponents: true", in `mono-data`, ink-muted, margin-bottom 6. It belongs to the statement: it scrolls, focuses and is read with it, and "Statement into view" (7) keeps it above True and False.
+
+### 5.15c Loading and load-failed states
+- **Start step 1, loading the index:** three placeholder cards (`surface-sunk`, radius 16, the height of an area card) where the area cards go; a screen reader hears "Loading the decks".
+- **Start step 1, index failed with nothing cached:** a `surface-raised` card (radius 16, padding 20, `elevation.small`) saying "The decks didn't load" (`emphasis`) over "Check your connection and try again." (`body`), and "Try again" (ink pill) in the foot zone.
+- **Play, loading the round:** the game screen with its header (the close button works) and an empty boarding pass in the stage; no action row; a screen reader hears "Loading your round".
+- **Play, deck failed with nothing cached:** the header, a `surface-raised` card (radius 16, padding 20, `elevation.ticket`) saying "This deck didn't load" (`step-title`) over "Check your connection and try again.", and "Try again" (ink pill) in the action row.
+- A fetch gives up after 8 seconds and then uses the cached copy when there is one (spec section 5, "Loading").
 
 ### 5.16 Bottom sheet (section picker)
 - **Purpose:** after a deck is chosen, pick Whole deck or one section, without leaving the step. **Not part of the final start flow:** start.html makes the section its own step with section cards (5.3), so the flow stays one decision per screen and needs no overlay. Build the sheet only if the client asks for it back.
@@ -423,8 +440,8 @@ Durations and curves come from `tokens.json` `motion`. On web, `--spring` is `cu
 | Start flow: back | The reverse: the value flies from the pass back to its card, current items sink 10px, previous items drop from −24px, dashes return (140, delay 220) | as above | as above | Same, direction from navigation | Compare `targetState` with `initialState` |
 | Top zone swap (step 1 ↔ 2, and step 1 → 6 on Continue) | Logo leaves (110, rises 12px) and the Back pill plus pass arrive (240, delay 120, from 12px below); the reverse on the way back | ease | Cross-fade as above | `.transition` on the top zone | `AnimatedContent` on the top zone |
 | Pass changes layout (steps 3 → 4, 5 → 6 and back) | One paper: its height and y animate together, the band grows from 30 to 44 with its type; the old block fades out (120, ease-out) while the new one fades in (220, delay 90). Values already on the pass travel to their new place; when their look changes (Sans 16 field → Mono 34 leg, Mono 16 → Mono 15) the old and new copies cross-fade on a linear clock (old gone by 60%, new in from 40%) while the shape follows the eased path | 360, ease | Cross-fade as above | One view whose content switches inside an animated frame; `matchedGeometryEffect` per value with an overlay copy for the cross-fade | `animateContentSize` on the pass plus `sharedElement` per value |
-| Start round (step 6 → 7) | The pass grows down into the first card (460, ease); the field Cards becomes Card "01 / 10" (fade 200, delay 160); the statement rises 8px and fades in (260, delay 220); the stub print fades in (240, delay 260); Back fades out (110) and the flight-path header comes in from 8px above (240, delay 160); True and False come in (240, delay 200). Focus moves to the statement | as listed | Cross-fade | as above | as above |
-| Leave round (step 7 → 6) | The reverse: statement and stub print fade (120), the paper rolls up (460), the header leaves and Back returns (delay 160); the step 6 text waits until the paper has passed (delay 320) | as listed | Cross-fade | as above | as above |
+| Start round (step 6 → `/play`) | Back and the theme switch fade out; below the ready pass an empty paper unrolls to the height of a game ticket, scaling from 0 from its top (360, ease). Then `/play` opens and draws the first card, the class's header and True and False in the same place; focus moves to the statement | as listed | No unroll: `/play` opens at once | as above | as above |
+| Leave round (`/play` → step 1) | No motion of its own: `/play` gives way to the start flow at step 1 with the choices cleared, whose title takes focus | none | Same | as above | as above |
 | Jump back through a field | Tapping a filled field goes straight to its step: every later value fades out as a ghost (120) or flies back to its card if that card is on the target step | 360, ease | Cross-fade | as above | as above |
 | Continue (step 1 → 6) | Logo out, full pass in (the top-zone swap); the pass values fade in (220, delay 200); Start round comes in (240, delay 140) | as listed | Cross-fade | as above | as above |
 | Time is up | Stub stamp lands (`land-fast`, 300, delay 120); jolt (260, delay 240) | as listed | Stamp at rest | as Stamp lands | as Stamp lands |
@@ -437,9 +454,9 @@ Durations and curves come from `tokens.json` `motion`. On web, `--spring` is `cu
 | Why | Height 0 → content; chevron rotates 180deg | 360 / 220, ease | Instant; scroll without animation | `DisclosureGroup`-like custom view with `.animation` | `AnimatedVisibility(expandVertically)` |
 | Option select | Fill and border colour (220); mark fill (120); check pops 0.4 → 1 (220, spring) | as listed | Instant | `.animation(.spring(response: 0.2, dampingFraction: 0.6))` | `spring(0.6f, ~960f)` |
 
-**Reduced motion rule.** On web, every animation is removed, transitions take 1ms and delays are dropped. Every end state must therefore be correct without its animation. The start flow is the one exception: it uses the timed cross-fade above. Native equivalents: `@Environment(\.accessibilityReduceMotion)` on iOS. On Android, read `Settings.Global.ANIMATOR_DURATION_SCALE` (0 means removed); Compose scales its animations by it, but the start-flow cross-fade needs an explicit branch.
+**Reduced motion rule.** On web, every animation is removed, transitions take 0s and delays are dropped (not 1ms: WebKit paints a transition's first frame at its start value, so a 1ms transition flashed the old value for a frame). Every end state must therefore be correct without its animation. The start flow is the one exception: it uses the timed cross-fade above. Native equivalents: `@Environment(\.accessibilityReduceMotion)` on iOS. On Android, read `Settings.Global.ANIMATOR_DURATION_SCALE` (0 means removed); Compose scales its animations by it, but the start-flow cross-fade needs an explicit branch.
 
-Only transform and opacity animate, with one exception: the web Why disclosure animates the grid row height. Natives animate the height directly.
+Transform and opacity carry the movement. The exceptions are small: the web Why disclosure animates the grid row height (natives animate the height directly), the slash of a lost life draws its stroke (`pathLength`), a pressed pill moves to the press shadow (`box-shadow`) and a pressed continue line takes the `press` fill (`background-color`).
 
 ---
 
@@ -453,17 +470,16 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
   - The missed-card answer word is ink, not red.
   - The "now" field on the fill-in pass switches to ink dashes and a 600 label.
   - Time is up: a stamp with a clock and words, Gate reads "Closed", and the line under the barcode says the card does not count.
-- **Contrast** is in 2.2. Text pairs are at least 4.5:1 in both themes, with two exceptions to fix or accept:
-  1. **Day tagline:** `ink-muted` on `sky-1` is **3.78:1** (and 4.36:1 where it crosses into `sky-2`). 17px / 600 is not large text, so this fails 1.4.3.
-  2. **Day focus ring on filled pills:** `accent` against `sky-3` / `sky-4` is **1.56 to 1.61:1**, which fails the 3:1 required for non-text contrast and focus appearance. Night is fine (about 7:1).
+- **Contrast** is in 2.2. Text pairs are at least 4.5:1 in both themes, and the focus ring is at least 3:1 against what it is drawn on (`tests/tokens/contrast.test.ts`). The approved screens had two day failures, both fixed in the build (Open questions 1): the tagline was `ink-muted` on `sky-1` (3.78:1) and is now `ink` (10.17:1); the focus ring on filled pills was `accent` against `sky-3` / `sky-4` (1.56 to 1.61:1) and is now the ink ring (13.32 and 13.80:1).
 - **Decorative only:** `rule` (1.47:1) is never the only signal. Blank fields also say "not chosen" to screen readers and have a label above them. The disabled pills (0.45) are exempt as inactive controls.
 - **Targets:** at least 48 everywhere (see Layout). The True/False buttons are a complete alternative to the swipe (WCAG 2.5.1). For natives, the research also recommends VoiceOver and TalkBack custom actions ("Answer true", "Answer false") on the card.
 - **Focus:**
-  - The ring is a 3px `ink` outline with a 3px offset. On filled pills it is `accent`; on option rows the offset is 2; on Why it is 0; on sheet rows it is −1 with radius 8.
+  - The ring is a 2px `ink` outline with a 2px offset on every control, filled pills included (`--focus-ring-width` and `--focus-ring-offset` in `app/globals.css`; the product owner chose it over the 3px ring and the amber ring on pills of the approved screens). The fields of the fill-in pass and the game's ticket draw it 2 inside their edge (offset −2), since their neighbours sit flush against them. On browse-c's sheet rows it is −1 with radius 8.
   - Start-flow step titles take focus programmatically after each step, with no visible ring on purpose.
   - Focus moves to Next card, or to See results after a deciding answer, 420ms after the answer, to the first sheet row on open, and back to the opener on close or Back. At time up See results takes focus only if True or False had it. In Timed only the first card's statement takes focus.
-  - In the start flow, going forward focuses the new step title; going back (Back, a field, Leave round) focuses the card that was chosen before; starting the round focuses the statement. Coming back to the start from /play by one of its controls (Choose another route, Close results, Leave round, all of which land on step 1 with the choices cleared), the step 1 title takes focus; a fresh page load of the start moves no focus.
-  - Escape closes the sheet, or goes back a step (on step 7 it leaves the round).
+  - In the start flow, going forward focuses the new step title; going back (Back, a field, Escape) focuses the card that was chosen before; starting the round focuses the statement. Coming back to the start from /play by one of its controls (Choose another route, Close results, Leave round, all of which land on step 1 with the choices cleared), the step 1 title takes focus; a fresh page load of the start moves no focus.
+  - Escape closes the sheet (and the "Leave round?" sheet, which then keeps playing), goes back a step in the start flow, and on `/play` is the close control: it leaves at once before the first answer and asks once after it. A held key does not repeat any of these.
+  - On `/play` the right arrow answers True and the left arrow False; Enter is the action after an answer (Next card, See results) unless focus is on a link or a button, which take Enter themselves.
   - The ticket of the game scrolls by keyboard in every class. It is a stop of its own in the Tab order ("Ticket", the ring drawn 2 inside its edge; the card lies above the ring, so it shows as lines along the side gutters and under the card rather than a whole rectangle, accepted as it shows in both themes), and wherever focus is on the play screen (the ticket, the statement, the page, a pill, the close button) the keys that scroll a page scroll it: the arrows, Page Up and Down, Home and End, and Space unless a focused control takes it.
 - **Screen reader:**
   - The flight path is one image with a full-sentence label.
@@ -511,17 +527,17 @@ Only transform and opacity animate, with one exception: the web Why disclosure a
 
 ## 10. Open questions
 
-1. **Day contrast failures.** The tagline is `ink-muted` on `sky-1` at 3.78:1, and the `accent` focus ring on pills is 1.6:1 against the sky. Possible fixes: make the tagline `ink`, or move it lower onto a lighter band; make the pill ring `ink` in day. Each fix changes an approved screen, so it needs the client's sign-off.
+1. **Day contrast failures (closed).** The approved tagline was `ink-muted` on `sky-1` at 3.78:1, and the `accent` focus ring on pills 1.6:1 against the sky. The product owner chose the fixes the build ships: the tagline is `ink`, and the focus ring is the ink ring, 2px with a 2px offset, on every control (8, Focus). `tokens.json` keeps the approved `focus-on-fill` and the 3px `stroke.focus` for the record; the web does not use them.
 2. **Night sheet (closed).** The "Leave round?" confirmation is a sheet over `scrim` with the sheet shadow. With the day values it did not stand off the dark pass, so `tokens.json` now has a night scrim (black at 60%) and a night sheet shadow (the night ticket recipe pointing up).
 3. **Two title sizes.** `screen-title` is 24 (mode-select) and `step-title` is 22 (browse-c, start). Unify them, or keep both? If the start flow replaces mode-select, only 22 remains.
 4. **Safe areas on native.** Use the system insets alone, or the insets plus the mock's 52/34 as a minimum?
 5. **Timed hold (closed).** 700ms from the tap until the card leaves, as spec section 6 says; `motion.duration.hold-timed` is 700. The mockup's 1000 is not used.
 6. **Tear direction.** The reference drops the stub left when the answer was correct and right when it was wrong, whatever the swipe direction. Timed sends the card toward the side that was answered. Should the stub also fall the way the player swiped? **Answered: unchanged.** The stub falls left when the answer was correct and right when it was wrong; only the Timed card leaves toward the answered side.
 7. **Where the result screens and Leave round go.** What the app does: Close on a result and "Choose another route" both return to start step 1, where the continue line offers the route just played. Leave round before the first answer leaves at once; after it, it asks once ("Leave round?") and then returns to start step 1. A round left before its deciding answer sets no record; one left after it, or at time up, is recorded as opening its result would record it, with its score. "Play again" restarts the same route and class.
-8. **Keyboard answering on the web.** The research suggests arrow keys or T/F. No approved screen implements them, so they are not specified here.
+8. **Keyboard answering on the web (closed).** The build answers with the arrow keys (right True, left False), takes Enter for the action after an answer and Escape as the close control (8, Focus), as spec section 8 says. No approved screen shows a key, so nothing is drawn for them.
 9. **Content data, not design:** browse-c counts CLF sections as CON 45 / SEC 47 / TEC 88 / BIL 34, while mode-select shows SEC as 64 cards (the earlier standard was 52 / 64 / 70 / 28). Pick one source of truth.
 10. **Mode-select and the sheet versus the start flow.** start.html chooses the section and the class as steps, which makes the approved mode-select screen and the browse-c sheet redundant. Confirm with the client that start.html is the flow to build.
-11. **Round header on start step 7 for other classes (closed).** Each class shows its own header from card 1: "Streak **0**" with its best, three full hearts and "**0** answered", "**1:00** left". The play screen draws the header of the mode, so the hand-over from the start flow needs no motion of its own.
+11. **Round header at card 1 for other classes (closed; the mock draws it on its start step 7).** Each class shows its own header from card 1: "Streak **0**" with its best, three full hearts and "**0** answered", "**1:00** left". The play screen draws the header of the mode, so the hand-over from the start flow needs no motion of its own.
 12. **Bests per route.** The class cards show the best for the chosen deck and section. Whether a whole-deck best and a section best are kept apart (they are in the mock) needs confirming.
 13. **Timed stamp on a short phone (decided in the build, for the owner to confirm).** At 320 × 568 the ticket is taller than the stage, and the stub with its stamp and hint lay under the answer row for the whole beat and at time up, with the statement showing through the dimmed pills. The ticket now scrolls to the stub when it is stamped and back for the next card (section 7, "Timed stub into view"). The alternative, a smaller or moved stub stamp on short screens, was not taken because it changes the approved stub.
 

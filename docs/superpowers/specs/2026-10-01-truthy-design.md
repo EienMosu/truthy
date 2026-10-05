@@ -20,7 +20,7 @@ Truthy is a mobile-first web game. The player picks what to study by filling in 
 | Content language | English, card text keyed by language (`text.en`) | user |
 | Design language | Boarding Pass (round 1 design d10) | user, chosen from 40 directions |
 | Start flow | "Filling in the pass" (prototype browse-c), one decision per screen | user |
-| Stack | Next.js like The Slow Wire, on Vercel | user |
+| Stack | Next.js on Vercel | user |
 | Decks | Static JSON built from the repository, no API key, no runtime server | approved recommendation |
 | Repository | One repository, public | user |
 | Accidental swipes | Prevention rules only in v1. A "Mis-swiped?" flag is reconsidered after the first play test | user |
@@ -49,7 +49,7 @@ Accounts, sync, leaderboards, any backend; Turkish or other languages; the nativ
 
 ### Stack
 
-The same skeleton as The Slow Wire: Next.js 16 (App Router), React 19, TypeScript in strict mode, Tailwind CSS 4, zod, Vitest, pnpm, deployed on Vercel from `main`. Two additions: Motion for transitions, Playwright for end-to-end tests.
+Next.js 16 (App Router), React 19, TypeScript in strict mode, Tailwind CSS 4, zod, Vitest, pnpm, deployed on Vercel from `main`. Two additions: Motion for transitions, Playwright for end-to-end tests.
 
 ### Rendering
 
@@ -61,6 +61,7 @@ Every route is prerendered at build time. The game is client components. There a
 |---|---|
 | `/` | The start flow: area, platform, deck, section, class, then "Start round". One screen that steps through its states. |
 | `/play` | The round and its result. The chosen route and class are read from the store; opening `/play` without a pending round redirects to `/`. |
+| any other | The game's own "Page not found" page (status 404) on the sky, in the theme the player chose, with one action: "Back to start". |
 
 ### Modules
 
@@ -72,10 +73,12 @@ Each module has one job and a narrow interface. Dependencies only point downward
 | `src/engine` | Dealing a round, the mode rules, scoring. Pure TypeScript: no React, no DOM, no storage, no clock or randomness of its own | `content` types |
 | `src/progress` | Card history, records, last route. An interface plus a local storage implementation | `content` types |
 | `src/input` | Swipe interpretation: pure functions that turn pointer samples into "cancel", "true" or "false" | nothing |
-| `components` | The design system's components | design tokens |
-| `app` | Routes; wires the modules together | all of the above |
+| `src/app-state` | What the screens share outside the engine: the table of classes, the round the start flow hands to `/play` (session storage), the theme choice, and the services a screen takes (network, storages, history) so its tests run without a browser | `content`, `progress` |
+| `components` | The design system's components | design tokens; `src/meta` for the app name (`Logo`); the engine's constants and types (`LIVES`, `TIMED`, `Answered`) and the progress types they draw (`Comparison`); `src/content/text`, which splits card text into plain and code parts (`CardText`); and, for `ThemeSwitch` alone, the theme logic and storage type in `src/app-state` and the local storage in `src/progress/local`, because the switch reads and keeps the player's theme choice itself |
+| `components/start`, `components/play` | The start flow, and the play and result screens with their hooks: they wire the modules together | all of the above |
+| `app` | Routes, each rendering one screen; the root layout (fonts, theme script) and the 404 page | all of the above |
 
-`engine` and `input` being pure is deliberate: they are fully unit-testable, and they are the reference that the Swift and Kotlin clones translate line by line. `progress` sitting behind an interface is what lets the native apps put iCloud key-value storage or Play Games behind the same contract.
+`engine` and `input` being pure is deliberate: they are fully unit-testable, and they are the reference that the Swift and Kotlin clones translate line by line. `progress` sitting behind an interface is what lets the native apps put iCloud key-value storage or Play Games behind the same contract. `tests/purity.test.ts` enforces the pure rows (`src/engine`, `src/input`, the progress rules in `src/progress/progress.ts`, and `src/content/play.ts` and `text.ts`); the other rows are kept by review.
 
 ## 5. Content
 
@@ -128,11 +131,11 @@ Hand-written. It defines areas, platforms and decks, and for each deck its secti
 
 Initial catalog: Cloud > AWS > Cloud Practitioner (CLF: CON 45, SEC 47, TEC 88, BIL 34 cards) and Solutions Architect Associate (SAA: SEC 33, RES 20, PRF 54, CST 47 cards); Cloud > Google Cloud > Cloud Digital Leader (CDL, no sections, 133 cards); Cloud > Azure (no decks); Frontend > Next.js > Rendering (RND, eight sections, 94 cards); DevOps (no decks).
 
-Added after step 2: Cloud > Google Cloud > Associate Cloud Engineer (ACE, four sections, 113 cards); Cloud > Azure > Fundamentals (AZ9, six sections, 99 cards); Frontend > React > Fundamentals (RCT, five sections, 135 cards), TypeScript > Fundamentals (TSC, six sections, 113 cards) and Web platform > Security (WEB, five sections, 112 cards); DevOps > Docker > Fundamentals (DKR, six sections, 112 cards), Kubernetes > Kubernetes and Cloud Native Associate (KCN, four sections, 116 cards), Terraform > Associate (TFA, six sections, 144 cards) and GitHub > Actions (GHA, five sections, 125 cards). A deck whose platform and title would read badly together on the pass carries a `passName`: Google Cloud Digital Leader, Google Associate Cloud Engineer, Web Security, Kubernetes and Cloud Native Associate.
+Added after step 2: Cloud > Google Cloud > Associate Cloud Engineer (ACE, four sections, 113 cards); Cloud > Azure > Fundamentals (AZ9, six sections, 99 cards); Frontend > React > Fundamentals (RCT, five sections, 135 cards), TypeScript > Fundamentals (TSC, six sections, 113 cards) and Web platform > Security (WEB, five sections, 112 cards); DevOps > Docker > Fundamentals (DKR, six sections, 112 cards), Kubernetes > Kubernetes and Cloud Native Associate (KCN, four sections, 116 cards), Terraform > Associate (TFA, six sections, 144 cards) and GitHub > Actions (GHA, five sections, 125 cards). Then: Frontend > JavaScript > Fundamentals (JSC, six sections, 134 cards) and Web platform > Accessibility (ACC, six sections, 121 cards) and Performance (CWV, six sections, 122 cards); DevOps > Git > Fundamentals (GIT, five sections, 122 cards) and Linux > Command line (LNX, six sections, 119 cards). A deck whose platform and title would read badly together on the pass carries a `passName`: Google Cloud Digital Leader, Google Associate Cloud Engineer, Web Security, Web Accessibility, Web Performance, Kubernetes and Cloud Native Associate, Linux Command Line.
 
 ### Build step
 
-`scripts/build-decks.ts` runs before `next build`. It reads `content/catalog.json` and `content/reviewed/*.json`, validates both with zod, checks that every card maps to exactly one section and that every `conflictGroups` member exists, and writes `public/decks/`. Any validation failure fails the build, so a broken deck cannot be deployed.
+`scripts/build-decks.ts` runs before `next build`. It reads `content/catalog.json` and `content/reviewed/*.json`, validates both with zod, checks that every card maps to exactly one section, and writes `public/decks/`. Any validation failure fails the build, so a broken deck cannot be deployed. A conflict group that only one card of the deck lists cannot conflict with anything: it is dropped from that card, not reported.
 
 ### public/decks/index.json
 
@@ -163,7 +166,7 @@ Card ids are stable for the life of a card. Pipeline-only fields (misconception,
 
 ### Loading
 
-The app fetches `index.json` on start and a deck file when a round on that deck starts. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A fetch that fails or does not answer within a few seconds falls back to the cached copy; without one, the screen that needed the data shows a plain message with a retry action.
+The app fetches `index.json` on start and a deck file when a round on that deck starts. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A fetch that fails or does not answer within 8 seconds falls back to the cached copy; without one, the screen that needed the data shows a plain message with a retry action.
 
 ## 6. Game engine
 
@@ -181,15 +184,15 @@ Input: the cards of the chosen route (a section or the whole deck), the mode, th
 
 Priority when choosing cards:
 
-1. Cards last answered wrong, at most three per ten cards dealt.
+1. Cards last answered wrong, at most three in each chunk of ten cards dealt (a Classic round is one chunk; see below for the unbounded modes).
 2. Cards never seen.
 3. Cards seen longest ago.
 
 Constraints:
 
 - No two cards that share a conflict group within one Classic round; in the unbounded modes, not within the last ten cards dealt.
-- In every ten cards dealt, between four and six have the answer True.
-- Order is random, with at most three equal answers in a row.
+- In each chunk of ten cards dealt, between four and six have the answer True. The balance holds per chunk, not for any ten cards in a row: across the join of two chunks, ten cards in a row can hold from two to eight True.
+- Order is random, with at most three equal answers in a row (this one holds across the join of two chunks too).
 
 If the constraints cannot all be met from the available cards, they are relaxed in this order: recency, then conflict groups, then answer balance. The unbounded modes deal in chunks of ten and, when every card of the route has been dealt in the round, continue with the cards seen longest ago.
 
@@ -202,7 +205,7 @@ A chunk is ten cards, or as many as may be dealt. The cards the round has not sh
 | Classic | 10 cards | after card 10 | verdict, explanation, source, "Next card"; after the last card the action is "See results" | score out of 10 |
 | Streak | unbounded | first wrong answer | same; after the ending answer the action is "See results" | longest streak |
 | Three lives | unbounded | third wrong answer | same; after the ending answer the action is "See results" | cards answered |
-| Timed | 60 seconds | time up | stamp only, next card at once | correct answers |
+| Timed | 60 seconds | time up | the verdict stamp only, for 700 ms, then the next card | correct answers |
 
 Timed: the clock starts when the first card is shown, pauses while the page is hidden and stops at zero. The card on screen at zero is neither counted nor recorded. Timed shows no explanations during play; missed cards are reviewed on the result screen.
 
@@ -271,17 +274,17 @@ The player can also choose the theme. A round button at the top right of the sta
 
 ### Typography
 
-Overpass and Overpass Mono (SIL OFL), static weights, loaded with `next/font` so they are served from the site.
+Overpass and Overpass Mono (SIL OFL 1.1), the four static weights the design uses, committed as woff2 files in `app/fonts/` with the OFL text and loaded with `next/font/local`, so they are served from the site and the build needs no network. Each file holds the latin characters and the arrows (← →) the screens draw.
 
 ### Screens
 
-1. **Start**, the fill-in pass: the theme switch sits at the top right on every step (section 9, "Theme switch"). Step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. An area or platform without decks, and a class that is not built yet, are shown as not available and cannot be chosen. A deck whose review is not finished is not listed. Option presses are ignored for 250 ms after a step appears, so a double tap cannot choose an option the player has not seen. Back works at every step; a filled field returns to its step. After the class is chosen, "Start round" appears.
-2. **Play**: the flight-path header in the variant of the mode, the boarding pass card with the statement, the stub with the swipe hint, the True and False buttons; then the answer state, or the stamp in Timed. A card with a non-empty `appliesTo` shows it as one small line above the statement. The source link opens in a new tab.
-3. **Result**: as described in section 6. Its actions ("Play again", "Choose another route", the close button) ignore presses for one second after the result appears, so a second tap on "See results", which lies where "Choose another route" is, cannot leave the result before the player has seen it.
+1. **Start**, the fill-in pass: the theme switch sits at the top right on every step (section 9, "Theme switch"). Step 1 shows the logo, one description line, the area cards and, for a returning player, one "Continue" line. Tapping "Continue" fills the pass with the last route and class and shows "Start round", so the player sees the route and can still change it; every round starts through the same "Start round" hand-off. Steps 2 to 5 (platform, deck, section, class) show the small pass with its filled fields above the options for the current step. Every step is shown even when it has a single option, with one exception: a deck without sections skips the section step and plays the whole deck. An area or platform without decks, and a class that is not built yet, are shown as not available and cannot be chosen. A deck whose review is not finished is not listed. Option presses are ignored for 250 ms after a step appears, so a double tap cannot choose an option the player has not seen. Back works at every step; a filled field returns to its step; Escape goes back a step like Back. The steps are kept in the browser history (the address does not change), so the browser's back and forward buttons move through them; "Start round" takes those entries out again, so back from `/play` is step 1. After the class is chosen, step 6, "Your pass is ready", shows the filled pass, the class's rule with the swipe in one sentence, and "Start round".
+2. **Play**: the flight-path header in the variant of the mode, the boarding pass card with the statement, the stub with the swipe hint, the True and False buttons; then the answer state, or the stamp in Timed. A card with a non-empty `appliesTo` shows it as one small line above the statement. The source link opens in a new tab. After an answer, "Next card" (or "See results") comes in where True and False were and takes presses only once it has arrived, 420 ms after the answer, so a double tap on an answer cannot skip the verdict. In Streak, the answer that takes the streak past a stored best gets a "New best" stamp on its answer slip, once per round. Escape is the close control ("Leaving a round", section 6).
+3. **Result**: as described in section 6. Each missed card has a "Why" disclosure that opens its explanation and its source link. Its actions ("Play again", "Choose another route", the close button) ignore presses for one second after the result appears, so a second tap on "See results", which lies where "Choose another route" is, cannot leave the result before the player has seen it.
 
 ### Motion
 
-Motion (the library) drives the start flow's transitions and the card's reveal. Card dragging is hand-written on pointer events because the swipe rules need exact control. Every transition uses transforms and opacity only and has a reduced-motion fallback (a cross-fade), as specified in the design system.
+Motion (the library) drives the start flow's transitions and the card's reveal. Card dragging is hand-written on pointer events because the swipe rules need exact control. Transitions use transforms and opacity, with four small exceptions: a missed card's "Why" row grows its height (`grid-template-rows`), the strike of a lost life draws its line (`pathLength`), the continue line darkens while pressed (`background-color`) and a pressed pill lowers its shadow (`box-shadow`). Every transition has a reduced-motion fallback (a cross-fade, or no transition), as specified in the design system.
 
 ### Accessibility
 
@@ -299,6 +302,7 @@ A web app manifest and icons ship in step 1 so the game can be added to the home
 | `index.json` or a deck cannot be fetched | Use the cached copy if there is one; otherwise show a message and a retry action. |
 | Storage unavailable, full or corrupt | Play continues with empty progress; nothing is thrown at the player. |
 | `/play` opened without a pending round | Redirect to `/`. |
+| An unknown address | The game's "Page not found" page, status 404, with "Back to start". |
 | A route has too few cards for the constraints | Relax the constraints in the documented order; never fail to deal. |
 
 ## 11. Testing
@@ -314,10 +318,9 @@ The engine and the input module are written test first. GitHub Actions runs all 
 
 ## 12. Repository and deployment
 
-One public GitHub repository. Commits use the owner's GitHub identity. The former content working folder (content pipeline and design files) moves into the repository as `content/` and `design/`, with local absolute paths in notes turned into relative ones. Vercel builds and deploys `main`; pull requests get preview deployments. The licence for code and for card content is decided when the repository is published.
+One public GitHub repository. Commits use the owner's GitHub identity. The former content working folder (content pipeline and design files) moves into the repository as `content/` and `design/`, with local absolute paths in notes turned into relative ones. Vercel builds and deploys `main`; pull requests get preview deployments. The code is licensed under MIT (`LICENSE`), the card content under CC BY 4.0 (`content/LICENSE.md`), and the fonts are under the SIL Open Font License 1.1 (`app/fonts/OFL.txt`).
 
 ## 13. Open questions
 
-- The licence (section 12).
 - Whether to add the "Mis-swiped?" flag, after the first play test.
 - A custom domain; none has been bought.

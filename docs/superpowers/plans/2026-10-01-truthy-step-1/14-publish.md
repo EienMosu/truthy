@@ -1,6 +1,6 @@
 ### Task 14: Publish: GitHub repository and Vercel
 
-Tasks 1 to 13 are done and committed on `main`. This task makes the repository safe to publish, adds the licences, creates the public repository `EienMosu/truthy`, checks CI, deploys `main` on Vercel the way The Slow Wire is deployed (Vercel's GitHub integration, imported in the dashboard, no Vercel CLI, no `.vercel/` folder), verifies the production URL and records it in the README.
+Tasks 1 to 13 are done and committed on `main`. This task makes the repository safe to publish, adds the licences, creates the public repository `EienMosu/truthy`, checks CI, deploys `main` on Vercel through Vercel's GitHub integration (imported in the dashboard, no Vercel CLI, no `.vercel/` folder), verifies the production URL and records it in the README.
 
 Every step that touches an account starts with the account check in step 1 and stops if it does not show `EienMosu`. Steps marked **Owner action or explicit go-ahead required** change something outside the machine: do not run them until the owner says so in this session. Every command runs from the repository root.
 

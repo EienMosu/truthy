@@ -11,8 +11,6 @@ export default defineConfig({
       // "@/x" is the repository root, the same mapping as "paths" in tsconfig.json.
       // A regex so that scoped packages such as "@testing-library/react" are left alone.
       { find: /^@\//, replacement: root },
-      // next/font/google only works inside the Next.js compiler.
-      { find: /^next\/font\/google$/, replacement: `${root}tests/stubs/next-font-google.ts` },
     ],
   },
   test: {
