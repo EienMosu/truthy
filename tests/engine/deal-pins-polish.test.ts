@@ -54,7 +54,8 @@ function repeatedGroups(dealt: readonly Card[]): string[] {
 }
 
 // The Swift and Kotlin clones must deal the same cards in the same order for the same seed (spec section 4). These
-// vectors pin every step of a deal: the ranking, the search, the run limit and the draw of each answer.
+// vectors pin every step of a deal: the ranking, the search, the limit on missed cards over the cap, the overdue
+// card, the run limit and the draw of each answer.
 describe("deal: reference vectors", () => {
   // 16 cards with answers True, False, True, ...; c3 and c8 share group a, c5 and c12 share group b; c1 and c6 were
   // missed, c2 was answered right.
@@ -78,6 +79,47 @@ describe("deal: reference vectors", () => {
       "c11", "c6", "c14", "c9", "c13", "c10", "c3", "c16", "c1", "c15",
       "c7", "c4", "c12", "c8", "c5", "c2",
       "c6", "c14", "c11", "c10", "c9", "c13",
+    ]);
+  });
+
+  describe("with more missed cards than the cap", () => {
+    // c1 to c3 (True) and c4 to c8 (False) were missed, oldest first; c9 to c15 (True) were never seen; c16 (False)
+    // was answered right. c5 and c10 share group b. The three missed cards within the cap are True, so the cards
+    // within the cap hold one False card and no deal keeps every rule without the missed cards over it. With them
+    // and no limit, the search deals c1 to c3 and three of c4 to c8: six missed cards. The limit of three finds a
+    // deal that keeps the cap: c16, three of c4 to c8 (c4, c6 and c7 here, as c10 holds group b) and six True cards
+    // never seen.
+    const overCapPool = Array.from({ length: 16 }, (_, i) =>
+      card(`c${i + 1}`, i < 3 || (i >= 8 && i < 15), i === 4 || i === 9 ? ["b"] : []),
+    );
+    const overCapHistory: History = {
+      ...Object.fromEntries(overCapPool.slice(0, 8).map((c, i) => [c.id, missed(i + 1)])),
+      c16: right(9),
+    };
+
+    it.each([
+      [1, ["c10", "c7", "c6", "c12", "c15", "c16", "c13", "c4", "c9", "c14"]],
+      [2, ["c13", "c11", "c4", "c14", "c6", "c16", "c10", "c15", "c9", "c7"]],
+      [3, ["c9", "c16", "c10", "c4", "c7", "c14", "c13", "c6", "c11", "c15"]],
+    ])("seed %i deals exactly these ten cards in this order", (seed, expected) => {
+      expect(ids(deal(overCapPool, overCapHistory, createRng(seed), { count: 10 }))).toEqual(expected);
+    });
+  });
+
+  it("six chunks with the seeds 210 to 215 deal exactly these cards, k1 overdue in the sixth", () => {
+    // 21 cards with answers True, False, True, ...; k1 and k12 share group pair. Without the overdue rule, k1 is
+    // still unshown after eighty cards. Once the round has dealt the route twice (42 cards), k1 is overdue, and the
+    // sixth chunk takes it in although k12 is among the ten cards before it.
+    const route = Array.from({ length: 21 }, (_, i) => card(`k${i + 1}`, i % 2 === 0, i === 0 || i === 11 ? ["pair"] : []));
+    const dealt: Card[] = [];
+    for (let k = 0; k < 6; k++) dealt.push(...dealChunk(route, {}, createRng(210 + k), dealt));
+    expect(ids(dealt)).toEqual([
+      "k7", "k3", "k15", "k8", "k12", "k19", "k4", "k14", "k17", "k11",
+      "k9", "k10", "k16", "k6", "k21", "k5", "k18", "k2", "k20", "k13",
+      "k7", "k11", "k12", "k19", "k3", "k17", "k14", "k4", "k15", "k8",
+      "k6", "k13", "k9", "k20", "k5", "k2", "k16", "k21", "k10", "k18",
+      "k15", "k7", "k14", "k17", "k4", "k3", "k19", "k8", "k11", "k12",
+      "k20", "k1", "k9", "k21", "k2", "k5", "k13", "k10", "k16", "k6",
     ]);
   });
 });
