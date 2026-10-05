@@ -336,6 +336,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Container:** the ticket's lower part in `surface-sunk` with notches. Its header row (padding 16 20 4) shows "Missed cards" (`mono-data`, ink-muted) and "3 to review" (Mono 600 13, ink). Then comes a scrolling list (padding 0 20 20, scroll contained, scrollbar hidden). A 28px fade from `surface-sunk-clear` to `surface-sunk` covers the bottom edge.
 - **Item:** padding 12 0 4, with a 1.5px `rule` line between items.
   - Head: `mono-caption`, "Card 03" on the left and "You said True" on the right.
+  - Applies to: only when the card's `appliesTo` is not empty, the line of 5.15b (the qualifier alone in `mono-data`, ink-muted, read as "Applies to …"), margin-top 6. Without it a card that holds only for one setup would read wrong here.
   - Statement: `list-statement`, margin-top 6.
   - Foot: at least 48 tall. "Answer" (`mono-data`, ink-muted) followed by the word in Sans 800 17, ink (not red). The **Why** button sits on the right.
 - **Why button:** at least 48 tall, padding 0 8, `mono-data-strong` in `true`, underlined 1.5 with a 3px offset, with a chevron-down (12, stroke 1.8). It reports whether it is expanded.
@@ -352,7 +353,10 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Night:** the scrim is black at 60% and the sheet shadow is the night ticket shadow pointing up (2.1 Notes).
 
 ### 5.15b Applies-to line
-- One small line above a card's statement when the card's `appliesTo` is not empty: "Applies to Next.js 16 with cacheComponents: true", in `mono-data`, ink-muted, margin-bottom 6. It belongs to the statement: it scrolls, focuses and is read with it, and "Statement into view" (7) keeps it above True and False.
+- One small line above a card's statement when the card's `appliesTo` is not empty. It shows the qualifier alone, "Next.js 16 with cacheComponents: true", in `mono-data`, ink-muted, margin-bottom 6; a screen reader hears "Applies to Next.js 16 with cacheComponents: true" (the phrase is visually hidden, the shown qualifier is hidden from screen readers). With "Applies to" written out the line took two lines on a 390 phone and three at 320.
+- It is never cut or ellipsised, since its end can decide the answer ("cacheComponents: false"): a qualifier longer than the line wraps into lines of balanced length (`text-wrap: balance`).
+- It belongs to the statement: it scrolls, focuses and is read with it, and "Statement into view" (7) keeps it above True and False.
+- The missed-card list shows the same line between an item's head and its statement (5.15).
 
 ### 5.15c Loading and load-failed states
 - **Start step 1, loading the index:** three placeholder cards (`surface-sunk`, radius 16, the height of an area card) where the area cards go; a screen reader hears "Loading the decks".
