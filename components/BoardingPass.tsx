@@ -195,10 +195,11 @@ export function PassStatement({ children, appliesTo, ref, id, muted = false, liv
       className="flex min-h-(--size-statement-min) flex-col justify-center px-(--size-ticket-inset) pt-(--space-18) pb-(--space-24) outline-none"
     >
       {/*
-        The line shows the qualifier alone, as the spec's example does ("Next.js 16 with cacheComponents: true"):
-        with "Applies to " in front it took two lines on a 390 px phone and three at 320 (review finding U95).
-        A screen reader hears the whole phrase. It is never cut, since its end can decide the answer
-        ("cacheComponents: false"); a qualifier still longer than the line wraps into lines of even length.
+        The line shows the qualifier alone, as the spec's example does ("cacheComponents: true"): with
+        "Applies to " in front it took two lines on a 390 px phone and three at 320 (review finding U95). A
+        screen reader hears the whole phrase. It is never cut, since its end can decide the answer
+        ("cacheComponents: false"). Every shipped qualifier fits one line at 320 px (e2e checks it); a longer
+        one would wrap into lines of even length.
       */}
       {appliesTo ? (
         <p
