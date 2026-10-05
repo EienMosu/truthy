@@ -9,13 +9,18 @@ interface Frame {
   pass: number;
   band: number;
   blocks: number;
+  /** The opacity of the block the change leaves, while it is on the pass. */
+  leaving: number | null;
+  /** The opacity of the block the change brings. */
+  entering: number | null;
 }
 
 /** Presses `name` and records the pass on every frame until it has been still for a while. */
 async function framesOfPress(page: Page, name: RegExp): Promise<Frame[]> {
   await page.evaluate(() => {
-    const frames: { pass: number; band: number; blocks: number }[] = [];
+    const frames: Frame[] = [];
     (window as unknown as { passFrames: typeof frames }).passFrames = frames;
+    const opacityOf = (el: Element | null | undefined) => (el ? Number(getComputedStyle(el).opacity) : null);
     const tick = () => {
       const pass = document.querySelector("[data-fill-in-pass]");
       const band = pass?.querySelector("[data-pass-band]");
@@ -24,6 +29,8 @@ async function framesOfPress(page: Page, name: RegExp): Promise<Frame[]> {
           pass: pass.getBoundingClientRect().height,
           band: band.getBoundingClientRect().height,
           blocks: pass.querySelectorAll("[data-pass-block]").length,
+          leaving: opacityOf(pass.querySelector("[data-pass-block][data-leaving]")),
+          entering: opacityOf(pass.querySelector("[data-pass-block]:not([data-leaving])")),
         });
       }
       if (frames.length < 90) requestAnimationFrame(tick);
@@ -102,14 +109,45 @@ test.describe("with motion", () => {
   });
 });
 
+// Review finding 18: with reduced motion the pass changes layout with the start flow's cross-fade (old block
+// out in 100, new block in over 140 after 90), its height switching at once, not with an instant swap.
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("the pass changes layout at once, with no copy of the old block", async ({ page }) => {
+  test("the pass takes its new height at once while the old block fades out and the new one fades in", async ({ page }) => {
     await toDecks(page);
     const frames = await framesOfPress(page, /^CLF, /);
+    expect(distinct(frames.map((f) => f.pass)), "the height switches in one frame").toHaveLength(2);
+    const both = frames.filter((f) => f.blocks === 2);
+    expect(both.length, "the old block stays on the pass while it fades").toBeGreaterThan(1);
+    expect(both[0]?.entering, "the new block waits before it fades in").toBeLessThan(0.1);
+    const fading = (o: number | null) => o !== null && o > 0 && o < 1;
+    expect(frames.some((f) => fading(f.leaving)), `old block ${JSON.stringify(both.map((f) => f.leaving))}`).toBe(true);
+    expect(frames.some((f) => fading(f.entering)), `new block ${JSON.stringify(frames.map((f) => f.entering))}`).toBe(true);
+    // From the change on, the old block is gone before the new one is all there.
+    const start = frames.findIndex((f) => f.blocks === 2);
+    const oldGone = frames.findIndex((f, i) => i > start && (f.blocks === 1 || f.leaving === 0));
+    const newFull = frames.findIndex((f, i) => i > start && f.entering === 1);
+    expect(oldGone).toBeGreaterThan(start);
+    expect(oldGone).toBeLessThan(newFull);
+    expect(frames.at(-1)?.blocks).toBe(1);
+    expect(frames.at(-1)?.entering).toBe(1);
+  });
+
+  test("going back from the ready pass cross-fades the same way", async ({ page }) => {
+    await toDecks(page);
+    await page.getByRole("button", { name: /^CLF, / }).click();
+    await atStep(page, "Choose a section");
+    await page.getByRole("button", { name: /^SEC, / }).click();
+    await atStep(page, "Choose how to play");
+    await page.getByRole("button", { name: /^Classic\. / }).click();
+    await atStep(page, "Your pass is ready");
+    const frames = await framesOfPress(page, /^Change deck, now CLF$/);
     expect(distinct(frames.map((f) => f.pass))).toHaveLength(2);
-    expect(frames.every((f) => f.blocks === 1)).toBe(true);
+    expect(distinct(frames.map((f) => f.band))).toEqual([44, 30]);
+    expect(frames.some((f) => f.blocks === 2 && f.leaving !== null && f.leaving > 0 && f.leaving < 1)).toBe(true);
+    expect(frames.at(-1)?.blocks).toBe(1);
+    expect(frames.at(-1)?.entering).toBe(1);
   });
 });
 
@@ -119,12 +157,18 @@ test.describe("with reduced motion", () => {
 
 interface Copy {
   field: string;
+  text: string;
   top: number;
   left: number;
+  right: number;
   opacity: number;
+  /** Whether the copy is cut with an ellipsis, as its value is. */
+  cut: boolean;
 }
 
 interface Snapshot {
+  /** The pass's left and right edges. */
+  pass: [number, number];
   copies: Copy[];
   /** The opacity of each value on the pass's current block. */
   values: Record<string, number>;
@@ -144,8 +188,17 @@ async function snapshotsOfPress(page: Page, name: RegExp | string): Promise<Snap
     const tick = () => {
       const copies = [...document.querySelectorAll<HTMLElement>("[data-pass-travel]")].map((copy) => {
         const rect = copy.getBoundingClientRect();
-        return { field: copy.dataset.passTravel ?? "", top: rect.top, left: rect.left, opacity: opacityOf(copy) };
+        return {
+          field: copy.dataset.passTravel ?? "",
+          text: copy.textContent ?? "",
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          opacity: opacityOf(copy),
+          cut: copy.scrollWidth > copy.clientWidth + 1,
+        };
       });
+      const passRect = document.querySelector("[data-fill-in-pass]")?.getBoundingClientRect();
       const values: Record<string, number> = {};
       for (const value of document.querySelectorAll<HTMLElement>("[data-pass-block]:not([data-leaving]) [data-pass-value]")) {
         values[value.dataset.passValue ?? ""] = opacityOf(value);
@@ -156,7 +209,7 @@ async function snapshotsOfPress(page: Page, name: RegExp | string): Promise<Snap
       }
       const leaving = document.querySelector("[data-step][inert]");
       const title = leaving?.querySelector("h2");
-      shots.push({ copies, values, blanks, leavingTitle: title ? opacityOf(title) : null, leavingPanel: leaving ? opacityOf(leaving) : null });
+      shots.push({ pass: [passRect?.left ?? 0, passRect?.right ?? 0], copies, values, blanks, leavingTitle: title ? opacityOf(title) : null, leavingPanel: leaving ? opacityOf(leaving) : null });
       if (shots.length < 90) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -185,6 +238,13 @@ function expectTravel(shots: Snapshot[], field: string): void {
     "both copies show half way",
   ).toBe(true);
   if (newFull !== -1) expect(oldGone).toBeLessThan(newFull);
+  // A copy that shows stays on the pass, however its words grow or shrink.
+  for (const [i, shot] of shots.entries()) {
+    for (const copy of shot.copies.filter((c) => c.field === field && c.opacity > 0)) {
+      expect(copy.left, `${field} "${copy.text}" at frame ${i}`).toBeGreaterThanOrEqual(shot.pass[0] - 1);
+      expect(copy.right, `${field} "${copy.text}" at frame ${i}`).toBeLessThanOrEqual(shot.pass[1] + 1);
+    }
+  }
   // The value itself waits under its copies and shows once they are gone.
   const last = shots.at(-1);
   expect(last?.copies).toEqual([]);
@@ -216,6 +276,35 @@ test.describe("values, dashes and titles with motion", () => {
     const back = await snapshotsOfPress(page, "Back to classes");
     expectTravel(back, "deck");
     expectTravel(back, "section");
+  });
+
+  // Review finding 5: values travel by field, not by text. The route pass says "Whole deck" where the ready
+  // pass's leg says "ALL"; the two copies carry their own words and cross-fade on the way, both ways.
+  test("choosing the class sends Whole deck to the ALL leg, and back again", async ({ page }) => {
+    await toDecks(page);
+    await page.getByRole("button", { name: /^CLF, / }).click();
+    await atStep(page, "Choose a section");
+    await page.getByRole("button", { name: /^Whole deck, / }).click();
+    await atStep(page, "Choose how to play");
+    const forward = await snapshotsOfPress(page, /^Classic\. /);
+    expectTravel(forward, "section");
+    expect(travelFrames(forward, "section")[0]?.map((copy) => copy.text)).toEqual(["Whole deck", "ALL"]);
+    expectTravel(forward, "deck");
+    await atStep(page, "Your pass is ready");
+    const back = await snapshotsOfPress(page, "Back to classes");
+    expectTravel(back, "section");
+    expect(travelFrames(back, "section")[0]?.map((copy) => copy.text)).toEqual(["ALL", "Whole deck"]);
+  });
+
+  test("a value cut with an ellipsis travels too, its old copy cut the same way", async ({ page }) => {
+    await toDecks(page);
+    // A field too narrow for its value, as on a phone narrower than any in the specs or with large text.
+    await page.addStyleTag({ content: '[data-pass-block="destination"] [data-pass-value="platform"] { max-width: 18px !important; }' });
+    const shots = await snapshotsOfPress(page, /^CLF, /);
+    expectTravel(shots, "platform");
+    const [old, next] = travelFrames(shots, "platform")[0] ?? [];
+    expect(old?.cut, "the old copy is cut as the value was").toBe(true);
+    expect(next?.cut, "the new copy shows the whole word, as the quiet line does").toBe(false);
   });
 
   test("the travelling copies leave from the old values and land on the new ones, the band's growth included", async ({ page }) => {

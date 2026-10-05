@@ -1,9 +1,10 @@
 // The values that stay on the fill-in pass when it changes layout (design system 7, "Pass changes layout"):
-// each one travels from its old place to its new one. Its look may change on the way (a Sans 16 field becomes
-// a word on the quiet line, a Mono 16 code becomes a Mono 34 leg), so it travels as two copies laid over the
+// each field's value travels from its old place to its new one. Its look may change on the way (a Sans 16 field
+// becomes a word on the quiet line, a Mono 16 code becomes a Mono 34 leg), and so may its words (the route
+// pass says "Whole deck" where the ready pass's leg says "ALL"), so it travels as two copies laid over the
 // pass, the old look and the new, that follow one eased path while they cross-fade on a linear clock: the old
-// copy is gone by 60 percent, the new one comes in from 40 percent. The values themselves are hidden meanwhile,
-// so the block fades of the two layouts never show them.
+// copy is gone by 60 percent, the new one comes in from 40 percent. Values are matched by field, never by
+// text. The values themselves are hidden meanwhile, so the block fades of the two layouts never show them.
 import { EASE } from "./easing";
 import type { PassFieldName } from "./FillInPass";
 
@@ -17,6 +18,8 @@ const LOOK = ["fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacin
 
 interface Box {
   left: number;
+  /** The right edge of what shows: the value's own right edge where its text is cut with an ellipsis. */
+  right: number;
   top: number;
   height: number;
 }
@@ -27,12 +30,19 @@ function textBox(el: HTMLElement, origin: DOMRect): Box | null {
   range.selectNodeContents(el);
   const rect = range.getBoundingClientRect();
   if (rect.height === 0) return null;
-  return { left: rect.left - origin.left, top: rect.top - origin.top, height: rect.height };
+  const right = Math.min(rect.right, el.getBoundingClientRect().right);
+  return { left: rect.left - origin.left, right: right - origin.left, top: rect.top - origin.top, height: rect.height };
 }
 
-/** Whether the value is cut with an ellipsis: a copy would show all of it, so such a value only fades. */
+/** Whether the value is cut with an ellipsis: its copy is cut the same way, at the same width. */
 function isCut(el: HTMLElement): boolean {
   return el.scrollWidth > el.clientWidth + 1;
+}
+
+/** Whether the value's text keeps to the right of its place (the section leg of the ready pass). */
+function keepsRight(el: HTMLElement): boolean {
+  const align = getComputedStyle(el).textAlign;
+  return align === "right" || align === "end";
 }
 
 /** A copy of `el` laid over `root` with its text exactly where `box` says. */
@@ -51,8 +61,8 @@ function copyAt(el: HTMLElement, root: HTMLElement, box: Box, origin: DOMRect): 
     whiteSpace: "nowrap",
     lineHeight: "normal",
     pointerEvents: "none",
-    transformOrigin: "0 0",
   });
+  if (isCut(el)) Object.assign(copy.style, { width: `${el.clientWidth}px`, overflow: "hidden", textOverflow: "ellipsis" });
   root.appendChild(copy);
   // A copy's text sits where its own line box puts it; move the copy by whatever is left over.
   const own = textBox(copy, origin);
@@ -78,18 +88,23 @@ export function travelPassValues(root: HTMLElement, leaving: HTMLElement, enteri
     if (field === skip) continue;
     const from = leaving.querySelector<HTMLElement>(`[data-pass-value="${field}"]`);
     const to = entering.querySelector<HTMLElement>(`[data-pass-value="${field}"]`);
-    if (!from || !to || from.textContent !== to.textContent || isCut(from) || isCut(to)) continue;
+    if (!from || !to) continue;
     const a = textBox(from, origin);
     const measured = textBox(to, origin);
     if (!a || !measured) continue;
     const b = { ...measured, top: measured.top + shift };
-    // Left edges and tops meet, and the scale is the change of text height, so the two copies cover each other.
+    // The tops meet, and so do the edges the text keeps to: the left edges, or the right edges where either
+    // end keeps to the right, so a copy whose words are longer than the other's ("Whole deck" grown to the
+    // size of "ALL") stays on the pass. The scale is the change of text height, so where the words are the
+    // same the two copies cover each other.
+    const anchorRight = keepsRight(from) || keepsRight(to);
     const scale = b.height / a.height;
-    const dx = b.left - a.left;
+    const dx = anchorRight ? b.right - a.right : b.left - a.left;
     const dy = b.top - a.top;
     const timing = { duration: TRAVEL_MS, fill: "both" as const };
     const oldCopy = copyAt(from, root, a, origin);
     const newCopy = copyAt(to, root, b, origin);
+    for (const copy of [oldCopy, newCopy]) copy.style.transformOrigin = anchorRight ? "100% 0" : "0 0";
     copies.push(oldCopy, newCopy);
     animations.push(
       oldCopy.animate({ transform: ["none", `translate(${dx}px, ${dy}px) scale(${scale})`] }, { ...timing, easing: PATH_EASING }),
