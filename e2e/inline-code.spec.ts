@@ -41,7 +41,7 @@ test("a code fragment is set in the mono face, without backticks, on the card, t
 
   await seeResults(page);
   const missed = page.getByRole("region", { name: "Missed cards" }).getByRole("listitem");
-  await expectCodeShown(missed.locator("p").first());
+  await expectCodeShown(missed.locator("[data-missed-statement]"));
   await missed.getByRole("button", { name: /^Why, / }).click();
   await expectCodeShown(missed.getByRole("region"));
 });

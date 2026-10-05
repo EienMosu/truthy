@@ -100,7 +100,7 @@
       "section": "1.1",
       "statement": "An IAM permissions boundary caps the permissions that identity-based policies can grant to its attached role.",
       "answer": true,
-      "explanation": "For a role with a permissions boundary, an identity-based permission must be allowed by both the identity policy and the boundary.",
+      "explanation": "The boundary grants nothing by itself. Effective permissions are the intersection, so an action must be allowed by the identity policy and the boundary alike.",
       "misconception": "",
       "factKey": "iam-permissions-boundary-identity-policy-intersection",
       "topic": "IAM policy evaluation",
@@ -115,7 +115,7 @@
         "title": "Permissions boundaries for IAM entities",
         "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -214,9 +214,9 @@
     {
       "id": "aws-saa-c03-s1.1-12",
       "section": "1.1",
-      "statement": "An application on Amazon EC2 can retrieve its instance-profile role credentials from instance metadata.",
+      "statement": "An application on Amazon EC2 gets its instance-profile role credentials from instance metadata.",
       "answer": true,
-      "explanation": "An instance profile associates an IAM role with an EC2 instance. Applications can use the instance metadata credential provider to obtain that role's credentials.",
+      "explanation": "The instance profile gives applications the role's temporary credentials, which update automatically before they expire, so no long-term access keys have to be stored on the instance.",
       "misconception": "",
       "factKey": "ec2-instance-profile-metadata-credentials",
       "topic": "IAM role access",
@@ -232,7 +232,7 @@
         "title": "Use an IAM role to grant permissions to applications running on Amazon EC2 instances",
         "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -240,7 +240,7 @@
       "section": "1.2",
       "statement": "Security groups permit responses to allowed inbound connections regardless of their outbound rules.",
       "answer": true,
-      "explanation": "Security groups track connection state. Response traffic for an allowed inbound connection is permitted even when an outbound rule does not separately allow it.",
+      "explanation": "Security groups are stateful: once inbound traffic is allowed, its responses are allowed to leave the instance whatever the outbound rules say.",
       "misconception": "",
       "factKey": "security-group-stateful-response",
       "topic": "VPC traffic controls",
@@ -255,7 +255,7 @@
         "title": "Control traffic to your AWS resources using security groups",
         "url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -640,7 +640,7 @@
     {
       "id": "aws-saa-c03-s1.3-07",
       "section": "1.3",
-      "statement": "Configuring Amazon S3 live replication automatically backfills existing objects in the source bucket.",
+      "statement": "Configuring Amazon S3 live replication also copies objects that already exist in the source bucket.",
       "answer": false,
       "explanation": "S3 live replication handles eligible objects written after replication is configured. Existing objects require a separate operation, such as S3 Batch Replication.",
       "misconception": "Enabling a live replication rule automatically backfills the source bucket's existing objects.",
@@ -658,7 +658,7 @@
         "title": "Replicating objects within and across Regions",
         "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -711,9 +711,9 @@
     {
       "id": "aws-saa-c03-s1.3-10",
       "section": "1.3",
-      "statement": "AWS Certificate Manager renews in-use, ACM-issued public certificates with valid public DNS validation records.",
+      "statement": "ACM renews in-use, ACM-issued public certificates that have valid public DNS validation records.",
       "answer": true,
-      "explanation": "ACM can automatically renew a DNS-validated public certificate used by an AWS service when its required validation CNAME records remain publicly accessible.",
+      "explanation": "About 45 days before expiry, ACM checks that the certificate is in use by an AWS service and that its ACM-provided CNAME records are present in public DNS. If so, it treats the domains as validated and renews.",
       "misconception": "",
       "factKey": "acm-dns-validation-managed-renewal",
       "topic": "Certificate lifecycle management",
@@ -728,7 +728,7 @@
         "title": "Renewal for domains validated by DNS",
         "url": "https://docs.aws.amazon.com/acm/latest/userguide/dns-renewal-validation.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -1372,9 +1372,9 @@
     {
       "id": "aws-saa-c03-s3.1-06",
       "section": "3.1",
-      "statement": "Amazon FSx for Windows File Server can join an existing self-managed Microsoft Active Directory domain.",
+      "statement": "Amazon FSx for Windows File Server supports joining an existing self-managed Microsoft Active Directory domain.",
       "answer": true,
-      "explanation": "An FSx for Windows File Server file system can join a self-managed domain during creation. This supports integration with existing directory identities and resources.",
+      "explanation": "Joined at creation, the file system sits in the same Active Directory forest and domain as the users and existing file servers. Amazon FSx joins it with a service account from that domain.",
       "misconception": "",
       "factKey": "fsx-windows-self-managed-active-directory",
       "topic": "File system integration",
@@ -1389,7 +1389,7 @@
         "title": "Using a self-managed Microsoft Active Directory",
         "url": "https://docs.aws.amazon.com/fsx/latest/WindowsGuide/self-managed-AD.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -1466,7 +1466,7 @@
     {
       "id": "aws-saa-c03-s3.1-10",
       "section": "3.1",
-      "statement": "Amazon S3 can return a selected byte range from an object instead of transferring the complete object.",
+      "statement": "Amazon S3 byte-range fetches return a selected part of an object instead of the complete object.",
       "answer": true,
       "explanation": "Byte-range retrieval lets an application fetch the portion of an S3 object it needs. This avoids transferring the remainder when processing part of a large object.",
       "misconception": "",
@@ -1483,7 +1483,7 @@
         "title": "Performance guidelines for Amazon S3",
         "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/optimizing-performance-guidelines.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -1909,7 +1909,7 @@
     {
       "id": "aws-saa-c03-s3.3-06",
       "section": "3.3",
-      "statement": "A result filter on an Amazon DynamoDB query reduces the read capacity consumed by that query.",
+      "statement": "A filter expression on an Amazon DynamoDB query can reduce the read capacity that query consumes.",
       "answer": false,
       "explanation": "DynamoDB applies query filters after reading the matching items. Discarding items from the response does not reduce the capacity consumed to read them.",
       "misconception": "A DynamoDB query is charged read capacity based on the items retained after filtering.",
@@ -1926,7 +1926,7 @@
         "title": "Filter expressions for the Query operation in DynamoDB",
         "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -1955,7 +1955,7 @@
     {
       "id": "aws-saa-c03-s3.3-09",
       "section": "3.3",
-      "statement": "Amazon RDS storage autoscaling reduces allocated storage after large tables are deleted.",
+      "statement": "Amazon RDS storage autoscaling can shrink allocated storage after large tables are deleted.",
       "answer": false,
       "explanation": "RDS storage autoscaling increases allocated storage but does not shrink it. Deleting table data can free space within the existing allocation rather than reduce that allocation.",
       "misconception": "RDS storage autoscaling reverses earlier storage increases when database usage falls.",
@@ -1972,7 +1972,7 @@
         "title": "Managing capacity automatically with Amazon RDS storage autoscaling",
         "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIOPS.Autoscaling.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -2002,7 +2002,7 @@
     {
       "id": "aws-saa-c03-s3.3-11",
       "section": "3.3",
-      "statement": "Amazon Redshift can skip storage blocks when a query filters on a table's sort key.",
+      "statement": "Amazon Redshift skips storage blocks when a query filters on a table's sort key.",
       "answer": true,
       "explanation": "Redshift records minimum and maximum column values for storage blocks. Sorting data lets range filters exclude blocks whose values fall outside the requested range.",
       "misconception": "",
@@ -2019,7 +2019,7 @@
         "title": "Sort keys",
         "url": "https://docs.aws.amazon.com/redshift/latest/dg/t_Sorting_data.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -2421,7 +2421,7 @@
       "section": "3.5",
       "statement": "An Amazon Athena query can reduce scanned data by filtering on a table's partition key.",
       "answer": true,
-      "explanation": "Athena can restrict a query to the S3 partitions selected by a partition-key filter. Data in unrelated partitions is skipped instead of scanned.",
+      "explanation": "When the WHERE clause specifies the partition, Athena scans data only from that partition, which improves performance and reduces cost.",
       "misconception": "",
       "factKey": "athena-partition-pruning",
       "topic": "Data lake query pruning",
@@ -2436,13 +2436,13 @@
         "title": "Partition your data",
         "url": "https://docs.aws.amazon.com/athena/latest/ug/partitions.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
       "id": "aws-saa-c03-s3.5-09",
       "section": "3.5",
-      "statement": "Adding task nodes to an Amazon EMR cluster increases the cluster's HDFS storage capacity.",
+      "statement": "Adding task nodes to an Amazon EMR cluster can increase the cluster's HDFS storage capacity.",
       "answer": false,
       "explanation": "EMR task nodes contribute processing capacity but do not store HDFS data. Core nodes provide the cluster's HDFS storage.",
       "misconception": "Task nodes contribute distributed storage in the same way as core nodes.",
@@ -2459,7 +2459,7 @@
         "title": "Understand node types in Amazon EMR: primary, core, and task nodes",
         "url": "https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-master-core-task-nodes.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -2632,7 +2632,7 @@
     {
       "id": "aws-saa-c03-s4.1-07",
       "section": "4.1",
-      "statement": "Detaching an Amazon EBS volume pauses its storage charges until it is attached again.",
+      "statement": "Detaching an Amazon EBS volume can pause its storage charges until it is attached again.",
       "answer": false,
       "explanation": "An EBS volume continues to incur storage charges after detachment. The allocated volume still exists even when an instance is not using it.",
       "misconception": "An unattached EBS volume is free because no instance is actively using it.",
@@ -2649,7 +2649,7 @@
         "title": "Detach an Amazon EBS volume from an Amazon EC2 instance",
         "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-detaching-volume.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -3246,7 +3246,7 @@
     {
       "id": "aws-saa-c03-s4.3-09",
       "section": "4.3",
-      "statement": "Deleting an Amazon RDS DB instance automatically removes its previously created manual DB snapshots.",
+      "statement": "Deleting an Amazon RDS DB instance also deletes its previously created manual DB snapshots.",
       "answer": false,
       "explanation": "Manual RDS snapshots survive deletion of their source DB instance. Retaining those snapshots can continue to incur storage charges until they are deleted separately.",
       "misconception": "Deleting a database instance also deletes its manual snapshots.",
@@ -3263,7 +3263,7 @@
         "title": "Deleting a DB instance",
         "url": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_DeleteInstance.html"
       },
-      "revision": "original",
+      "revision": "rewritten",
       "conflictGroups": []
     },
     {
@@ -3504,10 +3504,10 @@
       "volatility": "may_change",
       "volatilityNote": "The provisioned-capacity basis for port-hour pricing could change.",
       "source": {
-        "title": "AWS Direct Connect pricing",
-        "url": "https://aws.amazon.com/directconnect/pricing/"
+        "title": "AWS Direct Connect pay-as-you-go pricing",
+        "url": "https://aws.amazon.com/directconnect/pricing/pay-as-you-go/"
       },
-      "revision": "original",
+      "revision": "source-fixed",
       "conflictGroups": []
     },
     {
