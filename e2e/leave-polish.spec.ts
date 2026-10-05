@@ -72,6 +72,23 @@ test("Escape keeps playing after a tap on the sheet's title", async ({ page }) =
   await expect(page.getByRole("button", { name: "Next card" })).toBeVisible();
 });
 
+// The sheet hears its keys on the document only while it is open: on its way out after Keep playing, Tab
+// from the close button is the round screen's again, and does not send focus into the leaving sheet.
+test("Tab right after Keep playing stays on the round screen", async ({ page }) => {
+  await answeredOne(page);
+  // The round's close button, not the leaving sheet's own "Leave round".
+  const close = page.locator("main").getByRole("button", { name: "Leave round" });
+  await close.click();
+  const dialog = page.getByRole("dialog", { name: "Leave round?" });
+  await expect(page.getByRole("button", { name: "Keep playing" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog).toHaveCount(0);
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => document.activeElement !== document.body && document.querySelector("main")?.contains(document.activeElement))).toBe(true);
+});
+
 // Review finding U64: the scrim fades in over the close button, so a double tap on it put its second tap on
 // the scrim and closed the sheet before it was seen.
 test("a double tap on the close button opens the sheet and leaves it open", async ({ page }) => {

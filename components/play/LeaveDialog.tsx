@@ -4,7 +4,7 @@
 // bottom of the frame, over a scrim. "Keep playing" is the primary action and has focus when it opens;
 // Escape and a tap on the scrim also keep playing. Focus stays inside while it is open. The screen behind
 // should be made inert by the caller (PlayScreen sets inert on its <main>).
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { PillButton } from "@/components/PillButton";
 import { QuietButton } from "@/components/QuietButton";
@@ -55,12 +55,16 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
   }, []);
 
   // The keys are heard on the document, not on the sheet: a tap on the sheet's text moves focus to the
-  // body, and Escape must still keep playing from there (the screen behind is inert and ignores it).
+  // body, and Escape must still keep playing from there (the screen behind is inert and ignores it). Only
+  // while the sheet is open: once it has closed it stays in the page for its exit animation, and the keys
+  // are the round screen's again (Tab from the close button, Escape to ask again).
+  const present = useIsPresent();
   const stay = useRef(onStay);
   useEffect(() => {
     stay.current = onStay;
   });
   useEffect(() => {
+    if (!present) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -88,7 +92,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [present]);
 
   return (
     <div className="fixed inset-0 z-50">
