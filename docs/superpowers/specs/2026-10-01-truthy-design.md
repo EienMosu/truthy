@@ -69,6 +69,7 @@ Each module has one job and a narrow interface. Dependencies only point downward
 
 | Module | Job | May depend on |
 |---|---|---|
+| `src/meta` | The app's name and its one-line description, for the logo, the page head, the web manifest and the 404 page | nothing |
 | `src/content` | zod schemas and types for the catalog and decks; loading and caching deck files | nothing |
 | `src/engine` | Dealing a round, the mode rules, scoring. Pure TypeScript: no React, no DOM, no storage, no clock or randomness of its own | `content` types |
 | `src/progress` | Card history, records, last route. An interface plus a local storage implementation | `content` types |
