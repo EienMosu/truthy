@@ -68,10 +68,14 @@ for (const width of [320, 360]) {
   });
 }
 
-// Review finding U95: the appliesTo qualifier is one small line above the statement (spec section 9). The
-// qualifiers of the Next.js deck are set into the line in turn: on a 390 px phone each one that is not longer
-// than the line holds is one line, and the line shows the qualifier without an "Applies to" in front.
-test("the appliesTo line shows the qualifier alone, on one line on a 390 px phone", async ({ page }) => {
+type DeckIndex = { areas: { platforms: { decks: { id: string }[] }[] }[] };
+
+// Review finding U95: the appliesTo qualifier is one small line above the statement (spec section 9), shown
+// without an "Applies to" in front. Every qualifier of every shipped deck is set into the line of a Next.js card
+// in turn, on the smallest supported phone: each is one line, since a second line pushes the statement down and
+// can part a setting from its value ("cacheComponents:" from "false").
+test("the appliesTo line shows the qualifier alone, and every shipped qualifier is one line at 320 px", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
   await openHome(page);
   await chooseRoute(page, { area: /^Frontend, /, platform: /^Next\.js, /, deck: /^RND, /, section: /^Whole deck, /, mode: /^Classic\. / });
   await startRound(page);
@@ -80,9 +84,15 @@ test("the appliesTo line shows the qualifier alone, on one line on a 390 px phon
   await expect(line.locator("[aria-hidden]")).not.toContainText("Applies to");
   await expect(line.locator(".sr-only")).toHaveText(/^Applies to /);
 
-  const deck = (await (await page.request.get(`/decks/${RND_ID}.json`)).json()) as { cards: { appliesTo: string }[] };
-  const qualifiers = [...new Set(deck.cards.map((card) => card.appliesTo).filter((text) => text !== ""))];
-  expect(qualifiers.length).toBeGreaterThan(1);
+  const index = (await (await page.request.get("/decks/index.json")).json()) as DeckIndex;
+  const ids = index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks.map((deck) => deck.id)));
+  expect(ids).toContain(RND_ID);
+  const qualifiers = new Set<string>();
+  for (const id of ids) {
+    const deck = (await (await page.request.get(`/decks/${id}.json`)).json()) as { cards: { appliesTo: string }[] };
+    for (const card of deck.cards) if (card.appliesTo !== "") qualifiers.add(card.appliesTo);
+  }
+  expect(qualifiers.size).toBeGreaterThan(1);
   const measured = await line.evaluate((p, texts) => {
     const shown = p.querySelector("[aria-hidden]");
     if (shown === null) throw new Error("No visible qualifier");
@@ -91,9 +101,8 @@ test("the appliesTo line shows the qualifier alone, on one line on a 390 px phon
       shown.textContent = text;
       return { text, lines: Math.round(p.getBoundingClientRect().height / lineHeight) };
     });
-  }, qualifiers);
-  // A qualifier wider than the whole line is a matter for the deck's content; the line still shows it whole.
-  const fitting = measured.filter((m) => m.text.length <= 40);
-  expect(fitting.length).toBeGreaterThan(0);
-  for (const m of fitting) expect(m.lines, `"${m.text}" takes one line`).toBe(1);
+  }, [...qualifiers]);
+  // A qualifier that wraps here is shortened in its deck (content/review/<deck>-edits.json), not cut on screen.
+  const wrapped = measured.filter((m) => m.lines !== 1).map((m) => m.text);
+  expect(wrapped, "qualifiers that take more than one line at 320 px").toEqual([]);
 });
