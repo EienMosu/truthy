@@ -9,13 +9,18 @@ interface Frame {
   pass: number;
   band: number;
   blocks: number;
+  /** The opacity of the block the change leaves, while it is on the pass. */
+  leaving: number | null;
+  /** The opacity of the block the change brings. */
+  entering: number | null;
 }
 
 /** Presses `name` and records the pass on every frame until it has been still for a while. */
 async function framesOfPress(page: Page, name: RegExp): Promise<Frame[]> {
   await page.evaluate(() => {
-    const frames: { pass: number; band: number; blocks: number }[] = [];
+    const frames: Frame[] = [];
     (window as unknown as { passFrames: typeof frames }).passFrames = frames;
+    const opacityOf = (el: Element | null | undefined) => (el ? Number(getComputedStyle(el).opacity) : null);
     const tick = () => {
       const pass = document.querySelector("[data-fill-in-pass]");
       const band = pass?.querySelector("[data-pass-band]");
@@ -24,6 +29,8 @@ async function framesOfPress(page: Page, name: RegExp): Promise<Frame[]> {
           pass: pass.getBoundingClientRect().height,
           band: band.getBoundingClientRect().height,
           blocks: pass.querySelectorAll("[data-pass-block]").length,
+          leaving: opacityOf(pass.querySelector("[data-pass-block][data-leaving]")),
+          entering: opacityOf(pass.querySelector("[data-pass-block]:not([data-leaving])")),
         });
       }
       if (frames.length < 90) requestAnimationFrame(tick);
@@ -102,14 +109,45 @@ test.describe("with motion", () => {
   });
 });
 
+// Review finding 18: with reduced motion the pass changes layout with the start flow's cross-fade (old block
+// out in 100, new block in over 140 after 90), its height switching at once, not with an instant swap.
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
-  test("the pass changes layout at once, with no copy of the old block", async ({ page }) => {
+  test("the pass takes its new height at once while the old block fades out and the new one fades in", async ({ page }) => {
     await toDecks(page);
     const frames = await framesOfPress(page, /^CLF, /);
+    expect(distinct(frames.map((f) => f.pass)), "the height switches in one frame").toHaveLength(2);
+    const both = frames.filter((f) => f.blocks === 2);
+    expect(both.length, "the old block stays on the pass while it fades").toBeGreaterThan(1);
+    expect(both[0]?.entering, "the new block waits before it fades in").toBeLessThan(0.1);
+    const fading = (o: number | null) => o !== null && o > 0 && o < 1;
+    expect(frames.some((f) => fading(f.leaving)), `old block ${JSON.stringify(both.map((f) => f.leaving))}`).toBe(true);
+    expect(frames.some((f) => fading(f.entering)), `new block ${JSON.stringify(frames.map((f) => f.entering))}`).toBe(true);
+    // From the change on, the old block is gone before the new one is all there.
+    const start = frames.findIndex((f) => f.blocks === 2);
+    const oldGone = frames.findIndex((f, i) => i > start && (f.blocks === 1 || f.leaving === 0));
+    const newFull = frames.findIndex((f, i) => i > start && f.entering === 1);
+    expect(oldGone).toBeGreaterThan(start);
+    expect(oldGone).toBeLessThan(newFull);
+    expect(frames.at(-1)?.blocks).toBe(1);
+    expect(frames.at(-1)?.entering).toBe(1);
+  });
+
+  test("going back from the ready pass cross-fades the same way", async ({ page }) => {
+    await toDecks(page);
+    await page.getByRole("button", { name: /^CLF, / }).click();
+    await atStep(page, "Choose a section");
+    await page.getByRole("button", { name: /^SEC, / }).click();
+    await atStep(page, "Choose how to play");
+    await page.getByRole("button", { name: /^Classic\. / }).click();
+    await atStep(page, "Your pass is ready");
+    const frames = await framesOfPress(page, /^Change deck, now CLF$/);
     expect(distinct(frames.map((f) => f.pass))).toHaveLength(2);
-    expect(frames.every((f) => f.blocks === 1)).toBe(true);
+    expect(distinct(frames.map((f) => f.band))).toEqual([44, 30]);
+    expect(frames.some((f) => f.blocks === 2 && f.leaving !== null && f.leaving > 0 && f.leaving < 1)).toBe(true);
+    expect(frames.at(-1)?.blocks).toBe(1);
+    expect(frames.at(-1)?.entering).toBe(1);
   });
 });
 

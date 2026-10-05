@@ -9,7 +9,8 @@
 // the game ticket (the hand-off to /play, which shows its ticket in the same place).
 // A change of layout is one paper changing shape (design system 7, "Pass changes layout"): the band and the
 // body grow or shrink over 360 ms while the old block fades out and the new one fades in, and the values on
-// both layouts travel to their new places.
+// both layouts travel to their new places. With reduced motion it is the start flow's cross-fade: the paper
+// takes its new shape at once, the old block fades out (100) and the new one fades in (140, delay 90).
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FIELD_COLUMNS } from "./BoardingPass";
@@ -376,6 +377,9 @@ function PassBlock({ stage, values, now, sectionChoosable, onJump, travelling }:
 /** The new block fades in after a short wait (220, delay 90); the old one fades out (120, ease-out). */
 const BLOCK_IN = { opacity: 1, transition: { duration: 0.22, delay: 0.09, ease: EASE } };
 const BLOCK_OUT = { opacity: 0, transition: { duration: 0.12, ease: EASE_OUT } };
+/** Reduced motion: the start flow's cross-fade, the old block out in 100, the new one in over 140 after 90. */
+const BLOCK_IN_REDUCED = { opacity: 1, transition: { duration: 0.14, delay: 0.09 } };
+const BLOCK_OUT_REDUCED = { opacity: 0, transition: { duration: 0.1 } };
 /** How long the paper takes to change shape (--duration-t3). */
 const MORPH_MS = 360;
 
@@ -413,8 +417,8 @@ export function FillInPass({
     shown.current = { stage, values, now, sectionChoosable, onJump };
     if (before.stage === stage) return;
     changes.current += 1;
-    setLeaving(reduced ? null : { ...before, travelling: undefined, onJump: () => {}, id: changes.current });
-  }, [stage, values, now, sectionChoosable, onJump, reduced]);
+    setLeaving({ ...before, travelling: undefined, onJump: () => {}, id: changes.current });
+  }, [stage, values, now, sectionChoosable, onJump]);
 
   // The first block is there at once (the pass itself arrives with the top zone); a block that replaces
   // another fades in.
@@ -426,11 +430,15 @@ export function FillInPass({
   // The body goes from the old block's height to the new one's, then back to its own height, so a later change
   // inside a layout (a name that wraps after a turn of the phone) is never cut. It clips only while it moves:
   // at rest the quiet line's words reach a little above it. The move outlasts the fading copy it is measured
-  // from, so its end is a timer of its own.
+  // from, so its end is a timer of its own. With reduced motion nothing moves: the body takes the new block's
+  // height at once (the old block lies over it, clipped by the paper) and no value travels.
   const morphEnd = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const endTravel = useRef<() => void>(() => {});
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
   const leavingId = leaving?.id;
   useLayoutEffect(() => {
+    if (reducedRef.current) return;
     const body = bodyRef.current;
     const root = rootRef.current;
     const leavingBlock = leavingRef.current;
@@ -487,8 +495,8 @@ export function FillInPass({
             key={stage}
             ref={blockRef}
             data-pass-block={stage}
-            initial={mounted.current && !reduced ? { opacity: 0 } : false}
-            animate={BLOCK_IN}
+            initial={mounted.current ? { opacity: 0 } : false}
+            animate={reduced ? BLOCK_IN_REDUCED : BLOCK_IN}
           >
             <PassBlock stage={stage} values={values} now={now} sectionChoosable={sectionChoosable} onJump={onJump} travelling={travelling} />
           </motion.div>
@@ -502,7 +510,7 @@ export function FillInPass({
               inert
               className="pointer-events-none absolute inset-x-0 top-0"
               initial={{ opacity: 1 }}
-              animate={BLOCK_OUT}
+              animate={reduced ? BLOCK_OUT_REDUCED : BLOCK_OUT}
               onAnimationComplete={() => setLeaving((current) => (current?.id === leaving.id ? null : current))}
             >
               <PassBlock {...leaving} />
