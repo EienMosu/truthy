@@ -71,12 +71,15 @@ describe("dealChunk: an unshown card is shown, late at worst", () => {
     }
   });
 
-  it("gives way as little as it can: once every card is shown, the round keeps every rule again", () => {
+  it("gives way as little as it can: from the second chunk after the last card came in, the round keeps every rule again", () => {
     const pool = route(21);
     for (let seed = 0; seed < 200; seed++) {
       const dealt = dealRound(pool, seed, 300);
       const lastFirst = Math.max(...firstShown(pool, dealt));
-      // From the first chunk after the last card came in, no card shares a group with one of the ten before it.
+      // The chunk right after the overdue card may still give way: the overdue card is in its window, and keeping
+      // the balance can leave it no deal without that card's partner (seed 8: chunk 5 takes k1 in, and chunk 6 may
+      // deal only the eleven cards outside chunk 5, of which four are False; the balance needs all four, k12 among
+      // them). From the chunk after that, no card shares a group with one of the ten before it.
       const settled = (Math.floor(lastFirst / CHUNK) + 2) * CHUNK;
       for (let i = settled; i < dealt.length; i++) {
         const current = dealt[i]!;
