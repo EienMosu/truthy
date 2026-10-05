@@ -25,6 +25,9 @@ export interface LeaveDialogProps {
 
 const browserNow = () => performance.now();
 
+const OPEN_TEXT = "Your answers so far stay in your history. This round won't set a record.";
+const DECIDED_TEXT = "This round is over and its score is kept. Leaving skips its result.";
+
 export function LeaveDialog({ open, onStay, onLeave, decided = false, now = browserNow }: LeaveDialogProps) {
   return (
     <AnimatePresence>
@@ -49,6 +52,12 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
   // When the sheet opened. The scrim fades in over the close button, so the second tap of a double tap on
   // that button lands on it: for the settle time (spec section 8) a tap on the scrim does not keep playing.
   const [shownAt] = useState(now);
+  // The Timed clock keeps running under the sheet, so the round can be decided while it is open and the text
+  // changes to say its score is kept. A screen reader read the text (aria-describedby) when the sheet opened,
+  // so the status says the new text; it is empty until then, since a live region added with its text is not
+  // announced. A sheet that opens on a decided round already says it.
+  const [decidedAtOpen] = useState(decided);
+  const body = decided ? DECIDED_TEXT : OPEN_TEXT;
 
   useEffect(() => {
     stayRef.current?.focus();
@@ -130,9 +139,10 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
             id={bodyId}
             className="m-0 mt-(--space-8) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight)"
           >
-            {decided
-              ? "This round is over and its score is kept. Leaving skips its result."
-              : "Your answers so far stay in your history. This round won't set a record."}
+            {body}
+          </p>
+          <p role="status" className="sr-only">
+            {decided && !decidedAtOpen ? body : ""}
           </p>
           <div className="mt-(--space-20) flex flex-col gap-(--space-4)">
             <PillButton ref={stayRef} onClick={onStay}>
