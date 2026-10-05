@@ -12,6 +12,10 @@ import { LIVES } from "@/src/engine/round";
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
 
+// A correct dot no wider than the trail's line (stroke 1.2) disappears inside it. From there on the line alone
+// shows the right answers and only the wrong squares are drawn, so a long round stops adding a mark per card.
+const MIN_DOT_RADIUS = 0.6;
+
 export interface TrailLayout {
   /** x of mark i (0 is the oldest). */
   x: (i: number) => number;
@@ -141,7 +145,7 @@ export function LivesPath({ results, answered, className }: LivesPathProps): Rea
       ) : null}
       <path d="M238 17H274" fill="none" className="stroke-(--color-ink)" strokeWidth="1.6" strokeDasharray="2 5" strokeLinecap="round" />
       {marks.map((correct, i) =>
-        correct ? <circle key={i} data-trail="correct" cx={layout.x(i)} cy={17} r={layout.r} className="fill-(--color-ink)" /> : null,
+        correct && layout.r > MIN_DOT_RADIUS ? <circle key={i} data-trail="correct" cx={layout.x(i)} cy={17} r={layout.r} className="fill-(--color-ink)" /> : null,
       )}
       {/* The wrong squares after every dot, so the dots of the cards around them never cover their x. */}
       {marks.map((correct, i) => {

@@ -21,6 +21,17 @@ export interface StreakLayout {
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
 
+// The best target keeps the mockup's size for any best (design system 5.10: an r7 paper ring around an r3 ink
+// centre). It ends the route, so nothing lies to its right for it to cover.
+const TARGET_RING = 7;
+const TARGET_CENTRE = 3;
+// Below r2 the open future slots run together into a beaded line that reads as flown; the dotted route line
+// alone then shows the part still to fly.
+const MIN_FUTURE_RADIUS = 2;
+// A done dot no wider than the flown line (stroke 2.4) disappears inside it. From there on the line alone shows
+// the flown part, so a long streak stops adding a dot per card (at most about 65 are ever drawn).
+const MIN_DOT_RADIUS = 1.2;
+
 /** The layout for `done` dots (the card on screen is slot `done`) and the best on the route. */
 export function streakLayout(done: number, best: number | null): StreakLayout {
   const ring = best === null || best < 1 ? null : best - 1;
@@ -85,7 +96,7 @@ export function StreakPath({ streak, best, answered, className }: StreakPathProp
       }
     >
       <RouteLine flownTo={t(done)} />
-      {Array.from({ length: done }, (_, slot) => (
+      {Array.from({ length: dot > MIN_DOT_RADIUS ? done : 0 }, (_, slot) => (
         <g key={slot} data-streak-dot="">
           <Mark verdict="correct" at={pointAt(t(slot))} scale={dot / 7} plain={!ticks} />
         </g>
@@ -93,16 +104,26 @@ export function StreakPath({ streak, best, answered, className }: StreakPathProp
       {ring !== null && ringAt !== null && ring < done ? (
         <circle data-ring="reached" cx={ringAt.x} cy={ringAt.y} r={dot + 3.5} fill="none" className="stroke-(--color-ink)" strokeWidth="1.4" />
       ) : null}
-      {future.map((slot) => {
-        const at = pointAt(t(slot));
-        return (
-          <circle key={slot} cx={at.x} cy={at.y} r={futureRadius} className="fill-(--color-surface-raised) stroke-(--color-ink)" strokeWidth="1.6" />
-        );
-      })}
+      {futureRadius < MIN_FUTURE_RADIUS
+        ? null
+        : future.map((slot) => {
+            const at = pointAt(t(slot));
+            return (
+              <circle
+                key={slot}
+                data-future=""
+                cx={at.x}
+                cy={at.y}
+                r={futureRadius}
+                className="fill-(--color-surface-raised) stroke-(--color-ink)"
+                strokeWidth="1.6"
+              />
+            );
+          })}
       {target && ring !== null && ringAt !== null && ring > done ? (
         <g data-ring="target">
-          <circle cx={ringAt.x} cy={ringAt.y} r={dot + 1} className="fill-(--color-surface-raised) stroke-(--color-ink)" strokeWidth="1.6" />
-          <circle cx={ringAt.x} cy={ringAt.y} r={dot / 2} className="fill-(--color-ink)" />
+          <circle cx={ringAt.x} cy={ringAt.y} r={TARGET_RING} className="fill-(--color-surface-raised) stroke-(--color-ink)" strokeWidth="1.6" />
+          <circle cx={ringAt.x} cy={ringAt.y} r={TARGET_CENTRE} className="fill-(--color-ink)" />
         </g>
       ) : null}
       <Plane at={here} heading={headingAt(t(done))} hidden={answered !== null} />
