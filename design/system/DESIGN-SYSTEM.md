@@ -132,7 +132,7 @@ Sizes are px on web, pt on iOS and sp on Android. Letter spacing is in em (`toke
 | `list-title` | Sans 600 (800 for Whole deck) | 16 | 1.2 | -0.01em | section rows. Deck name on a card: 16 / 1.25 |
 | `list-statement` | Sans 600 | 16 | 1.38 | -0.005em | missed card statement |
 | `option-title` | Sans 800 | 18 | 1.2 | -0.01em | class name |
-| `emphasis` | Sans 800 | 16 | normal (1.2 on the continue line) | -0.01em | "2 short of your best", "Equals your best", "Continue where you left off". Missed-card answer word is 17 |
+| `emphasis` | Sans 800 | 16 | normal (1.2 on the continue line) | -0.01em | "2 short of your best", "Equals your best", the deck's pass name on the continue line. Missed-card answer word is 17 |
 | `deck-code` | Mono 600 | 30 | 1.2 | 0.02em | deck card |
 | `section-code` | Mono 600 | 18 | normal | 0.02em | sheet rows |
 | `score` | Mono 600 | 48 | 1 | 0.02em | unit "of 10": Mono 600 20, ink-muted, tracking 0 |
@@ -240,8 +240,8 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 ### 5.4a Continue line (start step 1)
 - **Purpose:** one tap back into the last route for a returning player, without adding a second decision to the first screen.
 - **Placement:** the foot zone of step 1, only when a previous round exists on the device (`data-player="returning"`). A first run shows nothing there.
-- **Anatomy:** a 60 tall row, radius 16, no fill and no shadow, padding 0 12 0 4, gap 14. A 44 `surface-raised` disc holding the logo mark (26 × 18). Then two lines: "Continue where you left off" (`emphasis`, line height 1.2) over the route in `mono-data` ink-muted, ellipsised: "CLF → SEC · Classic · last **7 of 10**" (the last score in Mono 600 ink). A right chevron (16, stroke 2.2) at the end.
-- **States:** pressed scales to 0.98 and fills with `press`. Accessible label: "Continue: Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10."
+- **Anatomy:** a 60 tall row, radius 16, no fill and no shadow, padding 0 12 0 4, gap 14. A 44 `surface-raised` disc holding the logo mark (26 × 18). Then the deck's pass name, "AWS Cloud Practitioner" (`emphasis`, line height 1.2, one line, ellipsised: six decks are titled "Fundamentals", so the bare title would not say which; a name longer than the column, such as "Kubernetes and Cloud Native Associate", is cut and the accessible label has all of it), over the route in `mono-data` ink-muted, at most two lines: "CLF → SEC · Classic · last **7 of 10**" (the last score in Mono 600 ink). A part that does not fit moves to the second line whole, so the last score shows on a 320 phone too. A right chevron (16, stroke 2.2) at the end; with the row's label it is what says "continue".
+- **States:** pressed scales to 0.98 and fills with `press`. Accessible label: "Continue: AWS Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10."
 - **Behaviour:** fills the whole pass at once and goes straight to step 6 ("Your pass is ready"), so the player can still change any field or press Back.
 - **Used by:** start, start-night.
 
