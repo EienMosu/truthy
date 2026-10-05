@@ -713,7 +713,7 @@
       "section": "1.3",
       "statement": "ACM renews in-use, ACM-issued public certificates that have valid public DNS validation records.",
       "answer": true,
-      "explanation": "About 45 days before expiry, ACM checks that the certificate is in use by an AWS service and that its ACM-provided CNAME records are present in public DNS. If so, it treats the domains as validated and renews.",
+      "explanation": "ACM renews when the certificate is in use by an AWS service and its ACM-provided CNAME records are in public DNS. A 198-day certificate renews 45 days before expiry, an older 395-day one 60 days before.",
       "misconception": "",
       "factKey": "acm-dns-validation-managed-renewal",
       "topic": "Certificate lifecycle management",
@@ -722,8 +722,8 @@
       ],
       "appliesTo": "",
       "difficulty": 2,
-      "volatility": "stable",
-      "volatilityNote": "",
+      "volatility": "may_change",
+      "volatilityNote": "Renewal timing follows the certificate's validity period, which ACM has shortened from 395 to 198 days.",
       "source": {
         "title": "Renewal for domains validated by DNS",
         "url": "https://docs.aws.amazon.com/acm/latest/userguide/dns-renewal-validation.html"
@@ -1372,7 +1372,7 @@
     {
       "id": "aws-saa-c03-s3.1-06",
       "section": "3.1",
-      "statement": "Amazon FSx for Windows File Server supports joining an existing self-managed Microsoft Active Directory domain.",
+      "statement": "Amazon FSx for Windows File Server works with an existing self-managed Microsoft Active Directory domain.",
       "answer": true,
       "explanation": "Joined at creation, the file system sits in the same Active Directory forest and domain as the users and existing file servers. Amazon FSx joins it with a service account from that domain.",
       "misconception": "",
@@ -2002,9 +2002,9 @@
     {
       "id": "aws-saa-c03-s3.3-11",
       "section": "3.3",
-      "statement": "Amazon Redshift skips storage blocks when a query filters on a table's sort key.",
+      "statement": "Amazon Redshift skips disk blocks whose min and max values fall outside a range filter on a sorted column.",
       "answer": true,
-      "explanation": "Redshift records minimum and maximum column values for storage blocks. Sorting data lets range filters exclude blocks whose values fall outside the requested range.",
+      "explanation": "Redshift stores columnar data in 1 MB disk blocks with each block's min and max as metadata. For five years of date-sorted data, a one-month range can drop up to 98 percent of blocks from the scan.",
       "misconception": "",
       "factKey": "redshift-sort-key-block-pruning",
       "topic": "Warehouse query pruning",
@@ -2419,9 +2419,9 @@
     {
       "id": "aws-saa-c03-s3.5-07",
       "section": "3.5",
-      "statement": "An Amazon Athena query can reduce scanned data by filtering on a table's partition key.",
+      "statement": "When an Amazon Athena query's WHERE clause specifies a partition, Athena scans only that partition's data.",
       "answer": true,
-      "explanation": "When the WHERE clause specifies the partition, Athena scans data only from that partition, which improves performance and reduces cost.",
+      "explanation": "Partitioning restricts the data each query scans, which improves performance and reduces cost. A common scheme partitions by time, such as by year, month, date, and hour.",
       "misconception": "",
       "factKey": "athena-partition-pruning",
       "topic": "Data lake query pruning",
@@ -3249,7 +3249,7 @@
       "statement": "Deleting an Amazon RDS DB instance also deletes its previously created manual DB snapshots.",
       "answer": false,
       "explanation": "Manual RDS snapshots survive deletion of their source DB instance. Retaining those snapshots can continue to incur storage charges until they are deleted separately.",
-      "misconception": "Deleting a database instance also deletes its manual snapshots.",
+      "misconception": "Assuming manual snapshots belong to the DB instance and share its lifecycle.",
       "factKey": "rds-manual-snapshot-retention-after-delete",
       "topic": "Database backup retention",
       "tags": [
