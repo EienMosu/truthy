@@ -1,0 +1,1052 @@
+{
+  "deck": "aws-dva-c02",
+  "block": "b2",
+  "generatedOn": "2026-10-05",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced cloudwatch-data-protection-stored-data with cloudwatch-data-protection-retroactivity to avoid overlap with the unmasking card's explanation. Replaced codebuild-compute-type-fixed-build with codebuild-startbuild-compute-override-scope, apigw-rest-testinvokemethod-authorization with apigw-rest-testinvoke-deployment-prerequisite, and codebuild-test-report-build-status with codebuild-test-report-file-input because the replacements have more explicit support in the opened official sources. Replaced lambda-invoke-dryrun-execution with lambda-invoke-dryrun-permission-validation to test permission behavior instead of a fact suggested by the term DryRun. Replaced ssm-advanced-parameter-expiration with ssm-expiration-policy-value-update to test value-update behavior instead of a fact suggested by the term Expiration.",
+  "cards": [
+    {
+      "id": "aws-dva-c02-s2.2-01",
+      "section": "2.2",
+      "statement": "AWS KMS GenerateDataKey supports returning a plaintext data key along with its KMS-encrypted copy.",
+      "answer": true,
+      "explanation": "Use the plaintext data key to encrypt application data, then discard it. Keep the encrypted copy so the data key can be recovered later.",
+      "misconception": "",
+      "factKey": "kms-generate-data-key-outputs",
+      "topic": "KMS Data Encryption",
+      "tags": [
+        "AWS Key Management Service (AWS KMS)",
+        "GenerateDataKey"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GenerateDataKey",
+        "url": "https://docs.aws.amazon.com/kms/latest/APIReference/API_GenerateDataKey.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-02",
+      "section": "2.2",
+      "statement": "AWS KMS treats encryption context keys and values as case-insensitive during decryption.",
+      "answer": false,
+      "explanation": "Decrypting symmetric KMS ciphertext uses the encryption context supplied during encryption, with exact case-sensitive matches for its keys and values.",
+      "misconception": "Encryption context matching ignores differences in letter case.",
+      "factKey": "kms-encryption-context-case-matching",
+      "topic": "KMS Data Encryption",
+      "tags": [
+        "AWS Key Management Service (AWS KMS)",
+        "Decrypt"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Decrypt",
+        "url": "https://docs.aws.amazon.com/kms/latest/APIReference/API_Decrypt.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-03",
+      "section": "2.2",
+      "statement": "AWS KMS propagates a new grant's permissions with strong consistency after CreateGrant succeeds.",
+      "answer": false,
+      "explanation": "New KMS grants propagate with eventual consistency. A caller can pass the returned grant token to use the grant before propagation finishes.",
+      "misconception": "A successful CreateGrant response makes the grant immediately consistent throughout KMS.",
+      "factKey": "kms-grant-eventual-consistency",
+      "topic": "KMS Access Grants",
+      "tags": [
+        "AWS Key Management Service (AWS KMS)",
+        "CreateGrant"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Grants in AWS KMS",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/grants.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-04",
+      "section": "2.2",
+      "statement": "Amazon S3 initializes a new bucket's object encryption configuration with SSE-S3 by default.",
+      "answer": true,
+      "explanation": "New S3 buckets start with SSE-S3 default encryption, so uploads receive server-side encryption. Developers can configure a different supported default.",
+      "misconception": "",
+      "factKey": "s3-sse-s3-default-encryption",
+      "topic": "S3 Object Encryption",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "The initial bucket encryption default is service behavior that AWS can change.",
+      "source": {
+        "title": "Using server-side encryption with Amazon S3 managed keys (SSE-S3)",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingServerSideEncryption.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-05",
+      "section": "2.2",
+      "statement": "Amazon S3 stores the customer-provided encryption key with an object uploaded using SSE-C.",
+      "answer": false,
+      "explanation": "For SSE-C, S3 discards the supplied key after using it. The caller retains the key and provides it again for operations that decrypt the object.",
+      "misconception": "S3 retains SSE-C encryption keys so the client can retrieve the object later with its usual credentials.",
+      "factKey": "s3-sse-c-key-retention",
+      "topic": "S3 Object Encryption",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using server-side encryption with customer-provided keys (SSE-C)",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-06",
+      "section": "2.2",
+      "statement": "Amazon S3 checks the caller's kms:Decrypt permission when downloading an SSE-KMS object.",
+      "answer": true,
+      "explanation": "S3 decrypts the object's encrypted data key through KMS during download. The caller needs access to that KMS key to read the object.",
+      "misconception": "",
+      "factKey": "s3-sse-kms-download-permission",
+      "topic": "S3 Object Encryption",
+      "tags": [
+        "Amazon S3",
+        "AWS Key Management Service (AWS KMS)"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using server-side encryption with AWS KMS keys (SSE-KMS)",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-07",
+      "section": "2.2",
+      "statement": "With policy-based access, AWS KMS checks the key policy and the caller's IAM policy for cross-account use.",
+      "answer": true,
+      "explanation": "The key-owning account authorizes the external principal in its key policy. The caller's account delegates that permission through an IAM policy.",
+      "misconception": "",
+      "factKey": "kms-cross-account-policy-pair",
+      "topic": "KMS Cross Account",
+      "tags": [
+        "AWS Key Management Service (AWS KMS)",
+        "AWS Identity and Access Management (IAM)"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Allowing users in other accounts to use a KMS key",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-08",
+      "section": "2.2",
+      "statement": "Rotating an AWS KMS key rewrites existing ciphertext with the key's newly generated key material.",
+      "answer": false,
+      "explanation": "KMS rotation changes material used for new encryption rather than rewriting existing ciphertext. Decryption uses the material that originally encrypted the data.",
+      "misconception": "Key rotation re-encrypts data that applications encrypted with the previous key material.",
+      "factKey": "kms-rotation-existing-ciphertext",
+      "topic": "KMS Key Rotation",
+      "tags": [
+        "AWS Key Management Service (AWS KMS)"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Rotate AWS KMS keys",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-09",
+      "section": "2.2",
+      "statement": "AWS KMS supports automatic rotation for asymmetric KMS keys used for encryption.",
+      "answer": false,
+      "explanation": "Automatic KMS rotation applies to eligible symmetric encryption keys. Rotate an asymmetric key by creating a replacement key and updating application references.",
+      "misconception": "Asymmetric encryption keys use the same automatic rotation feature as symmetric encryption keys.",
+      "factKey": "kms-asymmetric-automatic-rotation",
+      "topic": "KMS Key Rotation",
+      "tags": [
+        "AWS Key Management Service (AWS KMS)"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "AWS could extend automatic rotation eligibility to additional key types.",
+      "source": {
+        "title": "Rotate AWS KMS keys",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-10",
+      "section": "2.2",
+      "statement": "AWS Private CA uses the public key in a certificate signing request when issuing a certificate.",
+      "answer": true,
+      "explanation": "Private CA copies the CSR's SubjectPublicKeyInfo into the certificate. That field carries the public key selected by the requester.",
+      "misconception": "",
+      "factKey": "private-ca-csr-public-key",
+      "topic": "Private Certificate Issuance",
+      "tags": [
+        "AWS Private CA"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "What is AWS Private CA?",
+        "url": "https://docs.aws.amazon.com/privateca/latest/userguide/PcaWelcome.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-11",
+      "section": "2.2",
+      "statement": "AWS Private CA IssueCertificate returns the issued certificate's PEM data in its response.",
+      "answer": false,
+      "explanation": "IssueCertificate returns a certificate ARN. Retrieve the issued certificate with GetCertificate after issuance completes.",
+      "misconception": "IssueCertificate returns the certificate body synchronously instead of a reference for retrieval.",
+      "factKey": "private-ca-issuecertificate-result",
+      "topic": "Private Certificate Issuance",
+      "tags": [
+        "AWS Private CA",
+        "IssueCertificate",
+        "GetCertificate"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "IssueCertificate",
+        "url": "https://docs.aws.amazon.com/privateca/latest/APIReference/API_IssueCertificate.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.2-12",
+      "section": "2.2",
+      "statement": "Amazon EC2 CreateKeyPair returns the private key material in its successful response.",
+      "answer": true,
+      "explanation": "Save the private key returned by CreateKeyPair. EC2 retains the matching public key for instances that use the key pair.",
+      "misconception": "",
+      "factKey": "ec2-createkeypair-private-key-output",
+      "topic": "EC2 Development Keys",
+      "tags": [
+        "Amazon EC2",
+        "CreateKeyPair"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "CreateKeyPair",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateKeyPair.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-01",
+      "section": "2.3",
+      "statement": "CloudWatch Logs applies a new data protection policy to previously ingested sensitive log events.",
+      "answer": false,
+      "explanation": "A data protection policy applies to log events ingested after the policy takes effect. Older events retain their original masking status.",
+      "misconception": "Creating a data protection policy masks sensitive data in historical log events.",
+      "factKey": "cloudwatch-data-protection-retroactivity",
+      "topic": "CloudWatch Sensitive Logs",
+      "tags": [
+        "Amazon CloudWatch Logs"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Help protect sensitive log data with masking",
+        "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/mask-sensitive-log-data.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-02",
+      "section": "2.3",
+      "statement": "CloudWatch Logs GetLogEvents reveals masked values by default for a caller with logs:Unmask permission.",
+      "answer": false,
+      "explanation": "A caller with logs:Unmask permission sets unmask=true on GetLogEvents to request the original sensitive values. Permission alone leaves the default masking in place.",
+      "misconception": "Granting logs:Unmask automatically makes GetLogEvents return sensitive values as plaintext.",
+      "factKey": "cloudwatch-logs-unmask-permission",
+      "topic": "CloudWatch Sensitive Logs",
+      "tags": [
+        "Amazon CloudWatch Logs",
+        "GetLogEvents"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GetLogEvents",
+        "url": "https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_GetLogEvents.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-03",
+      "section": "2.3",
+      "statement": "Lambda function code calls KMS Decrypt to read environment values protected with client-side encryption.",
+      "answer": true,
+      "explanation": "Client-side encrypted Lambda environment values reach the handler as ciphertext. Function code calls KMS Decrypt to recover the plaintext.",
+      "misconception": "",
+      "factKey": "lambda-client-side-environment-decryption",
+      "topic": "Lambda Sensitive Configuration",
+      "tags": [
+        "AWS Lambda",
+        "AWS Key Management Service (AWS KMS)",
+        "Decrypt"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Securing Lambda environment variables",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars-encryption.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-04",
+      "section": "2.3",
+      "statement": "AWS Secrets Manager GetSecretValue can return a secret's plaintext value to an authorized caller.",
+      "answer": true,
+      "explanation": "Secrets Manager decrypts the stored secret and returns SecretString or SecretBinary. Application code uses the returned secret value.",
+      "misconception": "",
+      "factKey": "secrets-manager-getsecretvalue-decryption",
+      "topic": "Secrets Manager Retrieval",
+      "tags": [
+        "AWS Secrets Manager",
+        "GetSecretValue"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GetSecretValue",
+        "url": "https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-05",
+      "section": "2.3",
+      "statement": "AWS Secrets Manager rotation refreshes cached values in the AWS parameters and secrets Lambda extension.",
+      "answer": false,
+      "explanation": "The extension keeps a cached secret until its configured TTL expires. Rotating a secret does not push a new value into that cache.",
+      "misconception": "Rotating a secret immediately refreshes the Lambda extension's existing cache entry.",
+      "factKey": "secrets-manager-rotation-app-cache-refresh",
+      "topic": "Secrets Manager Retrieval",
+      "tags": [
+        "AWS Secrets Manager",
+        "AWS Lambda",
+        "AWS parameters and secrets Lambda extension"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use Secrets Manager secrets in Lambda functions",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/with-secrets-manager.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-06",
+      "section": "2.3",
+      "statement": "AWS Secrets Manager logs the returned SecretString in CloudTrail's GetSecretValue event.",
+      "answer": false,
+      "explanation": "Secrets Manager excludes SecretString and SecretBinary values from CloudTrail records. The audit event tracks the API call rather than returning the secret's contents.",
+      "misconception": "CloudTrail includes the secret value returned by GetSecretValue.",
+      "factKey": "secrets-manager-secret-value-cloudtrail",
+      "topic": "Secrets Manager Retrieval",
+      "tags": [
+        "AWS Secrets Manager",
+        "AWS CloudTrail",
+        "GetSecretValue"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GetSecretValue",
+        "url": "https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-07",
+      "section": "2.3",
+      "statement": "AWS Systems Manager GetParameter returns SecureString plaintext when WithDecryption is true.",
+      "answer": true,
+      "explanation": "Systems Manager decrypts a SecureString value for a GetParameter request with WithDecryption enabled, subject to the caller's permissions.",
+      "misconception": "",
+      "factKey": "ssm-securestring-withdecryption",
+      "topic": "Systems Manager Parameters",
+      "tags": [
+        "AWS Systems Manager",
+        "GetParameter"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GetParameter",
+        "url": "https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_GetParameter.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-08",
+      "section": "2.3",
+      "statement": "AWS Systems Manager keeps an advanced parameter's Expiration timestamp when the parameter value changes.",
+      "answer": true,
+      "explanation": "A value update preserves the Expiration policy's timestamp. Change or remove the policy to adjust when Systems Manager deletes the parameter.",
+      "misconception": "",
+      "factKey": "ssm-expiration-policy-value-update",
+      "topic": "Systems Manager Parameters",
+      "tags": [
+        "AWS Systems Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Assigning parameter policies in Parameter Store",
+        "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-policies.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-09",
+      "section": "2.3",
+      "statement": "AWS CodeBuild resolves env/secrets-manager references into environment values for build commands.",
+      "answer": true,
+      "explanation": "A buildspec can name a Secrets Manager secret under env/secrets-manager. CodeBuild retrieves its value under the chosen environment variable name.",
+      "misconception": "",
+      "factKey": "codebuild-buildspec-secret-reference",
+      "topic": "CodeBuild Sensitive Values",
+      "tags": [
+        "AWS CodeBuild",
+        "AWS Secrets Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build specification reference for CodeBuild",
+        "url": "https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-10",
+      "section": "2.3",
+      "statement": "AWS CodeBuild supports masking a secret after build code base64-encodes the retrieved env/secrets-manager value.",
+      "answer": false,
+      "explanation": "CodeBuild masks the exact secret value it retrieves. A transformed value, such as a base64-encoded copy, can appear in logs, so build code handles sanitization.",
+      "misconception": "CodeBuild recognizes and masks encoded derivatives of a retrieved secret.",
+      "factKey": "codebuild-transformed-secret-log-masking",
+      "topic": "CodeBuild Sensitive Values",
+      "tags": [
+        "AWS CodeBuild",
+        "AWS Secrets Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build specification reference for CodeBuild",
+        "url": "https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-11",
+      "section": "2.3",
+      "statement": "DynamoDB can return a permitted subset for a request that asks for attributes denied by dynamodb:Attributes.",
+      "answer": false,
+      "explanation": "dynamodb:Attributes restricts the attributes a caller requests. A request outside that permission is denied; IAM does not redact it into an allowed subset.",
+      "misconception": "DynamoDB removes forbidden attributes from a response instead of denying the request.",
+      "factKey": "dynamodb-attributes-denial-versus-redaction",
+      "topic": "DynamoDB Access Control",
+      "tags": [
+        "Amazon DynamoDB",
+        "AWS Identity and Access Management (IAM)"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using IAM policy conditions for fine-grained access control",
+        "url": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s2.3-12",
+      "section": "2.3",
+      "statement": "Amazon S3 supports tenant-specific object prefixes in IAM policies that use ${aws:PrincipalTag/tenant}.",
+      "answer": true,
+      "explanation": "IAM substitutes the caller's tenant tag into the S3 object resource ARN. An allowed ARN ending in that tenant's prefix restricts the covered object operations.",
+      "misconception": "",
+      "factKey": "s3-principal-tag-tenant-prefix",
+      "topic": "S3 Tenant Access",
+      "tags": [
+        "Amazon S3",
+        "AWS Identity and Access Management (IAM)"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "IAM policy elements: Variables and tags",
+        "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_variables.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-01",
+      "section": "3.1",
+      "statement": "A Python Lambda .zip package for handler app.handler places app.py at the archive root.",
+      "answer": true,
+      "explanation": "For a handler configured as app.handler, Lambda imports app.py as a top-level module. Put that file at the root of the deployment archive.",
+      "misconception": "",
+      "factKey": "lambda-zip-handler-root-layout",
+      "topic": "Lambda Deployment Packaging",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Working with .zip file archives for Python Lambda functions",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/python-package.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-02",
+      "section": "3.1",
+      "statement": "AWS Lambda extracts a layer's archive into /opt in the function's execution environment.",
+      "answer": true,
+      "explanation": "Layer contents land under /opt. Package dependencies in the directory layout expected by the function's runtime so it can find them.",
+      "misconception": "",
+      "factKey": "lambda-layer-opt-directory-layout",
+      "topic": "Lambda Deployment Packaging",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Packaging your layer content",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/packaging-layers.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-03",
+      "section": "3.1",
+      "statement": "Lambda supplies a runtime interface client to functions built from a Debian base image.",
+      "answer": false,
+      "explanation": "For a Lambda image built from a Debian base image, include a runtime interface client during the image build. That client communicates with the Lambda Runtime API.",
+      "misconception": "Lambda injects a runtime interface client into a function's custom base image during invocation.",
+      "factKey": "lambda-image-runtime-interface-client",
+      "topic": "Lambda Deployment Packaging",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create a Lambda function using a container image",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/images-create.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-04",
+      "section": "3.1",
+      "statement": "Lambda gives container functions a writable root filesystem for generated application files.",
+      "answer": false,
+      "explanation": "Lambda runs container images with a read-only root filesystem. Code writes temporary files to /tmp instead.",
+      "misconception": "A Lambda container image has the writable root filesystem typical of a local container.",
+      "factKey": "lambda-image-read-only-filesystem",
+      "topic": "Lambda Deployment Packaging",
+      "tags": [
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create a Lambda function using a container image",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/images-create.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-05",
+      "section": "3.1",
+      "statement": "Amazon ECR returns ImageTagAlreadyExistsException when a push targets an existing immutable tag.",
+      "answer": true,
+      "explanation": "A push using a tag protected by tag immutability fails rather than overwriting the referenced image. Choose a new tag for the next image.",
+      "misconception": "",
+      "factKey": "ecr-immutable-tag-overwrite",
+      "topic": "ECR Image Publishing",
+      "tags": [
+        "Amazon Elastic Container Registry (Amazon ECR)"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Preventing image tags from being overwritten in Amazon ECR",
+        "url": "https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-06",
+      "section": "3.1",
+      "statement": "An AWS CodeArtifact authorization token can access repositories across its issuing domain.",
+      "answer": true,
+      "explanation": "CodeArtifact tokens are scoped to a domain, so a token can authenticate to its repositories subject to the caller's repository permissions.",
+      "misconception": "",
+      "factKey": "codeartifact-token-domain-scope",
+      "topic": "CodeArtifact Package Access",
+      "tags": [
+        "AWS CodeArtifact",
+        "GetAuthorizationToken"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GetAuthorizationToken",
+        "url": "https://docs.aws.amazon.com/codeartifact/latest/APIReference/API_GetAuthorizationToken.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-07",
+      "section": "3.1",
+      "statement": "AWS CodeBuild selects build runtimes from runtime-versions in the build phase of a buildspec.",
+      "answer": false,
+      "explanation": "CodeBuild reads runtime-versions from the buildspec's install phase. It selects runtimes available in the chosen build image.",
+      "misconception": "The runtime-versions mapping belongs under the build phase instead of the install phase.",
+      "factKey": "codebuild-buildspec-runtime-selection",
+      "topic": "CodeBuild Build Configuration",
+      "tags": [
+        "AWS CodeBuild"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build specification reference for CodeBuild",
+        "url": "https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-08",
+      "section": "3.1",
+      "statement": "AWS CodeBuild includes the paths under cache/paths in the build's output artifact.",
+      "answer": false,
+      "explanation": "cache/paths identifies files to cache for future builds. The buildspec's artifacts section selects the build output files.",
+      "misconception": "The cache file list also determines the build's output artifact contents.",
+      "factKey": "codebuild-cache-artifact-separation",
+      "topic": "CodeBuild Build Configuration",
+      "tags": [
+        "AWS CodeBuild"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Build specification reference for CodeBuild",
+        "url": "https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-09",
+      "section": "3.1",
+      "statement": "AWS CodeBuild can use StartBuild's computeTypeOverride to change the project's saved compute configuration.",
+      "answer": false,
+      "explanation": "computeTypeOverride selects compute resources for the build being started. It overrides the project's setting for that build, rather than updating the saved project.",
+      "misconception": "A compute type override on StartBuild changes the compute setting saved in the project.",
+      "factKey": "codebuild-startbuild-compute-override-scope",
+      "topic": "CodeBuild Build Configuration",
+      "tags": [
+        "AWS CodeBuild",
+        "StartBuild"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "StartBuild",
+        "url": "https://docs.aws.amazon.com/codebuild/latest/APIReference/API_StartBuild.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-10",
+      "section": "3.1",
+      "statement": "Elastic Beanstalk reads .ebextensions configuration files written in YAML or JSON.",
+      "answer": true,
+      "explanation": "Put files with a .config extension under .ebextensions in the application bundle. Elastic Beanstalk parses them to configure the environment.",
+      "misconception": "",
+      "factKey": "elastic-beanstalk-ebextensions-format",
+      "topic": "Elastic Beanstalk Packaging",
+      "tags": [
+        "AWS Elastic Beanstalk"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Advanced environment customization with configuration files (.ebextensions)",
+        "url": "https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/ebextensions.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-11",
+      "section": "3.1",
+      "statement": "AWS AppConfig supports a JSON Schema validator for checking free form configuration before deployment.",
+      "answer": true,
+      "explanation": "AppConfig checks free form configuration against the schema you supply. A schema validation failure blocks deploying that configuration.",
+      "misconception": "",
+      "factKey": "appconfig-json-schema-validator",
+      "topic": "AppConfig Configuration Validation",
+      "tags": [
+        "AWS AppConfig"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding validators",
+        "url": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-creating-configuration-and-profile-validators.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.1-12",
+      "section": "3.1",
+      "statement": "A Lambda validator's normal return of an error message signals validation failure to AWS AppConfig.",
+      "answer": false,
+      "explanation": "A Lambda validator signals AppConfig validation failure by throwing an exception. A successful return containing an error message does not signal that failure.",
+      "misconception": "AppConfig treats an error message in a successful Lambda return value as validation failure.",
+      "factKey": "appconfig-lambda-validator-rejection",
+      "topic": "AppConfig Configuration Validation",
+      "tags": [
+        "AWS AppConfig",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understanding validators",
+        "url": "https://docs.aws.amazon.com/appconfig/latest/userguide/appconfig-creating-configuration-and-profile-validators.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-01",
+      "section": "3.2",
+      "statement": "AWS SAM's sam local start-api runs local HTTP endpoints for Lambda functions with API events.",
+      "answer": true,
+      "explanation": "SAM starts a local server that routes HTTP requests to your configured Lambda handlers, letting you exercise API payloads during development.",
+      "misconception": "",
+      "factKey": "sam-local-start-api-http-testing",
+      "topic": "SAM Development Testing",
+      "tags": [
+        "AWS SAM",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Introduction to testing with sam local start-api",
+        "url": "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-start-api.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-02",
+      "section": "3.2",
+      "statement": "AWS SAM sam local invoke redirects the function's AWS SDK calls to built-in service emulators.",
+      "answer": false,
+      "explanation": "SAM runs the Lambda function locally. Its SDK calls target their configured endpoints, so tests can reach live AWS resources unless you supply mocks or emulators.",
+      "misconception": "SAM's local invocation emulates the AWS services that function code calls through an SDK.",
+      "factKey": "sam-local-remote-service-calls",
+      "topic": "SAM Development Testing",
+      "tags": [
+        "AWS SAM",
+        "AWS Lambda",
+        "AWS SDKs"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How to test serverless functions and applications",
+        "url": "https://docs.aws.amazon.com/lambda/latest/dg/testing-guide.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-03",
+      "section": "3.2",
+      "statement": "AWS SAM uses deployment parameter overrides to vary the same template's settings between environments.",
+      "answer": true,
+      "explanation": "Define parameters in the SAM template and supply deployment-specific overrides. Those values take precedence over parameter defaults in the template.",
+      "misconception": "",
+      "factKey": "sam-deploy-parameter-overrides",
+      "topic": "SAM Development Testing",
+      "tags": [
+        "AWS SAM",
+        "AWS CloudFormation"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS SAM CLI configuration file",
+        "url": "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-04",
+      "section": "3.2",
+      "statement": "Amazon API Gateway REST API TestInvokeMethod needs a deployed stage to test a configured method.",
+      "answer": false,
+      "explanation": "TestInvokeMethod simulates a configured REST API method before API deployment. It lets the developer test the method through the API Gateway management interface.",
+      "misconception": "TestInvokeMethod requires an existing REST API stage deployment.",
+      "factKey": "apigw-rest-testinvoke-deployment-prerequisite",
+      "topic": "API Gateway Development Testing",
+      "tags": [
+        "Amazon API Gateway",
+        "TestInvokeMethod"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Invoke REST APIs in API Gateway",
+        "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-call-api.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-05",
+      "section": "3.2",
+      "statement": "A REST API mock integration in Amazon API Gateway returns data produced by its response mapping template.",
+      "answer": true,
+      "explanation": "For a REST API mock integration, an integration response mapping template generates a response body for the caller, allowing a developer to simulate backend output.",
+      "misconception": "",
+      "factKey": "apigw-rest-mock-response-mapping",
+      "topic": "API Gateway Development Testing",
+      "tags": [
+        "Amazon API Gateway"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Mock integrations for REST APIs in API Gateway",
+        "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-mock-integration.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-06",
+      "section": "3.2",
+      "statement": "Amazon API Gateway REST API stages use the latest saved integration settings for incoming requests.",
+      "answer": false,
+      "explanation": "A stage serves its associated deployment. REST API integration changes take effect there after a new deployment is associated with the stage.",
+      "misconception": "Saving an integration change updates the behavior of an existing REST API stage.",
+      "factKey": "apigw-rest-stage-deployment-snapshot",
+      "topic": "API Gateway Development Testing",
+      "tags": [
+        "Amazon API Gateway"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create a deployment for a REST API in API Gateway",
+        "url": "https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-deployments.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-07",
+      "section": "3.2",
+      "statement": "Amazon EventBridge TestEventPattern returns a boolean in the Result field for the supplied event.",
+      "answer": true,
+      "explanation": "TestEventPattern compares the supplied event with the supplied pattern. Result tells the caller whether that event matches the pattern.",
+      "misconception": "",
+      "factKey": "eventbridge-testeventpattern-result",
+      "topic": "EventBridge Event Handling",
+      "tags": [
+        "Amazon EventBridge",
+        "TestEventPattern"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "TestEventPattern",
+        "url": "https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-08",
+      "section": "3.2",
+      "statement": "AWS Step Functions TestState supports inspectionData.request at DEBUG level for an HTTP Task.",
+      "answer": false,
+      "explanation": "TestState uses TRACE for HTTP request details in inspectionData.request. DEBUG shows intermediate state input and output processing results.",
+      "misconception": "DEBUG inspection includes the HTTP request field provided by TRACE.",
+      "factKey": "step-functions-teststate-debug-inspection",
+      "topic": "Step Functions Workflows",
+      "tags": [
+        "AWS Step Functions",
+        "TestState"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "TestState",
+        "url": "https://docs.aws.amazon.com/step-functions/latest/apireference/API_TestState.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-09",
+      "section": "3.2",
+      "statement": "AWS Lambda Invoke with InvocationType=DryRun checks the caller's lambda:InvokeFunction permission.",
+      "answer": true,
+      "explanation": "DryRun validates the request parameters and the caller's permission to invoke the function. It provides a permission check while leaving the handler unexecuted.",
+      "misconception": "",
+      "factKey": "lambda-invoke-dryrun-permission-validation",
+      "topic": "Lambda Invocation Testing",
+      "tags": [
+        "AWS Lambda",
+        "Invoke"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Invoke",
+        "url": "https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-10",
+      "section": "3.2",
+      "statement": "A Lambda test event for an API Gateway HTTP API places binary request bytes in body as a base64 string.",
+      "answer": true,
+      "explanation": "An HTTP API Lambda proxy event carries binary request data as a base64-encoded body with isBase64Encoded set to true. Handler code decodes body to recover the bytes.",
+      "misconception": "",
+      "factKey": "apigw-http-lambda-base64-test-event",
+      "topic": "API Gateway Development Testing",
+      "tags": [
+        "Amazon API Gateway",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Handling binary data using Amazon API Gateway HTTP APIs",
+        "url": "https://aws.amazon.com/blogs/compute/handling-binary-data-using-amazon-api-gateway-http-apis/"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-11",
+      "section": "3.2",
+      "statement": "AWS CodeBuild builds test reports from test runner output printed to the build's standard output.",
+      "answer": false,
+      "explanation": "CodeBuild reads test result files selected by reports/files in the buildspec. Configure the test runner to write a supported report format.",
+      "misconception": "CodeBuild parses a test runner's console output to populate its test reports.",
+      "factKey": "codebuild-test-report-file-input",
+      "topic": "CodeBuild Test Reports",
+      "tags": [
+        "AWS CodeBuild"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create test reports",
+        "url": "https://docs.aws.amazon.com/codebuild/latest/userguide/report-create.html"
+      }
+    },
+    {
+      "id": "aws-dva-c02-s3.2-12",
+      "section": "3.2",
+      "statement": "AWS AppSync EvaluateMappingTemplate sends the evaluated request to the resolver's configured data source.",
+      "answer": false,
+      "explanation": "EvaluateMappingTemplate evaluates the supplied template and context in isolation. It returns evaluationResult rather than executing the resolver's data source request.",
+      "misconception": "EvaluateMappingTemplate executes the data source operation produced by a request mapping template.",
+      "factKey": "appsync-evaluatemappingtemplate-side-effects",
+      "topic": "AppSync Resolver Testing",
+      "tags": [
+        "AWS AppSync",
+        "EvaluateMappingTemplate"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "EvaluateMappingTemplate",
+        "url": "https://docs.aws.amazon.com/appsync/latest/APIReference/API_EvaluateMappingTemplate.html"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1007 @@
+{
+ "deck": "aws-dva-c02",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s1.1-08",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (sdkref retry page, describes the opt-in 2026 behavior)",
+     "evidence": "https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html: \"Adaptive mode only: The SDK checks the client-side rate limiter. If throttling has been detected, the SDK may delay or block the request before sending it.\" and \"Unlike standard mode, adaptive mode can delay or block the initial request, not just retries, when throttling is detected.\"",
+     "problem": "The answer (False) is right as the doc's flow is written, but the statement is a contorted ordering claim with a hedge ('can send ... before checking'). The limiter only acts once throttling has been detected (in botocore it stays disabled until the first throttling response), so an expert could defend True: until throttling is seen, the initial request goes out with no rate limiting. The wording tests reading of a flow step rather than the observable behavior, and the misconception field ('exempts the initial request') is not what the statement says.",
+     "suggestedFix": "Replace (answer stays false). Statement: \"AWS SDK adaptive retry mode applies its client-side rate limiter to retries and leaves initial requests undelayed.\" (114 chars) Explanation: \"Adaptive mode checks its client-side rate limiter before each request it sends. Once throttling is detected, it can delay or block the initial request, not only retries.\" Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s1.1-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-pattern.html: \"EventBridge ignores the fields in the event that aren't included in the event pattern. The effect is that there is a \\\"*\\\": \\\"*\\\" wildcard for fields that don't appear in the event pattern.\"",
+     "problem": "Answer (True) is correct and the source supports it, but the statement \"Amazon EventBridge ignores event fields omitted from an event pattern when checking for a match\" is the source sentence with a few words changed, which breaks the rule against reproducing an official sentence. It also reads close to a definition of pattern matching.",
+     "suggestedFix": "Reword in original form (answer stays true). Statement: \"An Amazon EventBridge pattern that lists source and detail-type still matches events whose detail holds extra fields.\" (117 chars) Explanation: \"EventBridge treats fields absent from a pattern as wildcards, so the listed fields decide the match and other content can vary. The event must still contain every field name the pattern lists.\" (192 chars). Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s1.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html: \"Amazon SNS lets applications send time-critical messages to multiple subscribers through a 'push' mechanism.\" and \"When you subscribe an Amazon SQS queue to an Amazon SNS topic, you can publish a message to the topic and Amazon SNS sends an Amazon SQS message to the subscribed queue.\"",
+     "problem": "Answer (True) is correct, but the card only says what SNS is for (a topic delivers to several subscribers). That is Cloud Practitioner depth, and nobody who has studied would answer False, so it is close to a strawman. The hedge 'supports' adds to the easy guess. The prompt asks for 1.1.x cards to rest on a concrete behavior a developer can observe, not on the pub/sub idea itself.",
+     "suggestedFix": "Replace with a fanout behavior a developer handles (answer stays true; RawMessageDelivery is not used elsewhere in the deck). Statement: \"With RawMessageDelivery set to true, Amazon SNS strips its metadata and sends the message to the SQS queue as is.\" (113 chars) Explanation: \"By default an SQS subscriber receives a JSON envelope with Type, MessageId, TopicArn and Message fields. RawMessageDelivery=true, set with SetSubscriptionAttributes, delivers the message body as is.\" (198 chars) URL: https://docs.aws.amazon.com/sns/latest/dg/sns-large-payload-raw-message-delivery.html"
+    }
+   ],
+   "notes": "I opened all 12 source URLs. All load, are official docs.aws.amazon.com pages and are current. The section is balanced at 6 true (01, 06, 07, 09, 11, 12) and 6 false (02, 03, 04, 05, 08, 10); every suggested fix keeps the original answer, so the balance holds.\n\nCards that pass, with the sentence that settles each:\n- 02: \"When a state has both Retry and Catch fields, Step Functions uses any appropriate retriers first.\"\n- 03: \"Messages are not deleted automatically after retrieval... you must explicitly send a delete request.\"\n- 04: \"Messages with different message group IDs may arrive or be processed out of order relative to one another.\"\n- 05: Basic validation of required headers: \"API Gateway only checks the existence of a parameter and doesn't check the type or format.\" The JSON schema applies to the payload.\n- 06: The mapping template is \"applied to a payload ... based on the Content-type header.\"\n- 07: \"Standard mode retries failed requests using exponential backoff with jitter.\" This also held under the pre-2026 behavior, so it does not depend on the 2026 opt-in.\n- 09: \"An MD5 hash function is used to map partition keys to 128-bit integer values and to map associated data records to shards.\" The hedge \"can\" is justified because ExplicitHashKey can override the hash.\n- 12: \"The task will pause until it receives that task token back with a SendTaskSuccess or SendTaskFailure call.\"\n\nMinor, not flagged:\n- 10: The API_PutEvents page only implies the fact (HTTP 200 on success; Entries holds \"successfully and unsuccessfully ingested events results\"). https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-putevents.html#eb-failure-handling states it outright: \"if an individual entry within a request fails, EventBridge continues processing the rest of the entries... A response Entries array can include both successful and unsuccessful entries.\" It is the better URL if you want one.\n- 07: Borderline easy. The purpose clause \"to spread retry attempts over time\" restates what jitter means, so a learner can guess True. Acceptable as difficulty 1.\n- 09: Slightly guessable from the name PartitionKey. Acceptable as difficulty 1.\n\nNo duplicates with other sections. I compared these cards against 1.2-04/11 (Lambda SQS/Kinesis), 3.2-07 (TestEventPattern), 3.3-10 (stage variables in mapping templates), 3.2-05 (mock mapping), 4.3-01/02 (SNS filter policies) and 4.3-09 (SQS long polling); they rest on different facts. No card in the section depends on a retired product, a retry default number or one SDK version."
+  },
+  {
+   "section": "1.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s1.2-10",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/lambda/latest/dg/best-practices.html)",
+     "evidence": "best-practices.html covers both card 10 and card 07 in one sentence: \"Take advantage of execution environment reuse to improve the performance of your function. Initialize SDK clients and database connections outside of the function handler, and cache static assets locally in the /tmp directory.\" lambda-runtime-environment.html (source of card 07) also lists both as consequences of the same reuse: \"Objects declared outside of the function's handler method remain initialized...\" and \"The directory content remains when the execution environment is frozen\".",
+     "problem": "Card 10 rests on the same fact as card 07 (aws-dva-c02-s1.2-07, lambda-tmp-execution-environment-reuse): state survives when Lambda reuses a warm execution environment. If you know one answer, you know the other. Both cards are true and easy, and 4.3-12 also builds on environment reuse. The hedge 'supports reusing' in a true statement is also a wording tell.",
+     "suggestedFix": "Replace with a TRUE card on skill 1.2.3. Statement: \"Lambda sends an asynchronous event to the on-failure destination once the event exceeds its maximum event age.\" (110 chars). Explanation: \"MaximumEventAgeInSeconds limits how long Lambda keeps an asynchronous event for retries. When it passes, Lambda sends a record to the on-failure destination if one is configured.\" (178 chars). Source: https://docs.aws.amazon.com/lambda/latest/dg/invocation-async-retain-records.html (\"On failure – Send a record when the event fails all processing attempts or exceeds the maximum age.\")"
+    },
+    {
+     "id": "aws-dva-c02-s1.2-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html)",
+     "evidence": "with-kinesis.html: \"Lambda reads records in batches and invokes your function to process records from the batch.\" The example event is {\"Records\": [ ... ]}. Elsewhere in the deck, card 4.1-02 says \"AWS Lambda reports IteratorAge using the last record in a Kinesis event sent to the function\" and its explanation mentions \"sending its batch to Lambda\".",
+     "problem": "The answer (False) is correct, but the card is close to a strawman. Anyone who has studied Lambda stream triggers knows that the handler receives event.Records, and the deck says 'batch' in many places. Card 4.1-02 ('the last record in a Kinesis event') also gives the answer away. The card tests event shape rather than the Kinesis event source mapping behaviour a developer must handle.",
+     "suggestedFix": "Replace with a FALSE card on the same skill (1.2.7). Statement: \"By default, a Lambda Kinesis event source mapping moves past a failing batch to process newer records in that shard.\" (116 chars). Explanation: \"By default, Lambda retries a failing Kinesis batch and stops processing later records in that shard until the batch succeeds or its records expire, preserving shard order.\" (171 chars). Sources: https://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html (\"Lambda processes records in each shard in order. It stops processing additional records in a shard if your function returns an error.\") and https://docs.aws.amazon.com/lambda/latest/dg/kinesis-on-failure-destination.html (\"With the default settings, this means that a bad record can block processing on the affected shard for up to one week.\")."
+    },
+    {
+     "id": "aws-dva-c02-s1.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html)",
+     "evidence": "configuration-envvars.html: \"Environment variables are not evaluated before the function invocation. Any value you define is considered a literal string and not expanded. Perform the variable evaluation in your function code.\" The same page also says: \"An environment variable is a pair of strings\".",
+     "problem": "The answer is right and the source supports it. But a player can answer True from common sense alone ('environment variables are strings'), without knowing the tested fact. The fact itself (Lambda does not expand references to other variables) appears only in the explanation, not in the statement. As written, the card reads as a truism.",
+     "suggestedFix": "Keep it TRUE and put the tested fact into the statement. Statement: \"Lambda passes an environment variable value containing ${OTHER_VAR} to function code with that reference text unchanged.\" (120 chars). Explanation: \"Lambda treats each configured value as a literal string and expands no variable references before invocation. Code that needs a referenced value substitutes it itself.\" (167 chars). Same source URL."
+    }
+   ],
+   "notes": "I checked all 12 section 1.2 cards in aws-dva-c02-b1.json against their source pages and the current Lambda docs. All 12 source URLs load and are official and current. Key quotes behind the cards that pass:\n- 01: \"Connecting a function to a public subnet doesn't give it internet access or a public IP address.\" (configuration-vpc.html)\n- 03: \"The invocation record contains details about the request and response in JSON format.\" The example record includes responsePayload.\n- 04: \"To turn on partial batch responses, specify ReportBatchItemFailures ... The batchItemFailures response must include a list of message IDs, as itemIdentifier JSON values.\" Small imprecision: the explanation says \"Lambda then retries the failed messages\", but the docs say the failed messages become visible in the queue again. Acceptable as written.\n- 05: \"The status code in the API response doesn't reflect function errors.\" (API_Invoke.html)\n- 06: Reserved concurrency \"sets both the maximum and minimum number of concurrent instances\", and provisioned concurrency is \"the number of pre-initialized execution environments\".\n- 08: \"you can use layers only with Lambda functions deployed as a .zip file archive.\" (chapter-layers.html)\n- 09: \"Lambda allocates CPU power in proportion to the amount of memory configured.\"\n- 12: Filters \"control which records ... Lambda sends to your function\", and \"If none of your filters are satisfied, Lambda discards the record.\"\n\nCard 12 is borderline: 'inside the function handler' is close to a strawman, because a handler is customer code. I left it unflagged. A stronger version would test the cost or delete behaviour, for example that Lambda deletes SQS messages its filters reject.\n\nBalance: the section is 6 true / 6 false. The suggested replacements keep it there: 02 stays true, 10 is replaced with a true card, 11 is replaced with a false card. I checked the replacement facts against the deck plan. The on-failure maximum-event-age and Kinesis shard-blocking facts do not appear in any other section, and neither is the other side of card 03 (the content of the on-success record). I did not use a DLQ-versus-destination replacement, because it would be the other side of card 03's distinction.\n\nNo card depends on retired products, X-Ray SDK APIs, SDK retry defaults or runtime versions."
+  },
+  {
+   "section": "1.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s1.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html)",
+     "evidence": "API_BatchWriteItem.html: \"If any requested operations fail because the table's provisioned throughput is exceeded or an internal processing failure occurs, the failed operations are returned in the UnprocessedItems response parameter. You can investigate and optionally resend the requests.\" The answer (false) is right, but the statement says the service could finish writes after it has already returned its response. No learner who has studied would hold that belief, so the card is a strawman. The awkward wording ('can finish ... after it returns its response') also tells the player the answer. The misconception learners really hold is that an HTTP 200 from BatchWriteItem means every item was written.",
+     "problem": "Strawman: the misconception (DynamoDB finishes UnprocessedItems after responding) is not one a studying developer holds, and the wording gives the answer away. The card does not test the real trap: an HTTP 200 response that still has UnprocessedItems.",
+     "suggestedFix": "Replace (answer false, keeps 6/6 balance). Statement: \"A DynamoDB BatchWriteItem call that returns HTTP 200 has written the full set of puts and deletes in its request.\" Explanation: \"BatchWriteItem can return HTTP 200 and still list throttled or failed operations in UnprocessedItems. Application code resubmits those, ideally with exponential backoff.\" Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s1.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/AmazonElastiCache/latest/dg/ElastiCache-Getting-Started-Tutorials-Python.html)",
+     "evidence": "Tutorial page: \"redis.hset(keyName, mapping=keyValues) # Set the key to expire and removed from cache in 60 seconds. redis.expire(keyName, 60)\". The page supports the card, but the card only tests generic Redis/Valkey command behaviour: EXPIRE acts on a key, and the hash is the key's value. That is close to a definition. No ElastiCache behaviour is tested, no realistic misconception is named, and a player who knows nothing would guess True. Strategies page https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html covers caching behaviour that the DVA skill 1.3.8 (use data caching services) actually tests: \"If you spin up a new node, whether due to a node failure or scaling out, there is missing data. This data continues to be missing until it's added or updated on the database.\"",
+     "problem": "Near-truism and engine trivia: it tests a generic Redis command, not how an application uses ElastiCache. The answer follows from what EXPIRE means, and the wording favours True.",
+     "suggestedFix": "Replace (answer true, keeps 6/6 balance). Statement: \"With a write-through strategy, a new ElastiCache node lacks existing data until the application writes that data again.\" Explanation: \"Write-through fills the cache only when the application writes to the database, so a replacement or scaled-out node stays empty for data that has not been written since. Adding lazy loading fills those gaps.\" URL: https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Strategies.html"
+    }
+   ],
+   "notes": "I checked all 12 section 1.3 cards (from aws-dva-c02-b1.json). The section is balanced at 6 true (01, 04, 07, 08, 10, 11) and 6 false (02, 03, 05, 06, 09, 12). Every source URL loaded and is official. I found no wrong answers, and none of these cards rests on the same fact as a card in another section: 4.3-07 (DAX ConsistentRead) and 2.1-12 (LeadingKeys) test different facts.\n\nSettling quotes for the cards that pass:\n- 01: Query.KeyConditionExpressions.html, \"You must specify the partition key name and value as an equality condition.\" This still holds for multi-attribute GSI keys.\n- 02: Query.FilterExpression.html, \"a Query consumes the same amount of read capacity, regardless of whether a filter expression is present.\"\n- 03: HowItWorks.ReadConsistency.html, \"Strongly consistent reads from a global secondary index or a DynamoDB stream are not supported.\" The explanation's \"rejected\" matches the Query API reference (ValidationException), not this page, which is acceptable. MRSC global tables do not change the GSI rule.\n- 04: API_PutItem.html, \"To prevent a new item from replacing an existing item, use a conditional expression that contains the attribute_not_exists function...\"\n- 06: TTL.html, \"typically within a few days after their expiration ... Use filter expressions to remove expired items from Scan and Query results.\"\n- 07: API_AttributeValue.html, \"Numbers are sent across the network to DynamoDB as strings ... DynamoDB treats them as number type attributes for mathematical operations.\"\n- 08: Welcome.html#ConsistencyModel, \"A process replaces an existing object and immediately tries to read it. Amazon S3 returns the new data.\" The fragment URL would point straight at the quote.\n- 09: API_DeleteObject.html, \"If bucket versioning is enabled, the operation inserts a delete marker ... To permanently delete an object in a versioned bucket, you must include the object's versionId.\"\n- 11: API_ExecuteStatement.html, \"If a call isn't part of a transaction because it doesn't include the transactionID parameter, changes that result from the call are committed automatically.\" The explanation is circular but correct.\n- 12: the source is an official AWS Solutions page (Migration Assistant for Amazon OpenSearch Service, tstk-validate.html). It supports the card: \"A term query expects an exact, non-analyzed value.\" It is still a weak choice of source, a migration-tool page rather than OpenSearch Service developer docs, and term versus match query analysis is at the edge of associate depth for skill 1.3.9. I left the card in.\n\nAlso worth a look: in replacement texts, avoid 'every' in false statements so requirement words do not mark the false cards."
+  },
+  {
+   "section": "2.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s2.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/apigateway/latest/developerguide/http-api-jwt-authorizer.html)",
+     "evidence": "Source: \"aud or client_id – Must match one of the audience entries that is configured for the authorizer. API Gateway validates client_id only if aud is not present. When both aud and client_id are present, API Gateway evaluates aud.\" The card is correct, but its answer follows from the wording: an authorizer with a configured 'audience' checking the token's 'aud' (audience) claim is close to true by definition. The phrase 'a present aud claim' also hints at the real lesson, the client_id fallback, without testing it. That fallback is what a developer actually runs into: per https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-the-access-token.html, a Cognito access token's aud is \"Present only if your application requested a resource binding\".",
+     "problem": "The answer can be read from the wording ('audience' vs 'aud'), so the card teaches almost nothing. The developer-relevant fact on the same page, that the authorizer matches client_id when aud is absent, goes untested.",
+     "suggestedFix": "Replacement (answer true, keeps section balance 6/6): statement \"An Amazon API Gateway HTTP API JWT authorizer matches a token's client_id claim to its audience when aud is absent.\" (115 chars). Explanation: \"When a JWT lacks an aud claim, as a Cognito user pool access token does without resource binding, an HTTP API JWT authorizer matches client_id against its audience entries.\" (172 chars). Keep the same URL; factKey e.g. apigw-http-jwt-authorizer-clientid-fallback."
+    },
+    {
+     "id": "aws-dva-c02-s2.1-01",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, current, but only indirectly supports the card (docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html)",
+     "evidence": "The cited overview page never says what sign-in returns. It only says \"From the perspective of your app, an Amazon Cognito user pool is an OpenID Connect (OIDC) identity provider\" and \"Identity pools provide credentials that authorize and monitor API requests to AWS services\". The JWT page states it outright: \"If the login is successful, Amazon Cognito creates a session and returns an ID token, an access token, and a refresh token for the authenticated user... Or you can exchange them for temporary AWS credentials to access other AWS services.\" (https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html). The same page notes refresh tokens are \"encrypted, opaque\", so 'JSON web tokens' in the explanation is slightly loose. The answer (false) is correct.",
+     "problem": "The source does not state the right fact the explanation gives (sign-in returns ID, access and refresh tokens). It leaves the reader to infer it. The explanation also calls every returned token a JWT, but the refresh token is opaque.",
+     "suggestedFix": "Use URL https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html and change the explanation to: \"After sign-in, a Cognito user pool returns ID, access and refresh tokens. An identity pool, not the user pool, exchanges them for temporary AWS credentials.\" (156 chars). The statement stays as is (answer false)."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.1 (6 true, 6 false), all in aws-dva-c02-b1.json. Every source URL loads and is official documentation on docs.aws.amazon.com. Every answer held up against the current docs. No card uses a retired product, a plan-dependent Cognito feature or a volatile number. I compared them with all other cards of the deck and found no duplicates: s2.3-12 (S3 PrincipalTag) and s2.2-07 (KMS cross-account) rest on different facts. All 12 fit skills 2.1.1 to 2.1.7 of guide v2.1. Passing cards and the quote that settles each: 02 (access-token page: \"Amazon Cognito signs access tokens with a different key from the key that signs ID tokens\". The statement is a fairly close paraphrase but restructured, so it passes; the reviewer could reword it further.) 04 (PutMethod: apiKeyRequired \"Specifies whether the method required a valid ApiKey\"; authorizationType values NONE, AWS_IAM, CUSTOM, COGNITO_USER_POOLS. The misconception is the realistic API key vs access key mix-up.) 05 (evaluation logic: \"An explicit deny in either of these policies overrides the allow\".) 06 (boundaries page: \"it limits the user's permissions but does not provide permissions on its own\". The exception, that implicit denies in a boundary do not limit same-account resource-based policies, does not make the boundary itself grant anything.) 07 (AssumeRole: \"an access key ID, a secret access key, and a security (or session) token\".) 08 (GetCallerIdentity example 2 returns arn:aws:sts::123456789012:assumed-role/my-role-name/my-role-session-name. RoleSessionName cannot contain ':' or '/', so it cannot carry a user ARN; the answer false is safe.) 09 (SigV4 page: \"Use the secret access key to derive the key used to sign the request\". The Authorization header carries only the Credential (access key ID and scope) and the Signature. This is borderline easy but a plausible beginner belief, so it is not flagged.) 10 (PassRole page: \"A user can pass a role ARN as a parameter in any API operation... The service then checks whether that user has the iam:PassRole permission\" and \"a role is passed to an AWS Lambda function when it's created... CreateFunction\".) 11 (Lambda permissions page: the execution role holds the function's permissions to reach DynamoDB; \"resource-based policies to give other accounts and AWS services permissions to access your Lambda resources\".) 12 (DynamoDB FGAC page: \"dynamodb:LeadingKeys – This condition key allows users to access only the items where the partition key value matches their user ID\".) The suggested replacement for card 03 is true, so the 6/6 true/false balance holds. The client_id fallback it tests does not overlap card 02 (signing keys) or card 01 (token output)."
+  },
+  {
+   "section": "2.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s2.2-06",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html)",
+     "evidence": "Source supports the permission requirement: \"To download an object encrypted with an AWS KMS key, you need kms:Decrypt permissions for the key.\" It also says S3 only forwards the request: \"Amazon S3 sends the encrypted data key to AWS KMS in a Decrypt request.\" The S3 Bucket Keys page (https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-key.html) adds: \"Unique bucket-level keys are fetched at least once per requester... By design, subsequent requests that take advantage of this bucket-level key do not result in AWS KMS API requests or validate access against the AWS KMS key policy.\"",
+     "problem": "The statement names the wrong actor and implies a check on every download. AWS KMS, not S3, evaluates kms:Decrypt. With S3 Bucket Keys, later downloads by the same requester do not trigger a KMS authorization check. An expert could answer False on either point, although the underlying fact (the caller needs kms:Decrypt) is true.",
+     "suggestedFix": "Replacement (answer True). Statement: \"Downloading an SSE-KMS object from Amazon S3 requires kms:Decrypt permission on the object's KMS key.\" Explanation: \"S3 asks AWS KMS to decrypt the object's data key on the caller's behalf, so a caller with s3:GetObject but no kms:Decrypt permission on that key gets an access denied error.\" (173 characters). Keep the same URL."
+    },
+    {
+     "id": "aws-dva-c02-s2.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/privateca/latest/userguide/PcaWelcome.html)",
+     "evidence": "PcaWelcome.html, RFC 5280 compliance section: \"When issuing a certificate, AWS Private CA copies the SubjectPublicKeyInfo and SAN extensions from the provided CSR without performing validation.\"",
+     "problem": "The source supports the card, but it is a PKI truism. A CSR exists to carry the requester's public key to the CA, so every CA issues the certificate with that key. The answer follows from the definition of a CSR and teaches nothing specific to AWS Private CA. No studied learner would answer False.",
+     "suggestedFix": "Replacement (answer True, keeps the 6/6 balance) built on the AWS-specific half of the same sentence. Statement: \"AWS Private CA copies a CSR's subject alternative names into the issued certificate as supplied, skipping validation.\" (117 characters). Explanation: \"When issuing a certificate, AWS Private CA copies SubjectPublicKeyInfo and SAN entries from the CSR unchecked. Unlike public ACM certificates, no domain validation step takes place.\" (181 characters). Same URL."
+    }
+   ],
+   "notes": "All 12 cards of section 2.2 (aws-dva-c02-b2.json) were checked against their source pages, which all load on docs.aws.amazon.com and are current. The section is balanced: 6 true (01, 04, 06, 07, 10, 12) and 6 false (02, 03, 05, 08, 09, 11). Both replacements keep the answer True. Cards that passed, with the sentence that settles each: 01 GenerateDataKey: \"returns a plaintext copy of the data key and a copy that is encrypted under a symmetric encryption KMS key\". \"Supports\" correctly hedges the Nitro Recipient case, where Plaintext is null. 02 Decrypt: \"you must specify the same (an exact case-sensitive match) encryption context\". 03 grants.html: \"when you create, retire, or revoke a grant, there might be a brief delay... To use the permissions in a grant immediately, use a grant token\". 04 UsingServerSideEncryption.html: \"SSE-S3 is the default encryption configuration for every bucket in Amazon S3\". Its explanation's \"different supported default\" is SSE-KMS or DSSE-KMS. 05 ServerSideEncryptionCustomerKeys.html: \"S3 never stores the encryption key when you use SSE-C\". The answer still holds, but since April 2026 SSE-C is blocked by default on new general purpose buckets (BlockedEncryptionTypes). A future edit could mention this; it does not change the answer. 07 key-policy-modifying-external-accounts.html: \"Cross-account access requires permission in the key policy of the KMS key and in an IAM policy in the external user's account\". The \"policy-based access\" qualifier correctly sets grants aside. 08 rotate-keys.html: \"It does not rotate the data keys that the KMS key generated or re-encrypt any data protected by the KMS key.\" 09 rotate-keys.html: \"Automatic key rotation is supported only on symmetric encryption KMS keys with key material that AWS KMS generates (AWS_KMS origin)\", with asymmetric keys listed under manual rotation. It is correctly marked may_change. 11 IssueCertificate: \"This action returns the Amazon Resource Name (ARN) of the certificate. You can retrieve the certificate by calling the GetCertificate action\". 12 CreateKeyPair: \"Amazon EC2 stores the public key and displays the private key for you to save to a file\", with keyMaterial = \"An unencrypted PEM encoded RSA or ED25519 private key\". No duplicates with the other sections: the closest is s2.3-03 (Lambda environment variables decrypted with KMS Decrypt), which rests on a different fact. Coverage: skill 2.2.1 (encryption at rest versus in transit) has no direct card, and 2.2.3 (client-side versus server-side encryption) appears only indirectly through SSE-C and GenerateDataKey. This is not flagged, but the editor may want one card there in a later revision."
+  },
+  {
+   "section": "2.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s2.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com Secrets Manager API reference)",
+     "evidence": "https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html: \"Retrieves the contents of the encrypted fields SecretString or SecretBinary from the specified version of a secret.\" The answer is right, but it comes straight from the operation's name: an API called GetSecretValue returns the secret's value to an authorized caller. Nobody who studied would answer False, so the card is a name giveaway and close to a truism. The same page has a useful, non-obvious fact: \"If you don't specify either a VersionStage or VersionId, then Secrets Manager returns the AWSCURRENT version.\"",
+     "problem": "The answer can be read from the API name GetSecretValue. The card teaches nothing beyond the name and breaks the no-giveaway and no-truism rules.",
+     "suggestedFix": "Replace (answer stays True). Statement: \"AWS Secrets Manager GetSecretValue returns the AWSCURRENT version when the request omits VersionId and VersionStage.\" (116 chars). Explanation: \"Rotation moves the AWSCURRENT staging label to the new secret version, so a call without a version selector gets the current value. Request VersionStage AWSPREVIOUS to read the prior one.\" (187 chars). Keep the same URL. New factKey: secrets-manager-getsecretvalue-default-awscurrent."
+    },
+    {
+     "id": "aws-dva-c02-s2.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (Systems Manager API reference)",
+     "evidence": "https://docs.aws.amazon.com/systems-manager/latest/APIReference/API_GetParameter.html, WithDecryption: \"Return decrypted values for secure string parameters. This flag is ignored for String and StringList parameter types.\" The card is correct, but the parameter name WithDecryption=true already says that the call returns decrypted plaintext, so a player who has never used Parameter Store can answer True from the wording alone.",
+     "problem": "The answer can be read from the parameter name (WithDecryption true, so the value comes back decrypted). This breaks the no-giveaway rule.",
+     "suggestedFix": "Replace (answer stays True). Statement: \"AWS Systems Manager GetParameter can return a Secrets Manager secret named under /aws/reference/secretsmanager/.\" (112 chars). Explanation: \"Parameter Store passes names with this reserved prefix through to Secrets Manager and honors the secret's IAM policies. Only GetParameter and GetParameters support these references.\" (181 chars). URL: https://docs.aws.amazon.com/systems-manager/latest/userguide/integration-ps-secretsmanager.html (\"Secrets Manager secrets in Parameter Store must have a prefix of /aws/reference/secretsmanager\"; \"You can only retrieve Secrets Manager secrets by using the GetParameter and GetParameters API operations\"). New factKey: ssm-parameter-store-secretsmanager-reference. With both replacements, true statements average 106 characters and false ones 102, which is within the 5-character rule."
+    }
+   ],
+   "notes": "I checked all 12 section 2.3 cards. Every source URL loads, is official (docs.aws.amazon.com) and is current, and the balance is 6 true and 6 false. On the facts, every answer is right and backed by its source:\n- 01: \\\"log events ingested to the log group before that time are not masked\\\" (mask-sensitive-log-data.html).\n- 02: the GetLogEvents parameter unmask defaults to false and needs logs:Unmask.\n- 03: the Lambda page says \\\"Add code to your function that decrypts the environment variables\\\" and \\\"your function needs permission to call the kms:Decrypt API operation\\\".\n- 05: with-secrets-manager.html says \\\"the default 300-second cache duration might cause your function to use outdated secrets\\\". The docs write the extension's name both as \\\"AWS parameters and secrets Lambda extension\\\" and \\\"AWS Parameters and Secrets Lambda Extension\\\", so the card's wording is acceptable.\n- 06: SecretString and SecretBinary: \\\"the service does not include it in AWS CloudTrail log entries\\\".\n- 08: \\\"Updating a parameter doesn't affect the expiration date or time of the policy attached to it.\\\" The card is correct but close to trivia (a policy for advanced-tier parameters). I left it unflagged as a configuration effect a developer can observe.\n- 09 and 10: build-spec-ref.html. 10 rests on \\\"If a build command transforms a secret before it appears in the logs, the result is a different string that is not masked. For example, encoding it with Base64\\\". The doc's own fix is to store the value already in the encoded form; the explanation could say that instead of \\\"build code handles sanitization\\\", but it is not wrong.\n- 11: specifying-conditions.html says that if any part of the Condition is false, access is denied, with no redaction. The page also has a stronger trap that could make a future card: without a ProjectionExpression, all attributes are returned unless dynamodb:Select is restricted.\n- 12: reference_policies_variables.html has the example arn:aws:s3:::amzn-s3-demo-bucket/${aws:PrincipalTag/dept}/*.\n\nOverlap: 2.3-11 (dynamodb:Attributes) and 2.1-12 (dynamodb:LeadingKeys) come from the same page but test different condition keys, so they are not duplicates. 2.3-12 and 2.1-12 share the per-tenant policy-variable idea but test different services and mechanisms; not flagged. Cards 04 and 06 both use GetSecretValue but test different facts, and so do 09 and 10 (CodeBuild).\n\nWording tells are balanced: hedge words appear in true cards 04 and 12 and in false cards 10 and 11, and \\\"by default\\\" appears in one false card (02). I found nothing retired or renamed, and no card depends on a version or a number. Only skill 2.3.1 (data classification) is covered only indirectly; no card tests PII or PHI identifiers, for example CloudWatch Logs managed data identifiers."
+  },
+  {
+   "section": "3.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s3.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official and current (https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html)",
+     "evidence": "\"After tag immutability is turned on, the ImageTagAlreadyExistsException error is returned if you push an image with a tag that is already in the repository.\" The source supports the card and the answer is right. The problem is that the answer comes straight from the word \"immutable\" in the statement: a push cannot overwrite an immutable tag. The only thing left to test is the exception name, and a false version could only be made by changing that name, which the rules forbid as trick wording. This is the definition-card or name-giveaway pattern that the prompt bans.",
+     "problem": "Give-away. A player who knows only what \"immutable\" means answers True, so the card teaches nothing beyond an exception name.",
+     "suggestedFix": "Replace, keeping the answer True. Statement (109 chars): \"An Amazon ECR repository with tag immutability can exempt chosen tags, such as latest, through exclusion filters.\" Explanation: \"With IMMUTABLE_WITH_EXCLUSION, tags that match an exclusion filter (for example latest) can still be overwritten. A push that reuses any other existing tag fails with ImageTagAlreadyExistsException.\" Source: the same URL, which says \"to enable tag updates for a few immutable tags, enter tag names or use wildcards (*) ... in the Immutable tag exclusion text box.\""
+    },
+    {
+     "id": "aws-dva-c02-s3.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official and current (https://docs.aws.amazon.com/codebuild/latest/APIReference/API_StartBuild.html)",
+     "evidence": "\"computeTypeOverride: The name of a compute type for this build that overrides the one specified in the build project.\" The source supports the answer False. Three problems: (1) The parameter name \"...Override\" on a per-call StartBuild request already tells the player that the setting is per-build, so the answer can be read from the name. (2) The actor is wrong: \"AWS CodeBuild can use StartBuild's...\" makes CodeBuild the caller instead of the developer. (3) Skill 3.1.4 is about application resource requirements (memory, cores), not build-host sizing, so this is close to API-parameter trivia. Lambda memory and CPU is already covered by s1.2-09, so it cannot be the replacement.",
+     "problem": "Name give-away and a misplaced actor on a parameter-trivia card that only loosely fits skill 3.1.4.",
+     "suggestedFix": "Replace, keeping the answer False. Statement (109 chars): \"Amazon ECS lets a container use more than its container definition memory value when the host has spare memory.\" Explanation: \"In an ECS container definition, memory is a hard limit, and a container that tries to exceed it is killed. memoryReservation is the soft limit, which a container may exceed when memory is free.\" Source: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html (\"If your container attempts to exceed the memory specified here, the container is killed.\" and \"memoryReservation ... The soft limit (in MiB) of memory to reserve for the container ... your container can use more memory when needed.\"). Check against s4.3-10 (ECS CPU above its reservation): the parameter and the fact are different, but keep the wording distinct. If that is too close, drop this card or replace it with another skill 3.1.4 fact."
+    }
+   ],
+   "notes": "I checked all 12 section 3.1 cards (6 true, 6 false; the balance holds with the suggested replacements). All 10 source URLs returned 200, and the Domain 3 page confirms skills 3.1.1 to 3.1.5. CodeArtifact, AppConfig, ECR, Elastic Beanstalk and CodeBuild are all on the in-scope list.\n\nCards that passed, with the source quote that settles each one:\n- 01: \"the .py file containing your handler code and all of your function's dependencies must be installed at the root of the .zip file.\" Edge case: a handler module could in theory sit in a layer on sys.path, but that falls outside a statement about the .zip package.\n- 02: \"Lambda loads the layer content into the /opt directory.\" It does not duplicate s1.2-08 (container images cannot use layers).\n- 03: For a non-AWS base image such as Debian, \"you must include a runtime interface client for your language in the image.\"\n- 04: \"The container image must be able to run on a read-only file system. Your function code can access a writable /tmp directory.\" Distinct from s1.2-07 (/tmp reuse).\n- 06: GetAuthorizationToken \"Generates a temporary authorization token for accessing repositories in the domain.\"\n- 07: The install phase holds runtime-versions: phases/install/runtime-versions.\n- 08: The cache/paths entries and the artifacts block are separate in the buildspec reference.\n- 10: \"Configuration files are YAML- or JSON-formatted documents with a .config file extension.\" The same page now notes that .ebextensions \"apply only to Beanstalk Standard environments\", not to the new Beanstalk Cluster environments. The card is still true, but if you edit it, consider adding \"in a Standard environment\".\n- 11: \"JSON Schema : Supported for free form configurations.\" The claim in its explanation that a failure blocks deployment is consistent with validation running at StartDeployment.\n- 12: \"AWS AppConfig verifies that the Lambda X-Amz-Function-Error header is set in the response. Lambda sets this header if the function throws an exception.\"\n\nNo wrong answers were found."
+  },
+  {
+   "section": "3.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s3.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com SAM developer guide)",
+     "evidence": "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-start-api.html: \"Use the ... sam local start-api subcommand to run your AWS Lambda functions locally and test through a local HTTP server host.\" The fact is correct, but the command name already says it: 'local' + 'start-api' tells a non-expert that it runs local API endpoints. That makes it a name giveaway and close to a definition. The same page has a sharper fact: \"For Lambda functions that use Lambda authorizers, the AWS SAM CLI will automatically invoke your Lambda authorizer before invoking your Lambda function endpoint.\"",
+     "problem": "Name giveaway and definition card: the command name gives the answer away, so the card tests nothing a developer has to learn.",
+     "suggestedFix": "Replacement (answer True, keeps balance): statement \"AWS SAM CLI sam local start-api invokes a function's configured Lambda authorizer locally before invoking the function.\" (119 chars). Explanation: \"When a SAM function uses a Lambda authorizer, the SAM CLI runs that authorizer first, then the function if authorization succeeds. Local results can differ from deployed authorizers.\" (182 chars). Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s3.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html: \"If the --parameter-overrides option is used at the command line or in your configuration file with the parameter_overrides key, its values take precedence over values in the Parameters section of the template file.\" and \"An environment is a named identifier that contains a unique set of configuration settings ... Use the AWS SAM CLI --config-env option to specify the environment to use.\" The statement \"uses deployment parameter overrides to vary the same template's settings between environments\" follows from what the words 'parameter overrides' mean. It also has a vague actor (\"AWS SAM uses\").",
+     "problem": "Truism or definition card: anyone who knows what 'override' means answers True, so it fails the no-definition and no-wording-tell rules. Skill 3.2.4 (deploying a SAM template to a different staging environment) has a concrete mechanism that is worth testing instead.",
+     "suggestedFix": "Replacement (answer True): statement \"sam deploy --config-env staging makes the AWS SAM CLI read deploy settings from the staging table of samconfig.toml.\" (116 chars). Explanation: \"samconfig.toml holds named environments, each with its own command parameters such as stack_name and parameter_overrides, so one template deploys to dev or staging by switching --config-env.\" (190 chars). Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s3.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (EventBridge API Reference)",
+     "evidence": "https://docs.aws.amazon.com/eventbridge/latest/APIReference/API_TestEventPattern.html: \"Tests whether the specified event pattern matches the provided event.\" ... \"Result: Indicates whether the event matches the event pattern. Type: Boolean\". The same page has a better fact: \"The JSON must follow the format specified in AWS Events, and the following fields are mandatory: id, account, source, time, region, resources, detail-type\".",
+     "problem": "Giveaway and trivia: an API called TestEventPattern obviously reports whether the event matches, and the only extra detail is the response field's name and type. A learner can answer it without knowing anything about EventBridge testing.",
+     "suggestedFix": "Replacement (answer True): statement \"EventBridge TestEventPattern requires the test event to include fields such as id, account, time and detail-type.\" (about 112 chars). Explanation: \"The Event passed to TestEventPattern must follow the AWS event format with id, account, source, time, region, resources and detail-type; Result then says whether the pattern matches.\" (182 chars). Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s3.2-10",
+     "verdict": "source_problem",
+     "urlStatus": "loads, but it is a 2021 AWS Compute Blog post (aws.amazon.com/blogs), not current documentation. The official HTTP API Lambda integration page shows only isBase64Encoded:false examples and does not state the request-side rule.",
+     "evidence": "Blog (published March 31, 2021): \"The HTTP API Lambda integration automatically infers the need for encoding based on the content-type header passed with the request\" and \"Lambda receives the following: { \\\"body\\\": \\\"/9j/4AAQSkZ...\\\", \\\"isBase64Encoded\\\": true }\". https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html has no sentence saying that binary request bodies are base64-encoded. Other problems: the actor is wrong (\"A Lambda test event ... places\": a developer writes a test event, and it holds whatever the developer puts in it, so an expert can object). The topic fits skill 3.3.1 (create test events) better than 3.2. Difficulty 1 is too low for this detail.",
+     "problem": "No current official documentation page supports the request-side binary rule, and the statement names the wrong actor.",
+     "suggestedFix": "Replace with a 3.2.1 fact that docs support (answer True): statement \"AWS SAM sam remote test-event stores shareable Lambda test events in the Amazon EventBridge schema registry.\" (108 chars). Explanation: \"Shareable test events live in the EventBridge schema registry, so users of the same AWS account can get, list or put them and pass them to sam remote invoke against the deployed function.\" (187 chars). URL: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-test-event.html (\"put – Save an event from a local file to the EventBridge schema registry.\")"
+    },
+    {
+     "id": "aws-dva-c02-s3.2-12",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, current, but it does not state the fact the card turns on",
+     "evidence": "The API page https://docs.aws.amazon.com/appsync/latest/APIReference/API_EvaluateMappingTemplate.html says only: \"Evaluates a given template and returns the response.\" It never says whether the data source is called. The developer guide page https://docs.aws.amazon.com/appsync/latest/devguide/test-debug-resolvers.html settles it: \"you can pass a mock or test context object ... This enables you to see how both the request and the response templates evaluate without actually running against a data source\" and \"You can use the EvaluateMappingTemplate API command to remotely test your mapping templates with mocked data.\" That page also notes: \"We now primarily support the APPSYNC_JS runtime\" (VTL is still supported, not retired).",
+     "problem": "The cited API reference does not support the right fact given in the explanation (no data source call). The answer itself (False) is correct.",
+     "suggestedFix": "Change the URL to https://docs.aws.amazon.com/appsync/latest/devguide/test-debug-resolvers.html. Optionally tighten the explanation: \"EvaluateMappingTemplate renders a VTL template against a supplied mock context and returns evaluationResult without running against a data source. EvaluateCode does the same for APPSYNC_JS code.\" (194 chars)."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 3.2 (all in b2). The section is balanced at 6 true and 6 false, and every proposed replacement keeps it, because each replaces a True card with another True card. All services used (SAM, API Gateway, EventBridge, Step Functions, Lambda, CodeBuild, AppSync) are on the DVA-C02 in-scope list. Section 3.2 has five skills (3.2.1 to 3.2.5) in exam guide v2.1.\n\nThese cards passed after verification:\n- s3.2-02: the Lambda testing guide says \\\"If your function makes API calls to other AWS services, those calls reach real AWS resources.\\\"\n- s3.2-04: how-to-call-api says TestInvoke \\\"allows API testing before the API is deployed\\\". The API_TestInvokeMethod page would be a more direct source.\n- s3.2-05: the mock integration page has the 200 integration response body mapping template.\n- s3.2-06: set-up-deployments says a stage \\\"represents a snapshot of the API, including methods, integrations ...\\\".\n- s3.2-08: the TestState API says \\\"DEBUG: Shows the final state output along with the input and output data processing result. TRACE: Shows the HTTP request and response for an HTTP Task.\\\" This is still current after the mock, Map and Parallel additions.\n- s3.2-09: the Invoke API says \\\"DryRun – Validate parameter values and verify that the user or role has permission to invoke the function\\\" and returns status 204.\n- s3.2-11: report-create says to specify \\\"the location of the files that contain the test results\\\" under reports in the buildspec.\n\nOverlap to watch, not flagged: s3.2-06 (a stage serves its deployment snapshot) and s3.3-04 (several REST API stages can share one deployment) are related. Knowing that stages point to deployments hints at s3.2-06's answer, but it does not give it away.\n\nMinor, not flagged: s3.2-08 is close to detail level for 'hard', and s3.2-05 is fairly easy to guess. Both are defensible."
+  },
+  {
+   "section": "3.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s3.3-07",
+     "verdict": "explanation_error",
+     "urlStatus": "loads (200), official, current: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-condition.html",
+     "evidence": "The source note says: \"If a resource with a condition isn't created, any resources that depend on that resource aren't created either, regardless of their own conditions.\" That supports the answer (False). What CloudFormation actually does is different. A Ref or DependsOn from a resource that remains in the template to a resource whose condition is false does not get skipped quietly. CloudFormation rejects it with \"Template format error: Unresolved resource dependencies [X] in the Resources block of the template\". The aws-cdk PR #13889 (https://github.com/aws/aws-cdk/pull/13889) says the Condition \"is not compatible with the dependency clause, as the resource will not exist if the Condition is false\". AWS's own example at https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/conditions-section-structure.html avoids the problem: the Policy that refs Bucket uses CreateBucketPolicy, which includes the bucket's CreateBucket condition.",
+     "problem": "The answer (False, the resource is not created) holds. The explanation says CloudFormation \"skips\" the dependent resource even when that resource's own condition is true, which teaches that the rest of the stack deploys normally. In practice an unguarded Ref to a resource that is not created makes the whole create or update fail at template validation. Developers fix it by giving the referencing resource the same condition or by using Fn::If. An expert would reject the explanation as written.",
+     "suggestedFix": "Keep the statement (answer False) and replace the explanation with this (about 225 characters): \"A false condition removes the referenced resource, so an unguarded Ref to it fails template validation with an Unresolved resource dependencies error. Give the referencing resource the same condition or wrap the Ref in Fn::If.\" Keep the Condition attribute URL and add the Conditions syntax page as context. If an official page that names the error cannot be cited, drop the card."
+    },
+    {
+     "id": "aws-dva-c02-s3.3-12",
+     "verdict": "source_problem",
+     "urlStatus": "loads (200), official, current: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/service_code_examples.html, but it only partly supports the card",
+     "evidence": "The cited page says only: \"Use the validate-template command to check your template file for syntax errors. During validation, CloudFormation first checks if the template is valid JSON. If it isn't, CloudFormation checks if the template is valid YAML.\" It says nothing about property values, existing resources or EC2 key pairs, so the key-pair claim in the explanation is not on the page. https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html#template-validation supports it better: \"You can check whether a template uses valid JSON or YAML with the validate-template CLI command ... These service-side checks don't run the additional property, security, or best-practice checks\" and \"[Local tools] can't guarantee that deployment will succeed with the current resources, permissions, and quotas in an AWS account\". The API reference (https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ValidateTemplate.html) also lists only the JSON and YAML checks.",
+     "problem": "The answer (False) is correct. ValidateTemplate takes no parameter values and checks only syntax. But the cited source does not cover the whole card. It never says that property values, or the existence of resources such as a named key pair, go unchecked.",
+     "suggestedFix": "Change the URL to https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html#template-validation. Optionally tighten the explanation (answer stays False): \"ValidateTemplate checks only that the template is valid JSON or YAML. Account-level problems, such as a missing EC2 key pair, surface when CloudFormation creates or updates the stack.\""
+    },
+    {
+     "id": "aws-dva-c02-s3.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current: https://docs.aws.amazon.com/amplify/latest/userguide/setting-env-vars.html",
+     "evidence": "The source says: \"By default, Amplify applies the environment variables across all branches ... (Optional) To customize an environment variable specifically for a branch, add a branch override ... Choose Actions and then choose Add variable override.\" The feature is called an override, so a branch value winning over the app-wide value is what the term itself says.",
+     "problem": "The statement is false only because the general value would beat the more specific one. That is a strawman: nobody who has seen Amplify's \"variable override\" would answer True, and the rule that specific beats general can be guessed without knowing Amplify. The card teaches little at the associate level.",
+     "suggestedFix": "Replace it with this (answer False, which keeps the 6/6 balance): \"AWS Amplify Hosting accepts a developer-defined environment variable named AWS_STAGE for a branch build.\" Explanation: \"Amplify reserves the AWS prefix for its own build variables, such as AWS_BRANCH and AWS_APP_ID, and rejects custom names that start with it. Use another prefix for branch-specific settings.\" Source: https://docs.aws.amazon.com/amplify/latest/userguide/environment-variables.html (\"Amplify doesn't allow you to create environment variable names with an AWS prefix. This prefix is reserved for Amplify internal use only.\"). Or drop the card."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 3.3 (aws-dva-c02-b3.json). The balance is 6 true (01, 02, 04, 05, 08, 11) and 6 false (03, 06, 07, 09, 10, 12). All cards fit skills 3.3.1 to 3.3.5 of the version 2.1 guide (domain 3 page confirmed). None uses Amazon Q Developer, AWS Copilot or a retired product.\n\nCards that pass, with the evidence that settles each one:\n- 01: configuration-versions.html says \"When you publish a version, Lambda creates an immutable snapshot of your function's code and configuration\" and lists Environment variables.\n- 02: API_UpdateFunctionCode says \"For a function defined as a container image, Lambda resolves the image tag to an image digest. In Amazon ECR, if you update the image tag to a new image, Lambda does not automatically update the function.\"\n- 04: api-gateway-basic-concept says \"the deployment must be associated with one or more API stages\".\n- 05: the change sets page says \"CloudFormation makes the changes to your stack only when you decide to execute the change set\".\n- 06: the drift page says \"CloudFormation only determines drift for property values that are explicitly set ... This doesn't include default values for resource properties.\"\n- 08: the SAM Function Role property says \"If a role isn't specified, one is created for you with a logical ID of <function-logical-id>Role\".\n- 09: the CodeDeploy BeforeAllowTraffic tutorial code reads event.DeploymentId and event.LifecycleEventHookExecutionId, then builds its own payload ({\"option\": \"time\"}) to invoke the new version.\n- 10: the mapping template reference gives the syntax $stageVariables.<name> / $stageVariables['<name>'], and its $context table has no stageVariables entry.\n- 11: configuring-alias-routing says \"Both versions must have the same execution role.\"\n\nDuplicates: I found none against other sections. 3.3-04 (several stages, one deployment) is related to 3.2-06 (a stage serves its deployment snapshot) but is a different fact. 3.3-11 is not the same fact as 3.4-06 (CodeDeploy shifts alias weights). 3.3-10 does not overlap 3.4-11 or 3.4-12 (stage variable canary override, cross-account Lambda).\n\nCard 07: the answer is safe, but the official note (\"aren't created either\") does not match how CloudFormation behaves. It returns an Unresolved resource dependencies validation error, so the explanation should say so or the card should be dropped.\n\nMinor, no flag: 05 is an easy, near-definitional change set card but still acceptable at difficulty 1. The source for 09 shows the event fields only through tutorial code; the explanation is accurate."
+  },
+  {
+   "section": "3.4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s3.4-01",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, current (https://docs.aws.amazon.com/codepipeline/latest/userguide/action-reference-CodestarConnectionSource.html)",
+     "evidence": "The cited page lists both actions and says \"Note Both actions are required. Operations invoked through [entity missing in rendered page] call codestar-connections:UseConnection, while operations invoked outside of [entity] call codeconnections:UseConnection. Granting both actions ensures the role works for both code paths, regardless of whether the connection's resource ARN uses the codeconnections or codestar-connections service prefix.\" The dtconsole reference (https://docs.aws.amazon.com/dtconsole/latest/userguide/security-iam.html) only says \"When a service like CodePipeline uses a connection, the service role must have the codeconnections:UseConnection permission\". The landing-zone-accelerator issue #828 shows a pipeline role that failed until both actions were added.",
+     "problem": "The card's own source says one code path checks codestar-connections:UseConnection and requires both actions. The missing entity is probably CodePipeline, and if it is, CodePipeline-invoked operations call the codestar-connections action. So an expert could argue the statement is False, and the explanation, which names only codeconnections:UseConnection, is incomplete. Also, 'UseConnection for a connection source' is close to a name giveaway.",
+     "suggestedFix": "Replacement (true): \"A CodePipeline service role needs both codeconnections and codestar-connections UseConnection for a connection source.\" (118 chars). Explanation: \"AWS CodePipeline docs require both UseConnection actions on the connection ARN, because some code paths check the codestar-connections prefix and others the codeconnections prefix.\" (180 chars). Keep the same URL."
+    },
+    {
+     "id": "aws-dva-c02-s3.4-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/using-features.rolling-version-deploy.html)",
+     "evidence": "\"With rolling deployments, Elastic Beanstalk splits the environment's Amazon EC2 instances into batches and deploys the new version of the application to one batch at a time.\" The same page also says: \"If a deployment fails after one or more batches completed successfully, the completed batches run the new version of your application while any pending batches continue to run the old version.\"",
+     "problem": "The answer is correct, but the card is a strawman and a definition card: 'rolling' already means one batch after another, so starting all batches together contradicts the term, and nobody who studied would answer True.",
+     "suggestedFix": "Replacement (false, keeps the 6/6 balance): \"When an AWS Elastic Beanstalk rolling deployment fails midway, it reverts the completed batches to the previous version.\" (120 chars). Explanation: \"Batches that already finished keep running the new version while pending batches keep the old one, so the fleet is mixed. Immutable deployments avoid this partial state.\" (169 chars). Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s3.4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html)",
+     "evidence": "\"Replacement: CloudFormation recreates the resource during an update, which also generates a new physical ID.\"",
+     "problem": "This is a truism and a near-copy of the source: a 'replacement resource' is by definition a new resource, so the new physical ID follows from the wording. It teaches nothing a developer would get wrong.",
+     "suggestedFix": "Replacement (true, keeps balance): \"AWS CloudFormation fails a stack update that needs to replace a resource with a custom name.\" (92 chars). Explanation: \"A replacement is a new resource that would need the same custom name as the one it replaces. Specify a new name in the template when a property change requires replacement.\" (172 chars). URL: https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-name.html (\"You can't perform an update that causes a custom-named resource to be replaced. If you must replace the resource, specify a new name.\")"
+    }
+   ],
+   "notes": "I checked all 12 cards in section 3.4 against their source pages, which I downloaded and read as text. All 12 URLs load (HTTP 200), are on docs.aws.amazon.com and are current. The section has 6 true and 6 false cards, and the three suggested replacements keep that split. All cards are in scope for the guide's skills 3.4.1 to 3.4.11, which I confirmed on the developer-associate-02-domain3.html page.\n\nCards that passed:\n- 02 (CodeBuild artifacts/base-directory): the page says \"Matching top-level directories are not included in the build output artifact, only their files and subdirectories.\" This is close to section 3.1 (artifact preparation), but it is acceptable under skill 3.4.6.\n- 03 (runOrder): \"To specify parallel actions, use the same integer for each action you want to run in parallel.\"\n- 04 (SUPERSEDED mode): \"Executions are only superseded in between stages.\"\n- 05 (Lambda AppSpec): \"targetversion – Required... This value must be a valid positive integer.\"\n- 06 (Lambda traffic shifting): the source is a SAM tutorial, but it does show the alias weights shifting between versions. A stronger source would be https://docs.aws.amazon.com/codedeploy/latest/userguide/deployment-steps-lambda.html.\n- 07 (rollback deployment ID): \"These rolled-back deployments are technically new deployments, with new deployment IDs.\" The deployment-steps-lambda page says the same: \"In all cases, the new or rolled-back deployment is assigned its own deployment ID.\"\n- 08 (Elastic Beanstalk immutable): \"Elastic Beanstalk creates a second, temporary Auto Scaling group behind your environment's load balancer.\"\n- 11 (canary overrides): the page shows that the base version keeps sv1=val1 while the canary uses val2. This is borderline guessable from the word 'canary', but I kept it.\n- 12 (stage variables): \"Stage variables don't support cross-account Lambda functions.\"\n\nNo duplicates found: the nearest cards in other sections are s3.3-11 (weighted alias execution role), s3.3-10 (the $stageVariables mapping template syntax) and s3.1-08 (cache/paths), and each tests a different fact.\n\nOn card 01: the CodePipeline action reference page renders a product entity as blank in its note, in both the HTML and the markdown version. The sentence is therefore incomplete, but its requirement that both actions be granted is unambiguous."
+  },
+  {
+   "section": "4.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s4.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (CWL_QuerySyntax-Stats.html)",
+     "evidence": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CWL_QuerySyntax-Stats.html: \"In subsequent stats commands in a single query, you can refer only to fields that are defined in the preceding stats command. For example, the following query is not valid because the @message field won't be available after the first stats aggregation.\" The page never says in plain words that stats keeps or drops the original rows. That only follows from what aggregation means.",
+     "problem": "The answer is right, but the card is close to a truism. Anyone who knows what a count grouped by a field (like SQL GROUP BY) does knows that the original rows do not survive, so the 'misconception' is a strawman. The source supports it only indirectly. The real behaviour a developer can observe, and which the doc states, is that later stats commands lose access to the raw fields.",
+     "suggestedFix": "Replace (answer false): \"A second stats command in a CloudWatch Logs Insights query can reference @message from the original log events.\" Explanation: \"After a stats aggregation, a later stats command can use only fields defined in the preceding stats command, so raw fields such as @message are no longer available.\" Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s4.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (xray-api-segmentdocuments.html)",
+     "evidence": "https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html: \"trace_id – A unique identifier that connects all segments and subsegments originating from a single client request.\" and \"id – A 64-bit identifier for the segment, unique among segments in the same trace\"",
+     "problem": "This is a definition card. A trace ID linking the segments of one trace is what the term means, so a player can answer from the words 'trace_id' and 'one request trace' without knowing X-Ray. It is labelled difficulty 3 ('real distinction between two similar things'), which it is not.",
+     "suggestedFix": "Replace (answer true): \"AWS X-Ray generates inferred segments for downstream resources from subsegments that an instrumented service records.\" Explanation: \"X-Ray builds inferred segments from subsegment data, so an uninstrumented downstream resource such as a DynamoDB table still appears as a node in the trace map.\" Same URL (\"the service uses information in subsegments to generate inferred segments and adds them to the full trace\"). Difficulty 2."
+    },
+    {
+     "id": "aws-dva-c02-s4.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; but API_BatchGetBuilds.html shows only the response schema with no description of contexts. The meaning is on API_BuildPhase.html.",
+     "evidence": "https://docs.aws.amazon.com/codebuild/latest/APIReference/API_BatchGetBuilds.html shows the schema path \"phases\": [ { \"contexts\": [ { \"message\": \"string\", \"statusCode\": \"string\" } ] ... } ] with no description. https://docs.aws.amazon.com/codebuild/latest/APIReference/API_BuildPhase.html: \"contexts – Additional information about a build phase, especially to help troubleshoot a failed build.\"",
+     "problem": "The card tests a JSON field path, which is API-shape trivia. Any false version would have to be a made-up path, so there is no realistic misconception and the hedge 'can return' signals true. The cited page shows the field exists but not what it is for, which the explanation claims.",
+     "suggestedFix": "Replace (answer true): \"AWS CodeBuild still attempts the UPLOAD_ARTIFACTS phase after a build's BUILD phase fails.\" Explanation: \"CodeBuild always attempts UPLOAD_ARTIFACTS even when BUILD fails, so a failed build can still upload output; check each phase's status and contexts to find the failing step.\" URL: https://docs.aws.amazon.com/codebuild/latest/userguide/view-build-details-phases.html (\"The UPLOAD_ARTIFACTS phase is always attempted, even if the BUILD phase fails.\")"
+    }
+   ],
+   "notes": "I checked all 12 cards in section 4.1. Every source URL loaded and is official, current docs.aws.amazon.com. 9 cards pass; 3 are flagged as weak_card (05, 09, 10).\n\nEvidence for the passing cards:\n- 01: monitoring-metrics-types says \"Throttled requests and other invocation errors don't count as either Invocations or Errors.\" The Lambda Managed Instances throttle sub-metrics do not change this.\n- 02: the same page says IteratorAge is \"the age of the last record in the event in milliseconds\".\n- 03: API_Invoke says LogType Tail \"Applies to synchronously invoked functions only\", and LogResult is \"The last 4 KB of the execution log, which is base64-encoded\". Synchronous is the default invocation type, so the statement holds.\n- 04: the discovered-fields page says \"Field discovery is supported only for log groups in the Standard log class\" and documents JSON field discovery. There is a 200-field cap, and Lambda logs get discovery only for their first JSON fragment; neither makes the card false.\n- 06: the EMF page says \"you need the logs:PutLogEvents permission but you don't need to also have the cloudwatch:PutMetricData permission\".\n- 07: the alarm missing-data page says \"ignore – The current alarm state is maintained\", and its table shows \"Retain current state\" when all points are missing.\n- 08: the CloudTrail event history page says \"only shows management events. It does not show data events\" and \"settings that you apply to a trail or event data store do not apply to event history\".\n- 11: DescribeStackEvents says it returns events \"in reverse chronological order\".\n- 12: the API Gateway metrics page says Latency \"includes the integration latency and other API Gateway overhead\".\n\nNo card in 4.1 rests on the same fact as a card in another section; I checked the 4.2, 4.3, 3.3 and 3.4 cards and the deck-wide X-Ray, CodeBuild and CloudTrail cards. No card relies on a retired product, the X-Ray SDK or daemon, or a volatile number. All three replacements keep the original answer, so the section stays at 6 true and 6 false. The replacement facts do not appear elsewhere in the deck."
+  },
+  {
+   "section": "4.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s4.2-05",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, current (docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html)",
+     "evidence": "cloudwatch_concepts.html: \"CloudWatch treats each unique combination of dimensions as a separate metric, even if the metrics have the same metric name.\" The page never says \"metric stream\"; in CloudWatch, \"metric streams\" is the name of a separate feature (CloudWatch Metric Streams, which streams metrics to Firehose).",
+     "problem": "The fact is right, but the statement says \"separate metric streams\". In CloudWatch that is a product feature name. An expert who reads it as CloudWatch Metric Streams would answer False, because a new dimension value creates no metric stream. The source and the explanation both say \"metric\", not \"stream\".",
+     "suggestedFix": "Keep the answer (true) and reword. Statement: \"CloudWatch stores data points that share a metric name but differ in a dimension value as two separate metrics.\" Explanation: \"A metric's identity is its namespace, name and dimensions, so each unique dimension combination is a separate metric, and you retrieve statistics only for the combinations you published.\" Same URL."
+    },
+    {
+     "id": "aws-dva-c02-s4.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (xray-sdk-migration.html), but its YAML example is for the upstream OpenTelemetry Collector, not the ADOT Collector",
+     "evidence": "xray-sdk-migration.html: \"Configure the following components in your collector: ... xray exporter: Sends traces to X-Ray\", with sample YAML \"exporters: awsxray\" under \"Setting up the OpenTelemetry collector\" (otel/opentelemetry-collector-contrib). The ADOT Collector itself is documented only on aws-otel.github.io.",
+     "problem": "This is a name giveaway at difficulty 1. A player can guess that the AWS distribution of OpenTelemetry can export to AWS X-Ray without knowing anything. It also identifies a component rather than testing a behaviour a developer can observe. The cited page shows the upstream collector, not ADOT.",
+     "suggestedFix": "Replace with a true card on the same page. Statement: \"AWS X-Ray stores OpenTelemetry span attributes as metadata unless their keys appear in the aws.xray.annotations list.\" Explanation: \"By default the X-Ray exporter converts span attributes to metadata. Listing a key in the aws.xray.annotations attribute turns that attribute into an X-Ray annotation instead.\" URL: https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-migration.html (quote: \"By default, OpenTelemetry span attributes are converted to metadata in X-Ray raw data. To convert specific attributes to annotations instead, add their keys to the aws.xray.annotations attributes list.\")"
+    },
+    {
+     "id": "aws-dva-c02-s4.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (set-up-access-logging.html, REST API specific)",
+     "evidence": "set-up-access-logging.html: \"To specify the access details, you select $context variables, a log format, and a log group destination.\" and \"For Log Format, enter a log format. You can choose CLF, JSON, XML, or CSV.\"",
+     "problem": "This is a strawman. The page and the console put the format choice (CLF, JSON, XML, CSV) right next to the $context variables. Nobody who has set up access logging would believe that API Gateway silently picks JSON when you choose fields. The misconception is invented, so the card teaches little about structured logging.",
+     "suggestedFix": "Replace with a false card from the same page. Statement: \"A REST API client can set $context.extendedRequestId in Amazon API Gateway access logs by sending its own header.\" Explanation: \"Clients can override $context.requestId through x-amzn-RequestId, but API Gateway generates extendedRequestId itself and returns it in x-amz-apigw-id; callers can't set it.\" Same URL (quote: \"An API caller can't provide or override this request ID.\")."
+    }
+   ],
+   "notes": "All 12 cards of section 4.2 are in raw/aws-dva-c02-b3.json. I opened every source URL; all load, are official, and are current (X-Ray pages carry the February 25, 2026 SDK/daemon maintenance notice). The answers split 6 true and 6 false, and the suggested replacements keep that split (s4.2-04 stays true, s4.2-05 stays true, s4.2-08 stays false).\n\nCards that pass, with the quote that settles each:\n- s4.2-01: \\\"Metadata are key-value pairs ... that are not indexed.\\\" Annotations are \\\"indexed for use with filter expressions\\\" and GetTraceSummaries (xray-concepts).\n- s4.2-02: sampling rule options list \\\"HTTP method\\\" and \\\"URL path\\\". The \\\"Parent-based\\\" note confirms rules apply at the entry point (xray-console-sampling).\n- s4.2-03: \\\"You can use the X-Ray SDK to extend the Invocation subsegment with additional subsegments for downstream calls.\\\" Active tracing alone creates only the AWS::Lambda and AWS::Lambda::Function segments (services-xray).\n- s4.2-06: \\\"An alarm invokes actions only when the alarm changes state. The exception is for alarms with Auto Scaling actions.\\\" SNS is not part of the exception, so the false answer holds.\n- s4.2-07: the AlarmRule example \\\"(ALARM(CPUUtilizationTooHigh) OR ALARM(DiskReadOpsTooHigh)) AND OK(NetworkOutTooHigh)\\\" mixes ALARM and OK tests.\n- s4.2-09: \\\"If you assign dimensions to metrics that metric filters generate, you can't specify default values for those metrics.\\\" This is borderline trivia but a real configuration constraint, so I kept it.\n- s4.2-10: \\\"Health check parameters that are specified in a container definition override any Docker health checks that exist in the container image.\\\"\n- s4.2-11: \\\"These protocols use the HTTP GET method to send health check requests.\\\"\n- s4.2-12: \\\"If a health check succeeds within the startPeriod, then the container is considered healthy and any subsequent failures count toward the maximum number of retries.\\\"\n\nChecks:\n- Duplicates: none within the section or against the rest of the deck. s4.1-06 (EMF), s4.1-07 (TreatMissingData) and s4.1-09 (trace_id) rest on different facts.\n- Retired products: no card depends on an X-Ray SDK or daemon API.\n- Collector status: a web search found that the ADOT Collector is still maintained.\n\nMinor point, not flagged: s4.2-03 and s4.2-11 are marked volatility may_change with weak reasons. stable would also be defensible."
+  },
+  {
+   "section": "4.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-dva-c02-s4.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/sns/latest/dg/sns-message-filtering-scope.html)",
+     "evidence": "\"MessageBody – Applies the filter policy to the message body.\" (https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering-scope.html). The fact is correct, but the statement gives its own answer away: the parameter value MessageBody says outright that the policy filters on the payload, so a player can answer True from the wording alone. The prompt forbids answers that can be read from the name.",
+     "problem": "This is a name and wording giveaway: FilterPolicyScope=MessageBody means 'filter on the body' by its literal name, so the card teaches nothing beyond the parameter name. The useful fact on the same page is the default scope, MessageAttributes, which catches developers whose body-based policy silently never matches.",
+     "suggestedFix": "Replacement (answer True, keeps the 6/6 balance). Statement (107 chars): \"Amazon SNS applies a subscription filter policy to message attributes when FilterPolicyScope is left unset.\" Explanation (179 chars): \"MessageAttributes is the default FilterPolicyScope. A policy written for payload fields matches only after the developer sets FilterPolicyScope to MessageBody on the subscription.\" Same URL; factKey sns-filter-policy-default-scope."
+    },
+    {
+     "id": "aws-dva-c02-s4.3-08",
+     "verdict": "source_problem",
+     "urlStatus": "loads, but it is an AWS Database Blog post, not current documentation, and it never states the card's fact",
+     "evidence": "The blog (https://aws.amazon.com/blogs/database/optimize-redis-client-performance-for-amazon-elasticache/) defines pipelining as \"the ability to send multiple commands to the server without waiting for the replies\" and says \"Redis atomically runs the queued commands only after it receives the EXEC command\". The only sentence on atomicity is client-specific (\"In StackExchange.Redis, batched commands are not wrapped in a Multi/Exec block and are therefore not guaranteed to run atomically\"). No sentence says that pipelining alone gives no atomicity. I found no ElastiCache developer-guide page that states it either: SupportedCommands.html only lists MULTI/EXEC. The fact is correct as Redis/Valkey engine behaviour, but it is an engine protocol fact rather than an AWS service behaviour, and the prompt requires an official page that supports the whole card.",
+     "problem": "The source does not support the card. Its claim, that pipelining is not atomic and MULTI/EXEC is, comes from Redis engine documentation, not AWS, and the cited AWS page only implies it. The card also sits on the edge of 'AWS service behaviour' scope.",
+     "suggestedFix": "Replace it with an AWS-documented ElastiCache fact (answer False, keeps the balance). Statement (104 chars): \"Amazon ElastiCache for Valkey runs other clients' commands between the steps of an executing Lua script.\" Explanation (171 chars): \"ElastiCache for Valkey and Redis OSS run a Lua script atomically at engine level: no other command or script runs until it finishes, so a long script blocks other clients.\" URL: https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/BestPractices.Clients.Redis.LuaScripts.html (\"Lua scripts can run multiple commands atomically ... A long-running Lua script that is mutating can cause the Valkey or Redis OSS server to be unresponsive\"). The explicit 'atomic by definition, meaning that no other command or script will be allowed to run' wording is on https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/TroubleshootingConnections.html. No other card in the deck uses Lua. If the Valkey version is kept, rename the factKey to elasticache-lua-script-atomicity."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 4.3 (all in aws-dva-c02-b4.json) against their source pages, which I fetched on 2026-10-05, and against the section's skills in domain 4 of the DVA-C02 v2.1 guide (4.3.1 to 4.3.9). The balance is 6 true (01, 03, 04, 06, 10, 11) and 6 false (02, 05, 07, 08, 09, 12). Average statement length is 101.5 for true cards and 104.5 for false ones, which is within the 5-character rule. Every statement is 120 characters or less and every explanation 240 or less. None of these cards rests on the same fact as a card elsewhere in the deck. I compared them with 1.2-09 (Lambda memory and CPU), 1.3-04 (conditional PutItem), 1.3-10 (Redis OSS EXPIRE) and 1.1-03 (SQS deletion): all are distinct.\n\nCards that pass, with the quote that settles each:\n- 02: and-or-logic.html, \"You can apply AND logic using multiple property names\"; \"$or\" has to be explicit. The answer False is correct.\n- 03: cache-key-understand-cache-policy.html, \"Normalizes the header to Accept-Encoding: gzip and includes the normalized header in the cache key. The cache key doesn't include other values\". This holds with gzip-only caching and also with gzip plus Brotli when the viewer sends gzip,deflate. \"by default\" is filler, because normalization is inherent once gzip caching is on, but it is not wrong.\n- 04: Invalidation.html, \"If you invalidate the file, the user might continue to see the old version until it expires from those caches.\" The answer True is supported.\n- 05: api-gateway-caching.html, \"When you enable caching for a stage, only GET methods have caching enabled by default ... You can enable caching for other methods by overriding method settings.\" The statement names REST API as the prompt requires.\n- 06: the answer True is correct. The cited code-examples page supports it only through comments and printed strings (\"The ADD operation is atomic\"; \"Atomic operations are guaranteed to be isolated from other writes\"). The Developer Guide atomic-counter section would be a stronger URL: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters. The fit with section 4.3 rests on skill 4.3.1 (concurrency) and is borderline; the fact leans toward 1.3. I did not flag it.\n- 07: DAX.consistency.html, \"DAX passes strongly consistent read requests to DynamoDB. When it receives a response from DynamoDB, DAX returns the results to the client, but it does not cache the results.\"\n- 09: sqs-short-and-long-polling.html. Short polling \"queries a subset of servers (based on a weighted random distribution)\"; long polling \"queries all servers\". The answer False is correct.\n- 10: the ContainerDefinition API reference says \"Linux containers share unallocated CPU units with other containers on the container instance with the same ratio as their allocated amount ... each container could float to higher CPU usage if the other container was not using it\", while Windows enforces an absolute quota. The statement's Linux-on-EC2 scope is correct.\n- 11: rds-proxy-pinning.html, MySQL/MariaDB section, \"Creating a temporary table causes the proxy to pin the session.\" Session pinning filters only exempt variable SETs, so no exception changes the answer.\n- 12: python-logging.html, \"Max Memory Used ... When invocations share an execution environment, Lambda reports the maximum memory used across all invocations.\" The 'Python' qualifier is not needed, since the same note appears on every runtime's logging page, but it does no harm.\n\nNothing in this section uses a retired product, a passive actor or an X-Ray SDK dependency."
+  }
+ ],
+ "scan": {
+  "cardsRead": 156,
+  "duplicates": [
+   {
+    "ids": [
+     "aws-dva-c02-s1.2-07",
+     "aws-dva-c02-s1.2-10"
+    ],
+    "why": "Both cards test one fact: Lambda keeps the state of a warm execution environment (files in /tmp, objects created during init) across invocations that reuse it. If you know /tmp files survive reuse, you know an SDK client created outside the handler survives too, and the reverse also holds. Both are true. s1.2-10 is the weaker card: it is the more familiar best-practice line, it uses the hedge 'supports', and at 113 characters it is the longest in its section.",
+    "dropId": "aws-dva-c02-s1.2-10"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "lambda-environment-reuse",
+    "ids": [
+     "aws-dva-c02-s1.2-07",
+     "aws-dva-c02-s1.2-10",
+     "aws-dva-c02-s4.3-12"
+    ],
+    "why": "The statement of s4.3-12 ('In a reused Python Lambda environment') and its explanation ('invocations sharing a ... execution environment') say that environments, and their state, carry over between invocations. That gives away the true answers of s1.2-07 (/tmp retained) and s1.2-10 (SDK client reused). s1.2-07 and s1.2-10 also give each other away."
+   },
+   {
+    "name": "lambda-esm-batch-records",
+    "ids": [
+     "aws-dva-c02-s1.2-04",
+     "aws-dva-c02-s1.2-11",
+     "aws-dva-c02-s4.1-02"
+    ],
+    "why": "s4.1-02 mentions 'the last record in a Kinesis event' and says the event source mapping sends 'its batch'. s1.2-04 talks about a 'partial batch response'. Both show that an event source mapping hands the handler several records, which answers s1.2-11 (false: Kinesis passes one record as the top-level event)."
+   },
+   {
+    "name": "lambda-container-image-build",
+    "ids": [
+     "aws-dva-c02-s1.2-08",
+     "aws-dva-c02-s3.1-03"
+    ],
+    "why": "Both explanations make the same point: a container image carries everything it needs, added at image build time (dependencies in s1.2-08, the runtime interface client in s3.1-03). Lambda supplies nothing to the image at run time. Reading one explanation answers the other card, and both cards are false."
+   },
+   {
+    "name": "http-success-embedded-failure",
+    "ids": [
+     "aws-dva-c02-s1.1-10",
+     "aws-dva-c02-s1.2-05"
+    ],
+    "why": "Both are false for the same reason: the API returns HTTP success and reports the failure in the response body (FailedEntryCount for PutEvents, FunctionError for Invoke). Seeing either explanation answers the other card."
+   },
+   {
+    "name": "batch-partial-failure-caller-retry",
+    "ids": [
+     "aws-dva-c02-s1.1-10",
+     "aws-dva-c02-s1.3-05"
+    ],
+    "why": "The explanation of s1.1-10 (the caller checks the failed entries in a successful batch response and resubmits them) teaches the same caller-retries rule that answers s1.3-05 (BatchWriteItem leaves UnprocessedItems for the application to resubmit)."
+   },
+   {
+    "name": "cognito-user-pool-tokens",
+    "ids": [
+     "aws-dva-c02-s2.1-01",
+     "aws-dva-c02-s2.1-02"
+    ],
+    "why": "The statement of s2.1-02 says a Cognito session yields an access token and an ID token. That tells the player a user pool issues tokens, which answers s2.1-01 (false: a user pool issues AWS access keys). The explanation of s2.1-01 ('returns JSON web tokens') also hints at s2.1-02."
+   },
+   {
+    "name": "secrets-manager-getsecretvalue",
+    "ids": [
+     "aws-dva-c02-s2.3-04",
+     "aws-dva-c02-s2.3-06"
+    ],
+    "why": "The statement of s2.3-06 mentions 'the returned SecretString in CloudTrail's GetSecretValue event'. That assumes GetSecretValue returns the plaintext secret, which gives away s2.3-04 (true)."
+   },
+   {
+    "name": "codebuild-secrets-manager-env",
+    "ids": [
+     "aws-dva-c02-s2.3-09",
+     "aws-dva-c02-s2.3-10"
+    ],
+    "why": "The statement of s2.3-10 says 'the retrieved env/secrets-manager value', and its explanation says 'CodeBuild masks the exact secret value it retrieves'. Both confirm that CodeBuild resolves env/secrets-manager references into environment values, which is the true answer of s2.3-09."
+   },
+   {
+    "name": "apigw-rest-deployment-snapshot",
+    "ids": [
+     "aws-dva-c02-s3.2-04",
+     "aws-dva-c02-s3.2-06",
+     "aws-dva-c02-s3.3-04"
+    ],
+    "why": "The explanation of s3.2-04 (a method can be tested 'before API deployment') and the statement and explanation of s3.3-04 (several stages share one deployment) both teach that a stage serves a deployment snapshot, not the saved configuration. That answers s3.2-06 (false). The explanation of s3.2-06 in turn hints at s3.3-04."
+   },
+   {
+    "name": "deployment-snapshot-semantics",
+    "ids": [
+     "aws-dva-c02-s3.2-06",
+     "aws-dva-c02-s3.3-01",
+     "aws-dva-c02-s3.3-02"
+    ],
+    "why": "These three cards rest on one principle: deployed artifacts are frozen until you redeploy (a version captures its environment variables, a tag is resolved to a digest, a stage serves its deployment). s3.3-01 and s3.3-02 are true and spell this principle out in their explanations, which makes the false s3.2-06 easy to see through."
+   },
+   {
+    "name": "lambda-weighted-alias-traffic",
+    "ids": [
+     "aws-dva-c02-s3.3-11",
+     "aws-dva-c02-s3.4-05",
+     "aws-dva-c02-s3.4-06"
+    ],
+    "why": "s3.3-11 ('versions behind a weighted alias') and the explanation of s3.4-05 (the AppSpec names a version as TargetVersion and the alias separately) together describe how CodeDeploy shifts traffic through alias weights, which is the true answer of s3.4-06. s3.4-06 in turn hints that TargetVersion is a version and not an alias (s3.4-05)."
+   },
+   {
+    "name": "lambda-execution-role",
+    "ids": [
+     "aws-dva-c02-s2.1-10",
+     "aws-dva-c02-s2.1-11",
+     "aws-dva-c02-s3.3-08"
+    ],
+    "why": "s2.1-10 (passing an execution role to CreateFunction) and s3.3-08 (SAM creates the function's execution role) show that a function gets its permissions from an execution role. That gives away s2.1-11, which is false because it credits the resource-based policy with the handler's DynamoDB permissions."
+   },
+   {
+    "name": "dynamodb-fine-grained-iam",
+    "ids": [
+     "aws-dva-c02-s2.1-12",
+     "aws-dva-c02-s2.3-11"
+    ],
+    "why": "The statement of s2.3-11 presents DynamoDB IAM condition keys that restrict a request (dynamodb:Attributes). That makes s2.1-12 (dynamodb:LeadingKeys restricts access by partition key) easy to guess as true. Both cards rest on the same fine-grained access control feature."
+   },
+   {
+    "name": "iam-tenant-scoping",
+    "ids": [
+     "aws-dva-c02-s2.1-12",
+     "aws-dva-c02-s2.3-12"
+    ],
+    "why": "The explanation of s2.1-12 ('a caller can be restricted to its own items') teaches the per-tenant IAM scoping pattern that s2.3-12 asks about for S3 with ${aws:PrincipalTag/tenant}. Both are true."
+   },
+   {
+    "name": "sts-assumed-role-session",
+    "ids": [
+     "aws-dva-c02-s2.1-07",
+     "aws-dva-c02-s2.1-08"
+    ],
+    "why": "The statement and explanation of s2.1-08 talk about 'assumed-role credentials' and the 'assumed-role session's ARN'. That hints at the session-credential output of AssumeRole that s2.1-07 asks about. This is a weak hint; s2.1-07 is close to a truism anyway."
+   }
+  ],
+  "tells": "TELLS A PLAYER CAN USE WITHOUT KNOWING AWS (156 cards, 78 true, 78 false)\n\n1. Service and API-type skew\n- 'REST API' in the statement: 3 true, 10 false.\n  - True: s1.1-06, s3.2-05, s3.3-04.\n  - False: s1.1-05, s2.1-04, s3.2-04, s3.2-06, s3.3-10, s3.4-11, s3.4-12, s4.1-12, s4.2-08, s4.3-05.\n  - API Gateway overall: 5 true, 10 false.\n- 'HTTP API': 2 true, 0 false (s2.1-03, s3.2-10).\n- Stage variables: 0 true, 3 false (s3.3-10, s3.4-11, s3.4-12).\n- AWS CodeBuild: 2 true, 6 false.\n  - True: s2.3-09, s4.1-10.\n  - False: s2.3-10, s3.1-07, s3.1-08, s3.1-09, s3.2-11, s3.4-02.\n- AWS CloudFormation: 2 true, 4 false.\n  - True: s3.3-05, s3.4-10.\n  - False: s3.3-06, s3.3-07, s3.3-12, s4.1-11.\n- Statements that open with 'CloudWatch': 1 true, 6 false.\n  - True: s4.1-04.\n  - False: s2.3-01, s2.3-02, s4.1-05, s4.1-06, s4.2-06, s4.2-09.\n- Always true:\n  - Amazon ECS: 3 of 3 (s4.2-10, s4.2-12, s4.3-10).\n  - Systems Manager: 2 of 2 (s2.3-07, s2.3-08).\n  - CloudFront: 2 of 2 (s4.3-03, s4.3-04).\n\n2. Words that predict the answer\n- 'includes': 0 true, 5 false (s3.1-08, s3.4-02, s4.1-01, s4.1-08, s4.1-12). The 'metric/artifact/history X includes Y' template carries 5 false cards, over the cap of 2.\n- 'same': 9 true, 1 false.\n  - True: s1.2-07, s1.2-10, s2.1-02, s2.1-05, s3.2-03, s3.3-04, s3.3-11, s3.4-03, s4.2-07.\n  - False: s3.3-03.\n- 'uses': 6 true, 2 false.\n  - True: s1.3-01, s2.1-02, s2.2-10, s3.2-03, s3.4-01, s4.2-10.\n  - False: s4.3-02, s4.3-09.\n- 'as soon as': 0 true, 2 false (s1.1-03, s1.3-06).\n- 'preserves' predicts false, while 'retains' and 'keeps' predict true:\n  - 'preserves': 0 true, 2 false (s1.1-04, s4.1-05).\n  - 'retains' and 'keeps': 4 true, 0 false (s1.2-07, s4.1-07, s2.3-08, s4.2-05).\n- Opening article 'A' or 'An': 18 true, 9 false.\n  - True: s1.1-06, s1.2-03, s1.2-04, s1.3-01, s1.3-08, s2.1-02, s2.1-03, s2.1-05, s2.1-10, s2.1-12, s3.1-01, s3.1-06, s3.2-05, s3.2-10, s4.1-07, s4.2-04, s4.2-07, s4.3-04.\n  - False: s1.1-04, s1.1-08, s1.2-11, s1.3-02, s2.1-01, s2.1-06, s2.1-11, s3.1-12, s4.2-11.\n\n3. Recurring false-statement templates (each over the cap of two)\n- (a) 'A change propagates retroactively or immediately to existing state': 7 false (s1.3-06, s2.2-03, s2.2-08, s2.3-01, s2.3-05, s3.2-06, s3.4-11). The true counterparts (s3.3-01, s3.3-02, s2.3-08) all say the opposite: the old state is frozen or kept. So the rule 'AWS never updates existing things retroactively' answers about 10 cards.\n- (b) 'Turning on or granting feature A also gives you B': 6 false (s2.1-04, s2.3-02, s4.1-08, s4.2-03, s4.2-08, s4.3-05).\n- (c) 'Feature X does sibling Y's job': 7 false, with no true card of that form.\n  - s1.2-06: reserved concurrency given provisioned concurrency's job.\n  - s2.1-11: resource-based policy given the execution role's job.\n  - s3.1-08: cache paths given the artifacts section's job.\n  - s4.1-01: Errors given Throttles' job.\n  - s4.1-12: IntegrationLatency given Latency's job.\n  - s3.2-08: DEBUG given TRACE's job.\n  - s1.2-12: the handler given the service's filtering job.\n- (d) 'An embedded failure surfaces as an HTTP error status': 2 false (s1.1-10, s1.2-05). This is at the cap, and the two cards give each other away.\n\n4. Truism or name-giveaway true cards (10)\n- s2.3-04: GetSecretValue returns the plaintext.\n- s2.3-07: WithDecryption=true returns the plaintext.\n- s2.3-03: calling Decrypt reads the encrypted value.\n- s3.2-01: start-api runs HTTP endpoints.\n- s3.3-05: a change set waits for ExecuteChangeSet.\n- s3.4-10: a replacement gets a new physical ID.\n- s4.1-09: trace_id links segments.\n- s3.2-07: TestEventPattern returns a match result.\n- s2.1-07: AssumeRole temporary credentials include a session token.\n- s1.1-01: SNS delivers to several SQS queues.\n\nThe pattern 'a decrypt or get call returns the plaintext' alone is true 3 of 3 times (s2.3-03, s2.3-04, s2.3-07).\n\n5. Difficulty skew (a tell if the game shows difficulty)\n- Easy cards: 44 true, 21 false.\n- Hard cards: 9 true, 17 false.\n\n6. Balanced, not tells\n- Hedge words: 20 true, 19 false ('can' 12/12, 'supports' 7/7).\n- Requirement words: 5 true, 5 false ('by default' 3/3, 'automatically' 1/1, 'requires' 1/1).\n- Average statement length: 95.9 characters for true, 96.3 for false. Every section is within 5 characters; section 1.3 sits exactly at the limit (true 89.0, false 94.0)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "aws-dva-c02-s1.1-01",
+    "reason": "weak_card: SNS fanout to several SQS queues is a Cloud Practitioner-level purpose card that nobody who studied would answer False. Section 1.1 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s1.1-11",
+    "reason": "weak_card: it is the eb-create-pattern sentence ('ignores the fields in the event that aren't included in the event pattern') with a few words changed, and it reads close to a definition. 1.1 stays at 10 cards."
+   },
+   {
+    "id": "aws-dva-c02-s1.2-02",
+    "reason": "weak_card: anyone can answer True from 'environment variables are strings', and the tested fact (references are not expanded) appears only in the explanation. 1.2 keeps 9 cards (4/5)."
+   },
+   {
+    "id": "aws-dva-c02-s1.2-10",
+    "reason": "duplicate of s1.2-07 (verifier and scan): both test that state survives when Lambda reuses a warm execution environment. It also uses the hedge 'supports' on a true card."
+   },
+   {
+    "id": "aws-dva-c02-s1.2-11",
+    "reason": "weak_card: near strawman about event shape (event.Records), and s4.1-02 and s1.2-04 give the answer away. 1.2 keeps 9 cards, 4 true and 5 false."
+   },
+   {
+    "id": "aws-dva-c02-s1.3-05",
+    "reason": "weak_card: strawman. Nobody believes DynamoDB finishes UnprocessedItems after it responds, and the awkward wording gives the answer away. 1.3 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s1.3-10",
+    "reason": "weak_card: generic Redis EXPIRE command semantics (near truism) with no ElastiCache behaviour tested. 1.3 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s2.1-03",
+    "reason": "weak_card: the answer can be read from 'audience' versus 'aud'. 2.1 keeps 11 cards (5/6)."
+   },
+   {
+    "id": "aws-dva-c02-s2.2-10",
+    "reason": "weak_card: PKI truism. A CSR exists to carry the requester's public key, so this teaches nothing about AWS Private CA. 2.2 keeps 11 cards (5/6)."
+   },
+   {
+    "id": "aws-dva-c02-s2.3-04",
+    "reason": "weak_card: name giveaway. GetSecretValue returning the secret value follows from the API name. 2.3 keeps 10 cards (4/6)."
+   },
+   {
+    "id": "aws-dva-c02-s2.3-07",
+    "reason": "weak_card: name giveaway. WithDecryption=true returning decrypted plaintext follows from the parameter name. 2.3 keeps 10 cards (4/6)."
+   },
+   {
+    "id": "aws-dva-c02-s3.1-05",
+    "reason": "weak_card: the answer follows from the word 'immutable', and only an exception name is left to learn. 3.1 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s3.1-09",
+    "reason": "weak_card: the parameter name '...Override' gives the answer away, the actor is wrong (CodeBuild as caller), and the card is parameter trivia that only loosely fits skill 3.1.4. 3.1 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s3.2-03",
+    "reason": "weak_card: truism. Parameter overrides varying settings follows from the word 'override', and the actor is vague. Section 3.2 needed only two of its four flagged true cards back to stay at 4/6, so this one is dropped and s3.2-01 and s3.2-10 are rewritten instead."
+   },
+   {
+    "id": "aws-dva-c02-s3.2-07",
+    "reason": "weak_card: name giveaway. TestEventPattern reporting whether the event matches is what the API name says. Dropped, not rewritten: 3.2 reaches 10 cards (4/6) through the s3.2-01 and s3.2-10 rewrites."
+   },
+   {
+    "id": "aws-dva-c02-s3.3-03",
+    "reason": "weak_card: strawman. 'Variable override' means the branch value wins, so specific-beats-general can be guessed. 3.3 keeps 11 cards (6/5)."
+   },
+   {
+    "id": "aws-dva-c02-s3.4-09",
+    "reason": "weak_card: strawman and definition card ('rolling' means batch after batch). 3.4 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s3.4-10",
+    "reason": "weak_card: truism and near-copy of the source ('Replacement ... generates a new physical ID'). 3.4 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.1-05",
+    "reason": "weak_card: near truism. Aggregation replacing rows follows from what GROUP BY does, and the source supports it only indirectly. 4.1 keeps 9 cards (4/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.1-09",
+    "reason": "weak_card: definition card. trace_id linking the segments of one trace is what the term means, and it is mislabelled difficulty 3. 4.1 keeps 9 cards (4/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.1-10",
+    "reason": "weak_card: JSON field-path trivia with no realistic false counterpart, a hedge 'can' on a true card, and a cited page that does not explain what contexts are for. 4.1 keeps 9 cards (4/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.2-04",
+    "reason": "weak_card: name giveaway (the AWS distro of OpenTelemetry exports to X-Ray). It identifies a component instead of testing a behaviour, and the cited page shows the upstream collector, not ADOT. 4.2 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.2-08",
+    "reason": "weak_card: invented strawman misconception. The log format choice (CLF, JSON, XML, CSV) sits next to the $context fields. 4.2 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.3-01",
+    "reason": "weak_card: name giveaway. FilterPolicyScope=MessageBody literally says the policy filters on the body. 4.3 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "aws-dva-c02-s4.3-08",
+    "reason": "source_problem with no official fix: the cited AWS Database Blog post never states that pipelining alone is not atomic, and a docs.aws.amazon.com search (SupportedCommands, TroubleshootingConnections and others) found no ElastiCache page that does. Under the prompt's source rule the fact is dropped. The verifier's Lua replacement is a new fact and is not needed, because 4.3 stays at 10 cards (5/5)."
+   }
+  ],
+  "source": [
+   {
+    "id": "aws-dva-c02-s2.1-01",
+    "title": "Understanding user pool JSON web tokens (JWTs)",
+    "url": "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.2-12",
+    "title": "Testing and debugging resolvers in AWS AppSync (VTL)",
+    "url": "https://docs.aws.amazon.com/appsync/latest/devguide/test-debug-resolvers.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.3-12",
+    "title": "Working with CloudFormation templates",
+    "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html#template-validation"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "aws-dva-c02-s1.1-08",
+    "reason": "ambiguous: the old ordering claim with a hedge could be defended as True before throttling is seen. The verifier's False wording would be a compound statement (true retry half, false initial-request half), so the card now states the single documented fact as True. This also moves 1.1 from 4/6 to 5/5. Source: 'Unlike standard mode, adaptive mode can delay or block the initial request, not just retries, when throttling is detected.'",
+    "statement": "Adaptive retry mode in an AWS SDK rate-limits initial requests too once it detects throttling.",
+    "answer": true,
+    "explanation": "Adaptive mode adds a per-client rate limiter driven by throttling responses, so it can hold back a first attempt, not only a retry. Standard mode never delays the initial request.",
+    "misconception": "",
+    "sourceTitle": "Retry behavior",
+    "sourceUrl": "https://docs.aws.amazon.com/sdkref/latest/guide/feature-retry-behavior.html"
+   },
+   {
+    "id": "aws-dva-c02-s2.1-01",
+    "reason": "source_problem: the cited overview page never says what sign-in returns, and the old explanation called every token a JWT although refresh tokens are opaque. The new page says that on successful login Cognito 'returns an ID token, an access token, and a refresh token' and that apps 'can exchange them for temporary AWS credentials'. Statement and answer are unchanged.",
+    "statement": "An Amazon Cognito user pool issues AWS access keys after a user signs in.",
+    "answer": false,
+    "explanation": "After a successful sign-in, a Cognito user pool returns an ID token, an access token and a refresh token. Apps can exchange those tokens for temporary AWS credentials in a separate step.",
+    "misconception": "Cognito user pool sign-in supplies credentials for direct AWS API calls.",
+    "sourceTitle": "Understanding user pool JSON web tokens (JWTs)",
+    "sourceUrl": "https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-with-identity-providers.html"
+   },
+   {
+    "id": "aws-dva-c02-s2.2-06",
+    "reason": "ambiguous: the old statement made S3 the actor that checks kms:Decrypt and implied a check on every download (S3 Bucket Keys skip repeat KMS calls). It now states the caller's requirement. Source: 'To download an object encrypted with an AWS KMS key, you need kms:Decrypt permissions for the key' and 'Amazon S3 sends the encrypted data key to AWS KMS in a Decrypt request.'",
+    "statement": "Amazon S3 GetObject on an SSE-KMS object needs the caller to hold kms:Decrypt on its KMS key.",
+    "answer": true,
+    "explanation": "S3 sends the object's encrypted data key to AWS KMS in a Decrypt request during the download, so a caller with s3:GetObject but no kms:Decrypt on that key is denied.",
+    "misconception": "",
+    "sourceTitle": "Using server-side encryption with AWS KMS keys (SSE-KMS)",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.2-01",
+    "reason": "weak_card (name giveaway), rewritten instead of dropped: dropping 01, 03 and 07 and losing the unsupported 3.2-10 fact would leave 3.2 at 3 true and 6 false. Verifier's replacement, confirmed: 'For Lambda functions that use Lambda authorizers, the AWS SAM CLI will automatically invoke your Lambda authorizer before invoking your Lambda function endpoint' and 'AWS SAM CLI does not guarantee 100% fidelity between authorizers locally and authorizers deployed on AWS.'",
+    "statement": "AWS SAM CLI sam local start-api runs a function's Lambda authorizer locally before the function.",
+    "answer": true,
+    "explanation": "A request to the local endpoint goes to the authorizer first, and the SAM CLI invokes the function only when authorization succeeds. Local authorizer behavior can differ from the deployed one.",
+    "misconception": "",
+    "sourceTitle": "Introduction to testing with sam local start-api",
+    "sourceUrl": "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-start-api.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.2-10",
+    "reason": "source_problem with no official fix: the only source is a 2021 Compute Blog post. http-api-develop-integrations-lambda.html shows only isBase64Encoded:false examples, and lambda-proxy-binary-media.html covers responses only and points to REST API binary media types. The statement also had the wrong actor. Replaced with the verifier's true 3.2.1 fact so 3.2 stays at 4/6. Source: put 'Save an event from a local file to the EventBridge schema registry', and 'Shareable test events for Lambda can be accessed and managed by users within the same AWS account.'",
+    "statement": "AWS SAM CLI sam remote test-event stores shareable Lambda test events in the EventBridge schema registry.",
+    "answer": true,
+    "explanation": "Users of the same AWS account can get, list, put or delete these shareable events and pass one to sam remote invoke to test the deployed function in the cloud.",
+    "misconception": "",
+    "sourceTitle": "Introduction to cloud testing with sam remote test-event",
+    "sourceUrl": "https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-remote-test-event.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.2-12",
+    "reason": "source_problem: the API reference only says 'Evaluates a given template and returns the response'. The developer guide page says a mock context lets you see templates evaluate 'without actually running against a data source' and that EvaluateMappingTemplate tests templates 'with mocked data'. Statement and answer are unchanged.",
+    "statement": "AWS AppSync EvaluateMappingTemplate sends the evaluated request to the resolver's configured data source.",
+    "answer": false,
+    "explanation": "EvaluateMappingTemplate renders a template against a mock context you supply and returns evaluationResult. It runs no request against the resolver's data source.",
+    "misconception": "EvaluateMappingTemplate executes the data source operation produced by a request mapping template.",
+    "sourceTitle": "Testing and debugging resolvers in AWS AppSync (VTL)",
+    "sourceUrl": "https://docs.aws.amazon.com/appsync/latest/devguide/test-debug-resolvers.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.3-07",
+    "reason": "explanation_error: the old explanation said CloudFormation 'skips' the dependent resource, which implies the rest of the stack deploys normally. In practice an unguarded Ref fails validation. No official page names that error, so the new explanation keeps only what the Condition attribute note supports ('If a resource with a condition isn't created, any resources that depend on that resource aren't created either, regardless of their own conditions'). That wording is true under both the documented and the observed behaviour. Statement and answer are unchanged.",
+    "statement": "AWS CloudFormation creates a resource whose Ref dependency has a condition that evaluates to false.",
+    "answer": false,
+    "explanation": "CloudFormation creates a conditional resource only when its condition is true. A resource that depends on an uncreated resource can't be created either, whatever its own condition says.",
+    "misconception": "A true resource condition permits creation despite a referenced dependency being excluded by its condition.",
+    "sourceTitle": "Condition attribute",
+    "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-attribute-condition.html"
+   },
+   {
+    "id": "aws-dva-c02-s3.3-12",
+    "reason": "source_problem: the CLI examples page covers only the JSON and YAML check. The template-guide validation section says validate-template checks 'valid JSON or YAML' and that 'These service-side checks don't run the additional property, security, or best-practice checks'. Statement and answer are unchanged.",
+    "statement": "AWS CloudFormation ValidateTemplate verifies that an EC2 instance's KeyName names an existing key pair.",
+    "answer": false,
+    "explanation": "ValidateTemplate checks that the template is valid JSON or YAML. Whether a named EC2 key pair exists comes to light when CloudFormation creates or updates the stack.",
+    "misconception": "Template validation verifies that resource property values identify existing resources in the target environment.",
+    "sourceTitle": "Working with CloudFormation templates",
+    "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-guide.html#template-validation"
+   },
+   {
+    "id": "aws-dva-c02-s3.4-01",
+    "reason": "ambiguous: the cited page says 'Both actions are required', because some code paths call codestar-connections:UseConnection. The old card and explanation named only codeconnections:UseConnection. Reworded from the verifier's fix to stay within the section's length balance and to avoid a true card opening with 'A/An'.",
+    "statement": "AWS CodePipeline's service role needs codestar-connections:UseConnection besides codeconnections:UseConnection.",
+    "answer": true,
+    "explanation": "The CodePipeline docs require both actions on the connection ARN: some operations call codestar-connections:UseConnection and others call codeconnections:UseConnection.",
+    "misconception": "",
+    "sourceTitle": "CodeStarSourceConnection for Bitbucket Cloud, GitHub, GitHub Enterprise Server, GitLab.com, and GitLab self-managed actions",
+    "sourceUrl": "https://docs.aws.amazon.com/codepipeline/latest/userguide/action-reference-CodestarConnectionSource.html"
+   },
+   {
+    "id": "aws-dva-c02-s4.2-05",
+    "reason": "ambiguous: 'metric streams' is the name of a separate CloudWatch feature. Source: 'CloudWatch treats each unique combination of dimensions as a separate metric, even if the metrics have the same metric name' and 'You can only retrieve statistics using combinations of dimensions that you specifically published.' The answer stays True.",
+    "statement": "CloudWatch treats one metric name published with two different dimension values as two distinct metrics.",
+    "answer": true,
+    "explanation": "Namespace, metric name and dimensions together identify a CloudWatch metric, and statistics come back only for the dimension combinations that were published.",
+    "misconception": "",
+    "sourceTitle": "Metrics concepts",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/cloudwatch_concepts.html"
+   },
+   {
+    "id": "aws-dva-c02-s4.1-01",
+    "reason": "tell: 'includes' marked false statements (0 true, 5 false). Swapped for 'counts'. Same fact, same answer.",
+    "statement": "AWS Lambda counts throttled invocation requests in the function's Errors metric.",
+    "answer": false,
+    "explanation": "Lambda records throttled requests in Throttles. Errors counts invocations that run and end with a function error, such as an exception or timeout.",
+    "misconception": "The Lambda Errors metric includes requests rejected because invocation capacity is exhausted.",
+    "sourceTitle": "Types of metrics for Lambda functions",
+    "sourceUrl": "https://docs.aws.amazon.com/lambda/latest/dg/monitoring-metrics-types.html"
+   },
+   {
+    "id": "aws-dva-c02-s4.1-08",
+    "reason": "tell: 'includes' marked false statements. Swapped for 'shows'. Same fact, same answer.",
+    "statement": "AWS CloudTrail event history shows the data events collected by a configured trail.",
+    "answer": false,
+    "explanation": "CloudTrail event history shows management events. A trail's data-event configuration does not add those data events to event history.",
+    "misconception": "Enabling data events on a CloudTrail trail makes them available in event history.",
+    "sourceTitle": "Working with CloudTrail event history",
+    "sourceUrl": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events.html"
+   },
+   {
+    "id": "aws-dva-c02-s4.1-12",
+    "reason": "tell: 'includes' marked false statements. Swapped for 'measures', which leaves 'includes' on 2 false cards (s3.1-08, s3.4-02), within the cap. Same fact, same answer.",
+    "statement": "Amazon API Gateway REST API IntegrationLatency measures the gateway's complete request processing time.",
+    "answer": false,
+    "explanation": "IntegrationLatency measures the backend request-response interval. API Gateway's Latency metric includes that interval plus the gateway's other processing overhead.",
+    "misconception": "IntegrationLatency and total API Gateway request latency measure the same interval.",
+    "sourceTitle": "Amazon API Gateway dimensions and metrics",
+    "sourceUrl": "https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-metrics-and-dimensions.html"
+   },
+   {
+    "id": "aws-dva-c02-s2.1-08",
+    "reason": "tell: after the drops, 'same' appears in 7 true and 0 false statements. This puts 'same' into a false card and removes a hedge 'can'. Same fact (GetCallerIdentity returns the assumed-role session ARN), same answer.",
+    "statement": "AWS STS GetCallerIdentity returns the same ARN for assumed-role credentials as for the IAM user who assumed the role.",
+    "answer": false,
+    "explanation": "With assumed-role credentials, GetCallerIdentity returns the assumed-role session's ARN. It identifies the active session rather than the IAM user who assumed the role.",
+    "misconception": "Assuming a role leaves GetCallerIdentity reporting the original IAM user.",
+    "sourceTitle": "GetCallerIdentity",
+    "sourceUrl": "https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html"
+   },
+   {
+    "id": "aws-dva-c02-s4.3-09",
+    "reason": "tell: a second false card that uses 'same', which brings the word to 7 true and 2 false. Same fact (long polling queries all servers, short polling a weighted subset), same answer.",
+    "statement": "Amazon SQS long polling queries the same weighted subset of servers that short polling queries.",
+    "answer": false,
+    "explanation": "With long polling, ReceiveMessage queries the full set of SQS servers for the queue. Broader server coverage reduces false empty responses.",
+    "misconception": "Long polling waits longer while querying the same sampled subset of servers as short polling.",
+    "sourceTitle": "Amazon SQS short and long polling",
+    "sourceUrl": "https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-short-and-long-polling.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "lambda-environment-reuse",
+    "ids": [
+     "aws-dva-c02-s1.2-07",
+     "aws-dva-c02-s4.3-12"
+    ]
+   },
+   {
+    "name": "lambda-container-image-build",
+    "ids": [
+     "aws-dva-c02-s1.2-08",
+     "aws-dva-c02-s3.1-03"
+    ]
+   },
+   {
+    "name": "http-success-embedded-failure",
+    "ids": [
+     "aws-dva-c02-s1.1-10",
+     "aws-dva-c02-s1.2-05"
+    ]
+   },
+   {
+    "name": "cognito-user-pool-tokens",
+    "ids": [
+     "aws-dva-c02-s2.1-01",
+     "aws-dva-c02-s2.1-02"
+    ]
+   },
+   {
+    "name": "codebuild-secrets-manager-env",
+    "ids": [
+     "aws-dva-c02-s2.3-09",
+     "aws-dva-c02-s2.3-10"
+    ]
+   },
+   {
+    "name": "apigw-rest-deployment-snapshot",
+    "ids": [
+     "aws-dva-c02-s3.2-04",
+     "aws-dva-c02-s3.2-06",
+     "aws-dva-c02-s3.3-04"
+    ]
+   },
+   {
+    "name": "deployment-snapshot-semantics",
+    "ids": [
+     "aws-dva-c02-s3.2-06",
+     "aws-dva-c02-s3.3-01",
+     "aws-dva-c02-s3.3-02"
+    ]
+   },
+   {
+    "name": "lambda-weighted-alias-traffic",
+    "ids": [
+     "aws-dva-c02-s3.3-11",
+     "aws-dva-c02-s3.4-05",
+     "aws-dva-c02-s3.4-06"
+    ]
+   },
+   {
+    "name": "lambda-execution-role",
+    "ids": [
+     "aws-dva-c02-s2.1-10",
+     "aws-dva-c02-s2.1-11",
+     "aws-dva-c02-s3.3-08"
+    ]
+   },
+   {
+    "name": "dynamodb-fine-grained-iam",
+    "ids": [
+     "aws-dva-c02-s2.1-12",
+     "aws-dva-c02-s2.3-11"
+    ]
+   },
+   {
+    "name": "iam-tenant-scoping",
+    "ids": [
+     "aws-dva-c02-s2.1-12",
+     "aws-dva-c02-s2.3-12"
+    ]
+   },
+   {
+    "name": "sts-assumed-role-session",
+    "ids": [
+     "aws-dva-c02-s2.1-07",
+     "aws-dva-c02-s2.1-08"
+    ]
+   }
+  ],
+  "sectionBalance": "131 cards after the edits (66 true, 65 false). Per section, cards left (true/false), with average true vs false statement length:\n- 1.1: 10 (5/5); 95.2 vs 90.2\n- 1.2: 9 (4/5); 95.2 vs 91.6\n- 1.3: 10 (5/5); 88.6 vs 92.2\n- 2.1: 11 (5/6); 90.0 vs 93.5\n- 2.2: 11 (5/6); 95.0 vs 90.2\n- 2.3: 10 (4/6); 102.0 vs 102.0\n- 3.1: 10 (5/5); 89.8 vs 90.6\n- 3.2: 10 (4/6); 101.2 vs 97.3\n- 3.3: 11 (6/5); 96.8 vs 98.8\n- 3.4: 10 (5/5); 98.6 vs 94.8\n- 4.1: 9 (4/5); 95.5 vs 92.2\n- 4.2: 10 (5/5); 99.4 vs 98.6\n- 4.3: 10 (5/5); 100.0 vs 102.8\nEvery section has at least 9 cards, no split is worse than 4/6 per 10, and every length gap is 5.0 characters or less (1.1 sits exactly at 5.0).",
+  "notes": "I opened the official pages behind every rewrite and source fix: sdkref retry behavior, the S3 SSE-KMS page, the Cognito JWT page, sam local start-api, sam remote test-event, the AppSync test-debug-resolvers page, the CloudFormation template-guide and Condition attribute pages, the CodePipeline CodeStarSourceConnection action reference and CloudWatch metrics concepts.\n\nChoices that differ from the verifiers' suggestions:\n1. s1.1-08 changes answer from False to True. The verifier's False text was a compound statement (one true half about retries, one false half about initial requests). The True wording states the single documented fact and also moves 1.1 to 5/5.\n2. In 3.2, four true cards were flagged (01, 03, 07, 10). Dropping all of them would have left 3 true and 6 false. I rewrote only the two needed: 01 (authorizer invoked locally) and 10 (shareable test events in the EventBridge schema registry). I dropped 03 and 07.\n3. s3.2-10 was replaced, not re-sourced. The HTTP API Lambda integration page shows only isBase64Encoded:false examples, and lambda-proxy-binary-media covers responses and points to REST API binary types. No current official page states the request-side rule.\n4. s4.3-08 was dropped. I searched docs.aws.amazon.com and found no ElastiCache page saying pipelining alone is not atomic. Section balance does not need the verifier's Lua replacement.\n5. s3.3-07 explanation is phrased so it holds under both the documented note ('aren't created either') and the observed behaviour (Unresolved resource dependencies validation error). Neither the old 'skips' nor a named error is needed.\n6. Some rewrite statements were shortened from the verifiers' texts (2.2-06, 3.2-01, 3.4-01, 4.2-05) to keep each section's true and false length averages within 5 characters. Some also avoid opening with 'A/An', which predicted True (about 15 true to 7 false after the drops).\n\nTell rewrites (5 used): 4.1-01, 4.1-08 and 4.1-12 drop 'includes' (it was 0 true, 5 false; now 0/2, at the cap). 2.1-08 and 4.3-09 add 'same' to false cards ('same' was 7 true, 0 false after the drops; now 7/2). Fact and answer are unchanged in each.\n\nConflict groups removed because their giveaway member was dropped:\n- lambda-esm-batch-records: s1.2-11 is gone, and s1.2-04 and s4.1-02 do not answer each other.\n- batch-partial-failure-caller-retry: s1.3-05 is gone.\n- secrets-manager-getsecretvalue: s2.3-04 is gone.\nlambda-environment-reuse now holds only s1.2-07 and s4.3-12. No rewrite creates a new giveaway, so no new group was added.\n\nTells still open, which rewording cannot fix without changing facts:\n- 'REST API' appears in 3 true and 9 false statements.\n- CodeBuild cards are mostly false (about 1 true, 5 false after the drops).\n- The 'old state is frozen, changes are not retroactive' false template still carries about 6 cards.\nA future revision should add true REST API and CodeBuild cards.\n\nCoverage gaps for a later revision:\n- skill 2.2.1 (encryption at rest versus in transit)\n- skill 2.3.1 (PII and PHI)\n\nRead-only: I edited no files."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "aws-dva-c02-s1.1-08",
+    "decision": "keep",
+    "statement": "Adaptive retry mode in an AWS SDK rate-limits initial requests too once it detects throttling.",
+    "answer": true,
+    "explanation": "Adaptive mode adds a per-client rate limiter driven by throttling responses, so it can hold back a first attempt, not only a retry. Standard mode never delays the initial request.",
+    "reason": "Both lenses keep. feature-retry-behavior.html: 'Unlike standard mode, adaptive mode can delay or block the initial request, not just retries, when throttling is detected'; 'The rate limiter operates per SDK client instance'; standard 'retry quota never delays or blocks the initial request'."
+   },
+   {
+    "id": "aws-dva-c02-s2.1-01",
+    "decision": "keep",
+    "statement": "An Amazon Cognito user pool issues AWS access keys after a user signs in.",
+    "answer": false,
+    "explanation": "After a successful sign-in, a Cognito user pool returns an ID token, an access token and a refresh token. Apps can exchange those tokens for temporary AWS credentials in a separate step.",
+    "reason": "Both lenses keep. The new source says a successful login 'returns an ID token, an access token, and a refresh token' and that you 'can exchange them for temporary AWS credentials'."
+   },
+   {
+    "id": "aws-dva-c02-s2.2-06",
+    "decision": "fixed",
+    "statement": "Amazon S3 GetObject on an SSE-KMS object needs the caller to hold kms:Decrypt on its KMS key.",
+    "answer": true,
+    "explanation": "A caller needs kms:Decrypt on the object's KMS key as well as s3:GetObject, because that key protects the data key S3 stored with the object. Without it, the download is denied.",
+    "reason": "Both lenses flagged the editor's 'S3 sends the data key to KMS during the download' claim. I checked it myself. bucket-key.html says 'subsequent requests that take advantage of this bucket-level key do not result in AWS KMS API requests', and bucket-level keys are 'fetched at least once per requester'. The wording lens's fix ('S3 calls AWS KMS Decrypt on the caller's behalf') still implies a KMS call on every download, so I used the fact lens's explanation. It is true with or without Bucket Keys. UsingKMSEncryption.html: 'To download an object encrypted with an AWS KMS key, you need kms:Decrypt permissions for the key' and 'Amazon S3 stores the encrypted data key as metadata with the encrypted data.' The statement is unchanged; the explanation is 177 chars."
+   },
+   {
+    "id": "aws-dva-c02-s3.2-01",
+    "decision": "keep",
+    "statement": "AWS SAM CLI sam local start-api runs a function's Lambda authorizer locally before the function.",
+    "answer": true,
+    "explanation": "A request to the local endpoint goes to the authorizer first, and the SAM CLI invokes the function only when authorization succeeds. Local authorizer behavior can differ from the deployed one.",
+    "reason": "Both lenses keep and quote the page: the SAM CLI 'will automatically invoke your Lambda authorizer before invoking your Lambda function endpoint' and does 'not guarantee 100% fidelity'. Note for the merger: the wording lens says the factKey must change, e.g. to sam-local-start-api-lambda-authorizer."
+   },
+   {
+    "id": "aws-dva-c02-s3.2-10",
+    "decision": "keep",
+    "statement": "AWS SAM CLI sam remote test-event stores shareable Lambda test events in the EventBridge schema registry.",
+    "answer": true,
+    "explanation": "Users of the same AWS account can get, list, put or delete these shareable events and pass one to sam remote invoke to test the deployed function in the cloud.",
+    "reason": "Both lenses keep, with page quotes: 'put – Save an event from a local file to the EventBridge schema registry' and 'accessed and managed by users within the same AWS account'. The factKey must replace apigw-http-lambda-base64-test-event."
+   },
+   {
+    "id": "aws-dva-c02-s3.2-12",
+    "decision": "keep",
+    "statement": "AWS AppSync EvaluateMappingTemplate sends the evaluated request to the resolver's configured data source.",
+    "answer": false,
+    "explanation": "EvaluateMappingTemplate renders a template against a mock context you supply and returns evaluationResult. It runs no request against the resolver's data source.",
+    "reason": "Both lenses keep. test-debug-resolvers.html: EvaluateMappingTemplate tests templates 'with mocked data', returns evaluationResult, and evaluates 'without actually running against a data source'."
+   },
+   {
+    "id": "aws-dva-c02-s3.3-07",
+    "decision": "fixed",
+    "statement": "AWS CloudFormation creates a resource that uses Ref to point to a resource whose condition evaluates to false.",
+    "answer": false,
+    "explanation": "CloudFormation creates a conditional resource only when its condition is true. A resource that depends on an uncreated resource can't be created either, whatever its own condition says.",
+    "reason": "I took the wording lens's fix. In the old statement the false condition could be read as the created resource's own condition. The new one puts it on the referenced resource. The fact lens found no fact problem, and the answer and explanation are unchanged. I checked aws-attribute-condition.html myself: 'CloudFormation creates the resource only when the condition evaluates to true' and the Note 'If a resource with a condition isn't created, any resources that depend on that resource aren't created either, regardless of their own conditions.' The answer is False under both behaviours (skipped, or failed validation). The statement is 110 chars."
+   },
+   {
+    "id": "aws-dva-c02-s3.3-12",
+    "decision": "keep",
+    "statement": "AWS CloudFormation ValidateTemplate verifies that an EC2 instance's KeyName names an existing key pair.",
+    "answer": false,
+    "explanation": "ValidateTemplate checks that the template is valid JSON or YAML. Whether a named EC2 key pair exists comes to light when CloudFormation creates or updates the stack.",
+    "reason": "Both lenses keep. template-guide validation section: validate-template checks for 'valid JSON or YAML' and these checks 'don't run the additional property, security, or best-practice checks'. The fact lens found the create/update timing on cloudformation-supplied-parameter-types.html."
+   },
+   {
+    "id": "aws-dva-c02-s3.4-01",
+    "decision": "keep",
+    "statement": "AWS CodePipeline's service role needs codestar-connections:UseConnection besides codeconnections:UseConnection.",
+    "answer": true,
+    "explanation": "The CodePipeline docs require both actions on the connection ARN: some operations call codestar-connections:UseConnection and others call codeconnections:UseConnection.",
+    "reason": "Both lenses keep. The action reference lists both actions and says 'Both actions are required', with the two code paths explained."
+   },
+   {
+    "id": "aws-dva-c02-s4.2-05",
+    "decision": "keep",
+    "statement": "CloudWatch treats one metric name published with two different dimension values as two distinct metrics.",
+    "answer": true,
+    "explanation": "Namespace, metric name and dimensions together identify a CloudWatch metric, and statistics come back only for the dimension combinations that were published.",
+    "reason": "Both lenses keep. cloudwatch_concepts.html: 'CloudWatch treats each unique combination of dimensions as a separate metric, even if the metrics have the same metric name' and 'You can only retrieve statistics using combinations of dimensions that you specifically published.'"
+   },
+   {
+    "id": "aws-dva-c02-s4.1-01",
+    "decision": "keep",
+    "statement": "AWS Lambda counts throttled invocation requests in the function's Errors metric.",
+    "answer": false,
+    "explanation": "Lambda records throttled requests in Throttles. Errors counts invocations that run and end with a function error, such as an exception or timeout.",
+    "reason": "Both lenses keep. Only the verb changed. monitoring-metrics-types.html: 'Throttled requests and other invocation errors don't count as either Invocations or Errors'; timeouts are function errors."
+   },
+   {
+    "id": "aws-dva-c02-s4.1-08",
+    "decision": "keep",
+    "statement": "AWS CloudTrail event history shows the data events collected by a configured trail.",
+    "answer": false,
+    "explanation": "CloudTrail event history shows management events. A trail's data-event configuration does not add those data events to event history.",
+    "reason": "Both lenses keep. Only the verb changed. view-cloudtrail-events.html: event history 'only shows management events. It does not show data events', and changes to trails 'do not affect the event history'."
+   },
+   {
+    "id": "aws-dva-c02-s4.1-12",
+    "decision": "keep",
+    "statement": "Amazon API Gateway REST API IntegrationLatency measures the gateway's complete request processing time.",
+    "answer": false,
+    "explanation": "IntegrationLatency measures the backend request-response interval. API Gateway's Latency metric includes that interval plus the gateway's other processing overhead.",
+    "reason": "Both lenses keep. Only the verb changed. The REST API metric definitions say Latency 'includes the integration latency and other API Gateway overhead'."
+   },
+   {
+    "id": "aws-dva-c02-s2.1-08",
+    "decision": "keep",
+    "statement": "AWS STS GetCallerIdentity returns the same ARN for assumed-role credentials as for the IAM user who assumed the role.",
+    "answer": false,
+    "explanation": "With assumed-role credentials, GetCallerIdentity returns the assumed-role session's ARN. It identifies the active session rather than the IAM user who assumed the role.",
+    "reason": "Both lenses keep. The API reference examples show arn:aws:iam::...:user/Alice for an IAM user and arn:aws:sts::...:assumed-role/my-role-name/my-role-session-name for AssumeRole credentials. The statement is 117 chars, within the 120 limit."
+   },
+   {
+    "id": "aws-dva-c02-s4.3-09",
+    "decision": "keep",
+    "statement": "Amazon SQS long polling queries the same weighted subset of servers that short polling queries.",
+    "answer": false,
+    "explanation": "With long polling, ReceiveMessage queries the full set of SQS servers for the queue. Broader server coverage reduces false empty responses.",
+    "reason": "Both lenses keep. sqs-short-and-long-polling.html: short polling 'queries a subset of servers (based on a weighted random distribution)' and long polling 'queries all servers'. 'Same subset' is a little loose, but there is still one clear reason the card is False."
+   }
+  ]
+ }
+}

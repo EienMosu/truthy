@@ -661,8 +661,8 @@ describe("the real content: Solutions Architect Associate", () => {
   });
 });
 
-// Fourteen decks entered after step 2 shipped: a second Google Cloud deck, the first Azure deck, four Frontend
-// platforms with two more Web platform decks, and the DevOps platforms. This pins what the deploy builds from
+// Fifteen decks entered after step 2 shipped: a third AWS deck, a second Google Cloud deck, the first Azure deck,
+// four Frontend platforms with two more Web platform decks, and the DevOps platforms. This pins what the deploy builds from
 // every reviewed file in the repository, which the blocks above never build all at once.
 describe("the real content: the decks added after step 2", () => {
   function readContent(path: string): unknown {
@@ -671,6 +671,7 @@ describe("the real content: the decks added after step 2", () => {
 
   const OLD = ["aws-clf-c02", "aws-saa-c03", "gcp-cdl", "nextjs-rendering"];
   const NEW = [
+    "aws-dva-c02",
     "gcp-ace",
     "azure-az-900",
     "react-fundamentals",
@@ -699,7 +700,7 @@ describe("the real content: the decks added after step 2", () => {
         "cloud",
         "Cloud",
         [
-          ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03"]],
+          ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03", "aws-dva-c02"]],
           ["gcp", "Google Cloud", ["gcp-cdl", "gcp-ace"]],
           ["azure", "Azure", ["azure-az-900"]],
         ],
@@ -732,6 +733,19 @@ describe("the real content: the decks added after step 2", () => {
 
   // Each deck: code, title, the name on the pass and the ticket, card count, and its sections in order.
   const PINNED: [id: string, code: string, title: string, passName: string, cards: number, sections: [string, string, number][]][] = [
+    [
+      "aws-dva-c02",
+      "DVA",
+      "Developer Associate",
+      "AWS Developer Associate",
+      131,
+      [
+        ["DEV", "Development with AWS services", 29],
+        ["SEC", "Security", 32],
+        ["DEP", "Deployment", 41],
+        ["TRB", "Troubleshooting and optimization", 29],
+      ],
+    ],
     [
       "gcp-ace",
       "ACE",
