@@ -101,12 +101,33 @@ describe("dealChunk: an unshown card is shown, late at worst", () => {
     }
   });
 
-  it("does not hurry a card that comes in its own time: a route without groups deals exactly as before", () => {
-    // Every card of a route without groups is shown in the first pass, so no card is ever overdue.
-    const pool = Array.from({ length: 23 }, (_, i) => card(`c${i + 1}`, i % 2 === 0));
+  // The cards a round has dealt, each once, at the last place it was dealt: a history shorter than the route, so the
+  // overdue rule (two passes over the route) cannot fire on it. dealChunk still sees the same unshown cards, the
+  // same cards to bring back in the same order and the same last ten cards (a card comes back only once it is more
+  // than ten cards back, so the last ten are ten different cards): it deals the chunk it would deal without the rule.
+  function withoutRepeats(dealt: readonly Card[]): Card[] {
+    return dealt.filter((c, i) => !dealt.slice(i + 1).some((later) => later.id === c.id));
+  }
+
+  it.each([
+    ["without groups", Array.from({ length: 23 }, (_, i) => card(`c${i + 1}`, i % 2 === 0))],
+    ["of 21 cards with one pair", route(21)],
+    ["of 23 cards with three pairs", route(23)],
+  ])("does not hurry a card that comes in its own time: a route %s deals exactly as without the rule until it has dealt the route twice", (_name, pool) => {
+    let waited = 0;
     for (let seed = 0; seed < 50; seed++) {
-      const dealt = dealRound(pool, seed, 100);
-      expect(Math.max(...firstShown(pool, dealt)), `seed ${seed}`).toBeLessThan(pool.length + CHUNK);
+      const dealt: Card[] = [];
+      for (let k = 0; dealt.length < 2 * pool.length; k++) {
+        const chunk = dealChunk(pool, {}, createRng(chunkSeed(seed, k)), dealt);
+        const without = dealChunk(pool, {}, createRng(chunkSeed(seed, k)), withoutRepeats(dealt));
+        expect(chunk.map((c) => c.id), `seed ${seed}, chunk ${k}`).toEqual(without.map((c) => c.id));
+        const unshown = pool.filter((c) => !dealt.some((d) => d.id === c.id));
+        if (unshown.length > 0 && !chunk.some((c) => unshown.includes(c))) waited++;
+        dealt.push(...chunk);
+      }
     }
+    // A route with groups lets a card wait a chunk in its first two passes: a rule that fired before then would
+    // take it in at once.
+    if (pool.some((c) => c.conflictGroups.length > 0)) expect(waited).toBeGreaterThan(0);
   });
 });
