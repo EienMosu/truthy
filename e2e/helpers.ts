@@ -418,6 +418,9 @@ export async function centreOf(locator: Locator): Promise<{ x: number; y: number
 export const WITHIN_SETTLE_MS = 200;
 export const WITHIN_ARRIVAL_MS = 370;
 
+// A page of the app's origin, so its storage can be cleared, that runs none of the app's code.
+const NEUTRAL_PAGE = "/icon-192.png";
+
 /** Makes the page note when each touch starts; call it before the page loads (in beforeEach). */
 export async function installTapClock(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -440,7 +443,9 @@ export async function tapTwice(page: Page, x: number, y: number, gap: number): P
 
 /**
  * Runs `attempt` (which sets the scene and double taps, returning tapTwice's measure) until its taps were at most
- * `within` ms apart, three times at most, then `check`. Each further attempt starts from an empty device.
+ * `within` ms apart, three times at most, then `check`. Each further attempt starts from an empty device: the
+ * page first leaves for a file of the app that runs no script, since the round screen writes an unsaved or
+ * decided round back to storage when the page is left (pagehide), and only then is storage cleared.
  */
 export async function quickDoubleTap(
   page: Page,
@@ -451,6 +456,7 @@ export async function quickDoubleTap(
   const seen: number[] = [];
   for (let i = 0; i < 3; i += 1) {
     if (i > 0) {
+      await page.goto(NEUTRAL_PAGE);
       await page.evaluate(() => {
         localStorage.clear();
         sessionStorage.clear();

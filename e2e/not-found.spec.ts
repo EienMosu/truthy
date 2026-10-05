@@ -28,7 +28,15 @@ for (const { system, stored, theme } of CASES) {
     await expect(page.locator("html")).toHaveAttribute("data-theme", stored);
     await expectThemePage(page, theme);
 
-    await page.getByRole("link", { name: "Back to start" }).click();
+    // The one action is inside main, where a screen reader that moves by landmarks finds it, and still sits at
+    // the foot of the page.
+    const back = page.getByRole("main").getByRole("link", { name: "Back to start" });
+    await expect(back).toBeVisible();
+    const box = await back.boundingBox();
+    const height = page.viewportSize()?.height ?? 0;
+    expect(box && box.y + box.height).toBeGreaterThan(height - 120);
+
+    await back.click();
     await expect(page).toHaveURL("/");
     await atHome(page);
     await expect(page).toHaveTitle("Truthy");

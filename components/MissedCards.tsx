@@ -2,8 +2,9 @@
 
 // The missed cards of a finished round (design system 5.15), on the sunk lower part of the result ticket:
 // a header row, then a scrolling list. Each card shows its number in the round, what the player said, the
-// version or setting it applies to (when it has one), the statement and the right answer (ink, not red: the word carries it), and a "Why" disclosure that reveals
-// the explanation and the source. With no missed cards there is one calm line instead of an empty list.
+// version or setting it applies to (when it has one), the statement and the right answer (ink, not red: the
+// word carries it), and a "Why" disclosure that reveals the explanation and the source. With no missed cards
+// there is one calm line instead of an empty list.
 import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import type { Answered } from "@/src/engine/round";
@@ -138,8 +139,16 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
         <span>You said {word(item.given)}</span>
       </div>
       {/* The same line the play card shows above the statement. Without it a card such as "a route's
-          revalidate export remains supported", False only with cacheComponents on, would read wrong here. */}
-      {item.appliesTo ? <p className={`m-0 mt-(--space-6) ${MONO_DATA}`}>Applies to {item.appliesTo}</p> : null}
+          revalidate export remains supported", False only with cacheComponents on, would read wrong here.
+          As on the card, the qualifier shows alone and a screen reader hears "Applies to" in front: the
+          whole phrase wrapped there (review finding U95), and this column is narrower. A qualifier longer
+          than the line wraps into lines of even length. */}
+      {item.appliesTo ? (
+        <p className={`m-0 mt-(--space-6) text-balance ${MONO_DATA}`}>
+          <span className="sr-only">{`Applies to ${item.appliesTo}`}</span>
+          <span aria-hidden="true">{item.appliesTo}</span>
+        </p>
+      ) : null}
       <p data-missed-statement="" className={STATEMENT}>
         <CardText text={item.statement} />
       </p>
