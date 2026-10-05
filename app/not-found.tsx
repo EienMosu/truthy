@@ -44,13 +44,15 @@ export default function NotFound() {
         >
           There is no card at this address. Your progress is safe on this device.
         </p>
+        {/* The page's one action, inside main so a screen reader that moves by landmarks reaches it, as the
+            action row of /play is; mt-auto keeps it at the foot of the page. */}
+        <Link href="/" className={`mt-auto ${PILL}`}>
+          Back to start
+          <span aria-hidden="true" className="flex flex-none">
+            →
+          </span>
+        </Link>
       </main>
-      <Link href="/" className={PILL}>
-        Back to start
-        <span aria-hidden="true" className="flex flex-none">
-          →
-        </span>
-      </Link>
     </div>
   );
 }
