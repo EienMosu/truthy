@@ -38,11 +38,17 @@ function sharesGroup(a: Card, b: Card): boolean {
 
 // Plan decision 10: the last unshown card of a route may come late, never not at all.
 describe("dealChunk: an unshown card is shown, late at worst", () => {
-  // Alternating answers, and the first card shares a group with the card eleven places later. Without the
-  // overdue rule a round of 21 cards could settle into two chunks that take turns for ever: one keeps k1 out
-  // because k12 is among the ten cards before it, the other because taking k1 for k12 tips the balance.
+  // Alternating answers, and each of the first size - 20 cards shares a group with the card eleven places later
+  // (k1 with k12 in a route of 21; k1 with k12 and k2 with k13 in a route of 22). Without the overdue rule a round
+  // could settle into two chunks that take turns for ever: one keeps k1 out because k12 is among the ten cards
+  // before it, the other because taking k1 for k12 tips the balance. Without the rule, a card was still unshown
+  // after 100 cards in 41 (21 cards), 21 (22) and 27 (23) of the 200 rounds below.
   function route(size: number): Card[] {
-    return Array.from({ length: size }, (_, i) => card(`k${i + 1}`, i % 2 === 0, i === 0 || i === 11 ? ["pair"] : []));
+    const pairs = size - 2 * CHUNK;
+    return Array.from({ length: size }, (_, i) => {
+      const pair = i < pairs ? i : i - (CHUNK + 1);
+      return card(`k${i + 1}`, i % 2 === 0, pair >= 0 && pair < pairs ? [`pair${pair + 1}`] : []);
+    });
   }
 
   it.each([21, 22, 23])("shows every card of a %i card route within 100 cards (seeds 0 to 199)", (size) => {
@@ -65,12 +71,15 @@ describe("dealChunk: an unshown card is shown, late at worst", () => {
     }
   });
 
-  it("gives way as little as it can: once every card is shown, the round keeps every rule again", () => {
+  it("gives way as little as it can: from the second chunk after the last card came in, the round keeps every rule again", () => {
     const pool = route(21);
     for (let seed = 0; seed < 200; seed++) {
       const dealt = dealRound(pool, seed, 300);
       const lastFirst = Math.max(...firstShown(pool, dealt));
-      // From the first chunk after the last card came in, no card shares a group with one of the ten before it.
+      // The chunk right after the overdue card may still give way: the overdue card is in its window, and keeping
+      // the balance can leave it no deal without that card's partner (seed 8: chunk 5 takes k1 in, and chunk 6 may
+      // deal only the eleven cards outside chunk 5, of which four are False; the balance needs all four, k12 among
+      // them). From the chunk after that, no card shares a group with one of the ten before it.
       const settled = (Math.floor(lastFirst / CHUNK) + 2) * CHUNK;
       for (let i = settled; i < dealt.length; i++) {
         const current = dealt[i]!;
@@ -92,12 +101,33 @@ describe("dealChunk: an unshown card is shown, late at worst", () => {
     }
   });
 
-  it("does not hurry a card that comes in its own time: a route without groups deals exactly as before", () => {
-    // Every card of a route without groups is shown in the first pass, so no card is ever overdue.
-    const pool = Array.from({ length: 23 }, (_, i) => card(`c${i + 1}`, i % 2 === 0));
+  // The cards a round has dealt, each once, at the last place it was dealt: a history shorter than the route, so the
+  // overdue rule (two passes over the route) cannot fire on it. dealChunk still sees the same unshown cards, the
+  // same cards to bring back in the same order and the same last ten cards (a card comes back only once it is more
+  // than ten cards back, so the last ten are ten different cards): it deals the chunk it would deal without the rule.
+  function withoutRepeats(dealt: readonly Card[]): Card[] {
+    return dealt.filter((c, i) => !dealt.slice(i + 1).some((later) => later.id === c.id));
+  }
+
+  it.each([
+    ["without groups", Array.from({ length: 23 }, (_, i) => card(`c${i + 1}`, i % 2 === 0))],
+    ["of 21 cards with one pair", route(21)],
+    ["of 23 cards with three pairs", route(23)],
+  ])("does not hurry a card that comes in its own time: a route %s deals exactly as without the rule until it has dealt the route twice", (_name, pool) => {
+    let waited = 0;
     for (let seed = 0; seed < 50; seed++) {
-      const dealt = dealRound(pool, seed, 100);
-      expect(Math.max(...firstShown(pool, dealt)), `seed ${seed}`).toBeLessThan(pool.length + CHUNK);
+      const dealt: Card[] = [];
+      for (let k = 0; dealt.length < 2 * pool.length; k++) {
+        const chunk = dealChunk(pool, {}, createRng(chunkSeed(seed, k)), dealt);
+        const without = dealChunk(pool, {}, createRng(chunkSeed(seed, k)), withoutRepeats(dealt));
+        expect(chunk.map((c) => c.id), `seed ${seed}, chunk ${k}`).toEqual(without.map((c) => c.id));
+        const unshown = pool.filter((c) => !dealt.some((d) => d.id === c.id));
+        if (unshown.length > 0 && !chunk.some((c) => unshown.includes(c))) waited++;
+        dealt.push(...chunk);
+      }
     }
+    // A route with groups lets a card wait a chunk in its first two passes: a rule that fired before then would
+    // take it in at once.
+    if (pool.some((c) => c.conflictGroups.length > 0)) expect(waited).toBeGreaterThan(0);
   });
 });

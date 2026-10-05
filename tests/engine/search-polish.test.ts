@@ -47,13 +47,14 @@ function inOrder(cards: readonly Card[]): History {
 describe("deal: the search cuts a branch that cannot finish", () => {
   it("sees that the groups in use leave too few False cards, and leaves out the True cards that hold them", () => {
     // h1 to h6 (True) come first; f1 to f6 (False) each share a group with one of them; t1 to t20 (True) come last.
-    // Four False cards are needed, so four of the h cards must stay out.
+    // Four False cards are needed, so four of the h cards must stay out. The search finds that in 20 steps; a cut
+    // that counts the False cards ahead without their groups lets it try the h cards in every way, over 100 steps.
     const h = Array.from({ length: 6 }, (_, i) => card(`h${i + 1}`, true, [`g${i + 1}`]));
     const f = Array.from({ length: 6 }, (_, i) => card(`f${i + 1}`, false, [`g${i + 1}`]));
     const t = Array.from({ length: 20 }, (_, i) => card(`t${i + 1}`, true));
     const ranked = [...h, ...f, ...t];
     for (let seed = 0; seed < 20; seed++) {
-      const dealt = deal(ranked, inOrder(ranked), createRng(seed), { count: 10, budget: 200 });
+      const dealt = deal(ranked, inOrder(ranked), createRng(seed), { count: 10, budget: 40 });
       expect(dealt, `seed ${seed}`).toHaveLength(10);
       expect(keepsEveryRule(dealt), `seed ${seed}: ${dealt.map((c) => c.id).join(",")}`).toBe(true);
       // The first deal in rank order that keeps every rule: h1, h2, f3 to f6 and t1 to t4.
