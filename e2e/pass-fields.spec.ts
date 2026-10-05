@@ -60,7 +60,8 @@ for (const width of [320, 360]) {
     await openHome(page);
     await chooseRoute(page, CDL_WHOLE);
     await page.getByRole("button", { name: "Back to classes" }).click();
-    const section = page.locator('[data-fill-in-pass="route"] [data-pass-value="section"]');
+    // The current block: the ready block it replaces stays on the pass while it fades out.
+    const section = page.locator('[data-fill-in-pass="route"] [data-pass-block]:not([data-leaving]) [data-pass-value="section"]');
     await expect(section).toHaveText("Whole deck");
     const fit = await section.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
     expect(fit.scroll).toBeLessThanOrEqual(fit.client);
