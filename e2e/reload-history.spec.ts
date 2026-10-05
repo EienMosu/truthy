@@ -6,6 +6,9 @@ import { atHome, atStep, openHome, stepTitle } from "./helpers";
 // site instead of bringing an old pass back. The move crosses entries the previous document made, which the
 // app router sees as popstate events of its own. Every spec starts on about:blank, the page before the site.
 
+// The history is the subject, not the movement between the steps.
+test.use({ reducedMotion: "reduce" });
+
 async function toSections(page: Page): Promise<void> {
   await openHome(page);
   await page.getByRole("button", { name: /^Cloud, / }).click();
