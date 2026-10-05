@@ -41,6 +41,14 @@ function paint(element: HTMLElement | null, dx: number): void {
   element.style.setProperty("--pull", String(Math.abs(value)));
 }
 
+// How long ago (ms) the browser received the input. Pointer events carry a performance.now() time stamp. A
+// missing one (0), one on another timeline (epoch ms, as in jsdom) or one from the future counts as "just now".
+function inputAge(timeStamp: number): number {
+  if (typeof performance === "undefined") return 0;
+  const age = performance.now() - timeStamp;
+  return timeStamp > 0 && age > 0 ? age : 0;
+}
+
 export function useSwipe<T extends HTMLElement>({ enabled, cardShownAt, now, onSwipe }: UseSwipeOptions): SwipeBindings<T> {
   const ref = useRef<T | null>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -58,7 +66,14 @@ export function useSwipe<T extends HTMLElement>({ enabled, cardShownAt, now, onS
     if (!enabled) reset();
   }, [enabled, reset]);
 
-  const sample = useCallback((event: PointerEvent<T>): SwipeSample => ({ x: event.clientX, y: event.clientY, t: now() }), [now]);
+  // A sample is timed by when the finger moved, not by when this handler ran. After a main-thread stall the
+  // queued moves and the release are handled within a couple of ms, and handler time would make a slow drag
+  // look like a fling. The event's own time stamp says how long ago the input happened; that age is taken off
+  // the injected clock, so the settle check still compares like with like.
+  const sample = useCallback(
+    (event: PointerEvent<T>): SwipeSample => ({ x: event.clientX, y: event.clientY, t: now() - inputAge(event.nativeEvent.timeStamp) }),
+    [now],
+  );
 
   const onPointerDown = useCallback(
     (event: PointerEvent<T>) => {
