@@ -207,6 +207,11 @@ const ITEM: Variants = {
   hidden: (dir: Direction) => ({ opacity: 0, y: 24 * dir }),
   shown: { opacity: 1, y: 0, transition: { duration: 0.24, ease: EASE } },
 };
+/** The step title is an item too, and on its way out it fades within the panel's 140 ms, in 80 (design system 7). */
+const TITLE: Variants = {
+  ...ITEM,
+  gone: { opacity: 0, transition: { duration: 0.08, ease: EASE_OUT } },
+};
 /** Reduced motion: the old step fades out, then the new one fades in. Text never overlaps. */
 const PANEL_REDUCED: Variants = {
   hidden: { opacity: 0 },
@@ -902,7 +907,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
         exit="gone"
         custom={dir}
       >
-        <motion.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={item} custom={dir}>
+        <motion.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={reduced ? undefined : TITLE} custom={dir}>
           {STEP_TITLE[step]}
         </motion.h2>
         {/* The list scrolls when it is taller than the screen; its margin and padding leave room for the focus ring.
