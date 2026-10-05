@@ -4,9 +4,14 @@ import { atStep, openHome } from "./helpers";
 // Review finding U139, design system 7 "Pass changes layout": steps 3 to 4 and 5 to 6 change the fill-in pass
 // as one paper. Its height and its band grow over 360 ms while the old block fades out over the new one,
 // instead of jumping in one frame. The pass is measured on every animation frame from just before the press.
-// A busy runner (CI's Linux WebKit) draws only three or four frames in those 360 ms, so a move is proved by
-// its time and one value between its ends, not by a count of frames; a check that needs a frame inside a
-// window of a few tens of ms runs only when the runner drew enough frames to have one.
+// A busy runner draws only three or four frames in those 360 ms, so a move is proved by its time and one value
+// between its ends, not by a count of frames; a check that needs a frame inside a window of a few tens of ms
+// runs only when the runner drew enough frames to have one. CI's shared Linux WebKit runner can draw no frame
+// at all for more than 300 ms, so the specs that sample frames do not run there (skipInCiWebKit); they run on
+// both engines locally and on Chromium in CI. The moves are Motion and Web Animations, the same on both engines.
+
+const skipInCiWebKit = () =>
+  test.skip(({ browserName }) => browserName === "webkit" && Boolean(process.env.CI), "CI's Linux WebKit can draw no frame for 300 ms, too few to sample a move");
 
 interface Frame {
   /** performance.now() when the frame was measured. */
@@ -92,6 +97,7 @@ async function toDecks(page: Page): Promise<void> {
 
 test.describe("with motion", () => {
   test.use({ reducedMotion: "no-preference" });
+  skipInCiWebKit();
 
   test("choosing the deck grows the pass over several frames, the old block fading out over the new one", async ({ page }) => {
     await toDecks(page);
@@ -136,6 +142,7 @@ test.describe("with motion", () => {
 // out in 100, new block in over 140 after 90), its height switching at once, not with an instant swap.
 test.describe("with reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
+  skipInCiWebKit();
 
   test("the pass takes its new height at once while the old block fades out and the new one fades in", async ({ page }) => {
     await toDecks(page);
@@ -289,6 +296,7 @@ function expectTravel(shots: Snapshot[], field: string): void {
 
 test.describe("values, dashes and titles with motion", () => {
   test.use({ reducedMotion: "no-preference" });
+  skipInCiWebKit();
 
   test("choosing the deck sends the area and the platform from their fields to the quiet line", async ({ page }) => {
     await toDecks(page);
@@ -342,6 +350,40 @@ test.describe("values, dashes and titles with motion", () => {
     expect(old?.cut, "the old copy is cut as the value was").toBe(true);
     expect(next?.cut, "the new copy shows the whole word, as the quiet line does").toBe(false);
   });
+
+  test("the dashes of a field fade out as its name heads for it, and fade back in on the way back", async ({ page }) => {
+    await openHome(page);
+    await page.getByRole("button", { name: /^Cloud, / }).click();
+    await atStep(page, "Choose a platform");
+    const forward = await snapshotsOfPress(page, /^AWS, /);
+    const out = forward.map((shot) => shot.blanks.platform).filter((o): o is number => o !== undefined);
+    expect(out.some((o) => o > 0 && o < 1), `platform dashes ${JSON.stringify(distinct(out))}`).toBe(true);
+    expect(forward.at(-1)?.blanks.platform).toBeUndefined();
+    await atStep(page, "Choose a deck");
+    const back = await snapshotsOfPress(page, "Back to platforms");
+    const comeBack = back.map((shot) => shot.blanks.platform).filter((o): o is number => o !== undefined);
+    expect(comeBack[0], "the dashes start hidden").toBe(0);
+    expect(comeBack.some((o) => o > 0 && o < 1)).toBe(true);
+    expect(comeBack.at(-1)).toBe(1);
+  });
+
+  test("the step title leaves before the cards of its step", async ({ page }) => {
+    await toDecks(page);
+    const shots = await snapshotsOfPress(page, /^CLF, /);
+    const leaving = shots.filter((shot) => shot.leavingTitle !== null && shot.leavingPanel !== null);
+    expect(leaving.length).toBeGreaterThan(1);
+    // The title is gone at 80 ms and the panel at 140: the check needs frames between the two.
+    if (leaving.length < DENSE_FRAMES) return;
+    expect(
+      leaving.some((shot) => (shot.leavingTitle ?? 1) < 0.1 && (shot.leavingPanel ?? 0) > 0.1),
+      `title and panel ${JSON.stringify(leaving.map((s) => [s.leavingTitle, s.leavingPanel]))}`,
+    ).toBe(true);
+  });
+});
+
+// The copies' animations are paused and moved to their end, so this one needs no frames and runs everywhere.
+test.describe("values with motion, measured at both ends", () => {
+  test.use({ reducedMotion: "no-preference" });
 
   test("the travelling copies leave from the old values and land on the new ones, the band's growth included", async ({ page }) => {
     await toDecks(page);
@@ -398,35 +440,6 @@ test.describe("values, dashes and titles with motion", () => {
       expect(newCopy, `${field} has a new copy`).toBeDefined();
       newCopy?.copy.forEach((n, i) => expect(n, `${field} new copy`).toBeCloseTo(newCopy.value[i] ?? 0, 0));
     }
-  });
-
-  test("the dashes of a field fade out as its name heads for it, and fade back in on the way back", async ({ page }) => {
-    await openHome(page);
-    await page.getByRole("button", { name: /^Cloud, / }).click();
-    await atStep(page, "Choose a platform");
-    const forward = await snapshotsOfPress(page, /^AWS, /);
-    const out = forward.map((shot) => shot.blanks.platform).filter((o): o is number => o !== undefined);
-    expect(out.some((o) => o > 0 && o < 1), `platform dashes ${JSON.stringify(distinct(out))}`).toBe(true);
-    expect(forward.at(-1)?.blanks.platform).toBeUndefined();
-    await atStep(page, "Choose a deck");
-    const back = await snapshotsOfPress(page, "Back to platforms");
-    const comeBack = back.map((shot) => shot.blanks.platform).filter((o): o is number => o !== undefined);
-    expect(comeBack[0], "the dashes start hidden").toBe(0);
-    expect(comeBack.some((o) => o > 0 && o < 1)).toBe(true);
-    expect(comeBack.at(-1)).toBe(1);
-  });
-
-  test("the step title leaves before the cards of its step", async ({ page }) => {
-    await toDecks(page);
-    const shots = await snapshotsOfPress(page, /^CLF, /);
-    const leaving = shots.filter((shot) => shot.leavingTitle !== null && shot.leavingPanel !== null);
-    expect(leaving.length).toBeGreaterThan(1);
-    // The title is gone at 80 ms and the panel at 140: the check needs frames between the two.
-    if (leaving.length < DENSE_FRAMES) return;
-    expect(
-      leaving.some((shot) => (shot.leavingTitle ?? 1) < 0.1 && (shot.leavingPanel ?? 0) > 0.1),
-      `title and panel ${JSON.stringify(leaving.map((s) => [s.leavingTitle, s.leavingPanel]))}`,
-    ).toBe(true);
   });
 });
 
