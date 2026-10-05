@@ -38,11 +38,17 @@ function sharesGroup(a: Card, b: Card): boolean {
 
 // Plan decision 10: the last unshown card of a route may come late, never not at all.
 describe("dealChunk: an unshown card is shown, late at worst", () => {
-  // Alternating answers, and the first card shares a group with the card eleven places later. Without the
-  // overdue rule a round of 21 cards could settle into two chunks that take turns for ever: one keeps k1 out
-  // because k12 is among the ten cards before it, the other because taking k1 for k12 tips the balance.
+  // Alternating answers, and each of the first size - 20 cards shares a group with the card eleven places later
+  // (k1 with k12 in a route of 21; k1 with k12 and k2 with k13 in a route of 22). Without the overdue rule a round
+  // could settle into two chunks that take turns for ever: one keeps k1 out because k12 is among the ten cards
+  // before it, the other because taking k1 for k12 tips the balance. Without the rule, a card was still unshown
+  // after 100 cards in 41 (21 cards), 21 (22) and 27 (23) of the 200 rounds below.
   function route(size: number): Card[] {
-    return Array.from({ length: size }, (_, i) => card(`k${i + 1}`, i % 2 === 0, i === 0 || i === 11 ? ["pair"] : []));
+    const pairs = size - 2 * CHUNK;
+    return Array.from({ length: size }, (_, i) => {
+      const pair = i < pairs ? i : i - (CHUNK + 1);
+      return card(`k${i + 1}`, i % 2 === 0, pair >= 0 && pair < pairs ? [`pair${pair + 1}`] : []);
+    });
   }
 
   it.each([21, 22, 23])("shows every card of a %i card route within 100 cards (seeds 0 to 199)", (size) => {
