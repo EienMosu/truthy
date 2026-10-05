@@ -74,7 +74,7 @@ Each module has one job and a narrow interface. Dependencies only point downward
 | `src/progress` | Card history, records, last route. An interface plus a local storage implementation | `content` types |
 | `src/input` | Swipe interpretation: pure functions that turn pointer samples into "cancel", "true" or "false" | nothing |
 | `src/app-state` | What the screens share outside the engine: the table of classes, the round the start flow hands to `/play` (session storage), the theme choice, and the services a screen takes (network, storages, history) so its tests run without a browser | `content`, `progress` |
-| `components` | The design system's components | design tokens; the engine's constants and types (`LIVES`, `TIMED`, `Answered`) and the progress types they draw (`Comparison`) |
+| `components` | The design system's components | design tokens; `src/meta` for the app name (`Logo`); the engine's constants and types (`LIVES`, `TIMED`, `Answered`) and the progress types they draw (`Comparison`); `src/content/text`, which splits card text into plain and code parts (`CardText`); and, for `ThemeSwitch` alone, the theme logic and storage type in `src/app-state` and the local storage in `src/progress/local`, because the switch reads and keeps the player's theme choice itself |
 | `components/start`, `components/play` | The start flow, and the play and result screens with their hooks: they wire the modules together | all of the above |
 | `app` | Routes, each rendering one screen; the root layout (fonts, theme script) and the 404 page | all of the above |
 
