@@ -54,6 +54,14 @@ export interface PlayScreenProps {
  */
 export const NEXT_ARRIVES_MS = 420;
 
+/**
+ * How long after the leave sheet has closed the play screen's live regions keep what they said when it
+ * opened (see `said` in RoundView). Long enough for a few rendered frames to pass after <main> stops being
+ * inert, so the regions are in the accessibility tree before their text changes, and short enough that the
+ * news is heard at once.
+ */
+export const SPOKEN_RELEASE_MS = 150;
+
 /** The keys the round acts on. Held down, only the first keydown counts (see the repeat guard in RoundView). */
 const HELD_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight", "Enter", "Escape"]);
 
@@ -338,14 +346,18 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // What the live regions say (the status, and in Timed the card announcer). While the leave sheet is open
   // <main> is inert and its live regions are not exposed, so a change under the sheet (time running out, the
   // next Timed card) would never be heard: they keep what they said when the sheet opened, and take what
-  // they say now one render after it has closed, when they can be heard again.
+  // they say now SPOKEN_RELEASE_MS after it has closed. A browser builds its accessibility tree once per
+  // rendered frame, so a change made in the same frame as the end of inert reaches it as a region that
+  // already holds the new text, which is never announced; the wait puts several frames between the two.
   const spoken = {
     status: timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : "",
     card: timed ? timedCardText(round) : "",
   };
   const [heldSpoken, setHeldSpoken] = useState<typeof spoken | null>(null);
   useEffect(() => {
-    if (!confirming) setHeldSpoken(null);
+    if (confirming) return;
+    const timer = setTimeout(() => setHeldSpoken(null), SPOKEN_RELEASE_MS);
+    return () => clearTimeout(timer);
   }, [confirming]);
   const said = heldSpoken ?? spoken;
 
@@ -498,7 +510,8 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   const requestLeave = () => {
     if (round.answers.length === 0) onLeave();
     else {
-      setHeldSpoken(spoken);
+      // A sheet opened again before the regions were released keeps what they last said, not what is new.
+      setHeldSpoken(said);
       setConfirming(true);
     }
   };

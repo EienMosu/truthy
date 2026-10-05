@@ -2,11 +2,12 @@
 // Review finding U25: the Timed clock keeps running while the "Leave round?" sheet is open, and <main> is
 // inert then, so its live regions are not exposed. Time running out under the sheet changed the status there
 // and was never heard. The live regions now keep what they said when the sheet opened, and say what is new
-// once the sheet has closed and <main> can be heard again.
+// SPOKEN_RELEASE_MS after the sheet has closed, so a few frames pass between <main> being exposed again and
+// the change (a browser builds its accessibility tree once per frame).
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { PlayScreen } from "@/components/play/PlayScreen";
+import { PlayScreen, SPOKEN_RELEASE_MS } from "@/components/play/PlayScreen";
 import { cardByStatement, harness, pendingFor, type Harness } from "../components/play/fixtures";
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
@@ -15,7 +16,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 beforeAll(() => {
   MotionGlobalConfig.skipAnimations = true;
 });
-afterEach(cleanup);
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 const TIME_UP = "Time is up. This card doesn't count.";
 let h: Harness;
@@ -42,6 +46,13 @@ function announcer(): string | null | undefined {
   return main().querySelector("[data-card-announcer]")?.textContent;
 }
 
+// The round's close button, not the sheet's own "Leave round" (which may still be on its way out).
+function closeButton(): HTMLElement {
+  const button = main().querySelector<HTMLElement>('button[aria-label="Leave round"]');
+  if (!button) throw new Error("no close button");
+  return button;
+}
+
 function answerRight() {
   const statement = document.querySelector("[data-statement] p:last-of-type")?.textContent;
   fireEvent.click(screen.getByRole("button", { name: cardByStatement(statement).answer ? "True" : "False" }));
@@ -64,24 +75,41 @@ describe("time up while the leave sheet is open", () => {
     expect(main().hasAttribute("inert")).toBe(true);
     expect({ status: status(), card: announcer() }).toEqual(before);
 
-    // The order of the changes: <main> stops being inert first, then the status says time is up.
-    const changes: string[] = [];
-    const note = (records: MutationRecord[]) => {
-      for (const record of records) changes.push(record.type === "attributes" ? "inert" : "status");
-    };
-    const observer = new MutationObserver(note);
-    observer.observe(main(), { attributes: true, attributeFilter: ["inert"] });
-    const region = main().querySelector('[role="status"]');
-    if (!region) throw new Error("no status");
-    observer.observe(region, { childList: true, characterData: true, subtree: true });
-
+    // The order of the changes: <main> stops being inert first, and the status says time is up only
+    // SPOKEN_RELEASE_MS later, not in the same frame.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     fireEvent.click(within(dialog).getByRole("button", { name: "Keep playing" }));
-    await waitFor(() => expect(status()).toBe(TIME_UP));
-    note(observer.takeRecords());
-    observer.disconnect();
-    expect(changes[0]).toBe("inert");
-    expect(changes.slice(1)).toContain("status");
+    expect(main().hasAttribute("inert")).toBe(false);
+    expect({ status: status(), card: announcer() }).toEqual(before);
+    act(() => vi.advanceTimersByTime(SPOKEN_RELEASE_MS - 1));
+    expect({ status: status(), card: announcer() }).toEqual(before);
+    act(() => vi.advanceTimersByTime(1));
+    expect(status()).toBe(TIME_UP);
     expect(announcer()).toBe("");
+  });
+
+  it("keeps what was last said when the sheet is opened again before the regions were released", async () => {
+    await startTimed();
+    answerRight();
+    act(() => h.run(700));
+    await screen.findByRole("button", { name: "True" });
+    const before = { status: status(), card: announcer() };
+
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    act(() => h.run(60_000));
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep playing" }));
+    act(() => vi.advanceTimersByTime(SPOKEN_RELEASE_MS / 2));
+    // Opened again in the wait: time up was never said, so it is still held back under the sheet.
+    fireEvent.click(closeButton());
+    expect(main().hasAttribute("inert")).toBe(true);
+    act(() => vi.advanceTimersByTime(SPOKEN_RELEASE_MS * 2));
+    expect({ status: status(), card: announcer() }).toEqual(before);
+
+    const sheets = screen.getAllByRole("dialog");
+    fireEvent.click(within(sheets[sheets.length - 1] as HTMLElement).getByRole("button", { name: "Keep playing" }));
+    act(() => vi.advanceTimersByTime(SPOKEN_RELEASE_MS));
+    expect(status()).toBe(TIME_UP);
   });
 
   it("keeps the verdict said before the sheet opened, and says it again only if it changed", async () => {
