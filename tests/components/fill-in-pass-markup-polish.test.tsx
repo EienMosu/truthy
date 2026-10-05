@@ -53,8 +53,11 @@ describe("FillInPass: the fields as a list of terms", () => {
     const deck = document.querySelector<HTMLElement>('[data-field="deck"]');
     expect(deck?.className).toContain("relative");
     expect(deck?.querySelector("dd")?.className.split(" ")).not.toContain("relative");
-    // The blank of the field being chosen keeps its positioned dd: its dashes sit at its top left.
-    expect(document.querySelector('[data-field="mode"] dd')?.className.split(" ")).toContain("relative");
+    // The dashes of the field being chosen sit in the dd's one grid cell, where its value will be, with no
+    // positioned dd for leaving dashes to be placed against.
+    const blankValue = document.querySelector('[data-field="mode"] dd');
+    expect(blankValue?.className.split(" ")).not.toContain("relative");
+    expect(blankValue?.querySelector("[data-pass-blank]")?.className).toContain("[grid-area:1/1]");
   });
 
   it("still goes back from the ready pass's class", () => {

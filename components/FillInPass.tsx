@@ -8,12 +8,14 @@
 // Every filled field is a way back to its step. With `unroll`, the ready pass grows down to the height of
 // the game ticket (the hand-off to /play, which shows its ticket in the same place).
 // A change of layout is one paper changing shape (design system 7, "Pass changes layout"): the band and the
-// body grow or shrink over 360 ms while the old block fades out and the new one fades in.
-import { motion, useReducedMotion } from "motion/react";
+// body grow or shrink over 360 ms while the old block fades out and the new one fades in, and the values on
+// both layouts travel to their new places.
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FIELD_COLUMNS } from "./BoardingPass";
 import { EASE, EASE_OUT } from "./easing";
 import { LogoMark } from "./Logo";
+import { travelPassValues } from "./passValueTravel";
 import { CloudIcon } from "./icons";
 
 export type PassStage = "destination" | "route" | "ready";
@@ -123,11 +125,23 @@ function TicketBand() {
   );
 }
 
+/** Dashes leave as a name heads for their field (100, delay 120) and come back on the way back (140, delay 220). */
+const DASHES_OUT = { opacity: 0, transition: { duration: 0.1, delay: 0.12, ease: EASE_OUT } };
+const DASHES_IN = { opacity: 1, transition: { duration: 0.14, delay: 0.22, ease: EASE } };
+
 /** Three dashes in a 20 tall box: a field not chosen yet. */
-function Blank({ now }: { now: boolean }) {
+function Blank({ now, reduced }: { now: boolean; reduced: boolean }) {
+  // Leaving dashes are only a picture: the field already says its value, so they no longer say "not chosen".
+  const present = useIsPresent();
   return (
-    <span className="absolute top-0 left-0 flex h-(--space-20) items-center gap-[5px]">
-      <span className="sr-only">not chosen</span>
+    <motion.span
+      data-pass-blank=""
+      className="flex h-(--space-20) items-center gap-[5px] [grid-area:1/1]"
+      initial={reduced ? false : { opacity: 0 }}
+      animate={DASHES_IN}
+      exit={reduced ? undefined : DASHES_OUT}
+    >
+      {present ? <span className="sr-only">not chosen</span> : null}
       {[0, 1, 2].map((i) => (
         <i
           key={i}
@@ -135,7 +149,7 @@ function Blank({ now }: { now: boolean }) {
           className={`block h-[3px] w-[14px] rounded-(--radius-tick) ${now ? "bg-(--color-ink)" : "bg-(--color-rule)"}`}
         />
       ))}
-    </span>
+    </motion.span>
   );
 }
 
@@ -156,6 +170,7 @@ interface FieldProps {
 /** One cell of the destination or route grid: label, then the value or the blank. */
 function Field({ field, label, value, code = false, now, first = false, choosable = true, hidden = false, onJump }: FieldProps) {
   const filled = value !== undefined;
+  const reduced = useReducedMotion() ?? false;
   return (
     <div
       data-field={field}
@@ -169,15 +184,20 @@ function Field({ field, label, value, code = false, now, first = false, choosabl
         {label}
       </dt>
       {/* A div in a list of terms holds only its term and value, so the way back is inside the value. The value
-          is positioned only while it holds the dashes: the way back then covers the whole field (review U69). */}
-      <dd className={`m-0 mt-[3px] h-(--space-20) ${filled ? "" : "relative"}`}>
+          is not positioned, so the way back covers the whole field (review U69). The value and the dashes share
+          one grid cell: leaving dashes fade out under the value that replaces them. Dashes already there when
+          the field first shows do not fade in; the block they are on does. */}
+      <dd className="m-0 mt-[3px] grid h-(--space-20) grid-cols-[minmax(0,1fr)]">
+        <AnimatePresence initial={false}>{filled ? null : <Blank key="blank" now={now} reduced={reduced} />}</AnimatePresence>
         {filled ? (
-          <span data-pass-value={field} className={code ? PASS_CODE : PASS_VALUE} style={hidden ? { opacity: 0 } : undefined}>
+          <span
+            data-pass-value={field}
+            className={`${code ? PASS_CODE : PASS_VALUE} justify-self-start [grid-area:1/1]`}
+            style={hidden ? { opacity: 0 } : undefined}
+          >
             {value}
           </span>
-        ) : (
-          <Blank now={now} />
-        )}
+        ) : null}
         {filled && !now && choosable ? (
           <button type="button" aria-label={changeLabel(field, value)} className={WAY_BACK} onClick={() => onJump(field)} />
         ) : null}
@@ -375,6 +395,13 @@ export function FillInPass({
   const bodyRef = useRef<HTMLDivElement>(null);
   const blockRef = useRef<HTMLDivElement>(null);
   const leavingRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Read when a layout change starts, so a name still travelling in from its card is left to its own copy.
+  const travellingRef = useRef(travelling);
+  travellingRef.current = travelling;
+  const stageRef = useRef(stage);
+  stageRef.current = stage;
+  const bandRef = useRef<HTMLDivElement>(null);
 
   // The block a change of layout leaves: a copy of it, as it was, fades out over the new one. It is out of the
   // reading order and takes no presses (inert), and lies after the new block, so the new values come first.
@@ -401,11 +428,24 @@ export function FillInPass({
   // at rest the quiet line's words reach a little above it. The move outlasts the fading copy it is measured
   // from, so its end is a timer of its own.
   const morphEnd = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const endTravel = useRef<() => void>(() => {});
   const leavingId = leaving?.id;
   useLayoutEffect(() => {
     const body = bodyRef.current;
-    const from = leavingRef.current?.getBoundingClientRect().height;
-    const to = blockRef.current?.getBoundingClientRect().height;
+    const root = rootRef.current;
+    const leavingBlock = leavingRef.current;
+    const block = blockRef.current;
+    // The values on both layouts travel to their new places (./passValueTravel.ts). The travel outlasts the
+    // fading copy of the old block, so only a new change of layout ends it early.
+    if (leavingId !== undefined && root && leavingBlock && block) {
+      endTravel.current();
+      const band = bandRef.current;
+      const bandTo = band ? parseFloat(getComputedStyle(band).getPropertyValue(stageRef.current === "ready" ? "--size-carrier" : "--size-carrier-compact")) : NaN;
+      const shift = band && Number.isFinite(bandTo) ? bandTo - band.getBoundingClientRect().height : 0;
+      endTravel.current = travelPassValues(root, leavingBlock, block, shift, travellingRef.current);
+    }
+    const from = leavingBlock?.getBoundingClientRect().height;
+    const to = block?.getBoundingClientRect().height;
     if (leavingId === undefined || !body || from === undefined || to === undefined || from === to) return;
     clearTimeout(morphEnd.current);
     body.style.overflow = "hidden";
@@ -417,10 +457,16 @@ export function FillInPass({
       body.style.removeProperty("overflow");
     }, MORPH_MS + 60);
   }, [leavingId]);
-  useLayoutEffect(() => () => clearTimeout(morphEnd.current), []);
+  useLayoutEffect(
+    () => () => {
+      clearTimeout(morphEnd.current);
+      endTravel.current();
+    },
+    [],
+  );
 
   return (
-    <div data-fill-in-pass={stage} className={["relative isolate", className].filter(Boolean).join(" ")}>
+    <div ref={rootRef} data-fill-in-pass={stage} className={["relative isolate", className].filter(Boolean).join(" ")}>
       <div
         className={[
           "relative overflow-hidden rounded-(--radius-card) bg-(--color-surface-raised) text-(--color-ink)",
@@ -430,6 +476,7 @@ export function FillInPass({
       >
         {/* The band grows from 30 to 44 with the paper (no CSS transition runs under reduced motion). */}
         <div
+          ref={bandRef}
           data-pass-band=""
           className={`overflow-hidden transition-[height] duration-(--duration-t3) ease-(--easing-ease) ${ready ? "h-(--size-carrier)" : "h-(--size-carrier-compact)"}`}
         >
