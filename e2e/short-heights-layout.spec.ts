@@ -321,6 +321,38 @@ for (const viewport of [SIDEWAYS[2], ZOOM_200, ZOOM_300]) {
   });
 }
 
+// ---------- screens without a column of their own ----------
+
+// Review finding M4: the page not found and a round that failed to load have no column of their own to scroll. Where
+// one is taller than the screen (at 300 percent) it keeps its content's height and the frame scrolls, so every part
+// is reached and the deck's card does not run on into the gap above "Try again".
+for (const viewport of SHORT) {
+  test.describe(`screens without a column on a ${name(viewport)} screen`, () => {
+    test.use({ viewport });
+
+    test("the page not found: its heading, its text and Back to start can be reached", async ({ page }) => {
+      await page.goto("/no-such-page");
+      await reach(page, page.getByRole("heading", { name: "Page not found" }), true);
+      await reach(page, page.getByText(/^There is no card at this address\./), true);
+      await reach(page, page.getByRole("link", { name: "Back to start" }), true);
+    });
+
+    test("a round that failed to load: the card ends 12 above the action row, and both can be reached", async ({ page }) => {
+      await page.route(`**/decks/${CLF_ID}.json*`, (route) => route.abort());
+      await openPendingRound(page, "classic");
+      const card = page.getByRole("alert").filter({ hasText: "This deck didn't load" });
+      await expect(card).toBeVisible();
+      await reach(page, card, true);
+      const retry = page.getByRole("button", { name: "Try again" });
+      await reach(page, retry);
+      const cardBox = await card.boundingBox();
+      const rowBox = await retry.locator("xpath=..").boundingBox();
+      expect(cardBox !== null && rowBox !== null, "the card and the action row have boxes").toBe(true);
+      expect(cardBox!.y + cardBox!.height + 12, "the card ends 12 above the action row").toBeLessThanOrEqual(rowBox!.y + 0.5);
+    });
+  });
+}
+
 // ---------- the result ----------
 
 /** A Streak round that ends on its second card: one right, one wrong, so one card to review. */

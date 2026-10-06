@@ -286,12 +286,15 @@ function Loading({ onLeave }: { onLeave: () => void }) {
   );
 }
 
+// On a short screen (at 300 percent zoom) the card is taller than the room between the header and the action row:
+// the card's section and the screen keep their content's height then, so the frame scrolls (globals.css) and the
+// card never runs on into the gap above "Try again".
 function LoadFailed({ onRetry, onLeave }: { onRetry: () => void; onLeave: () => void }) {
   return (
-    <main className="flex min-h-0 flex-1 flex-col">
+    <main className="flex min-h-0 flex-1 flex-col short:min-h-fit">
       <SkyBackdrop />
       <Header onLeave={onLeave} />
-      <section className="relative mt-(--space-12) min-h-0 flex-1">
+      <section className="relative mt-(--space-12) min-h-0 flex-1 short:min-h-fit">
         <div role="alert" className="rounded-(--radius-card) bg-(--color-surface-raised) p-(--space-20) text-(--color-ink) shadow-(--elevation-ticket)">
           <h1 className="m-0 font-(family-name:--type-step-title-family) text-(length:--type-step-title-size) leading-(--type-step-title-line-height) font-(--type-step-title-weight) tracking-(--type-step-title-letter-spacing)">
             This deck didn&apos;t load

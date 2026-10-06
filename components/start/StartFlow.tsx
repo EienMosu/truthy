@@ -644,8 +644,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       ref={mainRef}
       className={[
         "flex min-h-0 flex-1 flex-col",
-        // Short screens: the column scrolls, over the whole frame (its padding moves inside, so the top 52 and
-        // bottom 34 scroll with the content and every position stays the same at the top of the column).
+        // Short screens: the column scrolls, over the whole frame (its padding moves inside, so the frame's top 8
+        // and bottom 12 scroll with the content and every position stays the same at the top of the column).
         "short:-mx-(--size-gutter) short:-mt-(--size-safe-top) short:-mb-(--size-safe-bottom) short:overflow-y-auto",
         "short:px-(--size-gutter) short:pt-(--size-safe-top) short:pb-(--size-safe-bottom)",
       ].join(" ")}
