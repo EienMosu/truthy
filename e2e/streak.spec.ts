@@ -38,10 +38,14 @@ async function startStreak(page: Page): Promise<Map<string, boolean>> {
   return deckAnswers(page, CLF_ID);
 }
 
-/** Answers card `number` and checks the verdict; a right answer goes on with "Next card". */
+/**
+ * Answers card `number` and checks the verdict; a right answer goes on with "Next card". Every card before it
+ * was answered right, so a wrong one ends the streak at `number - 1`, which the status says after the verdict.
+ */
 async function play(page: Page, answers: Map<string, boolean>, number: number, right: boolean, previous?: string): Promise<Played> {
   const played = await answerCard(page, answers, number, right, previous);
-  await expect(verdict(page)).toHaveText(verdictFor(played.given, played.truth));
+  const end = right ? "" : ` Streak ended at ${number - 1}.`;
+  await expect(verdict(page)).toHaveText(`${verdictFor(played.given, played.truth)}${end}`);
   if (right) {
     await expect(nextCard(page)).toBeVisible();
     await nextCard(page).click();
@@ -65,7 +69,7 @@ test("a Streak round ends on the first wrong answer and shows its result", async
 
   const wrong = await answerCard(page, answers, 4, false, played.at(-1)?.statement);
   played.push(wrong);
-  await expect(verdict(page)).toHaveText(verdictFor(wrong.given, wrong.truth));
+  await expect(verdict(page)).toHaveText(`${verdictFor(wrong.given, wrong.truth)} Streak ended at 3.`);
   await expect(header(page)).toHaveAccessibleName(/^Streak ended at 3/);
   await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
   await expect(nextCard(page)).toHaveCount(0);
@@ -156,7 +160,7 @@ for (const gap of [150, 300]) {
         await page.waitForTimeout(100);
 
         await expect(page).toHaveURL(/\/play$/);
-        await expect(verdict(page)).toHaveText(verdictFor(!truth, truth));
+        await expect(verdict(page)).toHaveText(`${verdictFor(!truth, truth)} Streak ended at 0.`);
         await expect(page.getByRole("button", { name: "See results" })).toBeVisible();
         await expect(page.getByRole("heading", { name: "Round complete" })).toHaveCount(0);
         expect(await page.locator("[data-statement] > p").last().textContent()).toContain(statement);

@@ -36,7 +36,7 @@ test("a code fragment is set in the mono face, without backticks, on the card, t
 
   // A wrong answer ends the Streak: the slip explains it, then the result lists the card.
   await page.getByRole("button", { name: truth ? "False" : "True", exact: true }).click();
-  await expect(verdict(page)).toHaveText(verdictFor(!truth, truth));
+  await expect(verdict(page)).toHaveText(`${verdictFor(!truth, truth)} Streak ended at 0.`);
   await expectCodeShown(page.locator("[data-slip] p").last());
 
   await seeResults(page);

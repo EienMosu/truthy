@@ -126,7 +126,10 @@ export function verdict(page: Page): Locator {
   return page.locator("main").getByRole("status");
 }
 
-/** What the live region says after an answer (verdictText in components/play/PlayScreen.tsx). */
+/**
+ * What the live region says after an answer (verdictText in components/play/PlayScreen.tsx). In Streak and Three
+ * lives a wrong answer adds what it did to the round (roundStatus), which the specs of those modes append.
+ */
 export function verdictFor(given: boolean, truth: boolean): string {
   return `${given === truth ? "Correct" : "Not quite"}. The answer is ${truth ? "True" : "False"}.`;
 }

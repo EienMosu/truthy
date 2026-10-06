@@ -33,10 +33,12 @@ async function toDecidingAnswer(page: Page, mode: "classic" | "streak" | "lives"
   } else {
     // Streak ends on the first wrong answer, Three lives on the third.
     const wrongs = mode === "streak" ? 1 : 3;
+    // What the status says after each wrong answer's verdict (review finding U50).
+    const news = mode === "streak" ? [" Streak ended at 0."] : [" Life lost, 2 left.", " Last life.", " Out of lives."];
     let previous: Played | undefined;
     for (let n = 1; n <= wrongs; n += 1) {
       previous = await answerCard(page, answers, n, false, previous?.statement);
-      await expect(verdict(page)).toHaveText(verdictFor(previous.given, previous.truth));
+      await expect(verdict(page)).toHaveText(`${verdictFor(previous.given, previous.truth)}${news[n - 1]}`);
       if (n < wrongs) await page.getByRole("button", { name: "Next card" }).click();
     }
   }

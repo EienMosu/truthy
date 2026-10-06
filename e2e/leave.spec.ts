@@ -112,7 +112,7 @@ async function decidedStreak(page: Page): Promise<void> {
   let previous: string | undefined;
   for (let number = 1; number <= 3; number += 1) {
     const card = await answerCard(page, answers, number, number < 3, previous);
-    await expect(verdict(page)).toHaveText(verdictFor(card.given, card.truth));
+    await expect(verdict(page)).toHaveText(`${verdictFor(card.given, card.truth)}${number < 3 ? "" : " Streak ended at 2."}`);
     if (number < 3) await page.getByRole("button", { name: "Next card" }).click();
     previous = card.statement;
   }

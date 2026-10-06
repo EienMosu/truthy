@@ -32,7 +32,7 @@ import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
 import { plainText } from "@/src/content/text";
 import { SWIPE } from "@/src/input/swipe";
-import { TIMED, currentCard, isDecided, lastAnswer, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
+import { TIMED, currentCard, isDecided, lastAnswer, livesLeft, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
 import { LeaveDialog } from "./LeaveDialog";
 import { leavesSomething, saveLeftRound } from "./leave";
 import { ResultView } from "./ResultView";
@@ -85,6 +85,22 @@ const SCROLLER: CSSProperties = {
 /** What the live region says after an answer: "Correct. The answer is False." and, past the record, " New best." */
 export function verdictText(correct: boolean, answer: boolean, newBest = false): string {
   return `${correct ? "Correct" : "Not quite"}. The answer is ${answer ? "True" : "False"}.${newBest ? " New best." : ""}`;
+}
+
+/**
+ * What the live region says after the verdict when a wrong answer changes the round (review finding U50): in
+ * Three lives "Life lost, 2 left.", "Last life." or "Out of lives.", in Streak "Streak ended at 3.". A sighted
+ * player sees the heart struck through or the streak end as the stamp lands, but the header that says so is an
+ * image whose label is not live, so a screen reader would only hear it by going back to the header. Empty after
+ * a right answer, in Classic and in Timed, which says its own end.
+ */
+export function roundStatus(round: RoundState): string {
+  if (lastAnswer(round)?.correct !== false) return "";
+  if (round.mode === "streak") return `Streak ended at ${scoreOf("streak", round.answers)}.`;
+  if (round.mode !== "lives") return "";
+  const left = livesLeft(round);
+  if (left === 0) return "Out of lives.";
+  return left === 1 ? "Last life." : `Life lost, ${left} left.`;
 }
 
 /**
@@ -352,7 +368,11 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
   // rendered frame, so a change made in the same frame as the end of inert reaches it as a region that
   // already holds the new text, which is never announced; the wait puts several frames between the two.
   const spoken = {
-    status: timed ? timedStatus(round) : last ? verdictText(last.correct, last.card.answer, newBest) : "",
+    status: timed
+      ? timedStatus(round)
+      : last
+        ? [verdictText(last.correct, last.card.answer, newBest), roundStatus(round)].filter(Boolean).join(" ")
+        : "",
     card: timed ? timedCardText(round) : "",
   };
   const [heldSpoken, setHeldSpoken] = useState<typeof spoken | null>(null);

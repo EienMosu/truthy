@@ -49,11 +49,13 @@ test("a Three lives round ends on the third wrong answer", async ({ page }) => {
   await expect(page.locator('[data-heart="full"]')).toHaveCount(3);
 
   const wrongOn = [2, 4, 5];
+  // What the status says after the verdict when a life goes (review finding U50).
+  const lifeNews: Record<number, string> = { 2: " Life lost, 2 left.", 4: " Last life.", 5: " Out of lives." };
   const played: Played[] = [];
   for (let number = 1; number <= 5; number += 1) {
     const card = await answerCard(page, answers, number, !wrongOn.includes(number), played.at(-1)?.statement);
     played.push(card);
-    await expect(verdict(page)).toHaveText(verdictFor(card.given, card.truth));
+    await expect(verdict(page)).toHaveText(`${verdictFor(card.given, card.truth)}${lifeNews[number] ?? ""}`);
     if (number === 2) {
       await expect(header(page)).toHaveAccessibleName(/^2 of 3 lives left\./);
       await expectHearts(page, ["full", "full", "lost"]);

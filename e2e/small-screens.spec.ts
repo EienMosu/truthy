@@ -307,7 +307,8 @@ test.describe("the New best of a result on a 320 by 568 screen", () => {
       const truth = await livesCard(page, answers, n);
       const given = [6, 15, 21].includes(n) ? !truth : truth;
       await page.getByRole("button", { name: given ? "True" : "False", exact: true }).click();
-      await expect(verdict(page)).toHaveText(verdictFor(given, truth));
+      const lifeNews = n === 6 ? " Life lost, 2 left." : n === 15 ? " Last life." : n === 21 ? " Out of lives." : "";
+      await expect(verdict(page)).toHaveText(`${verdictFor(given, truth)}${lifeNews}`);
       await page.getByRole("button", { name: n === 21 ? "See results" : "Next card" }).click();
     }
     await expectNewBestInsidePass(page, "21 cards");

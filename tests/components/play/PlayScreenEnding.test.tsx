@@ -112,7 +112,7 @@ describe("PlayScreen ending: Streak", () => {
     await start(harness(pendingFor("streak")));
     give(false);
     const verdict = status();
-    expect(verdict).toMatch(/^Not quite\. The answer is (True|False)\.$/);
+    expect(verdict).toMatch(/^Not quite\. The answer is (True|False)\. Streak ended at 0\.$/);
     h.advance(150);
     fireEvent.click(await screen.findByRole("button", { name: "See results" }));
     expect(screen.queryByRole("heading", { name: "Round complete" })).toBeNull();

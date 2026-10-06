@@ -291,7 +291,7 @@ Motion (the library) drives the start flow's transitions and the card's reveal. 
 
 ### Accessibility
 
-Buttons are a full alternative to swiping. True and False, and correct and wrong, are never distinguished by colour alone. Touch targets are at least 48 px. Focus is visible. The verdict is announced to assistive technology. Text contrast is at least 4.5:1 in both themes.
+Buttons are a full alternative to swiping. True and False, and correct and wrong, are never distinguished by colour alone. Touch targets are at least 48 px. Focus is visible. The verdict is announced to assistive technology, and in Three lives and Streak so is a lost life and the end of the round. Text contrast is at least 4.5:1 in both themes.
 
 ### Installability
 
