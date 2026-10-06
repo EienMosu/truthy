@@ -104,11 +104,14 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
   }, [present]);
 
   return (
-    <div className="fixed inset-0 z-50">
+    // The sheet sits at the foot of the screen. Where it does not fit (a page zoomed to 300 percent) the layer
+    // scrolls, both ways, so its title and both actions can be reached: the sheet keeps the 320 px of the
+    // smallest phone, as the page under it does, and grows the layer upwards instead of running off the top.
+    <div className="fixed inset-0 z-50 overflow-auto overscroll-contain">
       <motion.div
         aria-hidden="true"
         data-scrim=""
-        className="absolute inset-0 bg-(--color-scrim)"
+        className="fixed inset-0 bg-(--color-scrim)"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -117,7 +120,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
           if (now() - shownAt >= SWIPE.settleMs) onStay();
         }}
       />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto w-full max-w-(--app-max-width) px-(--size-gutter) pb-(--size-safe-bottom)">
+      <div className="pointer-events-none relative mx-auto flex min-h-full w-full max-w-(--app-max-width) min-w-[320px] flex-col justify-end px-(--size-gutter) pt-(--space-12) pb-(--size-safe-bottom)">
         <motion.section
           role="dialog"
           aria-modal="true"
