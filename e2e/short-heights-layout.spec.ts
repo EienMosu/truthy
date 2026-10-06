@@ -34,6 +34,11 @@ const name = (viewport: { width: number; height: number }) => `${viewport.width}
  */
 async function reach(page: Page, target: Locator, whole = false): Promise<{ x: number; y: number }> {
   await target.scrollIntoViewIfNeeded();
+  return inReach(page, target, whole);
+}
+
+/** What reach checks, where `target` lies now, scrolling nothing: for a scroll the screen should have made itself. */
+async function inReach(page: Page, target: Locator, whole = false): Promise<{ x: number; y: number }> {
   const viewport = page.viewportSize();
   if (viewport === null) throw new Error("No viewport");
   const box = await target.boundingBox();
@@ -309,9 +314,22 @@ for (const viewport of SHORT) {
       await reach(page, list.getByRole("heading", { name: "Missed cards" }), true);
       await reach(page, list.getByText("1 to review", { exact: true }), true);
       await reach(page, list.getByRole("listitem"), true);
-      await tap(page, list.getByRole("button", { name: /Why/ }));
+      // Review finding M1: the opened Why scrolls its explanation into view by itself. Its button is put at the foot
+      // of the screen first, so the explanation opens below the screen, and nothing else scrolls before it is read.
+      const why = list.getByRole("button", { name: /Why/ });
+      await why.evaluate((element) => element.scrollIntoView({ block: "end" }));
+      await tap(page, why);
       await page.waitForTimeout(400);
-      await reach(page, list.getByRole("listitem"), true);
+      const item = list.getByRole("listitem");
+      const itemBox = await item.boundingBox();
+      if (itemBox !== null && itemBox.height + 16 <= viewport.height) await inReach(page, item, true);
+      else {
+        const explanation = await list.getByRole("region", { name: /^Why/ }).locator("p").first().boundingBox();
+        expect(explanation, "the opened explanation has a box").not.toBeNull();
+        expect(explanation!.y, "the opened explanation starts on screen").toBeGreaterThanOrEqual(-0.5);
+        expect(explanation!.y + 22, "its first line is on screen").toBeLessThanOrEqual(viewport.height + 0.5);
+      }
+      await reach(page, item, true);
       await reach(page, page.getByRole("button", { name: "Choose another route" }));
       await tap(page, page.getByRole("button", { name: "Play again" }));
       await expect(page.getByRole("heading", { name: "Round complete" })).toHaveCount(0);

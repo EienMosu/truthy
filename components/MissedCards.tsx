@@ -80,6 +80,18 @@ const EXPLANATION =
 // How many frames the scroll to an opened Why waits for the row to reach its full height: about a second.
 const GROWN_WAIT_FRAMES = 60;
 
+// The box that scrolls an opened Why into view: the list, or, where the list holds all of its content and has
+// nothing to scroll (under 568 tall the result scrolls as one column, design system 5.15), the nearest box
+// around it that scrolls. The list when neither scrolls.
+function scrollerFor(list: HTMLElement): HTMLElement {
+  if (list.scrollHeight > list.clientHeight + 1) return list;
+  for (let box = list.parentElement; box; box = box.parentElement) {
+    const { overflowY } = getComputedStyle(box);
+    if ((overflowY === "auto" || overflowY === "scroll") && box.scrollHeight > box.clientHeight + 1) return box;
+  }
+  return list;
+}
+
 function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HTMLOListElement | null> }) {
   const reduced = useReducedMotion() ?? false;
   const [open, setOpen] = useState(false);
@@ -90,9 +102,10 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
   const regionId = useId();
   const number = pad2(item.number);
 
-  // Once the explanation has grown (380 ms; with reduced motion there is no transition), scroll it into the list:
-  // the whole item, 16 px clear of the foot of the list, as far as that leaves the first line of the explanation
-  // in view. A card taller than the list (a long explanation on a short phone) gives up its statement and its
+  // Once the explanation has grown (380 ms; with reduced motion there is no transition), scroll it into the list
+  // (or into the column the list lies in, see scrollerFor): the whole item, 16 px clear of the foot of the list,
+  // as far as that leaves the first line of the explanation in view. What lies under the scroller's scroll
+  // padding does not count as in view. A card taller than the list (a long explanation on a short phone) gives up its statement and its
   // Why row, never the start of the explanation. The explanation is measured at its own height, which does not
   // depend on how far the row has grown, but the list can only scroll as far as its content then reaches: a
   // browser that has not drawn the transition by the time the timer fires (a slow phone, a busy test runner)
@@ -115,11 +128,13 @@ function MissedItem({ item, listRef }: { item: MissedCard; listRef: RefObject<HT
         request = requestAnimationFrame(scroll);
         return;
       }
-      const frame = list.getBoundingClientRect();
+      const scroller = scrollerFor(list);
+      const frame = scroller.getBoundingClientRect();
+      const { scrollPaddingTop, scrollPaddingBottom } = getComputedStyle(scroller);
       const below = parseFloat(getComputedStyle(why).marginBottom) + parseFloat(getComputedStyle(element).paddingBottom);
-      const over = explanation.bottom + (below || 0) + 16 - frame.bottom;
-      const toExplanation = explanation.top - frame.top;
-      if (over > 0) list.scrollBy?.({ top: Math.min(over, toExplanation), behavior: reduced ? "auto" : "smooth" });
+      const over = explanation.bottom + (below || 0) + 16 - (frame.bottom - (parseFloat(scrollPaddingBottom) || 0));
+      const toExplanation = explanation.top - (frame.top + (parseFloat(scrollPaddingTop) || 0));
+      if (over > 0) scroller.scrollBy?.({ top: Math.min(over, toExplanation), behavior: reduced ? "auto" : "smooth" });
     };
     const timer = setTimeout(scroll, reduced ? 50 : 380);
     return () => {

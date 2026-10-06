@@ -112,11 +112,13 @@ describe("MissedCards", () => {
     // jsdom has no layout: the list is 200 tall, the explanation (with its link) runs from 150 to 300, and the
     // row that holds it is closed (0 tall) until the test lets it grow.
     let grown = false;
-    function layout(): HTMLElement {
+    // `column`: a box around the list that scrolls, 200 tall; the list then holds all of its content, 400 tall.
+    function layout(column?: Element): HTMLElement {
       const region = screen.getByRole("region", { name: "Why, card 09" });
       const why = region.firstElementChild?.firstElementChild;
       vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
-        if (this.tagName === "OL") return DOMRect.fromRect({ x: 0, y: 0, width: 300, height: 200 });
+        if (this === column) return DOMRect.fromRect({ x: 0, y: 0, width: 300, height: 200 });
+        if (this.tagName === "OL") return DOMRect.fromRect({ x: 0, y: 0, width: 300, height: column ? 400 : 200 });
         if (this === why) return DOMRect.fromRect({ x: 0, y: 150, width: 300, height: 150 });
         if (this === region) return DOMRect.fromRect({ x: 0, y: 150, width: 300, height: grown ? 150 : 0 });
         return DOMRect.fromRect();
@@ -146,6 +148,28 @@ describe("MissedCards", () => {
       // 16 px clear of the foot of the list: 300 + 16 - 200.
       expect(list.scrollBy).toHaveBeenCalledTimes(1);
       expect(list.scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: 116 }));
+    });
+
+    // Review finding M1: under 568 tall the list holds all of its content and the result scrolls as one column, so
+    // scrolling the list did nothing and the opened explanation stayed below the screen.
+    it("scrolls the column around the list when the list has nothing to scroll", () => {
+      render(
+        <div data-column="" style={{ overflowY: "auto" }}>
+          <MissedCards missed={MISSED} />
+        </div>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Why, card 09" }));
+      grown = true;
+      const column = document.querySelector<HTMLElement>("[data-column]")!;
+      const list = layout(column);
+      column.scrollBy = vi.fn();
+      Object.defineProperties(list, { scrollHeight: { value: 400 }, clientHeight: { value: 400 } });
+      Object.defineProperties(column, { scrollHeight: { value: 900 }, clientHeight: { value: 200 } });
+      act(() => vi.advanceTimersByTime(500));
+      expect(list.scrollBy).not.toHaveBeenCalled();
+      // 16 px clear of the foot of the column: 300 + 16 - 200.
+      expect(column.scrollBy).toHaveBeenCalledTimes(1);
+      expect(column.scrollBy).toHaveBeenCalledWith(expect.objectContaining({ top: 116 }));
     });
 
     it("scrolls after about a second even if the row never reports its full height", () => {
