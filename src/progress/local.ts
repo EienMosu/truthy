@@ -1,6 +1,7 @@
 // The progress store on the device: one versioned key in localStorage (spec section 7).
-// Storage that is missing, blocked, full or corrupt never reaches the player: load gives
-// empty progress and save does nothing.
+// Storage that is missing, blocked, full or corrupt never reaches the player: load gives the parts of
+// the stored value that still read (empty progress when none do), and save does nothing when it cannot
+// write or cannot first keep an unreadable value aside.
 
 import { emptyProgress, parseProgress, readProgress, type Progress } from "./progress";
 
