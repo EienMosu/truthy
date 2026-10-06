@@ -39,10 +39,6 @@ const GROUPS_GIVE_WAY = [
   "docker-fundamentals/REG",
   "docker-fundamentals/SEC",
   "linux-command-line/SYS",
-  "nextjs-rendering/DAT",
-  "nextjs-rendering/REQ",
-  "nextjs-rendering/REV",
-  "nextjs-rendering/STR",
   "terraform-associate/MOD",
   "typescript-fundamentals/ENM",
 ];
