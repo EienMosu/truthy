@@ -2,7 +2,7 @@
 // Review finding U50: in Three lives and Streak the header says a lost life and the end of the round, but the
 // header is an image whose label is not live, so a screen reader heard only "Not quite. The answer is X." The
 // play screen's polite status now says it after the verdict, at the moment it happens, in the same region.
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
@@ -51,13 +51,15 @@ async function next() {
 }
 
 describe("the play screen's status says what a wrong answer did to the round", () => {
-  it("Three lives: a lost life, the last life and the end, in the one status region, without taking focus", async () => {
+  it("Three lives: a lost life, the last life and the end, in one status region, focus moving on as before", async () => {
     await start("lives");
     const region = statusRegion();
 
     let verdict = give(false);
     expect(region.textContent).toBe(`${verdict} Life lost, 2 left.`);
-    expect(document.activeElement).not.toBe(region);
+    const action = await screen.findByRole("button", { name: "Next card" });
+    await waitFor(() => expect(document.activeElement).toBe(action), { timeout: 1500 });
+    expect(region.textContent).toBe(`${verdict} Life lost, 2 left.`);
     await next();
 
     verdict = give(true);
@@ -71,8 +73,9 @@ describe("the play screen's status says what a wrong answer did to the round", (
     verdict = give(false);
     expect(statusRegion()).toBe(region);
     expect(region.textContent).toBe(`${verdict} Out of lives.`);
-    expect(document.activeElement).not.toBe(region);
-    expect(await screen.findByRole("button", { name: "See results" })).toBeTruthy();
+    const results = await screen.findByRole("button", { name: "See results" });
+    await waitFor(() => expect(document.activeElement).toBe(results), { timeout: 1500 });
+    expect(region.textContent).toBe(`${verdict} Out of lives.`);
   });
 
   it("Streak: the end with the streak it reached", async () => {
