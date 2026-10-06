@@ -103,4 +103,17 @@ describe("LeaveDialog's layer while the sheet moves", () => {
     expect(layer()?.className).not.toContain("overflow-auto");
     await waitFor(() => expect(layer()).toBeNull(), { timeout: 2000 });
   });
+
+  // Asked for again while it sinks, the sheet comes back as the same instance and rises from where it is: its
+  // layer waits for it to be still again before it scrolls.
+  it("does not scroll while a sheet asked for again on its way out rises back", async () => {
+    const { rerender } = setup();
+    await waitFor(() => expect(layer()?.className).toContain("overflow-auto"), { timeout: 2000 });
+    rerender(false);
+    expect(layer()?.className).toContain("overflow-hidden");
+    rerender(true);
+    expect(layer()?.className).toContain("overflow-hidden");
+    expect(layer()?.className).not.toContain("overflow-auto");
+    await waitFor(() => expect(layer()?.className).toContain("overflow-auto"), { timeout: 2000 });
+  });
 });

@@ -73,6 +73,11 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
   // scrollable for the 360 ms the sheet moves, so a classic scrollbar would flash and the centred sheet shift
   // sideways. The layer scrolls only while the sheet is at rest.
   const [atRest, setAtRest] = useState(false);
+  // A sheet asked for again while it sinks comes back as the same instance and rises from where it is, so
+  // leaving the page takes its rest away until it is still again.
+  useEffect(() => {
+    if (!present) setAtRest(false);
+  }, [present]);
   const stay = useRef(onStay);
   useEffect(() => {
     stay.current = onStay;
