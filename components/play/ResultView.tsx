@@ -85,13 +85,19 @@ export function useRecordedRound(round: RoundState, progressStore: () => Progres
 // under "Play again" (opaque, like the play screen's pills), so the ticket's shadow still shows in the gap
 // above it; it stops above the quiet button, which has no background to hide the ticket. What lies under the
 // pill does not count as in view when the result scrolls something into view (scroll padding).
+// On a short screen (under 568 tall: a phone held sideways, a zoomed page) the stage would show a sliver of
+// the ticket between the header and the pill, so the result scrolls as one column, as the start flow does: the
+// header, the whole ticket with its whole missed list, then the two actions, nothing lying under anything.
+// The bottom and the scroll padding do nothing there (a static box, not a scroller); the padding goes to none.
 const UNDER_PILL = "(var(--space-12) + var(--size-pill))";
 const SCROLLER: CSSProperties = {
   bottom: `calc(-1 * ${UNDER_PILL})`,
-  paddingBottom: `calc${UNDER_PILL}`,
   scrollPaddingBottom: `calc${UNDER_PILL}`,
   scrollbarWidth: "none",
 };
+const SCROLLER_LAYOUT =
+  "absolute inset-x-0 top-0 overflow-y-auto overscroll-contain pb-[calc(var(--space-12)+var(--size-pill))] " +
+  "short:static short:overflow-visible short:pb-0";
 
 export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome, now }: ResultViewProps) {
   const outcome = useRecordedRound(round, progressStore);
@@ -133,7 +139,14 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome, 
   }, []);
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col">
+    <main
+      className={[
+        "flex min-h-0 flex-1 flex-col",
+        // Short screens: the column scrolls over the whole frame, its padding moving inside (as in the start flow).
+        "short:-mx-(--size-gutter) short:-mt-(--size-safe-top) short:-mb-(--size-safe-bottom) short:overflow-y-auto",
+        "short:px-(--size-gutter) short:pt-(--size-safe-top) short:pb-(--size-safe-bottom)",
+      ].join(" ")}
+    >
       <SkyBackdrop />
       <header className="relative z-10 flex h-(--size-header) flex-none items-center gap-(--space-12)">
         <RoundButton label="Close results" className={waiting} onClick={whenArrived(onHome)}>
@@ -153,11 +166,11 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome, 
           ring={copy.ring}
         />
       </header>
-      <section aria-labelledby={headingId} className="relative mt-(--space-12) min-h-0 flex-1">
+      <section aria-labelledby={headingId} className="relative mt-(--space-12) min-h-0 flex-1 short:flex-none">
         <h1 id={headingId} ref={headingRef} tabIndex={-1} className="sr-only">
           Round complete
         </h1>
-        <div ref={scrollerRef} className="absolute inset-x-0 top-0 overflow-y-auto overscroll-contain" style={SCROLLER}>
+        <div ref={scrollerRef} className={SCROLLER_LAYOUT} style={SCROLLER}>
           <BoardingPass
             className="grid min-h-full grid-rows-[max-content_minmax(var(--size-lower),1fr)]"
             from={{ code: ticket.deckCode, name: ticket.deckName }}
@@ -165,7 +178,7 @@ export function ResultView({ round, ticket, progressStore, onPlayAgain, onHome, 
             fields={copy.fields}
             jolt={landed && comparison.kind === "new-best"}
             shortLegs
-            lower={<MissedCards missed={missedCards(round.answers)} className="contain-size" />}
+            lower={<MissedCards missed={missedCards(round.answers)} className="contain-size short:contain-none" />}
           >
             <ScoreBlock
               score={result.score}

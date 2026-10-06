@@ -777,7 +777,11 @@ for (const viewport of [
       await openHome(page);
       await tapThrough(page, ROUTE_BY_TAPS.slice(0, 1));
       const card = page.locator("[data-step]:not([inert])").getByRole("button", { name: CLF_SECURITY.platform });
-      const tapY = 180;
+      // The finger goes where the Area field of the pass lies while the column is at its top, so the step that
+      // arrives brings that way back under it, whatever the frame's padding on a short screen.
+      const areaField = await page.getByRole("button", { name: /^Change area, now / }).boundingBox();
+      if (areaField === null) throw new Error("The Area field is not on screen");
+      const tapY = Math.round(areaField.y + areaField.height / 2);
       // The cards of the step that arrived rise 24 px into place, one after another (about 400 ms in all, more
       // on a busy runner): scroll only once this one has stopped, or the scroll is off by what it had left to
       // rise (6.7 px in CI). Stopped means the same place for five frames in a row.

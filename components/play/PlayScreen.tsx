@@ -75,12 +75,15 @@ const CARD_TRANSFORM: CSSProperties = {
 // scroller runs on under the action row, so at 390 by 844 most tickets fit and the ticket's shadow shows
 // in the gap above the buttons, as in the mockup; its side padding lets a dragged card reach the frame edge.
 // What lies in its bottom padding is hidden under the row, so the screen scrolls what the player needs
-// above it (see ticketScroll).
-const SCROLLER: CSSProperties = {
-  bottom: "calc(-1 * (var(--space-12) + var(--size-actions)))",
-  paddingBottom: "calc(var(--space-12) + var(--size-actions))",
-  scrollbarWidth: "none",
-};
+// above it (see ticketScroll). On a short screen (a phone held sideways, a zoomed page) a statement can be taller
+// than the stage, and its end would lie under True and False: there the scroller runs on over the gap only and
+// stops at the top of the row, so nothing of the ticket ever lies under the row and what does not fit is
+// scrolled to.
+const SCROLLER: CSSProperties = { scrollbarWidth: "none" };
+const SCROLLER_ENDS = [
+  "bottom-[calc(-1*(var(--space-12)+var(--size-actions)))] pb-[calc(var(--space-12)+var(--size-actions))]",
+  "short:bottom-[calc(-1*var(--space-12))] short:pb-(--space-12)",
+].join(" ");
 
 /** What the live region says after an answer: "Correct. The answer is False." and, past the record, " New best." */
 export function verdictText(correct: boolean, answer: boolean, newBest = false): string {
@@ -656,7 +659,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
             role="group"
             aria-label="Ticket"
             tabIndex={0}
-            className="absolute inset-x-0 top-0 overflow-x-hidden overflow-y-auto overscroll-contain px-(--size-gutter) focus-visible:outline-offset-[-2px]"
+            className={`absolute inset-x-0 top-0 ${SCROLLER_ENDS} overflow-x-hidden overflow-y-auto overscroll-contain px-(--size-gutter) focus-visible:outline-offset-[-2px]`}
             style={SCROLLER}
           >
             <div
