@@ -176,6 +176,43 @@ for (const viewport of SHORT) {
   });
 }
 
+// Review finding M2: with motion on, the leave sheet rises 24 px into place and sinks 24 px on its way out, and on a
+// short screen only 12 lie under it: the moving sheet made its layer scrollable for those 360 ms (a classic
+// scrollbar flashed and the sheet shifted sideways). Every frame from opening the sheet to its leaving is checked.
+test.describe("the leave sheet moving in and out on a 844 by 390 screen", () => {
+  test.use({ viewport: SIDEWAYS[0], reducedMotion: "no-preference" });
+
+  test("never makes its layer scrollable", async ({ page }) => {
+    await openPendingRound(page, "classic");
+    const answers = await deckAnswers(page, CLF_ID);
+    const card = await waitForQuestion(page, answers);
+    await tapAnswer(page, card.truth);
+    await expect(page.getByRole("button", { name: "Next card" })).toBeFocused();
+    await page.evaluate(() => {
+      const frames = { shown: 0, scrollable: 0 };
+      (window as unknown as { leaveFrames: typeof frames }).leaveFrames = frames;
+      const tick = () => {
+        const layer = document.querySelector("[role=dialog]")?.parentElement?.parentElement;
+        if (layer) {
+          frames.shown += 1;
+          if (getComputedStyle(layer).overflowY !== "hidden" && layer.scrollHeight > layer.clientHeight) frames.scrollable += 1;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.keyboard.press("Escape");
+    const sheet = page.getByRole("dialog", { name: "Leave round?" });
+    await expect(sheet).toBeVisible();
+    await page.waitForTimeout(800);
+    await sheet.getByRole("button", { name: "Keep playing" }).click();
+    await expect(sheet).toHaveCount(0);
+    const frames = await page.evaluate(() => (window as unknown as { leaveFrames: { shown: number; scrollable: number } }).leaveFrames);
+    expect(frames.shown, "frames with the sheet were sampled").toBeGreaterThan(10);
+    expect(frames.scrollable, "frames in which the sheet's layer could scroll").toBe(0);
+  });
+});
+
 // Every statement shipped, with its appliesTo line, fits the stage of a phone held sideways down to 667 by 375 and
 // of a 390 by 844 phone at 200 percent zoom, so no player there has to scroll a card to read it. Each statement is
 // set into the live statement of a round and measured; a card without its own appliesTo line gets one line in the

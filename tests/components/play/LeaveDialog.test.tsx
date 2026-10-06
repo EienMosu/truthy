@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { LeaveDialog } from "@/components/play/LeaveDialog";
 
 beforeAll(() => {
@@ -75,5 +75,32 @@ describe("LeaveDialog", () => {
     const { rerender } = setup();
     rerender(false);
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+});
+
+// Review finding M2: the sheet's 24 px rise counts toward what its layer can scroll, and on a short screen only 12
+// lie under the sheet, so the layer turned scrollable while the sheet moved in and out (a classic scrollbar flashed
+// and the sheet shifted sideways). The layer scrolls only while the sheet is at rest.
+describe("LeaveDialog's layer while the sheet moves", () => {
+  beforeAll(() => {
+    MotionGlobalConfig.skipAnimations = false;
+  });
+  afterAll(() => {
+    MotionGlobalConfig.skipAnimations = true;
+  });
+
+  // The fixed layer around the sheet: the dialog sits in its centred column.
+  const layer = () => document.querySelector("[role=dialog]")?.parentElement?.parentElement ?? null;
+
+  it("does not scroll while the sheet rises, scrolls once it is at rest, and stops while it sinks", async () => {
+    const { rerender } = setup();
+    expect(layer()?.className).toContain("overflow-hidden");
+    expect(layer()?.className).not.toContain("overflow-auto");
+    await waitFor(() => expect(layer()?.className).toContain("overflow-auto"), { timeout: 2000 });
+    rerender(false);
+    expect(screen.getByRole("dialog", { hidden: true })).toBeTruthy();
+    expect(layer()?.className).toContain("overflow-hidden");
+    expect(layer()?.className).not.toContain("overflow-auto");
+    await waitFor(() => expect(layer()).toBeNull(), { timeout: 2000 });
   });
 });

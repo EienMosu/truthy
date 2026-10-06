@@ -68,6 +68,11 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
   // while the sheet is open: once it has closed it stays in the page for its exit animation, and the keys
   // are the round screen's again (Tab from the close button, Escape to ask again).
   const present = useIsPresent();
+  // The sheet rises 24 px into place and sinks 24 px on its way out, and a moving sheet counts toward what its
+  // layer can scroll: on a short screen, where 12 px lie under the sheet (globals.css), the layer would turn
+  // scrollable for the 360 ms the sheet moves, so a classic scrollbar would flash and the centred sheet shift
+  // sideways. The layer scrolls only while the sheet is at rest.
+  const [atRest, setAtRest] = useState(false);
   const stay = useRef(onStay);
   useEffect(() => {
     stay.current = onStay;
@@ -107,7 +112,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
     // The sheet sits at the foot of the screen. Where it does not fit (a page zoomed to 300 percent) the layer
     // scrolls, both ways, so its title and both actions can be reached: the sheet keeps the 320 px of the
     // smallest phone, as the page under it does, and grows the layer upwards instead of running off the top.
-    <div className="fixed inset-0 z-50 overflow-auto overscroll-contain">
+    <div className={`fixed inset-0 z-50 overscroll-contain ${atRest && present ? "overflow-auto" : "overflow-hidden"}`}>
       <motion.div
         aria-hidden="true"
         data-scrim=""
@@ -131,6 +136,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={reduced ? { opacity: 0 } : { opacity: 0, y: 24 }}
           transition={{ duration: reduced ? 0.14 : 0.36, ease: EASE }}
+          onAnimationComplete={() => setAtRest(true)}
         >
           <h2
             id={titleId}
