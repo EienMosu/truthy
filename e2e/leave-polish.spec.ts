@@ -50,12 +50,18 @@ test("leaving a Timed round at time up records it with its score", async ({ page
   expect(progress.last).toEqual({ route: { deckId: CLF_ID, sectionId: "SEC" }, mode: "timed", score: 1, total: 1 });
 });
 
-/** A Classic round with card 1 answered, so the close button asks. */
+/**
+ * A Classic round with card 1 answered, so the close button asks, and its "Next card" arrived. The row takes
+ * focus when it arrives, 420 ms after the answer (NEXT_ARRIVES_MS): a sheet opened and kept before then gives
+ * focus back to the close button, and the arrival then moves it on to "Next card", which on a busy runner can
+ * land between the steps of a spec. Waiting for the arrival first keeps focus where the spec puts it.
+ */
 async function answeredOne(page: Page): Promise<void> {
   await openPendingRound(page, "classic");
   const { truth } = await waitForCard(page, await deckAnswers(page, CLF_ID), 1);
   await page.getByRole("button", { name: "True", exact: true }).click();
   await expect(verdict(page)).toHaveText(verdictFor(true, truth));
+  await expect(page.getByRole("button", { name: "Next card" })).toBeFocused();
 }
 
 // Review finding U23: a tap on the sheet's title or text moves focus to the body; Escape still keeps playing.
