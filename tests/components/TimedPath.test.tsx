@@ -24,8 +24,8 @@ describe("timedLabel", () => {
     [41_000, 9, 2, "41 seconds left of 60. 9 correct, 2 wrong."],
     [60_000, 0, 0, "60 seconds left of 60. 0 correct, 0 wrong."],
     [900, 3, 0, "1 second left of 60. 3 correct, 0 wrong."],
-    [0, 14, 3, "No time left. 17 cards answered: 14 correct, 3 wrong."],
-    [0, 1, 0, "No time left. 1 card answered: 1 correct, 0 wrong."],
+    [0, 14, 3, "Time is up. 17 cards answered: 14 correct, 3 wrong."],
+    [0, 1, 0, "Time is up. 1 card answered: 1 correct, 0 wrong."],
   ])("%i ms, %i correct, %i wrong", (ms, correct, wrong, text) => {
     expect(timedLabel(ms, correct, wrong)).toBe(text);
   });

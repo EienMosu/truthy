@@ -75,7 +75,7 @@ test("a Three lives round ends on the third wrong answer", async ({ page }) => {
   await seeResults(page);
   await expect(page.locator("[data-score]")).toHaveText("5 cards");
   await expect(field(page, "Correct")).toHaveText("02");
-  await expect(field(page, "Missed")).toHaveText("03");
+  await expect(field(page, "Wrong")).toHaveText("03");
   await expect(header(page)).toHaveAccessibleName("Out of lives after 5 cards. 2 correct, 3 wrong: cards 2, 4 and 5.");
   await expectMissed(page, played);
   const progress = await storedProgress(page);

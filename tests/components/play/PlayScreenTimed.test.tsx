@@ -195,7 +195,7 @@ describe("PlayScreen Timed: the stamp beat", () => {
     await start();
     give(false);
     expect(stubStamps()).toEqual(["wrong"]);
-    expect(hint()).toBe("Missed, saved for review at the end");
+    expect(hint()).toBe("Wrong, saved for review at the end");
     expect(status()).toBe("Not quite.");
     expect(tally()).toBe("0 correct · 1 wrong");
   });
@@ -370,7 +370,7 @@ describe("PlayScreen Timed: time up", () => {
     expect(screen.getByRole("button", { name: "See results" })).toBeTruthy();
     await waitFor(() => expect(screen.queryByRole("button", { name: "True" })).toBeNull());
     expect(screen.queryByRole("button", { name: "False" })).toBeNull();
-    expect(headerName()).toBe("No time left. 0 cards answered: 0 correct, 0 wrong.");
+    expect(headerName()).toBe("Time is up. 0 cards answered: 0 correct, 0 wrong.");
     expect(progressText()).toBe("0:00 left");
     expect([...document.querySelectorAll("[data-quarter]")].map((mark) => mark.getAttribute("data-quarter"))).toEqual(["passed", "passed", "passed"]);
     expect(status()).toBe("Time is up. This card doesn't count.");

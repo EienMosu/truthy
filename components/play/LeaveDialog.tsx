@@ -25,7 +25,7 @@ export interface LeaveDialogProps {
 
 const browserNow = () => performance.now();
 
-const OPEN_TEXT = "Your answers so far stay in your history. This round won't set a record.";
+const OPEN_TEXT = "Your answers so far stay in your history. This round won't count toward your best.";
 const DECIDED_TEXT = "This round is over and its score is kept. Leaving skips its result.";
 
 export function LeaveDialog({ open, onStay, onLeave, decided = false, now = browserNow }: LeaveDialogProps) {

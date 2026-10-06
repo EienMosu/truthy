@@ -621,7 +621,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
     : stamped
       ? stamped.correct
         ? "Next card coming up"
-        : "Missed, saved for review at the end"
+        : "Wrong, saved for review at the end"
       : undefined;
 
   return (

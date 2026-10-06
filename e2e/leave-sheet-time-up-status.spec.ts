@@ -20,7 +20,7 @@ test("time running out under the leave sheet is said by a status inside the dial
   await expect(dialog).toBeVisible();
   const status = dialog.getByRole("status");
   await expect(status).toHaveText("");
-  await expect(dialog).toContainText("This round won't set a record.");
+  await expect(dialog).toContainText("This round won't count toward your best.");
 
   await page.clock.runFor(61_000);
   await expect(status).toHaveText(DECIDED);

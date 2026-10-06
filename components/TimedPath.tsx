@@ -25,7 +25,7 @@ export function timedLabel(remainingMs: number, correct: number, wrong: number):
   const seconds = wholeSeconds(remainingMs);
   if (seconds === 0) {
     const n = correct + wrong;
-    return `No time left. ${n} ${n === 1 ? "card" : "cards"} answered: ${correct} correct, ${wrong} wrong.`;
+    return `Time is up. ${n} ${n === 1 ? "card" : "cards"} answered: ${correct} correct, ${wrong} wrong.`;
   }
   const total = TIMED.roundMs / 1000;
   return `${seconds} ${seconds === 1 ? "second" : "seconds"} left of ${total}. ${correct} correct, ${wrong} wrong.`;

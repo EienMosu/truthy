@@ -43,7 +43,7 @@ describe("resultCopy", () => {
       fields: [
         { label: "Class", value: "Classic" },
         { label: "Cards", value: "10 / 10" },
-        { label: "Missed", value: "03" },
+        { label: "Wrong", value: "03" },
       ],
       scoreLabel: "Your score",
       unit: "of 10",
@@ -70,7 +70,7 @@ describe("resultCopy", () => {
       fields: [
         { label: "Class", value: "Streak" },
         { label: "Cards", value: "14" },
-        { label: "Missed", value: "01" },
+        { label: "Wrong", value: "01" },
       ],
       scoreLabel: "Correct in a row",
       unit: undefined,
@@ -107,7 +107,7 @@ describe("resultCopy", () => {
       fields: [
         { label: "Class", value: "Three lives" },
         { label: "Correct", value: "18" },
-        { label: "Missed", value: "03" },
+        { label: "Wrong", value: "03" },
       ],
       scoreLabel: "Your score",
       unit: "cards",
@@ -130,7 +130,7 @@ describe("resultCopy", () => {
       ],
       scoreLabel: "Correct",
       unit: "of 17",
-      ended: "Time up",
+      ended: "Time is up",
       endedDetail: " · 17 cards",
       label: "Time is up. 17 cards answered in 60 seconds. 14 correct, 3 wrong: cards 4, 9 and 15.",
       marks: 17,

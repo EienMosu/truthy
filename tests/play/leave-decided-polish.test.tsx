@@ -120,7 +120,7 @@ describe("leaving after the deciding answer (D1)", () => {
       const dialog = screen.getByRole("dialog", { name: "Leave round?" });
       return document.getElementById(dialog.getAttribute("aria-describedby") ?? "")?.textContent;
     };
-    expect(describedBy()).toBe("Your answers so far stay in your history. This round won't set a record.");
+    expect(describedBy()).toBe("Your answers so far stay in your history. This round won't count toward your best.");
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep playing" }));
     await next();
     give(false);

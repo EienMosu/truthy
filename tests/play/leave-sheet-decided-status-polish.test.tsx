@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 // The Timed clock keeps running under the "Leave round?" sheet. When the minute runs out there, the sheet's text
-// changes from "won't set a record" to "its score is kept", but a screen reader read that text (through
+// changes from "won't count toward your best" to "its score is kept", but a screen reader read that text (through
 // aria-describedby) when the sheet opened and is never told: the player chooses Leave round believing nothing is
 // recorded, and the round is recorded. A polite status inside the dialog now says the new text.
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 afterEach(cleanup);
 
-const OPEN_TEXT = "Your answers so far stay in your history. This round won't set a record.";
+const OPEN_TEXT = "Your answers so far stay in your history. This round won't count toward your best.";
 const DECIDED_TEXT = "This round is over and its score is kept. Leaving skips its result.";
 
 function sheetStatus(dialog: HTMLElement): HTMLElement {
