@@ -86,7 +86,8 @@ describe("applyResult: the seen count has no ceiling", () => {
   });
 });
 
-// The stored shape: a value no code of the app writes makes the whole stored progress invalid (spec section 7).
+// The stored shape: a value no code of the app writes drops the part that holds it, and only that part
+// (spec section 7, review finding U43).
 describe("parseProgress: the refinements of the stored shape", () => {
   const stored: Progress = {
     version: 1,
@@ -99,17 +100,17 @@ describe("parseProgress: the refinements of the stored shape", () => {
     expect(parseProgress(JSON.stringify(stored))).toEqual(stored);
   });
 
-  it("gives empty progress for a negative lastSeenAt", () => {
+  it("drops a card entry with a negative lastSeenAt", () => {
     const cards = { "aws-clf-c02-t1.1-01": { seen: 3, lastCorrect: false, lastSeenAt: -1 } };
-    expect(parseProgress(JSON.stringify({ ...stored, cards }))).toEqual(emptyProgress());
+    expect(parseProgress(JSON.stringify({ ...stored, cards }))).toEqual({ ...stored, cards: {} });
   });
 
-  it("gives empty progress for a record that is not a whole number", () => {
-    expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": 3.5 } }))).toEqual(emptyProgress());
+  it("drops a record that is not a whole number", () => {
+    expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": 3.5 } }))).toEqual({ ...stored, records: {} });
   });
 
-  it("gives empty progress for a last route with an empty section id", () => {
+  it("drops a last route with an empty section id", () => {
     const last = { route: { deckId: "aws-clf-c02", sectionId: "" }, mode: "classic", score: 8, total: 10 };
-    expect(parseProgress(JSON.stringify({ ...stored, last }))).toEqual(emptyProgress());
+    expect(parseProgress(JSON.stringify({ ...stored, last }))).toEqual({ ...stored, last: null });
   });
 });

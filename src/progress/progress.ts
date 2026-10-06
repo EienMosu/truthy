@@ -112,37 +112,75 @@ export function seenShare(history: History, cardIds: readonly string[]): number 
   return seen / ids.size;
 }
 
-// The stored shape. Unknown fields are dropped; any other difference makes the whole value invalid.
+// The stored shape, checked part by part: each card entry, each record and the last route stand on their
+// own, so one part that fails (a mode a later version added, a count that cannot be) costs only that part.
+// Unknown fields are dropped.
 const CardHistorySchema = z.object({
   seen: z.number().int().nonnegative(),
   lastCorrect: z.boolean(),
   lastSeenAt: z.number().nonnegative(),
 });
 
-const ProgressSchema = z.object({
-  version: z.literal(1),
-  cards: z.record(z.string(), CardHistorySchema),
-  records: z.record(z.string(), z.number().int().nonnegative()),
-  last: z
-    .object({
-      route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
-      mode: z.enum(MODES),
-      // Missing in progress stored before scores were kept: it reads as a round without a score.
-      score: z.number().int().nonnegative().nullable().default(null),
-      total: z.number().int().nonnegative().nullable().default(null),
-    })
-    .nullable(),
-});
+const RecordSchema = z.number().int().nonnegative();
 
-// Never throws: nothing stored, invalid JSON, the wrong shape or another version all give empty progress.
-export function parseProgress(raw: string | null): Progress {
-  if (raw === null) return emptyProgress();
+const LastSchema = z
+  .object({
+    route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
+    mode: z.enum(MODES),
+    // Missing in progress stored before scores were kept: it reads as a round without a score.
+    score: z.number().int().nonnegative().nullable().default(null),
+    total: z.number().int().nonnegative().nullable().default(null),
+  })
+  .nullable();
+
+/** A stored value as read: the progress kept from it, and whether all of it was kept. */
+export interface ProgressRead {
+  progress: Progress;
+  // False when any part of a stored value was dropped, or the whole of it: the raw value then holds
+  // something the progress does not, which the store keeps aside before it writes over it.
+  whole: boolean;
+}
+
+// Never throws. Nothing stored reads as empty and whole. Invalid JSON, a value that is not an object
+// and any version other than the number 1 read as empty and not whole. Otherwise a card entry, a record
+// or a last route that fails is dropped alone (the last route becomes null), and the rest is kept.
+export function readProgress(raw: string | null): ProgressRead {
+  if (raw === null) return { progress: emptyProgress(), whole: true };
   let data: unknown;
   try {
     data = JSON.parse(raw);
   } catch {
-    return emptyProgress();
+    return { progress: emptyProgress(), whole: false };
   }
-  const parsed = ProgressSchema.safeParse(data);
-  return parsed.success ? parsed.data : emptyProgress();
+  if (!isObject(data) || data["version"] !== 1) return { progress: emptyProgress(), whole: false };
+  const cards = validEntries(data["cards"], CardHistorySchema);
+  const records = validEntries(data["records"], RecordSchema);
+  const last = LastSchema.safeParse(data["last"]);
+  return {
+    progress: { version: 1, cards: cards.kept, records: records.kept, last: last.success ? last.data : null },
+    whole: cards.whole && records.whole && last.success,
+  };
+}
+
+/** The progress kept from a stored value (see readProgress). */
+export function parseProgress(raw: string | null): Progress {
+  return readProgress(raw).progress;
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// The entries of a stored map that pass the schema. Object.fromEntries defines each key as an own
+// property, so a "__proto__" key in stored data stays a plain key and never changes a prototype.
+function validEntries<T>(value: unknown, schema: z.ZodType<T>): { kept: Record<string, T>; whole: boolean } {
+  if (!isObject(value)) return { kept: {}, whole: false };
+  const kept: [string, T][] = [];
+  let whole = true;
+  for (const [key, entry] of Object.entries(value)) {
+    const parsed = schema.safeParse(entry);
+    if (parsed.success) kept.push([key, parsed.data]);
+    else whole = false;
+  }
+  return { kept: Object.fromEntries(kept), whole };
 }

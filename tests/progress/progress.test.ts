@@ -440,29 +440,37 @@ describe("parseProgress", () => {
     expect(parseProgress("[]")).toEqual(empty);
   });
 
-  it("gives empty progress for an object of the wrong shape", () => {
-    expect(parseProgress("{}")).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, cards: [] }))).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": "8" } }))).toEqual(empty);
+  // Review finding U43: each part is read on its own, so a part of the wrong shape costs only that part.
+  it("drops only the part of the wrong shape", () => {
+    expect(parseProgress(JSON.stringify({ ...stored, cards: [] }))).toEqual({ ...stored, cards: {} });
+    expect(parseProgress(JSON.stringify({ ...stored, records: { ...stored.records, "aws-clf-c02/APP#classic": "8" } }))).toEqual(stored);
     expect(
-      parseProgress(JSON.stringify({ ...stored, cards: { a: { seen: "1", lastCorrect: true, lastSeenAt: 1 } } })),
-    ).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC } }))).toEqual(empty);
+      parseProgress(JSON.stringify({ ...stored, cards: { ...stored.cards, a: { seen: "1", lastCorrect: true, lastSeenAt: 1 } } })),
+    ).toEqual(stored);
+    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC } }))).toEqual({ ...stored, last: null });
   });
 
-  it("gives empty progress for impossible values", () => {
-    expect(
-      parseProgress(JSON.stringify({ ...stored, cards: { a: { seen: -1, lastCorrect: true, lastSeenAt: 1 } } })),
-    ).toEqual(empty);
-    expect(
-      parseProgress(JSON.stringify({ ...stored, cards: { a: { seen: 1.5, lastCorrect: true, lastSeenAt: 1 } } })),
-    ).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, records: { "aws-clf-c02/SEC#classic": -3 } }))).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "zen" } }))).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, last: { route: { deckId: "", sectionId: "SEC" }, mode: "classic" } }))).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "classic", score: -1, total: 10 } }))).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "classic", score: 7, total: 9.5 } }))).toEqual(empty);
-    expect(parseProgress(JSON.stringify({ ...stored, last: { route: SEC, mode: "classic", score: "7", total: 10 } }))).toEqual(empty);
+  it("drops only the part with an impossible value", () => {
+    for (const entry of [
+      { seen: -1, lastCorrect: true, lastSeenAt: 1 },
+      { seen: 1.5, lastCorrect: true, lastSeenAt: 1 },
+    ]) {
+      expect(parseProgress(JSON.stringify({ ...stored, cards: { ...stored.cards, a: entry } }))).toEqual(stored);
+    }
+    expect(parseProgress(JSON.stringify({ ...stored, records: { ...stored.records, "aws-clf-c02/APP#classic": -3 } }))).toEqual(stored);
+    for (const last of [
+      { route: SEC, mode: "zen" },
+      { route: { deckId: "", sectionId: "SEC" }, mode: "classic" },
+      { route: SEC, mode: "classic", score: -1, total: 10 },
+      { route: SEC, mode: "classic", score: 7, total: 9.5 },
+      { route: SEC, mode: "classic", score: "7", total: 10 },
+    ]) {
+      expect(parseProgress(JSON.stringify({ ...stored, last }))).toEqual({ ...stored, last: null });
+    }
+  });
+
+  it("gives empty progress for an object without a version", () => {
+    expect(parseProgress("{}")).toEqual(empty);
   });
 
   it("gives empty progress for a missing version", () => {
