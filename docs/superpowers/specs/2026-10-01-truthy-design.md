@@ -230,7 +230,7 @@ Stored on the device under one versioned key.
 - Per route and mode: the record. A route is a deck id plus a section id or "whole deck".
 - The last route and mode played, with the score of that round when it was finished, for the "Continue" line on the start screen.
 
-Deck "seen" percentage is the share of the deck's current cards that have been seen at least once. When a deck file changes, history is kept by card id and entries for cards that no longer exist are removed. If storage is unavailable or corrupt, the game still runs with empty progress and does not crash.
+Deck "seen" percentage is the share of the deck's current cards that have been seen at least once. When a deck file changes, history is kept by card id and entries for cards that no longer exist are removed. If storage is unavailable or corrupt, the game still runs with empty progress and does not crash. A stored value is read part by part: a record, a card's history or the last route that fails validation is dropped on its own and the rest is kept; only a value that cannot be parsed at all, or has another version, starts empty. Before a value that did not read back whole is written over, its raw text is kept under a side key (`truthy.progress.v1.unreadable`, which holds the latest such value), so a later version can recover it. The player sees no message.
 
 ## 8. Input
 
@@ -303,7 +303,7 @@ A web app manifest and icons ship in step 1 so the game can be added to the home
 |---|---|
 | A deck fails validation at build time | The build fails with the card id and the reason. |
 | `index.json` or a deck cannot be fetched | Use the cached copy if there is one; otherwise show a message and a retry action. |
-| Storage unavailable, full or corrupt | Play continues with empty progress; nothing is thrown at the player. |
+| Storage unavailable, full or corrupt | Play continues with empty progress, or with the parts of it that still read (section 7); nothing is thrown at the player. |
 | `/play` opened without a pending round | Redirect to `/`. |
 | An unknown address | The game's "Page not found" page, status 404, with "Back to start". |
 | A route has too few cards for the constraints | Relax the constraints in the documented order; never fail to deal. |
