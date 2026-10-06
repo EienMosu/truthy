@@ -28,7 +28,7 @@ describe("LeaveDialog", () => {
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     expect(dialog.getAttribute("aria-describedby")).toBeTruthy();
     const description = document.getElementById(dialog.getAttribute("aria-describedby") ?? "");
-    expect(description?.textContent).toBe("Your answers so far stay in your history. This round won't set a record.");
+    expect(description?.textContent).toBe("Your answers so far stay in your history. This round won't count toward your best.");
   });
 
   it("offers Keep playing first and gives it focus", () => {

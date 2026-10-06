@@ -129,11 +129,11 @@ describe("ResultView: the ticket", () => {
     expect(container.querySelector("[data-plane]")).toBeNull();
   });
 
-  it("fills the ticket head with the route, Class, Cards and Missed", () => {
+  it("fills the ticket head with the route, Class, Cards and Wrong", () => {
     const { container } = renderResult(finishedRound("classic", SEVEN_OF_TEN), storeWith({}).store);
     expect(container.querySelector('[data-leg="from"]')?.textContent).toBe("TSTAWS Test deck");
     expect(container.querySelector('[data-leg="to"]')?.textContent).toBe("SECSecurity and compliance");
-    expect(screen.getAllByRole("term").map((term) => term.textContent).slice(0, 4)).toEqual(["Class", "Cards", "Missed", "Your score"]);
+    expect(screen.getAllByRole("term").map((term) => term.textContent).slice(0, 4)).toEqual(["Class", "Cards", "Wrong", "Your score"]);
     expect(screen.getAllByRole("definition").map((value) => value.textContent).slice(0, 4)).toEqual(["Classic", "10 / 10", "03", "7 of 10"]);
   });
 
@@ -460,7 +460,7 @@ describe("ResultView: Timed", () => {
     renderResult(finishedRound("timed", [true, false, true]), store);
     expect(fieldValues()).toEqual(["Timed", "60 s", "03"]);
     expect(scoreText()).toBe("2 of 3");
-    expect(progressText()).toBe("Time up · 3 cards");
+    expect(progressText()).toBe("Time is up · 3 cards");
     expect(screen.getByRole("img", { name: "Time is up. 3 cards answered in 60 seconds. 2 correct, 1 wrong: card 2." })).toBeTruthy();
     const saved = parseProgress(storage.getItem(PROGRESS_KEY));
     expect(saved.records[recordKey(ROUTE, "timed")]).toBe(2);
@@ -470,7 +470,7 @@ describe("ResultView: Timed", () => {
   it("nothing answered", () => {
     const { storage, store } = storeWith({});
     renderResult(finishedRound("timed", []), store);
-    expect(progressText()).toBe("Time up · 0 cards");
+    expect(progressText()).toBe("Time is up · 0 cards");
     expect(scoreText()).toBe("0 of 0");
     expect(comparison()).toBe("First round on this route");
     expect(screen.getByText("No missed cards")).toBeTruthy();

@@ -49,11 +49,13 @@ test("a Three lives round ends on the third wrong answer", async ({ page }) => {
   await expect(page.locator('[data-heart="full"]')).toHaveCount(3);
 
   const wrongOn = [2, 4, 5];
+  // What the status says after the verdict when a life goes (review finding U50).
+  const lifeNews: Record<number, string> = { 2: " Life lost, 2 left.", 4: " Last life.", 5: " Out of lives." };
   const played: Played[] = [];
   for (let number = 1; number <= 5; number += 1) {
     const card = await answerCard(page, answers, number, !wrongOn.includes(number), played.at(-1)?.statement);
     played.push(card);
-    await expect(verdict(page)).toHaveText(verdictFor(card.given, card.truth));
+    await expect(verdict(page)).toHaveText(`${verdictFor(card.given, card.truth)}${lifeNews[number] ?? ""}`);
     if (number === 2) {
       await expect(header(page)).toHaveAccessibleName(/^2 of 3 lives left\./);
       await expectHearts(page, ["full", "full", "lost"]);
@@ -73,7 +75,7 @@ test("a Three lives round ends on the third wrong answer", async ({ page }) => {
   await seeResults(page);
   await expect(page.locator("[data-score]")).toHaveText("5 cards");
   await expect(field(page, "Correct")).toHaveText("02");
-  await expect(field(page, "Missed")).toHaveText("03");
+  await expect(field(page, "Wrong")).toHaveText("03");
   await expect(header(page)).toHaveAccessibleName("Out of lives after 5 cards. 2 correct, 3 wrong: cards 2, 4 and 5.");
   await expectMissed(page, played);
   const progress = await storedProgress(page);

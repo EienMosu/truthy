@@ -13,7 +13,7 @@ export interface ResultCopy {
   unit: string | undefined;
   /** How a record reads in the comparison: "9 / 10", "21 cards", "12". */
   best: (record: number) => string;
-  /** The bold word of the header's label row: "Arrived", "Ended", "Out of lives", "Time up". */
+  /** The bold word of the header's label row: "Arrived", "Ended", "Out of lives", "Time is up". */
   ended: string;
   /** What follows it: " · 10 of 10", " · 14 cards", "". */
   endedDetail: string;
@@ -48,12 +48,12 @@ export function resultCopy(result: RoundResult, modeName: string, dealt: number,
     if (!answer.correct) wrong.push(i + 1);
   });
   const klass = { label: "Class", value: modeName };
-  const missed = { label: "Missed", value: pad2(w) };
+  const wrongField = { label: "Wrong", value: pad2(w) };
 
   switch (result.mode) {
     case "classic":
       return {
-        fields: [klass, { label: "Cards", value: `${pad2(n)} / ${pad2(dealt)}` }, missed],
+        fields: [klass, { label: "Cards", value: `${pad2(n)} / ${pad2(dealt)}` }, wrongField],
         scoreLabel: "Your score",
         unit: `of ${dealt}`,
         best: (record) => `${record} / ${dealt}`,
@@ -68,7 +68,7 @@ export function resultCopy(result: RoundResult, modeName: string, dealt: number,
       };
     case "streak":
       return {
-        fields: [klass, { label: "Cards", value: pad2(n) }, missed],
+        fields: [klass, { label: "Cards", value: pad2(n) }, wrongField],
         scoreLabel: "Correct in a row",
         unit: undefined,
         best: (record) => `${record}`,
@@ -80,7 +80,7 @@ export function resultCopy(result: RoundResult, modeName: string, dealt: number,
       };
     case "lives":
       return {
-        fields: [klass, { label: "Correct", value: pad2(c) }, missed],
+        fields: [klass, { label: "Correct", value: pad2(c) }, wrongField],
         scoreLabel: "Your score",
         unit: "cards",
         best: (record) => `${record} cards`,
@@ -96,7 +96,7 @@ export function resultCopy(result: RoundResult, modeName: string, dealt: number,
         scoreLabel: "Correct",
         unit: `of ${n}`,
         best: (record) => `${record}`,
-        ended: "Time up",
+        ended: "Time is up",
         endedDetail: ` · ${cards(n)}`,
         label: `Time is up. ${cards(n)} answered in ${TIMED.roundMs / 1000} seconds. ${tally(c, wrong)}`,
         marks: n,

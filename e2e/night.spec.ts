@@ -83,7 +83,7 @@ test("at night a Streak round and its result are drawn with the night colours", 
   await page.getByRole("button", { name: "Next card" }).click();
 
   const second = await answerCard(page, answers, 2, false, first.statement);
-  await expect(verdict(page)).toHaveText(verdictFor(second.given, second.truth));
+  await expect(verdict(page)).toHaveText(`${verdictFor(second.given, second.truth)} Streak ended at 1.`);
   await seeResults(page);
   await expectNightPage(page);
   await expectPass(page, "night");
@@ -97,7 +97,7 @@ test("at night the Three lives hearts and the Timed stamp use the night roles", 
   await startRound(page);
   const answers = await deckAnswers(page, CLF_ID);
   const wrong = await answerCard(page, answers, 1, false);
-  await expect(verdict(page)).toHaveText(verdictFor(wrong.given, wrong.truth));
+  await expect(verdict(page)).toHaveText(`${verdictFor(wrong.given, wrong.truth)} Life lost, 2 left.`);
   expect(await computed(page.locator('[data-heart="full"] path').first(), "fill")).toBe(rgb("night", "ink"));
   expect(await computed(page.locator('[data-heart="lost"] path').first(), "stroke")).toBe(rgb("night", "ink-muted"));
 

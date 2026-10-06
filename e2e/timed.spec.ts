@@ -81,13 +81,13 @@ test("a Timed round stamps each answer, ends when the minute is over and shows i
   const second = await answerAndLook(page, answers, 2, false, first.statement, async () => {
     await expect(page.locator('[data-stub-stamp="wrong"]')).toBeVisible();
     await expect(verdict(page)).toHaveText("Not quite.");
-    await expect(page.getByText("Missed, saved for review at the end")).toBeVisible();
+    await expect(page.getByText("Wrong, saved for review at the end")).toBeVisible();
     await expect(page.getByText("The answer is")).toHaveCount(0);
   });
 
   await page.clock.runFor(61_000);
   await expect(page.locator('[data-stub-stamp="time-up"]')).toBeVisible();
-  await expect(header(page)).toHaveAccessibleName("No time left. 2 cards answered: 1 correct, 1 wrong.");
+  await expect(header(page)).toHaveAccessibleName("Time is up. 2 cards answered: 1 correct, 1 wrong.");
   expect(await secondsLeft(page)).toBe(0);
   await expect(page.getByText("Closed")).toBeVisible();
   await expect(page.getByText("This card doesn't count · 2 answered")).toBeVisible();
