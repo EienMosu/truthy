@@ -291,7 +291,7 @@ Motion (the library) drives the start flow's transitions and the card's reveal. 
 
 ### Accessibility
 
-Buttons are a full alternative to swiping. True and False, and correct and wrong, are never distinguished by colour alone. Touch targets are at least 48 px. Focus is visible. The verdict is announced to assistive technology. Text contrast is at least 4.5:1 in both themes.
+Buttons are a full alternative to swiping. True and False, and correct and wrong, are never distinguished by colour alone. Touch targets are at least 48 px; on the route pass the area and platform words and the fields under them share 13 px, and the owner accepts 35 px there (WCAG 2.2 AA asks for 24) on the condition that a tap just under or above a word is the word's (design system section 4). The orientation is not locked: every screen works with the phone held sideways and at 200% zoom, and at 300% it scrolls with nothing out of reach (design system section 4, "Short screens, every screen"). Focus is visible. The verdict is announced to assistive technology. Text contrast is at least 4.5:1 in both themes.
 
 ### Installability
 
