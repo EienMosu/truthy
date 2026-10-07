@@ -66,6 +66,40 @@ After a release that changes the service worker, the owner checks on an iPhone i
 
 1. Online, open the game from the home screen icon and play one round on a deck.
 2. Turn on flight mode and open the game from the home screen again: the start shows in the chosen theme, the deck played in step 1 can be played to its result, and another deck says "Needs a connection".
-3. Still in flight mode, start a round on that deck, press Leave round, then Back: the first Back may show the start once more or, restored from the back-forward cache, the ready pass of the round just left (accepted), and Start round works from there.
+3. Still in flight mode, start a round on that deck, press Leave round, then Back: the first Back may show the start once more or, restored from the back-forward cache, the ready pass of the round just left (accepted); from the ready pass, Start round works.
 4. Turn flight mode off: the labels go without a reload.
-5. After the next deploy, open the game from the home screen twice: it runs the new release, with no prompt; a round left open while the release arrives is never interrupted.
+5. After a deploy with a visible change: open the game online from the home screen, wait about 10 s, swipe the app away, turn on flight mode and open it again: the change shows, with no prompt (it came from the new release's cache). Online every page comes from the network, so only an offline open shows which release the phone holds.
+6. With VoiceOver on and flight mode on, swipe through the deck step of a platform with a deck the phone has never loaded: VoiceOver stops on its dimmed card and reads its whole name, ending in "needs a connection" ("CDL, Cloud Digital Leader, needs a connection"), and a double tap does nothing. The card is a group with that name whose parts are hidden from VoiceOver, so a swipe that passes over it without stopping is a failure. The continue line on step 1 is built the same way when its deck has no copy on the device, which a phone check cannot set up (the last round's deck always has one).
+
+## Releases after step 3
+
+- **Stored formats.** Every release keeps what it stores (the localStorage and sessionStorage keys, such as `truthy.pending.v1` and `truthy.progress.v1`) readable by the release before it, and reads what that release stored, or it moves to a new key (`.v2`). Online the pages come from the network, so a newer release's start page can store a round while the worker still holds the release before it; offline, that installed release's `/play` then reads it.
+- **Turning the worker off.** Taking `/sw.js` away does not remove an installed worker: the browser's update check fails and the old worker stays. What removes it is a kill switch, a worker that deletes every `truthy-shell-*` cache and unregisters itself:
+
+  ```ts
+  // src/offline/sw-entry.ts, the kill switch: it answers no request, so every request goes to the network.
+  interface KillSwitchScope {
+    caches: CacheStorage;
+    registration: { unregister(): Promise<boolean> };
+    skipWaiting(): Promise<void>;
+    addEventListener(type: "install" | "activate", listener: (event: { waitUntil(promise: Promise<unknown>): void }) => void): void;
+  }
+
+  const scope = self as unknown as KillSwitchScope;
+
+  scope.addEventListener("install", (event) => event.waitUntil(scope.skipWaiting()));
+  scope.addEventListener("activate", (event) =>
+    event.waitUntil(
+      (async () => {
+        const names = await scope.caches.keys();
+        await Promise.all(names.filter((name) => name.startsWith("truthy-shell-")).map((name) => scope.caches.delete(name)));
+        await scope.registration.unregister();
+      })(),
+    ),
+  );
+  ```
+
+  - When: only when a release's worker does harm that the next release cannot undo at a safe moment (it answers pages wrongly online, or the way a waiting release takes over is broken), or when offline play is to be switched off. An ordinary bug needs no kill switch: the fixed release takes over at the next safe moment, as every release does.
+  - How: in one release, replace `src/offline/sw-entry.ts` with the code above (`pnpm build:sw` bundles it into `public/sw.js` as before, and `next.config.ts` keeps sending it with `Cache-Control: no-cache`), and set `production: false` in `browserOfflineClient` (`src/offline/register.ts`), so no page registers a worker again; their unit tests change with them, and so do the five specs that allow a worker (`service-worker`, `register`, `offline`, `offline-navigation`, `update`). The browser finds the new `sw.js` on the next page load, installs it, lets it take over at once (it serves nothing, so a round in memory goes on) and the caches and the registration are gone; from the next load the game runs online only, as before step 3.
+  - Check it on the branch's preview URL, whose origin stays the same across its deploys: open it once on the release before, deploy the kill switch to the branch, open it again online, then look at the site's data (Chrome's DevTools, Application): no service worker and no `truthy-shell-*` cache.
+  - Keep serving the kill switch for months, as long as a phone that has not opened the game since may still hold an old worker. To bring offline play back, ship the worker again; the kill switch leaves nothing behind.
