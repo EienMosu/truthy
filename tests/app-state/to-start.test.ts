@@ -25,7 +25,7 @@ describe("goToStart: an update is waiting", () => {
     const offline = fakeOffline(true);
     const backToStart = vi.fn(() => true);
     const router = { replace: vi.fn() };
-    await goToStart(servicesWith(offline, backToStart), router);
+    await expect(goToStart(servicesWith(offline, backToStart), router)).resolves.toBe(true);
     expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
     expect(location.replace).toHaveBeenCalledTimes(1);
     expect(location.replace).toHaveBeenCalledWith("/");
@@ -43,7 +43,7 @@ describe("goToStart: an update is waiting", () => {
     expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
     expect(location.replace).not.toHaveBeenCalled();
     takeOver(true);
-    await going;
+    await expect(going).resolves.toBe(true);
     expect(location.replace).toHaveBeenCalledWith("/");
     expect(router.replace).not.toHaveBeenCalled();
   });
@@ -52,7 +52,7 @@ describe("goToStart: an update is waiting", () => {
     const offline = fakeOffline(true, async () => false);
     const backToStart = vi.fn(() => false);
     const router = { replace: vi.fn() };
-    await goToStart(servicesWith(offline, backToStart), router);
+    await expect(goToStart(servicesWith(offline, backToStart), router)).resolves.toBe(false);
     expect(location.replace).not.toHaveBeenCalled();
     expect(backToStart).toHaveBeenCalledTimes(1);
     expect(router.replace).toHaveBeenCalledWith("/");
@@ -61,7 +61,7 @@ describe("goToStart: an update is waiting", () => {
   it("takes the in-app way back when applying the update fails", async () => {
     const offline = fakeOffline(true, () => Promise.reject(new Error("InvalidStateError")));
     const router = { replace: vi.fn() };
-    await expect(goToStart(servicesWith(offline), router)).resolves.toBeUndefined();
+    await expect(goToStart(servicesWith(offline), router)).resolves.toBe(false);
     expect(location.replace).not.toHaveBeenCalled();
     expect(router.replace).toHaveBeenCalledWith("/");
   });
@@ -72,7 +72,7 @@ describe("goToStart: nothing is waiting", () => {
     const offline = fakeOffline(false);
     const backToStart = vi.fn(() => true);
     const router = { replace: vi.fn() };
-    await goToStart(servicesWith(offline, backToStart), router);
+    await expect(goToStart(servicesWith(offline, backToStart), router)).resolves.toBe(false);
     expect(backToStart).toHaveBeenCalledTimes(1);
     expect(router.replace).not.toHaveBeenCalled();
     expect(offline.applyUpdate).not.toHaveBeenCalled();
@@ -116,7 +116,7 @@ describe("goToStart: nothing is waiting", () => {
     const offline = fakeOffline(false);
     offline.checkForUpdate.mockImplementation(() => Promise.reject(new Error("network")));
     const router = { replace: vi.fn() };
-    await expect(goToStart(servicesWith(offline), router)).resolves.toBeUndefined();
+    await expect(goToStart(servicesWith(offline), router)).resolves.toBe(false);
     await Promise.resolve();
     expect(router.replace).toHaveBeenCalledWith("/");
   });

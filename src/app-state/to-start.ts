@@ -15,15 +15,18 @@ export interface ToStartServices {
  * page runs the new version's code; /play is replaced, so a back step does not lead into the left round.
  * Otherwise the in-app way of today: back to the start's entry, or / in place of /play, at once (before the
  * returned promise settles), and the worker is asked to look for a new version for the next safe moment.
+ * Resolves true when it started the full page load: the page stays open until that load replaces it, and the
+ * caller keeps it as it is until then. False: the in-app way was taken.
  */
-export async function goToStart(services: ToStartServices, router: { replace(href: string): void }): Promise<void> {
+export async function goToStart(services: ToStartServices, router: { replace(href: string): void }): Promise<boolean> {
   if (services.offline.updateWaiting()) {
     const applied = await services.offline.applyUpdate().catch(() => false);
     if (applied) {
       window.location.replace("/");
-      return;
+      return true;
     }
   }
   if (!services.backToStart?.()) router.replace("/");
   services.offline.checkForUpdate().catch(() => undefined);
+  return false;
 }

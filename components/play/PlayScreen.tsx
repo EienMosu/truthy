@@ -180,16 +180,24 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // The player's own ways home (Leave round, Choose another route, Close results): the start then focuses its
   // step 1 title. A page load of /play without a round goes home too, but that is not a way back. They are
   // also the safe moment for a waiting update (spec section 7): goToStart applies it and opens the start with
-  // a full page load. Until the way back it started has settled, another press of a way back does nothing.
+  // a full page load. Until the way back it started has settled, another press of a way back, Play again and
+  // Try again do nothing; once the page load has started the guard stays, as the old page stays open until
+  // the load replaces it.
   const goingToStart = useRef(false);
   const leaveToStart = useCallback(() => {
     if (goingToStart.current) return;
     goingToStart.current = true;
     services.markReturnToStart?.();
-    void goToStart(services, router).finally(() => {
-      goingToStart.current = false;
+    void goToStart(services, router).then((loading) => {
+      if (!loading) goingToStart.current = false;
     });
   }, [router, services]);
+  const playAgain = useCallback(() => {
+    if (!goingToStart.current) restart();
+  }, [restart]);
+  const tryAgain = useCallback(() => {
+    if (!goingToStart.current) retry();
+  }, [retry]);
 
   // A round in progress with answers that are not in the card history yet, or a decided round whose result
   // has not been opened. Leaving any other way than the close control (the phone's back gesture, the
@@ -253,13 +261,13 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     [dispatch, progressStore, leaveToStart],
   );
 
-  if (status.kind === "error") return <LoadFailed onRetry={retry} onLeave={leaveToStart} />;
+  if (status.kind === "error") return <LoadFailed onRetry={tryAgain} onLeave={leaveToStart} />;
   if (status.kind !== "ready" || status.round.abandoned) return <Loading onLeave={leaveToStart} />;
 
   const { round, ticket } = status;
   if (round.phase === "finished") {
     return (
-      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={restart} onHome={leaveToStart} now={services.monotonic} />
+      <ResultView round={round} ticket={ticket} progressStore={progressStore} onPlayAgain={playAgain} onHome={leaveToStart} now={services.monotonic} />
     );
   }
 

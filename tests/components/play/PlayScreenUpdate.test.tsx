@@ -159,6 +159,68 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  it("ignores another way back after the page load has started, until the page is left", async () => {
+    let takeOver: (value: boolean) => void = () => {};
+    const offline = fakeOffline(true, () => new Promise<boolean>((resolve) => (takeOver = resolve)));
+    const backToStart = vi.fn(() => true);
+    const setup = withOffline(offline);
+    setup.services = { ...setup.services, backToStart };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await act(async () => takeOver(true));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await act(async () => {});
+    expect(offline.updateWaiting).toHaveBeenCalledTimes(1);
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(location.replace).toHaveBeenCalledTimes(1);
+    expect(backToStart).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("starts no new round with Play again while the update is being applied", async () => {
+    let takeOver: (value: boolean) => void = () => {};
+    const offline = fakeOffline(true, () => new Promise<boolean>((resolve) => (takeOver = resolve)));
+    await playToResult(withOffline(offline));
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+    await act(async () => takeOver(true));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("starts no new round with Play again once the page load has started", async () => {
+    const offline = fakeOffline(true);
+    await playToResult(withOffline(offline));
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+  });
+
+  it("tries the deck again with Try again only when no way back is pending", async () => {
+    let takeOver: (value: boolean) => void = () => {};
+    const offline = fakeOffline(true, () => new Promise<boolean>((resolve) => (takeOver = resolve)));
+    h = withOffline(offline);
+    h.network.online = false;
+    render(<PlayScreen services={h.services} />);
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    h.network.online = true;
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await act(async () => {});
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+    await act(async () => takeOver(true));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it("takes the in-app way back when the new worker does not take over in time", async () => {
     const offline = fakeOffline(true, async () => false);
     await playToResult(withOffline(offline));
