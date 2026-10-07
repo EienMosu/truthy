@@ -5,7 +5,7 @@
 // without a network gives the page; the same in Chromium and WebKit.
 import { expect, test as base, type Page } from "@playwright/test";
 import { e2ePort } from "../playwright.config";
-import { atStep } from "./helpers";
+import { atStep, option, type OptionName } from "./helpers";
 import { startProxy, type NetProxy } from "./proxy";
 
 // The key the onLine switch reads. The app never reads or writes it.
@@ -76,11 +76,10 @@ export async function goOnline(page: Page, net: NetProxy): Promise<void> {
  * From start step 1, chooses this area and this platform and waits until the deck step is shown and has settled
  * (atStep waits SETTLE_MS after each step appears). Areas and platforms are the same offline as online.
  */
-export async function toDeckStep(page: Page, area: string | RegExp, platform: string | RegExp): Promise<void> {
-  const option = (name: string | RegExp) => page.getByRole("button", typeof name === "string" ? { name, exact: true } : { name });
-  await option(area).click();
+export async function toDeckStep(page: Page, area: OptionName, platform: OptionName): Promise<void> {
+  await option(page, area).click();
   await atStep(page, "Choose a platform");
-  await option(platform).click();
+  await option(page, platform).click();
   await atStep(page, "Choose a deck");
 }
 

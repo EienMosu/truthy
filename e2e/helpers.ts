@@ -13,7 +13,7 @@ import { plainText } from "../src/content/text";
 export const SETTLE_MS = 300;
 
 /** One step of the start flow: the accessible name of the option to choose. */
-type OptionName = string | RegExp;
+export type OptionName = string | RegExp;
 
 export interface RoutePick {
   area: OptionName;
@@ -61,7 +61,8 @@ export async function atStep(page: Page, title: string): Promise<void> {
   await page.waitForTimeout(SETTLE_MS);
 }
 
-function option(page: Page, name: OptionName): Locator {
+/** The button of this accessible name: a string matches the whole name, a pattern matches part of it. */
+export function option(page: Page, name: OptionName): Locator {
   return page.getByRole("button", typeof name === "string" ? { name, exact: true } : { name });
 }
 
