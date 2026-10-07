@@ -1,0 +1,888 @@
+{
+  "deck": "kubernetes-ckad",
+  "block": "b3",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced immutable-configmap-data-freeze with immutable-configmap-setting-irreversible to test the irreversible field change and avoid a name giveaway.",
+  "cards": [
+    {
+      "id": "kubernetes-ckad-s3.3-01",
+      "section": "3.3",
+      "statement": "For a multi-container Pod, `kubectl logs -c app` retrieves output from the container named app.",
+      "answer": true,
+      "explanation": "The -c option selects a particular container in the named Pod, letting you inspect that container's output.",
+      "misconception": "",
+      "factKey": "logs-container-selection",
+      "topic": "Container log selection",
+      "tags": [
+        "kubectl logs",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl logs",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-02",
+      "section": "3.3",
+      "statement": "`kubectl logs --previous` on a replacement Pod can retrieve logs from the old Pod it replaces.",
+      "answer": false,
+      "explanation": "The --previous option retrieves the preceding instance of a container in the same Pod, if that instance exists. It does not retrieve logs from a replacement Pod's predecessor.",
+      "misconception": "The previous option follows replaced Pods rather than previous container instances within one Pod.",
+      "factKey": "logs-previous-instance",
+      "topic": "Container log selection",
+      "tags": [
+        "kubectl logs",
+        "Pod",
+        "Deployment"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl logs",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-03",
+      "section": "3.3",
+      "statement": "`kubectl logs` with a label selector matches labels on Deployment objects to choose Pods.",
+      "answer": false,
+      "explanation": "A label selector supplied to kubectl logs selects Pods by their own labels. Labels on a Deployment object do not determine this selection.",
+      "misconception": "A logs label selector selects Deployments and then their Pods.",
+      "factKey": "logs-label-selection",
+      "topic": "Container log selection",
+      "tags": [
+        "kubectl logs",
+        "Pod",
+        "Deployment"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl logs",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-04",
+      "section": "3.3",
+      "statement": "`kubectl logs` can combine a container's latest log file with older rotated files retained on its node.",
+      "answer": false,
+      "explanation": "kubectl logs exposes the latest log file for the selected container instance. Older rotated files can remain on the node but are excluded from that response.",
+      "misconception": "The logs command concatenates retained rotated files with the current log file.",
+      "factKey": "logs-rotation-latest-file",
+      "topic": "Container log rotation",
+      "tags": [
+        "kubectl logs"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-05",
+      "section": "3.3",
+      "statement": "With Metrics Server installed, `kubectl top` readings can differ from those shown by Linux top.",
+      "answer": true,
+      "explanation": "Metrics Server provides a stable resource-usage signal for autoscaling. kubectl top displays those metrics, whose sampling and design can differ from OS tools.",
+      "misconception": "",
+      "factKey": "top-autoscaler-metrics",
+      "topic": "Resource usage monitoring",
+      "tags": [
+        "kubectl top",
+        "Metrics Server"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl top",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_top/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-06",
+      "section": "3.3",
+      "statement": "`kubectl cp` automatically uses the target container's tar executable to transfer files.",
+      "answer": true,
+      "explanation": "kubectl cp runs tar inside the target container during file transfers. The operation fails when that executable is unavailable there.",
+      "misconception": "",
+      "factKey": "cp-container-tar-dependency",
+      "topic": "Container file transfer",
+      "tags": [
+        "kubectl cp"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl cp",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_cp/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-07",
+      "section": "3.3",
+      "statement": "The API server rejects CPU requests declared through resources on an ephemeral debugging container.",
+      "answer": true,
+      "explanation": "Ephemeral containers disallow the resources field, so they cannot declare CPU requests even though regular containers accept them.",
+      "misconception": "",
+      "factKey": "ephemeral-debug-resource-rejection",
+      "topic": "Ephemeral debugging containers",
+      "tags": [
+        "Pod",
+        "EphemeralContainer"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ephemeral Containers",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-08",
+      "section": "3.3",
+      "statement": "The kubelet automatically restarts a crashed ephemeral container in a Pod with `restartPolicy: Always`.",
+      "answer": false,
+      "explanation": "The kubelet leaves a terminated ephemeral container stopped, regardless of the Pod's restartPolicy. Its debugging session ends when its process exits.",
+      "misconception": "Ephemeral containers inherit the Pod's restart policy and restart after crashing.",
+      "factKey": "ephemeral-debug-restart-policy",
+      "topic": "Ephemeral debugging containers",
+      "tags": [
+        "Pod",
+        "EphemeralContainer"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ephemeral Containers",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-09",
+      "section": "3.3",
+      "statement": "Given `--container`, `kubectl debug --copy-to` can change that container's command in the copied Pod.",
+      "answer": true,
+      "explanation": "kubectl debug can create a Pod copy with a changed command for the named container. Omitting --container instead adds a new container to run the supplied command.",
+      "misconception": "",
+      "factKey": "debug-copy-command-change",
+      "topic": "Pod copy debugging",
+      "tags": [
+        "kubectl debug",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debug Running Pods",
+        "url": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s3.3-10",
+      "section": "3.3",
+      "statement": "With FallbackToLogsOnError, the kubelet replaces existing termination message text with log output.",
+      "answer": false,
+      "explanation": "With terminationMessagePolicy set to FallbackToLogsOnError, the kubelet uses log output when the termination message file is empty and the container exits with an error.",
+      "misconception": "Log fallback overrides an existing termination message when a container exits with an error.",
+      "factKey": "termination-error-log-fallback",
+      "topic": "Container termination messages",
+      "tags": [
+        "Pod",
+        "terminationMessagePolicy"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Determine the Reason for Pod Failure",
+        "url": "https://kubernetes.io/docs/tasks/debug/debug-application/determine-reason-pod-failure/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-01",
+      "section": "4.1",
+      "statement": "A CustomResourceDefinition's `spec.scope: Namespaced` lets you put that definition object inside a namespace.",
+      "answer": false,
+      "explanation": "A CustomResourceDefinition is cluster-scoped. Its spec.scope field determines the scope of the custom resource instances, rather than the CRD object.",
+      "misconception": "The CRD's scope field determines where the CRD object itself is stored.",
+      "factKey": "crd-resource-scope-field",
+      "topic": "Custom resource scope",
+      "tags": [
+        "CustomResourceDefinition"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Extend the Kubernetes API with CustomResourceDefinitions",
+        "url": "https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-02",
+      "section": "4.1",
+      "statement": "By default, the API server removes unknown fields from custom resources before it stores accepted objects.",
+      "answer": true,
+      "explanation": "The API server removes fields absent from a custom resource's structural schema. A schema can opt specific subtrees out of this pruning.",
+      "misconception": "",
+      "factKey": "crd-schema-unknown-field-pruning",
+      "topic": "Custom resource schemas",
+      "tags": [
+        "CustomResourceDefinition"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Extend the Kubernetes API with CustomResourceDefinitions",
+        "url": "https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-03",
+      "section": "4.1",
+      "statement": "By default, recreating a deleted CustomResourceDefinition restores the custom objects previously stored through it.",
+      "answer": false,
+      "explanation": "Deleting a CustomResourceDefinition deletes its stored custom resource objects. Recreating the same CRD starts with an empty collection.",
+      "misconception": "Deleting a CRD removes its endpoint while keeping instance data for later restoration.",
+      "factKey": "crd-deletion-custom-resource-cascade",
+      "topic": "Custom resource lifecycle",
+      "tags": [
+        "CustomResourceDefinition"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Extend the Kubernetes API with CustomResourceDefinitions",
+        "url": "https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-04",
+      "section": "4.1",
+      "statement": "Creating a CustomResourceDefinition makes the API server scale Pods when a custom resource's replica count changes.",
+      "answer": false,
+      "explanation": "A custom resource stores the requested state. A controller that understands that resource implements actions such as scaling Pods.",
+      "misconception": "Registering a CRD makes the API server act on application-specific fields such as replica counts.",
+      "factKey": "custom-resource-controller-reconciliation",
+      "topic": "Custom resource behavior",
+      "tags": [
+        "CustomResourceDefinition",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Custom Resources",
+        "url": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-05",
+      "section": "4.1",
+      "statement": "A narrower RoleBinding removes permissions that the same user receives from a broader RoleBinding.",
+      "answer": false,
+      "explanation": "RBAC combines permissions from applicable bindings. Adding a binding with fewer permissions leaves grants from other bindings in effect.",
+      "misconception": "A restrictive RoleBinding overrides broader access granted through another binding.",
+      "factKey": "rbac-permission-addition",
+      "topic": "RBAC permission combinations",
+      "tags": [
+        "RoleBinding",
+        "RBAC"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using RBAC Authorization",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-06",
+      "section": "4.1",
+      "statement": "A RoleBinding lets you reuse a ClusterRole to grant a ServiceAccount Pod access within the binding's namespace.",
+      "answer": true,
+      "explanation": "A RoleBinding references a ClusterRole to reuse its rules for namespaced resources. The binding grants those permissions within its own namespace.",
+      "misconception": "",
+      "factKey": "rolebinding-clusterrole-namespace",
+      "topic": "RBAC namespace scope",
+      "tags": [
+        "RoleBinding",
+        "ClusterRole",
+        "ServiceAccount"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using RBAC Authorization",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-07",
+      "section": "4.1",
+      "statement": "With impersonation permission, `kubectl auth can-i --as` submits an access check under the named username.",
+      "answer": true,
+      "explanation": "The --as option supplies the username for impersonation during a kubectl auth can-i access check. The caller needs permission to impersonate the specified user.",
+      "misconception": "",
+      "factKey": "auth-can-i-impersonation",
+      "topic": "Authorization access checks",
+      "tags": [
+        "kubectl auth can-i"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl auth can-i",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_auth/kubectl_auth_can-i/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-08",
+      "section": "4.1",
+      "statement": "Validating admission controllers receive a Pod with labels already added by mutating admission controllers.",
+      "answer": true,
+      "explanation": "The API server runs validation after the mutation phase. Validating admission evaluates the object with mutations already applied.",
+      "misconception": "",
+      "factKey": "admission-mutated-object-validation",
+      "topic": "Admission request evaluation",
+      "tags": [
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Admission Control in Kubernetes",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-09",
+      "section": "4.1",
+      "statement": "Admission controllers can reject a `kubectl get` request based on the requested object's field values.",
+      "answer": false,
+      "explanation": "Read requests bypass admission control. Admission rules therefore do not reject kubectl get requests based on the retrieved object's contents.",
+      "misconception": "Admission controllers evaluate and block reads using the stored object's field values.",
+      "factKey": "admission-read-request-bypass",
+      "topic": "Admission request evaluation",
+      "tags": [
+        "kubectl get"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Admission Control in Kubernetes",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.1-10",
+      "section": "4.1",
+      "statement": "Since Kubernetes v1.36, the API server evaluates MutatingAdmissionPolicy CEL expressions in its own process.",
+      "answer": true,
+      "explanation": "MutatingAdmissionPolicy evaluates CEL inside the API server, providing admission mutations without an external webhook service.",
+      "misconception": "",
+      "factKey": "mutating-policy-cel-in-process",
+      "topic": "Admission policy execution",
+      "tags": [
+        "MutatingAdmissionPolicy"
+      ],
+      "appliesTo": "Kubernetes v1.36 and later",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Mutating Admission Policy",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/mutating-admission-policy/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-01",
+      "section": "4.2",
+      "statement": "When a container's CPU request differs from its limit, the scheduler uses its limit to check node capacity.",
+      "answer": false,
+      "explanation": "The scheduler uses CPU requests to decide whether a node has enough CPU available for a Pod. Limits are not its CPU placement budget.",
+      "misconception": "CPU limits determine whether a Pod fits on a node.",
+      "factKey": "requests-scheduler-placement",
+      "topic": "Resource scheduling",
+      "tags": [
+        "Pod",
+        "resources.requests.cpu",
+        "resources.limits.cpu"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Assign CPU Resources to Containers and Pods",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-02",
+      "section": "4.2",
+      "statement": "The kernel throttles CPU time when a container's workload tries to exceed its CPU limit.",
+      "answer": true,
+      "explanation": "Linux enforces a container's CPU limit through throttling, restricting the CPU time available to that container.",
+      "misconception": "",
+      "factKey": "cpu-limit-throttling",
+      "topic": "Resource enforcement",
+      "tags": [
+        "Pod",
+        "resources.limits.cpu"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Management for Pods and Containers",
+        "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-03",
+      "section": "4.2",
+      "statement": "The kernel may OOM-kill a container whose memory consumption exceeds its memory limit.",
+      "answer": true,
+      "explanation": "Memory limit enforcement is reactive: the kernel can kill a container under memory pressure after it exceeds its limit.",
+      "misconception": "",
+      "factKey": "memory-limit-reactive-oom",
+      "topic": "Resource enforcement",
+      "tags": [
+        "Pod",
+        "resources.limits.memory"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Management for Pods and Containers",
+        "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-04",
+      "section": "4.2",
+      "statement": "By default, Kubernetes uses a container's CPU limit as its CPU request when admission leaves the request unset.",
+      "answer": true,
+      "explanation": "If admission supplies no default CPU request, Kubernetes copies the container's specified CPU limit into its request.",
+      "misconception": "",
+      "factKey": "limit-only-request-default",
+      "topic": "Resource defaulting",
+      "tags": [
+        "Pod",
+        "resources.requests.cpu",
+        "resources.limits.cpu"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Management for Pods and Containers",
+        "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-05",
+      "section": "4.2",
+      "statement": "By default, the admission controller applies updated LimitRange defaults to existing Pods.",
+      "answer": false,
+      "explanation": "LimitRange defaulting happens during admission. Updating its defaults leaves the resource settings of existing Pods unchanged.",
+      "misconception": "Changes to LimitRange defaults retroactively update existing Pods.",
+      "factKey": "limitrange-existing-pods-unchanged",
+      "topic": "LimitRange admission",
+      "tags": [
+        "LimitRange",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Limit Ranges",
+        "url": "https://kubernetes.io/docs/concepts/policy/limit-range/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-06",
+      "section": "4.2",
+      "statement": "The API server rejects a Pod whose container CPU limit exceeds a LimitRange's container CPU maximum.",
+      "answer": true,
+      "explanation": "A LimitRange can constrain a container's CPU limit. A submitted Pod that exceeds the configured maximum fails admission.",
+      "misconception": "",
+      "factKey": "limitrange-minmax-admission",
+      "topic": "LimitRange admission",
+      "tags": [
+        "LimitRange",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Limit Ranges",
+        "url": "https://kubernetes.io/docs/concepts/policy/limit-range/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-07",
+      "section": "4.2",
+      "statement": "A requests.cpu ResourceQuota permits creation of Pods that omit both CPU requests and CPU limits.",
+      "answer": false,
+      "explanation": "A requests.cpu ResourceQuota rejects a new Pod with no CPU request or limit when admission supplies no defaults. Omitting the fields does not bypass the quota.",
+      "misconception": "Omitting CPU resources lets a new Pod bypass requests.cpu quota as a zero-usage object.",
+      "factKey": "quota-missing-resource-fields",
+      "topic": "ResourceQuota admission",
+      "tags": [
+        "ResourceQuota",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Quotas",
+        "url": "https://kubernetes.io/docs/concepts/policy/resource-quotas/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-08",
+      "section": "4.2",
+      "statement": "After you lower a requests.cpu ResourceQuota below existing usage, the control plane evicts Pods to meet it.",
+      "answer": false,
+      "explanation": "Lowering a CPU ResourceQuota leaves existing Pods running even if their total requests exceed the new budget. The new quota governs subsequent admission.",
+      "misconception": "Reducing a namespace CPU quota evicts existing Pods until their requests fit the new quota.",
+      "factKey": "quota-change-existing-objects",
+      "topic": "ResourceQuota admission",
+      "tags": [
+        "ResourceQuota",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Quotas",
+        "url": "https://kubernetes.io/docs/concepts/policy/resource-quotas/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-09",
+      "section": "4.2",
+      "statement": "With an exhausted ConfigMap count ResourceQuota, the API server rejects a new ConfigMap despite spare node capacity.",
+      "answer": true,
+      "explanation": "A ConfigMap count quota limits object creation in its namespace; reaching the cap blocks another ConfigMap regardless of node resources.",
+      "misconception": "",
+      "factKey": "quota-object-count-admission",
+      "topic": "ResourceQuota admission",
+      "tags": [
+        "ResourceQuota",
+        "ConfigMap"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Quotas",
+        "url": "https://kubernetes.io/docs/concepts/policy/resource-quotas/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.2-10",
+      "section": "4.2",
+      "statement": "Since Kubernetes v1.35, the kubelet can replace a Pod to apply a memory resize using `RestartContainer`.",
+      "answer": false,
+      "explanation": "A memory resize with RestartContainer restarts the affected container inside the same Pod. The resize preserves the Pod's identity.",
+      "misconception": "RestartContainer during an in-place memory resize replaces the whole Pod.",
+      "factKey": "pod-resize-restartcontainer-preserves-pod",
+      "topic": "In-place resource resize",
+      "tags": [
+        "Pod",
+        "resizePolicy",
+        "RestartContainer"
+      ],
+      "appliesTo": "Kubernetes v1.35 and later",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resize CPU and Memory Resources assigned to Containers",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/resize-container-resources/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-01",
+      "section": "4.3",
+      "statement": "A container can use valueFrom to map one ConfigMap key to an environment variable with a different name.",
+      "answer": true,
+      "explanation": "An env entry with valueFrom.configMapKeyRef selects a named ConfigMap key. The entry's name determines the environment variable name.",
+      "misconception": "",
+      "factKey": "configmap-valuefrom-single-key",
+      "topic": "ConfigMap environment variables",
+      "tags": [
+        "Pod",
+        "ConfigMap",
+        "valueFrom"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ConfigMaps",
+        "url": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-02",
+      "section": "4.3",
+      "statement": "A running container keeps its existing ConfigMap-derived environment values when the ConfigMap changes.",
+      "answer": true,
+      "explanation": "The kubelet reads ConfigMap values when it starts the container. Restart the container to load changed values into its environment.",
+      "misconception": "",
+      "factKey": "configmap-env-update-restart",
+      "topic": "ConfigMap environment variables",
+      "tags": [
+        "Pod",
+        "ConfigMap"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ConfigMaps",
+        "url": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-03",
+      "section": "4.3",
+      "statement": "The kubelet automatically refreshes a ConfigMap file mounted with subPath after the ConfigMap changes.",
+      "answer": false,
+      "explanation": "A ConfigMap file mounted with subPath stays on its original contents. Updates to the ConfigMap do not propagate through that mount.",
+      "misconception": "A subPath mount receives ConfigMap updates like a regular ConfigMap volume mount.",
+      "factKey": "configmap-subpath-update-freeze",
+      "topic": "ConfigMap mounted files",
+      "tags": [
+        "ConfigMap",
+        "subPath"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ConfigMaps",
+        "url": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-04",
+      "section": "4.3",
+      "statement": "The kubelet may expose image files at a volume's mount path when its optional ConfigMap source is missing.",
+      "answer": false,
+      "explanation": "The kubelet still creates the optional ConfigMap volume's mount path. A missing ConfigMap leaves that mounted volume empty.",
+      "misconception": "An optional missing ConfigMap makes the kubelet skip the mount and reveal the image files underneath.",
+      "factKey": "optional-configmap-empty-volume",
+      "topic": "Optional configuration sources",
+      "tags": [
+        "Pod",
+        "ConfigMap"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure a Pod to Use a ConfigMap",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-05",
+      "section": "4.3",
+      "statement": "The kubelet automatically retries startup when a Pod's container references a missing required Secret.",
+      "answer": true,
+      "explanation": "A missing required Secret leaves the affected container waiting. The kubelet retries and reports an Event until it can obtain the Secret.",
+      "misconception": "",
+      "factKey": "required-secret-start-retry",
+      "topic": "Secret startup dependencies",
+      "tags": [
+        "Pod",
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Secrets",
+        "url": "https://kubernetes.io/docs/concepts/configuration/secret/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-06",
+      "section": "4.3",
+      "statement": "The API server rejects a patch changing a ConfigMap's immutable field from true to false.",
+      "answer": true,
+      "explanation": "The API server rejects changing immutable from true to false on an existing ConfigMap. Changing its stored data requires replacing the object.",
+      "misconception": "",
+      "factKey": "immutable-configmap-setting-irreversible",
+      "topic": "Immutable configuration updates",
+      "tags": [
+        "kubectl patch",
+        "ConfigMap",
+        "immutable"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ConfigMaps",
+        "url": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-07",
+      "section": "4.3",
+      "statement": "Base64 encoding encrypts a Secret's data against users who have permission to read the Secret.",
+      "answer": false,
+      "explanation": "A user who reads a Secret can decode its base64 data. The encoding changes the representation rather than providing encryption.",
+      "misconception": "Base64 encoding prevents an authorized Secret reader from learning its contents.",
+      "factKey": "secret-base64-confidentiality",
+      "topic": "Secret data encoding",
+      "tags": [
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Secrets",
+        "url": "https://kubernetes.io/docs/concepts/configuration/secret/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-08",
+      "section": "4.3",
+      "statement": "The API server accepts plain text values in a Secret's stringData field when creating the Secret.",
+      "answer": true,
+      "explanation": "The stringData field accepts unencoded strings as Secret input. The API server converts those values into stored data entries.",
+      "misconception": "",
+      "factKey": "secret-stringdata-plain-input",
+      "topic": "Secret data input",
+      "tags": [
+        "Secret",
+        "stringData"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managing Secrets using Configuration File",
+        "url": "https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-config-file/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-09",
+      "section": "4.3",
+      "statement": "The API server verifies that a kubernetes.io/tls Secret's certificate matches its private key.",
+      "answer": false,
+      "explanation": "For a kubernetes.io/tls Secret, the API server checks for tls.crt and tls.key but does not validate their values.",
+      "misconception": "The API server validates the certificate and private key relationship when admitting a TLS Secret.",
+      "factKey": "tls-secret-value-validation",
+      "topic": "TLS Secret validation",
+      "tags": [
+        "Secret",
+        "kubernetes.io/tls"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Secrets",
+        "url": "https://kubernetes.io/docs/concepts/configuration/secret/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.3-10",
+      "section": "4.3",
+      "statement": "`kubectl create configmap` imports files from nested subdirectories when its source is a directory.",
+      "answer": false,
+      "explanation": "Directory import reads regular files immediately inside the chosen directory. kubectl skips nested directories and other non-regular entries.",
+      "misconception": "Creating a ConfigMap from a directory recursively imports files beneath it.",
+      "factKey": "configmap-directory-file-import",
+      "topic": "ConfigMap file imports",
+      "tags": [
+        "kubectl create configmap",
+        "ConfigMap"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure a Pod to Use a ConfigMap",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/"
+      }
+    }
+  ]
+}

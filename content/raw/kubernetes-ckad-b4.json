@@ -1,0 +1,905 @@
+{
+  "deck": "kubernetes-ckad",
+  "block": "b4",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced networkpolicy-ipblock-except-subtraction with networkpolicy-egress-ipblock-destination to avoid an answer implied by the field name. Replaced service-envvars-creation-order with service-envvars-namespace-scope to avoid repeating the ConfigMap environment snapshot fact in 4.3.",
+  "cards": [
+    {
+      "id": "kubernetes-ckad-s4.4-01",
+      "section": "4.4",
+      "statement": "By default, a Pod in namespace apps with serviceAccountName unset uses the default ServiceAccount in namespace default.",
+      "answer": false,
+      "explanation": "When serviceAccountName is unset, Kubernetes assigns the ServiceAccount named default in the Pod's own namespace. A Pod in apps uses apps' default ServiceAccount.",
+      "misconception": "Pods share the default namespace's default ServiceAccount when their serviceAccountName is unset.",
+      "factKey": "pod-default-serviceaccount-selection",
+      "topic": "ServiceAccount Pod identity",
+      "tags": [
+        "Pod",
+        "ServiceAccount",
+        "serviceAccountName"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service Accounts",
+        "url": "https://kubernetes.io/docs/concepts/security/service-accounts/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-02",
+      "section": "4.4",
+      "statement": "The API server rejects changing serviceAccountName when you update an existing Pod.",
+      "answer": true,
+      "explanation": "A Pod's serviceAccountName is fixed at creation. Create a replacement Pod to assign a different ServiceAccount.",
+      "misconception": "",
+      "factKey": "pod-serviceaccount-immutable",
+      "topic": "ServiceAccount Pod identity",
+      "tags": [
+        "Pod",
+        "ServiceAccount",
+        "serviceAccountName"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure Service Accounts for Pods",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-03",
+      "section": "4.4",
+      "statement": "A ServiceAccount's automountServiceAccountToken setting takes precedence over the Pod's setting.",
+      "answer": false,
+      "explanation": "When both a Pod and its ServiceAccount set automountServiceAccountToken, the Pod's value controls automatic credential mounting for that Pod.",
+      "misconception": "The ServiceAccount's credential mounting choice overrides a conflicting choice on the Pod.",
+      "factKey": "pod-token-automount-precedence",
+      "topic": "ServiceAccount token mounting",
+      "tags": [
+        "Pod",
+        "ServiceAccount",
+        "automountServiceAccountToken"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure Service Accounts for Pods",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-04",
+      "section": "4.4",
+      "statement": "By default, the kubelet automatically rotates a projected ServiceAccount token before the token expires.",
+      "answer": true,
+      "explanation": "The kubelet requests a replacement as the projected token approaches expiration. The application needs to reload the token file to use the replacement.",
+      "misconception": "",
+      "factKey": "projected-serviceaccount-token-rotation",
+      "topic": "ServiceAccount token rotation",
+      "tags": [
+        "Pod",
+        "ServiceAccount",
+        "TokenRequest"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure Service Accounts for Pods",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-05",
+      "section": "4.4",
+      "statement": "When runAsUser differs, the container's securityContext overrides the Pod's configured user ID.",
+      "answer": true,
+      "explanation": "The runtime uses the container's runAsUser value when the Pod and container both specify it. The container-level value takes precedence for that container.",
+      "misconception": "",
+      "factKey": "container-securitycontext-precedence",
+      "topic": "Security context precedence",
+      "tags": [
+        "Pod",
+        "securityContext",
+        "runAsUser"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure a Security Context for a Pod or Container",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-06",
+      "section": "4.4",
+      "statement": "With runAsNonRoot true, the kubelet automatically selects a nonzero UID for an image configured as root.",
+      "answer": false,
+      "explanation": "runAsNonRoot makes the kubelet check the container's user and refuse startup if it would run as UID zero. The setting does not choose a replacement UID.",
+      "misconception": "runAsNonRoot assigns a non-root UID instead of validating the configured user.",
+      "factKey": "runasnonroot-uid-zero-rejection",
+      "topic": "Container user validation",
+      "tags": [
+        "Pod",
+        "securityContext",
+        "runAsNonRoot"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/core/pod-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-07",
+      "section": "4.4",
+      "statement": "With readOnlyRootFilesystem true, the runtime also makes a container's mounted volumes read-only.",
+      "answer": false,
+      "explanation": "readOnlyRootFilesystem affects the container's root filesystem. Mounted volumes retain their own read/write settings, independent of that root filesystem setting.",
+      "misconception": "Making the root filesystem read-only also makes mounted volumes read-only.",
+      "factKey": "readonly-rootfs-volume-independence",
+      "topic": "Container filesystem security",
+      "tags": [
+        "Pod",
+        "securityContext",
+        "readOnlyRootFilesystem"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure a Security Context for a Pod or Container",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/security-context/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-08",
+      "section": "4.4",
+      "statement": "A Pod's securityContext supports capabilities settings that apply across its containers.",
+      "answer": false,
+      "explanation": "Configure capabilities in each individual container's securityContext. PodSecurityContext does not provide a capabilities field for a Pod-wide setting.",
+      "misconception": "PodSecurityContext accepts capability changes that apply across the Pod's containers.",
+      "factKey": "capabilities-container-securitycontext",
+      "topic": "Container capability settings",
+      "tags": [
+        "Pod",
+        "securityContext",
+        "capabilities"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/core/pod-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-09",
+      "section": "4.4",
+      "statement": "A runtime upgrade can change the syscall filter a Pod receives with seccompProfile.type set to RuntimeDefault.",
+      "answer": true,
+      "explanation": "RuntimeDefault uses the container runtime's built-in profile. That profile can differ across runtime versions, so the field does not pin a fixed syscall allow-list.",
+      "misconception": "",
+      "factKey": "seccomp-runtimedefault-profile",
+      "topic": "Container seccomp profiles",
+      "tags": [
+        "Pod",
+        "seccompProfile",
+        "RuntimeDefault"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Syscalls with seccomp",
+        "url": "https://kubernetes.io/docs/tutorials/security/seccomp/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s4.4-10",
+      "section": "4.4",
+      "statement": "Since Kubernetes v1.36, with supporting kernels and runtimes, hostUsers false maps Pod UID zero to a non-root host UID.",
+      "answer": true,
+      "explanation": "Setting hostUsers to false puts the Pod in a user namespace. The kubelet chooses a host mapping that lets root inside the container remain unprivileged on the host.",
+      "misconception": "",
+      "factKey": "usernamespace-hostusers-mapping",
+      "topic": "Pod user namespaces",
+      "tags": [
+        "Pod",
+        "hostUsers"
+      ],
+      "appliesTo": "Kubernetes v1.36 and later",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "User Namespaces",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-01",
+      "section": "5.1",
+      "statement": "With a plugin enforcing NetworkPolicy, a new namespace's Pods permit incoming TCP traffic by default.",
+      "answer": true,
+      "explanation": "Pods start open to incoming connections in a namespace that has no NetworkPolicies. Installing an enforcing plugin does not itself isolate them.",
+      "misconception": "",
+      "factKey": "networkpolicy-default-nonisolation",
+      "topic": "NetworkPolicy ingress behavior",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Network Policies",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-02",
+      "section": "5.1",
+      "statement": "With a plugin enforcing NetworkPolicy, a policy with `policyTypes: [Ingress]` restricts its selected Pods' egress.",
+      "answer": false,
+      "explanation": "A NetworkPolicy with policyTypes [Ingress] controls incoming connections. Its selection does not isolate the Pod for egress.",
+      "misconception": "Selecting a Pod for ingress isolation also restricts its outgoing connections.",
+      "factKey": "networkpolicy-direction-independent",
+      "topic": "NetworkPolicy traffic directions",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Network Policies",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-03",
+      "section": "5.1",
+      "statement": "With a plugin enforcing NetworkPolicy, a Pod's ingress allowance can come from either of two matching policies.",
+      "answer": true,
+      "explanation": "NetworkPolicies selecting a Pod combine their ingress allowances instead of intersecting them.",
+      "misconception": "",
+      "factKey": "networkpolicy-additive-union",
+      "topic": "NetworkPolicy rule combinations",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "NetworkPolicy",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-04",
+      "section": "5.1",
+      "statement": "For new TCP connections, a NetworkPolicy-enforcing plugin lets destination ingress override blocked source egress.",
+      "answer": false,
+      "explanation": "A new Pod-to-Pod connection needs permission for source egress and destination ingress. Permission at the destination does not override blocked source egress.",
+      "misconception": "Destination ingress permission overrides source egress isolation.",
+      "factKey": "networkpolicy-both-end-allow",
+      "topic": "NetworkPolicy connection permission",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Network Policies",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-05",
+      "section": "5.1",
+      "statement": "A NetworkPolicy's empty podSelector includes Pods with unrelated labels in that policy's namespace.",
+      "answer": true,
+      "explanation": "An empty podSelector matches Pods throughout the policy's own namespace, regardless of their labels.",
+      "misconception": "",
+      "factKey": "networkpolicy-empty-selector-namespace",
+      "topic": "NetworkPolicy target selection",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Declare Network Policy",
+        "url": "https://kubernetes.io/docs/tasks/administer-cluster/declare-network-policy/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-06",
+      "section": "5.1",
+      "statement": "By default, a NetworkPolicy that defines egress rules and omits policyTypes applies to egress alone.",
+      "answer": false,
+      "explanation": "Kubernetes defaults policyTypes to include Ingress and adds Egress when the NetworkPolicy defines egress rules.",
+      "misconception": "Egress rules alone make the inferred policyTypes egress-only.",
+      "factKey": "networkpolicy-inferred-types",
+      "topic": "NetworkPolicy traffic directions",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "NetworkPolicy",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-07",
+      "section": "5.1",
+      "statement": "A NetworkPolicy combines namespaceSelector and podSelector in one peer to select Pods within matching namespaces.",
+      "answer": true,
+      "explanation": "A NetworkPolicy peer combines podSelector and namespaceSelector to select matching Pods in matching namespaces.",
+      "misconception": "",
+      "factKey": "networkpolicy-combined-selectors-and",
+      "topic": "NetworkPolicy peer selection",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "NetworkPolicy",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-08",
+      "section": "5.1",
+      "statement": "A NetworkPolicy's egress ipBlock matches the selected Pod's source address for outgoing connections.",
+      "answer": false,
+      "explanation": "A NetworkPolicy egress rule's ipBlock matches destination IP addresses. The selected Pod is the connection source.",
+      "misconception": "An egress ipBlock filters the selected Pod's source IP.",
+      "factKey": "networkpolicy-egress-ipblock-destination",
+      "topic": "NetworkPolicy address ranges",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "NetworkPolicy",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-09",
+      "section": "5.1",
+      "statement": "A NetworkPolicy with endPort uses a named port as the start of its destination port range.",
+      "answer": false,
+      "explanation": "A NetworkPolicy port range needs a numeric port value. The API server rejects endPort combined with a named port.",
+      "misconception": "A named port serves as the lower boundary of an endPort range.",
+      "factKey": "networkpolicy-endport-numeric",
+      "topic": "NetworkPolicy port ranges",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "NetworkPolicy",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.1-10",
+      "section": "5.1",
+      "statement": "With a plugin enforcing NetworkPolicy, ingress isolation still permits traffic from the Pod's own node.",
+      "answer": true,
+      "explanation": "NetworkPolicy leaves connections from a Pod's resident node permitted, even when its ingress rules grant no access.",
+      "misconception": "",
+      "factKey": "networkpolicy-own-node-traffic",
+      "topic": "NetworkPolicy node traffic",
+      "tags": [
+        "NetworkPolicy",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Network Policies",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-01",
+      "section": "5.2",
+      "statement": "Changing a Pod's labels can move it into the backend set of an existing Service.",
+      "answer": true,
+      "explanation": "The control plane watches for Pods matching the Service's selector and updates its backend set when their labels change.",
+      "misconception": "",
+      "factKey": "service-selector-pod-labels",
+      "topic": "Service backend selection",
+      "tags": [
+        "Service",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-02",
+      "section": "5.2",
+      "statement": "When port and targetPort differ, clients connect to targetPort on the Service's cluster IP.",
+      "answer": false,
+      "explanation": "Clients connect to the Service's port on its cluster IP. The Service forwards that traffic to the backend's targetPort.",
+      "misconception": "The targetPort is the client-facing port on the Service's cluster IP.",
+      "factKey": "service-port-targetport-routing",
+      "topic": "Service port routing",
+      "tags": [
+        "Service",
+        "targetPort"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debug Services",
+        "url": "https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-03",
+      "section": "5.2",
+      "statement": "A Service's named targetPort reaches Pods that use different port numbers for the same port name.",
+      "answer": true,
+      "explanation": "The Service resolves the named targetPort against each selected Pod's declared port. Matching port names can therefore refer to different numbers.",
+      "misconception": "",
+      "factKey": "service-named-targetport-varied-numbers",
+      "topic": "Service port routing",
+      "tags": [
+        "Service",
+        "Pod",
+        "targetPort"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-04",
+      "section": "5.2",
+      "statement": "Kubernetes routes a selectorless Service via manual EndpointSlices matched by owner reference.",
+      "answer": false,
+      "explanation": "An EndpointSlice's kubernetes.io/service-name label identifies the Service that uses its endpoints. An owner reference records ownership of the slice.",
+      "misconception": "An EndpointSlice's owner reference determines the Service that routes traffic through it.",
+      "factKey": "selectorless-service-manual-endpoints",
+      "topic": "Manual Service backends",
+      "tags": [
+        "Service",
+        "EndpointSlice"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "EndpointSlices",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-05",
+      "section": "5.2",
+      "statement": "With cluster DNS installed, a headless Service with a selector returns ready Pod IPs in DNS lookups by default.",
+      "answer": true,
+      "explanation": "A headless Service's DNS records point to its backing Pods rather than a virtual cluster IP, so the client receives endpoint addresses.",
+      "misconception": "",
+      "factKey": "headless-service-pod-dns",
+      "topic": "Service DNS discovery",
+      "tags": [
+        "Service",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "DNS for Services and Pods",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-06",
+      "section": "5.2",
+      "statement": "With cluster DNS installed, a Pod's short Service name lookup searches across namespaces by default.",
+      "answer": false,
+      "explanation": "A short Service name uses the querying Pod's namespace. To look up a Service in another namespace, include that namespace in the DNS name.",
+      "misconception": "A short Service name lookup searches Services throughout the cluster.",
+      "factKey": "service-dns-short-name-namespace",
+      "topic": "Service DNS discovery",
+      "tags": [
+        "Service",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "DNS for Services and Pods",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-07",
+      "section": "5.2",
+      "statement": "For application Services, the kubelet limits Service environment variable discovery to the Pod's namespace.",
+      "answer": true,
+      "explanation": "The kubelet supplies environment variables for application Services in the Pod's own namespace. Services in another namespace do not contribute those variables.",
+      "misconception": "",
+      "factKey": "service-envvars-namespace-scope",
+      "topic": "Service environment discovery",
+      "tags": [
+        "Service",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Container Environment",
+        "url": "https://kubernetes.io/docs/concepts/containers/container-environment/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-08",
+      "section": "5.2",
+      "statement": "For a Service backed by several Pods, `kubectl port-forward` can balance local connections across those Pods.",
+      "answer": false,
+      "explanation": "kubectl port-forward selects one matching Pod and forwards the session to it. It does not use Service load balancing across the backend set.",
+      "misconception": "Forwarding through a Service load-balances connections across its backend Pods.",
+      "factKey": "service-port-forward-one-pod",
+      "topic": "Service port forwarding",
+      "tags": [
+        "kubectl port-forward",
+        "Service",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kubectl port-forward",
+        "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_port-forward/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-09",
+      "section": "5.2",
+      "statement": "The EndpointSlice controller keeps an empty slice for a Service whose selector matches zero Pods.",
+      "answer": true,
+      "explanation": "With zero selected Pods, the EndpointSlice controller preserves an empty placeholder slice. Its endpoints list contains no Pod addresses.",
+      "misconception": "",
+      "factKey": "service-selector-no-matches-empty-slice",
+      "topic": "Service backend selection",
+      "tags": [
+        "Service",
+        "EndpointSlice"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "EndpointSlice controller reconciliation",
+        "url": "https://github.com/kubernetes/endpointslice/blob/v0.37.1/reconciler.go"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.2-10",
+      "section": "5.2",
+      "statement": "`kubectl port-forward` can reach an external database through a selectorless Service with manual EndpointSlices.",
+      "answer": false,
+      "explanation": "The API server blocks proxying to endpoints that do not map to Pods. External database addresses in manual EndpointSlices therefore do not work with kubectl port-forward.",
+      "misconception": "Manually supplied EndpointSlices make an external Service backend available through kubectl port-forward.",
+      "factKey": "selectorless-service-port-forward-block",
+      "topic": "Service port forwarding",
+      "tags": [
+        "kubectl port-forward",
+        "Service",
+        "EndpointSlice"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-01",
+      "section": "5.3",
+      "statement": "The API server can accept valid Ingress objects before an administrator installs an Ingress controller.",
+      "answer": true,
+      "explanation": "Creating an Ingress records routing configuration. An Ingress controller needs to implement that configuration before it affects traffic.",
+      "misconception": "",
+      "factKey": "ingress-controller-prerequisite",
+      "topic": "Ingress controller activation",
+      "tags": [
+        "Ingress"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-02",
+      "section": "5.3",
+      "statement": "With a single default IngressClass, the API server assigns it when a new Ingress leaves its class unspecified.",
+      "answer": true,
+      "explanation": "DefaultIngressClass admission assigns the single default class during Ingress creation. The new object's ingressClassName receives that class's name.",
+      "misconception": "",
+      "factKey": "ingress-default-class-assignment",
+      "topic": "Ingress class selection",
+      "tags": [
+        "Ingress",
+        "IngressClass",
+        "DefaultIngressClass"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Admission Controllers: DefaultIngressClass",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-03",
+      "section": "5.3",
+      "statement": "An Ingress's Secret reference lets you replace its configured certificate by editing the mutable Secret's data.",
+      "answer": true,
+      "explanation": "An Ingress references a Secret that holds its certificate and private key. Updating that Secret replaces the configured certificate material.",
+      "misconception": "",
+      "factKey": "ingress-tls-secret-indirection",
+      "topic": "Ingress TLS configuration",
+      "tags": [
+        "Ingress",
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Secrets: TLS Secrets and editing Secrets",
+        "url": "https://kubernetes.io/docs/concepts/configuration/secret/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-04",
+      "section": "5.3",
+      "statement": "For a host-specific Ingress rule, the controller uses both the request's host and path to select a backend.",
+      "answer": true,
+      "explanation": "A host-specific Ingress rule needs a matching host and a matching path. A path match by itself does not satisfy both conditions.",
+      "misconception": "",
+      "factKey": "ingress-host-and-path-match",
+      "topic": "Ingress request matching",
+      "tags": [
+        "Ingress"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-05",
+      "section": "5.3",
+      "statement": "An Ingress controller matches a request for `/Docs` against the Exact path `/docs` configured in that Ingress.",
+      "answer": false,
+      "explanation": "Ingress Exact path matching is case-sensitive. A rule for /Docs does not match a request for /docs.",
+      "misconception": "Exact paths treat uppercase and lowercase characters as equivalent.",
+      "factKey": "ingress-exact-case-sensitive",
+      "topic": "Ingress request matching",
+      "tags": [
+        "Ingress",
+        "Exact",
+        "pathType"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-06",
+      "section": "5.3",
+      "statement": "An Ingress controller treats the request path `/api-v2` as matching a Prefix path configured as `/api`.",
+      "answer": false,
+      "explanation": "Ingress Prefix compares complete slash-separated elements; api-v2 is a different element from api.",
+      "misconception": "Prefix matches a substring inside the final path element.",
+      "factKey": "ingress-prefix-path-elements",
+      "topic": "Ingress request matching",
+      "tags": [
+        "Ingress",
+        "Prefix",
+        "pathType"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-07",
+      "section": "5.3",
+      "statement": "A pathType of ImplementationSpecific lets an Ingress rule use regular-expression syntax defined by Kubernetes.",
+      "answer": false,
+      "explanation": "ImplementationSpecific gives the selected Ingress controller control over path interpretation. Kubernetes leaves those matching semantics to that implementation.",
+      "misconception": "ImplementationSpecific supplies a portable regular-expression matching contract.",
+      "factKey": "ingress-implementation-specific-controller",
+      "topic": "Ingress request matching",
+      "tags": [
+        "Ingress",
+        "ImplementationSpecific",
+        "pathType"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-08",
+      "section": "5.3",
+      "statement": "An Ingress controller prefers `/api/v2` over `/api` when both Prefix paths in one Ingress match a request.",
+      "answer": true,
+      "explanation": "When Ingress paths match the same request, the longest path takes precedence; /api/v2 outranks /api.",
+      "misconception": "",
+      "factKey": "ingress-longest-path-precedence",
+      "topic": "Ingress request matching",
+      "tags": [
+        "Ingress",
+        "Prefix"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-09",
+      "section": "5.3",
+      "statement": "In the Ingress specification, defaultBackend handles requests whose selected Service has zero Pods.",
+      "answer": false,
+      "explanation": "Ingress defaultBackend covers unmatched requests. A matched rule keeps its backend selection even when that Service has zero Pods.",
+      "misconception": "defaultBackend supplies failover for a matched Service with zero Pods.",
+      "factKey": "ingress-defaultbackend-unmatched-request",
+      "topic": "Ingress backend fallback",
+      "tags": [
+        "Ingress",
+        "Service",
+        "defaultBackend"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress API reference",
+        "url": "https://kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/"
+      }
+    },
+    {
+      "id": "kubernetes-ckad-s5.3-10",
+      "section": "5.3",
+      "statement": "The standard Ingress TLS model sends the client's encrypted TLS session onward to the Service backend.",
+      "answer": false,
+      "explanation": "Ingress TLS assumes termination at the Ingress entry point. The documented model sends plaintext traffic from there to the backend Service.",
+      "misconception": "Standard Ingress TLS forwards the encrypted client session to the backend for termination.",
+      "factKey": "ingress-tls-termination-point",
+      "topic": "Ingress TLS configuration",
+      "tags": [
+        "Ingress",
+        "Service"
+      ],
+      "appliesTo": "Kubernetes v1.37",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Ingress",
+        "url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+      }
+    }
+  ]
+}

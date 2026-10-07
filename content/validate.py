@@ -22,6 +22,7 @@ OFFICIAL = re.compile(
     r"|owasp\.org|mozilla\.org|w3\.org|whatwg\.org|ietf\.org|rfc-editor\.org|web\.dev|chromium\.org"
     r"|tc39\.es|ecma-international\.org|nodejs\.org|git-scm\.com|kernel\.org|man7\.org|gnu\.org|freedesktop\.org"
     r"|openbsd\.org|openssh\.com|uapi-group\.org|w3c\.github\.io|chrome\.com|debian\.org|fedoraproject\.org|ubuntu\.com|systemd\.io"
+    r"|python\.org|postgresql\.org"
     r")/"
 )
 ABSOLUTE = re.compile(r"\b(always|all|only|every|solely|exclusively)\b", re.I)

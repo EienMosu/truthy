@@ -1,0 +1,951 @@
+{
+  "deck": "azure-az-104",
+  "block": "b2",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Plan fixes: file-share-soft-delete-share-scope becomes file-share-undelete-snapshot-recovery, and arm-what-if-resource-mutation becomes arm-what-if-reference-expression-resolution, to test administrator behavior. In 3.2, encryption-at-host-guest-execution becomes encryption-at-host-temporary-disk-key-source; vm-resource-group-move-region-preserved becomes vm-resource-group-move-resource-id; vm-region-change-in-place becomes resource-mover-commit-source-vm-retention; vm-scale-set-metric-autoscale becomes vm-scale-set-scale-out-rule-or. These replacements remove a name giveaway, overlap with b1, a recurring distractor and a broad autoscale fact.",
+  "cards": [
+    {
+      "id": "azure-az-104-s2.2-01",
+      "section": "2.2",
+      "statement": "Azure Storage keeps a Standard general-purpose v2 account's type fixed after an administrator creates it.",
+      "answer": true,
+      "explanation": "To move data from a Standard general-purpose v2 account to a premium block blob account, create a replacement account and copy the data.",
+      "misconception": "",
+      "factKey": "storage-account-type-fixed-after-creation",
+      "topic": "Storage account settings",
+      "tags": [
+        "Azure Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of storage accounts",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-02",
+      "section": "2.2",
+      "statement": "By default, the Azure portal configures new storage accounts with TLS 1.2 as the minimum version.",
+      "answer": true,
+      "explanation": "The Azure portal sets a new storage account's minimum TLS version to 1.2. This creation default depends on the deployment tool.",
+      "misconception": "",
+      "factKey": "storage-portal-minimum-tls-default",
+      "topic": "Storage account settings",
+      "tags": [
+        "Azure Storage",
+        "Azure portal"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "The numeric TLS minimum and the portal's creation default can change.",
+      "source": {
+        "title": "Enforce a minimum required version of Transport Layer Security (TLS) for requests to a storage account",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/transport-layer-security-configure-minimum-version"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-03",
+      "section": "2.2",
+      "statement": "A GRS account allows applications to read blobs from its secondary region before an account failover.",
+      "answer": false,
+      "explanation": "With geo-redundant storage (GRS), applications gain access to the secondary region after failover. Read access before failover uses RA-GRS.",
+      "misconception": "Geo-replication makes the GRS secondary region available for application reads before failover.",
+      "factKey": "grs-secondary-read-before-failover",
+      "topic": "Storage redundancy",
+      "tags": [
+        "Azure Storage",
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Azure Storage redundancy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-04",
+      "section": "2.2",
+      "statement": "An administrator rehydrates archived blobs to an online tier before changing an account's redundancy.",
+      "answer": true,
+      "explanation": "Azure Storage requires archived blobs to return to hot, cool or cold storage before the account's redundancy configuration changes.",
+      "misconception": "",
+      "factKey": "archived-blobs-redundancy-change-prerequisite",
+      "topic": "Storage redundancy",
+      "tags": [
+        "Azure Storage",
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Access tiers for blob data",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-05",
+      "section": "2.2",
+      "statement": "Azure Storage requires change feed on the source account before an administrator configures object replication.",
+      "answer": true,
+      "explanation": "Azure Storage reads the source account's change feed to identify operations that object replication needs to copy.",
+      "misconception": "",
+      "factKey": "object-replication-source-change-feed",
+      "topic": "Blob object replication",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Object replication for block blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-06",
+      "section": "2.2",
+      "statement": "An application can directly modify blobs in an object replication destination container while its rule is active.",
+      "answer": false,
+      "explanation": "Azure Storage rejects client writes to a destination container with an active object replication rule. Disable that rule before writing to the container.",
+      "misconception": "An object replication destination stays available for independent client writes.",
+      "factKey": "object-replication-destination-write-restriction",
+      "topic": "Blob object replication",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Object replication for block blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-07",
+      "section": "2.2",
+      "statement": "Azure Storage copies a source blob's snapshots to its destination during object replication.",
+      "answer": false,
+      "explanation": "Object replication excludes blob snapshots. Snapshots created for a source blob remain outside the replication policy's copied data.",
+      "misconception": "Object replication copies blob snapshots along with the blob's data.",
+      "factKey": "object-replication-snapshot-exclusion",
+      "topic": "Blob object replication",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Object replication for block blobs",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/object-replication-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-08",
+      "section": "2.2",
+      "statement": "Azure Storage can authenticate to Azure Key Vault with a managed identity for same-tenant customer-managed keys.",
+      "answer": true,
+      "explanation": "Grant the storage account's chosen managed identity permission to use the key. Azure Storage uses that identity when accessing the vault.",
+      "misconception": "",
+      "factKey": "storage-customer-managed-key-account-identity",
+      "topic": "Storage account encryption",
+      "tags": [
+        "Azure Storage",
+        "Azure Key Vault"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Customer-managed keys for Azure Storage encryption",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/customer-managed-keys-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-09",
+      "section": "2.2",
+      "statement": "An administrator can resume an interrupted AzCopy transfer using the job's retained plan file.",
+      "answer": true,
+      "explanation": "AzCopy uses its saved plan when resuming a failed or canceled job. It retries transfers in that plan that the job has yet to complete.",
+      "misconception": "",
+      "factKey": "azcopy-interrupted-job-resume",
+      "topic": "Storage data transfer",
+      "tags": [
+        "AzCopy",
+        "Azure Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Find errors and resume jobs by using log and plan files in AzCopy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-configure"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-10",
+      "section": "2.2",
+      "statement": "Azure Storage Explorer rejects a folder upload into a target virtual directory that it needs to create.",
+      "answer": false,
+      "explanation": "Azure Storage Explorer creates a missing target virtual directory during a folder upload, then places the selected folder's contents inside it.",
+      "misconception": "An administrator must create the target virtual directory before Storage Explorer uploads a folder into it.",
+      "factKey": "storage-explorer-folder-upload",
+      "topic": "Storage data transfer",
+      "tags": [
+        "Azure Storage Explorer",
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Manage Azure Blob Storage resources with Storage Explorer",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/storage-explorer/vs-azure-tools-storage-explorer-blobs"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.2-11",
+      "section": "2.2",
+      "statement": "By default, azcopy sync compares content hashes when deciding whether to update a matching blob.",
+      "answer": false,
+      "explanation": "AzCopy sync normally compares file names and last modified timestamps. Content-hash comparison is an explicit option.",
+      "misconception": "AzCopy sync selects updated files by comparing their contents by default.",
+      "factKey": "azcopy-sync-default-comparison",
+      "topic": "Storage data transfer",
+      "tags": [
+        "AzCopy",
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "The default comparison behavior of the AzCopy sync command can change.",
+      "source": {
+        "title": "Synchronize with Azure Blob storage by using AzCopy",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-synchronize"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-01",
+      "section": "2.3",
+      "statement": "Administrators can edit a file inside an Azure Files share snapshot after creating the snapshot.",
+      "answer": false,
+      "explanation": "Azure Files share snapshots preserve captured data as read-only. To change a captured file, copy it into a writable share first.",
+      "misconception": "A share snapshot acts as a writable copy of the file share.",
+      "factKey": "file-share-snapshot-read-only",
+      "topic": "File share snapshots",
+      "tags": [
+        "Azure Files"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use Azure Files share snapshots",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-snapshots-files"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-02",
+      "section": "2.3",
+      "statement": "Azure Files can restore a deleted share's snapshots when an administrator undeletes that share.",
+      "answer": true,
+      "explanation": "Undeleting a retained Azure file share restores its contents and the snapshots that existed when the share was deleted. The recovery operation brings the share back as a unit.",
+      "misconception": "",
+      "factKey": "file-share-undelete-snapshot-recovery",
+      "topic": "File share recovery",
+      "tags": [
+        "Azure Files"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Azure file share soft delete",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-prevent-file-share-deletion"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-03",
+      "section": "2.3",
+      "statement": "Azure Files supports NFS deployments on SSD (premium) file shares in storage accounts.",
+      "answer": true,
+      "explanation": "Azure Files offers NFS shares on SSD media. An administrator provisioning an NFS share in a storage account selects an SSD (premium) file share.",
+      "misconception": "",
+      "factKey": "nfs-file-share-ssd-media",
+      "topic": "File share configuration",
+      "tags": [
+        "Azure Files"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "NFS support across Azure Files media tiers may change.",
+      "source": {
+        "title": "Plan an Azure Files deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-04",
+      "section": "2.3",
+      "statement": "Azure Files converts an existing HDD file share to SSD (premium) when an administrator changes its media tier.",
+      "answer": false,
+      "explanation": "Moving between Azure Files media tiers requires a new share on the target media tier and a data copy. An existing share's media tier stays fixed.",
+      "misconception": "A file share's media tier changes in place like a blob's access tier.",
+      "factKey": "file-share-media-direct-conversion",
+      "topic": "File share configuration",
+      "tags": [
+        "Azure Files"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Plan an Azure Files deployment",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/files/storage-files-planning"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-05",
+      "section": "2.3",
+      "statement": "An account's anonymous access restriction overrides a container's public setting on the Azure Blob Storage endpoint.",
+      "answer": true,
+      "explanation": "For Blob service requests, an account's prohibition of anonymous access takes precedence over a container's public setting. The account setting closes anonymous access to such a container.",
+      "misconception": "",
+      "factKey": "anonymous-blob-account-setting-precedence",
+      "topic": "Blob anonymous access",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Remediate anonymous read access to blob data",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/anonymous-read-access-prevent"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-06",
+      "section": "2.3",
+      "statement": "Container soft delete recovers a blob an administrator deletes from a container that still exists.",
+      "answer": false,
+      "explanation": "Container soft delete restores a deleted container and its contents. A blob deleted from an existing container needs blob-level protection, such as blob soft delete.",
+      "misconception": "Container soft delete protects individual deletions inside a surviving container.",
+      "factKey": "container-soft-delete-individual-blob-recovery",
+      "topic": "Blob data protection",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Soft delete for containers",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/soft-delete-container-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-07",
+      "section": "2.3",
+      "statement": "Azure Storage automatically keeps prior block blob content when an administrator overwrites it with versioning enabled.",
+      "answer": true,
+      "explanation": "With blob versioning enabled, overwriting a block blob moves its previous state into version history. An administrator can access that earlier version to recover the old content.",
+      "misconception": "",
+      "factKey": "blob-versioning-preserves-overwritten-content",
+      "topic": "Blob version history",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Blob versioning",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-08",
+      "section": "2.3",
+      "statement": "Administrators can enable blob versioning on storage accounts that use a hierarchical namespace.",
+      "answer": false,
+      "explanation": "Azure Blob Storage currently excludes accounts with a hierarchical namespace from blob versioning. Administrators need another data-protection approach for those accounts.",
+      "misconception": "Hierarchical-namespace accounts offer the same blob versioning feature as flat-namespace accounts.",
+      "factKey": "blob-versioning-hierarchical-namespace-support",
+      "topic": "Blob version history",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Hierarchical-namespace support for blob versioning may change.",
+      "source": {
+        "title": "Blob versioning",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/versioning-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-09",
+      "section": "2.3",
+      "statement": "A new Azure Blob Storage lifecycle rule can act on existing blobs that match its filters and age conditions.",
+      "answer": true,
+      "explanation": "Azure Storage evaluates stored objects against lifecycle rules during policy runs. Blobs that predate a new rule can qualify for its actions when their properties meet its conditions.",
+      "misconception": "",
+      "factKey": "lifecycle-policy-existing-blob-eligibility",
+      "topic": "Blob lifecycle rules",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Lifecycle management performance characteristics",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-performance-characteristics"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-10",
+      "section": "2.3",
+      "statement": "Administrators can select archive as the default access tier for a general-purpose v2 storage account.",
+      "answer": false,
+      "explanation": "A storage account's default blob tier is an online tier. Administrators assign archive to individual eligible blobs rather than to the account's default access tier.",
+      "misconception": "The account's default access tier accepts archive just like an online tier.",
+      "factKey": "archive-account-default-tier",
+      "topic": "Blob access tiers",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Access tiers for blob data",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/access-tiers-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s2.3-11",
+      "section": "2.3",
+      "statement": "Azure Storage automatically changes an archived source blob to hot when copying it into a new blob for rehydration.",
+      "answer": false,
+      "explanation": "Copy-based rehydration creates a separate blob in the selected online tier. Azure Storage leaves the source blob unchanged in archive.",
+      "misconception": "Copy-based rehydration changes the source blob's tier along with the new destination blob.",
+      "factKey": "archive-copy-rehydration-source-state",
+      "topic": "Blob archive recovery",
+      "tags": [
+        "Azure Blob Storage"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Blob rehydration from the archive tier",
+        "url": "https://learn.microsoft.com/en-us/azure/storage/blobs/archive-rehydrate-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-01",
+      "section": "3.1",
+      "statement": "Azure Resource Manager checks parameter inputs against allowed values before it starts deploying resources.",
+      "answer": true,
+      "explanation": "A value outside a parameter's allowed choices fails validation. Azure Resource Manager catches this invalid input before it starts resource deployment operations.",
+      "misconception": "",
+      "factKey": "arm-parameter-allowed-values-validation",
+      "topic": "Template parameters",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Parameters in ARM templates",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameters"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-02",
+      "section": "3.1",
+      "statement": "An administrator can directly override an ARM template variable through the deployment's parameter file.",
+      "answer": false,
+      "explanation": "A parameter file supplies values for parameters declared in the template. Variable values come from the template's definitions and expressions.",
+      "misconception": "A deployment parameter file directly overrides template variables as well as parameters.",
+      "factKey": "arm-variable-caller-override",
+      "topic": "Template variables",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create an ARM template parameter file",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/parameter-files"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-03",
+      "section": "3.1",
+      "statement": "Bicep automatically infers a dependency from a symbolic reference to another deployed resource's runtime property.",
+      "answer": true,
+      "explanation": "A symbolic resource reference creates an implicit dependency in Bicep. Azure Resource Manager uses that dependency to deploy the referenced resource first.",
+      "misconception": "",
+      "factKey": "bicep-inferred-resource-dependency",
+      "topic": "Resource dependencies",
+      "tags": [
+        "Bicep",
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource dependencies in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/resource-dependencies"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-04",
+      "section": "3.1",
+      "statement": "A Bicep existing declaration automatically redeploys the referenced resource during template deployment.",
+      "answer": false,
+      "explanation": "Bicep's existing declaration references a resource that is already deployed. The declaration does not submit that resource for creation or update.",
+      "misconception": "Declaring an existing resource makes Bicep include it in the resources deployed again.",
+      "factKey": "bicep-existing-resource-redeployment",
+      "topic": "Existing resources",
+      "tags": [
+        "Bicep"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Reference existing resources in Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/existing-resource"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-05",
+      "section": "3.1",
+      "statement": "A Bicep module can deploy resources into a resource group different from its parent deployment's group.",
+      "answer": true,
+      "explanation": "A module's explicit scope chooses its deployment target. An administrator sets that scope to the desired resource group when deploying from the parent Bicep file.",
+      "misconception": "",
+      "factKey": "bicep-module-explicit-target-scope",
+      "topic": "Deployment scopes",
+      "tags": [
+        "Bicep"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Bicep modules",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/modules"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-06",
+      "section": "3.1",
+      "statement": "Azure Resource Manager masks a secure parameter's value inside an ordinary string deployment output.",
+      "answer": false,
+      "explanation": "An ordinary string output exposes the secure parameter's value in deployment history. The parameter's secure type does not transfer protection to that output.",
+      "misconception": "A secure parameter keeps its value protected when an ordinary string output includes it.",
+      "factKey": "arm-output-secret-visibility",
+      "topic": "Template outputs",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Test cases for ARM templates: Outputs cannot include secrets",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-test-cases"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-07",
+      "section": "3.1",
+      "statement": "An incremental ARM deployment can reset omitted properties when Azure Resource Manager redeploys a resource.",
+      "answer": true,
+      "explanation": "Incremental mode reapplies the resource configuration. An administrator includes intended nondefault properties to preserve them when redeploying the resource.",
+      "misconception": "",
+      "factKey": "arm-incremental-omitted-property-reset",
+      "topic": "Deployment modes",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Azure Resource Manager deployment modes",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-modes"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-08",
+      "section": "3.1",
+      "statement": "A what-if operation can resolve ARM reference expressions before comparing resource properties.",
+      "answer": false,
+      "explanation": "What-if compares a deployed value with an unresolved reference expression. It can predict a modification even when deployment would leave that value unchanged.",
+      "misconception": "What-if evaluates reference expressions just as a deployment does, so a matching resolved value prevents a predicted change.",
+      "factKey": "arm-what-if-reference-expression-resolution",
+      "topic": "Deployment previews",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Future improvements to what-if expression evaluation could change this documented limitation.",
+      "source": {
+        "title": "ARM template deployment what-if operation",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-what-if"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-09",
+      "section": "3.1",
+      "statement": "An administrator chooses API versions directly on individual resource declarations in an ARM template.",
+      "answer": true,
+      "explanation": "The API version belongs to the resource declaration. Resources in one template can use different versions appropriate to their resource types.",
+      "misconception": "",
+      "factKey": "arm-resource-api-versions-independent",
+      "topic": "Resource API versions",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ARM template structure and syntax",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/syntax"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-10",
+      "section": "3.1",
+      "statement": "An ARM template exported from a resource group preserves its original deployment's authored expressions.",
+      "answer": false,
+      "explanation": "Resource-group export builds a new template from current resource settings. It does not recover the original template's parameter expressions.",
+      "misconception": "Exporting a resource group recovers the original authored deployment template.",
+      "factKey": "arm-export-template-completeness",
+      "topic": "Template export",
+      "tags": [
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Export a template from existing Azure resources",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/export-template-portal"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.1-11",
+      "section": "3.1",
+      "statement": "az bicep decompile can produce a Bicep file that needs repairs before an administrator deploys it.",
+      "answer": true,
+      "explanation": "JSON-to-Bicep conversion uses a best-effort mapping. An administrator resolves warnings or errors in the generated file before relying on it for deployment.",
+      "misconception": "",
+      "factKey": "bicep-decompile-manual-fixes",
+      "topic": "Bicep conversion",
+      "tags": [
+        "Bicep",
+        "Azure CLI"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Decompile an ARM template to Bicep",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/decompile"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-01",
+      "section": "3.2",
+      "statement": "Encryption at host uses customer-managed keys for a VM's temporary disk when its managed disks use those keys.",
+      "answer": false,
+      "explanation": "Encryption at host protects temporary disks with platform-managed keys. Choosing customer-managed keys for managed disks leaves the temporary disk's key source unchanged.",
+      "misconception": "Customer-managed key selection for managed disks also governs the VM's temporary disk.",
+      "factKey": "encryption-at-host-temporary-disk-key-source",
+      "topic": "VM disk encryption",
+      "tags": [
+        "Encryption at host",
+        "Azure Virtual Machines"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Enable encryption at host for disks in the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-enable-host-based-encryption-portal"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-02",
+      "section": "3.2",
+      "statement": "A successful resize of a running Azure VM preserves the guest operating system's uptime.",
+      "answer": false,
+      "explanation": "Resizing a running Azure VM restarts the guest operating system. Schedule the size change for a time when the workload can tolerate that interruption.",
+      "misconception": "Resizing a running VM changes its compute capacity while keeping the guest running.",
+      "factKey": "vm-resize-guest-restart",
+      "topic": "VM size changes",
+      "tags": [
+        "Azure Virtual Machines"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Change the size of a virtual machine",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/resize-vm"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-03",
+      "section": "3.2",
+      "statement": "Azure preserves the existing data on a managed data disk after an administrator detaches it from a VM.",
+      "answer": true,
+      "explanation": "Detaching a managed data disk leaves the disk available as a storage resource. An administrator can reattach it to a VM to access its stored data.",
+      "misconception": "",
+      "factKey": "managed-disk-detach-retains-data",
+      "topic": "VM data disks",
+      "tags": [
+        "Azure Managed Disks",
+        "Azure Virtual Machines"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Detach a data disk from a Linux VM",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/detach-disk"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-04",
+      "section": "3.2",
+      "statement": "Azure automatically formats a new empty managed data disk when an administrator attaches it to a Linux VM.",
+      "answer": false,
+      "explanation": "Attaching an empty data disk makes it available to the Linux guest. The administrator then partitions and formats the disk before using it for file storage.",
+      "misconception": "Attaching a new managed data disk also prepares its guest file system.",
+      "factKey": "attached-data-disk-guest-initialization",
+      "topic": "VM data disks",
+      "tags": [
+        "Azure Managed Disks",
+        "Azure Virtual Machines"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Attach a data disk to a Linux VM using the Azure portal",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/attach-disk-portal"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-05",
+      "section": "3.2",
+      "statement": "Moving an Azure VM to another resource group changes the resource ID used by management scripts.",
+      "answer": true,
+      "explanation": "A VM's resource ID includes its resource group. After moving the VM, update management references that still contain the old resource ID.",
+      "misconception": "",
+      "factKey": "vm-resource-group-move-resource-id",
+      "topic": "VM resource moves",
+      "tags": [
+        "Azure Virtual Machines",
+        "Azure Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Move resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-06",
+      "section": "3.2",
+      "statement": "An administrator can move an Azure VM between subscriptions belonging to different Microsoft Entra tenants.",
+      "answer": false,
+      "explanation": "Azure Resource Manager requires the source and destination subscriptions to belong to the same Microsoft Entra tenant for a resource move.",
+      "misconception": "An ordinary subscription move transfers a VM across Microsoft Entra tenant boundaries.",
+      "factKey": "vm-subscription-move-tenant-boundary",
+      "topic": "VM resource moves",
+      "tags": [
+        "Azure Virtual Machines",
+        "Azure Resource Manager",
+        "Microsoft Entra ID"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Move resources to a new resource group or subscription",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-07",
+      "section": "3.2",
+      "statement": "Azure Resource Mover deletes the source VM when an administrator commits a move to another Azure region.",
+      "answer": false,
+      "explanation": "Committing a VM's region move leaves the source VM available for optional deletion. The administrator decides whether to remove that source resource.",
+      "misconception": "Committing a region move includes deleting the original VM.",
+      "factKey": "resource-mover-commit-source-vm-retention",
+      "topic": "VM region moves",
+      "tags": [
+        "Azure Resource Mover",
+        "Azure Virtual Machines"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Move Azure VMs across regions",
+        "url": "https://learn.microsoft.com/en-us/azure/resource-mover/tutorial-move-region-virtual-machines"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-08",
+      "section": "3.2",
+      "statement": "Azure can reboot VMs in the same availability set update domain together during planned platform maintenance.",
+      "answer": true,
+      "explanation": "VMs sharing an update domain can face the same platform-maintenance reboot. Check domain placement when evaluating an availability set's redundancy.",
+      "misconception": "",
+      "factKey": "availability-set-update-domain-maintenance",
+      "topic": "VM availability sets",
+      "tags": [
+        "Azure Virtual Machines"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Availability sets overview",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/availability-set-overview"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-09",
+      "section": "3.2",
+      "statement": "Uniform scale set instances use the standard Azure VM APIs that administrators use for standalone VMs.",
+      "answer": false,
+      "explanation": "Uniform orchestration uses scale-set-specific VM APIs to manage its instances. Standard standalone VM operations are a different API surface.",
+      "misconception": "Uniform scale set instances expose the same management API surface as standalone VMs.",
+      "factKey": "uniform-scale-set-standard-vm-apis",
+      "topic": "Scale set orchestration",
+      "tags": [
+        "Virtual Machine Scale Sets"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Orchestration modes for Virtual Machine Scale Sets in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-10",
+      "section": "3.2",
+      "statement": "Azure keeps a scale set's chosen orchestration mode fixed after an administrator creates the scale set.",
+      "answer": true,
+      "explanation": "The orchestration mode is a creation-time choice. To use a different mode, create another scale set and move the workload.",
+      "misconception": "",
+      "factKey": "scale-set-orchestration-mode-immutable",
+      "topic": "Scale set orchestration",
+      "tags": [
+        "Virtual Machine Scale Sets"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Orchestration modes for Virtual Machine Scale Sets in Azure",
+        "url": "https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-orchestration-modes"
+      }
+    },
+    {
+      "id": "azure-az-104-s3.2-11",
+      "section": "3.2",
+      "statement": "Azure autoscale automatically combines a scale set's scale-out rule conditions using OR logic.",
+      "answer": true,
+      "explanation": "A matching scale-out rule can trigger an increase in scale-set capacity. The configured capacity bounds and cooldown still govern the scaling action.",
+      "misconception": "",
+      "factKey": "vm-scale-set-scale-out-rule-or",
+      "topic": "Scale set autoscale",
+      "tags": [
+        "Azure Monitor autoscale",
+        "Virtual Machine Scale Sets"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand autoscale settings",
+        "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/autoscale/autoscale-understanding-settings"
+      }
+    }
+  ]
+}
