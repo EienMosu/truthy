@@ -20,7 +20,19 @@ function nextSource(path: string): string {
 describe("an offline client navigation becomes a document load", () => {
   it("does not turn on Next's offline mode, which waits for the network instead of loading the document", () => {
     const experimental = (nextConfig.experimental ?? {}) as Record<string, unknown>;
-    expect(experimental.useOffline ?? false).toBe(false);
+    // Left out of next.config, the option takes Next's own default, so a default that turned it on would count.
+    const { defaultConfig } = require("next/dist/server/config-shared") as { defaultConfig: { experimental: Record<string, unknown> } };
+    expect(experimental.useOffline ?? defaultConfig.experimental.useOffline ?? false).toBe(false);
+  });
+
+  it("keeps the fallback to a full load outside Next's offline mode, which only an option turns on", () => {
+    const fetching = nextSource("router-reducer/fetch-server-response.js");
+    // The wait for the network sits in front of the fallback and runs only when the flag is set and the page is
+    // not unloading; with the flag off, a failed payload fetch reaches the fallback below it.
+    expect(fetching).toContain("if (process.env.__NEXT_USE_OFFLINE && !isPageUnloading) {");
+    // The flag comes from the useOffline option and nothing else.
+    const defined = readFileSync(join(dirname(require.resolve("next/package.json")), "dist", "build", "define-env.js"), "utf8");
+    expect(defined).toContain("'process.env.__NEXT_USE_OFFLINE': Boolean(config.experimental.useOffline),");
   });
 
   it("falls back to the browser's navigation when the payload fetch fails", () => {
