@@ -50,12 +50,74 @@ describe("Vercel build", () => {
   });
 });
 
+// One "key: value" line of a lockfile and the lines indented under it. The lockfile is plain YAML with block mappings
+// only, so a reader that follows the indentation is enough, and it takes no dependency.
+interface YamlNode {
+  indent: number;
+  value: string;
+  children: Map<string, YamlNode>;
+}
+
+// A mapping key or scalar without the quotes YAML puts around names like '@playwright/test'.
+const unquoted = (text: string): string => text.replace(/^(['"])(.*)\1$/, "$2");
+
+// The tree of a block-mapping YAML text. Indentation width, quoting, line endings and the order of a node's children
+// do not matter; comments, blank lines and anything that is not a "key:" line are skipped.
+function parseYaml(text: string): YamlNode {
+  const root: YamlNode = { indent: -1, value: "", children: new Map() };
+  const stack = [root];
+  for (const line of text.split(/\r?\n/)) {
+    const entry = /^(\s*)(?!#)(\S.*?):(?:\s+(.*?))?\s*$/.exec(line);
+    if (!entry) continue;
+    const node: YamlNode = { indent: entry[1]?.length ?? 0, value: unquoted(entry[3] ?? ""), children: new Map() };
+    while ((stack.at(-1)?.indent ?? -1) >= node.indent) stack.pop();
+    stack.at(-1)?.children.set(unquoted(entry[2] ?? ""), node);
+    stack.push(node);
+  }
+  return root;
+}
+
+// The specifier and version the lockfile records for a devDependency of the root importer.
+function lockedDevDependency(lock: string, name: string): { specifier?: string; version?: string } {
+  const entry = parseYaml(lock).children.get("importers")?.children.get(".")?.children.get("devDependencies")?.children.get(name);
+  return { specifier: entry?.children.get("specifier")?.value, version: entry?.children.get("version")?.value };
+}
+
+const LOCK = [
+  "importers:",
+  "  .:",
+  "    devDependencies:",
+  "      esbuild:",
+  "        specifier: 0.28.2",
+  "        version: 0.28.2",
+].join("\n");
+
+describe("the lockfile reader", () => {
+  it("reads the importer's devDependency whatever the indentation, line endings, quoting or order of the entry", () => {
+    const expected = { specifier: "0.28.2", version: "0.28.2" };
+    expect(lockedDevDependency(LOCK, "esbuild")).toEqual(expected);
+    expect(lockedDevDependency(LOCK.replaceAll("  ", "    "), "esbuild")).toEqual(expected);
+    expect(lockedDevDependency(LOCK.replaceAll("\n", "\r\n"), "esbuild")).toEqual(expected);
+    expect(lockedDevDependency(LOCK.replace("esbuild:", "'esbuild':"), "esbuild")).toEqual(expected);
+    const reordered = LOCK.replace("        specifier: 0.28.2\n        version: 0.28.2", "        version: 0.28.2\n\n        # pinned\n        specifier: 0.28.2");
+    expect(lockedDevDependency(reordered, "esbuild")).toEqual(expected);
+  });
+
+  it("reports a devDependency that is missing, has another version, or sits under dependencies or another importer", () => {
+    expect(lockedDevDependency(LOCK.replace("esbuild:", "tsx:"), "esbuild")).toEqual({});
+    expect(lockedDevDependency(LOCK.replace("version: 0.28.2", "version: 0.28.3"), "esbuild").version).toBe("0.28.3");
+    expect(lockedDevDependency(LOCK.replace("devDependencies:", "dependencies:"), "esbuild")).toEqual({});
+    expect(lockedDevDependency(LOCK.replace("  .:", "  other:"), "esbuild")).toEqual({});
+  });
+});
+
 describe("the service worker's bundler", () => {
   it("is esbuild, a devDependency at the one version the toolchain already installs", () => {
     expect(JSON.parse(read("package.json")).devDependencies.esbuild).toBe("0.28.2");
     const lock = read("pnpm-lock.yaml");
-    expect(lock).toContain("\n      esbuild:\n        specifier: 0.28.2\n        version: 0.28.2\n");
-    expect([...new Set(lock.match(/^ {2}esbuild@[^:]+:$/gm))]).toEqual(["  esbuild@0.28.2:"]);
+    expect(lockedDevDependency(lock, "esbuild")).toEqual({ specifier: "0.28.2", version: "0.28.2" });
+    const packages = [...(parseYaml(lock).children.get("packages")?.children.keys() ?? [])];
+    expect(packages.filter((key) => key.startsWith("esbuild@"))).toEqual(["esbuild@0.28.2"]);
   });
 });
 
