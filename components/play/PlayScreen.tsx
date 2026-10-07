@@ -68,7 +68,9 @@ export const SPOKEN_RELEASE_MS = 150;
  * How long a way back that started a full page load keeps the screen's controls still. A load that has not
  * replaced the page by then is taken as lost: the screen stops it, and the controls work again. It is the life
  * of the return mark (RETURN_MAX_AGE_MS): a load that lands later would not focus the start's step title
- * either, so the two agree on when a way back is over.
+ * either, so the two end at about the same time, though not exactly: the mark's life starts at the press and
+ * must also cover the new page's hydration, while the guard's starts once applyUpdate has settled, up to
+ * APPLY_TIMEOUT_MS (3 s) later.
  */
 export const FULL_LOAD_WAIT_MS = RETURN_MAX_AGE_MS;
 
@@ -197,11 +199,12 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // When the full page load started, on services.monotonic, or null while none has. A load that has not
   // replaced the page after FULL_LOAD_WAIT_MS lifts the guard at the next press. Waiting for pageshow would
   // not do: location.replace took /play's history entry, so this page never comes back from the back-forward
-  // cache, and a load that is cut off or never answers fires nothing at all. When the guard lifts, the load
-  // is stopped first: a stalled load that landed later would unload /play in the middle of the round that
-  // Play again or Try again had just dealt, which spec section 7 forbids. The return mark is taken back with it:
-  // no start takes it now, and the mark in memory has no age, so a start that the back gesture opened later,
-  // with no control used, would focus its step 1 title.
+  // cache. A load that fails replaces /play all the same, with the browser's error page; only a load that
+  // never answers, or is cancelled without a new page (a 204, a download), leaves this page open, and it fires
+  // nothing at all. When the guard lifts, the load is stopped first: a stalled load that landed later would
+  // unload /play in the middle of the round that Play again or Try again had just dealt, which spec section 7
+  // forbids. The return mark is taken back with it: no start takes it now, and the mark in memory has no age,
+  // so a start that the back gesture opened later, with no control used, would focus its step 1 title.
   const loadingSince = useRef<number | null>(null);
   // Set when the guard lifted after a lost load. The next way back then takes the in-app way, as when no update
   // was applied: once a new version has taken over, every way back is a full page load, which would most likely

@@ -48,8 +48,11 @@ export interface PlayServices extends AppServices {
   /** Takes back markReturnToStart's mark when the way back fails before it moves, or its full page load is lost. */
   clearReturnToStart?: () => void;
   /**
-   * Stops a page load that is still under way, as the browser's stop button does. In the browser:
-   * window.stop, which cancels a navigation in flight and leaves fetches alone.
+   * Stops a page load that is still under way, as the browser's stop button does. In the browser: window.stop,
+   * which cancels a navigation in flight and, by the HTML spec, aborts the document's fetches as well. The play
+   * screen calls it only when its way back guard lifts, when no fetch that a round needs is in flight: Play again
+   * and Try again fetch only after it, and a round that is still loading is being left, so stopping cannot
+   * cancel what they fetch.
    */
   stopLoading?: () => void;
   /** Calls onTick about every TICK_MS while subscribed. Returns the unsubscribe. In the browser: setInterval. */
