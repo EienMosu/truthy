@@ -13,6 +13,8 @@ const PURE: readonly { files: string[]; mayImport: readonly string[] }[] = [
   { files: ["src/progress/progress.ts"], mayImport: ["zod", ...CONTENT_TYPES, "./"] },
   { files: ["src/content/play.ts"], mayImport: ["./schema"] },
   { files: ["src/content/text.ts"], mayImport: [] },
+  // The service worker's decisions (offline spec section 5): the worker and the unit tests run the same code.
+  { files: ["src/offline/assets.ts", "src/offline/cache-names.ts", "src/offline/strategy.ts"], mayImport: ["./"] },
 ];
 
 const FORBIDDEN: readonly { name: string; pattern: RegExp }[] = [
@@ -91,7 +93,7 @@ describe("the scanner", () => {
 });
 
 describe("pure modules", () => {
-  it("covers the engine, the input rules, the progress rules, the shared play types and how card text marks code", () => {
+  it("covers the engine, the input rules, the progress rules, the shared play types, how card text marks code and the service worker's decisions", () => {
     expect(PURE.flatMap((entry) => entry.files).sort()).toEqual([
       "src/content/play.ts",
       "src/content/text.ts",
@@ -99,6 +101,9 @@ describe("pure modules", () => {
       "src/engine/rng.ts",
       "src/engine/round.ts",
       "src/input/swipe.ts",
+      "src/offline/assets.ts",
+      "src/offline/cache-names.ts",
+      "src/offline/strategy.ts",
       "src/progress/progress.ts",
     ]);
   });
