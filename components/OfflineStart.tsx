@@ -16,7 +16,9 @@ import type { OfflineClient } from "@/src/offline/register";
  * (spec section 7: never on /play while a round is open). A router.push("/play") still in flight reads / for a
  * moment, so nothing is applied or reloaded either once the player has pressed anything (`pressed`). Otherwise
  * nothing is applied and nothing reloads: a new version that already took over leaves the loaded code running,
- * as in a second tab (spec section 10).
+ * as in a second tab (spec section 10). When it was this page that asked for it, that lasts only until the
+ * next way back from a round, which then opens the start with a full page load (goToStart, updateApplied;
+ * spec section 14, amendment 6).
  */
 export async function openApp(
   offline: OfflineClient,
