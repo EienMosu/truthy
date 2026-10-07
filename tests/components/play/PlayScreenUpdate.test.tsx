@@ -5,8 +5,9 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
+import { FULL_LOAD_WAIT_MS, NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { RESULT_ARRIVES_MS } from "@/components/play/ResultView";
+import { RETURN_MAX_AGE_MS } from "@/src/app-state/services";
 import type { OfflineClient } from "@/src/offline/register";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress } from "@/src/progress/progress";
@@ -220,6 +221,28 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     await act(async () => {});
     expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+  });
+
+  it("lifts the guard when the page load has not replaced the page after FULL_LOAD_WAIT_MS", async () => {
+    const offline = fakeOffline(true);
+    await playToResult(withOffline(offline));
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    h.advance(FULL_LOAD_WAIT_MS - 1);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
+    // The load stalled and the old page is still there: the result's buttons work again.
+    h.advance(1);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(2));
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(2);
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+    expect(FULL_LOAD_WAIT_MS).toBe(RETURN_MAX_AGE_MS);
   });
 
   it("tries the deck again with Try again only when no way back is pending", async () => {

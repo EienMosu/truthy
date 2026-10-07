@@ -30,6 +30,7 @@ import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { EASE, EASE_IN, FALL } from "@/components/easing";
 import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
+import { RETURN_MAX_AGE_MS } from "@/src/app-state/services";
 import { goToStart } from "@/src/app-state/to-start";
 import { plainText } from "@/src/content/text";
 import { SWIPE } from "@/src/input/swipe";
@@ -62,6 +63,14 @@ export const NEXT_ARRIVES_MS = 420;
  * news is heard at once.
  */
 export const SPOKEN_RELEASE_MS = 150;
+
+/**
+ * How long a way back that started a full page load keeps the screen's controls still. A load that has not
+ * replaced the page by then is taken as lost, and the controls work again. It is the life of the return mark
+ * (RETURN_MAX_AGE_MS): a load that lands later would not focus the start's step title either, so the two agree
+ * on when a way back is over.
+ */
+export const FULL_LOAD_WAIT_MS = RETURN_MAX_AGE_MS;
 
 /** The keys the round acts on. Held down, only the first keydown counts (see the repeat guard in RoundView). */
 const HELD_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowRight", "Enter", "Escape"]);
@@ -182,26 +191,41 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // also the safe moment for a waiting update (spec section 7): goToStart applies it and opens the start with
   // a full page load. Until the way back it started has settled, another press of a way back, Play again and
   // Try again do nothing; once the page load has started the guard stays, as the old page stays open until
-  // the load replaces it. A way back that throws lifts the guard, so the screen's controls work again.
+  // the load replaces it, for FULL_LOAD_WAIT_MS at most. A way back that throws lifts the guard, so the
+  // screen's controls work again.
   const goingToStart = useRef(false);
+  // When the full page load started, on services.monotonic, or null while none has. A load that has not
+  // replaced the page after FULL_LOAD_WAIT_MS lifts the guard at the next press. Waiting for pageshow would
+  // not do: location.replace took /play's history entry, so this page never comes back from the back-forward
+  // cache, and a load that is cut off or never answers fires nothing at all.
+  const loadingSince = useRef<number | null>(null);
+  const wayBackPending = useCallback(() => {
+    if (!goingToStart.current) return false;
+    const since = loadingSince.current;
+    if (since === null || services.monotonic() - since < FULL_LOAD_WAIT_MS) return true;
+    goingToStart.current = false;
+    loadingSince.current = null;
+    return false;
+  }, [services]);
   const leaveToStart = useCallback(() => {
-    if (goingToStart.current) return;
+    if (wayBackPending()) return;
     goingToStart.current = true;
     services.markReturnToStart?.();
     void goToStart(services, router)
       .then((loading) => {
-        if (!loading) goingToStart.current = false;
+        if (loading) loadingSince.current = services.monotonic();
+        else goingToStart.current = false;
       })
       .catch(() => {
         goingToStart.current = false;
       });
-  }, [router, services]);
+  }, [router, services, wayBackPending]);
   const playAgain = useCallback(() => {
-    if (!goingToStart.current) restart();
-  }, [restart]);
+    if (!wayBackPending()) restart();
+  }, [restart, wayBackPending]);
   const tryAgain = useCallback(() => {
-    if (!goingToStart.current) retry();
-  }, [retry]);
+    if (!wayBackPending()) retry();
+  }, [retry, wayBackPending]);
 
   // A round in progress with answers that are not in the card history yet, or a decided round whose result
   // has not been opened. Leaving any other way than the close control (the phone's back gesture, the
