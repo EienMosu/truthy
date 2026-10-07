@@ -148,7 +148,8 @@ export function createWorker(env: WorkerEnv): ShellWorker {
         const cache = await env.caches.open(cacheName);
         for (const { path, response } of [...pages, ...files, notFound]) await cache.put(absolute(path), response);
       } catch (error) {
-        await env.caches.delete(cacheName);
+        // Whatever stopped the storing is what the install reports; a cache that cannot be removed is not.
+        await env.caches.delete(cacheName).catch(() => false);
         throw error;
       }
     },

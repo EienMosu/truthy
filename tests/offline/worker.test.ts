@@ -147,6 +147,18 @@ describe("install", () => {
     expect(await (await running.match(`${ORIGIN}/`))?.text()).toBe("<html>running</html>");
   });
 
+  it("reports the failure to store the shell even when removing the half-filled cache fails too", async () => {
+    const h = harness();
+    const own = await h.caches.open(OWN);
+    own.put = async () => {
+      throw new Error("QuotaExceededError: the device is full");
+    };
+    h.caches.delete = async () => {
+      throw new Error("the cache could not be deleted");
+    };
+    await expect(createWorker(h.env).install()).rejects.toThrow("the device is full");
+  });
+
   it("does not take over on its own", async () => {
     const h = harness();
     await createWorker(h.env).install();
