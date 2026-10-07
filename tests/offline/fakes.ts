@@ -211,3 +211,10 @@ export function navigate(path: string): Request {
 export function get(path: string, init?: RequestInit): Request {
   return new Request(new URL(path, ORIGIN), init);
 }
+
+// A response that came through a redirect. Node's Response sets `redirected` only for a fetch it followed, so the
+// flag is set the way the browser reports it.
+export function redirected(response: Response): Response {
+  Object.defineProperty(response, "redirected", { value: true });
+  return response;
+}

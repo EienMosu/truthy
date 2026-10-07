@@ -5,7 +5,7 @@ import { shellCacheName } from "@/src/offline/cache-names";
 import { PAGE_TIMEOUT_MS } from "@/src/offline/strategy";
 import { createWorker } from "@/src/offline/worker";
 import { importSources, withoutComments } from "@/tests/support/imports";
-import { NOT_FOUND_HTML, ORIGIN, PLAY_HTML, ROOT_HTML, VERSION, get, harness, navigate } from "./fakes";
+import { NOT_FOUND_HTML, ORIGIN, PLAY_HTML, ROOT_HTML, VERSION, get, harness, navigate, redirected } from "./fakes";
 
 const OWN = shellCacheName(VERSION);
 
@@ -94,6 +94,19 @@ describe("install", () => {
     const h = harness();
     h.network.offline = true;
     await expect(createWorker(h.env).install()).rejects.toThrow("Failed to fetch");
+    expect(await h.caches.keys()).toEqual([]);
+  });
+
+  // The browser refuses a redirected response as the answer to a page load, so a kept page that came through a
+  // redirect would fail offline.
+  it.each([
+    ["a page", "/play"],
+    ["a file a page names", "/_next/static/chunks/shared.js"],
+    ["an icon", "/icon-512.png"],
+  ])("fails when %s comes through a redirect, and leaves no cache of this version", async (_what, path) => {
+    const h = harness();
+    h.network.routes.set(path, () => redirected(new Response(path === "/play" ? PLAY_HTML : "moved", { status: 200 })));
+    await expect(createWorker(h.env).install()).rejects.toThrow(`${path} answered with a redirect`);
     expect(await h.caches.keys()).toEqual([]);
   });
 
@@ -191,6 +204,34 @@ describe("the two pages", () => {
     const response = await worker.respond(navigate(path));
     expect(response?.status).toBe(200);
     expect(await response?.text()).toBe(html);
+  });
+
+  it.each([
+    ["/", 500, ROOT_HTML],
+    ["/play", 503, PLAY_HTML],
+  ])("%s comes from the cache when the server answers %i", async (path, status, html) => {
+    const { worker, network, timers } = await installed();
+    network.routes.set(path, () => new Response("<html>down</html>", { status }));
+    const response = await worker.respond(navigate(path));
+    expect(response?.status).toBe(200);
+    expect(await response?.text()).toBe(html);
+    expect(timers.cleared.size).toBe(1);
+  });
+
+  it("passes on the server's error when the page is not in the cache", async () => {
+    const h = harness();
+    h.network.routes.set("/play", () => new Response("<html>down</html>", { status: 502 }));
+    const response = await createWorker(h.env).respond(navigate("/play"));
+    expect(response?.status).toBe(502);
+    expect(await response?.text()).toBe("<html>down</html>");
+  });
+
+  it("passes on any other answer of the server, a 404 too", async () => {
+    const { worker, network } = await installed();
+    network.routes.set("/play", () => new Response(NOT_FOUND_HTML, { status: 404 }));
+    const response = await worker.respond(navigate("/play"));
+    expect(response?.status).toBe(404);
+    expect(await response?.text()).toBe(NOT_FOUND_HTML);
   });
 
   it(`comes from the cache when the network takes longer than ${PAGE_TIMEOUT_MS} ms, without waiting for it`, async () => {

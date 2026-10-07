@@ -41,10 +41,12 @@ export function createWorker(env: WorkerEnv): ShellWorker {
 
   // One file of the shell. Files without a hash in their name (the pages, the icons, the manifest, the 404 page)
   // are revalidated with the server, so the shell is the release this worker belongs to; hashed files may come
-  // from the browser's HTTP cache, as they never change.
+  // from the browser's HTTP cache, as they never change. A file that came through a redirect fails the install:
+  // the browser refuses a redirected response as the answer to a page load, so a kept page would fail offline.
   async function fetchShellFile(path: string, expected: (status: number) => boolean): Promise<Response> {
     const hashed = path.startsWith("/_next/static/");
     const response = await env.fetch(absolute(path), hashed ? undefined : { cache: "no-cache" });
+    if (response.redirected) throw new Error(`${path} answered with a redirect`);
     if (!expected(response.status)) throw new Error(`${path} answered ${response.status}`);
     return response;
   }
@@ -58,8 +60,9 @@ export function createWorker(env: WorkerEnv): ShellWorker {
     }
   }
 
-  // Network first, the cached page when the network fails or is slower than PAGE_TIMEOUT_MS. A slow network
-  // with nothing cached is waited for. A fresh page is not stored: the cache changes only with a new version.
+  // Network first, the cached page when the network fails or is slower than PAGE_TIMEOUT_MS. A server error
+  // (5xx) is no better than no network: the cached page when there is one, else the server's answer. A slow
+  // network with nothing cached is waited for. A fresh page is not stored: the cache changes only with a new version.
   function page(request: Request): Promise<Response> {
     const key = absolute(new URL(request.url).pathname);
     return new Promise<Response>((resolve, reject) => {
@@ -75,7 +78,11 @@ export function createWorker(env: WorkerEnv): ShellWorker {
           if (hit) finish(hit);
         });
       }, PAGE_TIMEOUT_MS);
-      env.fetch(request).then(finish, (error: unknown) => {
+      const answered = (response: Response) => {
+        if (response.status < 500) return finish(response);
+        void cached(key).then((hit) => finish(hit ?? response));
+      };
+      env.fetch(request).then(answered, (error: unknown) => {
         void cached(key).then((hit) => {
           if (hit) return finish(hit);
           if (done) return;
