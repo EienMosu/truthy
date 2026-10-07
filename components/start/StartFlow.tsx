@@ -494,6 +494,18 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     if (card && mainRef.current && lastInput.current === "key") showInColumn(mainRef.current, card);
   }, [view, services]);
 
+  // The deck card and the continue line are a button online and a labelled group offline, when their deck has no
+  // copy on the device. When the network changes under the focused one, its button leaves the page and the browser
+  // drops the focus on the body: the current step's title takes it, as after a step change. A focus that was on
+  // nothing stays there.
+  const lastFocused = useRef<Element | null>(null);
+  useEffect(() => {
+    const dropped = lastFocused.current !== null && !lastFocused.current.isConnected;
+    if (!dropped || (document.activeElement !== null && document.activeElement !== document.body)) return;
+    lastFocused.current = null;
+    mainRef.current?.querySelector<HTMLElement>(`[data-step="${latest.current.view.step}"] h2`)?.focus({ preventScroll: true });
+  }, [online]);
+
   // The chosen card's name, hidden while its copy travels into the pass. Going back within the step's exit
   // (140 ms) brings back the leaving panel itself, with this node in it, so every way back shows it again before
   // the frame is painted. Hidden with opacity, not visibility: Safari does not repaint a name whose visibility
@@ -654,6 +666,9 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   return (
     <main
       ref={mainRef}
+      onFocus={(event) => {
+        lastFocused.current = event.target;
+      }}
       className={[
         "flex min-h-0 flex-1 flex-col",
         // Short screens: the column scrolls, over the whole frame (its padding moves inside, so the frame's top 8

@@ -138,3 +138,49 @@ describe("StartFlow offline: the continue line", () => {
     expect(screen.queryByText("Needs a connection")).toBeNull();
   });
 });
+
+// The deck card and the continue line are a button online and a group offline: the focused button leaves the page.
+describe("StartFlow offline: the focus when the network goes", () => {
+  async function startOnline(local: ReturnType<typeof device>) {
+    h = harness(local);
+    render(<StartFlow services={h.services} />);
+    await screen.findByRole("button", { name: "Cloud, 2 decks" });
+  }
+
+  it("moves to the deck step's title when the focused deck card loses its button", async () => {
+    await startOnline(device([]));
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await choose("Google Cloud, 1 deck", "Choose a deck");
+    screen.getByRole("button", { name: /^CDL, Cloud Digital Leader/ }).focus();
+    act(() => setOnline(false));
+    expect(screen.getByRole("group", { name: "CDL, Cloud Digital Leader, needs a connection" })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Choose a deck" }));
+  });
+
+  it("moves to step 1's title when the focused continue line loses its button", async () => {
+    await startOnline(device([], LAST_CLF_SEC));
+    screen.getByRole("button", { name: /^Continue: AWS Cloud Practitioner/ }).focus();
+    act(() => setOnline(false));
+    expect(screen.getByRole("group", { name: /^Continue: .*, needs a connection\.$/ })).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Choose an area" }));
+  });
+
+  it("stays on a focused deck card that the device holds, which keeps its button", async () => {
+    await startOnline(device(["aws-clf-c02"]));
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await choose("AWS, 1 deck", "Choose a deck");
+    const card = screen.getByRole("button", { name: /^CLF, Cloud Practitioner/ });
+    card.focus();
+    act(() => setOnline(false));
+    expect(document.activeElement).toBe(card);
+  });
+
+  it("does not take a focus that was on nothing", async () => {
+    await startOnline(device([]));
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await choose("Google Cloud, 1 deck", "Choose a deck");
+    (document.activeElement as HTMLElement).blur();
+    act(() => setOnline(false));
+    expect(document.activeElement).toBe(document.body);
+  });
+});
