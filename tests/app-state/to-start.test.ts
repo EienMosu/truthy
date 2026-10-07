@@ -67,6 +67,32 @@ describe("goToStart: an update is waiting", () => {
   });
 });
 
+// A press during the app-open update leaves the new version in control without the reload (openApp), and a
+// version can also take over after applyUpdate gave up. Nothing waits any more, but the page runs the old code.
+describe("goToStart: a new version took over this page earlier without a reload", () => {
+  it("opens the start with a full page load in place of /play, and asks nothing of the worker", async () => {
+    const offline = fakeOffline(false, async () => true, true);
+    const backToStart = vi.fn(() => true);
+    const router = { replace: vi.fn() };
+    await expect(goToStart(servicesWith(offline, backToStart), router)).resolves.toBe(true);
+    expect(location.replace).toHaveBeenCalledTimes(1);
+    expect(location.replace).toHaveBeenCalledWith("/");
+    expect(offline.applyUpdate).not.toHaveBeenCalled();
+    expect(backToStart).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(offline.checkForUpdate).not.toHaveBeenCalled();
+  });
+
+  it("opens the start with a full page load too when a newer update waits and does not take over in time", async () => {
+    const offline = fakeOffline(true, async () => false, true);
+    const router = { replace: vi.fn() };
+    await expect(goToStart(servicesWith(offline), router)).resolves.toBe(true);
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(location.replace).toHaveBeenCalledWith("/");
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+});
+
 describe("goToStart: nothing is waiting", () => {
   it("goes back to the start's entry when it is right behind /play, and applies nothing", async () => {
     const offline = fakeOffline(false);

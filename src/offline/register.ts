@@ -13,6 +13,11 @@ export interface OfflineClient {
    * message cannot be sent, or the controller has not changed after APPLY_TIMEOUT_MS.
    */
   applyUpdate(): Promise<boolean>;
+  /**
+   * Whether a version this page asked to take over (applyUpdate) now controls it, although the page was not
+   * loaded again since: the code that runs is then older than the worker's. A page load starts afresh with false.
+   */
+  updateApplied(): boolean;
   /** Asks the browser to look for a new version now. Never rejects. */
   checkForUpdate(): Promise<void>;
 }
@@ -27,6 +32,11 @@ export const APPLY_TIMEOUT_MS = 3000;
 export function createOfflineClient(env: { container: ServiceWorkerContainer | undefined; production: boolean }): OfflineClient {
   let registration: ServiceWorkerRegistration | undefined;
   let starting: Promise<void> | undefined;
+  // The worker that controlled the page when it first asked a waiting version to take over (null: none did), or
+  // undefined while it has not asked. A different controller later means the version it asked for took over,
+  // even after applyUpdate gave up waiting. Only an ask counts: the first install's claim and an update that
+  // another tab applied change the controller too, and spec section 10 lets those wait for the next page load.
+  let controllerWhenAsked: ServiceWorker | null | undefined;
 
   // A new version waits behind the one that runs. On the very first install nothing runs yet, and the
   // worker that is briefly installed is the first version, not an update.
@@ -72,11 +82,18 @@ export function createOfflineClient(env: { container: ServiceWorkerContainer | u
         container.addEventListener("controllerchange", onChange);
         timer = setTimeout(() => finish(false), APPLY_TIMEOUT_MS);
         try {
+          const controller = container.controller;
           waiting.postMessage({ type: "apply-update" });
+          if (controllerWhenAsked === undefined) controllerWhenAsked = controller;
         } catch {
           finish(false);
         }
       });
+    },
+
+    updateApplied() {
+      if (controllerWhenAsked === undefined || !env.container) return false;
+      return env.container.controller !== controllerWhenAsked;
     },
 
     async checkForUpdate() {
@@ -113,5 +130,6 @@ export const noOfflineClient: OfflineClient = {
   start: async () => {},
   updateWaiting: () => false,
   applyUpdate: async () => false,
+  updateApplied: () => false,
   checkForUpdate: async () => {},
 };

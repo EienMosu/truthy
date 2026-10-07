@@ -18,7 +18,7 @@ interface FakeRegistration {
   update: ReturnType<typeof vi.fn<() => Promise<void>>>;
 }
 
-// navigator.serviceWorker with what register.ts uses: register, and the controllerchange event.
+// navigator.serviceWorker with what register.ts uses: register, the controller, and the controllerchange event.
 function fakeContainer(registered: "registration" | "nothing" | "fails" = "registration") {
   const listeners = new Set<() => void>();
   const registration: FakeRegistration = { waiting: null, active: null, update: vi.fn(async () => undefined) };
@@ -29,6 +29,8 @@ function fakeContainer(registered: "registration" | "nothing" | "fails" = "regis
   });
   const container = {
     register,
+    // The worker that controls the page: the one that runs, or none on a page loaded without a worker.
+    controller: null as FakeWorker | null,
     addEventListener: (type: string, listener: () => void) => {
       if (type === "controllerchange") listeners.add(listener);
     },
@@ -40,8 +42,13 @@ function fakeContainer(registered: "registration" | "nothing" | "fails" = "regis
     container: container as unknown as ServiceWorkerContainer,
     register,
     registration,
-    /** The waiting worker took over: the browser fires controllerchange. */
+    /** Sets the worker that controls the page, without an event (the state a page loads with). */
+    setController: (worker: FakeWorker | null) => {
+      container.controller = worker;
+    },
+    /** The waiting worker took over: it controls the page, and the browser fires controllerchange. */
     changeController: () => {
+      container.controller = registration.waiting ?? fakeWorker();
       for (const listener of [...listeners]) listener();
     },
     listening: () => listeners.size,
@@ -52,6 +59,7 @@ function fakeContainer(registered: "registration" | "nothing" | "fails" = "regis
 async function withUpdateWaiting() {
   const fake = fakeContainer();
   fake.registration.active = fakeWorker();
+  fake.setController(fake.registration.active);
   const waiting = fakeWorker();
   fake.registration.waiting = waiting;
   const client = createOfflineClient({ container: fake.container, production: true });
@@ -99,6 +107,7 @@ describe("registering the worker", () => {
     expect(fake.registration.update).not.toHaveBeenCalled();
     expect(client.updateWaiting()).toBe(false);
     expect(await client.applyUpdate()).toBe(false);
+    expect(client.updateApplied()).toBe(false);
   });
 
   it("does nothing in a browser without service workers", async () => {
@@ -201,6 +210,61 @@ describe("a waiting update", () => {
     };
     expect(await client.applyUpdate()).toBe(false);
     expect(fake.listening()).toBe(0);
+  });
+});
+
+// A press during the app-open update leaves the new version in control without the reload, so the way back to
+// the start must load the page afresh (spec section 14, amendment 6). The client tells it from the controller.
+describe("an update applied without a reload", () => {
+  it("is reported once the version the page asked for controls it", async () => {
+    const { fake, client } = await withUpdateWaiting();
+    expect(client.updateApplied()).toBe(false);
+    const applying = client.applyUpdate();
+    expect(client.updateApplied()).toBe(false);
+    fake.changeController();
+    expect(await applying).toBe(true);
+    expect(client.updateApplied()).toBe(true);
+  });
+
+  it("is reported when the version takes over after applyUpdate gave up waiting", async () => {
+    vi.useFakeTimers();
+    const { fake, client } = await withUpdateWaiting();
+    const applying = watch(client.applyUpdate());
+    await vi.advanceTimersByTimeAsync(APPLY_TIMEOUT_MS);
+    expect(applying).toEqual({ settled: true, value: false });
+    expect(client.updateApplied()).toBe(false);
+    fake.changeController();
+    expect(client.updateApplied()).toBe(true);
+  });
+
+  it("is reported on a page that no worker controlled when it asked (a reload that skipped the worker)", async () => {
+    const { fake, client } = await withUpdateWaiting();
+    fake.setController(null);
+    const applying = client.applyUpdate();
+    fake.changeController();
+    expect(await applying).toBe(true);
+    expect(client.updateApplied()).toBe(true);
+  });
+
+  it("is not reported when the page asked for nothing: the first install's claim, or another tab's update", async () => {
+    const fake = fakeContainer();
+    const client = createOfflineClient({ container: fake.container, production: true });
+    await client.start();
+    fake.registration.active = fakeWorker();
+    fake.changeController();
+    expect(client.updateApplied()).toBe(false);
+  });
+
+  it("is not reported when nothing waited or the waiting worker could not take the message", async () => {
+    const { fake, waiting, client } = await withUpdateWaiting();
+    waiting.postMessage = () => {
+      throw new DOMException("The worker is gone.", "InvalidStateError");
+    };
+    expect(await client.applyUpdate()).toBe(false);
+    expect(client.updateApplied()).toBe(false);
+    fake.registration.waiting = null;
+    expect(await client.applyUpdate()).toBe(false);
+    expect(client.updateApplied()).toBe(false);
   });
 });
 

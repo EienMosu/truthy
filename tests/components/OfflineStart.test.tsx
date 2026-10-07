@@ -25,6 +25,7 @@ function fakeClient({ waiting = false, applied = true }: { waiting?: boolean; ap
       calls.push("applyUpdate");
       return applied;
     }),
+    updateApplied: vi.fn(() => false),
     checkForUpdate: vi.fn(async () => {
       calls.push("checkForUpdate");
     }),
