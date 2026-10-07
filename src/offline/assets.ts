@@ -44,9 +44,11 @@ function attributes(source: string): Map<string, string> {
 
 const ENTITIES: Record<string, string> = { amp: "&", "#38": "&", "#x26": "&", quot: '"', "#34": '"', "#x22": '"', "#39": "'", "#x27": "'", apos: "'" };
 
-// One pass, so the text an entity decodes to is never decoded again: "&amp;quot;" is the text "&quot;".
+// One pass, so the text an entity decodes to is never decoded again: "&amp;quot;" is the text "&quot;". The
+// pattern names only entities in ENTITIES, so the lookup always finds one; the fallback, which keeps the text as
+// it is, only gives the lookup a string type.
 function decodeEntities(value: string): string {
-  return value.replace(/&(amp|quot|apos|#38|#x26|#34|#x22|#39|#x27);/gi, (_whole, name: string) => ENTITIES[name.toLowerCase()] ?? _whole);
+  return value.replace(/&(amp|quot|apos|#38|#x26|#34|#x22|#39|#x27);/gi, (whole, name: string) => ENTITIES[name.toLowerCase()] ?? whole);
 }
 
 function isShellPath(pathname: string): boolean {
