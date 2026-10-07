@@ -147,9 +147,10 @@ export function markReturnFromPlay(): void {
 }
 
 /**
- * A way back from /play failed before it moved, or the full page load it started was lost, so no start will
- * take the mark: clears it in memory and in sessionStorage, or the next start to open in this page (or, for the
- * stored mark, within RETURN_MAX_AGE_MS) would focus its step 1 title.
+ * A way back from /play failed before it moved, the full page load it started was lost, or the player played on
+ * (Play again, Try again) while it had not moved yet, so no start should take the mark: clears it in memory and
+ * in sessionStorage, or the next start to open in this page (or, for the stored mark, within RETURN_MAX_AGE_MS)
+ * would focus its step 1 title.
  */
 export function clearReturnFromPlay(): void {
   takeReturnFromPlay();

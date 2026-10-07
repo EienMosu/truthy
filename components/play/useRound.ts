@@ -45,7 +45,10 @@ export interface PlayServices extends AppServices {
   markPlayEntry?: () => void;
   /** Tells the start that the player is coming back from a round by a control, so it takes the focus. */
   markReturnToStart?: () => void;
-  /** Takes back markReturnToStart's mark when the way back fails before it moves, or its full page load is lost. */
+  /**
+   * Takes back markReturnToStart's mark when the way back fails before it moves, when its full page load is lost,
+   * and when Play again or Try again goes ahead.
+   */
   clearReturnToStart?: () => void;
   /**
    * Stops a page load that is still under way, as the browser's stop button does. In the browser: window.stop,

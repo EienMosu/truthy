@@ -475,6 +475,46 @@ describe("PlayScreen: nothing waiting", () => {
     await waitFor(() => expect(offline.checkForUpdate).toHaveBeenCalledTimes(1));
   });
 
+  // On a network that drops packets, router.replace("/") waits for its payload while the screen's controls work.
+  // A player who plays on has dropped that way back, so a start that the back gesture opens later must not take
+  // its mark. The stored mark is past its age by then; only the one in memory, which has none, could count.
+  it("takes back the return mark when Play again goes ahead after an in-app way back that has not moved yet", async () => {
+    const setup = withOffline(fakeOffline(false));
+    setup.services = { ...setup.services, markReturnToStart: markReturnFromPlay, clearReturnToStart: clearReturnFromPlay };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    expect(router.replace).toHaveBeenCalledWith("/");
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+    const later = vi.spyOn(Date, "now").mockReturnValue(Date.now() + RETURN_MAX_AGE_MS + 1);
+    try {
+      expect(takeReturnFromPlay()).toBe(false);
+    } finally {
+      later.mockRestore();
+    }
+  });
+
+  it("takes back the return mark when Try again goes ahead after an in-app way back that has not moved yet", async () => {
+    h = withOffline(fakeOffline(false));
+    h.services = { ...h.services, markReturnToStart: markReturnFromPlay, clearReturnToStart: clearReturnFromPlay };
+    h.network.online = false;
+    render(<PlayScreen services={h.services} />);
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    expect(router.replace).toHaveBeenCalledWith("/");
+    await act(async () => {});
+    h.network.online = true;
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+    const later = vi.spyOn(Date, "now").mockReturnValue(Date.now() + RETURN_MAX_AGE_MS + 1);
+    try {
+      expect(takeReturnFromPlay()).toBe(false);
+    } finally {
+      later.mockRestore();
+    }
+  });
+
   it("Leave round goes back to the start's entry when it is behind /play", async () => {
     const offline = fakeOffline(false);
     const backToStart = vi.fn(() => true);

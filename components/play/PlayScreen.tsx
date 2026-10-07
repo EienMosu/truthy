@@ -238,12 +238,19 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
         services.clearReturnToStart?.();
       });
   }, [router, services, wayBackPending]);
+  // An in-app way back lifts the guard at once, but on a slow network router.replace("/") can still be waiting
+  // for its payload. Play again and Try again drop that way back, so they take back its mark: a start that the
+  // back gesture opened later, with no control used, would otherwise take it, as the mark in memory has no age.
   const playAgain = useCallback(() => {
-    if (!wayBackPending()) restart();
-  }, [restart, wayBackPending]);
+    if (wayBackPending()) return;
+    services.clearReturnToStart?.();
+    restart();
+  }, [restart, services, wayBackPending]);
   const tryAgain = useCallback(() => {
-    if (!wayBackPending()) retry();
-  }, [retry, wayBackPending]);
+    if (wayBackPending()) return;
+    services.clearReturnToStart?.();
+    retry();
+  }, [retry, services, wayBackPending]);
 
   // A round in progress with answers that are not in the card history yet, or a decided round whose result
   // has not been opened. Leaving any other way than the close control (the phone's back gesture, the
