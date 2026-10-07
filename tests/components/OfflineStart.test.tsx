@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OfflineStart, openApp } from "@/components/OfflineStart";
@@ -46,7 +46,7 @@ describe("openApp: the safe moment when the app opens", () => {
   it("on /, with an update waiting: registers first, then applies it and reloads once it has taken over", async () => {
     const { client, calls, finishStart } = fakeClient({ waiting: true });
     const reload = vi.fn();
-    const opening = openApp(client, "/", reload, () => "/");
+    const opening = openApp(client, "/", reload, () => "/", () => false);
     expect(calls).toEqual(["start"]);
     finishStart();
     await opening;
@@ -58,7 +58,7 @@ describe("openApp: the safe moment when the app opens", () => {
     const { client, finishStart } = fakeClient({ waiting: true, applied: false });
     const reload = vi.fn();
     finishStart();
-    await openApp(client, "/", reload, () => "/");
+    await openApp(client, "/", reload, () => "/", () => false);
     expect(client.applyUpdate).toHaveBeenCalledTimes(1);
     expect(reload).not.toHaveBeenCalled();
   });
@@ -67,7 +67,7 @@ describe("openApp: the safe moment when the app opens", () => {
     const { client, finishStart } = fakeClient({ waiting: false });
     const reload = vi.fn();
     finishStart();
-    await openApp(client, "/", reload, () => "/");
+    await openApp(client, "/", reload, () => "/", () => false);
     expect(client.applyUpdate).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
   });
@@ -76,8 +76,32 @@ describe("openApp: the safe moment when the app opens", () => {
     const { client, calls, finishStart } = fakeClient({ waiting: true });
     const reload = vi.fn();
     finishStart();
-    await openApp(client, path, reload, () => path);
+    await openApp(client, path, reload, () => path, () => false);
     expect(calls).toEqual(["start"]);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  // A router.push("/play") still in flight reads "/", so a press is what tells that the player has begun.
+  it("applies nothing once the player has pressed something, though the page still reads /", async () => {
+    const { client, calls, finishStart } = fakeClient({ waiting: true });
+    const reload = vi.fn();
+    finishStart();
+    await openApp(client, "/", reload, () => "/", () => true);
+    expect(calls).toEqual(["start"]);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("does not reload when the player presses something while the update applies", async () => {
+    const { client, finishStart } = fakeClient({ waiting: true });
+    let pressed = false;
+    client.applyUpdate = vi.fn(async () => {
+      pressed = true;
+      return true;
+    });
+    const reload = vi.fn();
+    finishStart();
+    await openApp(client, "/", reload, () => "/", () => pressed);
+    expect(client.applyUpdate).toHaveBeenCalledTimes(1);
     expect(reload).not.toHaveBeenCalled();
   });
 });
@@ -157,6 +181,41 @@ describe("OfflineStart", () => {
     render(<OfflineStart services={{ offline: client }} reload={reload} />);
     await waitFor(() => expect(client.start).toHaveBeenCalledTimes(1));
     window.history.pushState(null, "", "/play");
+    finishStart();
+    await settle();
+    expect(client.applyUpdate).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  // A quick Start round: the press comes before registration settles, and router.push("/play") may not have
+  // changed the path yet when it does.
+  it.each([
+    ["a pointerdown", () => fireEvent.pointerDown(document.body)],
+    ["a keydown", () => fireEvent.keyDown(document.body, { key: "Enter" })],
+  ])("%s on the page before registration settles applies nothing, while the page still reads /", async (_what, press) => {
+    window.history.replaceState(null, "", "/");
+    const { client, finishStart } = fakeClient({ waiting: true });
+    const reload = vi.fn();
+    render(<OfflineStart services={{ offline: client }} reload={reload} />);
+    await waitFor(() => expect(client.start).toHaveBeenCalledTimes(1));
+    press();
+    finishStart();
+    await settle();
+    expect(client.applyUpdate).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("hears a press also when React runs its effects twice", async () => {
+    window.history.replaceState(null, "", "/");
+    const { client, finishStart } = fakeClient({ waiting: true });
+    const reload = vi.fn();
+    render(
+      <StrictMode>
+        <OfflineStart services={{ offline: client }} reload={reload} />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(client.start).toHaveBeenCalledTimes(1));
+    fireEvent.pointerDown(document.body);
     finishStart();
     await settle();
     expect(client.applyUpdate).not.toHaveBeenCalled();

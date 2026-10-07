@@ -13,14 +13,22 @@ import type { OfflineClient } from "@/src/offline/register";
  * Registers the worker; then, when the page opened on /, lets a waiting update take over and reloads once it
  * has. Registration can take seconds, and the start flow may open /play meanwhile with the layout still
  * mounted, so the page must also still be on / when registration settles and when the update has taken over
- * (spec section 7: never on /play while a round is open). Otherwise nothing is applied and nothing reloads:
- * a new version that already took over leaves the loaded code running, as in a second tab (spec section 10).
+ * (spec section 7: never on /play while a round is open). A router.push("/play") still in flight reads / for a
+ * moment, so nothing is applied or reloaded either once the player has pressed anything (`pressed`). Otherwise
+ * nothing is applied and nothing reloads: a new version that already took over leaves the loaded code running,
+ * as in a second tab (spec section 10).
  */
-export async function openApp(offline: OfflineClient, path: string, reload: () => void, currentPath: () => string): Promise<void> {
+export async function openApp(
+  offline: OfflineClient,
+  path: string,
+  reload: () => void,
+  currentPath: () => string,
+  pressed: () => boolean,
+): Promise<void> {
   await offline.start();
-  if (path !== "/" || currentPath() !== "/") return;
+  if (path !== "/" || currentPath() !== "/" || pressed()) return;
   if (!offline.updateWaiting()) return;
-  if ((await offline.applyUpdate()) && currentPath() === "/") reload();
+  if ((await offline.applyUpdate()) && currentPath() === "/" && !pressed()) reload();
 }
 
 export interface OfflineStartProps {
@@ -38,14 +46,28 @@ function pagePath(): string {
   return window.location.pathname;
 }
 
+const PRESSES = ["pointerdown", "keydown"] as const;
+
 export function OfflineStart({ services = browserAppServices, reload = reloadPage }: OfflineStartProps) {
+  // Whether the player has pressed anything since the page opened: a finger, pen or mouse, or a key.
+  const pressed = useRef(false);
+  useEffect(() => {
+    const onPress = () => {
+      pressed.current = true;
+    };
+    for (const type of PRESSES) document.addEventListener(type, onPress, { capture: true, passive: true });
+    return () => {
+      for (const type of PRESSES) document.removeEventListener(type, onPress, { capture: true });
+    };
+  }, []);
+
   // Once per page load: the layout stays mounted across in-app moves between / and /play, and React runs
   // an effect twice in development.
   const opened = useRef(false);
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
-    void openApp(services.offline, pagePath(), reload, pagePath);
+    void openApp(services.offline, pagePath(), reload, pagePath, () => pressed.current);
   }, [services, reload]);
   return null;
 }
