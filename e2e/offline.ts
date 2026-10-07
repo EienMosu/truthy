@@ -45,7 +45,15 @@ export async function goOffline(page: Page, net: NetProxy): Promise<void> {
     localStorage.setItem(flag, "1");
     window.dispatchEvent(new Event("offline"));
   }, OFFLINE_FLAG);
-  // The page's own requests fail now (a worker passes /decks/ to the network untouched).
+  await expectNetworkGone(page);
+}
+
+/**
+ * The page's own requests fail (a worker passes /decks/ to the network untouched). goOffline checks it, so a spec never
+ * passes for the wrong reason; a spec that cuts the network without touching navigator.onLine (net.setOffline alone)
+ * checks it with this.
+ */
+export async function expectNetworkGone(page: Page): Promise<void> {
   const reached = await page.evaluate(() =>
     fetch("/decks/index.json", { cache: "no-store" }).then(
       () => true,

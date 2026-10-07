@@ -118,17 +118,48 @@ export function browserBackToStart(): boolean {
 
 // Whether the player has just left /play for the start with one of its controls (Choose another route,
 // Close results, Leave round). The start flow then focuses its step 1 title, which a fresh page load does
-// not. It lasts as long as the page and is read once.
+// not. It is read once. Offline, and when a waiting update is applied, the way back is a full page load, which
+// starts this module afresh, so the mark is also kept in sessionStorage under RETURN_KEY, where the start reads
+// it after that load. The stored mark counts for RETURN_MAX_AGE_MS only: one that no start took (a way back
+// into a start restored from the back-forward cache, a load that was cut off) must not move the focus of a
+// later fresh load.
 let returningFromPlay = false;
+
+/** The sessionStorage key of the mark that the player is coming back from /play: the time it was set, in ms. */
+export const RETURN_KEY = "truthy.return.v1";
+
+/**
+ * How long the stored mark counts. The slowest way back that loads the page applies an update first (up to 3 s),
+ * then the page may wait 3 s for the network before the worker serves its copy, then hydrates.
+ */
+export const RETURN_MAX_AGE_MS = 10_000;
 
 /** /play is sending the player back to the start with one of its controls. */
 export function markReturnFromPlay(): void {
-  if (typeof window !== "undefined") returningFromPlay = true;
+  if (typeof window === "undefined") return;
+  returningFromPlay = true;
+  try {
+    browserSessionStorage()?.setItem(RETURN_KEY, String(Date.now()));
+  } catch {
+    // Storage full or blocked: the mark in memory still serves a way back within the page.
+  }
 }
 
-/** Whether the start is being opened by a way back from /play; clears the mark. */
+/** Whether the start is being opened by a way back from /play; clears the mark in memory and in sessionStorage. */
 export function takeReturnFromPlay(): boolean {
-  const was = returningFromPlay;
+  let stored = false;
+  if (typeof window !== "undefined") {
+    try {
+      const storage = browserSessionStorage();
+      const markedAt = Number(storage?.getItem(RETURN_KEY) ?? Number.NaN);
+      const age = Date.now() - markedAt;
+      stored = age >= 0 && age <= RETURN_MAX_AGE_MS;
+      storage?.removeItem(RETURN_KEY);
+    } catch {
+      // Blocked storage: only the mark in memory counts.
+    }
+  }
+  const was = returningFromPlay || stored;
   returningFromPlay = false;
   return was;
 }
