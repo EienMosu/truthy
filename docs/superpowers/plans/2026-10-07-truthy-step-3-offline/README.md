@@ -29,7 +29,7 @@ Every task was drafted by its own writer and its code run in a throwaway worktre
 
 The plan as written was then run once more, in a scratch copy of the tree at `5db53f3` with every task applied (each task's drafted files, and the code of these files where it changed), on macOS with Playwright 1.63:
 - `tsc --noEmit` over the whole tree: clean. `next build`: every route static.
-- The whole unit suite: 147 files and 2340 tests, as the table below says; the only two failures were the cases that need a git checkout, which the copy did not have (`tests/repo-hygiene.test.ts`, and the short-commit case of `tests/scripts/build-sw.test.ts`).
+- The whole unit suite: 147 files and 2340 tests, as the forecast row of the table below says; the only two failures were the cases that need a git checkout, which the copy did not have (`tests/repo-hygiene.test.ts`, and the short-commit case of `tests/scripts/build-sw.test.ts`).
 - Task 7's unit tests failed first exactly as its step 2 says, and the guard of task 4 failed when a React import was planted in `src/offline`.
 - The step 3 specs against that build (`service-worker`, `offline-labels`, `offline-navigation`, `offline`, `update`): 34 passed, 17 in each engine, nothing skipped. Task 8's two mutation runs gave exactly its lists.
 - Not run there: the full e2e suite (task 1 ran it with the block; task 8 runs it last) and `e2e/register.spec.ts` (run by task 4's draft).
@@ -43,7 +43,10 @@ If a step's actual output differs from the stated one, stop and find out why bef
 | After task | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---|---|---|---|---|---|---|---|
 | Test files | 130 | 133 | 136 | 139 | 141 | 145 | 147 | 147 |
-| Tests | 2154 | 2188 | 2241 | 2273 | 2298 | 2325 | 2338 | 2340 |
+| Tests, as the draft runs predicted | 2154 | 2188 | 2241 | 2273 | 2298 | 2325 | 2338 | 2340 |
+| Tests, as the executed plan ran | not kept | not kept | not kept | not kept | not kept | not kept | not kept | 2346 |
+
+Both rows count the Vitest tests that `pnpm test` runs (unit, document and hygiene tests; no end-to-end tests), and the file row counts the Vitest files. The first row is the plan's forecast, from the throwaway drafts. The second is what `pnpm test` printed when the plan was executed in order: only the last cell was kept, and it is the real count after task 8, 2346 instead of the forecast 2340. After the final fix wave (the five commits after task 8) the suite holds 147 files and 2363 tests. A later run that differs from the forecast by a few cases is not a failure of the plan; one that differs from 2363 on the final tree without a change to the tests is.
 
 The full end-to-end suite holds 646 tests at `5db53f3` (644 pass, the two WebKit swipe cases skip) and 686 after task 8 (684 pass, the same two skip).
 
