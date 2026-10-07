@@ -162,6 +162,15 @@ test.describe("in the night theme", () => {
   test("offline, the start opens in the night theme with the game's own four font faces, as it does online", async ({ page, net }) => {
     await openHome(page);
     await waitForWorker(page);
+    // Every font the page preloads is in the worker's cache. Offline, Chromium's HTTP cache can still serve a font
+    // the worker did not keep, so the face check below bites in WebKit alone; this one bites in both engines.
+    const uncached = await page.evaluate(async () => {
+      const hrefs = [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')].map((link) => link.href);
+      const kept = await Promise.all(hrefs.map(async (href) => (await caches.match(href)) !== undefined));
+      return { count: hrefs.length, missing: hrefs.filter((_, index) => !kept[index]) };
+    });
+    expect(uncached.count, "the page preloads its font files").toBeGreaterThan(0);
+    expect(uncached.missing, "a preloaded font the worker did not keep").toEqual([]);
     await goOffline(page, net);
     const opened = await page.reload();
     expect(opened?.fromServiceWorker()).toBe(true);
