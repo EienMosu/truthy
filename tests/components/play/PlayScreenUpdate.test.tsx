@@ -235,14 +235,14 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     await act(async () => {});
     expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
     expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
-    // The load stalled and the old page is still there: the result's buttons work again. The lost load is not
-    // tried again: this way back is the in-app one, which settles at once.
+    // The load stalled and the old page is still there: the result's buttons work again. No start entry is behind
+    // /play here (the harness has no backToStart), so the way back is the full page load again, under the guard.
     h.advance(1);
     fireEvent.click(screen.getByRole("button", { name: "Close results" }));
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
-    expect(location.replace).toHaveBeenCalledTimes(1);
-    expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
-    // The router is a stand-in, so the screen stays, and Play again deals a new round.
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(2));
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(2);
+    expect(router.replace).not.toHaveBeenCalled();
+    h.advance(FULL_LOAD_WAIT_MS);
     fireEvent.click(screen.getByRole("button", { name: "Play again" }));
     expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
     expect(FULL_LOAD_WAIT_MS).toBe(RETURN_MAX_AGE_MS);
@@ -302,9 +302,9 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
   // A version took over earlier without a reload, so every way back is a full page load. Were the lost load tried
   // again, Close results would stall each time, and in a home screen app, which has no back gesture, the player
   // could only Play again and never reach the start.
-  it("takes the in-app way back after a page load that was lost, rather than the same page load again", async () => {
+  it("goes back to the start's entry after a page load that was lost, rather than the same page load again", async () => {
     const offline = fakeOffline(false, async () => true, true);
-    const backToStart = vi.fn(() => false);
+    const backToStart = vi.fn(() => true);
     const stopLoading = vi.fn();
     const markReturnToStart = vi.fn();
     const clearReturnToStart = vi.fn();
@@ -320,11 +320,37 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     expect(stopLoading).toHaveBeenCalledTimes(1);
     expect(location.replace).toHaveBeenCalledTimes(1);
     expect(backToStart).toHaveBeenCalledTimes(1);
-    expect(router.replace).toHaveBeenCalledWith("/");
+    expect(router.replace).not.toHaveBeenCalled();
     // The lost load's mark is taken back before this way back sets its own, which the start then takes.
     expect(clearReturnToStart).toHaveBeenCalledTimes(1);
     expect(markReturnToStart).toHaveBeenCalledTimes(2);
     expect(clearReturnToStart.mock.invocationCallOrder[0]).toBeLessThan(markReturnToStart.mock.invocationCallOrder[1] ?? 0);
+  });
+
+  // router.replace("/") would not stay in the app here: a newer release has taken over, so the payload comes from
+  // another build and Next.js answers with a document load of its own, which the screen could neither guard nor stop.
+  it("takes the full page load again, under the guard, after a lost load when the start's entry is not behind /play", async () => {
+    const offline = fakeOffline(false, async () => true, true);
+    const backToStart = vi.fn(() => false);
+    const stopLoading = vi.fn();
+    const setup = withOffline(offline);
+    setup.services = { ...setup.services, backToStart, stopLoading };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await act(async () => {});
+    expect(stopLoading).toHaveBeenCalledTimes(1);
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(location.replace).toHaveBeenCalledTimes(2);
+    // Guarded again: Play again does nothing until this load, too, is taken as lost.
+    h.advance(FULL_LOAD_WAIT_MS - 1);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
+    expect(stopLoading).toHaveBeenCalledTimes(1);
   });
 
   it("does not stop a page load when no way back started one", async () => {
