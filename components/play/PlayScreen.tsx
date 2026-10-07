@@ -66,9 +66,9 @@ export const SPOKEN_RELEASE_MS = 150;
 
 /**
  * How long a way back that started a full page load keeps the screen's controls still. A load that has not
- * replaced the page by then is taken as lost, and the controls work again. It is the life of the return mark
- * (RETURN_MAX_AGE_MS): a load that lands later would not focus the start's step title either, so the two agree
- * on when a way back is over.
+ * replaced the page by then is taken as lost: the screen stops it, and the controls work again. It is the life
+ * of the return mark (RETURN_MAX_AGE_MS): a load that lands later would not focus the start's step title
+ * either, so the two agree on when a way back is over.
  */
 export const FULL_LOAD_WAIT_MS = RETURN_MAX_AGE_MS;
 
@@ -197,12 +197,15 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // When the full page load started, on services.monotonic, or null while none has. A load that has not
   // replaced the page after FULL_LOAD_WAIT_MS lifts the guard at the next press. Waiting for pageshow would
   // not do: location.replace took /play's history entry, so this page never comes back from the back-forward
-  // cache, and a load that is cut off or never answers fires nothing at all.
+  // cache, and a load that is cut off or never answers fires nothing at all. When the guard lifts, the load
+  // is stopped first: a stalled load that landed later would unload /play in the middle of the round that
+  // Play again or Try again had just dealt, which spec section 7 forbids.
   const loadingSince = useRef<number | null>(null);
   const wayBackPending = useCallback(() => {
     if (!goingToStart.current) return false;
     const since = loadingSince.current;
     if (since === null || services.monotonic() - since < FULL_LOAD_WAIT_MS) return true;
+    services.stopLoading?.();
     goingToStart.current = false;
     loadingSince.current = null;
     return false;

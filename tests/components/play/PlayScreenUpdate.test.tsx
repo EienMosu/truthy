@@ -246,6 +246,55 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     expect(FULL_LOAD_WAIT_MS).toBe(RETURN_MAX_AGE_MS);
   });
 
+  it("stops the stalled page load when it lifts the guard, before Play again deals, so the load never lands in the new round", async () => {
+    const offline = fakeOffline(true);
+    // Dealing a round draws a seed: how many rounds were dealt when the load was stopped.
+    const randomSeed = vi.fn(() => 12345);
+    const dealtWhenStopped: number[] = [];
+    const stopLoading = vi.fn(() => {
+      dealtWhenStopped.push(randomSeed.mock.calls.length);
+    });
+    const setup = withOffline(offline);
+    setup.services = { ...setup.services, randomSeed, stopLoading };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    h.advance(FULL_LOAD_WAIT_MS - 1);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await act(async () => {});
+    expect(stopLoading).not.toHaveBeenCalled();
+    h.advance(1);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+    expect(stopLoading).toHaveBeenCalledTimes(1);
+    expect(randomSeed).toHaveBeenCalledTimes(2);
+    expect(dealtWhenStopped).toEqual([1]);
+    // The guard is down now: another press does not stop anything.
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    await act(async () => {});
+    expect(stopLoading).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not stop a page load when no way back started one", async () => {
+    const stopLoading = vi.fn();
+    const setup = withOffline(fakeOffline(false));
+    setup.services = { ...setup.services, stopLoading };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await screen.findByRole("button", { name: "True" });
+    expect(stopLoading).not.toHaveBeenCalled();
+  });
+
+  it("the browser's play services stop the page load with window.stop", () => {
+    const stop = vi.spyOn(window, "stop").mockImplementation(() => {});
+    browserPlayServices.stopLoading?.();
+    expect(stop).toHaveBeenCalledTimes(1);
+    stop.mockRestore();
+  });
+
   it("tries the deck again with Try again only when no way back is pending", async () => {
     let takeOver: (value: boolean) => void = () => {};
     const offline = fakeOffline(true, () => new Promise<boolean>((resolve) => (takeOver = resolve)));

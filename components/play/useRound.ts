@@ -47,6 +47,11 @@ export interface PlayServices extends AppServices {
   markReturnToStart?: () => void;
   /** Takes back markReturnToStart's mark when the way back fails before it moves. */
   clearReturnToStart?: () => void;
+  /**
+   * Stops a page load that is still under way, as the browser's stop button does. In the browser:
+   * window.stop, which cancels a navigation in flight and leaves fetches alone.
+   */
+  stopLoading?: () => void;
   /** Calls onTick about every TICK_MS while subscribed. Returns the unsubscribe. In the browser: setInterval. */
   ticker: (onTick: () => void) => () => void;
   visibility: PageVisibility;
@@ -61,6 +66,7 @@ export const browserPlayServices: PlayServices = {
   markPlayEntry,
   markReturnToStart: markReturnFromPlay,
   clearReturnToStart: clearReturnFromPlay,
+  stopLoading: () => window.stop(),
   randomSeed: () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 0,
   ticker: (onTick) => {
     const id = window.setInterval(onTick, TICK_MS);
