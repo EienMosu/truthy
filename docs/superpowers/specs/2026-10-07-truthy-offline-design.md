@@ -35,34 +35,36 @@ Out: downloading decks the player has not played, a custom install prompt, push 
 
 | Unit | Job | Depends on |
 | --- | --- | --- |
-| `src/offline/assets.ts` | Pure: the same-origin asset paths a page's HTML loads (`/_next/static/...`, icons, the manifest). | nothing |
-| `src/offline/strategy.ts` | Pure: what the worker does with one request (page, static asset, deck data, other). | nothing |
-| `src/offline/version.ts` | The release version the worker carries, injected at build time. | nothing |
-| `src/offline/worker.ts` | The service worker: install, activate, fetch and message handlers. Built to `public/sw.js`. | `assets`, `strategy`, `version` |
-| `scripts/build-sw.ts` | Bundles `worker.ts` with esbuild into `public/sw.js` with the version filled in. Runs before `next build`, like `build:tokens` and `build:decks`. | esbuild |
+| `src/offline/assets.ts` | Pure: the same-origin asset paths a page's HTML loads (`/_next/static/...`, icons, the manifest), and the one list of the shell: its pages (`SHELL_PAGES`), the files no page names with their plain path (`SHELL_FILES`) and the path of the 404 probe. | nothing |
+| `src/offline/cache-names.ts` | Pure: the name of a release's cache, `truthy-shell-<version>`, and which caches belong to another release. | nothing |
+| `src/offline/strategy.ts` | Pure: what the worker does with one request (a page, a page for an unknown path, a static file, or nothing). | `assets` |
+| `src/offline/version.ts` | The release version the worker carries, injected at build time. Only `sw-entry.ts` imports it, inside the bundle. | nothing |
+| `src/offline/worker.ts` | The service worker's behaviour: install, activate, fetch and message, behind an environment object (version, origin, caches, fetch, timers) so the unit tests drive it with fakes. | `assets`, `cache-names`, `strategy` |
+| `src/offline/sw-entry.ts` | The bundled entry and the only file that touches the worker global: gives `worker.ts` the real caches, fetch and timers and the version, and registers its handlers. | `worker`, `version` |
+| `scripts/build-sw.ts` | Bundles `sw-entry.ts` with esbuild into `public/sw.js` with the version filled in. Runs before `next build` and `next dev`, like `build:tokens` and `build:decks`. | esbuild |
 | `src/offline/register.ts` | Registers `/sw.js` in production builds, checks for updates, and applies a waiting update when asked at a safe moment. | the browser's ServiceWorker API |
-| `src/offline/availability.ts` | Which decks can be played now: all of them online, the ones with a cached copy offline; and a hook for the online state. | `src/content/load.ts` (`createDeckCache`) |
+| `src/offline/availability.ts` | Which decks can be played now: all of them online, the ones with a cached copy offline. The hook for the online state is `components/useOnline.ts`, because `src/offline` imports no React. | `src/content/load.ts` (the `DeckCache` type) |
 | `components/start/*` | Shows a deck that cannot be played offline as unavailable, with its reason. | `availability` |
 
 The worker shares its pure parts with the unit tests, so the decisions it makes are tested without a browser.
 
 ## 6. The service worker
 
-**Version.** Each build gets a version string: the deploy's commit (`VERCEL_GIT_COMMIT_SHA`, or `git rev-parse HEAD` locally) plus the build time. It is part of `public/sw.js`, so every deploy changes the worker's bytes and the browser sees a new worker. The worker's cache is named `truthy-shell-<version>`.
+**Version.** Each build gets a version string: the deploy's commit (`VERCEL_GIT_COMMIT_SHA`, or `git rev-parse --short HEAD` locally, or `local` outside a checkout) plus the build time as an ISO timestamp. It is part of `public/sw.js`, so every deploy changes the worker's bytes and the browser sees a new worker. The worker's cache is named `truthy-shell-<version>`.
 
-**Install.** The worker fetches `/` and `/play`, reads the asset paths out of their HTML (`assets.ts`: script `src`, stylesheet and preload `href`, the font files of the self-hosted faces), and puts the two pages, those assets, the icons and the manifest in its cache. It also fetches one path that does not exist and keeps that response as the offline page for unknown paths (the game's own 404, status 404). If any of these fetches fails, the install fails and the old worker stays; the browser tries again later. The new worker does not take over on its own (no `skipWaiting` at install).
+**Install.** The worker fetches `/` and `/play`, reads the asset paths out of their HTML (`assets.ts`: script `src`, including the noModule polyfill, and the `href` of stylesheet, preload, modulepreload, icon, apple-touch-icon and manifest links, the font files of the self-hosted faces being among the preloads), and puts the two pages, those assets, the icons and the manifest in its cache; the icons and the manifest are also kept by their plain paths (`SHELL_FILES`), whether a page names them or not. It also fetches one path that does not exist and keeps that response as the offline page for unknown paths (the game's own 404, which must answer with status 404). The files without a hash in their name are fetched with revalidation, so the shell is the release the worker belongs to. If any of these fetches fails, answers with a status outside 200 to 299 (the 404 probe: any status but 404), or comes through a redirect, the install fails and the old worker stays; the browser tries again later. The install also fails for a page whose HTML names no script under `/_next/static/`: that is a page of another shape (a changed build), and a cache without scripts would not play offline. Nothing is stored until every fetch has answered, so a failed install, or a device too full to store the shell, leaves no half-filled cache, and the running release's cache is never touched. The new worker does not take over on its own (no `skipWaiting` at install).
 
-**Activate.** The worker deletes every `truthy-shell-*` cache but its own. On the very first install (no worker controlled the page before), it claims the open page at once, so the first visit already works offline; a later version is only activated at a safe moment (section 7), so claiming then cannot change a running round.
+**Activate.** The worker deletes every `truthy-shell-*` cache but its own. It then claims the open pages, on every activation. On the very first install that makes the first visit already work offline; a later version is only activated at a safe moment (section 7), so claiming then cannot change a running round, and the pages the old release controlled switch to the new one on activation anyway.
 
 **Fetch.** Only same-origin GET requests are handled; everything else goes to the network untouched.
 
 | Request | Strategy |
 | --- | --- |
-| A page (`mode: navigate`) for `/` or `/play` | Network first, with the cached page when the network fails or takes more than 3 s. A fresh response from the network updates nothing in the cache: the cache only changes with a new version, so a page and its assets always match. |
-| A page for any other path | Network first; offline, the cached 404 page with status 404. |
-| `/_next/static/...` | Cache first, then the network, adding what it fetches to the cache (a file a page loads later, such as a lazily loaded chunk). These files have a hash in their name and never change. |
+| A page (`mode: navigate`) for `/` or `/play` | Network first, with the cached page when the network fails, answers with a server error (status 500 or more) or takes more than 3 s; a slow network with nothing cached is waited for. The cached page is looked up by path, whatever the query. A fresh response from the network updates nothing in the cache: the cache only changes with a new version, so a page and its assets always match. |
+| A page for any other path | Network first; offline, the cached 404 page with status 404 (the network error passes on when none is cached). |
+| `/_next/static/...` | Cache first, then the network, adding what it fetches to the cache when the answer is fine (a file a page loads later, such as a lazily loaded chunk). The cache is matched by the full URL with its query. These files have a hash in their name and never change. |
 | `/decks/...` | Network only, untouched. The app's own localStorage cache is the offline copy (section 3). |
-| Icons, the manifest, `/sw.js` | Icons and the manifest: cache first. `/sw.js` is never handled by the worker. |
+| Icons, the manifest, `/sw.js` | Icons and the manifest (by their plain paths, `SHELL_FILES`): cache first. `/sw.js` is never handled by the worker. |
 | A React Server Components request (a `_rsc` query or an `RSC` header) | Network only. Its offline behaviour is in section 8. |
 
 **Messages.** The page can post `{ type: "apply-update" }` to a waiting worker, which then calls `skipWaiting()`.
