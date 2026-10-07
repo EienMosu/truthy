@@ -80,7 +80,7 @@ Each module has one job and a narrow interface. Dependencies only point downward
 | `components/start`, `components/play` | The start flow, and the play and result screens with their hooks: they wire the modules together | all of the above |
 | `app` | Routes, each rendering one screen; the root layout (fonts, theme script) and the 404 page | all of the above |
 
-`engine` and `input` being pure is deliberate: they are fully unit-testable, and they are the reference that the Swift and Kotlin clones translate line by line. `progress` sitting behind an interface is what lets the native apps put iCloud key-value storage or Play Games behind the same contract. `tests/purity.test.ts` enforces the pure rows (`src/engine`, `src/input`, the progress rules in `src/progress/progress.ts`, and `src/content/play.ts` and `text.ts`); the other rows are kept by review.
+`engine` and `input` being pure is deliberate: they are fully unit-testable, and they are the reference that the Swift and Kotlin clones translate line by line. `progress` sitting behind an interface is what lets the native apps put iCloud key-value storage or Play Games behind the same contract. `tests/purity.test.ts` enforces the pure rows (`src/engine`, `src/input`, the progress rules in `src/progress/progress.ts`, and `src/content/play.ts` and `text.ts`), and `tests/offline/boundaries.test.ts` enforces the boundary of `src/offline` (no React, Next.js or component imports); the other rows are kept by review.
 
 ## 5. Content
 
