@@ -234,9 +234,13 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     await act(async () => {});
     expect(screen.queryByRole("button", { name: "True" })).toBeNull();
-    await act(async () => takeOver(true));
-    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
-    expect(router.replace).not.toHaveBeenCalled();
+    // The new worker does not take over in time: the in-app way back runs and settles, so no way back is
+    // pending any more. The router is a stand-in, so the screen stays, and Try again now loads the deck.
+    await act(async () => takeOver(false));
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
+    expect(location.replace).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
   });
 
   it("takes the in-app way back when the new worker does not take over in time", async () => {
