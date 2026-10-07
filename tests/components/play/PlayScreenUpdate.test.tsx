@@ -11,7 +11,7 @@ import type { OfflineClient } from "@/src/offline/register";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress } from "@/src/progress/progress";
 import { fakeOffline } from "@/tests/offline/fake-offline";
-import { DECK_ID, cardByStatement, harness, type Harness } from "./fixtures";
+import { DECK_ID, cardByStatement, harness, pendingFor, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -132,6 +132,24 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
     expect(savedWhenApplied).toEqual([first.id]);
     expect(parseProgress(h.local.getItem(PROGRESS_KEY)).records).toEqual({});
+  });
+
+  // Owner decision D1: a decided round left before its result opens is recorded as its result would record it,
+  // and the update's full page load must not lose that record.
+  it("applies it on Leave round on a decided round before its result opens, and keeps the round's record", async () => {
+    const offline = fakeOffline(true);
+    await start(withOffline(offline, harness(pendingFor("streak"))));
+    await answerAndNext(cardByStatement(statementText()).answer);
+    await answerAndNext(cardByStatement(statementText()).answer);
+    fireEvent.click(screen.getByRole("button", { name: cardByStatement(statementText()).answer ? "False" : "True" }));
+    expect(await screen.findByRole("button", { name: "See results" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Leave round" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(parseProgress(h.local.getItem(PROGRESS_KEY)).records).toEqual({ "test-deck/SEC#streak": 2 });
+    expect(screen.queryByRole("heading", { name: "Round complete" })).toBeNull();
   });
 
   it("applies it on Leave round when the deck did not load", async () => {
