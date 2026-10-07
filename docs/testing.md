@@ -62,9 +62,9 @@ A known limit: the proxy refuses a connection at once, as a phone in flight mode
 
 ## A worker left over under `pnpm dev`
 
-The app registers its service worker only in a production build, so `pnpm dev` never registers one. A worker that an earlier `pnpm start` (a production build) left on `localhost` stays, though: a registration belongs to the origin, and the origin includes the port. If `pnpm dev` then runs on the same port, that old worker keeps controlling the page and answers from its cache, so the page shows the old build and ignores what you change. Remove it before you trust what the dev server shows:
+The app registers its service worker only in a production build, so `pnpm dev` never registers one. A worker that an earlier `pnpm start` (a production build) left on `localhost` stays, though: a registration belongs to the origin, and the origin includes the port. If `pnpm dev` then runs on the same port, that old worker keeps controlling the page. The pages still come from the dev server, since the worker asks the network first for them, but it answers `/_next/static` files from its cache, so the page can run stale code and ignore what you change. Remove it before you trust what the dev server shows:
 
-- In the browser's DevTools, open the Application panel, then Service workers, and choose Unregister for the `localhost` entry; Clear site data in the Storage section also removes its `truthy-shell-*` caches.
+- In the browser's DevTools, open the Application panel, then Service workers, and choose Unregister for the `localhost` entry. Prefer that to Clear site data in the Storage section: it also removes the worker's `truthy-shell-*` caches, but it wipes the game's localStorage on that origin as well, which holds your progress, records and cached decks.
 - Or run `navigator.serviceWorker.getRegistrations().then((all) => all.forEach((r) => r.unregister()))` in the console, and reload.
 
 A different port, or a private window, has no such worker. The end-to-end specs are not affected: they block service workers unless a spec allows one.
