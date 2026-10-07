@@ -425,6 +425,45 @@ describe("PlayScreen: a waiting update is never applied during a round", () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  // Leave round on the loading screen starts the way back while the round is still being dealt. A round that opened
+  // under the full page load would be cut off when the load lands, and a load that stalls is only stopped by a press
+  // of a way back, Play again or Try again, which answering is not.
+  it("opens no round from a deal that resolves after Leave round on the loading screen started the full page load", async () => {
+    const randomSeed = vi.fn(() => 12345);
+    h = withOffline(fakeOffline(true));
+    h.services = { ...h.services, randomSeed };
+    h.network.hold = true;
+    render(<PlayScreen services={h.services} />);
+    expect(screen.getByRole("status").textContent).toBe("Loading your round");
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
+    h.network.hold = false;
+    await act(async () => h.network.release());
+    // Dealing draws the seed: the deal has resolved.
+    await waitFor(() => expect(randomSeed).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("Loading your round");
+  });
+
+  it("opens no round from a deal that resolves after Leave round on the loading screen while the update is being applied", async () => {
+    let takeOver: (value: boolean) => void = () => {};
+    const randomSeed = vi.fn(() => 12345);
+    h = withOffline(fakeOffline(true, () => new Promise<boolean>((resolve) => (takeOver = resolve))));
+    h.services = { ...h.services, randomSeed };
+    h.network.hold = true;
+    render(<PlayScreen services={h.services} />);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    h.network.hold = false;
+    await act(async () => h.network.release());
+    await waitFor(() => expect(randomSeed).toHaveBeenCalledTimes(1));
+    await act(async () => {});
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+    await act(async () => takeOver(true));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledWith("/"));
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+  });
+
   it("does not apply it when /play sends a page load without a round to the start", async () => {
     const offline = fakeOffline(true);
     h = withOffline(offline, harness(null));

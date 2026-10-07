@@ -182,7 +182,6 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   const goHome = useCallback(() => {
     if (!services.backToStart?.()) router.replace("/");
   }, [router, services]);
-  const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome);
   // Once, as /play opens: its history entry is told whether the start's entry is behind it (review finding
   // U26: a reload of /play forgot it, and leaving then added a second start entry).
   useEffect(() => {
@@ -194,8 +193,11 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // a full page load. Until the way back it started has settled, another press of a way back, Play again and
   // Try again do nothing; once the page load has started the guard stays, as the old page stays open until
   // the load replaces it, for FULL_LOAD_WAIT_MS at most. A way back that throws lifts the guard, so the
-  // screen's controls work again, and takes back the return mark, so a later start keeps its focus.
+  // screen's controls work again, and takes back the return mark, so a later start keeps its focus. A round that
+  // is still being dealt when a way back starts (Leave round on the loading screen) never opens: useRound drops
+  // the deal, so nothing is played under the update that the way back applies and the page load that follows.
   const goingToStart = useRef(false);
+  const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome, goingToStart);
   // When the full page load started, on services.monotonic, or null while none has. A load that has not
   // replaced the page after FULL_LOAD_WAIT_MS lifts the guard at the next press. Waiting for pageshow would
   // not do: location.replace took /play's history entry, so this page never comes back from the back-forward

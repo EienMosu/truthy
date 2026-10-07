@@ -200,7 +200,13 @@ function roundReducer(state: RoundState | null, action: Action): RoundState | nu
 
 type LoadState = { kind: "loading" } | { kind: "redirecting" } | { kind: "error"; message: string } | { kind: "ready"; ticket: TicketInfo };
 
-export function useRound(services: PlayServices, goHome: () => void): UseRoundResult {
+/**
+ * `leaving` is true while the play screen's way back to the start is under way (Leave round on the loading screen
+ * starts it while a round is still being dealt). A deal that settles then is dropped, whatever it brings: no round
+ * opens under a page that is leaving, where the update the way back applies and its full page load could land in
+ * the middle of it (spec section 7). A deal started after the way back is over (Play again, Try again) counts.
+ */
+export function useRound(services: PlayServices, goHome: () => void, leaving?: { readonly current: boolean }): UseRoundResult {
   const [round, send] = useReducer(roundReducer, null);
   const [load, setLoad] = useState<LoadState>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
@@ -217,7 +223,7 @@ export function useRound(services: PlayServices, goHome: () => void): UseRoundRe
     }
     prepareRound(pending, services, knownIndex.current).then(
       (prepared) => {
-        if (cancelled) return;
+        if (cancelled || leaving?.current) return;
         if (prepared === null) {
           setLoad({ kind: "redirecting" });
           goHome();
@@ -232,13 +238,14 @@ export function useRound(services: PlayServices, goHome: () => void): UseRoundRe
         // A LoadError is the network or the cache. Anything else is a bug in dealing or pruning: it is
         // logged, and the player still sees the one message the screen has.
         if (!(reason instanceof LoadError)) console.error(reason);
+        if (leaving?.current) return;
         setLoad({ kind: "error", message: LOAD_FAILED_MESSAGE });
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [attempt, services, goHome]);
+  }, [attempt, services, goHome, leaving]);
 
   const again = useCallback(() => {
     send({ type: "clear" });
