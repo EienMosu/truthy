@@ -193,9 +193,12 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // a full page load. Until the way back it started has settled, another press of a way back, Play again and
   // Try again do nothing; once the page load has started the guard stays, as the old page stays open until
   // the load replaces it, for FULL_LOAD_WAIT_MS at most. A way back that throws lifts the guard, so the
-  // screen's controls work again, and takes back the return mark, so a later start keeps its focus. A round that
-  // is still being dealt when a way back starts (Leave round on the loading screen) never opens: useRound drops
-  // the deal, so nothing is played under the update that the way back applies and the page load that follows.
+  // screen's controls work again, and takes back the return mark, so a later start keeps its focus. A deal that
+  // settles while a way back applies an update or its full page load is under way (Leave round on the loading
+  // screen starts one while a round is still being dealt) opens no round: useRound drops it, so nothing is played
+  // under that update or that load. An in-app way back lifts the guard once goToStart has resolved, before
+  // history.back or router.replace lands, so a deal that settles in between can still open a round for a moment;
+  // no update is applied then, and a round without answers saves nothing when the start replaces it.
   const goingToStart = useRef(false);
   const { status, dispatch, retry, restart, recoverDropped, progressStore } = useRound(services, goHome, goingToStart);
   // When the full page load started, on services.monotonic, or null while none has. A load that has not

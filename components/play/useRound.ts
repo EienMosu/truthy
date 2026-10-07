@@ -207,10 +207,11 @@ function roundReducer(state: RoundState | null, action: Action): RoundState | nu
 type LoadState = { kind: "loading" } | { kind: "redirecting" } | { kind: "error"; message: string } | { kind: "ready"; ticket: TicketInfo };
 
 /**
- * `leaving` is true while the play screen's way back to the start is under way (Leave round on the loading screen
- * starts it while a round is still being dealt). A deal that settles then is dropped, whatever it brings: no round
- * opens under a page that is leaving, where the update the way back applies and its full page load could land in
- * the middle of it (spec section 7). A deal started after the way back is over (Play again, Try again) counts.
+ * `leaving` is true while the play screen's way back to the start applies an update or its full page load is
+ * under way (Leave round on the loading screen starts one while a round is still being dealt); an in-app way back
+ * clears it as soon as it has asked to move. A deal that settles while it is true is dropped, whatever it brings,
+ * so no round opens under that update or that page load, which could land in the middle of it (spec section 7).
+ * A deal started after the way back is over (Play again, Try again) counts.
  * When that way back is over with the screen still there, recoverDropped puts the load failure in the dropped
  * round's place: dealing at once could race the next way back, which the same press may already have started.
  */
