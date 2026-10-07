@@ -7,7 +7,8 @@ import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FULL_LOAD_WAIT_MS, NEXT_ARRIVES_MS, PlayScreen } from "@/components/play/PlayScreen";
 import { RESULT_ARRIVES_MS } from "@/components/play/ResultView";
-import { RETURN_MAX_AGE_MS } from "@/src/app-state/services";
+import { browserPlayServices } from "@/components/play/useRound";
+import { RETURN_KEY, RETURN_MAX_AGE_MS, clearReturnFromPlay, markReturnFromPlay, takeReturnFromPlay } from "@/src/app-state/services";
 import type { OfflineClient } from "@/src/offline/register";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { parseProgress } from "@/src/progress/progress";
@@ -377,5 +378,23 @@ describe("PlayScreen: a way back that fails", () => {
     fireEvent.click(screen.getByRole("button", { name: "Play again" }));
     await screen.findByRole("button", { name: "True" });
     expect(screen.queryByRole("heading", { name: "Round complete" })).toBeNull();
+  });
+
+  it("takes back the mark that the player is coming back, so the next start does not focus its step title", async () => {
+    const backToStart = vi.fn((): boolean => {
+      throw new Error("the history cannot be read");
+    });
+    const setup = withOffline(fakeOffline(false));
+    setup.services = { ...setup.services, backToStart, markReturnToStart: markReturnFromPlay, clearReturnToStart: clearReturnFromPlay };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await act(async () => {});
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(window.sessionStorage.getItem(RETURN_KEY)).toBeNull();
+    expect(takeReturnFromPlay()).toBe(false);
+  });
+
+  it("the browser's play services take the mark back with clearReturnFromPlay", () => {
+    expect(browserPlayServices.clearReturnToStart).toBe(clearReturnFromPlay);
   });
 });

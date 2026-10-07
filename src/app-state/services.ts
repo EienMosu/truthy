@@ -145,6 +145,14 @@ export function markReturnFromPlay(): void {
   }
 }
 
+/**
+ * A way back from /play failed before it moved, so no start will take the mark: clears it in memory and in
+ * sessionStorage, or the next start to open within RETURN_MAX_AGE_MS would focus its step 1 title.
+ */
+export function clearReturnFromPlay(): void {
+  takeReturnFromPlay();
+}
+
 /** Whether the start is being opened by a way back from /play; clears the mark in memory and in sessionStorage. */
 export function takeReturnFromPlay(): boolean {
   let stored = false;

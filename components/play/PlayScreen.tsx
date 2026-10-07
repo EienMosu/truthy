@@ -192,7 +192,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // a full page load. Until the way back it started has settled, another press of a way back, Play again and
   // Try again do nothing; once the page load has started the guard stays, as the old page stays open until
   // the load replaces it, for FULL_LOAD_WAIT_MS at most. A way back that throws lifts the guard, so the
-  // screen's controls work again.
+  // screen's controls work again, and takes back the return mark, so a later start keeps its focus.
   const goingToStart = useRef(false);
   // When the full page load started, on services.monotonic, or null while none has. A load that has not
   // replaced the page after FULL_LOAD_WAIT_MS lifts the guard at the next press. Waiting for pageshow would
@@ -218,6 +218,8 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
       })
       .catch(() => {
         goingToStart.current = false;
+        // The mark was set before the way back, which then failed before it moved: no start takes it.
+        services.clearReturnToStart?.();
       });
   }, [router, services, wayBackPending]);
   const playAgain = useCallback(() => {

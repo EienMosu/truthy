@@ -118,6 +118,15 @@ describe("the mark that the player is coming back from /play", () => {
     expect(after.takeReturnFromPlay()).toBe(false);
   });
 
+  it("can be taken back by a way back that failed, in memory and in sessionStorage", async () => {
+    vi.resetModules();
+    const fresh = await import("@/src/app-state/services");
+    fresh.markReturnFromPlay();
+    fresh.clearReturnFromPlay();
+    expect(window.sessionStorage.getItem(fresh.RETURN_KEY)).toBeNull();
+    expect(fresh.takeReturnFromPlay()).toBe(false);
+  });
+
   it("is not there on a page load that no way back from /play started", async () => {
     vi.resetModules();
     const fresh = await import("@/src/app-state/services");
