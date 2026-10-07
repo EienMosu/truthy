@@ -37,7 +37,7 @@ Each step leaves working, tested, deployed software.
 
 1. **One mode end to end.** Project skeleton, design tokens, deck build, the start flow, a Classic round, the result screen, progress storage, deploy to Vercel. Decks: every deck whose review is finished when the step ships (AWS Cloud Practitioner, Next.js Rendering, Google Cloud Digital Leader).
 2. **The other three modes.** Streak, Three lives and Timed with their in-game states and result screens.
-3. **Polish.** Offline play. The night theme and the AWS Solutions Architect Associate deck were planned for this step and were pulled forward after step 1 shipped (section 9, "Tokens in code"; the deck entered once its review was finished).
+3. **Polish.** Offline play, specified in `docs/superpowers/specs/2026-10-07-truthy-offline-design.md`: a service worker keeps the app on the device, and every deck the player has played can be played without a network. The night theme and the AWS Solutions Architect Associate deck were planned for this step and were pulled forward after step 1 shipped (section 9, "Tokens in code"; the deck entered once its review was finished).
 
 This document specifies all three. Implementation plans are written per step, starting with step 1.
 
@@ -74,8 +74,9 @@ Each module has one job and a narrow interface. Dependencies only point downward
 | `src/engine` | Dealing a round, the mode rules, scoring. Pure TypeScript: no React, no DOM, no storage, no clock or randomness of its own | `content` types |
 | `src/progress` | Card history, records, last route. An interface plus a local storage implementation | `content` types |
 | `src/input` | Swipe interpretation: pure functions that turn pointer samples into "cancel", "true" or "false" | nothing |
-| `src/app-state` | What the screens share outside the engine: the table of classes, the round the start flow hands to `/play` (session storage), the theme choice, and the services a screen takes (network, storages, history) so its tests run without a browser | `content`, `progress` |
-| `components` | The design system's components | design tokens; `src/meta` for the app name (`Logo`); the engine's constants and types (`LIVES`, `TIMED`, `Answered`) and the progress types they draw (`Comparison`); `src/content/text`, which splits card text into plain and code parts (`CardText`); and, for `ThemeSwitch` alone, the theme logic and storage type in `src/app-state` and the local storage in `src/progress/local`, because the switch reads and keeps the player's theme choice itself |
+| `src/offline` | The service worker (`src/offline/worker.ts`, built to `public/sw.js` by `scripts/build-sw.ts`), its pure rules (which files the shell holds, what each request gets), its registration and updates, and which decks can be played offline. No React | `content` |
+| `src/app-state` | What the screens share outside the engine: the table of classes, the round the start flow hands to `/play` (session storage), the theme choice, and the services a screen takes (network, storages, history, the service worker) so its tests run without a browser | `content`, `progress`, `offline` |
+| `components` | The design system's components | design tokens; `src/meta` for the app name (`Logo`); the engine's constants and types (`LIVES`, `TIMED`, `Answered`) and the progress types they draw (`Comparison`); `src/content/text`, which splits card text into plain and code parts (`CardText`); for `ThemeSwitch` alone, the theme logic and storage type in `src/app-state` and the local storage in `src/progress/local`, because the switch reads and keeps the player's theme choice itself; and, for `OfflineStart`, the services of `src/app-state` and the offline client of `src/offline`, because it starts the service worker and applies a waiting update when the app opens |
 | `components/start`, `components/play` | The start flow, and the play and result screens with their hooks: they wire the modules together | all of the above |
 | `app` | Routes, each rendering one screen; the root layout (fonts, theme script) and the 404 page | all of the above |
 
@@ -168,6 +169,8 @@ Card ids are stable for the life of a card. Pipeline-only fields (misconception,
 ### Loading
 
 The app fetches `index.json` on start and a deck file when a round on that deck starts. Both are cached on the device; a deck is fetched again only when its `hash` in the index differs from the cached one. A fetch that fails or does not answer within 8 seconds falls back to the cached copy; without one, the screen that needed the data shows a plain message with a retry action. A round dealt again from the play screen ("Play again", or "Try again" once a round has been dealt there) waits at most 1.5 seconds for the index, then deals from the index the last round was dealt from; the fetch goes on behind it and still caches what it brings, so a deck update shows up in a later round.
+
+Offline (`navigator.onLine` false, followed through the `online` and `offline` events) the start flow offers only the decks the device holds a copy of, of any hash, which is the copy `loadDeck` falls back to; every other deck reads "Needs a connection" and cannot be chosen, and so does the continue line when its deck has no copy. The labels go when the network is back, without a reload. The deck files and the index stay in local storage; the service worker never caches them (offline design, section 8).
 
 ## 6. Game engine
 
@@ -295,7 +298,7 @@ Buttons are a full alternative to swiping. True and False, and correct and wrong
 
 ### Installability
 
-A web app manifest and icons ship in step 1 so the game can be added to the home screen. A service worker that makes the app and the cached decks work offline ships in step 3.
+A web app manifest and icons ship in step 1 so the game can be added to the home screen. A service worker ships in step 3 (offline design, sections 6 and 7): after one visit online it keeps the two pages and every file they load on the device and serves them when the network is missing, so the game opens from the home screen without a network and plays every deck the device holds. A new release downloads in the background and takes over without a prompt at a safe moment only: when the app opens on the start, or when the player comes back to the start from a round; never during a round. Without service worker support the game works as before, online only.
 
 ## 10. Error handling
 
@@ -307,15 +310,24 @@ A web app manifest and icons ship in step 1 so the game can be added to the home
 | `/play` opened without a pending round | Redirect to `/`. |
 | An unknown address | The game's "Page not found" page, status 404, with "Back to start". |
 | A route has too few cards for the constraints | Relax the constraints in the documented order; never fail to deal. |
+| No service worker support, or its registration fails | The game works online only, as before step 3. Nothing is shown. |
+| The install of a new release fails midway | The release before it stays and keeps serving; the browser tries again on a later visit. |
+| Offline on the very first visit | The browser's own offline page. Offline play starts after one visit online. |
+| Offline, a deck with no copy on the device | "Needs a connection" on the deck step, and it cannot be chosen. |
+| Offline, a stored round whose deck has no copy | `/play` shows the load failure with "Try again"; "Leave round" goes back to the start. |
+| The network drops during a round, or comes back | Nothing changes in the round. Back online, the deck step's labels go and the next index fetch refreshes the cached index. |
+| A new release is waiting while a round is open | It waits until the next safe moment (section 9, "Installability"). |
+| Two tabs are open, one in a round | Applying the update in one tab replaces the worker for both. The worker serves only pages and hashed files, and the other tab keeps the code it loaded, so its round goes on; it gets the new release on its next page load. |
+| The device clears the site's storage | Decks, index, progress and the worker's cache go together; the next visit online starts fresh. |
 
 ## 11. Testing
 
 | Gate | What it proves |
 |---|---|
-| `pnpm test` (Vitest) | Engine: dealing priority and constraints, the end rule and record of each mode, determinism under a seed, Timed pausing. Input: every swipe rule. Progress: history, records, deck changes, corrupt storage. Content: schemas, section mapping, conflict group integrity. The purity and import boundaries of the engine, the input rules and the progress rules; dealing in chunks. |
+| `pnpm test` (Vitest) | Engine: dealing priority and constraints, the end rule and record of each mode, determinism under a seed, Timed pausing. Input: every swipe rule. Progress: history, records, deck changes, corrupt storage. Content: schemas, section mapping, conflict group integrity. The purity and import boundaries of the engine, the input rules and the progress rules; dealing in chunks. Offline: the files the worker keeps, what it does with each request, its install, activate and update, the safe moments, and which decks can be played offline. |
 | `pnpm typecheck` | Strict TypeScript across app, scripts and tests. |
 | `pnpm build` | The deck build and validation, then the Next.js build. |
-| `pnpm e2e` (Playwright) | At phone size in Chromium and WebKit: the start flow to a finished Classic round and its result; each mode's ending; answering by swipe, button and keyboard; an accidental-swipe case that must not answer; reduced motion; a returning player's "Continue"; a whole round in the dark colour scheme, drawn with the night colours; the Timed clock pausing while the page is hidden; the back gesture in every mode. |
+| `pnpm e2e` (Playwright) | At phone size in Chromium and WebKit: the start flow to a finished Classic round and its result; each mode's ending; answering by swipe, button and keyboard; an accidental-swipe case that must not answer; reduced motion; a returning player's "Continue"; a whole round in the dark colour scheme, drawn with the night colours; the Timed clock pausing while the page is hidden; the back gesture in every mode; after one round online, the game opening and playing that deck without a network, a deck never loaded saying it needs a connection, and a new release taking over only when the app opens on the start or the player leaves a round. |
 
 The engine and the input module are written test first. GitHub Actions runs all gates on every pull request. After each screen is implemented it is compared side by side with its mockup at 390 by 844.
 

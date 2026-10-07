@@ -50,9 +50,22 @@ A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-tra
 
 Every spec that goes offline imports `test` from `e2e/offline.ts` instead of `@playwright/test`. Its fixture `net` is a proxy of the test's own (`e2e/proxy.ts`) in front of the production server, and the proxy is the test's `baseURL`. Service workers stay blocked unless the spec allows them; a spec about the worker offline sets `serviceWorkers: "allow"`.
 
-- `goOffline(page, net)` makes the proxy drop every connection, makes `navigator.onLine` read false (an init script reads a flag in local storage) and sends the page an `offline` event; it then checks that a request of the page fails, so a spec never passes for the wrong reason. `goOnline(page, net)` undoes all three without a reload.
-- `net.setOffline(true)` alone is a network that is gone while the browser still says it is online (a Wi-Fi without internet).
+- `goOffline(page, net)` makes the proxy drop every connection, makes `navigator.onLine` read false (an init script reads a flag in local storage) and sends the page an `offline` event; it then checks that a request of the page fails (`expectNetworkGone(page)`), so a spec never passes for the wrong reason. `goOnline(page, net)` undoes all three without a reload.
+- `net.setOffline(true)` alone is a network that is gone while the browser still says it is online (a Wi-Fi without internet); a spec that does it checks the cut with `expectNetworkGone(page)` itself.
 - `net.release(from, to)` makes the proxy serve `sw.js` with the version string `from` replaced by `to`, which is what a deploy does. `waitForWorker(page)` waits until the first worker controls the page and returns its version; `workerState(page)` reads what the page sees: controlled, a release waiting, the `truthy-shell-*` caches.
 - `toDeckStep(page, area, platform)` goes from start step 1 to the deck step and waits for each step to settle, the same offline as online.
+- Read what a spec needs from the network before going offline: `deckAnswers` fetches the deck file, so an offline round is played with `playRoundWith(page, answers, choose)`.
 
 Why a proxy and not `context.setOffline`: in Playwright 1.63's WebKit an offline context fails every page request before the service worker sees it (microsoft/playwright issue 42775; fixed with WebKit r2370, which comes with Playwright 1.64), and neither engine routes the worker's update check through `page.route` or `context.route`, so a new `sw.js` cannot come from a route. With the proxy the same specs run in both projects, on macOS and in CI. Playwright's own worker events (`context.serviceWorkers()`, the `serviceworker` event) exist only in Chromium, so the specs assert on what the page shows, on `response.fromServiceWorker()` and on `workerState`.
+
+A known limit: the proxy refuses a connection at once, as a phone in flight mode does. A network that drops packets instead (a weak signal, a router that has stopped answering) leaves the router's payload fetch waiting before Next.js falls back to a document load, and that wait can outlast the 10 s the return mark counts (`RETURN_MAX_AGE_MS`); the start then opens with focus on the body instead of its step 1 title. No spec covers that network.
+
+## On a phone
+
+After a release that changes the service worker, the owner checks on an iPhone in Safari (and, if at hand, Chrome on Android), because Playwright neither runs the game as a home screen app nor turns a real network off:
+
+1. Online, open the game from the home screen icon and play one round on a deck.
+2. Turn on flight mode and open the game from the home screen again: the start shows in the chosen theme, the deck played in step 1 can be played to its result, and another deck says "Needs a connection".
+3. Still in flight mode, start a round on that deck, press Leave round, then Back: the first Back may show the start once more or, restored from the back-forward cache, the ready pass of the round just left (accepted), and Start round works from there.
+4. Turn flight mode off: the labels go without a reload.
+5. After the next deploy, open the game from the home screen twice: it runs the new release, with no prompt; a round left open while the release arrives is never interrupted.
