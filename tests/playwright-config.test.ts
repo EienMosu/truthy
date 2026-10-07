@@ -24,6 +24,11 @@ describe("end-to-end configuration", () => {
     for (const project of config.projects ?? []) expect(project.use?.colorScheme, project.name).toBe("light");
   });
 
+  it("blocks service workers in every spec, so a spec that routes requests sees them; an offline spec allows them itself", () => {
+    expect(config.use?.serviceWorkers).toBe("block");
+    for (const project of config.projects ?? []) expect(project.use?.serviceWorkers, project.name).toBeUndefined();
+  });
+
   it("serves the production build, not the dev server", async () => {
     // The default port, whatever E2E_PORT the shell that runs the unit tests has set.
     vi.stubEnv("E2E_PORT", "");

@@ -47,6 +47,15 @@ describe("Vercel build", () => {
   });
 });
 
+describe("the service worker's bundler", () => {
+  it("is esbuild, a devDependency at the one version the toolchain already installs", () => {
+    expect(JSON.parse(read("package.json")).devDependencies.esbuild).toBe("0.28.2");
+    const lock = read("pnpm-lock.yaml");
+    expect(lock).toContain("\n      esbuild:\n        specifier: 0.28.2\n        version: 0.28.2\n");
+    expect([...new Set(lock.match(/^ {2}esbuild@[^:]+:$/gm))]).toEqual(["  esbuild@0.28.2:"]);
+  });
+});
+
 describe("production URL", () => {
   it("is recorded in the README as the public production address, not a preview one", () => {
     const line = /^Play it on your phone at (https:\/\/[a-z0-9.-]+)\/?$/m.exec(read("README.md"));

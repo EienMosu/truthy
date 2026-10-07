@@ -35,6 +35,10 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     trace: "retain-on-failure",
+    // The game registers a service worker from step 3 on. A worker answers a page's requests before page.route and
+    // context.route see them, so the specs that route or fail requests would test the worker instead of the page.
+    // Blocked here for every spec; a spec that needs a worker sets test.use({ serviceWorkers: "allow" }) itself.
+    serviceWorkers: "block",
   },
   projects: [
     { name: "phone-chromium", use: { ...phone, browserName: "chromium" } },
