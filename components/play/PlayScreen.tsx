@@ -182,15 +182,19 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // also the safe moment for a waiting update (spec section 7): goToStart applies it and opens the start with
   // a full page load. Until the way back it started has settled, another press of a way back, Play again and
   // Try again do nothing; once the page load has started the guard stays, as the old page stays open until
-  // the load replaces it.
+  // the load replaces it. A way back that throws lifts the guard, so the screen's controls work again.
   const goingToStart = useRef(false);
   const leaveToStart = useCallback(() => {
     if (goingToStart.current) return;
     goingToStart.current = true;
     services.markReturnToStart?.();
-    void goToStart(services, router).then((loading) => {
-      if (!loading) goingToStart.current = false;
-    });
+    void goToStart(services, router)
+      .then((loading) => {
+        if (!loading) goingToStart.current = false;
+      })
+      .catch(() => {
+        goingToStart.current = false;
+      });
   }, [router, services]);
   const playAgain = useCallback(() => {
     if (!goingToStart.current) restart();

@@ -314,3 +314,23 @@ describe("PlayScreen: nothing waiting", () => {
     expect(location.replace).not.toHaveBeenCalled();
   });
 });
+
+describe("PlayScreen: a way back that fails", () => {
+  it("leaves the result's actions working: the way back can be pressed again, and Play again deals a new round", async () => {
+    const offline = fakeOffline(false);
+    const backToStart = vi.fn((): boolean => {
+      throw new Error("the history cannot be read");
+    });
+    const setup = withOffline(offline);
+    setup.services = { ...setup.services, backToStart };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Choose another route" }));
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await act(async () => {});
+    expect(backToStart).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    await screen.findByRole("button", { name: "True" });
+    expect(screen.queryByRole("heading", { name: "Round complete" })).toBeNull();
+  });
+});
