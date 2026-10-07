@@ -275,6 +275,28 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     expect(stopLoading).toHaveBeenCalledTimes(1);
   });
 
+  // Close results, the load stalls, Play again after FULL_LOAD_WAIT_MS, and the player then leaves the new round by
+  // the back gesture: the start opens in the app with no control used, and must not take the lost load's mark.
+  it("takes back the return mark when it lifts the guard, so a start that no control opened does not take it", async () => {
+    const setup = withOffline(fakeOffline(true));
+    setup.services = { ...setup.services, markReturnToStart: markReturnFromPlay, clearReturnToStart: clearReturnFromPlay, stopLoading: vi.fn() };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+    const stored = window.sessionStorage.getItem(RETURN_KEY);
+    // The new round outlives the stored mark's age, so only the mark in memory, which has none, could still count.
+    const later = vi.spyOn(Date, "now").mockReturnValue(Date.now() + RETURN_MAX_AGE_MS + 1);
+    try {
+      expect(takeReturnFromPlay()).toBe(false);
+    } finally {
+      later.mockRestore();
+    }
+    expect(stored).toBeNull();
+  });
+
   it("does not stop a page load when no way back started one", async () => {
     const stopLoading = vi.fn();
     const setup = withOffline(fakeOffline(false));

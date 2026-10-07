@@ -199,13 +199,16 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // not do: location.replace took /play's history entry, so this page never comes back from the back-forward
   // cache, and a load that is cut off or never answers fires nothing at all. When the guard lifts, the load
   // is stopped first: a stalled load that landed later would unload /play in the middle of the round that
-  // Play again or Try again had just dealt, which spec section 7 forbids.
+  // Play again or Try again had just dealt, which spec section 7 forbids. The return mark is taken back with it:
+  // no start takes it now, and the mark in memory has no age, so a start that the back gesture opened later,
+  // with no control used, would focus its step 1 title.
   const loadingSince = useRef<number | null>(null);
   const wayBackPending = useCallback(() => {
     if (!goingToStart.current) return false;
     const since = loadingSince.current;
     if (since === null || services.monotonic() - since < FULL_LOAD_WAIT_MS) return true;
     services.stopLoading?.();
+    services.clearReturnToStart?.();
     goingToStart.current = false;
     loadingSince.current = null;
     return false;

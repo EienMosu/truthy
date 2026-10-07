@@ -122,7 +122,8 @@ export function browserBackToStart(): boolean {
 // starts this module afresh, so the mark is also kept in sessionStorage under RETURN_KEY, where the start reads
 // it after that load. The stored mark counts for RETURN_MAX_AGE_MS only: one that no start took (a way back
 // into a start restored from the back-forward cache, a load that was cut off) must not move the focus of a
-// later fresh load.
+// later fresh load. The mark in memory has no age: the play screen takes it back when it knows that no start
+// will take it (clearReturnFromPlay).
 let returningFromPlay = false;
 
 /** The sessionStorage key of the mark that the player is coming back from /play: the time it was set, in ms. */
@@ -146,8 +147,9 @@ export function markReturnFromPlay(): void {
 }
 
 /**
- * A way back from /play failed before it moved, so no start will take the mark: clears it in memory and in
- * sessionStorage, or the next start to open within RETURN_MAX_AGE_MS would focus its step 1 title.
+ * A way back from /play failed before it moved, or the full page load it started was lost, so no start will
+ * take the mark: clears it in memory and in sessionStorage, or the next start to open in this page (or, for the
+ * stored mark, within RETURN_MAX_AGE_MS) would focus its step 1 title.
  */
 export function clearReturnFromPlay(): void {
   takeReturnFromPlay();
