@@ -15,10 +15,12 @@ export interface ToStartOptions {
   /**
    * A full page load that an earlier way back from this screen started was lost (it never replaced the page), and
    * the same load would most likely stall again. When the start's entry is right behind /play, the way back goes
-   * back to it, which needs no network, whatever the worker says. Otherwise it takes the full page load again,
-   * under the play screen's guard: router.replace("/") is no way out, as a newer release has taken over, so the
-   * payload comes from another build and Next.js answers with a document load of its own, which nothing guards
-   * or stops, and once that is lost too, every later router.replace("/") in this page does nothing.
+   * back to it whatever the worker says; that stays in the page when the start flow opened /play in this page,
+   * and after a reload of /play it is a load of the document behind it, which nothing guards or stops. Otherwise
+   * it takes the full page load again, under the play screen's guard: router.replace("/") is no way out, as a
+   * newer release has taken over, so the payload comes from another build and Next.js answers with a document
+   * load of its own, which nothing guards or stops either, and once that is lost too, every later
+   * router.replace("/") in this page does nothing.
    */
   loadLost?: boolean;
 }

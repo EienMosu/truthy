@@ -94,8 +94,9 @@ describe("goToStart: a new version took over this page earlier without a reload"
 });
 
 // The play screen lost a full page load that a way back started (it never replaced the page). A back step to the
-// start's entry needs no network. router.replace("/") is no way out: a newer release has taken over, so the
-// payload comes from another build, and Next.js answers with a document load of its own that nothing guards.
+// start's entry stays in the page when the start flow opened /play in it. router.replace("/") is no way out: a newer
+// release has taken over, so the payload comes from another build, and Next.js answers with a document load of its
+// own that nothing guards.
 describe("goToStart: a full page load from this screen was lost", () => {
   it("goes back to the start's entry when it is right behind /play, whatever waits or took over, and applies nothing", async () => {
     const offline = fakeOffline(true, async () => true, true);
