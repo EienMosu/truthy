@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
+import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { OfflineStart } from "@/components/OfflineStart";
 import { THEME_COLOR, themeScript } from "@/src/app-state/theme";
 import { NEXT_FONT_VARIABLES, tokensToCss } from "@/src/tokens/build";
 
@@ -36,6 +38,30 @@ describe("root layout", () => {
   it("names the page Truthy with a one-line description", () => {
     expect(metadata.title).toBe("Truthy");
     expect(metadata.description).toBe("A true or false card game that teaches IT, one swipe at a time.");
+  });
+});
+
+// The elements of a rendered tree whose type is `type`, at any depth below `node`.
+function elementsOfType(node: ReactNode, type: unknown): ReactElement[] {
+  if (Array.isArray(node)) return node.flatMap((child: ReactNode) => elementsOfType(child, type));
+  if (!isValidElement<{ children?: ReactNode }>(node)) return [];
+  return [...(node.type === type ? [node] : []), ...elementsOfType(node.props.children, type)];
+}
+
+describe("the service worker", () => {
+  it("starts the offline client from every page: OfflineStart sits once in the body, after the app frame", () => {
+    const html = RootLayout({ children: null });
+    const [body] = elementsOfType(html, "body");
+    expect(elementsOfType(html, OfflineStart)).toHaveLength(1);
+    const children = (body?.props as { children?: ReactNode } | undefined)?.children;
+    expect(Array.isArray(children)).toBe(true);
+    const [frame, starter] = children as ReactNode[];
+    expect(isValidElement(frame) && frame.type).toBe("div");
+    expect(isValidElement(starter) && starter.type).toBe(OfflineStart);
+  });
+
+  it("adds nothing to the markup: OfflineStart renders no element", () => {
+    expect(renderLayout()).toContain('<body><div class="app-frame"><p>child</p></div></body>');
   });
 });
 

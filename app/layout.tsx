@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import { OfflineStart } from "@/components/OfflineStart";
 import { THEME_COLOR, themeScript } from "@/src/app-state/theme";
 import { APP_DESCRIPTION, APP_NAME } from "@/src/meta";
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   // The font variable classes sit on <html>: --font-sans is declared on :root and resolves its var() there.
   // The theme script runs while <head> is parsed, before the first paint: it puts the player's chosen theme
   // on <html> as data-theme, which React does not render, hence suppressHydrationWarning (one level deep).
+  // OfflineStart renders nothing: it registers the service worker and applies a waiting update on / (spec section 7).
   return (
     <html lang="en" className={`${overpass.variable} ${overpassMono.variable}`} suppressHydrationWarning>
       <head>
@@ -57,6 +59,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <div className="app-frame">{children}</div>
+        <OfflineStart />
       </body>
     </html>
   );

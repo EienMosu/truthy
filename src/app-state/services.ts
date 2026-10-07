@@ -1,7 +1,8 @@
-// The outside world as the screens see it: the network, the two storages and the browser history.
-// Screens take these through an optional `services` prop, so their tests run without a browser.
+// The outside world as the screens see it: the network, the two storages, the service worker and the browser
+// history. Screens take these through an optional `services` prop, so their tests run without a browser.
 
 import type { Fetcher } from "@/src/content/load";
+import { browserOfflineClient, type OfflineClient } from "@/src/offline/register";
 import { browserLocalStorage } from "@/src/progress/local";
 
 export type ReadWriteStorage = Pick<Storage, "getItem" | "setItem">;
@@ -13,6 +14,8 @@ export interface AppServices {
   localStorage: () => ReadWriteStorage | undefined;
   /** The round handed from the start flow to /play. In the browser: sessionStorage, or undefined when blocked. */
   sessionStorage: () => ReadWriteStorage | undefined;
+  /** The service worker: registration and the update applied at a safe moment. Tests: noOfflineClient. */
+  offline: OfflineClient;
 }
 
 /** window.sessionStorage, or undefined on the server and where the browser blocks storage. */
@@ -29,6 +32,7 @@ export const browserAppServices: AppServices = {
   fetcher: (url) => fetch(url),
   localStorage: browserLocalStorage,
   sessionStorage: browserSessionStorage,
+  offline: browserOfflineClient,
 };
 
 /**

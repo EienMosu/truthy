@@ -4,6 +4,7 @@ import type { PlayServices } from "@/components/play/useRound";
 import { PENDING_KEY, type PendingRound } from "@/src/app-state/pending";
 import type { Mode } from "@/src/content/play";
 import type { Card, DeckFile, DeckIndex } from "@/src/content/schema";
+import { noOfflineClient } from "@/src/offline/register";
 
 export const DECK_ID = "test-deck";
 
@@ -139,6 +140,7 @@ export function harness(pending: PendingRound | null = { route: { deckId: DECK_I
     fetcher: network.fetcher,
     localStorage: () => local,
     sessionStorage: () => session,
+    offline: noOfflineClient,
     now: () => time,
     monotonic: () => time,
     randomSeed: () => 12345,

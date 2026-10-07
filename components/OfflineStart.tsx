@@ -1,0 +1,41 @@
+"use client";
+
+// Starts the service worker when a page opens, and applies a waiting new version at the first safe moment
+// of spec section 7: "when the app opens". It sits in app/layout.tsx, so it runs once per page load, on every
+// page; only a page that opened on / applies an update, and it does that before the player has done anything,
+// so the reload looks like part of opening the app. The other safe moment, coming back from a round, belongs
+// to the play screen's ways back to the start (goToStart).
+import { useEffect, useRef } from "react";
+import { browserAppServices, type AppServices } from "@/src/app-state/services";
+import type { OfflineClient } from "@/src/offline/register";
+
+/** Registers the worker; then, on / only, lets a waiting update take over and reloads once it has. */
+export async function openApp(offline: OfflineClient, path: string, reload: () => void): Promise<void> {
+  await offline.start();
+  if (path !== "/") return;
+  if (!offline.updateWaiting()) return;
+  if (await offline.applyUpdate()) reload();
+}
+
+export interface OfflineStartProps {
+  /** The service worker. Defaults to the browser's. */
+  services?: Pick<AppServices, "offline">;
+  /** Reloads the page once the update controls it. Defaults to window.location.reload. */
+  reload?: () => void;
+}
+
+function reloadPage(): void {
+  window.location.reload();
+}
+
+export function OfflineStart({ services = browserAppServices, reload = reloadPage }: OfflineStartProps) {
+  // Once per page load: the layout stays mounted across in-app moves between / and /play, and React runs
+  // an effect twice in development.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current) return;
+    opened.current = true;
+    void openApp(services.offline, window.location.pathname, reload);
+  }, [services, reload]);
+  return null;
+}

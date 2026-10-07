@@ -1,6 +1,7 @@
 // Spec sections 6 and 9: the production build serves the service worker, and a registered worker keeps the app
-// shell in its cache and controls the page. The app registers the worker itself from src/offline/register.ts;
-// this spec registers it by hand so that it tests the worker alone. Playing offline has specs of its own.
+// shell in its cache and controls the page. The app registers the worker itself on every page (src/offline/register.ts,
+// checked by e2e/register.spec.ts); the call below asks for that same registration, so this spec does not depend on
+// when the app's own call runs. Playing offline has specs of its own.
 import { expect, test } from "@playwright/test";
 import { atHome } from "./helpers";
 

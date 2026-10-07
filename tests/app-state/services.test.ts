@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { browserAppServices, browserSessionStorage, browserStepHistory, withEntryState } from "@/src/app-state/services";
+import { browserOfflineClient } from "@/src/offline/register";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -53,9 +54,10 @@ describe("browser storages", () => {
     expect(browserSessionStorage()).toBeUndefined();
   });
 
-  it("wires the real services to fetch and the two storages", () => {
+  it("wires the real services to fetch, the two storages and the service worker", () => {
     expect(browserAppServices.localStorage()).toBe(window.localStorage);
     expect(browserAppServices.sessionStorage()).toBe(window.sessionStorage);
+    expect(browserAppServices.offline).toBe(browserOfflineClient);
   });
 });
 

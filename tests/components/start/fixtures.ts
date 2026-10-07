@@ -2,6 +2,7 @@
 // history in memory and a clock moved by hand. Everything goes in through StartFlow's `services` prop.
 import type { AppServices, StepHistory } from "@/src/app-state/services";
 import type { DeckIndex } from "@/src/content/schema";
+import { noOfflineClient } from "@/src/offline/register";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { emptyProgress, type Progress } from "@/src/progress/progress";
 
@@ -188,6 +189,7 @@ export function harness(local: MemoryStorage = memoryStorage(), index: unknown =
     fetcher: network.fetcher,
     localStorage: () => local,
     sessionStorage: () => session,
+    offline: noOfflineClient,
     history: () => history,
     now: () => clock.time,
   };

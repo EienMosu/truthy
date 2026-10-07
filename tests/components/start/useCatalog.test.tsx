@@ -5,6 +5,7 @@ import { continueTarget, deckCount, decksLabel, seenPercent, useCatalog, type Ca
 import type { AppServices } from "@/src/app-state/services";
 import { INDEX_CACHE_KEY, INDEX_URL, createDeckCache, deckCacheKey, type Fetcher } from "@/src/content/load";
 import { findRoute, type DeckFile, type DeckIndex } from "@/src/content/schema";
+import { noOfflineClient } from "@/src/offline/register";
 import { PROGRESS_KEY } from "@/src/progress/local";
 import { bestFor, emptyProgress, parseProgress, type Progress } from "@/src/progress/progress";
 import { INDEX, harness, memoryStorage, storedProgress } from "./fixtures";
@@ -173,7 +174,7 @@ describe("useCatalog: the seen share after a deck update", () => {
     const updated = deckFile("aws-clf-c02", "clf-2", [...CLF_IDS.slice(10), "aws-clf-c02-new"]);
     const local = deviceWith(updated);
     const net = network(indexWithClf("clf-2", 11), []);
-    const status = await ready({ fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined });
+    const status = await ready({ fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined, offline: noOfflineClient });
     expect(status.cardIds["aws-clf-c02"]).toEqual(updated.cards.map((c) => c.id));
     expect(Object.keys(status.progress.cards)).toEqual([]);
     expect(Object.keys(parseProgress(local.getItem(PROGRESS_KEY)).cards)).toEqual([]);
@@ -186,7 +187,7 @@ describe("useCatalog: the seen share after a deck update", () => {
     const updated = deckFile("aws-clf-c02", "clf-2", [...CLF_IDS.slice(10), "aws-clf-c02-new"]);
     const local = deviceWith(old);
     const net = network(indexWithClf("clf-2", 11), [updated]);
-    const status = await ready({ fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined }, (s) => "aws-clf-c02" in s.cardIds);
+    const status = await ready({ fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined, offline: noOfflineClient }, (s) => "aws-clf-c02" in s.cardIds);
     expect(net.calls).toEqual([INDEX_URL, "/decks/aws-clf-c02.json?v=clf-2"]);
     expect(status.cardIds["aws-clf-c02"]).toHaveLength(11);
     expect(Object.keys(status.progress.cards)).toEqual([]);
@@ -198,7 +199,7 @@ describe("useCatalog: the seen share after a deck update", () => {
     const updated = deckFile("aws-clf-c02", "clf-2", [...PLAYED.slice(0, 4), ...CLF_IDS.slice(10)]);
     const local = deviceWith(updated);
     const net = network(indexWithClf("clf-2", 14), []);
-    const status = await ready({ fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined });
+    const status = await ready({ fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined, offline: noOfflineClient });
     expect(Object.keys(status.progress.cards).sort()).toEqual(PLAYED.slice(0, 4).sort());
     expect(seenPercent(status.progress, { id: "aws-clf-c02", cardCount: 14 }, status.cardIds["aws-clf-c02"])).toBe(29);
   });
@@ -207,7 +208,7 @@ describe("useCatalog: the seen share after a deck update", () => {
     const old = deckFile("aws-clf-c02", "clf-1", CLF_IDS);
     const local = deviceWith(old);
     const net = network(indexWithClf("clf-2", 11), []); // the new deck file cannot be loaded
-    const services: AppServices = { fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined };
+    const services: AppServices = { fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined, offline: noOfflineClient };
     const { result } = renderHook(() => useCatalog(services));
     await waitFor(() => expect(net.calls).toHaveLength(2));
     await act(async () => {});
