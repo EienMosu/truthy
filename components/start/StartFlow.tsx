@@ -16,7 +16,7 @@
 //     that travels into its field of the pass. Reduced motion swaps all of it for a cross-fade.
 import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Transition, type Variants } from "motion/react";
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { DestinationCard } from "@/components/DestinationCard";
 import { FillInPass, type FillInPassValues, type PassFieldName, type PassStage } from "@/components/FillInPass";
 import { Logo } from "@/components/Logo";
@@ -24,6 +24,7 @@ import { PillButton } from "@/components/PillButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { EASE, EASE_OUT } from "@/components/easing";
+import { useOnline } from "@/components/useOnline";
 import { BackArrowIcon } from "@/components/icons";
 import { MODE_TABLE, lastScoreText, modeInfo, type ModeInfo } from "@/src/app-state/modes";
 import { savePending } from "@/src/app-state/pending";
@@ -35,9 +36,11 @@ import {
   type AppServices,
   type StepHistory,
 } from "@/src/app-state/services";
+import { createDeckCache } from "@/src/content/load";
 import type { Mode } from "@/src/content/play";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { SWIPE } from "@/src/input/swipe";
+import { availableDeckIds } from "@/src/offline/availability";
 import { bestFor } from "@/src/progress/progress";
 import { ContinueLine } from "./ContinueLine";
 import { useListCue } from "./listCue";
@@ -367,6 +370,15 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   const r = index ? resolve(index, view.choice) : {};
   const hasSections = (r.deck?.sections.length ?? 1) > 0;
 
+  // The decks that can be played now (offline spec section 8): all of them online; offline, those with a copy
+  // on the device. Read again when the network comes or goes, so the deck step's labels follow without a reload.
+  const online = useOnline();
+  const available = useMemo(() => {
+    if (!index) return new Set<string>();
+    const ids = index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks.map((deck) => deck.id)));
+    return availableDeckIds(ids, online, createDeckCache(services.localStorage()));
+  }, [index, online, services]);
+
   // The latest values for the history listener, which is subscribed once.
   const latest = useRef({ index, view, boarding });
   useLayoutEffect(() => {
@@ -550,7 +562,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   function continueLast() {
     if (!index || !progress || !settled() || rewinding.current) return;
     const target = continueTarget(index, progress);
-    if (!target) return;
+    if (!target || !available.has(target.found.deck.id)) return;
     const choice: Choice = {
       areaId: target.found.area.id,
       platformId: target.found.platform.id,
@@ -729,6 +741,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                 sectionTitle={returning.found.section?.title ?? "Whole deck"}
                 modeLabel={modeInfo(returning.mode).name}
                 lastScore={returning.lastScore ? lastScoreText(returning.mode, returning.lastScore.score, returning.lastScore.total) : undefined}
+                needsConnection={!available.has(returning.found.deck.id)}
                 onContinue={continueLast}
               />
             </motion.div>
@@ -797,6 +810,21 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       case 3:
         return (r.platform?.decks ?? []).map((deck) => {
           const seen = seenPercent(progress, deck, cardIds[deck.id]);
+          if (!available.has(deck.id)) {
+            return (
+              <Option key={deck.id} id={deck.id}>
+                <DestinationCard
+                  variant="deck"
+                  name={deck.code}
+                  code
+                  detail={deck.title}
+                  seenPercent={seen}
+                  dimmedReason="Needs a connection"
+                  label={`${deck.code}, ${deck.title}, needs a connection`}
+                />
+              </Option>
+            );
+          }
           const choose = () =>
             deck.sections.length > 0
               ? forward(4, { ...view.choice, deckId: deck.id }, "deck", optionEl(deck.id))

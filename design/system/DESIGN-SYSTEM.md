@@ -63,7 +63,7 @@ Notes:
 | ink / surface-raised | 15.21 | 10.48 | All ticket text |
 | ink / surface-sunk | 14.07 | 11.83 | Slip text |
 | ink-muted / surface-raised | 5.66 | 5.35 | Field labels, leg names |
-| ink-muted / surface-sunk | 5.23 | 6.04 | Missed-card heads, unavailable card |
+| ink-muted / surface-sunk | 5.23 | 6.04 | Missed-card heads, unavailable card, deck card that needs a connection |
 | true / surface-raised | 6.07 | 4.72 | True hint, intent stamp |
 | true / surface-sunk | 5.61 | 5.33 | Source link, Why link |
 | false / surface-raised | 5.99 | 4.94 | False hint, intent stamp |
@@ -78,7 +78,7 @@ Notes:
 | ink / sky-2 | 11.73 | 13.24 | Same tagline where it crosses into sky-2 |
 | ink ring / sky-3, sky-4 | 13.32, 13.80 | 12.22, 11.94 | The focus ring (2px, offset 2), filled pills included, see Accessibility |
 | ink / sky-3 | 13.32 | 12.22 | "Your pass is ready" line (start step 6) |
-| ink-muted / sky-4 | 5.13 | 6.09 | Continue line route (start step 1) |
+| ink-muted / sky-4 | 5.13 | 6.09 | Continue line route (start step 1), and its deck name when it needs a connection |
 | ink / surface-raised (stub stamp) | 15.21 | 10.48 | "Time is up" stamp |
 | rule / surface-raised | 1.47 | 1.43 | Decorative only, never the only signal |
 
@@ -217,6 +217,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
   - **Section** (start step 4): stub 80, at least 90 tall, padding 14 top and bottom, main gap 2. The code in `deck-code` (or "Whole deck" in `card-name` for the first card) over the name in Sans 600 16 / 1.25, ink ("All 4 sections" under Whole deck). Stub: "Cards", count, chevron, as on the deck card. Whole deck always comes first.
   - **Class** (start step 5): stub 80, at least 108 tall, padding 16 top and bottom. The class name in `card-name` over its one-line rule in Sans 600 16 / 1.25, **ink-muted** ("Correct answers out of 10 cards."). Stub: "Best" (`field-label`), the value (Mono 600 16) and its unit (`field-label`: "of 10", "in a row", "cards", "correct"). Never played: an ink-muted "–" over "not played". No chevron: the class card is the last choice before the ready step.
   - **Not available** ("No decks yet"): at least 84 tall, a single column with no stub, notches, shadow or icon. Fill `surface-sunk`, name in ink-muted. It is not a button and does nothing when tapped; it is a labelled group ("DevOps, no decks yet").
+  - **Needs a connection** (deck card, offline, for a deck with no copy on the device): the deck card's shape, size and main column (code, name, status row) kept, so the list does not move when the network comes or goes. Paper `surface-sunk` with the same notches and perforation, no shadow, all text ink-muted (the seen share too). The stub holds only "Needs a connection" in `field-label`, centred, on two lines ("Needs a" / "connection"), in place of "Cards", the count and the chevron. It is not a button and does nothing when tapped; it is a labelled group whose name ends in ", needs a connection" ("SAA, Solutions Architect Associate, needs a connection"). The words say why, so the state does not rest on the colour. When the network comes back the card becomes the deck button again, without a reload.
 - **States:** pressed scales to 0.98 (`motion.transition.press`). Focus uses the ink ring (2px, offset 2). While the chosen name is travelling, the card hides its own name.
 - **Used by:** browse-c steps 1 to 3, start steps 1 to 5.
 
@@ -242,6 +243,7 @@ Each entry gives purpose, anatomy (sizes in px), variants, states and the screen
 - **Placement:** the foot zone of step 1, only when a previous round exists on the device (`data-player="returning"`). A first run shows nothing there.
 - **Anatomy:** a 60 tall row, radius 16, no fill and no shadow, padding 0 12 0 4, gap 14. A 44 `surface-raised` disc holding the logo mark (26 × 18). Then the deck's pass name, "AWS Cloud Practitioner" (`emphasis`, line height 1.2, one line, ellipsised: six decks are titled "Fundamentals", so the bare title would not say which; a name longer than the column, such as "Kubernetes and Cloud Native Associate", is cut and the accessible label has all of it), over the route in `mono-data` ink-muted, at most two lines: "CLF → SEC · Classic · last **7 of 10**" (the last score in Mono 600 ink). A part that does not fit moves to the second line whole, so the last score shows on a 320 phone too. A right chevron (16, stroke 2.2) at the end; with the row's label it is what says "continue".
 - **States:** pressed scales to 0.98 and fills with `press`. Accessible label: "Continue: AWS Cloud Practitioner, Security and compliance, Classic. Last score 7 of 10."
+  - **Needs a connection** (offline, when the route's deck has no copy on the device): the same row, place and size, with no chevron and no pressed state. The deck's pass name turns ink-muted, and the third part of the mono line reads "Needs a connection" (Mono 600 ink) in place of the last score. It is not a button and does nothing when tapped; it is a labelled group: "Continue: AWS Cloud Practitioner, Security and compliance, Classic, needs a connection." When the network comes back it is the continue button again, without a reload.
 - **Behaviour:** fills the whole pass at once and goes straight to step 6 ("Your pass is ready"), so the player can still change any field or press Back.
 - **Used by:** start, start-night.
 

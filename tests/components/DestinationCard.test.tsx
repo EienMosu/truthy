@@ -75,6 +75,51 @@ describe("DestinationCard", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it("draws a deck that cannot be played now dimmed: a labelled, disabled group with the reason in the stub", () => {
+    const onSelect = vi.fn();
+    render(
+      <DestinationCard
+        variant="deck"
+        name="SAA"
+        code
+        detail="Solutions Architect Associate"
+        seenPercent={0}
+        stub={{ label: "Cards", value: "248" }}
+        dimmedReason="Needs a connection"
+        label="SAA, Solutions Architect Associate, needs a connection"
+        onSelect={onSelect}
+      />,
+    );
+    expect(screen.queryByRole("button")).toBeNull();
+    const group = screen.getByRole("group", { name: "SAA, Solutions Architect Associate, needs a connection" });
+    expect(group.getAttribute("aria-disabled")).toBe("true");
+    expect(group.hasAttribute("data-dimmed")).toBe(true);
+    // The reason takes the place of the count: no "Cards", no number, no chevron.
+    expect(group.textContent).toBe("SAASolutions Architect AssociateNot startedNeeds a connection");
+    expect(group.querySelector("[data-stub-reason]")?.textContent).toBe("Needs a connection");
+    expect(group.querySelectorAll("svg")).toHaveLength(0);
+    fireEvent.click(group);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("keeps a dimmed deck card the size and shape of a deck card, in sunk paper and muted ink without a shadow", () => {
+    render(<DestinationCard variant="deck" name="SAA" code detail="Solutions Architect Associate" seenPercent={0} dimmedReason="Needs a connection" label="SAA" />);
+    const group = screen.getByRole("group", { name: "SAA" });
+    expect(group.className).toContain("min-h-(--size-card-min-deck)");
+    expect(group.className).toContain("text-(--color-ink-muted)");
+    expect(group.className).not.toContain("shadow-");
+    expect(group.style.gridTemplateColumns).toBe("minmax(0, 1fr) var(--size-card-stub-deck)");
+    expect(group.style.background).toContain("var(--color-surface-sunk)");
+    expect(group.style.background).not.toContain("var(--color-surface-raised)");
+  });
+
+  it("shows the seen share of a dimmed deck in muted ink too", () => {
+    render(<DestinationCard variant="deck" name="CLF" code detail="Cloud Practitioner" seenPercent={38} dimmedReason="Needs a connection" label="CLF" />);
+    const share = screen.getByRole("group", { name: "CLF" }).querySelector("[data-status] b");
+    expect(share?.textContent).toBe("38%");
+    expect(share?.className).not.toContain("text-(--color-ink)");
+  });
+
   it("can hide its name while a copy of it travels into the pass", () => {
     render(<DestinationCard variant="place" name="Cloud" sub="2 decks" label="Cloud" nameHidden />);
     expect(document.querySelector<HTMLElement>("[data-card-name]")?.style.visibility).toBe("hidden");

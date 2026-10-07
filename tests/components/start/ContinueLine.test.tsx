@@ -31,6 +31,24 @@ describe("ContinueLine", () => {
     expect(button.querySelector("em")?.textContent).toBe("13 in a row");
   });
 
+  it("says Needs a connection and is not a button when its deck cannot be played now", () => {
+    const onContinue = vi.fn();
+    render(<ContinueLine {...ROUTE} lastScore="7 of 10" needsConnection onContinue={onContinue} />);
+    expect(screen.queryByRole("button")).toBeNull();
+    const line = screen.getByRole("group", { name: "Continue: AWS Cloud Practitioner, Security and compliance, Classic, needs a connection." });
+    expect(line.getAttribute("aria-disabled")).toBe("true");
+    // The reason takes the place of the last score; the chevron that says "continue" is gone.
+    expect(line.textContent).toBe("AWS Cloud PractitionerCLF → SEC · Classic · Needs a connection");
+    expect(line.querySelector("[data-continue='reason']")?.textContent).toBe("Needs a connection");
+    expect(line.querySelector("[data-continue='score']")).toBeNull();
+    expect(line.querySelectorAll("svg")).toHaveLength(1); // the logo mark only
+    expect(line.className).toContain("h-(--size-pill)");
+    expect(line.className).toContain("text-(--color-ink-muted)");
+    expect(line.className).not.toContain("active:");
+    fireEvent.click(line);
+    expect(onContinue).not.toHaveBeenCalled();
+  });
+
   it("is a 60 tall row, the same place and size as the pill it shares the foot with", () => {
     render(<ContinueLine {...ROUTE} onContinue={() => {}} />);
     expect(screen.getByRole("button").className).toContain("h-(--size-pill)");

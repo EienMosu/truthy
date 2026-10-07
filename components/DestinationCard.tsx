@@ -1,7 +1,9 @@
 // The destination card of the start flow (design system 5.3): one large, calm choice per row. A ticket
 // with a stub on the right, notches of radius 7 on the stub line and a dashed perforation between them.
 // Variants: "place" (an area or a platform), "deck", "section" and "class". A card whose option has no
-// content is "not available": a sunk, labelled group without a stub, which is not a button.
+// content is "not available": a sunk, labelled group without a stub, which is not a button. A deck that
+// exists but cannot be played now (offline, no copy on the device) is "dimmed": the same ticket in sunk
+// paper and muted ink, the reason in its stub, also a labelled group and not a button.
 import type { CSSProperties, Ref } from "react";
 import { ChevronIcon } from "./icons";
 
@@ -35,6 +37,12 @@ export interface DestinationCardProps {
   label: string;
   /** When true the option cannot be chosen: no button, no stub, sunk paper, and `sub` says why. */
   unavailable?: boolean;
+  /**
+   * When set the option cannot be chosen now, and this says why ("Needs a connection"). The card keeps its
+   * shape, height and main column, in sunk paper and muted ink without a shadow; the stub shows this text in
+   * place of its values and chevron. Not a button: a labelled, disabled group. Used by the deck card offline.
+   */
+  dimmedReason?: string;
   onSelect?: () => void;
   ref?: Ref<HTMLButtonElement>;
   /** Hides the name while a copy of it travels into the pass. */
@@ -63,10 +71,10 @@ const MAIN_PADDING: Record<DestinationVariant, string> = {
 };
 
 /** Paper with a half circle of radius 7 cut into the top and bottom edges on the stub line. */
-function notchedCard(stubWidth: string): CSSProperties {
+function notchedCard(stubWidth: string, paper = "var(--color-surface-raised)"): CSSProperties {
   const cut = (edge: "0" | "100%") =>
     `radial-gradient(circle at calc(100% - ${stubWidth}) ${edge}, transparent var(--size-card-notch), ` +
-    `var(--color-surface-raised) calc(var(--size-card-notch) + 0.5px))`;
+    `${paper} calc(var(--size-card-notch) + 0.5px))`;
   return { background: `${cut("0")} top / 100% 51% no-repeat, ${cut("100%")} bottom / 100% 51% no-repeat` };
 }
 
@@ -113,8 +121,9 @@ export function ProgressTrack({ percent }: { percent: number }) {
 }
 
 export function DestinationCard(props: DestinationCardProps) {
-  const { variant, name, code = false, sub, detail, seenPercent, stub, label, unavailable = false, onSelect, ref, nameHidden = false } = props;
+  const { variant, name, code = false, sub, detail, seenPercent, stub, label, unavailable = false, dimmedReason, onSelect, ref, nameHidden = false } = props;
   const nameClass = code ? CODE : NAME;
+  const dimmed = dimmedReason !== undefined;
 
   if (unavailable) {
     return (
@@ -143,6 +152,53 @@ export function DestinationCard(props: DestinationCardProps) {
   }
 
   const stubWidth = STUB_WIDTH[variant];
+  const main = (
+    <span aria-hidden="true" className={`flex min-w-0 flex-col justify-center pr-(--space-12) pl-(--space-20) ${MAIN_PADDING[variant]}`}>
+      <span data-card-name="" className={nameClass} style={nameHidden ? { visibility: "hidden" } : undefined}>
+        {name}
+      </span>
+      {sub ? <span className={SUB}>{sub}</span> : null}
+      {detail ? (
+        <span className={`${DETAIL} ${variant === "class" ? "text-(--color-ink-muted)" : ""}`}>{detail}</span>
+      ) : null}
+      {seenPercent === undefined ? null : (
+        <span data-status="" className={`mt-(--space-10) flex items-center gap-(--space-10) ${SUB}`}>
+          <ProgressTrack percent={seenPercent} />
+          {seenPercent > 0 ? (
+            <span>
+              <b className={`font-(--font-weight-mono-semibold) ${dimmed ? "" : "text-(--color-ink)"}`}>{seenPercent}%</b> seen
+            </span>
+          ) : (
+            <span>Not started</span>
+          )}
+        </span>
+      )}
+    </span>
+  );
+  const perforation = <span className="absolute top-(--space-12) bottom-(--space-12) left-[-0.75px] w-(--stroke-rule)" style={PERFORATION} />;
+
+  if (dimmed) {
+    return (
+      <div
+        role="group"
+        aria-label={label}
+        aria-disabled="true"
+        data-variant={variant}
+        data-dimmed=""
+        className={`relative grid w-full rounded-(--radius-card) text-left text-(--color-ink-muted) ${MIN_HEIGHT[variant]}`}
+        style={{ ...notchedCard(stubWidth, "var(--color-surface-sunk)"), gridTemplateColumns: `minmax(0, 1fr) ${stubWidth}` }}
+      >
+        {main}
+        <span aria-hidden="true" className="relative flex flex-col items-center justify-center px-(--space-4)">
+          {perforation}
+          <span data-stub-reason="" className={`${STUB_LABEL} text-center`}>
+            {dimmedReason}
+          </span>
+        </span>
+      </div>
+    );
+  }
+
   return (
     <button
       ref={ref}
@@ -157,29 +213,9 @@ export function DestinationCard(props: DestinationCardProps) {
       ].join(" ")}
       style={{ ...notchedCard(stubWidth), gridTemplateColumns: `minmax(0, 1fr) ${stubWidth}` }}
     >
-      <span aria-hidden="true" className={`flex min-w-0 flex-col justify-center pr-(--space-12) pl-(--space-20) ${MAIN_PADDING[variant]}`}>
-        <span data-card-name="" className={nameClass} style={nameHidden ? { visibility: "hidden" } : undefined}>
-          {name}
-        </span>
-        {sub ? <span className={SUB}>{sub}</span> : null}
-        {detail ? (
-          <span className={`${DETAIL} ${variant === "class" ? "text-(--color-ink-muted)" : ""}`}>{detail}</span>
-        ) : null}
-        {seenPercent === undefined ? null : (
-          <span data-status="" className={`mt-(--space-10) flex items-center gap-(--space-10) ${SUB}`}>
-            <ProgressTrack percent={seenPercent} />
-            {seenPercent > 0 ? (
-              <span>
-                <b className="font-(--font-weight-mono-semibold) text-(--color-ink)">{seenPercent}%</b> seen
-              </span>
-            ) : (
-              <span>Not started</span>
-            )}
-          </span>
-        )}
-      </span>
+      {main}
       <span aria-hidden="true" className="relative flex flex-col items-center justify-center gap-(--space-2)">
-        <span className="absolute top-(--space-12) bottom-(--space-12) left-[-0.75px] w-(--stroke-rule)" style={PERFORATION} />
+        {perforation}
         {stub ? (
           <>
             <span className={STUB_LABEL}>{stub.label}</span>

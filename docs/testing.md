@@ -46,3 +46,13 @@ E2E_PORT=3200 pnpm e2e
 
 A failed test keeps its trace in `test-results/` (`pnpm exec playwright show-trace <path>`); CI uploads that folder as the `playwright-traces` artifact after every run that was not cancelled. In CI a failed test runs once more, so the report tells a flaky test from a broken one. A test that passes only on its retry keeps the run green but shows as a flaky notice in the run summary, and the failed attempt's trace is in the artifact: read the notice after every run.
 
+## Offline and updates
+
+Every spec that goes offline imports `test` from `e2e/offline.ts` instead of `@playwright/test`. Its fixture `net` is a proxy of the test's own (`e2e/proxy.ts`) in front of the production server, and the proxy is the test's `baseURL`. Service workers stay blocked unless the spec allows them; a spec about the worker offline sets `serviceWorkers: "allow"`.
+
+- `goOffline(page, net)` makes the proxy drop every connection, makes `navigator.onLine` read false (an init script reads a flag in local storage) and sends the page an `offline` event; it then checks that a request of the page fails, so a spec never passes for the wrong reason. `goOnline(page, net)` undoes all three without a reload.
+- `net.setOffline(true)` alone is a network that is gone while the browser still says it is online (a Wi-Fi without internet).
+- `net.release(from, to)` makes the proxy serve `sw.js` with the version string `from` replaced by `to`, which is what a deploy does. `waitForWorker(page)` waits until the first worker controls the page and returns its version; `workerState(page)` reads what the page sees: controlled, a release waiting, the `truthy-shell-*` caches.
+- `toDeckStep(page, area, platform)` goes from start step 1 to the deck step and waits for each step to settle, the same offline as online.
+
+Why a proxy and not `context.setOffline`: in Playwright 1.63's WebKit an offline context fails every page request before the service worker sees it (microsoft/playwright issue 42775; fixed with WebKit r2370, which comes with Playwright 1.64), and neither engine routes the worker's update check through `page.route` or `context.route`, so a new `sw.js` cannot come from a route. With the proxy the same specs run in both projects, on macOS and in CI. Playwright's own worker events (`context.serviceWorkers()`, the `serviceworker` event) exist only in Chromium, so the specs assert on what the page shows, on `response.fromServiceWorker()` and on `workerState`.
