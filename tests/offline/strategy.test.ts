@@ -32,7 +32,7 @@ describe("strategyFor: pages", () => {
     expect(strategyFor(navigate("/__offline-not-found"), ORIGIN)).toBe("unknown-page");
   });
 
-  it("waits 3 s for the network before it serves a cached page", () => {
+  it("pins the spec's 3 s wait for the network before a cached page is served (the timeout itself is tested with the worker)", () => {
     expect(PAGE_TIMEOUT_MS).toBe(3000);
   });
 });
