@@ -42,11 +42,11 @@ If a step's actual output differs from the stated one, stop and find out why bef
 
 | After task | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
 |---|---|---|---|---|---|---|---|---|
-| Test files | 130 | 133 | 136 | 139 | 141 | 145 | 147 | 147 |
+| Test files, forecast and executed alike | 130 | 133 | 136 | 139 | 141 | 145 | 147 | 147 |
 | Tests, as the draft runs predicted | 2154 | 2188 | 2241 | 2273 | 2298 | 2325 | 2338 | 2340 |
-| Tests, as the executed plan ran | not kept | not kept | not kept | not kept | not kept | not kept | not kept | 2346 |
+| Tests, as the executed plan ran | 2154 | 2188 | 2242 | 2276 | 2305 | 2331 | 2344 | 2346 |
 
-Both rows count the Vitest tests that `pnpm test` runs (unit, document and hygiene tests; no end-to-end tests), and the file row counts the Vitest files. The first row is the plan's forecast, from the throwaway drafts. The second is what `pnpm test` printed when the plan was executed in order: only the last cell was kept, and it is the real count after task 8, 2346 instead of the forecast 2340. After the final fix wave (the five commits after task 8) the suite holds 147 files and 2363 tests. A later run that differs from the forecast by a few cases is not a failure of the plan; one that differs from 2363 on the final tree without a change to the tests is.
+The two test rows count the Vitest tests that `pnpm test` runs (unit, document and hygiene tests; no end-to-end tests), and the file row counts the Vitest files, which came out as forecast after every task. The first test row is the plan's forecast, from the throwaway drafts. The second is the count at the commit that ends each task on `offline` (`62e35fc`, `3cba51c`, `07e4e12`, `b07b838`, `450a07c`, `66d160c`, `1a21492`, `6b00879`; for tasks 4 and 5 that is the fix their review added), taken after the plan ran from an export of each commit (`git archive`) with the final tree's `node_modules`, where the only failures were the two cases that need a git checkout. The two rows part from task 3 on, by one to seven tests, because the executed tasks and their review fixes added cases the drafts did not have. The rule above, to stop when a step's output differs from the stated one, applied while the plan ran; the executed row is now the reference, and a recount of one of these commits that differs from it without a change to the tests is a real difference to find out. After the final fix wave (the five commits after task 8) the suite holds 147 files and 2363 tests.
 
 The full end-to-end suite holds 646 tests at `5db53f3` (644 pass, the two WebKit swipe cases skip) and 686 after task 8 (684 pass, the same two skip).
 
