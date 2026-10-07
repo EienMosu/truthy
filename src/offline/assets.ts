@@ -19,9 +19,16 @@ export const SHELL_FILES: ReadonlySet<string> = new Set(["/icon.svg", "/icon-192
 // A link loads a file for the page only with one of these rel values. A prefetch or a preconnect is not part of it.
 const LOADING_RELS: ReadonlySet<string> = new Set(["stylesheet", "preload", "modulepreload", "icon", "apple-touch-icon", "manifest"]);
 
+// The inside of a tag: any run of characters other than ">", where a quoted value is taken whole, so the ">" in
+// "a>b" does not end the tag (the first alternative cannot start with a quote, so the runs cannot overlap).
+const INSIDE = `(?:[^>"']|"[^"]*"|'[^']*')*`;
+
 // One pass from left to right, so the paths keep the order of the document. Comments, and the bodies of scripts
 // and styles, are consumed whole: text inside them (the inline flight data names chunk paths) is never read as a tag.
-const TAGS = /<!--[\s\S]*?-->|<script\b([^>]*)>[\s\S]*?<\/script\s*>|<style\b[^>]*>[\s\S]*?<\/style\s*>|<link\b([^>]*)>/gi;
+const TAGS = new RegExp(
+  `<!--[\\s\\S]*?-->|<script\\b(${INSIDE})>[\\s\\S]*?</script\\s*>|<style\\b${INSIDE}>[\\s\\S]*?</style\\s*>|<link\\b(${INSIDE})>`,
+  "gi",
+);
 
 // name, then a double quoted, single quoted or unquoted value (or none).
 const ATTRIBUTE = /([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
@@ -35,8 +42,11 @@ function attributes(source: string): Map<string, string> {
   return found;
 }
 
+const ENTITIES: Record<string, string> = { amp: "&", "#38": "&", "#x26": "&", quot: '"', "#34": '"', "#x22": '"', "#39": "'", "#x27": "'", apos: "'" };
+
+// One pass, so the text an entity decodes to is never decoded again: "&amp;quot;" is the text "&quot;".
 function decodeEntities(value: string): string {
-  return value.replace(/&(?:amp|#38|#x26);/gi, "&").replace(/&(?:quot|#34|#x22);/gi, '"').replace(/&(?:#39|#x27|apos);/gi, "'");
+  return value.replace(/&(amp|quot|apos|#38|#x26|#34|#x22|#39|#x27);/gi, (_whole, name: string) => ENTITIES[name.toLowerCase()] ?? _whole);
 }
 
 function isShellPath(pathname: string): boolean {

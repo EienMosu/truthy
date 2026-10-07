@@ -164,6 +164,31 @@ describe("assetPathsFromHtml rules", () => {
     expect(assetPathsFromHtml(html, ORIGIN)).toEqual(["/_next/static/chunks/single.js", "/_next/static/chunks/bare.css", "/icon.svg?v=1&w=2"]);
   });
 
+  it("does not end a tag at a > inside a quoted attribute value", () => {
+    const html = [
+      '<script data-x="a>b" src="/_next/static/chunks/double.js"></script>',
+      "<script data-x='a>b' src='/_next/static/chunks/single.js'></script>",
+      '<link data-x="a>b" rel="stylesheet" href="/_next/static/chunks/quoted.css">',
+      '<link rel="stylesheet" href="/_next/static/chunks/after.css">',
+    ].join("");
+    expect(assetPathsFromHtml(html, ORIGIN)).toEqual([
+      "/_next/static/chunks/double.js",
+      "/_next/static/chunks/single.js",
+      "/_next/static/chunks/quoted.css",
+      "/_next/static/chunks/after.css",
+    ]);
+  });
+
+  it("decodes an entity once, so &amp;quot; stays the text &quot;", () => {
+    const html = [
+      '<link rel="icon" href="/icon.svg?a=&amp;quot;">',
+      '<link rel="icon" href="/icon-192.png?a=&amp;amp;b=1">',
+      '<link rel="icon" href="/icon-512.png?a=&amp;&#x26;&#38;">',
+    ].join("");
+    // The query keeps its text; the URL parser would write a decoded quote as %22.
+    expect(assetPathsFromHtml(html, ORIGIN)).toEqual(["/icon.svg?a=&quot;", "/icon-192.png?a=&amp;b=1", "/icon-512.png?a=&&&"]);
+  });
+
   it("drops a fragment, keeps a query, and ignores an empty or broken URL", () => {
     const html = [
       '<script src="/_next/static/chunks/a.js?dpl=x#part"></script>',
