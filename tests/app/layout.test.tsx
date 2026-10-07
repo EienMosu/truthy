@@ -31,6 +31,7 @@ describe("root layout", () => {
     expect(renderLayout()).toMatch(/^<html lang="en"/);
   });
 
+  // The body holds the frame and nothing else in the markup, which also shows that OfflineStart renders no element.
   it("renders its children inside the app frame in the body", () => {
     expect(renderLayout()).toContain('<body><div class="app-frame"><p>child</p></div></body>');
   });
@@ -58,10 +59,6 @@ describe("the service worker", () => {
     const [frame, starter] = children as ReactNode[];
     expect(isValidElement(frame) && frame.type).toBe("div");
     expect(isValidElement(starter) && starter.type).toBe(OfflineStart);
-  });
-
-  it("adds nothing to the markup: OfflineStart renders no element", () => {
-    expect(renderLayout()).toContain('<body><div class="app-frame"><p>child</p></div></body>');
   });
 });
 
