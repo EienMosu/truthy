@@ -120,6 +120,49 @@ describe("DestinationCard", () => {
     expect(share?.className).not.toContain("text-(--color-ink)");
   });
 
+  it("writes every class attribute of a deck card, dimmed or not, without a leading, trailing or double space", () => {
+    for (const seenPercent of [0, 38]) {
+      for (const dimmedReason of [undefined, "Needs a connection"]) {
+        const { container, unmount } = render(
+          <DestinationCard variant="deck" name="CLF" code detail="Cloud Practitioner" seenPercent={seenPercent} dimmedReason={dimmedReason} stub={{ label: "Cards", value: "214" }} label="CLF" />,
+        );
+        const classes = [...container.querySelectorAll("[class]")].map((element) => element.getAttribute("class") ?? "");
+        expect(classes.length).toBeGreaterThan(5);
+        for (const value of classes) expect(value, `${seenPercent}% ${dimmedReason ?? "playable"}: "${value}"`).toMatch(/^\S+( \S+)*$/);
+        unmount();
+      }
+    }
+  });
+
+  it("writes the class attributes of a class card, with a muted stub value or not, without a stray space too", () => {
+    for (const muted of [true, false]) {
+      const { container, unmount } = render(
+        <DestinationCard variant="class" name="Classic" detail="Correct answers out of 10 cards." stub={{ label: "Best", value: muted ? "–" : "9", unit: muted ? "not played" : "of 10", muted }} label="Classic" />,
+      );
+      for (const element of container.querySelectorAll("[class]")) expect(element.getAttribute("class"), `muted ${muted}, ${element.tagName}`).toMatch(/^\S+( \S+)*$/);
+      unmount();
+    }
+  });
+
+  it("draws the track of a dimmed deck at the disabled opacity and leaves the reason in the stub at full strength", () => {
+    render(<DestinationCard variant="deck" name="CLF" code detail="Cloud Practitioner" seenPercent={38} dimmedReason="Needs a connection" label="CLF" />);
+    const group = screen.getByRole("group", { name: "CLF" });
+    expect(group.querySelector("[data-track]")?.hasAttribute("data-dimmed")).toBe(true);
+    expect(group.querySelector("[data-track]")?.className).toContain("opacity-(--opacity-disabled)");
+    // Opacity lowers the contrast of whatever it covers, so none of it may reach the label that says why.
+    const reason = group.querySelector("[data-stub-reason]");
+    for (let node = reason; node && node !== group.parentElement; node = node.parentElement) {
+      expect(node.className, node.tagName).not.toContain("opacity-");
+    }
+  });
+
+  it("keeps the track of a playable deck at full strength", () => {
+    render(<DestinationCard variant="deck" name="CLF" code detail="Cloud Practitioner" seenPercent={38} stub={{ label: "Cards", value: "214" }} label="CLF" />);
+    const track = screen.getByRole("button", { name: "CLF" }).querySelector("[data-track]");
+    expect(track?.hasAttribute("data-dimmed")).toBe(false);
+    expect(track?.className).not.toContain("opacity-");
+  });
+
   it("can hide its name while a copy of it travels into the pass", () => {
     render(<DestinationCard variant="place" name="Cloud" sub="2 decks" label="Cloud" nameHidden />);
     expect(document.querySelector<HTMLElement>("[data-card-name]")?.style.visibility).toBe("hidden");
@@ -130,5 +173,13 @@ describe("ProgressTrack", () => {
   it("is decorative", () => {
     const { container } = render(<ProgressTrack percent={12} />);
     expect(container.firstElementChild?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("is drawn at the disabled opacity only when dimmed", () => {
+    const { container, rerender } = render(<ProgressTrack percent={12} />);
+    expect(container.firstElementChild?.hasAttribute("data-dimmed")).toBe(false);
+    rerender(<ProgressTrack percent={12} dimmed />);
+    expect(container.firstElementChild?.hasAttribute("data-dimmed")).toBe(true);
+    expect(container.firstElementChild?.className).toContain("opacity-(--opacity-disabled)");
   });
 });

@@ -99,10 +99,19 @@ const STUB_LABEL =
   "leading-(--type-field-label-line-height) tracking-(--type-field-label-letter-spacing) text-(--color-ink-muted)";
 const STUB_VALUE = "font-(family-name:--font-mono) text-[16px] font-(--font-weight-mono-semibold) leading-[1.27]";
 
-/** The 56 by 8 progress track: dashed for the part not seen, a solid ink line with an amber dot for the part seen. */
-export function ProgressTrack({ percent }: { percent: number }) {
+/**
+ * The 56 by 8 progress track: dashed for the part not seen, a solid ink line with an amber dot for the part seen.
+ * Dimmed, the whole track is drawn at the disabled opacity like any other inactive part of the design; it is
+ * decorative, so the lower contrast takes nothing from the text beside it.
+ */
+export function ProgressTrack({ percent, dimmed = false }: { percent: number; dimmed?: boolean }) {
   return (
-    <span aria-hidden="true" data-track="" className="relative block h-(--space-8) w-(--size-progress-track) flex-none">
+    <span
+      aria-hidden="true"
+      data-track=""
+      data-dimmed={dimmed ? "" : undefined}
+      className={`relative block h-(--space-8) w-(--size-progress-track) flex-none${dimmed ? " opacity-(--opacity-disabled)" : ""}`}
+    >
       <span
         className="absolute inset-x-0 top-[3px] h-(--stroke-perforation)"
         style={{ background: "repeating-linear-gradient(90deg, var(--color-rule) 0 4px, transparent 4px 8px)" }}
@@ -159,14 +168,14 @@ export function DestinationCard(props: DestinationCardProps) {
       </span>
       {sub ? <span className={SUB}>{sub}</span> : null}
       {detail ? (
-        <span className={`${DETAIL} ${variant === "class" ? "text-(--color-ink-muted)" : ""}`}>{detail}</span>
+        <span className={variant === "class" ? `${DETAIL} text-(--color-ink-muted)` : DETAIL}>{detail}</span>
       ) : null}
       {seenPercent === undefined ? null : (
         <span data-status="" className={`mt-(--space-10) flex items-center gap-(--space-10) ${SUB}`}>
-          <ProgressTrack percent={seenPercent} />
+          <ProgressTrack percent={seenPercent} dimmed={dimmed} />
           {seenPercent > 0 ? (
             <span>
-              <b className={`font-(--font-weight-mono-semibold) ${dimmed ? "" : "text-(--color-ink)"}`}>{seenPercent}%</b> seen
+              <b className={dimmed ? "font-(--font-weight-mono-semibold)" : "font-(--font-weight-mono-semibold) text-(--color-ink)"}>{seenPercent}%</b> seen
             </span>
           ) : (
             <span>Not started</span>
@@ -219,7 +228,7 @@ export function DestinationCard(props: DestinationCardProps) {
         {stub ? (
           <>
             <span className={STUB_LABEL}>{stub.label}</span>
-            <span className={`${STUB_VALUE} ${stub.muted ? "text-(--color-ink-muted)" : ""}`}>{stub.value}</span>
+            <span className={stub.muted ? `${STUB_VALUE} text-(--color-ink-muted)` : STUB_VALUE}>{stub.value}</span>
             {stub.unit ? <span className={STUB_LABEL}>{stub.unit}</span> : null}
           </>
         ) : null}
