@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { importSources, withoutComments } from "@/tests/support/imports";
 
 // Spec section 4, "Modules": src/engine and src/input are pure, and the rules of progress depend on content
 // types only. The Swift and Kotlin clones translate these files line by line, so nothing in them may reach
@@ -31,17 +32,6 @@ function sources(dir: string): string[] {
   return readdirSync(dir)
     .filter((name) => /\.tsx?$/.test(name))
     .map((name) => join(dir, name));
-}
-
-// The code without its comments: a comment may name what the code must not use.
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
-function importSources(code: string): string[] {
-  return [...code.matchAll(/\b(?:import|export)\b[^;'"]*?\bfrom\s*["']([^"']+)["']|\bimport\s*\(?\s*["']([^"']+)["']/g)].map(
-    (match) => match[1] ?? match[2] ?? "",
-  );
 }
 
 function allowed(source: string, mayImport: readonly string[]): boolean {

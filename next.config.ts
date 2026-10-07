@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
         ],
       },
+      // The browser checks the service worker script on every visit, so a new release is found at once. Next applies
+      // every rule whose source matches, so /sw.js also gets the headers above.
+      {
+        source: "/sw.js",
+        headers: [{ key: "Cache-Control", value: "no-cache" }],
+      },
     ];
   },
 };

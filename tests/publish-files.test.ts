@@ -37,13 +37,16 @@ describe("Vercel build", () => {
     expect(config.regions).toEqual(["fra1"]);
   });
 
-  it("generates the tokens and the decks before every build, because both are gitignored", () => {
+  it("generates the tokens, the decks and the service worker before every build and dev server, because all three are gitignored", () => {
     const scripts = JSON.parse(read("package.json")).scripts;
-    expect(scripts.prebuild).toBe("pnpm build:tokens && pnpm build:decks");
+    expect(scripts.prebuild).toBe("pnpm build:tokens && pnpm build:decks && pnpm build:sw");
+    expect(scripts.predev).toBe("pnpm build:tokens && pnpm build:decks && pnpm build:sw");
+    expect(scripts["build:sw"]).toBe("tsx scripts/build-sw.ts");
     expect(scripts.build).toBe("next build");
     const ignored = read(".gitignore").split("\n");
     expect(ignored).toContain("app/tokens.css");
     expect(ignored).toContain("public/decks/");
+    expect(ignored).toContain("public/sw.js");
   });
 });
 

@@ -19,6 +19,7 @@ Node 24 and pnpm 10. The build needs no network: the fonts are committed in `app
 | `pnpm build` | Production build |
 | `pnpm build:tokens` | Generate `app/tokens.css` from `design/system/tokens.json` (runs automatically before `pnpm dev` and `pnpm build`) |
 | `pnpm build:decks` | Validate `content/catalog.json` and `content/reviewed/*.json` and write `public/decks/` (runs automatically before `pnpm dev` and `pnpm build`) |
+| `pnpm build:sw` | Bundle the service worker (`src/offline/sw-entry.ts`) into `public/sw.js` with the release version (runs automatically before `pnpm dev` and `pnpm build`) |
 | `pnpm start` | Serve the production build |
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm test:watch` | Unit tests in watch mode |

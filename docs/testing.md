@@ -6,7 +6,7 @@ Four gates, all run by CI (`.github/workflows/ci.yml`) on every push and pull re
 |---|---|
 | `pnpm test` | Vitest: the engine, input, progress, content and token modules, and every component (`tests/`) |
 | `pnpm typecheck` | `tsc --noEmit` over the app, the scripts, the unit tests and the end-to-end specs |
-| `pnpm build` | Tokens and decks, then the Next.js production build |
+| `pnpm build` | Tokens, decks and the service worker (`public/sw.js`), then the Next.js production build |
 | `pnpm e2e` | Playwright (`e2e/`) at 390 by 844 with touch, in `phone-chromium` and `phone-webkit`, against `pnpm build && pnpm start --port 3100` (the port comes from `E2E_PORT`, see below) |
 
 Install the browsers once with `pnpm exec playwright install chromium webkit`.
