@@ -60,6 +60,15 @@ Why a proxy and not `context.setOffline`: in Playwright 1.63's WebKit an offline
 
 A known limit: the proxy refuses a connection at once, as a phone in flight mode does. A network that drops packets instead (a weak signal, a router that has stopped answering) leaves the router's payload fetch waiting before Next.js falls back to a document load, and that wait can outlast the 10 s the return mark counts (`RETURN_MAX_AGE_MS`); the start then opens with focus on the body instead of its step 1 title. No spec covers that network.
 
+## A worker left over under `pnpm dev`
+
+The app registers its service worker only in a production build, so `pnpm dev` never registers one. A worker that an earlier `pnpm start` (a production build) left on `localhost` stays, though: a registration belongs to the origin, and the origin includes the port. If `pnpm dev` then runs on the same port, that old worker keeps controlling the page and answers from its cache, so the page shows the old build and ignores what you change. Remove it before you trust what the dev server shows:
+
+- In the browser's DevTools, open the Application panel, then Service workers, and choose Unregister for the `localhost` entry; Clear site data in the Storage section also removes its `truthy-shell-*` caches.
+- Or run `navigator.serviceWorker.getRegistrations().then((all) => all.forEach((r) => r.unregister()))` in the console, and reload.
+
+A different port, or a private window, has no such worker. The end-to-end specs are not affected: they block service workers unless a spec allows one.
+
 ## On a phone
 
 After a release that changes the service worker, the owner checks on an iPhone in Safari (and, if at hand, Chrome on Android), because Playwright neither runs the game as a home screen app nor turns a real network off:
