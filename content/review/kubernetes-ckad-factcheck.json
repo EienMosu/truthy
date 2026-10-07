@@ -1,0 +1,1075 @@
+{
+ "deck": "kubernetes-ckad",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s1.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://kubernetes.io/docs/concepts/containers/images/ (v1.37 docs)",
+     "evidence": "Images page, ImagePullBackOff section: \"The status ImagePullBackOff means that a container could not start because Kubernetes could not pull a container image (for reasons such as invalid image name, or pulling from a private registry without imagePullSecret). The BackOff part indicates that Kubernetes will keep trying to pull the image, with an increasing back-off delay.\" The fact is correct, but the statement just restates the status name: \"ImagePullBackOff\" already says the image pull failed and is being retried with back-off, and \"can leave\" is hedged. A player who knows no Kubernetes answers True from the wording alone.",
+     "problem": "Give-away and near-truism. The answer can be read from the status name, the obvious cause (a missing image) is the one in the statement, and the hedge \"can\" makes it even safer. The fact is also close to KCNA-level knowledge of what a failure state means, and it teaches nothing at intermediate depth.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Pushing a missing image to the registry lets a container stuck in ImagePullBackOff start in the same Pod.\" Explanation: \"ImagePullBackOff means the kubelet keeps retrying the pull with a growing back-off delay, so once the image exists in the registry, a later attempt succeeds and the container starts.\" (105/182 chars). Source: https://kubernetes.io/docs/concepts/containers/images/#imagepullbackoff"
+    },
+    {
+     "id": "kubernetes-ckad-s1.1-06",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/ (v1.37 docs)",
+     "evidence": "The cited task page only says: \"Now, when a new Pod is created in the current namespace and using the default ServiceAccount, the new Pod has its spec.imagePullSecrets field set automatically\". It never states the condition the card and explanation depend on (\"omit imagePullSecrets\" / \"when the Pod supplies none\"). That condition is on https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/: \"If the spec of the incoming Pod doesn't already contain any imagePullSecrets, then the admission controller adds imagePullSecrets, copying them from the ServiceAccount.\"",
+     "problem": "The answer (true) is correct, but the source cannot verify the whole card. The omit condition, which is what makes the card precise, comes from the ServiceAccount admission controller documentation, not from the task page.",
+     "suggestedFix": "Keep the statement and explanation. Change the source to {title: \"Managing Service Accounts\", url: \"https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/\"}. Optionally make the explanation name the actor: \"The ServiceAccount admission controller copies the ServiceAccount's imagePullSecrets into a new Pod whose spec lists none.\""
+    }
+   ],
+   "notes": "I checked all 10 section 1.1 cards (5 true: 02, 03, 06, 07, 10; 5 false: 01, 04, 05, 08, 09). Every source URL loads (HTTP 200) on current v1.37 kubernetes.io docs. Card 03's /reference/kubernetes-api/core/pod-v1/ is the canonical path: the workload-resources/pod-v1 path named in the prompt now 301-redirects to it.\n\nPassing cards and the text that settles each one:\n- 01: images page, \"Image name with tag and digest. Only the digest will be used for pulling.\"\n- 02: images page, \"To make sure the Pod always uses the same version of a container image, you can specify the image's digest\" and \"Tags can be moved to point to different images, but digests are fixed.\"\n- 03: pod-v1, \"Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.\"\n- 04: images page, \"The value of imagePullPolicy of the container is always set when the object is first created, and is not updated if the image's tag or digest later changes.\"\n- 05: pod-v1, \"references to secrets in the same namespace\", and the private-registry page, \"The namespace to use is the same namespace where you defined the Pod.\"\n- 08: command page, \"If you define args, but do not define a command, the default command is used with your new arguments.\"\n- 09: command page, \"The command and arguments that you define cannot be changed after the Pod is created.\" The Pods page confirms that Pod updates may change only image, activeDeadlineSeconds, terminationGracePeriodSeconds, tolerations and schedulingGates.\n- 10: command page, \"$(VAR) ... This is required for the variable to be expanded in the command or args field\". Pod-v1 adds that variable references are expanded using the container's environment.\n\nPoints I considered but did not flag:\n- Card 04 edge case: a full `kubectl replace` (PUT) with a manifest that omits imagePullPolicy re-runs API defaulting, so a template switched to :latest would then get Always. This is niche, and the official page states the opposite as the general rule, so I did not flag it.\n- Card 04 wording: it is close to the page's own example (\"if you create a Deployment with an image whose tag is not :latest, and later update that Deployment's image to a :latest tag, the imagePullPolicy field will not change to Always\"). It is borderline near-copy; consider rewording it.\n- Cards 01, 08 and 10 say \"kubelet\" where the container runtime does the actual pull or exec. That is acceptable at this depth.\n\nNo duplicates with other sections: I searched the deck for digest, latest, imagePullSecrets, $(VAR) and immutability cards. The replacement for 07 keeps the section at 5 true and 5 false.\n\nHousekeeping: I briefly moved other sessions' files from the shared scratchpad root into a subfolder and then moved them back; nothing was deleted. My own fetched pages are in a scratch folder"
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s1.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official kubernetes.io page, current (Feature state boxes for v1.36/v1.37 present)",
+     "evidence": "https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/ : \"This field defines a deadline (in whole seconds) for starting the Job, if that Job misses its scheduled time for any reason. After missing the deadline, the CronJob skips that instance of the Job (future occurrences are still scheduled).\"",
+     "problem": "The answer is correct and the page supports it. The trouble is that the card only restates what the field name says: a \"starting deadline\" that skips a run once it is exceeded can be guessed from the name `startingDeadlineSeconds` alone. That breaks the name-giveaway and definition-card rules. At difficulty 1 it teaches no behaviour beyond the name. The rest of the field's behaviour (for example how it interacts with Forbid) would give away the answer of card s1.2-08, so the safest fix is a different in-scope fact that no other card covers.",
+     "suggestedFix": "Replace with a true card on a Job fact the section has not covered. Statement (answer true): \"The API server rejects a Job whose Pod template sets the Pod-level `restartPolicy` to `Always`.\" Explanation: \"A Job's Pod template accepts only restartPolicy Never or OnFailure, because the Job's Pods have to be able to finish. A template with Always fails validation when you create the Job.\" Source: https://kubernetes.io/docs/concepts/workloads/controllers/job/ (\"Only a RestartPolicy equal to Never or OnFailure is allowed.\"). Keeps the section at 5 true and 5 false."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 1.2 (s1.2-01 to s1.2-10, all in kubernetes-ckad-b1.json). Every source URL loaded on 2026-10-08 and is a current kubernetes.io page (statefulset, daemonset, job, cron-jobs).\n\nThe section balance is right: 5 true (02, 03, 05, 07, 09) and 5 false (01, 04, 06, 08, 10). Difficulty split is 4/4/2. \"automatically\" appears once in a true card and once in a false one, and so does \"by default\".\n\nQuotes that settle the cards that pass:\n- 01: \"You are responsible for creating this Service.\"\n- 02: \"Retain (default) PVCs from the volumeClaimTemplate are not affected...\" (statefulset page)\n- 03: \"As nodes are added to the cluster, Pods are added to them.\"\n- 04: parallelism is concurrency; for a fixed completion count Job, \"set .spec.completions to the number of completions needed\".\n- 05: \"a Job's .spec.activeDeadlineSeconds takes precedence over its .spec.backoffLimit\".\n- 06: \"Suspending a Job will delete its active Pods until the Job is resumed again.\"\n- 07: \"The Job is considered complete when there is one successfully completed Pod for each index.\"\n- 08: Forbid \"skips the new Job run\".\n- 10: \"For CronJobs with no time zone specified, the kube-controller-manager interprets schedules relative to its local time zone.\" This is stable since v1.27.\n\nI looked for ways to argue the opposite answer and found none that hold:\n- 01: serviceName now being optional does not change it.\n- 03: DaemonSet automatic tolerations are covered by \"meets its scheduling constraints\".\n- 04: the doc says work-queue Jobs \"default to .spec.parallelism\", but completions stays unset, so parallelism still does not set a success count.\n- 07: \"default success rules\" hedges against the success policy.\n\nMinor, not flagged: the explanation of 07 is accurate, but it talks about duplicate Pods for one index counting once instead of the card's main point (the Job completes only when every index has a successful Pod). It could be tightened to: \"With default success rules, an Indexed Job completes only when every index from 0 to completions-1 has a successful Pod; extra Pods for one index count once.\"\n\nI found no duplicates with other sections. The nearest are s3.1-08 (batch/v1beta1 CronJob), s1.3-04 (a sidecar does not block Job completion) and s2.1-08 (progressDeadlineSeconds), and each rests on a different fact. Coverage gaps, acceptable for 10 cards: Deployment owning ReplicaSets, OrderedReady, ttlSecondsAfterFinished, podFailurePolicy, backoffLimitPerIndex and the Job restartPolicy restriction (the suggested replacement for 09 fills that last gap)."
+  },
+  {
+   "section": "1.3",
+   "checked": 10,
+   "flagged": [],
+   "notes": "All 10 cards in section 1.3 pass, so none are flagged. They are in content/raw/kubernetes-ckad-b1.json. Every source URL returned HTTP 200 on kubernetes.io and supports its card.\n\nEvidence per card:\n- 01 (true): Pods page says \"Inside a Pod (and only then), the containers that belong to the Pod can communicate with one another using localhost\".\n- 02 (false): Init Containers page says \"kubelet runs each init container sequentially. Each init container must succeed before the next can run.\"\n- 03 (false): pod-v1 reference describes shareProcessNamespace as \"Share a single process namespace between all of the containers in a pod... Default to false.\" The old workload-resources/pod-v1 path now redirects to core/pod-v1, which is the URL the card uses.\n- 04 (false): Sidecar Containers page says \"the sidecar container in each Pod does not prevent the Job from completing after the main container has finished\". The feature is stable since v1.33.\n- 05 (true): Volumes page says \"The data in an emptyDir volume is safe across container crashes.\"\n- 06 (false): Volumes page says \"files you write count against the memory limit of the container that wrote them\".\n- 07 (true): Ephemeral Volumes page says \"the ephemeral volume controller then creates an actual PersistentVolumeClaim object in the same namespace as the Pod\".\n- 08 (true): Volumes page says \"The OCI object gets mounted in a single directory ... and will be mounted read-only\". Image volumes are stable since v1.36.\n- 09 (true): Persistent Volumes page says \"ReadWriteOnce access mode still can allow multiple pods to access (read from or write to) that volume when the pods are running on the same node.\"\n- 10 (false): Persistent Volumes page says \"A PVC with its storageClassName set equal to \"\" is always interpreted to be requesting a PV with no class\".\n\nRules check:\n- **Balance:** 5 true and 5 false.\n- **Length:** true statements average 92.4 characters and false ones 96.8, within the 5-character limit. No statement is over 120 characters and no explanation is over 240.\n- **Difficulty:** 4 easy, 4 medium and 2 hard, matching the 40/40/20 mix.\n- **Scope split:** 4 pattern cards and 6 volume cards, as the prompt sets.\n- **Content:** no retired features, and no alpha or beta features are made arguable.\n- **Duplicates:** none across the deck. 1.2-02 (StatefulSet PVC retention), 3.2-10 (startupProbe on init containers), 4.3-03 (subPath ConfigMap) and 4.4-07 (readOnlyRootFilesystem) rest on different facts.\n\nMinor, below the flag threshold:\n- **07 wording:** \"from the Pod's template\" is loose wording. A Pod has no template; the claim template sits in the Pod's volume source. The explanation fixes it, but \"from the volumeClaimTemplate in the Pod's volume\" would be cleaner.\n- **04 and 08 version prefixes:** \"Since Kubernetes v1.33\" and \"Since Kubernetes v1.36\" give the GA release. The behaviour already existed in the beta (sidecars) or alpha (image volumes) stages, so these prefixes are accurate but not strictly needed.\n- **08 guessability:** a player could guess that an image volume is read-only.\n- **Missing topics:** the section has no card on hostPath, subPath, ReadWriteOncePod or reclaim policy. That is allowed, since the scope lists more topics than ten cards can cover."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s2.1-05",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, official kubectl reference (https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_status/)",
+     "evidence": "Source synopsis: \"By default 'rollout status' will watch the status of the latest rollout until it's done.\" The KCNA deck already has kubernetes-kcna-s3.2-08 (True): \"By default, kubectl rollout status watches the latest Deployment rollout until completion.\" That is the same fact in almost the same words, at KCNA depth. The CKAD statement also only paraphrases the synopsis sentence.",
+     "problem": "The fact is correct, but it repeats KCNA card s3.2-08 almost word for word, and the prompt says never to retest a KCNA fact at KCNA depth. It is also a near-copy of the source's synopsis sentence, which breaks the original-wording rule.",
+     "suggestedFix": "Replace (True, keeps 5/5): statement \"`kubectl rollout status` exits with a non-zero code once a Deployment exceeds its progress deadline.\" Explanation: \"When a Deployment passes its progressDeadlineSeconds, rollout status prints an error and exits with status 1, so a script or pipeline can detect the stalled rollout.\" Source: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/ (\"kubectl rollout status returns a non-zero exit code if the Deployment has exceeded the progression deadline.\")"
+    },
+    {
+     "id": "kubernetes-ckad-s2.1-03",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, official API reference (https://kubernetes.io/docs/reference/kubernetes-api/apps/deployment-v1/)",
+     "evidence": "API reference: \"`Recreate` Kill all existing pods before creating new ones.\" The concept page says: \"All existing Pods are killed before new ones are created when .spec.strategy.type==Recreate.\" The KCNA deck already has kubernetes-kcna-s3.1-02 (False): \"A Deployment's Recreate strategy starts replacement Pods before removing the old Pods.\" Its explanation is: \"the Deployment terminates the old revision's Pods before creating Pods for the new revision.\"",
+     "problem": "The answer is correct, but this is the mirror of KCNA s3.1-02: the same termination-order fact tested from the opposite side. A player of both decks gets it twice at the same depth. The strategy name also partly gives the answer away.",
+     "suggestedFix": "Replace (True, keeps 5/5): statement \"After a rollout completes, a Deployment with `.spec.revisionHistoryLimit` set to 0 has no revision to roll back to.\" Explanation: \"With a limit of 0, the controller deletes every old ReplicaSet once a rollout completes. Revision history lives in those ReplicaSets, so the Deployment can no longer roll back.\" Source: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/ (\"Explicitly setting this field to 0, will result in cleaning up all the history of your Deployment thus that Deployment will not be able to roll back.\")"
+    }
+   ],
+   "notes": "I checked all 10 cards in section 2.1 (5 true, 5 false; difficulty 4 easy, 4 medium, 2 hard). All source URLs return 200 and are official. Quotes that settle the cards that pass:\n- 01: concept page, \"A Deployment's rollout is triggered if and only if the Deployment's Pod template (that is, .spec.template) is changed... Other updates, such as scaling the Deployment, do not trigger a rollout.\"\n- 02: \"A Deployment's label selector is immutable after creation; it cannot be updated via kubectl patch, kubectl edit, kubectl apply, or tools like helm upgrade. If you must change the selector, you have to delete the Deployment and recreate it.\"\n- 04: API reference, maxSurge is \"The maximum number of pods that can be scheduled above the desired number of pods.\"\n- 06: undo reference, \"--to-revision int The revision to rollback to.\"\n- 07: pause reference, \"Any current state of the deployment will continue its function; new updates to the deployment will not have an effect as long as the deployment is paused.\" The card targets a realistic misconception: docker pause does freeze containers.\n- 08: \"Kubernetes takes no action on a stalled Deployment other than to report a status condition with reason: ProgressDeadlineExceeded. Higher level orchestrators can take advantage of it and act accordingly, for example, rollback the Deployment to its previous version.\"\n- 09: blog, \"Switch the frontend Service routing to the green environment by updating the Service config with TARGET_ROLE=green.\"\n- 10: canary tutorial, \"Since both versions share the same Service selector... Kubernetes will load-balance traffic across all 4 pods. With this ratio, approximately 25% of traffic goes to the canary.\"\n\nMinor points that do not need a flag:\n- 09's source is the 2018 blog that the prompt names. Its sample manifests use the removed extensions/v1beta1 Deployment API, but the selector-switch mechanism is still valid.\n- 10's phrase \"default Service routing\" stands in for kube-proxy's default per-connection distribution. With keep-alive connections, or with trafficDistribution or topology routing, the split can drift, but \"roughly\" covers that.\n- 04 is the maxSurge/maxUnavailable swap. It is fine because no other card in the deck tests the opposite side.\n\nThe two flags are overlaps with the KCNA deck, found in raw/kubernetes-kcna-b*.json: 2.1-05 matches kcna-s3.2-08, and 2.1-03 matches kcna-s3.1-02. Inside the CKAD deck itself I found no duplicates for this section. Both replacements are true, so the section stays 5/5. Their facts (rollout status exit code, revisionHistoryLimit 0) are in the 2.1 scope and are used by no other card in either deck. Note that the scratchpad is shared with other sessions, so downloaded page text files may be overwritten."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s2.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads (helm.sh docs v4.3.0, official, current) but does not state the card's fact; the only related sentence is the install example",
+     "evidence": "https://helm.sh/docs/intro/using_helm/ only says: \"Note that installing a chart creates a new release object.\" The fact appears almost word for word in the glossary, https://helm.sh/docs/glossary/: \"A single chart may be installed many times into the same cluster, and create many different releases. For example, one can install three PostgreSQL databases by running helm install three times with a different release name.\"",
+     "problem": "The answer is a definition-level fact (a release is one installation of a chart, which the prompt gives to KCNA), and the phrase \"as separate releases using different release names\" gives the answer away: nobody who studied would answer False. The card also paraphrases the glossary sentence, and the source URL never states that one chart can be installed several times.",
+     "suggestedFix": "Replace (stays True): \"Since Helm 3, two releases from the same chart in different namespaces can share one release name.\" Explanation: \"Helm 3 and 4 store each release record in the release's own namespace, so release names are scoped to the namespace. Helm 2 needed release names that were unique across the whole cluster.\" Source: https://helm.sh/docs/v3/faq/changes_since_helm2/ (section \"Release Names are now scoped to the Namespace\"). If the release-as-instance fact stays instead, use https://helm.sh/docs/glossary/ as the source and drop the \"using different release names\" giveaway."
+    },
+    {
+     "id": "kubernetes-ckad-s2.2-09",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, but the page carries the banner \"This page has not yet been updated for Helm 4. Some of the content might be inaccurate or not applicable to Helm 4.\"",
+     "evidence": "https://helm.sh/docs/topics/registries/ does show \"$ helm install myrelease oci://localhost:5000/helm-charts/mychart --version 0.1.0\", but it says it has not been updated for Helm 4. The current command reference https://helm.sh/docs/helm/helm_install/ (Version 4.3.0) lists \"By OCI registries: helm install mynginx --version 1.2.3 oci://example.com/charts/nginx\".",
+     "problem": "The answer (True) is right for Helm 3 and 4. The cited page is flagged by Helm itself as not updated for Helm 4, while the card has appliesTo \"Helm 3 and 4\", so the source is not shown to be current for the version the deck pins.",
+     "suggestedFix": "Keep the statement and explanation. Change the source to {title: \"helm install\", url: \"https://helm.sh/docs/helm/helm_install/\"}, which lists OCI registries among the ways to name the chart in Helm 4.3.0."
+    }
+   ],
+   "notes": "I checked all 10 section 2.2 cards (5 True, 5 False, so the balance is kept) against the helm.sh docs, which show Version 4.3.0. Quotes that settle the cards that pass:\n- 02 (False): using_helm says \"Every time an install, upgrade, or rollback happens, the revision number is incremented by 1.\" The glossary adds \"a rolled back release will receive a new release number\".\n- 03 (True): \"If both are used, --set values are merged into --values with higher precedence.\"\n- 04 (False): helm_install says \"The priority will be given to the last (right-most) file specified.\"\n- 05 (True): using_helm says \"Values that have been --set can be cleared by running helm upgrade with --reset-values specified.\" helm_upgrade says --reset-values resets \"the values to the ones built into the chart\".\n- 06 (False): helm_uninstall \"removes all of the resources associated with the last release of the chart as well as the release history\". --keep-history retains it.\n- 07 (True): helm_template says \"Render chart templates locally and display the output.\" The words \"by default\" cover the --dry-run=server option, which contacts the cluster.\n- 08 (False): using_helm says \"helm search repo searches the repositories that you have added to your local helm client (with helm repo add)\", while helm search hub searches Artifact Hub.\n- 10 (False): the Helm 4 overview says \"All releases created by Helm 3 will default to using client-side apply after upgrading to Helm 4.\" The card names Helm 4, as the prompt requires.\n\nI found no duplicates: no other section of the deck has Helm cards. I found no retired names, no use of --atomic as the current flag, and no chart-authoring content. Minor points I did not flag:\n- 08's explanation could name helm search hub as the command that searches Artifact Hub.\n- 08's phrase \"its repositories\" is a little loose.\n- 02's wording (\"restores the target's earlier revision number as the current number\") is clumsy but has one clear reading."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s2.3-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official kubernetes.io task page, current",
+     "evidence": "https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/ : \"A base has no knowledge of an overlay and can be used in multiple overlays.\" The page never says anything about building a base \"on its own\". A base is just a kustomization directory, so `kubectl kustomize base/` working is close to self-evident. The clause \"when overlays add environment-specific patches to that base\" also reads as if overlays write their patches into the base, which is the opposite of the fact the section is meant to teach.",
+     "problem": "Close to a truism. Hardly anyone who has studied would think a base directory stops being buildable once overlays exist, so the card tests no realistic misconception. Its wording also blurs the real point, which is that overlays leave the base untouched and that one base can be reused by several overlays.",
+     "suggestedFix": "Keep answer True. Statement: \"Several Kustomize overlays can list the same base directory under resources, each building its own variant of that base.\" (120 chars) Explanation: \"A base has no knowledge of its overlays, so one base can serve dev and prod overlays that each add their own patches, namePrefix or namespace while the base stays unchanged.\" (173 chars) Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 2.3 cards. The split is 5 true and 5 false. All statements are 93 to 108 characters (limit 120) and all explanations are 111 to 164 characters (limit 240). All 5 source URLs loaded with HTTP 200: the kubernetes.io Kustomize task page and the kubernetes-sigs/kustomize patches.md, namespace.md, namePrefix.md and labels.md. I checked each card against the current wording on those pages (raw markdown on master).\n\nCards that passed:\n- 01: kubernetes.io says \\\"To view resources ... run kubectl kustomize\\\" and \\\"To apply those resources, run kubectl apply with --kustomize or -k flag\\\".\n- 03: kubernetes.io says \\\"The generated ConfigMaps and Secrets have a content hash suffix appended. This ensures that a new ConfigMap or Secret is generated when the contents are changed\\\" and \\\"The generated Deployment will refer to the generated ConfigMap by name\\\".\n- 04: patches.md says \\\"Any resource which matches all the specified fields has the patch applied to it\\\".\n- 05: namespace.md says \\\"This will override Namespace values that already exist.\\\"\n- 06: namePrefix.md says the prefix applies to all resources \\\"including generated resources such as ConfigMaps and Secrets\\\".\n- 07: patches.md says \\\"Each patch may: be either a strategic merge patch, or a JSON6902 patch\\\". The kubernetes.io page says the patches field covers \\\"StrategicMerge and Json6902\\\".\n- 08: patches.md and kubernetes.io both say patches are \\\"applied in the order they are specified\\\". \\\"The later value wins\\\" follows directly from that but is not stated word for word.\n- 09: labels.md says includeSelectors \\\"Defaults to false\\\". The kubernetes.io feature table says labels are added \\\"without automatically injecting corresponding selectors\\\".\n- 10: labels.md says includeTemplates \\\"should include the spec/template/metadata fieldSpec\\\" and \\\"Defaults to false\\\".\n\nOther checks:\n- No card presents commonLabels, bases or patchesStrategicMerge as the current way.\n- No card names the Kustomize version that kubectl embeds.\n- No 2.3 fact is repeated in another section; I found no Kustomize or generator cards outside 2.3.\n- Hedge words and requirement words are spread evenly between true and false cards.\n\nMinor points, not flagged:\n- Cards 04, 05, 06, 09 and 10 cite the GitHub source of the Kustomize docs, which is allowed under github.com/kubernetes-sigs. The rendered pages under kubectl.docs.kubernetes.io/references/kustomize/kustomization/ (patches/, namespace/, nameprefix/, labels/) would be a slightly better choice.\n- Card 05: the namespace transformer has special handling for RoleBinding subjects, but that does not change the answer."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s3.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (kubernetes.io Service concept page, current)",
+     "evidence": "https://kubernetes.io/docs/concepts/services-networking/service/ : \"Endpoints (deprecated) Feature state: Deprecated since Kubernetes v1.33 ... Because of this, it is recommended that all clients use the EndpointSlice API rather than Endpoints.\" The statement itself calls Endpoints \"deprecated\", so 'docs recommend the replacement over the deprecated API' is readable from the wording. The 'Since v1.33' also attaches to the recommendation, but the v1.33 change was the deprecation; the docs called EndpointSlice the recommended replacement before that.",
+     "problem": "Give-away: once the statement calls Endpoints deprecated, nobody would answer False that the documentation recommends its replacement. The date is also on the wrong fact: v1.33 is when Endpoints was deprecated, not when the recommendation started. The card teaches nothing about how Endpoints behaves.",
+     "suggestedFix": "Replace (still True): \"For a Service backed by thousands of ready Pods, the Endpoints object lists only a subset of those Pods.\" Explanation: \"Kubernetes truncates an Endpoints object above 1000 backends and marks it over-capacity. EndpointSlice, recommended since Endpoints was deprecated in v1.33, spreads them over several slices.\" Same URL."
+    },
+    {
+     "id": "kubernetes-ckad-s3.1-10",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official (v1.37 release announcement, named in the prompt)",
+     "evidence": "https://kubernetes.io/blog/2026/08/26/kubernetes-v1-37-release/ : \"v1beta1 remains usable throughout the transition\". https://kubernetes.io/blog/2026/08/27/kubernetes-v1-37-metrics-api-ga/ : \"The Metrics API is served through the API aggregation layer, by an implementation such as metrics-server ... your chosen implementation must serve the v1.metrics.k8s.io API ... During the transition, implementations should serve both v1 and v1beta1.\" and \"The HPA controller currently supports only v1beta1.\"",
+     "problem": "The statement has the API serving itself (\"the installed stable Metrics API also serves\"). In fact an add-on implementation (Metrics Server) serves it, and the rule requires naming that add-on. Which versions are served depends on that implementation (\"should\", not \"does\"), so an expert could argue either answer. \"Since v1.37\" also suggests that v1beta1 serving started in v1.37, when in fact it is what has stayed the same.",
+     "suggestedFix": "Replace (still True): \"With the Metrics Server installed, Kubernetes v1.37 clients can keep using metrics.k8s.io/v1beta1 after v1 became stable.\" Explanation: \"metrics.k8s.io/v1 is stable in v1.37, but v1beta1 stays usable during the transition, and the HorizontalPodAutoscaler controller still reads only v1beta1, so implementations serve both.\" Source: release post; the HPA detail is in /blog/2026/08/27/kubernetes-v1-37-metrics-api-ga/."
+    },
+    {
+     "id": "kubernetes-ckad-s3.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (kubectl api-versions generated reference)",
+     "evidence": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_api-versions/ : \"Print the supported API versions on the server, in the form of \"group/version\".\"",
+     "problem": "The statement repeats the command's one-line description, so it is a near-copy of the source and close to a truism: nobody who studied would answer False. \"By default\" suggests a non-default mode that does not exist, which is a wording artefact added only to balance the counts.",
+     "suggestedFix": "Replace (still True): \"`kubectl explain` retrieves its field documentation from the OpenAPI schema published by the connected API server.\" Explanation: \"kubectl explain fetches field descriptions from the server in OpenAPI format, so it reflects the API versions that cluster serves; --api-version picks a specific group/version.\" URL: https://kubernetes.io/docs/reference/kubectl/generated/kubectl_explain/ (\"Information about each field is retrieved from the server in OpenAPI format.\")"
+    },
+    {
+     "id": "kubernetes-ckad-s3.1-04",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official (Deprecated API Migration Guide)",
+     "evidence": "https://kubernetes.io/docs/reference/using-api/deprecation-guide/ : for each removal, e.g. \"The autoscaling/v2beta2 API version of HorizontalPodAutoscaler is no longer served as of v1.26 ... All existing persisted objects are accessible via the new API\"",
+     "problem": "The fact is right but the actor is wrong. Clients reach existing objects through the new API version. The API server reads them from storage, not 'through the replacement API', and it does not 'remove' an endpoint: a release stops serving it. An expert could reject the sentence as written, which breaks the 'name the actor' rule.",
+     "suggestedFix": "Replace (still True): \"After an upgrade stops serving autoscaling/v2beta2, existing HorizontalPodAutoscalers stay accessible through autoscaling/v2.\" Explanation: \"For each removal, the migration guide states that existing persisted objects are accessible via the new API. Only manifests and clients that still name the old version need updating.\" Same URL."
+    }
+   ],
+   "notes": "I opened all 10 sources. Every URL returned 200. /docs/reference/using-api/deprecation-policy/ now redirects (301) to /docs/reference/deprecation-policy/, the URL the cards use. Cards passed: 01 (Rule #4a: \"GA API versions may be marked as deprecated, but must not be removed within a major version\"), 02 (beta: \"no longer served 9 months or 3 minor releases after deprecation\"; the policy also has a clock that starts at introduction, but that one is the deprecation deadline, so the statement is still false), 03 (\"Alpha API versions may be removed in any release without prior deprecation notice\"; borderline easy but in scope), 05 (kubectl cmd.go v0.37.1: `warningsAsErrors := false`, flag \"Treat warnings received from the server as errors\"; the kubectl_apply generated page would be an easier source for players), 07 (the install page has kubectl-convert as a separate download; the migration guide states it more clearly: \"The kubectl convert tool is not installed by default, although in fact it once was part of kubectl itself\", so that page could be used as the URL, and the explanation could add the 'once part of kubectl' fact), 08 (guide: \"The batch/v1beta1 API version of CronJob is no longer served as of v1.25\"). Balance before fixes: 5 true (01, 04, 06, 09, 10) and 5 false (02, 03, 05, 07, 08). All four replacements are True, so the balance stays 5/5. I found no duplicates with other sections: 3.3-05 covers kubectl top versus OS tools, and 4.1 has no kubectl explain card. Possible extra True replacement for 09, not used because the prompt allows kubernetes.io blog posts only where it names them: /blog/2025/04/24/endpoints-deprecation/ says that since v1.33 \"the API server will return warnings to users who read or write Endpoints resources\"."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s3.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://kubernetes.io/docs/concepts/workloads/pods/probes/ (official, current; the prompt's concepts/configuration/liveness-readiness-startup-probes/ URL redirects here)",
+     "evidence": "https://kubernetes.io/docs/concepts/workloads/pods/probes/: \"When the kubelet probes a container using HTTP, it follows redirects only if the redirect is to the same host.\" and \"If the redirect is to a different hostname, the kubelet does not follow it. Instead, the kubelet treats the probe as successful and records a ProbeWarning event.\" Also: \"The diagnostic is considered successful if the response has a status code greater than or equal to 200 and less than 400.\"",
+     "problem": "The answer (false) is correct, but the card does not test redirect handling. A 3xx response is already inside the 200-399 success range, so the probe passes whether or not the kubelet follows the redirect. A learner who knows the success range answers False without knowing anything about redirects, so the redirect detail adds nothing. The status-range fact named in the 3.2 scope is not tested by any card in the section.",
+     "suggestedFix": "Replace (answer false): \"The kubelet counts an httpGet probe that receives a 301 response as a failed check.\" Explanation: \"An httpGet probe passes on any status from 200 up to 399, so 3xx responses pass. The kubelet follows same-host redirects; a redirect to another host is not followed, and the probe still passes with a ProbeWarning event.\" Keep the same source URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.2 in kubernetes-ckad-b2.json against the live kubernetes.io pages on 2026-10-08: probes concept, configure-probes task, pod-lifecycle, init-containers, sidecar-containers and the pod-v1 API reference. All source URLs return 200 and are current. The section is balanced at 5 true (01, 03, 05, 08, 10) and 5 false (02, 04, 06, 07, 09). No other section of the deck has probe cards, so I found no duplicates.\n\nCards that pass, with the sentence that settles each:\n- 01: \"considered successful if the command exits with a status code of 0\".\n- 03: \"If the remote system (the container) closes the connection immediately after it opens, this counts as healthy\".\n- 04: the Pod API reference defines grpc.service as \"the name of the service to place in the gRPC HealthCheckRequest\". The probe always calls the standard health check, so it cannot call a custom method. The task page source supports this only indirectly (\"If your application implements the gRPC Health Checking Protocol\"); https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/ is a stronger optional source.\n- 05: \"If a startup probe is configured, Kubernetes does not execute liveness or readiness probes until the startup probe succeeds\" (on pod-lifecycle).\n- 06: \"The readiness and liveness probes do not depend on each other to succeed\" (task page).\n- 07: \"Readiness probes run on the container during its whole lifecycle\" (task page).\n- 08: \"Incorrect implementation of liveness probes can lead to cascading failures ... increased workload on remaining pods\".\n- 09: \"Probe-level terminationGracePeriodSeconds cannot be set for readiness probes. It will be rejected by the API server.\" The explanation's reason (\"because readiness failure leaves the container running\") is an inference, not a quote, but it is correct.\n- 10: the init-containers page only says regular init containers \"do not support\" startupProbe. The pod-v1 reference says \"Init containers may not have Lifecycle actions, Readiness probes, Liveness probes, or Startup probes\", and API validation rejects the field. The answer stands; the pod-v1 reference is a better optional source.\n\nBorderline but not flagged: card 01 is easy to guess for anyone who knows shell exit codes, but the prompt's 3.2 scope names exec exit code 0 explicitly. Card 03 restates a single source sentence closely, but it is reworded enough to pass the original-wording rule. No card touches the alpha features (h2c probes, gRPC TLS mode) or presents anything retired."
+  },
+  {
+   "section": "3.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s3.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (kubernetes.io kubectl_logs reference)",
+     "evidence": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/ : \"-c, --container string Print the logs of this container\". The statement restates the flag description: `-c app` returns output from \"the container named app\". A player who does not know the subject can read the True answer from the wording, since -c, container and app line up. It is also basic-tool depth, which the prompt gives to KCNA.",
+     "problem": "Give-away and near-copy of the option text. The answer is readable from the wording, so the card teaches nothing at intermediate depth.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"`kubectl logs deployment/web` prints logs from a single Pod of that Deployment unless `--all-pods` is given.\" Explanation: \"For a workload such as a Deployment or Job, kubectl logs reads one of its Pods; --all-pods fetches logs from every matching Pod and turns on the source prefix for each line.\" Same URL (\"--all-pods Get logs from all pod(s). Sets prefix to true.\"; \"Return snapshot logs from first container of a job named hello: kubectl logs job/hello\")."
+    },
+    {
+     "id": "kubernetes-ckad-s3.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (kubernetes.io kubectl_top reference)",
+     "evidence": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_top/ : \"the values may not match those from standard OS tools like 'top', as the metrics are designed to provide a stable signal for autoscalers rather than for pinpoint accuracy.\" The source supports the card. But \"readings can differ from those shown by Linux top\" is true by common sense: any two tools can differ, and the hedge \"can\" makes the claim close to unfalsifiable. A player with no Kubernetes knowledge answers True.",
+     "problem": "Near-truism. The fact is in the section scope, but this wording leaves out the reason, which is what the card should teach: the metrics are optimised as a stable autoscaling signal.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"With the Metrics Server installed, `kubectl top` shows usage tuned as a stable signal for the HPA and VPA, not for exact readings.\" Explanation: \"kubectl top reads the Metrics Server, which aggregates kubelet data for autoscaling decisions, so its CPU and memory values can differ from what OS tools such as top report inside a node.\" Same URL."
+    }
+   ],
+   "notes": "I fetched every source URL with curl on 2026-10-08. All return HTTP 200 on kubernetes.io and are current: kubectl_logs, kubectl_top, kubectl_cp, logging, ephemeral-containers, debug-running-pod and determine-reason-pod-failure.\n\nCards that passed, with the quote that settles each:\n- 02 (F): kubectl_logs says \"-p, --previous If true, print the logs for the previous instance of the container in a pod if it exists.\"\n- 03 (F): kubectl_logs gives the example \"Return snapshot logs from all containers in pods defined by label app=nginx\". kubectl's code also queries the pods resource type for -l.\n- 04 (F): logging says \"Note: Only the contents of the latest log file are available through kubectl logs.\"\n- 06 (T): kubectl_cp says \"Requires that the 'tar' binary is present in your container image. If 'tar' is not present, 'kubectl cp' will fail.\"\n- 07 (T): ephemeral-containers says \"Pod resource allocations are immutable, so setting resources is disallowed.\" That rationale is dated now that in-place resize is stable, but the API still rejects resources on ephemeral containers. Pod-level resources, which are beta, do not change this.\n- 08 (F): ephemeral-containers says \"they will never be automatically restarted\".\n- 09 (T): debug-running-pod says \"To change the command of a specific container you must specify its name using --container or kubectl debug will instead create a new container to run the command you specified.\"\n- 10 (F): determine-reason-pod-failure says \"use the last chunk of container log output if the termination message file is empty and the container exited with an error.\"\n\nBalance and form: 5 true and 5 false. Average statement length is 95.6 characters for true and 97.6 for false. Hedge words are spread evenly: \"can\" appears on 2 true and 2 false cards, and \"automatically\" on 1 true and 1 false. Difficulty mix is 4 easy, 4 medium and 2 hard. No card goes over the length limits. No card in other sections rests on the same facts: 5.2 has port-forward cards and 1.3 has emptyDir and ephemeral-volume cards, all on different facts.\n\nCoverage gap, not a flag: the scope names several topics that have no card. These are get, describe and events (for example a Pending Pod with a scheduling event), exec, port-forward in this section, --target process sharing, --copy-to with --share-processes or --set-image, kubectl debug node/, debugging a Service, and the fact that there is no built-in cluster-wide log storage. The two replacement suggestions above stay within the flagged cards' topics. A writer could instead use these slots to fill those gaps."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s4.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (kubernetes.io kubectl reference), current",
+     "evidence": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_auth/kubectl_auth_can-i/ : \"--as string: Username to impersonate for the operation. User could be a regular user or a service account in a namespace.\" and the example \"# You must be allowed to use impersonation for the global option \"--as\" / kubectl auth can-i list pods --as=system:serviceaccount:dev:foo -n prod\"",
+     "problem": "The answer is correct, but anyone can read it from the flag name: `--as` checks access as the named user. The added qualifier \"With impersonation permission\" also marks the card as true. The card teaches nothing beyond the flag's name, which breaks the name-giveaway and wording-tell rules.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"`kubectl auth can-i --as` checks a ServiceAccount when given the username system:serviceaccount:<namespace>:<name>.\" (115 chars). Explanation: \"ServiceAccounts authenticate with the username system:serviceaccount:<namespace>:<name>, so --as needs that full form. The caller also needs permission to impersonate.\" (167 chars). Same source URL."
+    },
+    {
+     "id": "kubernetes-ckad-s4.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/ : \"On their own, custom resources let you store and retrieve structured data. When you combine a custom resource with a custom controller, custom resources provide a true declarative API.\"",
+     "problem": "The answer (false) is right, but the card is close to a strawman and is false for two reasons. The API server never scales Pods, even for built-in objects such as Deployments, because controllers in kube-controller-manager do that. So a learner can answer False without knowing anything about CRDs, and the target fact (a custom resource only stores data, and behaviour comes from a controller) is never really tested.",
+     "suggestedFix": "Replace (keeps answer FALSE). Statement: \"Once its CustomResourceDefinition exists, creating a Database custom resource makes Kubernetes run a database.\" (110 chars). Explanation: \"A CRD only adds an API that stores and serves the custom objects. A database runs only when a custom controller, such as an operator, watches those objects and creates the workloads.\" (182 chars). Misconception: installing a CRD by itself gives the custom resource working behaviour. Same source URL."
+    },
+    {
+     "id": "kubernetes-ckad-s4.1-08",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, current, but supports only part of the card",
+     "evidence": "The cited page https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/ says only: \"In the first phase, mutating admission controllers are run. In the second phase, validating admission controllers are run.\" It never says that validators receive the mutated object. https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/ says it directly: \"After all object modifications are complete, and after the incoming object is validated by the API server, validating admission webhooks are invoked\" and \"Admission webhooks that need to guarantee they see the final state of the object in order to enforce policy should use a validating admission webhook\".",
+     "problem": "The answer (true) is right. The cited page gives the order of the phases but never states the card's actual point, that validation sees an object that already carries the mutations (for example added labels). That point is only implied.",
+     "suggestedFix": "Keep the card and change the source URL to https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/ (Dynamic Admission Control), which states that validating webhooks run after all object modifications are complete."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.1. The answer balance is 5 true (02, 06, 07, 08, 10) and 5 false (01, 03, 04, 05, 09). Every source URL loaded and is official kubernetes.io documentation. The cards that pass and the sentence that settles each:\n- 01 (false): CRD task page: CRDs are \"non-namespaced\"/cluster-scoped, and spec.scope sets the scope of the custom resources.\n- 02 (true): \"By default, all unspecified fields for a custom resource, across all versions, are pruned\". The word \"accepted\" in the statement correctly covers kubectl's default strict field validation, which rejects unknown fields rather than pruning them.\n- 03 (false): \"When you delete a CustomResourceDefinition, the server will uninstall the RESTful API endpoint and delete all custom objects stored in it\".\n- 05 (false): RBAC page: \"Permissions are purely additive (there are no \\\"deny\\\" rules)\".\n- 06 (true): RBAC page: \"a RoleBinding can reference a ClusterRole and bind that ClusterRole to the namespace of the RoleBinding\".\n- 09 (false): \"Admission controllers do not (and cannot) block requests to read (get, watch or list) objects, because reads bypass the admission control layer\".\n- 10 (true): MutatingAdmissionPolicy page: stable since v1.36, \"a declarative, in-process alternative to mutating admission webhooks\".\n\nMinor points, not flagged:\n- 03: the leading \"By default\" hints that a non-default option to keep the data exists. No such option exists, so the words could be dropped.\n- 06: \"a ServiceAccount Pod access\" reads awkwardly; \"grant a ServiceAccount access to Pods\" would be clearer.\n- 10: \"Since Kubernetes v1.36\" marks when the feature became GA and on by default. In-process CEL evaluation already existed behind alpha/beta feature gates from v1.30, so a pedantic reader could object to \"since\". It is acceptable under the deck's version-pinning rule.\n\nDuplicate check: no card in another section rests on the same facts. The 4.2 cards on LimitRange and ResourceQuota admission and the 5.3 card on DefaultIngressClass admission test different facts.\n\nCoverage: the section has no card on authentication (normal users are not API objects), CRDs versus API aggregation, or CEL validation rules. That is acceptable at 10 cards."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s4.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official kubernetes.io page, current (v1.37 docs)",
+     "evidence": "https://kubernetes.io/docs/concepts/policy/resource-quotas/ : \"configmaps The total number of ConfigMaps that can exist in the namespace.\" and \"If creating or updating a resource violates a quota constraint, the control plane rejects that request\". The card's answer follows from what a count quota means (KCNA already owns the purpose of ResourceQuota), and \"despite spare node capacity\" is an irrelevant contrast because ConfigMaps never use node capacity. Nobody who studied would answer False, so the card is close to a truism or strawman. Answer and source are otherwise correct.",
+     "problem": "The answer follows from the definition of an object-count quota. The 'spare node capacity' clause sets up a misconception nobody holds, so the card teaches nothing beyond KCNA depth.",
+     "suggestedFix": "Replacement (answer TRUE, keeps 5 true / 5 false): statement \"A `pods` ResourceQuota excludes Pods in the Succeeded or Failed phase from its count of Pods in the namespace.\" Explanation: \"The pods quota counts only Pods in a non-terminal state, so a finished Job Pod whose phase is Succeeded or Failed frees its quota slot before the Pod object is deleted.\" Same URL; it says \"pods The total number of Pods in a non-terminal state that can exist in the namespace. A pod is in a terminal state if .status.phase in (Failed, Succeeded) is true.\" factKey e.g. quota-pods-count-nonterminal."
+    }
+   ],
+   "notes": "All 5 source URLs load (HTTP 200) and are current official kubernetes.io v1.37 docs. The balance is 5 true (02, 03, 04, 06, 09) and 5 false (01, 05, 07, 08, 10). No duplicates across the deck: I checked every card in other sections that mentions quota, LimitRange, requests, limits, resize, OOM or throttling.\n\nCards that pass, with the sentence that settles each:\n- 01: assign-cpu-resource says \"Pod scheduling is based on requests. A Pod is scheduled to run on a Node only if the Node has enough CPU resources available to satisfy the Pod CPU request.\"\n- 02: manage-resources-containers says \"cpu limits are enforced by CPU throttling. When a container approaches its cpu limit, the kernel will restrict access to the CPU\".\n- 03: manage-resources-containers says \"When a container uses more than its memory limit, the kernel may terminate it ... memory limits are enforced reactively\". Memory QoS (beta, on by default in v1.37) adds throttling but leaves OOM kills possible, so \"may\" still holds. The statement is a fairly close paraphrase of that source sentence. It is acceptable but borderline under the original-wording rule.\n- 04: manage-resources-containers says \"If you specify a limit for a resource, but do not specify any request, and no admission-time mechanism has applied a default request ... Kubernetes copies the limit\".\n- 05: limit-range says \"LimitRange validations occur only at Pod admission stage, not on running Pods\" and \"Neither contention nor changes to a LimitRange will affect already created resources.\"\n- 06: limit-range says \"If you attempt to create or update an object ... that violates a LimitRange constraint, your request to the API server will fail with an HTTP status code 403 Forbidden\".\n- 07: resource-quotas says users \"must specify either requests or limits for that resource, for every new Pod you submit. If you don't, the control plane may reject admission\". The doc hedges with \"may\", but the quota admission plugin rejects a Pod with no CPU request when the namespace has an unscoped requests.cpu quota and no LimitRange, which is the deck's assumed context. A scoped quota would change this, but the statement does not imply one.\n- 08: resource-quotas says \"Neither contention nor changes to quota will affect already created resources.\"\n- 10: resize-container-resources says \"Stable since Kubernetes v1.35\", \"change the CPU and memory resource requests and limits assigned to a container without recreating the Pod\" and \"RestartContainer: Restart the container to apply the new resource values\". The restartCount example confirms the container restarts inside the same Pod.\n\nMinor style notes, not flagged:\n- The explanation of 01 ends with an awkward phrase (\"Limits are not its CPU placement budget\").\n- In 05, \"By default\" adds nothing, but it is balanced against the same phrase in 04."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s4.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://kubernetes.io/docs/concepts/configuration/secret/, 200, current)",
+     "evidence": "Secret page, kubernetes.io/tls example: \"values are base64 encoded, which obscures them but does NOT provide any useful level of confidentiality\"; Caution box: \"Anyone with API access can retrieve or modify a Secret\". The answer (false) is right, but the qualifier \"against users who have permission to read the Secret\" makes it false for a second, common-sense reason: no encryption scheme, base64 or real encryption at rest, hides a Secret from someone authorised to read it through the API. A player can answer from the wording alone, and the rule asks for exactly one reason for a false statement.",
+     "problem": "The added qualifier turns the card into a give-away: anyone allowed to read something can read it. That makes the base64 point secondary and gives the false statement two reasons.",
+     "suggestedFix": "Answer stays false. Statement: \"The base64 encoding of a Secret's data values encrypts them so that only Pods can read them.\" Explanation: \"Base64 is a reversible encoding: anyone who can get the Secret can decode it with base64 -d. It obscures values but does not encrypt them, so protect Secrets with RBAC least privilege.\" Same URL."
+    },
+    {
+     "id": "kubernetes-ckad-s4.3-06",
+     "verdict": "explanation_error",
+     "urlStatus": "loads (https://kubernetes.io/docs/concepts/configuration/configmap/, 200, current)",
+     "evidence": "ConfigMap page, Immutable ConfigMaps (Stable since v1.21): \"Once a ConfigMap is marked as immutable, it is not possible to revert this change nor to mutate the contents of the data or the binaryData field. You can only delete and recreate the ConfigMap. Because existing Pods maintain a mount point to the deleted ConfigMap, it is recommended to recreate these pods.\" The statement and its answer (true) are correct.",
+     "problem": "The explanation says changing the data \"requires replacing the object\". In kubectl terms a replace (`kubectl replace`, an update/PUT) is rejected by the same immutability check; the docs say delete and recreate. The explanation should also say that Pods should be recreated.",
+     "suggestedFix": "Keep the statement and the answer (true). Explanation: \"Once immutable is true, the API server rejects reverting it and any change to data or binaryData. To change contents, delete and recreate the ConfigMap, then recreate the Pods that use it.\""
+    }
+   ],
+   "notes": "I checked all 10 section 4.3 cards from raw/kubernetes-ckad-b3.json. Five are true (01, 02, 05, 06, 08) and five are false (03, 04, 07, 09, 10). True and false statements both average 99 characters. Difficulty is 4 easy, 4 medium and 2 hard. All three source URLs load, are current kubernetes.io pages and support their cards: concepts/configuration/configmap/, concepts/configuration/secret/, tasks/configure-pod-container/configure-pod-configmap/, and tasks/configmap-secret/managing-secret-using-config-file/ (which says stringData \\\"allows you to put a non-base64 encoded string directly into the Secret, and the string will be encoded for you when the Secret is created or updated\\\").\n\nKey evidence for the passing cards:\n- 01 (true): ConfigMap page, \\\"The name of the environment variable can also be different from the key within the ConfigMap.\\\"\n- 02 (true): ConfigMap page, \\\"ConfigMaps consumed as environment variables are not updated automatically and require a pod restart.\\\" The explanation says a container restart is enough. That matches the kubelet, which rebuilds the environment on each container start, and the prompt's scope.\n- 03 (false): ConfigMap page, \\\"A container using a ConfigMap as a subPath volume mount will not receive ConfigMap updates.\\\"\n- 04 (false): task page, \\\"Kubernetes always creates the mount paths for the volume, even if the referenced ConfigMap or key doesn't exist\\\" and \\\"If the ConfigMap is non-existent, the mounted volume will be empty.\\\" The wording (\\\"may expose image files\\\") is convoluted, but the misconception is realistic: the Secret page says an optional missing Secret is something \\\"Kubernetes ignores\\\", which suggests the mount is skipped. So it passes.\n- 05 (true): Secret page, \\\"If the Secret cannot be fetched (perhaps because it does not exist...) the kubelet periodically retries running that Pod. The kubelet also reports an Event.\\\" Minor point: the explanation says \\\"the affected container\\\" waits, while the page says \\\"None of a Pod's containers will start until all non-optional Secrets are available.\\\" That is defensible for a per-container env reference, so it is not flagged.\n- 09 (false): Secret page, \\\"the tls.key and the tls.crt key must be provided ... although the API server doesn't actually validate the values for each key.\\\"\n- 10 (false): task page, \\\"Any directory entries except regular files are ignored (for example: subdirectories, symlinks, devices, pipes, and more).\\\"\n\nCard 06 uses factKey immutable-configmap-setting-irreversible instead of the planned immutable-configmap-data-freeze. The b3 notes record this change, so it is not a problem.\n\nNo duplicates with other sections. s5.3-03 (editing an Ingress TLS Secret), s2.3-03 and 2.3-06 (Kustomize generators), s4.2-09 (ConfigMap count quota) and s1.1-05 and 1.1-06 (imagePullSecrets) each rest on different facts. No card in this section relies on an alpha or beta feature, or on anything removed or retired."
+  },
+  {
+   "section": "4.4",
+   "checked": 10,
+   "flagged": [],
+   "notes": "Checked all 10 section 4.4 cards in raw/kubernetes-ckad-b4.json (s4.4-01 to s4.4-10). All source URLs return 200 on kubernetes.io. The old workload-resources/pod-v1 path redirects to core/pod-v1, and the cards already use core/pod-v1. Balance is 5 true and 5 false. Average statement length is 102.2 for true cards and 100.8 for false ones. Every statement is 120 characters or less and every explanation is 240 or less. I found no duplicate in the deck. The nearest cards are s1.1-06 (imagePullSecrets on a ServiceAccount) and s4.1-06 (RoleBinding to a ClusterRole for a ServiceAccount), and both rest on different facts. The only KCNA card on this topic is kcna-s2.2-05, a Pod authenticating with its ServiceAccount identity, which is a different fact.\n\nEvidence per card:\n01: concepts/security/service-accounts says \"If you deploy a Pod in a namespace, and you don't manually assign a ServiceAccount to the Pod, Kubernetes assigns the default ServiceAccount for that namespace to the Pod.\"\n02: configure-service-account says \"You can only set the serviceAccountName field when creating a Pod, or in a template for a new Pod. You cannot update the serviceAccountName field of a Pod that already exists.\"\n03: the same page says \"If both the ServiceAccount and the Pod's .spec specify a value for automountServiceAccountToken, the Pod spec takes precedence.\"\n04: the same page says \"The kubelet proactively requests rotation for the token if it is older than 80% of its total time-to-live (TTL)... The application is responsible for reloading the token when it rotates.\"\n05: security-context says Container settings \"override settings made at the Pod level when there is overlap\", and its worked example shows runAsUser 2000 overriding the Pod's 1000.\n06: pod-v1 says runAsNonRoot means \"the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does\". It validates the user and does not choose one.\n07: security-context describes readOnlyRootFilesystem as \"Mounts the container's root filesystem as read-only\" and says \"Container settings do not affect the Pod's Volumes.\"\n08: pod-v1 has no capabilities field in PodSecurityContext. Capabilities appear only under container SecurityContext and in the list spec.containers[*].securityContext.capabilities.\n09: the seccomp tutorial says \"It is possible that the default profiles differ between container runtimes and their release versions.\"\n10: user-namespaces says \"Feature state: Stable since Kubernetes v1.36\", that \"The kubelet will pick host UIDs/GIDs a pod is mapped to\", and that \"root inside a Pod with user namespaces ... is never mapped to a privileged user on the host.\"\n\nTwo minor points, neither enough to flag:\n(a) s4.4-10 says \"Since Kubernetes v1.36\", which is the GA version. hostUsers: false already worked as a beta feature, enabled by default, before v1.36. The statement is still true on the pinned v1.37, and the deck's convention is to name the version a feature became stable.\n(b) s4.4-06 is an easy card. An image whose user is non-numeric is also refused when runAsUser is unset, which does not change the answer."
+  },
+  {
+   "section": "5.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s5.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official kubernetes.io API reference (networking/network-policy-v1), current",
+     "evidence": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/ : \"If podSelector is also set, then the NetworkPolicyPeer as a whole selects the pods matching podSelector in the namespaces selected by namespaceSelector.\" Concept page https://kubernetes.io/docs/concepts/services-networking/network-policies/ : \"It contains two elements in the from array, and allows connections from Pods in the local Namespace with the label role=client, or from any Pod in any namespace with the label user=alice.\"",
+     "problem": "Answer (true) is correct, but the wording gives it away: \"combines namespaceSelector and podSelector in one peer to select Pods within matching namespaces\" reads as the obvious meaning of combining two selectors. The hard, exam-relevant distinction (one from element = AND versus two elements = OR) is not tested, so the card is labelled difficulty 3 but is effectively easy.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"A from list with namespaceSelector and podSelector as two separate elements allows sources matching either one.\" (111 chars). Explanation: \"True. Items in a from list are ORed: the podSelector element admits matching Pods in the policy's namespace, the namespaceSelector element admits all Pods in matching namespaces. Put in one element, they AND.\" Same source URLs."
+    },
+    {
+     "id": "kubernetes-ckad-s5.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official kubernetes.io API reference, current",
+     "evidence": "https://kubernetes.io/docs/reference/kubernetes-api/networking/network-policy-v1/ : \"to is a list of destinations for outgoing traffic of pods selected for this rule.\" https://kubernetes.io/docs/concepts/services-networking/network-policies/ : \"ipBlock: This selects particular IP CIDR ranges to allow as ingress sources or egress destinations. These should be cluster-external IPs, since Pod IPs are ephemeral and unpredictable.\"",
+     "problem": "Answer (false) and explanation are correct, but it is a strawman: an egress ipBlock sits under `to`, a list of destinations, so nobody who studied NetworkPolicy would think it filters the selected Pod's own source address. The realistic ipBlock misconception, using it to target in-cluster Pod IPs, is left untested.",
+     "suggestedFix": "Replace (keeps answer FALSE): statement \"NetworkPolicy ipBlock is the intended way to allow traffic to or from specific in-cluster Pods by their IP addresses.\" (117 chars). Explanation: \"False. ipBlock CIDRs should be cluster-external IPs, because Pod IPs are ephemeral and unpredictable. Select in-cluster Pods with podSelector and namespaceSelector instead.\" Source: https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+    },
+    {
+     "id": "kubernetes-ckad-s5.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official kubernetes.io concept page, current (v1.37)",
+     "evidence": "https://kubernetes.io/docs/concepts/services-networking/network-policies/ : \"A pod is isolated for egress if there is any NetworkPolicy that both selects the pod and has \\\"Egress\\\" in its policyTypes\" and, for the default-deny-ingress example, \"This policy has no effect on isolation for egress from any pod.\"",
+     "problem": "Answer (false) is correct, but the statement gives itself away. Writing `policyTypes: [Ingress]` explicitly and then saying it restricts egress makes the answer readable from the words. The real misconception is that any policy selecting a Pod, for example a default-deny, locks the Pod down in both directions.",
+     "suggestedFix": "Replace (keeps answer FALSE): statement \"With a NetworkPolicy-enforcing plugin, a default-deny ingress policy also blocks the selected Pods' outbound traffic.\" (117 chars). Explanation: \"False. A policy whose policyTypes holds only Ingress isolates its Pods for ingress. Their egress stays open until some policy with Egress in its policyTypes selects them.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 5.1 (in raw/kubernetes-ckad-b4.json, ids s5.1-01 to s5.1-10). All three source URLs return 200, are official kubernetes.io pages and are current (the concept page says \"As of Kubernetes 1.37\"). Every card's answer is correct. No card is wrong, ambiguous or out of scope, and none duplicates a card in another section: a grep of the whole deck finds NetworkPolicy only in 5.1.\n\nEvidence for the cards that pass:\n- 01: \"By default, a pod is non-isolated for ingress; all inbound connections are allowed.\"\n- 03: \"the ingress rules for each are combined additively\"\n- 04: \"both the egress policy on the source pod and the ingress policy on the destination pod need to allow the connection\"\n- 05: \"An empty selector matches all pods in the policy's namespace.\" (also on the declare-network-policy page)\n- 06: \"policies that contain an egress section are assumed to affect egress, and all policies (whether or not they contain an ingress section) are assumed to affect ingress\"\n- 09: endPort \"cannot be defined if ... the port field is defined as a named (string) port\". API server validation rejects it, as the card's explanation says.\n- 10: \"the only allowed connections into the pod are those from the pod's node and those allowed by the ingress list\"\n\nBalance and form are fine: 5 true and 5 false, with average lengths of 105.4 (true) and 103.6 (false) characters. All three suggested replacements keep their card's answer.\n\nOne gap in coverage: the scope lists \"a default-deny egress policy also blocks DNS unless DNS is allowed\", and no card tests it. The concept page has a Caution box that says so. If the deck owner wants it, it would be a TRUE card, so it should replace a true card (07 is the weakest) rather than 02 or 08.\n\nMinor style note: five statements open with \"With a plugin enforcing NetworkPolicy\" (or a variant of it), and the opener appears in both true and false cards, so it is not a tell. Card 01's \"incoming TCP traffic\" narrows the statement for no reason, but it is not wrong."
+  },
+  {
+   "section": "5.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s5.2-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/ loads, official and current",
+     "evidence": "The cited EndpointSlices page says: \"In most use cases, EndpointSlices are owned by the Service that the endpoint slice object tracks endpoints for. This ownership is indicated by an owner reference on each EndpointSlice as well as a kubernetes.io/service-name label that enables simple lookups of all EndpointSlices belonging to a Service.\" It puts the owner reference and the label side by side and never says that the label, not the owner reference, links a manual slice to a Service. So it does not settle the card and could even support the misconception. The fact is settled on https://kubernetes.io/docs/concepts/services-networking/service/#custom-endpointslices: \"You link an EndpointSlice to a Service by setting the kubernetes.io/service-name label on that EndpointSlice.\" The answer (false) is right. As a smaller problem, the actor \"Kubernetes routes\" is vague.",
+     "problem": "The answer is correct, but the cited page does not support the right fact given in the explanation. Its ownership paragraph names the owner reference and the label together. The statement also leaves the actor unclear.",
+     "suggestedFix": "Change the URL to https://kubernetes.io/docs/concepts/services-networking/service/#custom-endpointslices and keep the answer false. Statement: \"kube-proxy links a manual EndpointSlice to a selectorless Service through the slice's owner reference.\" Explanation: \"You link a manual EndpointSlice to a Service by setting its kubernetes.io/service-name label. An owner reference only records ownership and does not choose the Service.\""
+    }
+   ],
+   "notes": "I checked all 10 cards of section 5.2. They are all in raw/kubernetes-ckad-b4.json, and all source URLs returned HTTP 200. The balance is 5 true (01, 03, 05, 07, 09) and 5 false (02, 04, 06, 08, 10). I found no duplicate with other sections: s1.2-01 is about the StatefulSet headless Service, s2.1-09 is about switching a selector for blue/green, and s3.1-09 is about the Endpoints deprecation, all different facts.\n\nCards that passed, with the sentence that settles each:\n- 01: the Service page says \\\"The controller for that Service continuously scans for Pods that match its selector, and then makes any necessary updates to the set of EndpointSlices.\\\" The card is basic but in scope.\n- 02: the Service page says \\\"A Service can map any incoming port to a targetPort\\\". The debug-service page says \\\"These commands use the Pod port (9376), rather than the Service port (80).\\\"\n- 03: the Service page says \\\"This works even if there is a mixture of Pods in the Service using a single configured name, with the same network protocol available via different port numbers.\\\"\n- 05: dns-pod-service says headless Services resolve \\\"to the set of IPs of all of the Pods selected by the Service\\\" and that \\\"the Pod needs to be ready in order to have a record unless publishNotReadyAddresses=True\\\". \\\"By default\\\" covers publishNotReadyAddresses.\n- 06: dns-pod-service says \\\"DNS queries that don't specify a namespace are limited to the Pod's namespace.\\\"\n- 07: container-environment says \\\"This list is limited to services within the same namespace as the new Container's Pod and Kubernetes control plane services.\\\" The words \\\"application Services\\\" handle the control plane exception.\n- 08: kubectl_port-forward says \\\"If there are multiple pods matching the criteria, a pod will be selected automatically. The forwarding session ends when the selected pod terminates.\\\"\n- 09: the source is kubernetes/endpointslice v0.37.1 reconciler.go, where the comment \\\"When no endpoint slices would usually exist, we need to add a placeholder\\\" confirms the empty placeholder slice. Source code is allowed (github.com/kubernetes), but no kubernetes.io page states this directly. The closest is debug-service: \\\"If the ENDPOINTS column is <none>...\\\".\n- 10: the Service page says \\\"The Kubernetes API server does not allow proxying to endpoints that are not mapped to pods. Actions such as kubectl port-forward service/<service-name> ... where the service has no selector will fail due to this constraint.\\\" A caveat that does not change the answer: in practice kubectl already fails on the client side, because it resolves a Pod from the Service selector. The explanation follows the official doc wording, so I did not flag it.\n\nThe section never tests some items its scope lists: nodePort, kubectl expose, Service environment variables needing the Service to exist before the Pod, and the debug-service troubleshooting steps. That is a coverage note on the section, not a defect in any card. Two cards (08 and 10) use the port-forward topic, but they rest on different facts."
+  },
+  {
+   "section": "5.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-ckad-s5.3-03",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, official (kubernetes.io/docs/concepts/configuration/secret/), current, but it does not mention what an Ingress does when its Secret changes",
+     "evidence": "Secret page: \"You can edit an existing Secret unless it is immutable.\" and \"One common use for TLS Secrets is to configure encryption in transit for an Ingress\". Neither page says that editing the Secret changes the certificate an Ingress serves. Ingress page (https://kubernetes.io/docs/concepts/services-networking/ingress/#tls): \"Note: There is a gap between TLS features supported by various ingress controllers. Please refer to documentation on nginx, GCE, or any other platform specific Ingress controller to understand how TLS works in your environment.\"",
+     "problem": "Whether the served certificate changes after the Secret is edited depends on the Ingress controller watching and reloading the Secret. Kubernetes does not define this. An expert could defend False, for example for a controller that only reads the Secret at sync time or for a cloud load balancer that copies the certificate. The explanation states the reload as a Kubernetes fact with no source behind it. The wording is also awkward, and \"mutable Secret's data\" hints at the answer.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"An Ingress tls section secures a host only when that same host also appears in the Ingress's rules.\" Explanation: \"Hosts in the tls section must explicitly match hosts in the rules section, so TLS does not work on the default rule, which names no host.\" URL: https://kubernetes.io/docs/concepts/services-networking/ingress/#tls"
+    },
+    {
+     "id": "kubernetes-ckad-s5.3-05",
+     "verdict": "explanation_error",
+     "urlStatus": "200 OK, official (kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/), current, supports the fact",
+     "evidence": "ingress-v1 API reference: \"`\"Exact\"` matches the URL path exactly and with case sensitivity.\" Ingress concept page: \"Exact : Matches the URL path exactly and with case sensitivity.\"",
+     "problem": "The answer (False) is right, but the explanation swaps the two sides. The statement has a request for /Docs and an Exact path /docs. The explanation says \"A rule for /Docs does not match a request for /docs\", so it no longer matches the card. Also, the false reason rests on a single capital letter, which a player can misread. That is close to the spelling trick the prompt forbids.",
+     "suggestedFix": "Keep FALSE. Statement: \"An Ingress controller ignores letter case when it compares a request path with an Exact path such as `/docs`.\" Explanation: \"Exact matches the URL path exactly and with case sensitivity, so the Exact path /docs does not match a request for /Docs.\" URL unchanged."
+    },
+    {
+     "id": "kubernetes-ckad-s5.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official (kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/), current, supports the card",
+     "evidence": "ingress-v1 API reference: \"Incoming requests are matched against the host before the IngressRuleValue.\" Ingress concept page: \"Both the host and path must match the content of an incoming request before the load balancer directs traffic to the referenced Service.\"",
+     "problem": "The wording gives the answer away. A rule called \"host-specific\" that contains paths obviously uses both host and path, so a player who has not studied would answer True. No studied learner would hold the opposite belief, so the card is close to a truism.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"An Ingress wildcard host such as `*.foo.com` matches exactly one DNS label in front of `foo.com`.\" Explanation: \"A wildcard host covers a single DNS label: *.foo.com matches bar.foo.com, but neither baz.bar.foo.com nor foo.com itself.\" URL: https://kubernetes.io/docs/concepts/services-networking/ingress/#hostname-wildcards (the API reference says \"The wildcard character '*' must appear by itself as the first DNS label and matches only a single label.\")"
+    }
+   ],
+   "notes": "I checked all 10 cards of section 5.3 against the downloaded current kubernetes.io pages: the Ingress concept page, the ingress-v1 API reference, admission-controllers and secret. All four source URLs return 200. The section is balanced 5 true and 5 false, and the proposed replacements keep that balance (03 and 04 stay true, 05 stays false). No other card in the deck tests an Ingress fact, so I found no duplicates (4.3-09 is about the API server not validating a kubernetes.io/tls Secret, a different fact).\n\nThe cards that pass:\n- 01: \"Only creating an Ingress resource has no effect.\"\n- 02: DefaultIngressClass, which is in the default-enabled list. The page says it \"observes creation of Ingress objects that do not request any specific ingress class and automatically adds a default ingress class to them\".\n- 06: \"/foo/bar ... does not match /foo/barbaz\", and the table row \"/aaa/bbbxyz No\".\n- 08: \"If multiple matching paths exist in an Ingress spec, the longest matching path is given priority.\"\n- 09: \"defaultBackend is the backend that should handle requests that don't match any rule.\"\n- 10: \"assumes TLS termination at the ingress point (traffic to the Service and its Pods is in plaintext).\"\n\nCard 07 (ImplementationSpecific with Kubernetes-defined regex, False) is borderline. Its false reason is only the qualifier \"defined by Kubernetes\", while some controllers do offer regex under ImplementationSpecific. I let it pass. A cleaner false version would be: \"With pathType ImplementationSpecific, Kubernetes applies Prefix matching to the path.\" The source says \"matching is up to the IngressClass\".\n\nThe scope topics \"Ingress exposes only HTTP and HTTPS\" and \"the Ingress API is GA and frozen; the Kubernetes project recommends Gateway\" are not covered. That is acceptable, but one of the replacements could cover them instead."
+  }
+ ],
+ "scan": {
+  "cardsRead": 160,
+  "duplicates": [
+   {
+    "ids": [
+     "kubernetes-ckad-s2.3-09",
+     "kubernetes-ckad-s2.3-10"
+    ],
+    "why": "Both test the opt-in flags of the Kustomize labels field: by default labels go only to metadata, and includeSelectors/includeTemplates switch on selectors and Pod templates. 2.3-10's statement ('with includeTemplates true and includeSelectors false') shows that selectors are opt-in, which answers 2.3-09. These are two sides of one distinction. Keep 2.3-09, the more consequential selector fact.",
+    "dropId": "kubernetes-ckad-s2.3-10"
+   },
+   {
+    "ids": [
+     "kubernetes-ckad-s5.2-08",
+     "kubernetes-ckad-s5.2-10"
+    ],
+    "why": "Both rest on one fact: kubectl port-forward to a Service resolves to a single backing Pod and does not use Service routing. Once you know 5.2-08 ('selects one matching Pod'), 5.2-10 follows, because external addresses are not Pods. 5.2-10's mechanism ('API server blocks proxying to endpoints that do not map to Pods') is also shaky: kubectl itself refuses a Service without a selector. Drop 5.2-10.",
+    "dropId": "kubernetes-ckad-s5.2-10"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "pull-policy-defaulting",
+    "ids": [
+     "kubernetes-ckad-s1.1-03",
+     "kubernetes-ckad-s1.1-04"
+    ],
+    "why": "Mirrored true/false pair. 1.1-03 says 'newly created Pod ... defaults to Always', and 1.1-04's explanation ('sets the default at object creation') restates the defaulting rule, so each hints at the other's answer."
+   },
+   {
+    "name": "pod-spec-immutability",
+    "ids": [
+     "kubernetes-ckad-s1.1-09",
+     "kubernetes-ckad-s4.4-02"
+    ],
+    "why": "Mirrored template. 'API server can accept changes to command' (F) and 'API server rejects changing serviceAccountName' (T) both rest on the same rule: these Pod spec fields are immutable."
+   },
+   {
+    "name": "pod-shared-namespaces",
+    "ids": [
+     "kubernetes-ckad-s1.3-01",
+     "kubernetes-ckad-s1.3-03"
+    ],
+    "why": "A mirrored pair on what containers in a Pod share: shared localhost (T) and shared process namespace by default (F). Seen together, a player can contrast them and infer the answers."
+   },
+   {
+    "name": "probe-gating-order",
+    "ids": [
+     "kubernetes-ckad-s3.2-05",
+     "kubernetes-ckad-s3.2-06"
+    ],
+    "why": "Same sentence template ('The kubelet waits for X probe to succeed before liveness...'), one true and one false. 3.2-05's explanation says only the startup probe gates liveness, which answers 3.2-06."
+   },
+   {
+    "name": "configmap-update-propagation",
+    "ids": [
+     "kubernetes-ckad-s4.3-02",
+     "kubernetes-ckad-s4.3-03"
+    ],
+    "why": "Mirrored pair on what happens when a ConfigMap changes: env values are kept (T) and a subPath file refreshes (F). One teaches 'no live update', which strongly suggests the other."
+   },
+   {
+    "name": "missing-config-reference",
+    "ids": [
+     "kubernetes-ckad-s4.3-04",
+     "kubernetes-ckad-s4.3-05"
+    ],
+    "why": "'Missing required Secret' (4.3-05) and 'missing optional ConfigMap' (4.3-04) are the two sides of the optional flag. Each statement frames the other."
+   },
+   {
+    "name": "admission-time-only",
+    "ids": [
+     "kubernetes-ckad-s4.2-05",
+     "kubernetes-ckad-s4.2-08"
+    ],
+    "why": "Both are false for the same reason: LimitRange and ResourceQuota changes act only at admission and leave existing Pods untouched. Either explanation answers the other card."
+   },
+   {
+    "name": "deprecation-policy-tiers",
+    "ids": [
+     "kubernetes-ckad-s3.1-01",
+     "kubernetes-ckad-s3.1-02",
+     "kubernetes-ckad-s3.1-03"
+    ],
+    "why": "GA, beta and alpha removal rules. 3.1-02's explanation spells out the beta schedule, which answers 3.1-03 (alpha does not get beta's notice). 3.1-03's statement presumes beta gets advance notice, which supports 3.1-01 and 3.1-02."
+   },
+   {
+    "name": "networkpolicy-policytypes",
+    "ids": [
+     "kubernetes-ckad-s5.1-02",
+     "kubernetes-ckad-s5.1-06"
+    ],
+    "why": "5.1-06's explanation (policyTypes default to Ingress, Egress added only with egress rules) answers 5.1-02 (policyTypes [Ingress] does not restrict egress)."
+   },
+   {
+    "name": "additive-allow-lists",
+    "ids": [
+     "kubernetes-ckad-s4.1-05",
+     "kubernetes-ckad-s5.1-03"
+    ],
+    "why": "RBAC bindings and NetworkPolicies are both additive unions of allows. 4.1-05's explanation ('combines permissions from applicable bindings') and 5.1-03's ('combine instead of intersecting') cue each other."
+   },
+   {
+    "name": "service-namespace-scope",
+    "ids": [
+     "kubernetes-ckad-s5.2-06",
+     "kubernetes-ckad-s5.2-07"
+    ],
+    "why": "Both say Service discovery (short DNS name, env variables) is limited to the Pod's own namespace. 5.2-06's explanation hints at 5.2-07's answer, and the reverse."
+   },
+   {
+    "name": "port-forward-single-pod",
+    "ids": [
+     "kubernetes-ckad-s5.2-08",
+     "kubernetes-ckad-s5.2-10"
+    ],
+    "why": "5.2-08's explanation ('port-forward selects one matching Pod') gives away 5.2-10. Use this group if the duplicate is kept."
+   },
+   {
+    "name": "first-wins-template",
+    "ids": [
+     "kubernetes-ckad-s2.2-04",
+     "kubernetes-ckad-s2.3-08"
+    ],
+    "why": "The same false template, 'gives the first X precedence/priority', with the same 'last one wins' answer. Seeing one teaches the other."
+   },
+   {
+    "name": "more-specific-setting-wins",
+    "ids": [
+     "kubernetes-ckad-s4.4-03",
+     "kubernetes-ckad-s4.4-05"
+    ],
+    "why": "Precedence pair. Container overrides Pod (T) cues the 'more specific wins' rule, which answers ServiceAccount over Pod (F)."
+   },
+   {
+    "name": "kustomize-labels-flags",
+    "ids": [
+     "kubernetes-ckad-s2.3-09",
+     "kubernetes-ckad-s2.3-10"
+    ],
+    "why": "2.3-10's statement shows includeSelectors as an opt-in flag, which answers 2.3-09. Use this group if the duplicate is kept."
+   },
+   {
+    "name": "ephemeral-container-limits",
+    "ids": [
+     "kubernetes-ckad-s3.3-07",
+     "kubernetes-ckad-s3.3-08"
+    ],
+    "why": "Both test ephemeral container restrictions. 3.3-07 shows that ephemeral containers lose ordinary container features, which cues 'no automatic restart' for 3.3-08."
+   }
+  ],
+  "tells": "The deck is 80 true and 80 false. Statement length is balanced: average 98.5 characters (true) vs 98.0 (false), and every section is within 5 characters (largest gaps: 1.3 at 92.4 vs 96.8, and 3.1 at 92.8 vs 89.0). Explanations average 128 (true) vs 132 (false). Hedge and coverage words are balanced: can 16T/14F, may 1T/1F, lets 2T/3F, 'by default' 11T/11F, 'automatically' 7T/7F. The exploitable tells are these:\n\n(1) 'rejects' predicts True. 'The API server rejects ...' is true in 6 of 6 cards (s3.2-10, s3.3-07, s4.2-06, s4.2-09, s4.3-06, s4.4-02). The word 'rejects' is 6T/1F; the false one is s4.1-09 'Admission controllers can reject'. 'API server ... accepts / can accept' is true in s4.3-08 and s5.3-01 and false in s1.1-09 and s3.2-09. With s3.1-08 ('v1.37 accepts batch/v1beta1'), the template 'X accepts an invalid thing' carries 3 false cards, above the cap of two.\n\n(2) Opening words. 'The API server' opens 8T/3F (T: s3.1-04, s3.2-10, s3.3-07, s4.2-06, s4.3-06, s4.3-08, s4.4-02, s5.3-01; F: s1.1-09, s3.2-09, s4.3-09). 'The kubelet' opens 4T/7F (F: s1.3-02, s3.2-02, s3.2-06, s3.2-07, s3.3-08, s4.3-03, s4.3-04), and 'kubelet' anywhere is 7T/12F. 'Setting a ...' opens 0T/3F (s1.1-08, s1.2-06, s1.3-10).\n\n(3) Keyword imbalances. 'Since Kubernetes v1.3x' is 5T/2F (T: s1.3-08, s3.1-09, s3.1-10, s4.1-10, s4.4-10; F: s1.3-04, s4.2-10). 'first' is 0T/4F (s2.2-04, s2.2-10, s2.3-08, s3.2-07). keeps/retains/preserves/leaves is 9T/3F (T: s1.1-02, s1.1-07, s1.2-02, s1.3-05, s3.1-01, s4.2-04, s4.3-02, s5.2-09, s5.3-02; F: s2.1-04, s2.2-06, s2.3-05). 'across' is 0T/3F (s4.4-08, s5.2-06, s5.2-08). 'precedence/priority/overrides' is 2T/4F (F: s2.2-04, s2.3-08, s4.4-03, s5.1-04). 'With a plugin enforcing NetworkPolicy' is 3T/1F in 5.1 (T: s5.1-01, s5.1-03, s5.1-10; F: s5.1-02). Backticked code in the statement is 19T/30F, so commands and fields lean False.\n\n(4) Recurring false templates, each above the cap of two:\n(a) 'X automatically does an extra thing it does not do' has 7 false cards: s1.1-04, s1.2-01, s2.1-08, s2.3-09, s3.3-08, s4.3-03, s4.4-06.\n(b) 'kubectl/helm subcommand can do more than it does' has 6 false cards: s2.2-08, s2.3-01, s3.3-02, s3.3-04, s5.2-08, s5.2-10. The 3 true ones are s2.1-06, s3.3-05, s3.3-09.\n(c) 'With <setting> set, the kubelet/runtime also does extra' has 3 false and no true: s3.3-10, s4.4-06, s4.4-07.\n(d) 'Gives the first X precedence/priority' appears twice, in s2.2-04 and s2.3-08: at the cap, but identical in form and in answer.\n\nAccuracy notes found while reading:\n- s5.3-05: the explanation reverses the example. It says a rule for /Docs does not match /docs, but the statement has the request /Docs against the Exact rule /docs.\n- s5.2-10: the explanation's mechanism is doubtful. kubectl port-forward refuses a Service with no selector on the client side; the API server does not block it."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "kubernetes-ckad-s1.1-07",
+    "reason": "weak_card: the answer can be read from the status name ImagePullBackOff and the hedge 'can'. Dropping it leaves 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s1.2-09",
+    "reason": "weak_card: the statement only restates what the field name startingDeadlineSeconds says. Dropping it leaves 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s2.1-03",
+    "reason": "duplicate: mirrors KCNA s3.1-02 (Recreate termination order) at KCNA depth, and the strategy name gives the answer away. Of the two 2.1 duplicates this one is dropped; s2.1-05 is rewritten so the section keeps 9 cards."
+   },
+   {
+    "id": "kubernetes-ckad-s2.2-01",
+    "reason": "weak_card: a definition-level release fact (owned by KCNA) with a give-away phrase, and the cited page does not state it. Dropping it leaves 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s2.3-10",
+    "reason": "scan duplicate of s2.3-09: the same labels opt-in flags, and its statement answers 2.3-09. s2.3-02 is rewritten so the section keeps 9 cards."
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-09",
+    "reason": "weak_card: calling Endpoints 'deprecated' gives the answer away, and v1.33 is pinned to the wrong fact. s3.1-06 is rewritten instead so the section keeps 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s3.2-02",
+    "reason": "weak_card: a 3xx is already in the 200-399 success range, so the redirect detail is not tested. Dropping it leaves 9 cards at 5T/4F."
+   },
+   {
+    "id": "kubernetes-ckad-s3.3-05",
+    "reason": "weak_card: near-truism ('readings can differ from Linux top'). s3.3-01 is rewritten instead so the section keeps 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s4.1-07",
+    "reason": "weak_card: the answer can be read from the --as flag name, and 'With impersonation permission' marks the card as true. s4.1-04 is rewritten instead so the section keeps 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s4.2-09",
+    "reason": "weak_card: the answer follows from what an object-count quota means, and the 'spare node capacity' contrast is a strawman. Dropping it leaves 9 cards at 4T/5F."
+   },
+   {
+    "id": "kubernetes-ckad-s4.3-07",
+    "reason": "weak_card: the qualifier 'against users who have permission to read' makes it false for a second, common-sense reason. Dropping it leaves 9 cards at 5T/4F."
+   },
+   {
+    "id": "kubernetes-ckad-s5.1-02",
+    "reason": "weak_card: writing policyTypes [Ingress] in the statement gives the answer away. Dropping it also removes the scan's networkpolicy-policytypes conflict with 5.1-06. 5.1-07 and 5.1-08 are rewritten so the section keeps 9 cards at 5T/4F."
+   },
+   {
+    "id": "kubernetes-ckad-s5.2-10",
+    "reason": "scan duplicate of s5.2-08 (port-forward resolves to one Pod), and its mechanism is doubtful: kubectl refuses a Service with no selector on the client side. Dropping it leaves 9 cards at 5T/4F."
+   },
+   {
+    "id": "kubernetes-ckad-s5.3-04",
+    "reason": "weak_card: 'host-specific rule ... uses host and path' gives the answer away (truism). Dropping it leaves 9 cards at 4T/5F."
+   }
+  ],
+  "source": [
+   {
+    "id": "kubernetes-ckad-s1.1-06",
+    "title": "Managing Service Accounts",
+    "url": "https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/"
+   },
+   {
+    "id": "kubernetes-ckad-s2.2-09",
+    "title": "helm install",
+    "url": "https://helm.sh/docs/helm/helm_install/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.1-08",
+    "title": "Dynamic Admission Control",
+    "url": "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/"
+   },
+   {
+    "id": "kubernetes-ckad-s5.2-04",
+    "title": "Service",
+    "url": "https://kubernetes.io/docs/concepts/services-networking/service/#custom-endpointslices"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "kubernetes-ckad-s1.1-06",
+    "reason": "source_problem: the task page never states the 'Pod lists none' condition; the ServiceAccount admission controller section does. The explanation now names the actor.",
+    "statement": "A ServiceAccount's imagePullSecrets automatically populate new Pods that use it and omit imagePullSecrets.",
+    "answer": true,
+    "explanation": "The ServiceAccount admission controller copies the ServiceAccount's imagePullSecrets into a new Pod whose spec lists none, so the Pod can pull from that private registry.",
+    "misconception": "",
+    "sourceTitle": "Managing Service Accounts",
+    "sourceUrl": "https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/"
+   },
+   {
+    "id": "kubernetes-ckad-s2.1-05",
+    "reason": "duplicate of KCNA s3.2-08 and a near-copy of the source synopsis. Rewritten, not dropped, because dropping both 2.1 duplicates would leave 8 cards. Uses the verifier's replacement; Deployments page: 'kubectl rollout status returns a non-zero exit code if the Deployment has exceeded the progression deadline.'",
+    "statement": "`kubectl rollout status` exits with a non-zero code once a Deployment exceeds its progress deadline.",
+    "answer": true,
+    "explanation": "When a Deployment passes its progressDeadlineSeconds, rollout status prints an error and returns a non-zero exit code, so a script or pipeline can detect the stalled rollout.",
+    "misconception": "",
+    "sourceTitle": "Deployments",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#failed-deployment"
+   },
+   {
+    "id": "kubernetes-ckad-s2.2-09",
+    "reason": "source_problem: helm.sh/docs/topics/registries/ carries a 'not yet updated for Helm 4' banner. The helm install reference (v4.3.0) lists 'By OCI registries: helm install mynginx --version 1.2.3 oci://example.com/charts/nginx'. Statement and explanation are unchanged.",
+    "statement": "`helm install` accepts a chart reference from an OCI registry as its installation source.",
+    "answer": true,
+    "explanation": "Helm install accepts OCI chart references. This uses an OCI registry as the chart source instead of a traditional chart repository.",
+    "misconception": "",
+    "sourceTitle": "helm install",
+    "sourceUrl": "https://helm.sh/docs/helm/helm_install/"
+   },
+   {
+    "id": "kubernetes-ckad-s2.3-02",
+    "reason": "weak_card (truism, and its wording blurred overlays into the base). Rewritten, not dropped, because dropping it together with the scan duplicate 2.3-10 would leave 8 cards at 3T/5F. Uses the verifier's replacement; the task page says 'A base has no knowledge of an overlay and can be used in multiple overlays' and shows two overlays with 'resources: - ../base'.",
+    "statement": "Several Kustomize overlays can list one base directory under resources, each building its own variant of that base.",
+    "answer": true,
+    "explanation": "A base has no knowledge of its overlays, so one base can serve dev and prod overlays that each add their own patches or name prefix while the base itself stays unchanged.",
+    "misconception": "",
+    "sourceTitle": "Declarative Management of Kubernetes Objects Using Kustomize",
+    "sourceUrl": "https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/"
+   },
+   {
+    "id": "kubernetes-ckad-s2.3-08",
+    "reason": "tell: breaks the 'gives the first X precedence' false template it shares with 2.2-04, and removes 'first' and 'precedence' (both lean false). Same fact, still false.",
+    "statement": "When two patches set the same scalar field, Kustomize keeps the value from the earlier patch in the list.",
+    "answer": false,
+    "explanation": "Kustomize applies patches in their listed order. A later patch that sets the same scalar field replaces the value left by an earlier patch.",
+    "misconception": "The first patch's value wins when another patch later changes the same field.",
+    "sourceTitle": "Kustomize patches reference",
+    "sourceUrl": "https://github.com/kubernetes-sigs/kustomize/blob/master/site/content/en/docs/Reference/API/Kustomization%20File/patches.md"
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-04",
+    "reason": "ambiguous: the old wording had the API server 'removing' endpoints and reading 'through the replacement API'. Clients are now the actor. Migration guide: 'The autoscaling/v2beta2 API version of HorizontalPodAutoscaler is no longer served as of v1.26 ... All existing persisted objects are accessible via the new API.'",
+    "statement": "Once a cluster stops serving autoscaling/v2beta2, clients read existing HorizontalPodAutoscalers through autoscaling/v2.",
+    "answer": true,
+    "explanation": "For each removed API version, the migration guide states that existing persisted objects are accessible via the new API. Only manifests and clients that still name the old version need updating.",
+    "misconception": "",
+    "sourceTitle": "Deprecated API Migration Guide",
+    "sourceUrl": "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-06",
+    "reason": "weak_card (the old card copied the api-versions synopsis). Rewritten, not dropped, because dropping both 3.1-06 and 3.1-09 would leave 8 cards at 3T/5F. Uses the verifier's kubectl explain replacement; the page says 'Information about each field is retrieved from the server in OpenAPI format.'",
+    "statement": "`kubectl explain` describes fields using the OpenAPI schema it fetches from the cluster's API server.",
+    "answer": true,
+    "explanation": "kubectl explain retrieves field information from the server in OpenAPI format, so its output reflects the API versions that cluster serves; --api-version picks a specific group/version.",
+    "misconception": "",
+    "sourceTitle": "kubectl explain",
+    "sourceUrl": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_explain/"
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-10",
+    "reason": "ambiguous: the old wording had the API serving itself and implied that v1beta1 serving started in v1.37. Now names the Metrics Server add-on. Release post: 'v1beta1 remains usable throughout the transition, in line with the API deprecation policy'. The HPA-only-v1beta1 detail is left out because the only page that states it is a blog post the prompt does not name.",
+    "statement": "With the Metrics Server installed, Kubernetes v1.37 clients can still use metrics.k8s.io/v1beta1 after v1 went stable.",
+    "answer": true,
+    "explanation": "The metrics.k8s.io API graduated to v1 in Kubernetes v1.37, and v1beta1 remains usable throughout the transition under the API deprecation policy, so existing clients keep working.",
+    "misconception": "",
+    "sourceTitle": "Kubernetes v1.37: Garhwal",
+    "sourceUrl": "https://kubernetes.io/blog/2026/08/26/kubernetes-v1-37-release/"
+   },
+   {
+    "id": "kubernetes-ckad-s3.2-07",
+    "reason": "tell: removes the 'The kubelet' opener (4T/7F) and the word 'first' (0T/4F). Same fact, still false; probes task page: 'Readiness probes run on the container during its whole lifecycle.'",
+    "statement": "Once a readiness probe has succeeded, the kubelet stops running it for that container.",
+    "answer": false,
+    "explanation": "The kubelet keeps running readiness probes throughout a container's lifetime, checking for changes after initial success.",
+    "misconception": "Readiness probing finishes after its first successful check.",
+    "sourceTitle": "Configure Liveness, Readiness and Startup Probes",
+    "sourceUrl": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+   },
+   {
+    "id": "kubernetes-ckad-s3.3-01",
+    "reason": "weak_card (the old card restated the -c flag text). Rewritten, not dropped, because dropping both 3.3-01 and 3.3-05 would leave 8 cards at 3T/5F. Uses the verifier's replacement; kubectl logs page: '--all-pods Get logs from all pod(s). Sets prefix to true.' and the example 'Return snapshot logs from all pods in the deployment nginx: kubectl logs deployment/nginx --all-pods=true'.",
+    "statement": "By default, `kubectl logs deployment/web` prints the logs of a single Pod that belongs to that Deployment.",
+    "answer": true,
+    "explanation": "For a workload such as a Deployment or Job, kubectl logs reads one of its Pods. Add --all-pods to fetch logs from every Pod, which also prefixes each line with its source.",
+    "misconception": "",
+    "sourceTitle": "kubectl logs",
+    "sourceUrl": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.1-04",
+    "reason": "weak_card (strawman: the old card was false for two reasons, since the API server never scales Pods). Rewritten, not dropped, because dropping both 4.1-04 and 4.1-07 would leave 8 cards. Based on the verifier's replacement; the 'control plane' wording keeps exactly one reason (no controller watches the custom resource). Custom Resources page: 'On their own, custom resources let you store and retrieve structured data. When you combine a custom resource with a custom controller, custom resources provide a true declarative API.'",
+    "statement": "Once its CustomResourceDefinition exists, a new Database custom resource makes the control plane start database Pods.",
+    "answer": false,
+    "explanation": "On its own, a custom resource only stores and serves structured data. Database Pods start only when a custom controller, such as an operator, watches those objects and creates the workloads.",
+    "misconception": "Installing a CRD by itself gives its custom resources working behaviour, such as running a database.",
+    "sourceTitle": "Custom Resources",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.1-08",
+    "reason": "source_problem: the admission-controllers page gives only the phase order. Dynamic Admission Control says 'After all object modifications are complete ... validating admission webhooks are invoked' and that webhooks needing 'the final state of the object' should validate. Statement and explanation are unchanged.",
+    "statement": "Validating admission controllers receive a Pod with labels already added by mutating admission controllers.",
+    "answer": true,
+    "explanation": "The API server runs validation after the mutation phase. Validating admission evaluates the object with mutations already applied.",
+    "misconception": "",
+    "sourceTitle": "Dynamic Admission Control",
+    "sourceUrl": "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.2-06",
+    "reason": "tell: removes the 'The API server rejects' opener (6T/1F) without adding the word 'admission', which would cue 4.2-05. Same fact, still true; Limit Ranges page: a request that violates a LimitRange constraint 'will fail with an HTTP status code 403 Forbidden'.",
+    "statement": "Creating a Pod whose container CPU limit exceeds a LimitRange's container CPU maximum returns 403 Forbidden.",
+    "answer": true,
+    "explanation": "A LimitRange max constrains each container's CPU limit. A create request for a Pod over that maximum fails at the API server with HTTP status 403 Forbidden.",
+    "misconception": "",
+    "sourceTitle": "Limit Ranges",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/policy/limit-range/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.3-03",
+    "reason": "tell: removes 'automatically' from the 'X automatically does an extra thing' false template (7 cards) and the 'The kubelet' opener. Same fact, still false; ConfigMap page: 'A container using a ConfigMap as a subPath volume mount will not receive ConfigMap updates.'",
+    "statement": "After the ConfigMap changes, the kubelet refreshes a file from it that a container mounts with subPath.",
+    "answer": false,
+    "explanation": "A ConfigMap file mounted with subPath stays on its original contents. Updates to the ConfigMap do not propagate through that mount.",
+    "misconception": "A subPath mount receives ConfigMap updates like a regular ConfigMap volume mount.",
+    "sourceTitle": "ConfigMaps",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.3-06",
+    "reason": "explanation_error: 'requires replacing the object' is wrong, since a kubectl replace (PUT) is also rejected. ConfigMap page: 'You can only delete and recreate the ConfigMap ... it is recommended to recreate these pods.' The statement is unchanged.",
+    "statement": "The API server rejects a patch changing a ConfigMap's immutable field from true to false.",
+    "answer": true,
+    "explanation": "Once immutable is true, the API server rejects reverting it and any change to data or binaryData. To change contents, delete and recreate the ConfigMap, then recreate the Pods that use it.",
+    "misconception": "",
+    "sourceTitle": "ConfigMaps",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+   },
+   {
+    "id": "kubernetes-ckad-s4.4-02",
+    "reason": "tell: removes the 'The API server rejects' opener (6T/1F). Same fact, still true; the task page says 'You cannot update the .spec.serviceAccountName field of a Pod that already exists.'",
+    "statement": "Once a Pod exists, an update that changes its serviceAccountName fails API server validation.",
+    "answer": true,
+    "explanation": "A Pod's serviceAccountName can be set only at creation or in a template for new Pods. Create a replacement Pod to assign a different ServiceAccount.",
+    "misconception": "",
+    "sourceTitle": "Configure Service Accounts for Pods",
+    "sourceUrl": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/"
+   },
+   {
+    "id": "kubernetes-ckad-s5.1-07",
+    "reason": "weak_card (the AND reading followed from the wording). Rewritten, not dropped, because dropping all three flagged 5.1 cards would leave 7. Uses the verifier's OR replacement, with 'True.' removed from the explanation. Network Policies page: 'It contains two elements in the from array, and allows connections from Pods in the local Namespace with the label role=client, or from any Pod in any namespace with the label user=alice.'",
+    "statement": "With namespaceSelector and podSelector as two separate from elements, a NetworkPolicy admits sources matching either.",
+    "answer": true,
+    "explanation": "Elements of a from list are ORed: the podSelector element admits matching Pods in the policy's namespace, and the namespaceSelector element admits all Pods in matching namespaces. In one element they combine as AND.",
+    "misconception": "",
+    "sourceTitle": "Network Policies",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+   },
+   {
+    "id": "kubernetes-ckad-s5.1-08",
+    "reason": "weak_card (strawman: an egress ipBlock under 'to' obviously lists destinations). Rewritten, not dropped, to keep 9 cards. Based on the verifier's replacement, but phrased as a documentation recommendation because the page states it as 'should'. Network Policies page: 'These should be cluster-external IPs, since Pod IPs are ephemeral and unpredictable.'",
+    "statement": "The Kubernetes documentation recommends NetworkPolicy ipBlock for allowing traffic from specific in-cluster Pod IPs.",
+    "answer": false,
+    "explanation": "ipBlock CIDRs should be cluster-external IPs, because Pod IPs are ephemeral and unpredictable. Select in-cluster Pods with podSelector and namespaceSelector instead.",
+    "misconception": "ipBlock is the recommended way to target in-cluster Pods by IP address.",
+    "sourceTitle": "Network Policies",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+   },
+   {
+    "id": "kubernetes-ckad-s5.2-04",
+    "reason": "source_problem: the EndpointSlices page lists the owner reference and the label side by side. The Service page, Custom EndpointSlices section, says 'You link an EndpointSlice to a Service by setting the kubernetes.io/service-name label on that EndpointSlice.' The statement now names the actor as the page does ('you').",
+    "statement": "You link a manual EndpointSlice to a selectorless Service by giving the slice an owner reference to that Service.",
+    "answer": false,
+    "explanation": "You link an EndpointSlice to a Service by setting the kubernetes.io/service-name label on the slice. An owner reference records ownership and does not choose the Service.",
+    "misconception": "An owner reference is what links a manual EndpointSlice to its Service.",
+    "sourceTitle": "Service",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/services-networking/service/#custom-endpointslices"
+   },
+   {
+    "id": "kubernetes-ckad-s5.3-03",
+    "reason": "ambiguous: whether an edited Secret changes the served certificate depends on the Ingress controller, and the cited page did not cover it. Replaced with the verifier's TLS-host card; Ingress page: 'hosts in the tls section need to explicitly match the host in the rules section.'",
+    "statement": "For Ingress TLS to work, each host in the tls section has to match a host in the rules section.",
+    "answer": true,
+    "explanation": "TLS does not work on the default rule, which names no host, since its certificate would have to cover every possible subdomain. So hosts in the tls section need to explicitly match rule hosts.",
+    "misconception": "",
+    "sourceTitle": "Ingress",
+    "sourceUrl": "https://kubernetes.io/docs/concepts/services-networking/ingress/#tls"
+   },
+   {
+    "id": "kubernetes-ckad-s5.3-05",
+    "reason": "explanation_error: the explanation swapped /Docs and /docs, and the single-capital trick was close to spelling-based falsity. The statement now tests case sensitivity directly. ingress-v1: 'Exact matches the URL path exactly and with case sensitivity.'",
+    "statement": "An Ingress controller ignores letter case when it compares a request path with an Exact path such as `/docs`.",
+    "answer": false,
+    "explanation": "Exact path matching is case-sensitive, so a rule with the Exact path /docs does not match a request for /Docs.",
+    "misconception": "Exact paths treat uppercase and lowercase characters as equivalent.",
+    "sourceTitle": "Ingress API reference",
+    "sourceUrl": "https://kubernetes.io/docs/reference/kubernetes-api/networking/ingress-v1/"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "pull-policy-defaulting",
+    "ids": [
+     "kubernetes-ckad-s1.1-03",
+     "kubernetes-ckad-s1.1-04"
+    ]
+   },
+   {
+    "name": "pod-spec-immutability",
+    "ids": [
+     "kubernetes-ckad-s1.1-09",
+     "kubernetes-ckad-s4.4-02"
+    ]
+   },
+   {
+    "name": "pod-shared-namespaces",
+    "ids": [
+     "kubernetes-ckad-s1.3-01",
+     "kubernetes-ckad-s1.3-03"
+    ]
+   },
+   {
+    "name": "probe-gating-order",
+    "ids": [
+     "kubernetes-ckad-s3.2-05",
+     "kubernetes-ckad-s3.2-06"
+    ]
+   },
+   {
+    "name": "configmap-update-propagation",
+    "ids": [
+     "kubernetes-ckad-s4.3-02",
+     "kubernetes-ckad-s4.3-03"
+    ]
+   },
+   {
+    "name": "missing-config-reference",
+    "ids": [
+     "kubernetes-ckad-s4.3-04",
+     "kubernetes-ckad-s4.3-05"
+    ]
+   },
+   {
+    "name": "admission-time-only",
+    "ids": [
+     "kubernetes-ckad-s4.2-05",
+     "kubernetes-ckad-s4.2-08"
+    ]
+   },
+   {
+    "name": "deprecation-policy-tiers",
+    "ids": [
+     "kubernetes-ckad-s3.1-01",
+     "kubernetes-ckad-s3.1-02",
+     "kubernetes-ckad-s3.1-03"
+    ]
+   },
+   {
+    "name": "additive-allow-lists",
+    "ids": [
+     "kubernetes-ckad-s4.1-05",
+     "kubernetes-ckad-s5.1-03"
+    ]
+   },
+   {
+    "name": "service-namespace-scope",
+    "ids": [
+     "kubernetes-ckad-s5.2-06",
+     "kubernetes-ckad-s5.2-07"
+    ]
+   },
+   {
+    "name": "first-wins-template",
+    "ids": [
+     "kubernetes-ckad-s2.2-04",
+     "kubernetes-ckad-s2.3-08"
+    ]
+   },
+   {
+    "name": "more-specific-setting-wins",
+    "ids": [
+     "kubernetes-ckad-s4.4-03",
+     "kubernetes-ckad-s4.4-05"
+    ]
+   },
+   {
+    "name": "ephemeral-container-limits",
+    "ids": [
+     "kubernetes-ckad-s3.3-07",
+     "kubernetes-ckad-s3.3-08"
+    ]
+   },
+   {
+    "name": "networkpolicy-or-semantics",
+    "ids": [
+     "kubernetes-ckad-s5.1-03",
+     "kubernetes-ckad-s5.1-07"
+    ]
+   },
+   {
+    "name": "progress-deadline",
+    "ids": [
+     "kubernetes-ckad-s2.1-05",
+     "kubernetes-ckad-s2.1-08"
+    ]
+   },
+   {
+    "name": "kubectl-picks-one-pod",
+    "ids": [
+     "kubernetes-ckad-s3.3-01",
+     "kubernetes-ckad-s5.2-08"
+    ]
+   }
+  ],
+  "sectionBalance": "After 14 drops and 21 rewrites (14 fix or source edits, 5 tell rewordings, and 2 source-only changes kept as full cards), the deck has 146 cards: 70 true and 76 false. Per section: 1.1: 9 (4T/5F); 1.2: 9 (4T/5F); 1.3: 10 (5T/5F); 2.1: 9 (4T/5F); 2.2: 9 (4T/5F); 2.3: 9 (4T/5F); 3.1: 9 (4T/5F); 3.2: 9 (5T/4F); 3.3: 9 (4T/5F); 4.1: 9 (4T/5F); 4.2: 9 (4T/5F); 4.3: 9 (5T/4F); 4.4: 10 (5T/5F); 5.1: 9 (5T/4F); 5.2: 9 (5T/4F); 5.3: 9 (4T/5F).",
+  "notes": "Every rewrite was checked against official pages fetched on 2026-10-08 (all HTTP 200): service-accounts-admin, Deployments (#failed-deployment), the Kustomize task page, the deprecation guide, kubectl_explain, the v1.37 release post, kubectl_logs, Custom Resources, Dynamic Admission Control, ConfigMaps, Network Policies, Service (#custom-endpointslices), Ingress (#tls), ingress-v1, limit-range, configure-service-account, the probes task page, the Kustomize patches.md and helm_install.\n\nHow the drop/rewrite rule was applied:\n- Where a section had two or more weak or duplicate flags and dropping them all would leave fewer than 9 cards, I rewrote the minimum number needed (one card in 2.1, 2.3, 3.1, 3.3 and 4.1; two in 5.1), each from the verifier's suggestion.\n- In 3.1, 04 and 10 were ambiguous, so both were rewritten. Of the weak 06 and 09, 06 was rewritten (kubectl explain) and 09 dropped. The 09 replacement leaned on the 1000-backend truncation number and on Endpoints behaviour that overlaps 5.2.\n- In 5.1, 02 was dropped rather than rewritten, which also removes the scan's networkpolicy-policytypes conflict with 5.1-06.\n\nChanges from the verifiers' suggested text:\n- 3.1-10: the HPA 'only v1beta1' detail is left out. It appears only in the Metrics API GA blog post (2026-08-27), which the prompt does not name as an allowed source. The card rests on the release post's 'v1beta1 remains usable throughout the transition'.\n- 5.1-08: phrased as 'The Kubernetes documentation recommends ...'. The page states it as 'should', and the prompt forbids stating a judgement as a fact.\n- 5.2-04: the actor is 'you' (the page says 'You link an EndpointSlice to a Service by setting the kubernetes.io/service-name label') instead of kube-proxy, which the page does not name.\n- 4.1-04: 'control plane start database Pods' replaces 'Kubernetes run a database', so the card is false for exactly one reason.\n- 5.1-07: the leading 'True.' was removed from the explanation.\n\nSource-only fixes (1.1-06, 2.2-09, 4.1-08) appear in both 'source' and 'rewrite'. The rewrite entries repeat the card text (only 1.1-06's explanation now names the admission controller).\n\nTell rewrites (5): 2.3-08, 3.2-07, 4.3-03, 4.2-06, 4.4-02. Each keeps its fact and answer.\n- 'rejects' was 6T/1F; after these edits and the drop of 4.2-09 it is 3T/1F.\n- 'The API server' as an opener goes from 8T/3F to 5T/3F.\n- 'The kubelet' as an opener goes from 4T/7F to 4T/5F.\n- 'first' goes from 0T/4F to 0T/2F.\n\nTells still open for the writer:\n- The 'X accepts an invalid thing' false template is still on 3 cards (1.1-09, 3.1-08, 3.2-09), one over the cap of two.\n- The 'X automatically does an extra thing' false template is still on 6 cards (1.1-04, 1.2-01, 2.1-08, 2.3-09, 3.3-08, 4.4-06).\n- Backticked commands still lean false.\n\nCoverage gaps created by drops: the httpGet 200-399 success range (3.2), and Recreate termination order (2.1; KCNA covers it).\n\nNew conflict groups:\n- networkpolicy-or-semantics (5.1-03, 5.1-07): both teach OR or union semantics.\n- progress-deadline (2.1-05, 2.1-08): same deadline context.\n- kubectl-picks-one-pod (3.3-01, 5.2-08): logs on a Deployment and port-forward to a Service both resolve to one Pod.\n\nScan groups removed because a member was dropped: networkpolicy-policytypes, port-forward-single-pod, kustomize-labels-flags.\n\nWorking files (fetched pages and the length-check script) are in a scratch folder"
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "kubernetes-ckad-s1.1-06",
+    "decision": "keep",
+    "statement": "A ServiceAccount's imagePullSecrets automatically populate new Pods that use it and omit imagePullSecrets.",
+    "answer": true,
+    "explanation": "The ServiceAccount admission controller copies the ServiceAccount's imagePullSecrets into a new Pod whose spec lists none, so the Pod can pull from that private registry.",
+    "reason": "Both lenses keep. service-accounts-admin: if the incoming Pod has no imagePullSecrets, the admission controller adds them, copying them from the ServiceAccount."
+   },
+   {
+    "id": "kubernetes-ckad-s2.1-05",
+    "decision": "keep",
+    "statement": "`kubectl rollout status` exits with a non-zero code once a Deployment exceeds its progress deadline.",
+    "answer": true,
+    "explanation": "When a Deployment passes its progressDeadlineSeconds, rollout status prints an error and returns a non-zero exit code, so a script or pipeline can detect the stalled rollout.",
+    "reason": "Both lenses keep. The Deployments page, Failed Deployment section, says rollout status returns a non-zero exit code once the progression deadline is exceeded."
+   },
+   {
+    "id": "kubernetes-ckad-s2.2-09",
+    "decision": "keep",
+    "statement": "`helm install` accepts a chart reference from an OCI registry as its installation source.",
+    "answer": true,
+    "explanation": "Helm install accepts OCI chart references. This uses an OCI registry as the chart source instead of a traditional chart repository.",
+    "reason": "Both lenses keep. The helm install reference lists 'helm install mynginx --version 1.2.3 oci://example.com/charts/nginx', and this holds in Helm 3 and 4."
+   },
+   {
+    "id": "kubernetes-ckad-s2.3-02",
+    "decision": "keep",
+    "statement": "Several Kustomize overlays can list one base directory under resources, each building its own variant of that base.",
+    "answer": true,
+    "explanation": "A base has no knowledge of its overlays, so one base can serve dev and prod overlays that each add their own patches or name prefix while the base itself stays unchanged.",
+    "reason": "Both lenses keep. The kustomization task page says 'A base has no knowledge of an overlay and can be used in multiple overlays', and its overlays use resources: - ../base."
+   },
+   {
+    "id": "kubernetes-ckad-s2.3-08",
+    "decision": "keep",
+    "statement": "When two patches set the same scalar field, Kustomize keeps the value from the earlier patch in the list.",
+    "answer": false,
+    "explanation": "Kustomize applies patches in their listed order. A later patch that sets the same scalar field replaces the value left by an earlier patch.",
+    "reason": "Both lenses keep. patches.md says patches are applied in the order they are specified, so the later patch's value is the one that remains."
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-04",
+    "decision": "keep",
+    "statement": "Once a cluster stops serving autoscaling/v2beta2, clients read existing HorizontalPodAutoscalers through autoscaling/v2.",
+    "answer": true,
+    "explanation": "For each removed API version, the migration guide states that existing persisted objects are accessible via the new API. Only manifests and clients that still name the old version need updating.",
+    "reason": "Both lenses keep. Deprecation guide v1.26: v2beta2 HPA is no longer served, and 'All existing persisted objects are accessible via the new API'. The statement is exactly 120 characters."
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-06",
+    "decision": "keep",
+    "statement": "`kubectl explain` describes fields using the OpenAPI schema it fetches from the cluster's API server.",
+    "answer": true,
+    "explanation": "kubectl explain retrieves field information from the server in OpenAPI format, so its output reflects the API versions that cluster serves; --api-version picks a specific group/version.",
+    "reason": "Both lenses keep. The kubectl explain page says 'Information about each field is retrieved from the server in OpenAPI format.'"
+   },
+   {
+    "id": "kubernetes-ckad-s3.1-10",
+    "decision": "fixed",
+    "statement": "With the Metrics Server installed, Kubernetes v1.37 clients reach metrics.k8s.io/v1beta1 after the API's v1 graduation.",
+    "answer": true,
+    "explanation": "The metrics.k8s.io API graduated to v1 in Kubernetes v1.37, and v1beta1 remains usable throughout the transition under the API deprecation policy, so existing clients keep working.",
+    "reason": "The wording lens is right that 'can still' tells the answer is true, so it is removed. Its replacement claims clients reach v1 'alongside' v1beta1, and that is not guaranteed. The metrics API GA post says v1 is available only if the implementation serves v1.metrics.k8s.io and registers an APIService. So the merged wording keeps only the v1beta1 claim, which the release post confirms."
+   },
+   {
+    "id": "kubernetes-ckad-s3.2-07",
+    "decision": "keep",
+    "statement": "Once a readiness probe has succeeded, the kubelet stops running it for that container.",
+    "answer": false,
+    "explanation": "The kubelet keeps running readiness probes throughout a container's lifetime, checking for changes after initial success.",
+    "reason": "Both lenses keep. The probes task page says 'Readiness probes run on the container during its whole lifecycle.'"
+   },
+   {
+    "id": "kubernetes-ckad-s3.3-01",
+    "decision": "keep",
+    "statement": "By default, `kubectl logs deployment/web` prints the logs of a single Pod that belongs to that Deployment.",
+    "answer": true,
+    "explanation": "For a workload such as a Deployment or Job, kubectl logs reads one of its Pods. Add --all-pods to fetch logs from every Pod, which also prefixes each line with its source.",
+    "reason": "Both lenses keep. The kubectl logs page lists '--all-pods Get logs from all pod(s). Sets prefix to true.' and the example 'kubectl logs deployment/nginx --all-pods=true'. The fact lens confirmed the single-Pod default in the kubectl source (GetFirstPod)."
+   },
+   {
+    "id": "kubernetes-ckad-s4.1-04",
+    "decision": "keep",
+    "statement": "Once its CustomResourceDefinition exists, a new Database custom resource makes the control plane start database Pods.",
+    "answer": false,
+    "explanation": "On its own, a custom resource only stores and serves structured data. Database Pods start only when a custom controller, such as an operator, watches those objects and creates the workloads.",
+    "reason": "Both lenses keep. The Custom Resources page says 'On their own, custom resources let you store and retrieve structured data' and that a true declarative API needs a custom controller."
+   },
+   {
+    "id": "kubernetes-ckad-s4.1-08",
+    "decision": "keep",
+    "statement": "Validating admission controllers receive a Pod with labels already added by mutating admission controllers.",
+    "answer": true,
+    "explanation": "The API server runs validation after the mutation phase. Validating admission evaluates the object with mutations already applied.",
+    "reason": "Both lenses keep. Dynamic Admission Control: 'After all object modifications are complete ... validating admission webhooks are invoked'."
+   },
+   {
+    "id": "kubernetes-ckad-s4.2-06",
+    "decision": "fixed",
+    "statement": "Kubernetes refuses to create a Pod whose container CPU limit exceeds its namespace LimitRange's container CPU maximum.",
+    "answer": true,
+    "explanation": "A LimitRange max constrains each container's CPU limit, so a create request for a Pod over that maximum fails at the API server with HTTP status 403 Forbidden.",
+    "reason": "Adopts the wording lens fix (116 chars). Ending on '403 Forbidden' turned the card into status-code trivia. The fix avoids the 'The API server rejects' opener and the word 'admission', and keeps 403 in the explanation. The Limit Ranges page confirms that a violating create request 'will fail with an HTTP status code 403 Forbidden'."
+   },
+   {
+    "id": "kubernetes-ckad-s4.3-03",
+    "decision": "keep",
+    "statement": "After the ConfigMap changes, the kubelet refreshes a file from it that a container mounts with subPath.",
+    "answer": false,
+    "explanation": "A ConfigMap file mounted with subPath stays on its original contents. Updates to the ConfigMap do not propagate through that mount.",
+    "reason": "Both lenses keep. The ConfigMap page says a container using a ConfigMap as a subPath volume mount will not receive ConfigMap updates."
+   },
+   {
+    "id": "kubernetes-ckad-s4.3-06",
+    "decision": "fixed",
+    "statement": "Once a ConfigMap's immutable field is true, a patch setting it back to false fails at the API server.",
+    "answer": true,
+    "explanation": "Once immutable is true, the API server rejects reverting it and any change to data or binaryData. To change contents, delete and recreate the ConfigMap, then recreate the Pods that use it.",
+    "reason": "Adopts the wording lens fix. The 'The API server rejects' opener was a true-only tell, and the same editor removed it from 4.2-06 and 4.4-02. The ConfigMap page confirms that once immutable is set it is 'not possible to revert this change nor to mutate the contents of the data or the binaryData field. You can only delete and recreate the ConfigMap ... it is recommended to recreate these pods.'"
+   },
+   {
+    "id": "kubernetes-ckad-s4.4-02",
+    "decision": "keep",
+    "statement": "Once a Pod exists, an update that changes its serviceAccountName fails API server validation.",
+    "answer": true,
+    "explanation": "A Pod's serviceAccountName can be set only at creation or in a template for new Pods. Create a replacement Pod to assign a different ServiceAccount.",
+    "reason": "Both lenses keep. configure-service-account: 'You cannot update the .spec.serviceAccountName field of a Pod that already exists.' The wording lens also flags an existing overlap with 1.1-09, which this rewrite does not cover."
+   },
+   {
+    "id": "kubernetes-ckad-s5.1-07",
+    "decision": "keep",
+    "statement": "With namespaceSelector and podSelector as two separate from elements, a NetworkPolicy admits sources matching either.",
+    "answer": true,
+    "explanation": "Elements of a from list are ORed: the podSelector element admits matching Pods in the policy's namespace, and the namespaceSelector element admits all Pods in matching namespaces. In one element they combine as AND.",
+    "reason": "Both lenses keep. The Network Policies page says two elements in from allow connections from local Pods with role=client 'or from any Pod in any namespace with the label user=alice'."
+   },
+   {
+    "id": "kubernetes-ckad-s5.1-08",
+    "decision": "keep",
+    "statement": "The Kubernetes documentation recommends NetworkPolicy ipBlock for allowing traffic from specific in-cluster Pod IPs.",
+    "answer": false,
+    "explanation": "ipBlock CIDRs should be cluster-external IPs, because Pod IPs are ephemeral and unpredictable. Select in-cluster Pods with podSelector and namespaceSelector instead.",
+    "reason": "Both lenses keep. On the ipBlock field the Network Policies page says 'These should be cluster-external IPs, since Pod IPs are ephemeral and unpredictable.'"
+   },
+   {
+    "id": "kubernetes-ckad-s5.2-04",
+    "decision": "keep",
+    "statement": "You link a manual EndpointSlice to a selectorless Service by giving the slice an owner reference to that Service.",
+    "answer": false,
+    "explanation": "You link an EndpointSlice to a Service by setting the kubernetes.io/service-name label on the slice. An owner reference records ownership and does not choose the Service.",
+    "reason": "Both lenses keep. The Service page, Custom EndpointSlices section: 'You link an EndpointSlice to a Service by setting the kubernetes.io/service-name label on that EndpointSlice.'"
+   },
+   {
+    "id": "kubernetes-ckad-s5.3-03",
+    "decision": "keep",
+    "statement": "For Ingress TLS to work, each host in the tls section has to match a host in the rules section.",
+    "answer": true,
+    "explanation": "TLS does not work on the default rule, which names no host, since its certificate would have to cover every possible subdomain. So hosts in the tls section need to explicitly match rule hosts.",
+    "reason": "Both lenses keep. The Ingress TLS section says TLS will not work on the default rule, so 'hosts in the tls section need to explicitly match the host in the rules section.'"
+   },
+   {
+    "id": "kubernetes-ckad-s5.3-05",
+    "decision": "keep",
+    "statement": "An Ingress controller ignores letter case when it compares a request path with an Exact path such as `/docs`.",
+    "answer": false,
+    "explanation": "Exact path matching is case-sensitive, so a rule with the Exact path /docs does not match a request for /Docs.",
+    "reason": "Both lenses keep. The ingress-v1 API reference says Exact 'matches the URL path exactly and with case sensitivity.'"
+   }
+  ]
+ }
+}

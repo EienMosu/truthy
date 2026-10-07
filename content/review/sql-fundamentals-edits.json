@@ -1,0 +1,240 @@
+{
+ "drop": {
+  "sql-fundamentals-sr1-09": "weak_card: near-definition of DISTINCT ON with a hedge ('can keep') that makes it true under any reading; r1 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr1-11": "weak_card: restates the queries-limit.html sentence with a few words changed and leans toward a give-away; r1 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr2-07": "out_of_scope: GREATEST is outside the r2 topic list; also removes the null-skipping-functions conflict with sr2-08. r2 stays at 10 cards (6T/4F).",
+  "sql-fundamentals-sr2-10": "weak_card: name giveaway, since NULLIF(4, 4) returning null can be read from the name 'null if'; r2 stays at 10 cards (6T/4F).",
+  "sql-fundamentals-sr3-03": "duplicate (verifier and scan): the mirror of sr3-02, since RIGHT JOIN is LEFT JOIN with the inputs swapped; also close to a strawman. r3 stays at 11 cards (6T/5F).",
+  "sql-fundamentals-sr4-01": "weak_card: truism, because 'GROUP BY city returns one row per city' follows from the clause name; the cited tutorial page covers only the aggregate case. r4 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr4-11": "weak_card: name giveaway (FILTER restricts rows) that nearly copies the sql-select sentence, and it never tests the per-aggregate scope; r4 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr5-03": "weak_card: the sql-expressions sentence ('act as constants during any one evaluation') with words swapped, and close to a truism; r5 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr5-07": "weak_card plus scan duplicate of sr5-04: NOT EXISTS over an empty result is the negation of the EXISTS rule and readable from the words; r5 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr6-02": "weak_card: definition and name giveaway, since INTERSECT keeping rows in both results is what the word means; r6 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr6-11": "weak_card: uses vague terms the docs do not use ('cyclic branch', 'independent branches eligible for expansion'), never names WITH RECURSIVE, and the keyword CYCLE hints the answer; r6 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr7-02": "weak_card: name giveaway (PARTITION BY dept means per department), and its avg ... OVER example overlaps sr7-10; r7 stays at 10 cards (5T/5F).",
+  "sql-fundamentals-sr7-05": "weak_card: strawman, since nobody who studied lag believes it reads the first row of the frame and the name hints at the answer; r7 stays at 10 cards (5T/5F).",
+  "sql-fundamentals-sr8-05": "weak_card: name giveaway, since BY DEFAULT accepting a user value follows from the word DEFAULT; r8 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr8-11": "weak_card: name giveaway, since ON DELETE CASCADE deleting referencing rows is what CASCADE says; r8 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr9-06": "weak_card: the indexes-multicolumn sentence with 7700 changed to 7, and the term 'skip scan' hints the answer; r9 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr9-08": "weak_card: restates the doc's lower(col1) example with the same expression on both sides, so it is true by common sense; r9 stays at 10 cards (4T/6F).",
+  "sql-fundamentals-sr10-01": "weak_card: definition card, since ROLLBACK cancelling the transaction's writes follows from the word rollback; r10 stays at 10 cards (5T/5F).",
+  "sql-fundamentals-sr10-08": "weak_card: close to a strawman, since 'ROLLBACK TO SAVEPOINT s' already says the state returns to s; r10 stays at 10 cards (5T/5F).",
+  "sql-fundamentals-sr12-01": "weak_card: truism, since an empty source query inserting zero rows is common sense; r12 stays at 9 cards (4T/5F).",
+  "sql-fundamentals-sr12-02": "weak_card: strawman, since the statement names the declared DEFAULT 7 and so gives away that SET col = DEFAULT does not assign null; r12 stays at 9 cards (4T/5F).",
+  "sql-fundamentals-sr12-10": "weak_card: near-tautology, since an unconditional upsert that succeeds has by definition inserted or updated; the concurrency guarantee appears only in the explanation. r12 stays at 9 cards (4T/5F).",
+  "sql-fundamentals-sr13-10": "weak_card: name giveaway, since VIRTUAL versus 'computed for storage' is answered by the meaning of the word; r13 stays at 11 cards (6T/5F)."
+ },
+ "source": {
+  "sql-fundamentals-sr4-04": {
+   "title": "7.2. Table Expressions",
+   "url": "https://www.postgresql.org/docs/18/queries-table-expressions.html"
+  }
+ },
+ "rewrite": {
+  "sql-fundamentals-sr6-03": {
+   "reason": "ambiguous: the original 'removes a matching value completely' is true whenever the right input has at least as many copies as the left. Fixing the copy counts makes the answer unambiguous. (final: keep)",
+   "statement": "With EXCEPT ALL, a row with 3 copies on the left and 1 on the right is absent from the result.",
+   "answer": false,
+   "explanation": "EXCEPT ALL keeps max(m-n,0) copies of a row, so 3 copies on the left and 1 on the right leave 2 copies in the result.",
+   "misconception": "EXCEPT ALL removes a row completely as soon as the right input contains it.",
+   "source": {
+    "title": "SELECT",
+    "url": "https://www.postgresql.org/docs/18/sql-select.html"
+   }
+  },
+  "sql-fundamentals-sr10-04": {
+   "reason": "ambiguous: 'each statement outside a transaction block' could be read as covering a multi-statement query string, which runs as one implicit transaction. Restricted to a single statement sent alone. (final: keep)",
+   "statement": "In PostgreSQL, a single statement sent outside BEGIN runs in its own implicit transaction.",
+   "answer": true,
+   "explanation": "Outside BEGIN, PostgreSQL runs in autocommit mode: such a statement gets an implicit BEGIN and, if it succeeds, a COMMIT, otherwise a rollback.",
+   "misconception": "",
+   "source": {
+    "title": "BEGIN",
+    "url": "https://www.postgresql.org/docs/18/sql-begin.html"
+   }
+  },
+  "sql-fundamentals-sr10-10": {
+   "reason": "explanation_error: 'rejects further data writes' implied that reads still work in an aborted transaction. Statement and answer unchanged; the explanation now follows tutorial-transactions.html. (final: keep)",
+   "statement": "In PostgreSQL, a valid `UPDATE` can resume an aborted transaction after a statement error.",
+   "answer": false,
+   "explanation": "An error puts the transaction block in an aborted state; ROLLBACK TO an earlier savepoint, or rolling back the whole transaction, is the only way to regain control.",
+   "misconception": "A valid data-modifying statement clears an error's aborted transaction state.",
+   "source": {
+    "title": "3.4. Transactions",
+    "url": "https://www.postgresql.org/docs/18/tutorial-transactions.html"
+   }
+  },
+  "sql-fundamentals-sr1-04": {
+   "reason": "tell: 'alone/solely' appeared only in false cards (4 of 4). Same fact (an output alias cannot be used inside an ORDER BY expression), same answer, without 'solely'. The query is analogous to the doc's 'ORDER BY sum + c -- wrong' example. (final: fixed)",
+   "statement": "In PostgreSQL, for t(a, b), `SELECT a + b AS total FROM t ORDER BY total * 2` is a valid query.",
+   "answer": false,
+   "explanation": "In ORDER BY, an output column name must stand alone; inside an expression such as total * 2 it is read as an input column of t, which has no total, so the query errors.",
+   "misconception": "ORDER BY expressions can use SELECT-list aliases.",
+   "source": {
+    "title": "7.5. Sorting Rows (ORDER BY)",
+    "url": "https://www.postgresql.org/docs/18/queries-order.html"
+   }
+  },
+  "sql-fundamentals-sr8-08": {
+   "reason": "tell: removes 'alone' (4 of 4 occurrences were false cards). Same fact (a non-unique index does not qualify columns as a foreign key target), same answer. (final: keep)",
+   "statement": "In PostgreSQL, a non-unique index on a column is enough to let a foreign key reference that column.",
+   "answer": false,
+   "explanation": "A foreign key target needs a primary key, a unique constraint, or a non-partial unique index.",
+   "misconception": "Any index qualifies its columns as a referenced foreign key target.",
+   "source": {
+    "title": "CREATE TABLE",
+    "url": "https://www.postgresql.org/docs/18/sql-createtable.html"
+   }
+  },
+  "sql-fundamentals-sr9-09": {
+   "reason": "tell: removes 'alone' (4 of 4 occurrences were false cards). Same fact (visibility information is not in index entries), same answer. (final: fixed)",
+   "statement": "In PostgreSQL, index entries store the visibility information that an index-only scan checks.",
+   "answer": false,
+   "explanation": "Visibility data lives in heap entries, not index entries; an index-only scan checks the visibility map and visits the table row when the page is not all-visible.",
+   "misconception": "Index entries contain row visibility data.",
+   "source": {
+    "title": "11.9. Index-Only Scans and Covering Indexes",
+    "url": "https://www.postgresql.org/docs/18/indexes-index-only-scans.html"
+   }
+  },
+  "sql-fundamentals-sr2-02": {
+   "reason": "tell: in r2, 'evaluates to true' was always false and 'evaluates to false' always true. Same fact (two nulls compare as equal under the null-safe operator), same answer (true), now stated through the doc's own IS NOT DISTINCT FROM row (NULL IS NOT DISTINCT FROM NULL -> t). Shortened to keep r2 true and false lengths within 5 characters. (final: keep)",
+   "statement": "`NULL IS NOT DISTINCT FROM NULL` evaluates to true.",
+   "answer": true,
+   "explanation": "IS NOT DISTINCT FROM treats null as a comparable value, so two nulls count as equal and the result is true rather than null.",
+   "misconception": "",
+   "source": {
+    "title": "9.2. Comparison Functions and Operators",
+    "url": "https://www.postgresql.org/docs/18/functions-comparison.html"
+   }
+  },
+  "sql-fundamentals-sr5-09": {
+   "reason": "tell: 'zero' marked true cards (8 true, 1 false). Same fact (ALL over an empty subquery is true), same answer, without 'zero'. (final: keep)",
+   "statement": "A comparison such as `x > ALL (subquery)` returns true when the subquery result is empty.",
+   "answer": true,
+   "explanation": "ALL is true when every subquery row yields true, which includes the case of a subquery that returns no rows.",
+   "misconception": "",
+   "source": {
+    "title": "9.24. Subquery Expressions",
+    "url": "https://www.postgresql.org/docs/18/functions-subquery.html"
+   }
+  }
+ },
+ "conflictGroups": {
+  "outer-join-preserved-side": [
+   "sql-fundamentals-sr3-02",
+   "sql-fundamentals-sr3-04"
+  ],
+  "and-or-null-dominance": [
+   "sql-fundamentals-sr2-04",
+   "sql-fundamentals-sr2-05",
+   "sql-fundamentals-sr2-06"
+  ],
+  "null-equality-vs-distinct-from": [
+   "sql-fundamentals-sr2-01",
+   "sql-fundamentals-sr2-02"
+  ],
+  "null-condition-drops-row": [
+   "sql-fundamentals-sr2-03",
+   "sql-fundamentals-sr3-12"
+  ],
+  "null-skipping-aggregates": [
+   "sql-fundamentals-sr2-11",
+   "sql-fundamentals-sr4-09"
+  ],
+  "empty-input-aggregate-row": [
+   "sql-fundamentals-sr4-04",
+   "sql-fundamentals-sr4-05",
+   "sql-fundamentals-sr4-08"
+  ],
+  "where-before-aggregation": [
+   "sql-fundamentals-sr4-02",
+   "sql-fundamentals-sr4-03"
+  ],
+  "window-processing-position": [
+   "sql-fundamentals-sr7-11",
+   "sql-fundamentals-sr7-12"
+  ],
+  "where-forbidden-reference-template": [
+   "sql-fundamentals-sr1-03",
+   "sql-fundamentals-sr4-03",
+   "sql-fundamentals-sr7-12"
+  ],
+  "result-order-without-order-by": [
+   "sql-fundamentals-sr1-02",
+   "sql-fundamentals-sr1-10",
+   "sql-fundamentals-sr6-10",
+   "sql-fundamentals-sr7-01"
+  ],
+  "limit-ties": [
+   "sql-fundamentals-sr1-05",
+   "sql-fundamentals-sr1-10"
+  ],
+  "scalar-subquery-cardinality": [
+   "sql-fundamentals-sr5-01",
+   "sql-fundamentals-sr5-02"
+  ],
+  "join-vs-semijoin-multiplicity": [
+   "sql-fundamentals-sr3-01",
+   "sql-fundamentals-sr5-06"
+  ],
+  "not-in-semantics": [
+   "sql-fundamentals-sr2-12",
+   "sql-fundamentals-sr5-10"
+  ],
+  "union-dedup": [
+   "sql-fundamentals-sr6-01",
+   "sql-fundamentals-sr6-09"
+  ],
+  "set-operation-all-multiplicity": [
+   "sql-fundamentals-sr6-01",
+   "sql-fundamentals-sr6-03"
+  ],
+  "recursive-cte-termination": [
+   "sql-fundamentals-sr6-08",
+   "sql-fundamentals-sr6-09"
+  ],
+  "cte-materialization-default": [
+   "sql-fundamentals-sr6-06",
+   "sql-fundamentals-sr6-07"
+  ],
+  "default-window-frame": [
+   "sql-fundamentals-sr7-06",
+   "sql-fundamentals-sr7-08"
+  ],
+  "unique-null-handling": [
+   "sql-fundamentals-sr8-02",
+   "sql-fundamentals-sr8-03"
+  ],
+  "uncommitted-visibility": [
+   "sql-fundamentals-sr10-02",
+   "sql-fundamentals-sr11-01"
+  ],
+  "commit-durability-wal": [
+   "sql-fundamentals-sr10-03",
+   "sql-fundamentals-sr10-07"
+  ],
+  "savepoint-rollback": [
+   "sql-fundamentals-sr10-09",
+   "sql-fundamentals-sr10-10"
+  ],
+  "transaction-snapshot-timing": [
+   "sql-fundamentals-sr11-02",
+   "sql-fundamentals-sr11-03",
+   "sql-fundamentals-sr11-04"
+  ],
+  "serialization-error-retry": [
+   "sql-fundamentals-sr11-05",
+   "sql-fundamentals-sr11-08"
+  ],
+  "matview-refresh-blocking": [
+   "sql-fundamentals-sr13-08",
+   "sql-fundamentals-sr13-09"
+  ],
+  "bare-type-declaration-template": [
+   "sql-fundamentals-sr14-01",
+   "sql-fundamentals-sr14-06",
+   "sql-fundamentals-sr14-10"
+  ]
+ }
+}

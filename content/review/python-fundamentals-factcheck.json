@@ -1,0 +1,1063 @@
+{
+ "deck": "python-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr1-11",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/library/copy.html (3.14.8 docs, official, current)",
+     "evidence": "The answer is right. copy.html says: \"A shallow copy constructs a new compound object and then (to the extent possible) inserts references into it to the objects found in the original.\" The same page also says: \"Shallow copies of many collections can be made using the corresponding copy() method ... and of sequences (such as lists or bytearrays) by making a slice of the entire sequence (sequence[:]).\" So this card tests the same fact as python-fundamentals-sr4-04 (factKey list-slice-shallow-copy, \"`items[:]` shares element references with the original list\", True). Anyone who knows one answer knows the other. The prompt also puts \"slicing copies in r4\". The r1 bullet \"copy.copy versus copy.deepcopy\" can be tested from the deepcopy side.",
+     "problem": "This card rests on the same fact as sr4-04: a shallow copy shares references to the elements. Only the spelling of the copy differs (copy.copy() versus [:]). The deepcopy half of the r1 copy topic has no card at all.",
+     "suggestedFix": "Replace it with a true card. Statement: \"For a list of lists a, `copy.deepcopy(a)[0] is a[0]` evaluates to False.\" Explanation: \"copy.deepcopy() copies recursively: it builds a new outer list and puts a new copy of each nested list in it, so changing a nested list in the copy leaves the original unchanged.\" New factKey: deep-copy-nested-identity. URL: https://docs.python.org/3.14/library/copy.html (\"A deep copy constructs a new compound object and then, recursively, inserts copies into it of the objects found in the original.\"). Answer: True, so the section keeps 6 true and 6 false."
+    },
+    {
+     "id": "python-fundamentals-sr1-10",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/faq/programming.html#why-did-changing-list-y-also-change-list-x",
+     "evidence": "The FAQ says: \"Some operations (for example y.append(10) and y.sort()) mutate the object, whereas superficially similar operations (for example y = y + [10] and sorted(y)) create a new object.\" The answer (False) and the explanation are right.",
+     "problem": "This is a strawman at the depth the prompt sets (a developer who writes Python every day). Almost nobody who has studied believes that `a + b` changes a. The real trap in the r1 topic \"+= mutating in place versus + building a new one\" is aliasing: rebinding with x = x + [...] leaves another name on the old list. The card does not test that.",
+     "suggestedFix": "Replace it with a false card. Statement: \"After `y = x` for a list x, `x = x + [1]` also makes the new item visible through y.\" Explanation: \"x + [1] builds a new list and the assignment rebinds only x. y still refers to the original list, which keeps its old items.\" Keep the same FAQ URL (#why-did-changing-list-y-also-change-list-x). Answer: False, so the balance is unchanged."
+    },
+    {
+     "id": "python-fundamentals-sr1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/builtins/functions.html#id",
+     "evidence": "functions.html (id) says: \"Two objects with non-overlapping lifetimes may have the same id() value.\" The card says: \"Objects with non-overlapping lifetimes may share the same id() value.\" The answer (True) and the source are right.",
+     "problem": "The statement repeats the official sentence with one or two words changed, which the rule \"do not reproduce a sentence of the official page with a word or two changed\" forbids. A player who has seen the docs recognises the sentence instead of reasoning about object lifetimes.",
+     "suggestedFix": "Reword it and keep it true. Statement: \"Once an object is gone, Python may give its id() integer to an object created afterwards.\" Explanation: \"id() is unique and constant only while an object lives. After that object's lifetime ends, a newly created object can report the same id() value.\" Keep the same URL. Answer: True."
+    },
+    {
+     "id": "python-fundamentals-sr1-08",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/glossary.html (loads, official), but it does not support the TypeError half of the card",
+     "evidence": "The glossary entry \"hashable\" says only that immutable containers \"such as tuples and frozensets ... are only hashable if their elements are hashable\". It never says that hashing one raises TypeError. Built-in Types does: \"Attempting to hash an immutable sequence that contains unhashable values will result in TypeError.\" (https://docs.python.org/3.14/builtins/stdtypes.html#immutable-sequence-types). The answer (True) is correct: hash(([],)) raises TypeError: unhashable type: 'list'.",
+     "problem": "The cited URL does not support the whole card. The exception type, which is what the statement claims, is missing from the glossary.",
+     "suggestedFix": "Keep the card. Change the source to the Built-in Types page, https://docs.python.org/3.14/builtins/stdtypes.html#immutable-sequence-types, which states both the hashability rule and the TypeError."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (b1, sr1-01 to sr1-12). The section balance is right: 6 true (01, 02, 04, 08, 11, 12) and 6 false (03, 05, 06, 07, 09, 10). The average lengths of true and false statements are both about 63 characters. The suggested fixes keep that balance.\n\nAll cited URLs return 200 on the 3.14.8 docs and on peps.python.org/pep-0008. Each passing card is settled by an official sentence:\n- 03: expressions.html#identity-comparisons, \"x is y is true if and only if x and y are the same object\".\n- 04: PEP 8, \"Comparisons to singletons like None should always be done with is or is not, never the equality operators\".\n- 05: datamodel.html, \"after a = 1; b = 1, a and b may or may not refer to the same object ... depending on the implementation\". The statement says \"the language guarantees\", so CPython's small-int caching cannot make it True.\n- 06: copy.html, \"Assignment statements in Python do not copy objects, they create bindings\".\n- 07: faq/programming.html, \"arguments are passed by assignment ... assignment just creates references to objects\".\n- 09: FAQ a_tuple[i] += item, \"The __iadd__() succeeds, and thus the list is extended ... that final assignment still results in an error\".\n- 12: FAQ multidimensional list, \"replicating a list with * doesn't create copies, it only creates references to the existing objects\".\n\nBorderline cards I let pass:\n- 01 (module object as a function argument, True) is easy, and its source supports it only indirectly. Data model says \"All data in a Python program is represented by objects\" and describes module objects, but no page says in one sentence that a module can be passed as an argument. It is in scope (\"everything is an object, including ... modules\"). A tighter citation would be the datamodel.html#modules anchor.\n- 06 uses the hedge \"can\" in a false statement. That is allowed for balance, and no reading makes it true.\n- 07 and 06 are close (assignment versus argument passing). They are kept as two facts because the prompt lists both, and a learner can hold the misconception that calls copy arguments while knowing that y = x aliases.\n\nNo r1 card depends on Python 3.15 changes, on interactive-interpreter-only behaviour, or on version numbers. Work files: a scratch folder"
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [],
+   "notes": "All 12 r2 cards (python-fundamentals-sr2-01 to -12, in raw/python-fundamentals-b1.json) pass. The section balances 6 true (02, 04, 05, 06, 08, 09) against 6 false (01, 03, 07, 10, 11, 12). Average statement length is 45.7 characters for true and 50.3 for false, inside the 5-character limit. Every explanation is 122 characters or less. On 2026-10-08 every cited URL returned 200 at its version-pinned docs.python.org/3.14 path; the builtins/ paths are live and the old library/stdtypes.html redirects to builtins/stdtypes.html. I ran 01, 03, 11 and 12 locally: round(2.675, 2) gives 2.67, 'ready' and 7 gives 7, and -7 // 3 gives -3.\n\nEvidence, card by card:\n- 01: builtins/stdtypes.html says \"an object is considered true unless its class defines either a __bool__() method that returns False or a __len__() method that returns zero\". Its list of false values includes only the empty string ''.\n- 02: reference/datamodel.html, under __bool__: \"When this method is not defined, __len__() is called, if it is defined, and the object is considered true if its result is nonzero.\"\n- 03: reference/expressions.html: \"neither and nor or restrict the value and type they return to False and True, but rather return the last evaluated argument.\"\n- 04: reference/expressions.html: \"x < y <= z is equivalent to x < y and y <= z, except that y is evaluated only once.\"\n- 05: reference/expressions.html: \"The default behavior for equality comparison (== and !=) is based on the identity of the objects.\"\n- 06: reference/datamodel.html: \"if two numbers compare equal (e.g., 1 and 1.0) then they can be used interchangeably to index the same dictionary entry\". The same page also says \"objects which compare equal have the same hash value\".\n- 07: reference/expressions.html: \"A default order comparison (<, >, <=, and >=) is not provided; an attempt raises TypeError.\"\n- 08: reference/expressions.html: for a list, x in y \"is equivalent to any(x is e or x == e for e in y)\".\n- 09: builtins/functions.html: \"bool class is a subclass of int\".\n- 10: tutorial/introduction.html: \"Division (/) always returns a float.\"\n- 11: faq/programming.html, \"Why does -22 // 10 return -3?\": \"integer division has to return the floor\".\n- 12: builtins/functions.html: \"round(2.675, 2) gives 2.67 instead of the expected 2.68\", because most decimal fractions cannot be represented exactly as a float.\n\nI also tried to refute each answer:\n- No version difference affects any of the 12 between 3.11 and 3.14, and none of the listed 3.15 changes touches them.\n- 03 says \"evaluates to True\" with a capital T, so it means the True object, and 7 == True is also False. No reading makes it true.\n- In 05, both operands are alive during the comparison, so id reuse cannot make them equal.\n\nDeck overlap: none found. sr1-03 tests what `is` does, while sr2-05 tests what the default == does, so they are separate facts. sr11-01 (len looks __len__ up on the type) and sr11-04 (bool(NotImplemented) raises TypeError) rest on different facts from sr2-02.\n\nTwo optional improvements, neither a defect:\n1. The section covers none of the prompt's r2 items on int() truncation and int('3.5'), ** precedence (-1 ** 2), % taking the divisor's sign, conditional expressions, or :=. This is a coverage choice made in the plan.\n2. Card 11 could cite reference/expressions.html instead of the FAQ. That page states the floor rule directly (\"the result is that of mathematical division with the 'floor' function applied\"), while the FAQ gives it only as part of a rationale."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr3-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, https://docs.python.org/3.14/reference/datamodel.html loads (3.14.8 docs) and supports the claim",
+     "evidence": "Datamodel: \"Python doesn't have a dedicated character type. Instead, every code point in the string is represented as a string object with length 1.\" The card is correct (verified on 3.14.7: 'cat'[0] is 'c', type str). But https://docs.python.org/3.14/builtins/stdtypes.html gives both indexing facts as one contrast: \"for a bytes object b, b[0] will be an integer, while b[0:1] will be a bytes object of length 1. (This contrasts with text strings, where both indexing and slicing will produce a string of length 1)\". Card sr3-02 (bytes-index-result) tests the other side of that same distinction, with the same topic \"Sequence indexing\". On its own the str side is close to a strawman: no daily Python developer would answer False.",
+     "problem": "Duplicates sr3-02. The prompt says the two sides of one distinction are one fact, and the docs state str indexing and bytes indexing as one contrast. As a stand-alone card it is near-truism. It also uses a slot that could cover a section topic with no card yet (escape sequences, bytearray, removeprefix, the tr prefix).",
+     "suggestedFix": "Replace (answer True, keeps the 6/6 balance). Statement: \"Since Python 3.12, the compiler emits a SyntaxWarning for an unrecognized escape sequence such as `'\\q'`.\" Explanation: \"Python keeps the backslash of an unrecognized escape in the string. Since 3.12 this triggers a SyntaxWarning instead of a DeprecationWarning, not a SyntaxError.\" appliesTo \"Python 3.12 and later\". URL https://docs.python.org/3.14/reference/lexical_analysis.html#unrecognized-escape-sequences (\"Changed in version 3.12: Unrecognized escape sequences produce a SyntaxWarning.\")"
+    },
+    {
+     "id": "python-fundamentals-sr3-10",
+     "verdict": "source_problem",
+     "urlStatus": "200, https://docs.python.org/3.14/reference/lexical_analysis.html loads but does not state the card's fact",
+     "evidence": "The lexical analysis t-strings section (2.5.8) only says: \"A template string literal or t-string is a string literal that is prefixed with 't' or 'T'. These strings follow the same syntax rules as formatted string literals. For differences in evaluation rules, see the Standard Library section on t-strings\". That page never names string.templatelib.Template as the result. https://docs.python.org/3.14/builtins/stdtypes.html#template-string-literals-t-strings does: \"Rather than evaluating to a str object, template string literals evaluate to a string.templatelib.Template object.\" The answer (False) is correct: on 3.14.7, type(t'hi') is <class 'string.templatelib.Template'>.",
+     "problem": "The cited page does not support the explanation's right fact (a t-string produces a string.templatelib.Template). It defers to the Built-in Types page.",
+     "suggestedFix": "Change source URL to https://docs.python.org/3.14/builtins/stdtypes.html#template-string-literals-t-strings (title \"Built-in Types: Template String Literals (t-strings)\"). Statement and explanation can stay."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (b1, sr3-01 to sr3-12) against the 3.14.8 docs fetched on 2026-10-08. I also ran each code claim on CPython 3.14.7:\n- 'cat'[0] gives 'c' (a str).\n- b'cat'[0] gives 99.\n- b'cat' == 'cat' is False.\n- 'café'.encode() gives b'caf\\xc3\\xa9'.\n- ' a  b '.split() gives ['a', 'b'].\n- f'{value=}' uses repr(), and with :.2f the format is applied instead.\n- t'{value:.2f}' keeps the exact value object (identity preserved), with format_spec '.2f'.\n- t'hello' + ' world' raises TypeError: \"can only concatenate string.templatelib.Template (not \\\"str\\\") to string.templatelib.Template\".\n\nBalance: 6 true and 6 false; average statement length is 64.3 for true and 66.5 for false. All statements are 120 characters or less and all explanations 240 or less. 3.15 What's New makes no change that touches these cards.\n\nUnflagged cards, minor observations:\n- sr3-02 cites the datamodel page (\"The items are 8-bit bytes, represented by integers\"). That is enough, but builtins/stdtypes.html is more explicit: \"b[0] will be an integer\".\n- sr3-05 is the negated form of the doc sentence \"The chars argument is not a prefix or suffix\". It is worded differently enough to pass.\n- sr3-12: the doc says only that Template + str \"is not supported\". The TypeError in the explanation is confirmed at run time; PEP 750 is the fallback source.\n- sr3-07: the doc itself warns that \"f-strings do not have a constant value\", which shows the misconception is realistic.\n\nSection coverage gaps the replacement for sr3-01 could fill: escape sequences, bytearray, bytes literals limited to ASCII, removeprefix/removesuffix, join, !a, nested format specifiers, doubled braces, the tr/rt prefix. No cross-section duplicates: r2-07 tests ordering between str and int, not equality, and r14-05 tests sequence patterns on str. Read-only work: no files edited, no git. Downloaded pages are in a scratch folder"
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr4-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/reference/expressions.html (official, 3.14-pinned)",
+     "evidence": "expressions.html: \"Mappings (instances of dict) compare equal if and only if they have equal (key, value) pairs.\" builtins/stdtypes.html: \"Dictionaries compare equal if and only if they have the same (key, value) pairs (regardless of ordering).\" But https://docs.python.org/3.14/library/collections.html: \"Equality tests between OrderedDict objects are order-sensitive\", and OrderedDict is a dict subclass.",
+     "problem": "The answer (False) is right for plain dicts, but the statement says \"dictionaries\" in general and \"compares\" without naming ==. An expert can point to OrderedDict, a dict subclass whose == against another OrderedDict does use insertion order, and \"compares\" could also be read as covering < and >, which raise TypeError. At 88 characters it is also the longest statement in the section. The cited expressions page never says \"order\"; the stdtypes page states \"regardless of ordering\" directly.",
+     "suggestedFix": "Replacement (answer False): \"`{'a': 1, 'b': 2} == {'b': 2, 'a': 1}` evaluates to False.\" Explanation: \"Two dicts compare equal when they hold the same key-value pairs. Insertion order plays no part, so these two dicts are equal.\" Source: https://docs.python.org/3.14/builtins/stdtypes.html (Mapping types, the sentence with \"regardless of ordering\")."
+    },
+    {
+     "id": "python-fundamentals-sr4-09",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/builtins/stdtypes.html (official, 3.14-pinned)",
+     "evidence": "stdtypes.html, d | other: \"Create a new dictionary with the merged keys and values of d and other, which must both be dictionaries. The values of other take priority when d and other share keys.\"",
+     "problem": "The fact and the answer (False) are correct and the source supports them. The statement's wording is broken: \"gives values from left priority\" is not grammatical, so a player has to guess what it claims. It only says the operands are dicts at the end of the sentence. A garbled sentence is not a clear test of one fact.",
+     "suggestedFix": "Replacement (answer False): \"When two dicts share a key, `a | b` keeps the value from `a`.\" Explanation: \"In a dict merge with |, the values of the right operand take priority for shared keys, so the result holds the value from b.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards (6 true, 6 false), all from python-fundamentals-b1.json, and flagged 2. All cited pages returned HTTP 200 at their version-pinned 3.14 URLs, and builtins/stdtypes.html is served directly. I ran each example under the local python3 and confirmed: range(1,6,2)==range(1,7,2) is True, {1,2}&{2,3} is {2}, starred rest is a list, reassigning a key keeps its position, and {'a':1}|{'a':2} gives {'a':2}.\n\nEvidence for the cards that passed:\n- 01: tutorial/datastructures.html says \\\"a tuple with one item is constructed by following a value with a comma (it is not sufficient to enclose a single value in parentheses)\\\".\n- 02: the same tutorial says sort and similar methods \\\"return the default None\\\".\n- 03: howto/sorting.html says \\\"Sorts are guaranteed to be stable.\\\"\n- 04: library/copy.html says shallow copies of sequences can be made \\\"by making a slice of the entire sequence (sequence[:])\\\", and a shallow copy \\\"inserts references into it to the objects found in the original\\\".\n- 05: reference/simple_stmts.html says \\\"A list of the remaining items in the iterable is then assigned to the starred target\\\".\n- 06: reference/datamodel.html says \\\"Replacing an existing key does not change the order\\\".\n- 08: stdtypes.html says views are \\\"a dynamic view ... when the dictionary changes, the view reflects these changes\\\".\n- 10: the tutorial says \\\"to create an empty set you have to use set(), not {}\\\".\n- 11: stdtypes.html says set & other returns \\\"a new set with elements common to the set and all others\\\".\n- 12: stdtypes.html says \\\"two range objects are considered equal if they represent the same sequence of values\\\".\n\nMinor points I did not flag:\n- 12 is close to the docs' own example (range(0, 3, 2) == range(0, 4, 2)) with the numbers changed. It is acceptable but could be reworded.\n- 08 has a very short explanation (43 characters) that only restates the statement. Something like \\\"The view is a window on the dict, not a snapshot\\\" would help it stick.\n- 04 (slice shallow copy) and sr1-11 (copy.copy shallow) both test shallow-copy semantics. The prompt assigns them to different sections, and knowing one answer does not give the other, so I did not mark them as duplicates.\n- No r4 card overlaps sr14-06 (sequence star pattern) or sr2-06 (1 and 1.0 as the same dict key).\n\nBalance and difficulty:\n- Current average statement length: true 61.2, false 63.7 characters.\n- With both replacements, the false average is about 56.5, still within 5 characters of the true average.\n- Difficulty mix is 5/5/2.\n\nCoverage gaps in the plan, not defects: no card covers frozenset hashability, hashable keys, < and > on dicts raising TypeError, the RuntimeError risk when changing a dict while iterating a view, or sorted() returning a new list."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr5-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, version-pinned 3.14 (https://docs.python.org/3.14/reference/simple_stmts.html#the-del-statement, anchor present)",
+     "evidence": "simple_stmts.html#the-del-statement: \"Deletion of a name removes the binding of that name from the local or global namespace, depending on whether the name occurs in a global statement in the same code block.\" The source supports the answer (False) and the explanation. But the card is a strawman. Nobody who has studied Python believes `del x` brings back an earlier value of x: Python names keep no history, and the docs never suggest one. The misconception given, \"Deleting a binding restores its predecessor\", is not one a learner realistically holds. The trap the section actually means by \"del removing a binding\" is what lookup finds after the binding is gone. executionmodel.html: \"A target occurring in a del statement is also considered bound for this purpose (though the actual semantics are to unbind the name)\" and \"The global namespace is searched first. If the names are not found there, the builtins namespace is searched next.\" Checked locally on CPython 3.14.7: `len = 5; del len; print(len('ab'))` prints 2.",
+     "problem": "Strawman. The statement is false for a reason no studied learner would get wrong, so the card teaches nothing about del beyond its own name.",
+     "suggestedFix": "Replace it with another False card. Statement (88 chars): \"`del len` after a module-level `len = 5` makes a later `len(\\\"ab\\\")` call raise NameError.\" Explanation (151 chars): \"del removes only the module binding; name lookup then falls through to the builtins namespace, so len(\\\"ab\\\") calls the built-in len again and returns 2.\" Misconception: del deletes the name everywhere, including the built-in. Source: https://docs.python.org/3.14/reference/executionmodel.html#naming-and-binding (this page covers both the unbinding semantics of del and the global-then-builtins search). Keeps factKey del-unbinds-name and r5's 6 true / 6 false balance."
+    }
+   ],
+   "notes": "Checked all 12 r5 cards (sr5-01 to sr5-12, all in python-fundamentals-b2.json). I downloaded every source URL with curl. All return HTTP 200, all are version-pinned 3.14 pages (PEP 572 for card 10, Status: Final), and every #anchor exists on its page.\n\nCards that pass, with the sentence that settles each:\n- 01 (True). Tutorial classes#python-scopes-and-namespaces lists the scopes in order: innermost scope searched first, then enclosing functions, then the module's global names as the next-to-last scope, and finally the outermost scope, searched last, holding the built-in names. The wording \"Ordinary function lookup\" is a little awkward (\"name lookup in an ordinary function\" would be clearer), but every reading still gives True. Optional polish only.\n- 02 (False). executionmodel#resolution-of-names: \"If a name binding operation occurs anywhere within a code block, all uses of the name within the block are treated as references to the current block.\"\n- 03 (True). Same page: \"UnboundLocalError is a subclass of NameError.\" No r8 card tests this relation, so it is not a duplicate.\n- 04 (False). Same page: \"the global namespace, i.e. the namespace of the module containing the code block\".\n- 05 (True). Same page: \"SyntaxError is raised at compile time if the given name does not exist in any enclosing function scope.\" Checked locally on CPython 3.14.7: \"SyntaxError: no binding for nonlocal 'x' found\" when x is only a module global.\n- 06 (False). Programming FAQ: \"x is not local to the lambdas, but is defined in the outer scope, and it is accessed when the lambda is called — not when it is defined.\"\n- 07 (False). executionmodel: \"The scope of names defined in a class block is limited to the class block; it does not extend to the code blocks of methods.\"\n- 08 (True). Expressions reference: \"The iterable expression in the leftmost for clause is evaluated directly in the enclosing scope and then passed as an argument to the implicitly nested scope.\" Taken together with the class-scope rule, this settles the card. Checked locally: a class-body list comprehension over a class attribute works.\n- 09 (False). What's New 3.12: \"Comprehension iteration variables remain isolated and don't overwrite a variable of the same name in the outer scope, nor are they visible after the comprehension.\"\n- 10 (True). PEP 572#scope-of-the-target binds the target in the containing scope. The class-scope SyntaxError exception does not apply, because the card is at module level. Checked locally: saved == 1.\n- 12 (True). What's New 3.13: optimized scopes (functions and others) \"explicitly return independent snapshots\". builtins/functions locals(): \"each call to locals() instead returns a fresh dictionary\".\n\nOther checks:\n- No duplicates with other sections. Searched every card in the deck for NameError, nonlocal, global, locals, del, lambda, comprehension, scope and :=. sr6-03 (mutable default) and sr7-08 (nested for order) rest on different facts.\n- The section has no default-argument capture card. That fits the prompt's rule that this fact lives in r5 or r6, not both.\n- Balance is 6 true / 6 false.\n- Version-dependent cards (09, 12) name their version in the statement, and no card is false because of a version number.\n- No card attributes \"LEGB\" to the docs, and nothing in the section is retired or excluded by the 3.15 rules."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr6-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, version-pinned (https://docs.python.org/3.14/library/functools.html#functools.wraps); the page supports the card",
+     "evidence": "functools.update_wrapper (which wraps calls): \"this function automatically adds a __wrapped__ attribute to the wrapper that refers to the function being wrapped.\" The fact is correct. The trouble is the wording: a statement that pairs `functools.wraps(f)` with a `__wrapped__` attribute \"referring to `f`\" can be answered True from the names alone (the prompt's no name giveaway and no wording tells rules). The same page also says WRAPPER_UPDATES \"updates the wrapper function's __dict__, i.e. the instance dictionary\", which is a less guessable fact for this sub-topic.",
+     "problem": "Name giveaway: wraps(f) and an attribute called __wrapped__ that refers to f make the answer True for a player who knows nothing about functools.",
+     "suggestedFix": "Replace with a TRUE card (keeps the 6/6 balance): statement \"Decorating a wrapper with `functools.wraps(f)` merges the entries of `f.__dict__` into the wrapper's `__dict__`.\" (112 chars); explanation \"wraps calls update_wrapper, which copies metadata such as __name__ and __doc__, updates the wrapper's __dict__ from f's, and sets __wrapped__ to f.\" (147 chars). Keep the URL https://docs.python.org/3.14/library/functools.html#functools.update_wrapper"
+    },
+    {
+     "id": "python-fundamentals-sr6-09",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, version-pinned (https://docs.python.org/3.14/tutorial/controlflow.html#unpacking-argument-lists), but it only covers lists and tuples",
+     "evidence": "Tutorial: \"write the function call with the *-operator to unpack the arguments out of a list or tuple\". The statement says \"the iterable's items\", which only the Language Reference states (https://docs.python.org/3.14/reference/expressions.html#calls): \"If the syntax *expression appears in the function call, expression must evaluate to an iterable. Elements from these iterables are treated as if they were additional positional arguments.\" The explanation (\"The star expands values at the call site into individual positional arguments\") only repeats the statement and adds no reason or context.",
+     "problem": "The cited page does not support the card as worded (any iterable, not just a list or tuple), and the explanation restates the statement instead of adding context.",
+     "suggestedFix": "Change the URL to https://docs.python.org/3.14/reference/expressions.html#calls and keep the answer TRUE. Optionally sharpen the statement: \"In `f(*values)`, Python passes each item of any iterable values as a separate positional argument.\" (98 chars). Explanation: \"The expression after * may be any iterable, such as a set or generator, not only a list or tuple; its items become positional arguments at that position.\" (about 150 chars)"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (b2 file): 6 true (02, 05, 07, 09, 11, 12) and 6 false (01, 03, 04, 06, 08, 10). All statements are 120 characters or less and all explanations are 240 or less. The average statement length is 76.8 characters for true cards and 80.5 for false ones, within the 5-character limit. Every cited URL loaded with HTTP 200 under docs.python.org/3.14, and every anchor exists.\n\nVerified and passing:\n- 01: compound_stmts says \"The function definition does not execute the function body; this gets executed only when the function is called.\"\n- 02: Tutorial says \"Falling off the end of a function also returns None.\"\n- 03: FAQ says \"It is often expected that a function call creates new objects for default values. This is not what happens. Default values are created exactly once\".\n- 04: Tutorial says \"These arguments will be wrapped up in a tuple\".\n- 05: compound_stmts says \"a new ordered mapping receiving any excess keyword arguments\". The guarantee that the order matches the call is stated more explicitly in the Tutorial (\"guaranteed to match the order in which they were provided in the function call\"), but the card stands.\n- 06: Tutorial says \"Any formal parameters which occur after the *args parameter are 'keyword-only' arguments\". A call to f(True) puts True in args and raises TypeError for the missing flag.\n- 07: positional-only parameters \"cannot be passed by keyword\".\n- 08: Tutorial says \"No argument may receive a value more than once\", with the example \"TypeError: function() got multiple values for argument 'a'\". The edge case `def f(x, /, **kw)` sends x=2 into kw, so the keyword value still does not \"win\" and the card stays False.\n- 10: the Tutorial says lambdas are \"syntactically restricted to a single expression\", and reference/expressions says lambdas \"cannot contain statements or annotations\".\n- 11: compound_stmts says \"Multiple decorators are applied in nested fashion\" and shows `func = f1(arg)(f2(func))`.\n\nNo version dependence: everything holds in 3.11 to 3.14, and none of the 3.15 exclusions apply. I found no duplicates with other sections:\n- sr1-07 (argument binding without a copy) is a different fact.\n- sr5-06 (late binding) does not mention the default-argument capture, so the r5/r6 one-fact rule holds.\n- sr13-06 (Optional[int] and None defaults) is a different fact.\n\nMinor wording tell, not flagged: the verb \"accepts\" appears only in false r6 statements (06 and 10). sr1-01 uses it in a true statement, so the deck-wide balance is less skewed. A future rebalance could reword one of them, e.g. 06 as \"`f(True)` binds `flag` to True for `def f(*args, flag): ...`\".\n\nCard 02's explanation closely paraphrases the Tutorial sentence. That is acceptable for an explanation but adds little context.\n\nNo files were edited."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [],
+   "notes": "All 12 r7 cards (sr7-01 to sr7-12, all in python-fundamentals-b2.json) were checked against the cited pages. On 2026-10-08 every cited URL returned HTTP 200 on version-pinned 3.14 pages, including the new builtins/ paths. None of the cards is flagged. The section has 6 true and 6 false cards, with average statement lengths of 67.8 (true) and 70.0 (false) characters. Difficulty mix is 5 easy, 5 medium, 2 hard. Every statement is under 120 characters and every explanation under 240.\n\nEvidence per card:\n- **sr7-01** (builtins/stdtypes.html): iterator.__iter__() \"Return the iterator object itself.\"\n- **sr7-02** (builtins/functions.html): \"If default is given, it is returned if the iterator is exhausted.\"\n- **sr7-03** (builtins/functions.html): \"if the value returned is equal to sentinel, StopIteration will be raised, otherwise the value will be returned.\" So the sentinel itself is never yielded.\n- **sr7-04** (reference/expressions.html): \"The execution starts when one of the generator's methods is called.\"\n- **sr7-05** (builtins/exceptions.html): \"the value returned by the function is used as the value parameter to the constructor of the exception.\"\n- **sr7-06** (reference/expressions.html): generator.close() \"Raises a GeneratorExit exception at the point where the generator function was paused.\" The statement correctly says \"paused at yield\".\n- **sr7-07** (builtins/exceptions.html): \"If a generator code directly or indirectly raises StopIteration, it is converted into a RuntimeError.\" This is PEP 479, on by default since 3.7, so no version is needed.\n- **sr7-08** (tutorial/datastructures.html): the Tutorial shows this only by example (\"the order of the for and if statements is the same\"). reference/expressions.html says it outright: \"nesting from left to right\".\n- **sr7-09** (reference/expressions.html): \"The iterable expression in the leftmost for clause is evaluated immediately.\"\n- **sr7-10** (builtins/functions.html): \"By default, zip() stops when the shortest iterable is exhausted.\"\n- **sr7-11** (builtins/functions.html): map \"If strict is True and one of the iterables is exhausted before the others, a ValueError is raised.\" Also \"Changed in version 3.14: Added the strict parameter\". The statement correctly names Python 3.14.\n- **sr7-12** (builtins/functions.html): enumerate \"returns a tuple containing a count (from start which defaults to 0) and the values obtained from iterating over iterable.\"\n\nWhat's New in 3.15 has no change that affects any r7 fact. Its sentinel and comprehension-unpacking items do not touch these cards.\n\nOptional polish, below the flag threshold:\n1. **sr7-11 explanation** mostly repeats the statement. A suggested rewrite that adds context: \"The ValueError comes lazily, when iteration reaches the shorter input's end, not when map() is called; without strict, map stops at the shortest input.\"\n2. **sr7-04 source anchor**: it points to #generator-iterator-methods, but the sentence that settles the card is just above it, under #yield-expressions. That anchor would be more precise.\n3. **sr7-08 source**: reference/expressions.html#displays-for-lists-sets-and-dictionaries states the left-to-right nesting explicitly, which makes it a stronger source than the Tutorial.\n4. **sr7-10 and sr7-11 overlap**: they are separate facts, but a player who sees one gets a hint for the other. Both are planned by the prompt, so I did not flag either as a duplicate.\n\nI found no duplicates with r5 (the comprehension scope cards sr5-08, sr5-09 and sr5-10 test scope, not laziness or clause order) or with r9 (the @contextmanager generator cards)."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr8-07",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/builtins/exceptions.html (official, 3.14-pinned)",
+     "evidence": "builtins/exceptions.html#BaseException.add_note: \"Add the string note to the exception's notes which appear in the standard traceback after the exception string. A TypeError is raised if note is not a string.\" and \"__notes__: A list of the notes of this exception, which were added with add_note(). This attribute is created when add_note() is called.\"",
+     "problem": "The answer is true and correct, but it can be read off the names: add_note adds a note, so it lands in __notes__. A player who does not know the API answers True and gets it right. That breaks the no-name-giveaway and no-wording-tell rules.",
+     "suggestedFix": "Replace (answer stays true): \"Calling `exc.add_note(42)` on an exception raises TypeError.\" Explanation: \"add_note() accepts only a string note and raises TypeError for any other type. Accepted notes are stored in the exception's __notes__ list and printed after the message in the traceback.\" Same URL (#BaseException.add_note). The true-statement average stays within 5 characters of the false one (about 76.7 vs 77.8)."
+    },
+    {
+     "id": "python-fundamentals-sr8-11",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/reference/compound_stmts.html (official, 3.14-pinned)",
+     "evidence": "reference/compound_stmts.html#except-star: \"If the exception raised from the try block is not an exception group and its type matches one of the except* clauses, it is caught and wrapped by an exception group with an empty message string. This ensures that the type of the target e is consistently BaseExceptionGroup\"",
+     "problem": "The fact is right and the source supports it. But the target name `eg` (exception group) in the statement hints at the answer, which breaks the no-wording-tell rule.",
+     "suggestedFix": "Keep answer true. Use a neutral target name: \"`except* ValueError as e` wraps a matching standalone ValueError in an exception group.\" Keep the same explanation and the URL https://docs.python.org/3.14/reference/compound_stmts.html#except-star."
+    },
+    {
+     "id": "python-fundamentals-sr8-01",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/tutorial/errors.html (official, 3.14-pinned)",
+     "evidence": "The tutorial only implies it: \"The use of the else clause is better than adding additional code to the try clause because it avoids accidentally catching an exception that wasn't raised by the code being protected by the try … except statement.\" The reference says it outright, https://docs.python.org/3.14/reference/compound_stmts.html#else-clause: \"Exceptions in the else clause are not handled by the preceding except clauses.\"",
+     "problem": "The answer (false) and the explanation are correct. The cited tutorial page only implies the fact, though. The 3.14 language reference states it in one sentence, and the prompt names the compound statements reference for r8 exception traps.",
+     "suggestedFix": "Change the source URL to https://docs.python.org/3.14/reference/compound_stmts.html#else-clause (title \"Compound statements — Python 3.14\"). Statement, answer and explanation stay unchanged."
+    },
+    {
+     "id": "python-fundamentals-sr8-04",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/tutorial/errors.html (official, 3.14-pinned)",
+     "evidence": "The tutorial says only: \"Exceptions which are not subclasses of Exception ... include SystemExit which is raised by sys.exit() and KeyboardInterrupt\". It does not say \"directly\". https://docs.python.org/3.14/builtins/exceptions.html#KeyboardInterrupt says: \"The exception inherits from BaseException so as to not be accidentally caught by code that catches Exception\", and the class hierarchy on that page lists KeyboardInterrupt directly under BaseException.",
+     "problem": "The answer (false) is correct. But the explanation says KeyboardInterrupt inherits \"directly\" from BaseException, and the cited tutorial page does not support that word. The rule is that the whole card, explanation included, must be checkable on the cited page.",
+     "suggestedFix": "Change the source URL to https://docs.python.org/3.14/builtins/exceptions.html#KeyboardInterrupt (title \"Built-in Exceptions — Python 3.14\"). Statement, answer and explanation stay unchanged."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards against the live 3.14-pinned pages, fetched 2026-10-08: tutorial/errors.html, reference/compound_stmts.html, builtins/exceptions.html and whatsnew/3.14.html. All returned HTTP 200 and the anchors exist. The section is balanced: 6 true and 6 false, with average statement lengths of 78.2 (true) and 77.8 (false) characters.\n\nNo answer is wrong or ambiguous. These 8 cards pass with direct quotes from the cited pages:\n- 02, finally SyntaxWarning: tutorial #defining-clean-up-actions, \"From version 3.14 the compiler emits a SyntaxWarning for it (see PEP 765)\". The reference says the same.\n- 03, except-as target: reference, \"it is cleared at the end of the except clause\".\n- 05, LookupError: \"The base class for the exceptions that are raised when a key or index used on a mapping or sequence is invalid: IndexError, KeyError\".\n- 06, from None: the tutorial's from None idiom, and exceptions.html, \"effectively replaces the old exception with the new one for display purposes\". The card correctly says display, not removal of __context__.\n- 08, ExceptionGroup members: \"The ExceptionGroup constructor ... raises a TypeError if any contained exception is not an Exception subclass\".\n- 09, split nesting: split is \"Like subgroup()\", and for subgroup \"The nesting structure of the current exception is preserved in the result ... Empty nested groups are omitted\".\n- 10, except* with a group type: \"A TypeError is raised if a matching type is a subclass of BaseExceptionGroup\".\n- 12, parentheses with as: What's New 3.14, \"allow brackets to be omitted when there are multiple exception types and the as clause is not used\".\n\nPython 3.15 does not change any of these facts. Each 3.14 change (cards 02 and 12) names the version, and no card is made false through a version number.\n\nOne overlap outside this section, for whoever reviews r5: sr5-03 (\"A handler for `NameError` also catches `UnboundLocalError`\") is an exception-hierarchy card. The prompt puts the exception hierarchy in r8, and it uses the same \"handler for parent catches subclass\" template as sr8-05 (LookupError). They rest on different facts, so I did not flag it as a duplicate."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr9-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.python.org/3.14/library/contextlib.html)",
+     "evidence": "contextlib 3.14: \"This iterator must yield exactly one value, which will be bound to the targets in the with statement's as clause, if any.\" The page says nothing about what a second yield does, so the explanation's claim that \"a second yield makes exit fail\" is unsupported by the cited page. CPython raises RuntimeError(\"generator didn't stop\"), but that is not documented. https://docs.python.org/3.14/library/contextlib.html#contextlib.contextmanager",
+     "problem": "The statement \"signals successful block exit by yielding a cleanup result\" is contrived. No one who has studied this would believe it, so it is a strawman, and it does not cleanly test the planned fact (exactly one yield). Part of the explanation rests on undocumented behaviour.",
+     "suggestedFix": "Replacement (answer False): \"A @contextmanager generator yields twice: once to enter the with block and once to exit it.\" Explanation: \"The generator must yield exactly one value, which is bound to the as target. The code after that single yield runs when the with block exits.\" Same URL with #contextlib.contextmanager."
+    },
+    {
+     "id": "python-fundamentals-sr9-05",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (docs.python.org/3.14/tutorial/inputoutput.html#reading-and-writing-files)",
+     "evidence": "Tutorial 3.14: \"It is good practice to use the with keyword when dealing with file objects. The advantage is that the file is properly closed after its suite finishes, even if an exception is raised at some point.\" https://docs.python.org/3.14/tutorial/inputoutput.html#reading-and-writing-files",
+     "problem": "\"A file opened in a with statement\" can also mean a file opened with a plain open() call inside the with body. That file is not closed when the block ends, so an expert could defend False. The card is also close to common knowledge for an everyday Python developer.",
+     "suggestedFix": "Replacement (answer True): \"A file opened by `with open(path) as f:` is closed when the block is left, even when the block raises.\" Explanation: \"The file object is the context manager here, and its __exit__ closes it whenever the with suite ends, whether normally or through an exception.\" Same URL."
+    },
+    {
+     "id": "python-fundamentals-sr9-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.python.org/3.14/library/contextlib.html)",
+     "evidence": "contextlib 3.14, suppress(): \"Return a context manager that suppresses any of the specified exceptions if they occur in the body of a with statement and then resumes execution with the first statement following the end of the with statement.\" https://docs.python.org/3.14/library/contextlib.html#contextlib.suppress",
+     "problem": "The answer is correct, but the name suppress(ValueError) points to True. The useful fact, that the rest of the with body is skipped rather than resumed, appears only in the explanation. A player who wrongly thinks suppress acts like 'ignore this line and continue' would still answer True.",
+     "suggestedFix": "Replacement (answer True): \"After contextlib.suppress(KeyError) swallows a KeyError, the remaining statements of the with body are skipped.\" Explanation: \"suppress ends the with block at the failing statement. Execution resumes with the first statement after the with statement, not with the next line inside it.\" Same URL with #contextlib.suppress."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards against the 3.14 compound statements reference (8.5, The with statement), the contextlib 3.14 page and the 3.14 Tutorial. Every source URL loads and is version-pinned to 3.14. Answers are balanced 6 True / 6 False (True: 02, 03, 05, 07, 10, 11). Average statement length is 86.2 characters for True and 83.5 for False, within the 5-character rule. No answer is wrong.\n\nCards that passed, with the docs sentence that settles each:\n- 01: \"the return value from __enter__() is assigned to it\".\n- 02: \"if the __enter__() method returns without an error, then __exit__() will always be called\".\n- 03: \"If the return value was true, the exception is suppressed, and execution continues with the statement following the with statement\".\n- 04: the multi-item form is \"semantically equivalent\" to nested with statements, so B exits first.\n- 07: \"it is reraised inside the generator at the point where the yield occurred\".\n- 08: \"Otherwise the generator context manager will indicate to the with statement that the exception has been handled\".\n- 09: \"single use context managers, and will complain about the underlying generator failing to yield if an attempt is made to use them a second time\".\n- 11: \"returns enter_result from __enter__()\".\n- 12: \"invoking callbacks in the reverse order of registration\".\n\nI searched the other sections for __enter__, __exit__, contextlib, ExitStack, suppress and nullcontext and found no duplicates. Cards 07 and 08 (exception re-raised at the yield; caught without re-raising means suppressed) and cards 01 and 11 (as target; nullcontext) are related but rest on separate facts, as the prompt plans. No card touches the excluded 3.15 topics, such as a @contextmanager decorating a generator function, or async with.\n\nMinor points, not flagged:\n- Card 03's explanation (\"reports the exception as handled\") does not say that a true return value is the signal. It is acceptable but vague.\n- Card 07's explanation says \"Python throws\"; strictly, the contextmanager machinery throws the exception into the generator.\n\nAll three flags keep the section balance: the replacement for 06 is False, and the replacements for 05 and 10 are True."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr10-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://docs.python.org/3.14/tutorial/classes.html#class-definition-syntax loads (official, 3.14-pinned)",
+     "evidence": "Tutorial 9.3.1: \"When a class definition is left normally (via the end), a class object is created.\" The page supports the card and the answer is correct, but the claim follows from what a class statement is, and the deck already teaches that everything, classes included, is an object (r1 scope). A player who has never studied Python's class model still answers True.",
+     "problem": "Truism or definition card: 'executing a class statement creates an object representing the class' is true by common sense and teaches nothing. The section's 'type as the default metaclass' fact is not tested by any card.",
+     "suggestedFix": "Replace (answer True): statement \"For `class Widget: pass`, `type(Widget)` evaluates to `type`.\" Explanation: \"By default Python builds classes with type(), so a class object is itself an instance of type; a metaclass= keyword in the class header selects another.\" Source: https://docs.python.org/3.14/reference/datamodel.html#metaclasses (\"By default, classes are constructed using type().\"). Keep the bare `class Widget: pass` form. A wording like \"without an explicit metaclass\" would be arguable, because a base such as ABC passes its own metaclass on."
+    },
+    {
+     "id": "python-fundamentals-sr10-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://docs.python.org/3.14/builtins/functions.html#isinstance loads (official, 3.14-pinned)",
+     "evidence": "Built-in Functions, isinstance: \"If classinfo is a tuple of type objects (or recursively, other such tuples) or a Union Type of multiple types, return True if object is an instance of any of the types.\" The source supports the answer, False.",
+     "problem": "Strawman or give-away: with the example's types, the 'both types' (intersection) reading is absurd, because no object is both a str and an int. Anyone who has written isinstance with a tuple, or who simply reads the example, answers False. The card does not test the section's real trap, which is the union form of classinfo.",
+     "suggestedFix": "Replace (answer False, keeps 6/6): statement \"isinstance() raises TypeError when its classinfo argument is a union such as `int | str`.\" Explanation: \"Since Python 3.10, isinstance() accepts a union type as classinfo and returns True when the object is an instance of any member, as with a tuple of types.\" Same URL (\"Changed in version 3.10: classinfo can be a Union Type.\"). The statement is 89 characters and the explanation 154."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards. Every source URL returned 200 on the 3.14-pinned docs (tutorial/classes.html, reference/datamodel.html, builtins/functions.html, whatsnew/3.13.html), and every anchor exists. Answers are 6 True and 6 False. Passing cards and the sentences that settle them:\n- 02 shared class list: \"just a single list would be shared by all Dog instances\".\n- 03 shadowing: \"If the same attribute name occurs in both an instance and in a class, then attribute lookup prioritizes the instance\".\n- 04: \"the call x.f() is exactly equivalent to MyClass.f(x)\".\n- 05: \"the name self has absolutely no special meaning to Python\".\n- 06: \"If __new__() is invoked during object construction and it returns an instance of cls, then the new instance's __init__() method will be invoked\".\n- 07: \"__spam ... is textually replaced with _classname__spam\".\n- 08: super returns \"a proxy object that delegates method calls to a parent or sibling class of type\".\n- 09: obj is \"the first argument of the immediately enclosing function ... zero-argument super() will not work as expected within nested functions, including generator expressions\". The explanation's note that a no-argument nested function lacks a first argument is accurate.\n- 10: \"If a class method is called for a derived class, the derived class object is passed as the implied first argument.\" The statement is a close rewording of this sentence, but more than a word or two is changed, so I did not flag it.\n- 11: What's New 3.13 builtins says chained classmethod descriptors \"can no longer be used to wrap other descriptors, such as property\". functions.html#classmethod adds \"Deprecated since version 3.11, removed in version 3.13\". The answer is False for any reading in 3.14.\n\nMinor, not flagged:\n- 11: the \"Since Python 3.13, ... can\" phrasing could suggest that 3.13 added the feature. This brushes the \"never make a card false through a version number\" rule. The card is still false today regardless of the version, and the prompt requires naming 3.13. Optional rewording: \"In Python 3.14, stacking @classmethod over @property yields a class-level computed attribute.\" Also optional: the explanation could say \"in 3.13\".\n- No duplicates with other sections. sr2-09 uses isinstance but tests bool as a subclass of int. sr11-07 and sr11-08 cover descriptors and properties, which is separate from the plain-class shadowing in sr10-03.\n- Hedge words are balanced in this section (\"may\" in true 08, \"can\" in false 11)."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr11-02",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://docs.python.org/3.14/reference/datamodel.html loads (official, version-pinned 3.14)",
+     "evidence": "datamodel.html, object.__str__: \"The default implementation defined by the built-in type object calls object.__repr__().\" The same page, under __repr__: \"If a class defines __repr__() but not __str__(), then __repr__() is also used when an 'informal' string representation of instances of that class is required.\" Checked on Python 3.14.7: class R with __repr__ returning 'R!' gives str(R()) == 'R!'.",
+     "problem": "The answer (False) is right in behaviour, but the statement borrows the docs' own notation in a way that turns against it. The docs say literally that object.__str__ \"calls object.__repr__()\", where \"object.__repr__\" is the docs' generic name for the __repr__ slot. A player who read that sentence literally could argue for True. The sentence is also hard to parse (\"inherits object.__str__ ... uses object.__repr__ despite an overridden __repr__\"), so the card tests whether you can decode the wording more than the fact.",
+     "suggestedFix": "Replace (answer stays False): \"If a class defines __repr__ but not __str__, print() shows the default `<... object at 0x...>` text for its instances.\" (118 chars). Explanation: \"When a class defines __repr__() but not __str__(), the inherited object.__str__ uses that __repr__(), so str() and print() show the custom representation.\" (154 chars). Keep the URL https://docs.python.org/3.14/reference/datamodel.html."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards. 11 pass and 1 is flagged (sr11-02, ambiguous).\n\nHow I checked:\n- All three source URLs returned 200 and are version-pinned 3.14 pages: reference/datamodel.html, builtins/constants.html and howto/descriptor.html, plus library/dataclasses.html.\n- I ran each claim on a local CPython 3.14.7 and every stated answer held: len() ignored a __len__ in the instance dict (TypeError); E.__hash__ is None after defining __eq__; bool(NotImplemented) raised TypeError; B.__radd__ ran before A.__add__; assigning to a getter-only property raised \"property 'x' of 'P' object has no setter\"; C().__dict__ raised AttributeError with __slots__; D1(1) == D2(1) is False; a list default raised ValueError; dataclasses.replace ran __post_init__.\n\nQuotes that settle the cards that pass:\n- sr11-01: datamodel 3.3.13, \"implicit invocations of special methods are only guaranteed to work correctly if defined on an object's type, not in the object's instance dictionary\", with the c.__len__ example.\n- sr11-03: datamodel, \"A class that overrides __eq__() and does not define __hash__() will have its __hash__() implicitly set to None.\"\n- sr11-04: constants, \"Changed in version 3.14: Evaluating NotImplemented in a boolean context now raises a TypeError.\"\n- sr11-05: datamodel note, \"If the right operand's type is a subclass of the left operand's type and that subclass provides a different implementation of the reflected method ... this method will be called before the left operand's non-reflected method.\"\n- sr11-06: descriptor HOWTO, \"lastly __getattr__() if it is provided\" and \"invoking __getattr__() whenever __getattribute__() raises an AttributeError.\"\n- sr11-07: descriptor HOWTO, \"Data descriptors always override instance dictionaries.\"\n- sr11-08: the descriptor HOWTO example shows \"AttributeError: property 'dept' of 'Immutable' object has no setter\".\n- sr11-09: descriptor HOWTO, \"When a class defines __slots__, it replaces instance dictionaries with a fixed-length array of slot values.\"\n- sr11-10: dataclasses, \"Both instances in the comparison must be of the identical type.\"\n- sr11-11: dataclasses, \"will raise a ValueError if it detects an unhashable default parameter\".\n- sr11-12: dataclasses, \"The newly returned object is created by calling the __init__() method ... This ensures that __post_init__(), if present, is also called.\"\n\nOther checks:\n- The section is balanced at 6 true and 6 false. Average statement length is 90.7 characters for true cards and 87.7 for false ones, within the 5-character rule. No statement is over 120 characters and no explanation is over 240.\n- No duplicates with other sections. sr11-08 (a getter-only property rejects assignment) is a separate fact from sr10-03 (assignment shadows a plain class attribute). sr2-02, sr1-08, sr10-11 and sr14-08 touch nearby topics but rest on different facts.\n\nMinor points, not flagged:\n- The explanations of sr11-04 and sr11-07 mostly restate their statements instead of adding context. sr11-04 could mention that NotImplemented used to evaluate to True with a DeprecationWarning since 3.9. sr11-07 could say that a non-data descriptor, by contrast, is overridden by the instance dict.\n- The section does not cover several items listed for r11 in the prompt: copy.replace, __set_name__ and __init_subclass__, FrozenInstanceError, kw_only and slots, InitVar and ClassVar, field order, and the dataclass defaults. Twelve cards cannot cover them all, so this is only a breadth note.\n- sr11-06 uses the descriptor HOWTO as its source. The datamodel's __getattr__ entry would be the more canonical page, but the HOWTO does support the card.\n\nPages read are saved in a scratch folder"
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr12-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, 3.14.8 docs; supports the card",
+     "evidence": "https://docs.python.org/3.14/reference/import.html#package-relative-imports: \"Relative imports use leading dots. A single leading dot indicates a relative import, starting with the current package.\" The section's actual import trap is in the same passage: \"Absolute imports may use either the import <> or from <> import <> syntax, but relative imports may only use the second form\". The prompt's r12 rules list \"relative imports work only in the from form\".",
+     "problem": "The card only tests what a single leading dot means. Anyone who has seen `.` used for 'current' can guess the answer from the wording, so it misses the planned fact (relative imports are valid only in the from form) and teaches almost nothing to a working developer.",
+     "suggestedFix": "Replacement (answer True, keeps the section at 6 true / 6 false). Statement: \"Inside a package module, `import .helpers` raises SyntaxError at compile time.\" Explanation: \"Relative imports work only in the from form: the import statement itself accepts absolute names, so `import .helpers` is invalid syntax.\" Same URL (#package-relative-imports)."
+    },
+    {
+     "id": "python-fundamentals-sr12-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, 3.14.8 docs; supports the card",
+     "evidence": "https://docs.python.org/3.14/reference/import.html#namespace-packages: \"With namespace packages, there is no parent/__init__.py file.\" Also #regular-packages: \"A subdirectory inside a regular package that does not contain an __init__.py file is treated as an implicit namespace package\". The glossary defines a namespace package as one that has \"no __init__.py file\".",
+     "problem": "This is a definition card. Having no __init__.py is part of the documented definition of a namespace package, so anyone who knows the term answers False and nobody else learns anything. The more realistic misconception is that a directory needs an __init__.py before Python will import it as a package.",
+     "suggestedFix": "Replacement (answer False, keeps the balance). Statement: \"Python needs an __init__.py file in a directory before it imports that directory as a package.\" Explanation: \"A directory on the import path with no __init__.py becomes a namespace package (PEP 420); only regular packages run an __init__.py when imported.\" Same URL (#namespace-packages)."
+    }
+   ],
+   "notes": "I checked all 12 r12 cards. I fetched every source page from docs.python.org/3.14 and all returned 200; the pages are the 3.14.8 documentation. Answer balance is 6 true (01, 04, 07, 09, 10, 11) and 6 false (02, 03, 05, 06, 08, 12). There are 2 free-threaded cards, under the cap of 3. Cards that passed, with the sentence that settles each:\n- 01 (import.html#the-module-cache): \"The first place checked during import search is sys.modules... if present, the associated value is the module satisfying the import\".\n- 02 (importlib.reload): \"When a module is reloaded, its dictionary (containing the module's global variables) is retained\". The statement says \"Python module's code\", which correctly excludes extension modules. The docs' own edge case, a different object placed in sys.modules, does not make the answer arguable.\n- 03 (#loading): \"If loading fails, the failing module – and only the failing module – gets removed from sys.modules.\"\n- 04 (tutorial/modules): \"with the __name__ set to \\\"__main__\\\"\".\n- 05 (simple_stmts import): \"a reference to that value is stored in the current namespace\". This only implies the rebinding isolation; it is acceptable, though the page does not state it outright.\n- 06: \"the name of the top level package that contains the module is bound in the local namespace\".\n- 07 (#submodules): \"a binding is placed in the parent module's namespace to the submodule object\".\n- 10 (whatsnew 3.14): \"free-threaded Python is officially supported but still optional.\"\n- 11 (free-threading HOWTO): \"The GIL may also automatically be enabled when importing a C-API extension module that is not explicitly marked as supporting free threading. A warning will be printed in this case.\"\n- 12 (concurrent.interpreters): the page title is \"Multiple interpreters in the same process\", and create() is documented as giving \"A single interpreter in the current process.\"\nEvery version-dependent card names 3.14. I found no wrong answers, no 3.15 conflicts and no duplicates with other sections. Card 05 sits next to r1's \"assignment never copies\" fact but is a different, import-specific fact."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr13-03",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/library/annotationlib.html (official, 3.14-pinned)",
+     "evidence": "annotationlib: \"VALUE evaluates the annotations and returns their value ... it may raise errors, for example if the annotations contain references to undefined names.\" and \"VALUE: object.__annotations__ is tried first\". Checked on python3.14 (3.14.7): `def f(x: Undefined)` then `f.__annotations__` raises NameError, and it raises again on every later read. The answer True is correct. The problem is the wording: \"a function's deferred __annotations__\" tells the player that 3.14 defers annotations, which is the whole answer to sr13-02 (\"In Python 3.14, Python defers evaluation of function parameter annotations by default\", True). Also, \"first reading\" suggests later reads behave differently, but a failed evaluation is not cached and every read raises.",
+     "problem": "The statement gives away card sr13-02's answer by calling the annotations \"deferred\". The word \"first\" in \"first reading\" also implies a one-time effect that does not exist, so the card is harder to read and slightly misleading. The answer itself is right.",
+     "suggestedFix": "Keep answer True. Statement (116 chars): \"In Python 3.14, reading `f.__annotations__` raises NameError while an annotation of f names a still-undefined class.\" Explanation (204 chars): \"Annotations are evaluated lazily, on access. Reading __annotations__ evaluates them in the VALUE format, so a name that is still undefined raises NameError; Format.FORWARDREF returns a ForwardRef instead.\" Keep the annotationlib URL."
+    }
+   ],
+   "notes": "I checked all 12 r13 cards in raw/python-fundamentals-b4.json (6 true: 02, 03, 05, 07, 09, 10; 6 false: 01, 04, 06, 08, 11, 12). True statements average 92.2 characters and false ones 88.8, which is within the 5-character limit. Every source URL (library/typing.html, library/annotationlib.html, reference/simple_stmts.html, whatsnew/3.14.html) returned 200, is pinned to 3.14 and is official. I also ran every claim on local python3.14 (3.14.7):\n- 01: an int-annotated function accepts \"s\".\n- 02/03: f.__annotations__ raises NameError for an undefined name.\n- 04: FORWARDREF gives annotationlib.ForwardRef, not str.\n- 05: the future import gives {'x': 'int', 'return': 'list[str]'}.\n- 06: Optional[int] repr is int | None.\n- 07: type(Union[int,str]) and type(int|str) are both typing.Union, and Union is types.UnionType.\n- 08: `type Alias = Missing` succeeds and Alias.__value__ raises NameError.\n- 09: cast returns the same object.\n- 10: TYPE_CHECKING is False.\n- 11: TD(a=1) is a dict.\n- 12: isinstance passes for a class whose member m = 5, against a protocol method m(self, x: int).\n\nQuotes that settle the passing cards:\n- 01: typing, \"The Python runtime does not enforce function and variable type annotations.\"\n- 02: annotationlib, \"Deferred evaluation (default in Python 3.14 and newer; see PEP 649 and PEP 749): Annotations are evaluated lazily, only when they are accessed.\"\n- 04: annotationlib, \"Values are real annotation values (as per Format.VALUE format) for defined values, and ForwardRef proxies for undefined values.\"\n- 05: annotationlib, \"Stringified annotations (used with from __future__ import annotations ...): Annotations are stored as strings only.\"\n- 06: typing, \"Optional[X] is equivalent to X | None ... Note that this is not the same concept as an optional argument, which is one that has a default.\"\n- 07: whatsnew/3.14, \"types.UnionType and typing.Union types are now aliases for each other, meaning that both old-style unions (created with Union[int, str]) and new-style unions (int | str) now create instances of the same runtime type.\"\n- 08: simple_stmts, \"It is not evaluated when the type alias is created, but only when the value is accessed through the type alias's __value__ attribute.\"\n- 09: typing, \"This returns the value unchanged.\"\n- 10: typing, \"A special constant that is assumed to be True by static type checkers. It's False at runtime.\"\n- 11: typing, \"At runtime TypedDict instances are simply dicts.\"\n- 12: typing, \"@runtime_checkable will check only the presence of the required methods or attributes, not their type signatures or types.\"\n\nMinor points I did not flag:\n- 02: the explanation says \"annotation evaluator\", but the official term is \"annotate function\" (__annotate__). Consider swapping it in.\n- 01: \"by default\" hints that Python has an opt-in enforcement mode, which it does not. The answer stays False, but dropping \"by default\" would be cleaner.\n- 11: \"A TypedDict definition's constructor\" is awkward. \"Calling a TypedDict class returns an instance of that class\" reads better and keeps answer False.\n- 12: \"explicitly\" reads oddly, though it does avoid the 3.15 inherited-protocol case.\n\nNo other card in the deck tests these annotation facts; the only related card, sr12-10, is about free threading. None of the r13 cards hits a 3.15-excluded topic or contradicts the prompt's r13 constraints. No card says __future__ annotations is deprecated, and none says typing.List was removed."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "python-fundamentals-sr14-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.python.org/3.14/tutorial/controlflow.html#match-statements (3.14.8 docs, anchor present)",
+     "evidence": "Tutorial: \"Most literals are compared by equality, however the singletons True, False and None are compared by identity.\" Reference (https://docs.python.org/3.14/reference/compound_stmts.html#literal-patterns): \"For the singletons None, True and False, the is operator is used.\" Local check on Python 3.14.7: `match 0: case False:` does not match.",
+     "problem": "The answer is correct and the source supports it, but the statement gives the answer away. Calling the pattern a \"singleton literal pattern\" points straight to identity, because any learner who knows the PEP 8 idiom for singletons (`is None`) can answer True without knowing how pattern matching works. The card fails the no-wording-tells rule.",
+     "suggestedFix": "Replacement (answer True, keeps the section at 6 true / 6 false): statement \"The pattern `case False:` rejects the subject 0 even though `0 == False` evaluates to True.\" Explanation: \"Literal patterns for None, True and False compare with is rather than ==, so case False: matches only the False object, while other literals such as 0 or 'a' compare with ==.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards (all in python-fundamentals-b4.json) against https://docs.python.org/3.14/tutorial/controlflow.html#match-statements, https://docs.python.org/3.14/reference/compound_stmts.html (section 8.6) and https://docs.python.org/3.14/library/dataclasses.html. All three pages load with HTTP 200, serve the 3.14.8 docs, and have every cited anchor. I also ran the key claims on Python 3.14.7:\n- The dataclass __match_args__ is ('b',) when a keyword-only field comes first.\n- `match 0` does not match `case False`.\n- `[first, *middle, last]` matches (1, 2) with middle == [].\n- `[x] | [y]` raises SyntaxError \"alternative patterns bind different names\".\n- A `case _:` that is not last raises SyntaxError \"wildcard makes remaining patterns unreachable\".\n- int(0|1) rejects 0.0.\n\nThe section has 6 true and 6 false cards. The settling quotes:\n- 01: tutorial, \"Only the first pattern that matches gets executed\".\n- 02: tutorial, named constants \"must be dotted names to prevent them from being interpreted as capture variables\".\n- 03: reference, a wildcard pattern \"always succeeds (matches anything) and binds no name\".\n- 05: reference, \"If the subject value is an instance of str, bytes or bytearray the sequence pattern fails\".\n- 06: reference, a variable-length pattern fails only \"If the length of the subject sequence is less than the number of non-star subpatterns\".\n- 07: tutorial, \"Unlike sequence patterns, extra keys are ignored\".\n- 08: dataclasses, \"__match_args__ tuple will be created from the list of non keyword-only parameters to the generated __init__() method\" and \"Keyword-only fields are not included in __match_args__\".\n- 09: reference, \"int(0|1) matches the value 0, but not the value 0.0\". The statement reuses the docs example, but the prompt names that example explicitly.\n- 10: reference, \"each subpattern must bind the same set of names\".\n- 11: tutorial, \"value capture happens before the guard is evaluated\", and reference, \"all name bindings are guaranteed to have happened\".\n- 12: reference, \"A match statement may have at most one irrefutable case block, and it must be last\".\n\nOne minor point on 08, not flagged: its opening \"With generated __init__\" is a needless condition. The docs say __match_args__ is built from those parameters \"even if __init__() is not generated\", so the card stays true, but the qualifier could be dropped.\n\nNo r14 fact appears in another section's cards. Coverage misses value patterns with dotted names, f-strings and t-strings as literal patterns, AS patterns and soft keywords, which is acceptable for 12 cards."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "python-fundamentals-sr3-01",
+     "python-fundamentals-sr3-02"
+    ],
+    "why": "Both sides of one distinction, which the prompt's own rule counts as one fact: indexing a str returns a length-1 str (sr3-01, True) and indexing bytes returns an int, not b'c' (sr3-02, False). Each card is the other's contrast case. sr3-02 is the real trap; sr3-01 is close to a truism for a daily Python developer.",
+    "dropId": "python-fundamentals-sr3-01"
+   },
+   {
+    "ids": [
+     "python-fundamentals-sr1-11",
+     "python-fundamentals-sr4-04"
+    ],
+    "why": "Both test the same thing: a shallow copy shares references to the inner objects. sr1-11 says copy.copy() keeps references to nested lists; sr4-04 says items[:] shares element references. sr4-04 never tests the slice-specific part (that the slice is a new outer list), so it is a reworded sr1-11. Its statement is also trivially true for any list copy.",
+    "dropId": "python-fundamentals-sr4-04"
+   },
+   {
+    "ids": [
+     "python-fundamentals-sr1-06",
+     "python-fundamentals-sr1-07"
+    ],
+    "why": "Near-duplicate. Arguments are passed by assignment, so 'parameter receives a shallow copy of a list' (sr1-07) and 'y = x can copy the list' (sr1-06) rest on one fact: binding a name never copies. Knowing either answer gives the other, and both are false through the same 'it copies' distractor. sr1-06 is the weaker card because its hedged 'can copy' wording is awkward.",
+    "dropId": "python-fundamentals-sr1-06"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "str-vs-bytes-indexing",
+    "ids": [
+     "python-fundamentals-sr3-01",
+     "python-fundamentals-sr3-02"
+    ],
+    "why": "Mirrored true/false pair on the same template ('indexing X at position zero returns a one-character Y'). Seeing the str card answered True invites the contrast answer for bytes."
+   },
+   {
+    "name": "shallow-copy-shares-nested",
+    "ids": [
+     "python-fundamentals-sr1-11",
+     "python-fundamentals-sr4-04"
+    ],
+    "why": "Both say a copy shares nested or element references. Each one's explanation gives the other's answer."
+   },
+   {
+    "name": "binding-never-copies",
+    "ids": [
+     "python-fundamentals-sr1-06",
+     "python-fundamentals-sr1-07"
+    ],
+    "why": "Same no-copy fact for assignment and for argument passing. sr1-07's explanation ('passes the list by assignment ... refers to the caller's list') answers sr1-06."
+   },
+   {
+    "name": "list-plus-vs-augmented",
+    "ids": [
+     "python-fundamentals-sr1-09",
+     "python-fundamentals-sr1-10"
+    ],
+    "why": "sr1-09's explanation says += extends the inner list in place, the other side of the += versus + distinction that sr1-10 tests (+ builds a new list)."
+   },
+   {
+    "name": "tstring-template-type",
+    "ids": [
+     "python-fundamentals-sr3-10",
+     "python-fundamentals-sr3-11",
+     "python-fundamentals-sr3-12"
+    ],
+    "why": "sr3-12's statement ('t'hello' + ' world' produces a combined Template') and sr3-11's statement (value kept in its Interpolation) both reveal that a t-string is a Template, not a str, which answers sr3-10. sr3-10's explanation also names Template."
+   },
+   {
+    "name": "scope-order-omits-class",
+    "ids": [
+     "python-fundamentals-sr5-01",
+     "python-fundamentals-sr5-07"
+    ],
+    "why": "sr5-01's statement gives the lookup order as local, enclosing function, module, built-in, with no class scope. That gives away sr5-07 (a method searches its class body before globals: False)."
+   },
+   {
+    "name": "class-body-scope",
+    "ids": [
+     "python-fundamentals-sr5-07",
+     "python-fundamentals-sr5-08"
+    ],
+    "why": "Both come from one reference sentence (class scope does not extend to methods or comprehensions, except the leftmost iterable). sr5-08 singles out the leftmost iterable as the exception, which implies class names are otherwise invisible."
+   },
+   {
+    "name": "function-wide-local",
+    "ids": [
+     "python-fundamentals-sr5-02",
+     "python-fundamentals-sr5-03"
+    ],
+    "why": "sr5-03 names UnboundLocalError, the error you get when a name is local throughout a function body but read before it is assigned. That hints at sr5-02's answer."
+   },
+   {
+    "name": "comprehension-scope",
+    "ids": [
+     "python-fundamentals-sr5-09",
+     "python-fundamentals-sr5-10"
+    ],
+    "why": "sr5-10 shows := as the way a comprehension binds a name in the containing scope, which suggests the ordinary iteration variable does not leak (sr5-09). The explanations contrast the two directly."
+   },
+   {
+    "name": "star-target-list-vs-args-tuple",
+    "ids": [
+     "python-fundamentals-sr4-05",
+     "python-fundamentals-sr6-04"
+    ],
+    "why": "Mirrored pair on the template 'the starred name receives a list': true for first, *rest = ... and false for *args. Shown together, the contrast draws attention to itself and one answer cues the other."
+   },
+   {
+    "name": "variadic-parameter-containers",
+    "ids": [
+     "python-fundamentals-sr6-04",
+     "python-fundamentals-sr6-05"
+    ],
+    "why": "Identical template ('The X parameter in def f(*X/**X): ... receives ...'), one True and one False. The prompt lists *args as tuple and **kwargs as mapping as one paired fact."
+   },
+   {
+    "name": "keyword-only-vs-positional-only",
+    "ids": [
+     "python-fundamentals-sr6-06",
+     "python-fundamentals-sr6-07"
+    ],
+    "why": "Two sides of the special-parameter split (after * or *args versus before /), one True and one False. sr6-07's TypeError-on-wrong-binding answer cues sr6-06."
+   },
+   {
+    "name": "generator-laziness",
+    "ids": [
+     "python-fundamentals-sr7-04",
+     "python-fundamentals-sr7-09"
+    ],
+    "why": "sr7-09 and its explanation stress that only the leftmost iterable is evaluated at creation, which implies a generator body does not run on creation (sr7-04)."
+   },
+   {
+    "name": "generator-stopiteration",
+    "ids": [
+     "python-fundamentals-sr7-05",
+     "python-fundamentals-sr7-07"
+    ],
+    "why": "Both are about StopIteration at a generator's boundary. sr7-05's statement and explanation about the 'terminating StopIteration' are easily read across to sr7-07's answer."
+   },
+   {
+    "name": "zip-map-strict",
+    "ids": [
+     "python-fundamentals-sr7-10",
+     "python-fundamentals-sr7-11"
+    ],
+    "why": "sr7-11's statement says strict=True is what makes map raise ValueError on unequal inputs, which implies plain zip does not raise. That strongly gives away sr7-10."
+   },
+   {
+    "name": "baseexception-hierarchy",
+    "ids": [
+     "python-fundamentals-sr8-04",
+     "python-fundamentals-sr8-08"
+    ],
+    "why": "sr8-08's explanation (SystemExit needs BaseExceptionGroup) and sr8-04's explanation (KeyboardInterrupt derives from BaseException) each reveal that these control exceptions are not Exception subclasses, which answers the other card."
+   },
+   {
+    "name": "except-star-matching",
+    "ids": [
+     "python-fundamentals-sr8-10",
+     "python-fundamentals-sr8-11"
+    ],
+    "why": "sr8-10's explanation ('except* matches the contained exceptions') and sr8-11's statement about wrapping into a group explain each other's mechanism."
+   },
+   {
+    "name": "with-as-enter-value",
+    "ids": [
+     "python-fundamentals-sr9-01",
+     "python-fundamentals-sr9-11"
+    ],
+    "why": "sr9-11's statement (with nullcontext(value) as result receives value, not the manager) directly shows that the as target need not be the manager, which gives away sr9-01."
+   },
+   {
+    "name": "exit-on-exception",
+    "ids": [
+     "python-fundamentals-sr9-02",
+     "python-fundamentals-sr9-05"
+    ],
+    "why": "sr9-05's explanation ('closes it on block exit, including exit caused by an exception') restates sr9-02's guarantee."
+   },
+   {
+    "name": "contextmanager-generator-flow",
+    "ids": [
+     "python-fundamentals-sr9-06",
+     "python-fundamentals-sr9-07",
+     "python-fundamentals-sr9-08"
+    ],
+    "why": "sr9-07 (the exception is thrown in at the single suspended yield, with try/finally around the yield) hints at the single-yield rule (sr9-06) and at catching without re-raising suppressing the exception (sr9-08)."
+   },
+   {
+    "name": "exception-suppression",
+    "ids": [
+     "python-fundamentals-sr9-03",
+     "python-fundamentals-sr9-08",
+     "python-fundamentals-sr9-10"
+    ],
+    "why": "All three rest on the suppression mechanism (a truthy __exit__). Each explanation that describes the with statement continuing after a handled exception cues the others."
+   },
+   {
+    "name": "lifo-cleanup-order",
+    "ids": [
+     "python-fundamentals-sr9-04",
+     "python-fundamentals-sr9-12"
+    ],
+    "why": "Same reverse-order principle and same false template ('cleanup runs in entry or registration order'). sr9-04's explanation 'B exits before A' answers sr9-12."
+   },
+   {
+    "name": "class-attribute-instance",
+    "ids": [
+     "python-fundamentals-sr10-02",
+     "python-fundamentals-sr10-03"
+    ],
+    "why": "Both are about class attributes as seen through instances (a shared mutable list versus a shadowing assignment). Each explanation cues the other's answer."
+   },
+   {
+    "name": "method-self-binding",
+    "ids": [
+     "python-fundamentals-sr10-04",
+     "python-fundamentals-sr10-05"
+    ],
+    "why": "sr10-04's equivalence c.f() == C.f(c), and its explanation that the instance is just the first argument, hint that self is an ordinary parameter name (sr10-05)."
+   },
+   {
+    "name": "data-descriptor-property",
+    "ids": [
+     "python-fundamentals-sr11-07",
+     "python-fundamentals-sr11-08"
+    ],
+    "why": "property is a data descriptor, so sr11-07's rule (data descriptor beats the instance dict) answers sr11-08. sr11-08's explanation in turn cues sr11-07."
+   },
+   {
+    "name": "mutable-default-sharing",
+    "ids": [
+     "python-fundamentals-sr6-03",
+     "python-fundamentals-sr11-11"
+    ],
+    "why": "sr11-11's explanation (default_factory gives each instance a fresh list) implies that a plain mutable default is shared, the point of sr6-03."
+   },
+   {
+    "name": "dotted-import-binding",
+    "ids": [
+     "python-fundamentals-sr12-06",
+     "python-fundamentals-sr12-07"
+    ],
+    "why": "sr12-06's explanation (import xml.etree binds xml) and sr12-07 (the submodule becomes an attribute of its parent) explain each other: etree is reached as xml.etree."
+   },
+   {
+    "name": "deferred-annotations",
+    "ids": [
+     "python-fundamentals-sr13-02",
+     "python-fundamentals-sr13-03"
+    ],
+    "why": "sr13-03's statement says 'deferred __annotations__' outright, which gives away sr13-02 (annotations are deferred by default in 3.14)."
+   },
+   {
+    "name": "annotation-string-forms",
+    "ids": [
+     "python-fundamentals-sr13-04",
+     "python-fundamentals-sr13-05"
+    ],
+    "why": "Mirrored template 'annotations become strings': true for the __future__ import, false for FORWARDREF. Dealt together, the contrast gives away one answer."
+   },
+   {
+    "name": "capture-vs-wildcard",
+    "ids": [
+     "python-fundamentals-sr14-02",
+     "python-fundamentals-sr14-03"
+    ],
+    "why": "Two sides of one split (a bare name binds while _ never binds). Each explanation (capture replaces the binding; the wildcard leaves _ unchanged) cues the other."
+   }
+  ],
+  "tells": "168 cards, 84 True and 84 False. Every section is 6/6, and per-section average lengths of true and false statements stay within 5 characters (r2 is closest to the limit: T 45.7 vs F 50.3; deck T 76.7 vs F 76.9). Length is therefore not a tell. Word and template tells a player can exploit:\n1) 'An error is raised' means True (strongest tell). Statements claiming an exception is raised are true 9 of 10: sr1-08, sr5-05, sr6-07, sr7-06, sr7-11, sr11-04, sr11-09, sr11-11, sr13-03 True; only sr7-10 False. The reverse also holds: 10 false cards claim that Python quietly accepts or completes something that actually raises (sr2-07, sr3-12, sr6-06, sr6-08, sr8-08, sr8-10, sr8-12, sr10-11, sr11-08, sr14-10). The heuristic 'Python is strict' therefore answers about 19 of 20 cards.\n2) Sharing versus copying. Claims that something gets a copy, a fresh object or a separate object are false 7 of 8 (sr1-06, sr1-07, sr6-03, sr9-09, sr10-02, sr12-02, sr12-12 False; only sr6-05 'fresh mapping' True). Claims of the 'same' object, 'itself' or 'shares' are true 9 of 12 (sr1-02, sr1-11, sr1-12, sr2-06, sr4-04, sr7-01, sr12-01, sr13-07, sr13-09 True; sr1-10, sr9-01, sr12-05 False). The word 'same' appears only in true statements (sr1-02, sr1-12, sr2-06, sr13-07, sr13-09; 0 false). This also breaks the template limit: about five false cards share the 'X gets its own copy' distractor (sr1-06, sr1-07, sr6-03, sr10-02, sr12-02).\n3) Verb choice. 'produces' is false in 6 of 8 (sr2-07, sr2-10, sr2-12, sr3-02, sr3-10, sr3-12 False; sr3-04, sr4-11 True). The verb 'returns' is true in 7 of 9 (sr3-01, sr3-06, sr5-12, sr6-02, sr7-01, sr7-02, sr13-09 True; sr4-02, sr13-11 False).\n4) Hedge verbs mark false statements, the reverse of what the prompt warned about. 'accepts' is false 5 of 7 (sr6-06, sr6-10, sr8-08, sr8-12, sr14-09 False; sr1-01, sr3-09 True). 'can' is false 3 of 4 (sr1-06, sr10-11, sr12-08 False; sr12-11 True). Across all hedges (can/may/accepts): 5 True versus 8 False.\n5) Recurring false templates over the prompt's two-card limit. (a) Reversed order, 'X before Y' or 'in the order added': sr5-07, sr7-08, sr9-04, sr9-12, sr10-06, sr11-06 (6 False; true ordering cards sr2-02, sr5-01, sr6-11, sr11-05 and sr14-11 keep it from being a pure answer tell, but the distractor is reused). (b) The silent-acceptance template from point 1 (10 False). (c) Undo or restore: sr1-09 (rollback) and sr5-11 (del restores), 2, which is at the limit.\n6) Typing does nothing at run time. In r13 the single rule 'typing constructs have no run-time effect' answers sr13-01 F, sr13-06 F, sr13-09 T, sr13-10 T, sr13-11 F and sr13-12 F (6 of 12) without specific knowledge.\n7) Version prefix leans True. 'In Python 3.14' statements are true 9 of 14 (True: sr3-11, sr7-11, sr8-02, sr11-04, sr12-10, sr12-11, sr13-02, sr13-03, sr13-07; False: sr3-10, sr3-12, sr8-12, sr12-12, sr13-04). Across all version-tagged statements it is 11 True versus 8 False. Mild.\nNeutral or balanced: backtick code (57 True / 48 False), 'evaluates to' (5/3), 'despite/even if/alone' (3/3), 'before/first' (7/8), 'by default' (1/1), 'ordinary/plain/normal' (5/4). Coverage words (requires/must/every/always/only) are almost absent (only sr13-01 and sr13-02 'by default')."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "python-fundamentals-sr1-06",
+    "reason": "Scan duplicate of sr1-07: both rest on the fact that binding a name never copies. sr1-06 is the weaker card because its hedged 'can copy' wording is awkward. r1 keeps 9 cards after the drops."
+   },
+   {
+    "id": "python-fundamentals-sr1-10",
+    "reason": "weak_card, a strawman: hardly anyone who has studied Python thinks `a + b` mutates a. Its += versus + contrast is also covered by sr1-09's explanation. Dropping it leaves r1 at 9 cards."
+   },
+   {
+    "id": "python-fundamentals-sr1-11",
+    "reason": "Duplicate pair sr1-11/sr4-04: both say a shallow copy shares element references. I drop sr1-11, the card the verifier flagged, because the prompt puts slicing copies in r4. Keeping it instead of sr4-04 would also break r1's length balance (true average 63 against false 69). r1 then needed one rewrite to stay at 9 cards; that rewrite is sr1-02. I did not use the deepcopy replacement: it would leave r1 at a 6-character length gap, and its answer can be guessed from the name deepcopy."
+   },
+   {
+    "id": "python-fundamentals-sr3-01",
+    "reason": "Duplicate of sr3-02, flagged by both the verifier and the scan. Str indexing and bytes indexing are the two sides of one distinction, and sr3-01 alone is close to a truism. r3 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "python-fundamentals-sr5-11",
+    "reason": "weak_card, a strawman: no learner thinks del brings back a previous value. r5 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr6-12",
+    "reason": "weak_card, a name giveaway: wraps(f) plus an attribute called __wrapped__ that refers to f gives the answer away. r6 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "python-fundamentals-sr8-07",
+    "reason": "weak_card, a name giveaway: add_note puts the note in __notes__. r8 keeps 10 cards (4T/6F), which is not worse than 4 to 6."
+   },
+   {
+    "id": "python-fundamentals-sr8-11",
+    "reason": "weak_card, a wording tell: the target name `eg` hints at an exception group. Dropping is allowed because r8 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "python-fundamentals-sr9-05",
+    "reason": "ambiguous: 'a file opened in a with statement' can mean an open() call inside the body. The clean version ('closed even when the block raises') is just one instance of sr9-02 (__exit__ runs even if the block raises), so it would be a near duplicate, and the plain version is common knowledge. I found no clean, distinct card, so I drop it. r9 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr9-06",
+    "reason": "weak_card: the 'yielding a cleanup result' framing is a strawman, and the explanation's claim about a second yield is not on the cited page. r9 keeps 9 cards."
+   },
+   {
+    "id": "python-fundamentals-sr9-10",
+    "reason": "weak_card, a name giveaway: suppress(ValueError) points to True, and the useful fact (the rest of the body is skipped) is only in the explanation. r9 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr10-01",
+    "reason": "weak_card, a truism: executing a class statement creates a class object. r10 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr10-12",
+    "reason": "weak_card, a strawman: no object is both a str and an int, so the 'both types' reading is absurd. r10 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr12-08",
+    "reason": "weak_card, a definition card: a namespace package is defined as one with no __init__.py. r12 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr12-09",
+    "reason": "weak_card: the meaning of a single leading dot can be guessed from the wording, and the card misses the planned fact (relative imports work only in the from form). r12 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "python-fundamentals-sr13-03",
+    "reason": "weak_card: 'deferred __annotations__' gives away sr13-02, and 'first reading' wrongly suggests a one-time effect. r13 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "python-fundamentals-sr14-04",
+    "reason": "weak_card, a wording tell: 'singleton literal pattern' points straight to identity. r14 keeps 11 cards (5T/6F)."
+   }
+  ],
+  "source": [
+   {
+    "id": "python-fundamentals-sr1-08",
+    "title": "Built-in Types — Python 3.14",
+    "url": "https://docs.python.org/3.14/builtins/stdtypes.html#immutable-sequence-types"
+   },
+   {
+    "id": "python-fundamentals-sr3-10",
+    "title": "Built-in Types — Python 3.14",
+    "url": "https://docs.python.org/3.14/builtins/stdtypes.html#template-string-literals-t-strings"
+   },
+   {
+    "id": "python-fundamentals-sr6-09",
+    "title": "Expressions — Python 3.14",
+    "url": "https://docs.python.org/3.14/reference/expressions.html#calls"
+   },
+   {
+    "id": "python-fundamentals-sr8-01",
+    "title": "Compound statements — Python 3.14",
+    "url": "https://docs.python.org/3.14/reference/compound_stmts.html#else-clause"
+   },
+   {
+    "id": "python-fundamentals-sr8-04",
+    "title": "Built-in Exceptions — Python 3.14",
+    "url": "https://docs.python.org/3.14/builtins/exceptions.html#KeyboardInterrupt"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "python-fundamentals-sr1-02",
+    "reason": "weak_card (the statement copies the docs sentence). Dropping it with sr1-06, sr1-10 and sr1-11 would leave r1 at 8 cards, so I used the verifier's reworded version instead. It keeps the id-reuse fact and the True answer, and puts a hedge verb in a true statement, which the deck lacks.",
+    "statement": "Once an object is gone, Python may give its id() integer to an object created afterwards.",
+    "answer": true,
+    "explanation": "id() is unique and constant for an object only during its lifetime, so after that object is gone a newly created object can report the same id() value.",
+    "misconception": "",
+    "sourceTitle": "Built-in Functions — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/builtins/functions.html#id"
+   },
+   {
+    "id": "python-fundamentals-sr1-08",
+    "reason": "source_problem: the Glossary does not mention the TypeError. Built-in Types states it, so I moved the source there and reworded the explanation so the new page supports every part of it. Statement and answer are unchanged.",
+    "statement": "Calling `hash(([],))` raises TypeError because its tuple contains a list.",
+    "answer": true,
+    "explanation": "Hashing an immutable sequence such as a tuple raises TypeError when it contains an unhashable value; mutable sequences such as lists lack hash support.",
+    "misconception": "",
+    "sourceTitle": "Built-in Types — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/builtins/stdtypes.html#immutable-sequence-types"
+   },
+   {
+    "id": "python-fundamentals-sr3-10",
+    "reason": "source_problem: the lexical analysis page does not name Template. I moved the source to the Built-in Types t-string section ('template string literals evaluate to a string.templatelib.Template object') and aligned the explanation with that page. Statement and answer are unchanged.",
+    "statement": "In Python 3.14, a t-string produces a str with its interpolation values inserted.",
+    "answer": false,
+    "explanation": "A t-string evaluates to a string.templatelib.Template object, and each replacement field becomes an Interpolation object instead of formatted text.",
+    "misconception": "T-strings produce formatted str values.",
+    "sourceTitle": "Built-in Types — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/builtins/stdtypes.html#template-string-literals-t-strings"
+   },
+   {
+    "id": "python-fundamentals-sr4-07",
+    "reason": "ambiguous: 'dictionaries' could include OrderedDict, and 'compares' could include < and >. The new statement is a concrete == between plain dicts. Built-in Types confirms: 'Dictionaries compare equal if and only if they have the same (key, value) pairs (regardless of ordering)'. Checked on 3.14.7: True.",
+    "statement": "`{'a': 1, 'b': 2} == {'b': 2, 'a': 1}` evaluates to False.",
+    "answer": false,
+    "explanation": "Dictionaries compare equal when they hold the same key-value pairs, regardless of ordering, so these two dicts are equal.",
+    "misconception": "Dictionary equality includes insertion order.",
+    "sourceTitle": "Built-in Types — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/builtins/stdtypes.html#mapping-types-dict"
+   },
+   {
+    "id": "python-fundamentals-sr4-09",
+    "reason": "ambiguous: the original sentence was ungrammatical. Built-in Types, d | other: 'The values of other take priority when d and other share keys.' Checked on 3.14.7: {'a':1} | {'a':2} gives {'a': 2}.",
+    "statement": "When two dicts share a key, `a | b` keeps the value from `a`.",
+    "answer": false,
+    "explanation": "In a dict merge with |, the values of the right operand take priority for shared keys, so the result holds the value from b.",
+    "misconception": "Left-hand dictionary values win.",
+    "sourceTitle": "Built-in Types — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/builtins/stdtypes.html#mapping-types-dict"
+   },
+   {
+    "id": "python-fundamentals-sr6-09",
+    "reason": "source_problem: the Tutorial covers only lists and tuples. The reference says 'expression must evaluate to an iterable. Elements from these iterables are treated as if they were additional positional arguments'. The explanation no longer just restates the statement. Statement and answer are unchanged.",
+    "statement": "In `f(*values)`, Python supplies the iterable's items as separate positional arguments.",
+    "answer": true,
+    "explanation": "The expression after * may be any iterable, not only a list or tuple; its elements are treated as additional positional arguments in the call.",
+    "misconception": "",
+    "sourceTitle": "Expressions — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/reference/expressions.html#calls"
+   },
+   {
+    "id": "python-fundamentals-sr11-02",
+    "reason": "ambiguous: 'uses object.__repr__' borrows the docs' generic slot name and can be argued as True. The new statement asks about the visible output. I avoided the verifier's 'but not' wording because it is a negation. Data model: object.__str__ is 'Called by str(object) ... and the built-in function print()' and 'The default implementation defined by the built-in type object calls object.__repr__()'; 'If a class defines __repr__() but not __str__(), then __repr__() is also used'. Checked on 3.14.7: print shows the custom repr.",
+    "statement": "When a class overrides __repr__ and inherits __str__ from object, print() shows `<... object at 0x...>` for instances.",
+    "answer": false,
+    "explanation": "object.__str__ calls __repr__(), so a class that defines __repr__() and leaves __str__() inherited shows its custom representation in str() and print().",
+    "misconception": "print() ignores a custom __repr__ when __str__ is inherited.",
+    "sourceTitle": "Data model — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/reference/datamodel.html#object.__repr__"
+   },
+   {
+    "id": "python-fundamentals-sr6-06",
+    "reason": "tell: 'accepts' marked false statements (5 of 7). Same fact (a keyword-only parameter after *args) and same False answer. Checked: f(True) raises 'missing 1 required keyword-only argument: flag'.",
+    "statement": "`f(True)` binds `flag` to True for `def f(*args, flag): ...`.",
+    "answer": false,
+    "explanation": "flag follows *args and needs a keyword argument, such as flag=True.",
+    "misconception": "Positional arguments fill keyword-only parameters.",
+    "sourceTitle": "More Control Flow Tools — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/tutorial/controlflow.html#arbitrary-argument-lists"
+   },
+   {
+    "id": "python-fundamentals-sr6-10",
+    "reason": "tell: 'accepts' marked false statements. Same fact (a lambda is a single expression with no statements) and same False answer. Tutorial: 'They are syntactically restricted to a single expression.' Checked: `lambda x: return x` is a SyntaxError.",
+    "statement": "`lambda x: return x` defines a function that returns its argument.",
+    "answer": false,
+    "explanation": "A lambda is restricted to a single expression whose value the call returns; a return statement inside it is invalid syntax.",
+    "misconception": "Lambda bodies accept return statements.",
+    "sourceTitle": "More Control Flow Tools — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/tutorial/controlflow.html#lambda-expressions"
+   },
+   {
+    "id": "python-fundamentals-sr8-12",
+    "reason": "tell: 'accepts' marked false statements. Same fact (PEP 758 drops the brackets only without as) and same False answer. What's New 3.14: brackets may be omitted 'when there are multiple exception types and the as clause is not used'. Checked: SyntaxError 'multiple exception types must be parenthesized when using as'.",
+    "statement": "In Python 3.14, `except ValueError, TypeError as err:` is valid syntax.",
+    "answer": false,
+    "explanation": "An as target keeps the parentheses mandatory: except (ValueError, TypeError) as err: is valid.",
+    "misconception": "An as clause accepts several unparenthesized types.",
+    "sourceTitle": "What's New in Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/whatsnew/3.14.html"
+   },
+   {
+    "id": "python-fundamentals-sr14-09",
+    "reason": "tell: 'accepts' marked false statements. Only the verb changed (accepts to matches); same fact and False answer. Reference: 'int(0|1) matches the value 0, but not the value 0.0'.",
+    "statement": "The class pattern `int(0 | 1)` matches the float value 0.0 because it equals 0.",
+    "answer": false,
+    "explanation": "int(0 | 1) first checks for an int instance, then matches the whole subject.",
+    "misconception": "Inner equality replaces class-pattern type checks.",
+    "sourceTitle": "Compound statements — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/reference/compound_stmts.html#class-patterns"
+   },
+   {
+    "id": "python-fundamentals-sr2-10",
+    "reason": "tell: 'produces' marked false statements (6 of 8). Same fact (/ between ints returns a float) and same False answer. Tutorial: 'Division (/) always returns a float.' Checked: 6 / 3 gives 2.0. This also brings r2's false average length close to the true one.",
+    "statement": "`6 / 3` evaluates to the int 2.",
+    "answer": false,
+    "explanation": "Division with / returns a float even when both operands are ints and the quotient is whole, so 6 / 3 gives 2.0.",
+    "misconception": "Dividing two ints with / gives an int when the result is whole.",
+    "sourceTitle": "An Informal Introduction to Python — Python 3.14",
+    "sourceUrl": "https://docs.python.org/3.14/tutorial/introduction.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "tstring-template-type",
+    "ids": [
+     "python-fundamentals-sr3-10",
+     "python-fundamentals-sr3-11",
+     "python-fundamentals-sr3-12"
+    ]
+   },
+   {
+    "name": "scope-order-omits-class",
+    "ids": [
+     "python-fundamentals-sr5-01",
+     "python-fundamentals-sr5-07"
+    ]
+   },
+   {
+    "name": "class-body-scope",
+    "ids": [
+     "python-fundamentals-sr5-07",
+     "python-fundamentals-sr5-08"
+    ]
+   },
+   {
+    "name": "function-wide-local",
+    "ids": [
+     "python-fundamentals-sr5-02",
+     "python-fundamentals-sr5-03"
+    ]
+   },
+   {
+    "name": "comprehension-scope",
+    "ids": [
+     "python-fundamentals-sr5-09",
+     "python-fundamentals-sr5-10"
+    ]
+   },
+   {
+    "name": "star-target-list-vs-args-tuple",
+    "ids": [
+     "python-fundamentals-sr4-05",
+     "python-fundamentals-sr6-04"
+    ]
+   },
+   {
+    "name": "variadic-parameter-containers",
+    "ids": [
+     "python-fundamentals-sr6-04",
+     "python-fundamentals-sr6-05"
+    ]
+   },
+   {
+    "name": "keyword-only-vs-positional-only",
+    "ids": [
+     "python-fundamentals-sr6-06",
+     "python-fundamentals-sr6-07"
+    ]
+   },
+   {
+    "name": "generator-laziness",
+    "ids": [
+     "python-fundamentals-sr7-04",
+     "python-fundamentals-sr7-09"
+    ]
+   },
+   {
+    "name": "generator-stopiteration",
+    "ids": [
+     "python-fundamentals-sr7-05",
+     "python-fundamentals-sr7-07"
+    ]
+   },
+   {
+    "name": "zip-map-strict",
+    "ids": [
+     "python-fundamentals-sr7-10",
+     "python-fundamentals-sr7-11"
+    ]
+   },
+   {
+    "name": "baseexception-hierarchy",
+    "ids": [
+     "python-fundamentals-sr8-04",
+     "python-fundamentals-sr8-08"
+    ]
+   },
+   {
+    "name": "with-as-enter-value",
+    "ids": [
+     "python-fundamentals-sr9-01",
+     "python-fundamentals-sr9-11"
+    ]
+   },
+   {
+    "name": "contextmanager-generator-flow",
+    "ids": [
+     "python-fundamentals-sr9-07",
+     "python-fundamentals-sr9-08"
+    ]
+   },
+   {
+    "name": "exception-suppression",
+    "ids": [
+     "python-fundamentals-sr9-03",
+     "python-fundamentals-sr9-08"
+    ]
+   },
+   {
+    "name": "lifo-cleanup-order",
+    "ids": [
+     "python-fundamentals-sr9-04",
+     "python-fundamentals-sr9-12"
+    ]
+   },
+   {
+    "name": "class-attribute-instance",
+    "ids": [
+     "python-fundamentals-sr10-02",
+     "python-fundamentals-sr10-03"
+    ]
+   },
+   {
+    "name": "method-self-binding",
+    "ids": [
+     "python-fundamentals-sr10-04",
+     "python-fundamentals-sr10-05"
+    ]
+   },
+   {
+    "name": "data-descriptor-property",
+    "ids": [
+     "python-fundamentals-sr11-07",
+     "python-fundamentals-sr11-08"
+    ]
+   },
+   {
+    "name": "mutable-default-sharing",
+    "ids": [
+     "python-fundamentals-sr6-03",
+     "python-fundamentals-sr11-11"
+    ]
+   },
+   {
+    "name": "dotted-import-binding",
+    "ids": [
+     "python-fundamentals-sr12-06",
+     "python-fundamentals-sr12-07"
+    ]
+   },
+   {
+    "name": "annotation-string-forms",
+    "ids": [
+     "python-fundamentals-sr13-04",
+     "python-fundamentals-sr13-05"
+    ]
+   },
+   {
+    "name": "capture-vs-wildcard",
+    "ids": [
+     "python-fundamentals-sr14-02",
+     "python-fundamentals-sr14-03"
+    ]
+   }
+  ],
+  "sectionBalance": "Cards left, true/false split, and average statement length (true vs false characters) after all edits:\n- r1: 9 cards, 5T/4F, 66.4 vs 69.0\n- r2: 12 cards, 6T/6F, 45.7 vs 45.2\n- r3: 11 cards, 5T/6F, 63.4 vs 66.5\n- r4: 12 cards, 6T/6F, 61.2 vs 56.5\n- r5: 11 cards, 6T/5F, 86.8 vs 89.8\n- r6: 11 cards, 5T/6F, 73.2 vs 73.2\n- r7: 12 cards, 6T/6F, 67.8 vs 70.0\n- r8: 10 cards, 4T/6F, 78.5 vs 73.8\n- r9: 9 cards, 4T/5F, 85.2 vs 82.8\n- r10: 10 cards, 5T/5F, 86.6 vs 82.2\n- r11: 12 cards, 6T/6F, 90.7 vs 90.0\n- r12: 10 cards, 5T/5F, 86.4 vs 90.4\n- r13: 11 cards, 5T/6F, 87.0 vs 88.8\n- r14: 11 cards, 5T/6F, 89.2 vs 87.0\n\nDeck: 151 cards, 73 true and 78 false. Every section has at least 9 cards, every split is within 4 to 6 per 10, and every length gap is within 5 characters.",
+  "notes": "On 2026-10-08 I checked every rewrite and source change against the live 3.14 pages (all returned HTTP 200). The anchors #immutable-sequence-types, #template-string-literals-t-strings, #mapping-types-dict, #calls, #else-clause, #KeyboardInterrupt, #object.__repr__, #class-patterns and #id all exist. I ran the code claims on CPython 3.14.7:\n- `lambda x: return x` is a SyntaxError.\n- `except A, B as err` raises \"multiple exception types must be parenthesized when using 'as'\".\n- f(True) raises \"missing keyword-only argument\".\n- int(0|1) does not match 0.0.\n- print() uses a custom __repr__.\n- 6/3 gives 2.0.\n- The dict == and | results are as stated.\n- hash(([],)) raises TypeError.\n\nDecisions where I departed from a suggestion:\n1. Duplicate pair sr1-11/sr4-04: I dropped sr1-11 (the verifier's pick), not sr4-04 (the scan's pick). The prompt puts slicing copies in r4. With sr1-11 kept, r1's true/false lengths would be 61.6 vs 69.0, over the 5-character limit. Dropping sr1-06, sr1-10 and sr1-11 left r1 at 8 cards, so one rewrite was required. I chose the verifier's sr1-02 reword over the deepcopy replacement, because the deepcopy card would keep r1 6 characters out of balance and its answer can be guessed from the name.\n2. sr9-05 (ambiguous) was dropped, not rewritten. The clean rewrite ('closed even when the block raises') is an instance of sr9-02's guarantee, a near duplicate. Its conflict group exit-on-exception goes with it.\n3. sr11-02: I did not use the verifier's 'but not __str__' wording because it is a negation.\n4. sr1-08, sr3-10 and sr6-09: besides the new URLs, I adjusted their explanations so that the new page supports every word. Statements and answers are unchanged.\n5. The five tell rewrites target the hedge verb 'accepts' (false 5 of 7: sr6-06, sr6-10, sr8-12, sr14-09) and 'produces' (sr2-10). After the edits, 'accepts' is left in sr1-01 (T), sr3-09 (T) and sr8-08 (F).\n\nConflict groups:\n- Removed because a member was dropped: str-vs-bytes-indexing, shallow-copy-shares-nested, binding-never-copies, list-plus-vs-augmented, except-star-matching, exit-on-exception, deferred-annotations.\n- Trimmed: contextmanager-generator-flow and exception-suppression lose their dropped members.\n- No new giveaway groups were needed.\n\nRemaining risk:\n- The 'raises means True' tell (strongest in the scan) still holds: about 8 true cards claim an exception against 1 false (sr7-10). It cannot be fixed by rewording without changing answers. A future refill should add false cards that wrongly claim an exception is raised.\n- r8 sits at the 4T/6F boundary.\n- r1 and r9 sit at the 9-card minimum.\n\nCoverage gaps worth refilling later with verified cards, using the verifiers' suggested replacements as a starting point:\n- copy.deepcopy (r1)\n- the single yield in @contextmanager, and suppress skipping the rest of the body (r9)\n- type as the default metaclass, and isinstance with an X | Y union (r10)\n- relative imports only in the from form, and a directory without __init__.py importing as a namespace package (r12)\n- add_note TypeError for a non-string note (r8)\n- wraps updating __dict__ (r6)\n- del falling through to builtins (r5)\n- case False rejecting 0 (r14)\n- the unrecognized-escape SyntaxWarning (r3)"
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "python-fundamentals-sr1-02",
+    "decision": "keep",
+    "statement": "Once an object is gone, Python may give its id() integer to an object created afterwards.",
+    "answer": true,
+    "explanation": "id() is unique and constant for an object only during its lifetime, so after that object is gone a newly created object can report the same id() value.",
+    "reason": "Both lenses say keep. Built-in Functions id() says it is 'unique and constant for this object during its lifetime' and that 'Two objects with non-overlapping lifetimes may have the same id() value.'"
+   },
+   {
+    "id": "python-fundamentals-sr1-08",
+    "decision": "keep",
+    "statement": "Calling `hash(([],))` raises TypeError because its tuple contains a list.",
+    "answer": true,
+    "explanation": "Hashing an immutable sequence such as a tuple raises TypeError when it contains an unhashable value; mutable sequences such as lists lack hash support.",
+    "reason": "Both lenses say keep. I confirmed it on builtins/stdtypes.html: hash() support is the operation that mutable sequence types do not implement, and 'Attempting to hash an immutable sequence that contains unhashable values will result in TypeError.'"
+   },
+   {
+    "id": "python-fundamentals-sr3-10",
+    "decision": "fixed",
+    "statement": "In Python 3.14, a t-string produces a str with its interpolation values inserted.",
+    "answer": false,
+    "explanation": "Rather than a str, a t-string evaluates to a string.templatelib.Template object, with an Interpolation object for each evaluated expression.",
+    "reason": "The wording lens is right that 'instead of formatted text' gives away sr3-11 (format spec not applied). Its replacement phrase 'keeps its literal strings and interpolations as separate parts' is not on the cited t-string section, so I used the page's own facts instead: 'Rather than evaluating to a str object, template string literals evaluate to a string.templatelib.Template object' and an Interpolation 'created for each evaluated expression'. This says nothing about formatting, so it does not give away sr3-11 or sr3-12. 140 characters."
+   },
+   {
+    "id": "python-fundamentals-sr4-07",
+    "decision": "keep",
+    "statement": "`{'a': 1, 'b': 2} == {'b': 2, 'a': 1}` evaluates to False.",
+    "answer": false,
+    "explanation": "Dictionaries compare equal when they hold the same key-value pairs, regardless of ordering, so these two dicts are equal.",
+    "reason": "Both lenses say keep. Confirmed on builtins/stdtypes.html: 'Dictionaries compare equal if and only if they have the same (key, value) pairs (regardless of ordering).'"
+   },
+   {
+    "id": "python-fundamentals-sr4-09",
+    "decision": "keep",
+    "statement": "When two dicts share a key, `a | b` keeps the value from `a`.",
+    "answer": false,
+    "explanation": "In a dict merge with |, the values of the right operand take priority for shared keys, so the result holds the value from b.",
+    "reason": "Both lenses say keep. Confirmed on builtins/stdtypes.html, d | other: 'The values of other take priority when d and other share keys.'"
+   },
+   {
+    "id": "python-fundamentals-sr6-09",
+    "decision": "keep",
+    "statement": "In `f(*values)`, Python supplies the iterable's items as separate positional arguments.",
+    "answer": true,
+    "explanation": "The expression after * may be any iterable, not only a list or tuple; its elements are treated as additional positional arguments in the call.",
+    "reason": "Both lenses say keep. The fact lens quotes reference/expressions.html#calls: 'expression must evaluate to an iterable. Elements from these iterables are treated as if they were additional positional arguments.'"
+   },
+   {
+    "id": "python-fundamentals-sr11-02",
+    "decision": "keep",
+    "statement": "When a class overrides __repr__ and inherits __str__ from object, print() shows `<... object at 0x...>` for instances.",
+    "answer": false,
+    "explanation": "object.__str__ calls __repr__(), so a class that defines __repr__() and leaves __str__() inherited shows its custom representation in str() and print().",
+    "reason": "Both lenses say keep. The Data model says object.__str__ is called by str() and print(), that its default calls object.__repr__(), and that a class defining __repr__() but not __str__() uses __repr__() for the informal representation. The statement is 118 characters."
+   },
+   {
+    "id": "python-fundamentals-sr6-06",
+    "decision": "fixed",
+    "statement": "For `def f(*args, flag): ...`, the call `f(True)` binds flag to True.",
+    "answer": false,
+    "explanation": "f(True) puts True in args, which scoops up all remaining positional arguments, so flag gets no value; flag is keyword-only and needs flag=True.",
+    "reason": "I took the wording lens's fix: the def comes before the call, and the explanation says what actually happens. I left out its 'the call raises TypeError' clause. The cited Tutorial section does not show a TypeError for a missing keyword-only argument after *args; its only keyword-only TypeError example has no *args. The Tutorial does support the rest: variadic arguments 'scoop up all remaining input arguments', and parameters after *args 'can only be used as keywords rather than positional arguments'. 143 characters."
+   },
+   {
+    "id": "python-fundamentals-sr6-10",
+    "decision": "keep",
+    "statement": "`lambda x: return x` defines a function that returns its argument.",
+    "answer": false,
+    "explanation": "A lambda is restricted to a single expression whose value the call returns; a return statement inside it is invalid syntax.",
+    "reason": "Both lenses say keep. Confirmed in the Tutorial: lambdas 'are syntactically restricted to a single expression'. The reference adds that they cannot contain statements."
+   },
+   {
+    "id": "python-fundamentals-sr8-12",
+    "decision": "keep",
+    "statement": "In Python 3.14, `except ValueError, TypeError as err:` is valid syntax.",
+    "answer": false,
+    "explanation": "An as target keeps the parentheses mandatory: except (ValueError, TypeError) as err: is valid.",
+    "reason": "Both lenses say keep. What's New 3.14 (PEP 758) lets you omit the brackets only 'when there are multiple exception types and the as clause is not used'. The compound statements reference says the same."
+   },
+   {
+    "id": "python-fundamentals-sr14-09",
+    "decision": "fixed",
+    "statement": "The class pattern `int(0 | 1)` matches the float value 0.0 because it equals 0.",
+    "answer": false,
+    "explanation": "int(0 | 1) first checks that the subject is an int instance, so the float 0.0 fails; for int the subpattern then matches the whole subject, so 0 matches.",
+    "reason": "I took the wording lens's fix, because the old explanation never said why 0.0 fails. Confirmed on reference/compound_stmts.html class patterns: 'If the subject value is not an instance of name_or_attr (tested via isinstance()), the class pattern fails', and 'the pattern there is matched against the whole object ... int(0|1) matches the value 0, but not the value 0.0.' 153 characters."
+   },
+   {
+    "id": "python-fundamentals-sr2-10",
+    "decision": "keep",
+    "statement": "`6 / 3` evaluates to the int 2.",
+    "answer": false,
+    "explanation": "Division with / returns a float even when both operands are ints and the quotient is whole, so 6 / 3 gives 2.0.",
+    "reason": "Both lenses say keep. The Tutorial says: 'Division (/) always returns a float.'"
+   }
+  ]
+ }
+}

@@ -1,0 +1,1044 @@
+{
+ "deck": "sql-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (queries-select-lists.html), supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/queries-select-lists.html: \"A set of rows for which all the expressions are equal are considered duplicates, and only the first row of the set is kept in the output. Note that the 'first row' of a set is unpredictable unless the query is sorted on enough columns to guarantee a unique ordering of the rows arriving at the DISTINCT filter.\" https://www.postgresql.org/docs/18/sql-select.html: \"SELECT DISTINCT ON ( expression [, ...] ) keeps only the first row of each set of rows where the given expressions evaluate to equal.\"",
+     "problem": "The statement is close to a definition of DISTINCT ON, and the hedge \"can keep\" makes it true under almost any reading. Nobody who has studied would answer False, so the card teaches nothing. The explanation (\"compares its specified values even when other output columns differ\") never says the part that matters: ORDER BY decides which row counts as first. The leftmost ORDER BY rule that the prompt lists for r1 is not tested anywhere.",
+     "suggestedFix": "Replacement (answer true): \"In PostgreSQL, `DISTINCT ON (a)` with `ORDER BY a, b DESC` keeps the row with the highest b for each a.\" (103 chars). Explanation: \"DISTINCT ON keeps the first row of each set in ORDER BY order, so sorting by b descending after a picks the highest b per a; ORDER BY must start with the DISTINCT ON expressions.\" (178 chars). Optionally say b is NOT NULL so null placement does not interfere. Source: https://www.postgresql.org/docs/18/sql-select.html (DISTINCT Clause)."
+    },
+    {
+     "id": "sql-fundamentals-sr1-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (queries-limit.html), supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/queries-limit.html: \"If both OFFSET and LIMIT appear, then OFFSET rows are skipped before starting to count the LIMIT rows that are returned.\"",
+     "problem": "The statement (\"OFFSET skips result rows before LIMIT starts counting the returned rows\") restates the doc sentence with a few words changed, which the rule on original wording forbids. In the abstract it also leans toward a give-away, since \"skip before counting\" is what OFFSET means. The fact is correct and in scope.",
+     "suggestedFix": "Replacement (answer true): \"In PostgreSQL, `LIMIT 10 OFFSET 20` returns the 21st through 30th rows of the sorted result.\" (92 chars). Explanation: \"OFFSET skips its rows first and LIMIT counts from the next row, so OFFSET 20 with LIMIT 10 returns rows 21 to 30, or fewer if the result is shorter.\" (148 chars). Keep the same URL."
+    }
+   ],
+   "notes": "All 12 r1 source URLs return 200 under https://www.postgresql.org/docs/18/ (queries-select-lists, queries-order, queries-limit, sql-select), and each supports its card. The section balance is 6 true (05, 07, 08, 09, 11, 12) and 6 false (01, 02, 03, 04, 06, 10). Both suggested replacements keep their card true, so the balance holds.\n\nEvidence for the cards that pass:\n- 01: \"After the select list has been processed, the result table can optionally be subject to the elimination of duplicate rows\" (queries-select-lists).\n- 02: \"If sorting is not chosen, the rows will be returned in an unspecified order ... it must not be relied on\" (queries-order).\n- 03: \"An output column's name can be used to refer to the column's value in ORDER BY and GROUP BY clauses, but not in the WHERE or HAVING clauses\" (sql-select). The qualifier \"differs from the input column names\" correctly excludes the case where the alias matches an input column.\n- 04: \"an output column name has to stand alone, that is, it cannot be used in an expression\" (queries-order).\n- 05: \"ORDER BY is mandatory in this case\" (sql-select, LIMIT Clause).\n- 06: \"ORDER BY x, y DESC means ORDER BY x ASC, y DESC\" (queries-order).\n- 07: \"NULLS FIRST is the default for DESC order\" (queries-order).\n- 08: \"Null values are considered equal in this comparison\" (queries-select-lists).\n- 10: \"Otherwise you will get an unpredictable subset of the query's rows\" (queries-limit).\n- 12: \"PostgreSQL allows one to omit the FROM clause\" (sql-select Compatibility).\n\nNone of these facts changes between PostgreSQL 18 and the 19 beta.\n\nMinor observations, not flagged:\n- sr7-01 (window ORDER BY does not fix the output order; the explanation says query-level ORDER BY does) sits close to sr1-02 (no ORDER BY means unspecified order). They test different facts.\n- sr1-05 is fairly easy to reason out, since ties only make sense with an ordering. It is listed explicitly in the prompt, so it was kept."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://www.postgresql.org/docs/18/functions-conditional.html (PostgreSQL 18 docs, current)",
+     "evidence": "functions-conditional.html 9.18.3: \"The NULLIF function returns a null value if value1 equals value2; otherwise it returns value1.\" The card is correct (false), but the function name itself reads \"null if (equal)\". A player who has never seen NULLIF can work out that NULLIF(4, 4) gives null and not its first argument, so the card breaks the no-name-giveaway rule.",
+     "problem": "Name giveaway: the answer can be read from the name NULLIF. The card also tests the easy half of NULLIF instead of its null-logic subtlety, even though it sits in the NULL and three-valued logic section.",
+     "suggestedFix": "Replace (keeps answer false). Statement: \"The expression `NULLIF(1, NULL)` evaluates to null.\" Explanation: \"NULLIF compares its arguments as if by =. Since 1 = NULL yields null rather than true, the arguments do not count as equal and NULLIF returns its first argument, 1.\" Same URL: https://www.postgresql.org/docs/18/functions-conditional.html (\"they are compared exactly as if you had written value1 = value2\")."
+    },
+    {
+     "id": "sql-fundamentals-sr2-07",
+     "verdict": "out_of_scope",
+     "urlStatus": "200 OK, https://www.postgresql.org/docs/18/functions-conditional.html (PostgreSQL 18 docs, current)",
+     "evidence": "functions-conditional.html 9.18.4: \"NULL values in the argument list are ignored. The result will be NULL only if all the expressions evaluate to NULL. (This is a deviation from the SQL standard...)\" The fact is correct and the card says \"In PostgreSQL\". But the prompt's r2 list (NULL as unknown, =/<>, IS NULL vs = NULL, IS DISTINCT FROM, WHERE/join keeping true rows, AND/OR/NOT, arithmetic vs concat/concat_ws, COALESCE, NULLIF, count, IN with a null on either side, NOT IN) does not include GREATEST/LEAST, and \"IN with a null on either side\" has no card. functions-comparisons.html: \"if the left-hand expression yields null, or if there are no equal right-hand values and at least one right-hand expression yields null, the result of the IN construct will be null, not false.\"",
+     "problem": "The card tests a fact outside the topic list the prompt sets for r2, while a listed r2 topic (IN with a null operand) has no card at all.",
+     "suggestedFix": "Replace (keeps answer false). Statement: \"The expression `NULL IN (1, 2)` evaluates to false.\" Explanation: \"IN yields null, not false, when its left-hand value is null, or when no list value matches and the list contains a null.\" URL: https://www.postgresql.org/docs/18/functions-comparisons.html"
+    }
+   ],
+   "notes": "I downloaded all 7 source URLs from www.postgresql.org/docs/18/ (curl, HTTP 200) and checked each card against the page text. These pages are the current PostgreSQL 18 docs.\n\nCards that pass, with the sentence that settles each:\n- 01: functions-comparison.html, \"Ordinary comparison operators yield null ... when either input is null\" and \"Do not write expression = NULL because NULL is not 'equal to' NULL\". The default transform_null_equals=off is assumed by the prompt.\n- 02: the same page, \"NULL IS DISTINCT FROM NULL → f (rather than NULL)\".\n- 03: queries-table-expressions.html 7.2.2, \"If the result of the condition is true, the row is kept ... otherwise (i.e., if the result is false or null) it is discarded\".\n- 04, 05, 06: the truth tables in functions-logical.html. For 06, `::` binds tighter than prefix NOT, so the expression is NOT (NULL::boolean) = null. The lexer turns NOT into NOT_LA only before BETWEEN/IN/LIKE/ILIKE/SIMILAR, so this is not misparsed.\n- 08: functions-string.html, \"NULL arguments are ignored.\"\n- 09: functions-conditional.html, \"arguments to the right of the first non-null argument are not evaluated\". Because x and y are columns, the planning-time constant-folding caveat in sql-expressions 4.2.14 does not apply.\n- 11: functions-aggregate.html, \"count(*) Computes the number of input rows\" vs \"count(\\\"any\\\") ... in which the input value is not null\".\n- 12: functions-comparisons.html, \"the result of the NOT IN construct will be null, not true as one might naively expect\".\n\nNo card's answer differs between PostgreSQL 18 and 19. The beta 19 COALESCE / IS DISTINCT FROM / NOT IN planner changes do not change results.\n\nBalance: 6 true (02, 04, 06, 08, 09, 11) and 6 false. Both replacements I propose are false, so the balance holds.\n\nBorderline points I did not flag:\n- 04 (FALSE AND NULL) and 05 (TRUE OR NULL) both test the \"deciding operand wins\" rule of the same truth table, and 06 tests a third row of it. The prompt names the first two pair explicitly as examples, so I kept them, but three of 12 cards on one table is heavy.\n- 02 is the doc's own example expression, not a copied sentence.\n\nCoverage gaps in r2, not tied to any one card: arithmetic with a null operand (no PG18 page states it explicitly, so it cannot be sourced), concat_ws, and IN with a null (addressed by the sr2-07 replacement).\n\nNo duplicates across sections: sr1-08 DISTINCT, sr3-12 LEFT JOIN WHERE, sr4-08 and sr4-09 empty/null aggregates, sr5-10 NOT IN = <> ALL and sr8-04 CHECK null each rest on different facts."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr3-03",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://www.postgresql.org/docs/18/queries-table-expressions.html (PostgreSQL 18 docs, current). The page supports the card's own fact: \"for each row in T2 that does not satisfy the join condition with any row in T1, a joined row is added with null values in columns of T1. This is the converse of a left join\"",
+     "evidence": "https://www.postgresql.org/docs/18/sql-select.html: \"Conversely, RIGHT OUTER JOIN returns all the joined rows, plus one row for each unmatched right-hand row (extended with nulls on the left). This is just a notational convenience, since you could convert it to a LEFT OUTER JOIN by switching the left and right tables.\" queries-table-expressions.html also calls it \"the converse of a left join\".",
+     "problem": "The answer is right, but the card mirrors sr3-02 (left-join-null-extension: \"A LEFT JOIN supplies null right-side columns for an unmatched left row\"). The docs present RIGHT JOIN as LEFT JOIN with the tables swapped, so this is the other side of one two-way split, which the prompt's rules ban. Anyone who answers sr3-02 also gets this one. It is also close to a strawman: a learner who knows LEFT JOIN would not think RIGHT JOIN drops its preserved side.",
+     "suggestedFix": "Replace with a false card on comma versus JOIN precedence, which the r3 plan does not test yet. Statement (answer false, 79 chars): \"In `FROM a, b JOIN c ON c.a_id = a.id`, the ON condition can reference table a.\" Explanation (about 150 chars): \"JOIN binds more tightly than a comma, so this ON clause sees only b and c and the reference to a fails; writing `a CROSS JOIN b JOIN c ON ...` lets it see a.\" Source: https://www.postgresql.org/docs/18/queries-table-expressions.html (\"JOIN binds more tightly than comma ... the condition can reference T1 in the first case but not the second\"). This keeps r3 at 6 true and 6 false."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (6 true: 01, 02, 05, 07, 11, 12; 6 false: 03, 04, 06, 08, 09, 10) against the PostgreSQL 18 pages tutorial-join.html, queries-table-expressions.html and sql-select.html. All three returned HTTP 200 and are the current 18 docs. Only one card is flagged.\n\nPassing cards and the sentence that settles each:\n- sr3-01: queries-table-expressions says \"For each row R1 of T1, the joined table has a row for each row in T2 that satisfies the join condition with R1\". tutorial-join says \"select the pairs of rows where these values match\".\n- sr3-02: tutorial-join says \"empty (null) values are substituted for the right-table columns\".\n- sr3-04: sql-select says FULL OUTER JOIN adds \"one row for each unmatched left-hand row (extended with nulls on the right)\". This also holds when the right input is empty.\n- sr3-05: tutorial-join says \"The joins we have seen so far are inner joins\" after its plain JOIN ... ON examples. queries-table-expressions is more explicit: \"The words INNER and OUTER are optional in all forms. INNER is the default\". That would be the stronger URL, but the current one is acceptable.\n- sr3-06: tutorial-join says \"The results from this older implicit syntax and the newer explicit JOIN/ON syntax are identical\".\n- sr3-07: queries-table-expressions says aliases are \"necessary to use them when joining a table to itself\". Strictly, only one of the two instances needs an alias (`FROM people JOIN people AS child`). The statement says \"uses\", not \"requires\", so it stays true. It is an easy card with little misconception value but acceptable.\n- sr3-08: sql-select says \"given FROM foo AS f, the remainder of the SELECT must refer to this FROM item as f not foo\".\n- sr3-09: sql-select says \"only one of each pair of equivalent columns will be included in the join output, not both\".\n- sr3-10: sql-select says \"NATURAL is shorthand for a USING list that mentions all columns in the two tables that have matching names\".\n- sr3-11: queries-table-expressions says \"If there are no common column names, NATURAL JOIN behaves like CROSS JOIN\".\n- sr3-12: queries-table-expressions says \"a restriction placed in the WHERE clause is processed after the join\". The explanation would be stronger if it said why the rows go: b.id > 0 is null for the null-extended rows. It is not wrong as written.\n\nNo version or PostgreSQL 19 issue: join semantics are the same in every version, and appliesTo \"PostgreSQL 18\" is correct.\n\nCross-deck check: sr3-01 (an inner join repeats rows) is a different fact from sr5-06 (EXISTS keeps each outer row at most once). sr3-10 and sr3-11 are both NATURAL cards but test separate facts.\n\nThe null-join-key fact is in the r3 scope list but has no card. I did not suggest it as the replacement, because sr2-01 (NULL = NULL is not true) would give its answer away."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr4-11",
+     "verdict": "weak_card",
+     "urlStatus": "sql-expressions.html loads (HTTP 200), official PostgreSQL 18 docs, supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/sql-expressions.html 4.2.7: \"If FILTER is specified, then only the input rows for which the filter_clause evaluates to true are fed to the aggregate function; other rows are discarded.\" https://www.postgresql.org/docs/18/sql-select.html: \"The set of rows fed to each aggregate function can be further filtered by attaching a FILTER clause to the aggregate function call\". The answer is correct (True), but the statement reads almost word for word like the sql-select sentence (\"attaching\", \"rows fed to ... aggregate\"). It also gives the answer away: a clause called FILTER that restricts rows will be guessed True by anyone. The useful fact is that FILTER is scoped to one aggregate, unlike WHERE (tutorial-agg.html: \"it removes rows only from the input of the particular aggregate function that it is attached to\"), and the statement does not test that contrast.",
+     "problem": "Answer correct, but this is a name giveaway and nearly copies the sql-select sentence. The per-aggregate scope, which is the real fact, is never tested.",
+     "suggestedFix": "Replacement (answer True, keeps the 6/6 balance): \"A FILTER on count(*) leaves the input of a max(x) in the same SELECT list unchanged.\" (84 chars). Explanation: \"FILTER works like a per-aggregate WHERE: it removes rows only from the input of the aggregate it is attached to, while other aggregates still see every row.\" (156 chars). Source: https://www.postgresql.org/docs/18/tutorial-agg.html"
+    },
+    {
+     "id": "sql-fundamentals-sr4-01",
+     "verdict": "weak_card",
+     "urlStatus": "tutorial-agg.html loads (HTTP 200), official PostgreSQL 18 docs; it shows GROUP BY with aggregates only",
+     "evidence": "https://www.postgresql.org/docs/18/sql-select.html: \"GROUP BY will condense into a single row all selected rows that share the same values for the grouped expressions.\" https://www.postgresql.org/docs/18/queries-table-expressions.html 7.2.3: \"Grouping without aggregate expressions effectively calculates the set of distinct values in a column. This can also be achieved using the DISTINCT clause\". The answer is correct (True), but the statement only repeats what GROUP BY means: someone who knows no SQL guesses True from \"GROUP BY city\". \"One row per city value in the input\" can also be read as one row per input row. The cited tutorial-agg page only shows GROUP BY together with aggregates (\"one output row per city\"), so it does not directly cover the no-aggregate query on the card.",
+     "problem": "This is a definition or truism card: the answer follows from the clause's name. The wording \"per city value in the input\" is loose, and the source covers only the aggregate case.",
+     "suggestedFix": "Replacement (answer True): \"A GROUP BY with no aggregate returns the same rows as DISTINCT on those columns.\" (78 chars, which keeps the true and false average lengths within 5 characters). Explanation: \"Without aggregates each group still yields one output row holding its grouping key, so the query lists each distinct combination once, as DISTINCT does.\" (152 chars). Source: https://www.postgresql.org/docs/18/queries-table-expressions.html"
+    },
+    {
+     "id": "sql-fundamentals-sr4-04",
+     "verdict": "source_problem",
+     "urlStatus": "functions-aggregate.html loads (HTTP 200), official PostgreSQL 18 docs, but it does not state the row count",
+     "evidence": "Cited page https://www.postgresql.org/docs/18/functions-aggregate.html only says: \"It should be noted that except for count, these functions return a null value when no rows are selected.\" That is the same sentence card sr4-08 (sum of no rows is null) rests on, and it says nothing outright about the result having one row. The fact the card tests is stated in https://www.postgresql.org/docs/18/queries-table-expressions.html 7.2.4: \"If a query contains aggregate function calls, but no GROUP BY clause, grouping still occurs: the result is a single group row (or perhaps no rows at all, if the single row is then eliminated by HAVING).\" and in 7.2.5: \"An empty grouping set means that all rows are aggregated down to a single group (which is output even if no input rows were present)\". The answer (True) is correct.",
+     "problem": "Answer correct, but the cited page supports the null-value fact that sr4-08 tests, not the one-row-even-on-empty-input fact this card tests. With this source the card leans toward duplicating sr4-08.",
+     "suggestedFix": "Change the source URL to https://www.postgresql.org/docs/18/queries-table-expressions.html (7.2.4, grouping with aggregates and no GROUP BY). Optionally sharpen the explanation: \"With aggregates and no GROUP BY, all selected rows form one group, and that group row is output even when WHERE matches nothing.\""
+    }
+   ],
+   "notes": "I checked all 12 r4 cards (6 true: 01, 04, 06, 07, 09, 11; 6 false: 02, 03, 05, 08, 10, 12). All five cited pages load from /docs/18/ with HTTP 200. On these pages the answers of all 12 cards are correct. Quotes that settle the cards that pass:\n- 02 and 03: tutorial-agg.html, \"WHERE selects input rows before groups and aggregates are computed ... whereas HAVING selects group rows after groups and aggregates are computed. Thus, the WHERE clause must not contain aggregate functions\".\n- 05: queries-table-expressions.html 7.2.4, \"The same is true if it contains a HAVING clause, even without any aggregate function calls or GROUP BY clause\". sql-select.html says the same: \"Such a query will emit a single row if the HAVING condition is true\".\n- 06: queries-table-expressions.html, \"name and price would be functionally dependent on the product ID\". \"In PostgreSQL\" is justified by the sql-select Compatibility section: \"PostgreSQL recognizes functional dependency ... only when a table's primary key is included in the GROUP BY list\".\n- 07: sql-select.html, \"the name or ordinal number of an output column (SELECT list item)\". Compatibility: \"PostgreSQL extends each of these clauses\".\n- 08: functions-aggregate.html, \"sum of no rows returns null, not zero as one might expect\".\n- 09 and 10: functions-aggregate.html, \"avg ( integer ) → numeric ... Computes the average (arithmetic mean) of all the non-null input values\".\n- 12: queries-table-expressions.html, \"all prefixes of the list including the empty list\".\n\nOther notes:\n- Lengths: true statements average 73.0 characters, false 70.3, within the 5-character rule. The two replacements I propose keep it at about 74.2 vs 70.3.\n- Duplicates: no r4 card shares a fact with r1, r2 or r7 (r2-11 is count(*), r7-10 is aggregates used with OVER). Cards 04 and 08 sit close together (one row returned vs null value). They pass as separate facts only once 04 cites queries-table-expressions.html.\n- Edge readings I considered and rejected: card 05 would be trivially true if t has exactly one row, but the general reading is clearly false. Card 09 returns numeric 10.0000000000000000, which still equals 10.\n- Version: none of these cards changes between 18 and the 19 beta notes.\n- Coverage: the section never tests count(DISTINCT), ORDER BY inside string_agg or array_agg, input-name precedence on GROUP BY ambiguity, or CUBE/GROUPING SETS beyond ROLLUP. That is acceptable for 12 cards, but it would be worth considering if cards are replaced."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr5-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (https://www.postgresql.org/docs/18/sql-expressions.html)",
+     "evidence": "4.2.11 Scalar Subqueries: \"The subquery can refer to variables from the surrounding query, which will act as constants during any one evaluation of the subquery.\" The same sentence appears in 9.24.1 EXISTS (https://www.postgresql.org/docs/18/functions-subquery.html).",
+     "problem": "The answer (True) is right, but the statement is that docs sentence with a few words swapped (\"act as constants during any one evaluation\" becomes \"treats ... as fixed during one evaluation\"), which the prompt forbids. It is also close to a truism: no developer who has studied this pictures an outer value changing partway through one evaluation, so the card teaches almost nothing.",
+     "suggestedFix": "Replace (keeps answer True). Statement: \"A subquery in WHERE can reference a column of the outer query's table even when its own FROM omits that table.\" (110 chars). Explanation: \"An outer column referenced in the subquery makes it correlated: for each outer row, that value acts as a constant during that evaluation of the subquery.\" (153 chars). Source: https://www.postgresql.org/docs/18/sql-expressions.html"
+    },
+    {
+     "id": "sql-fundamentals-sr5-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (https://www.postgresql.org/docs/18/functions-subquery.html)",
+     "evidence": "9.24.1: \"If it returns at least one row, the result of EXISTS is 'true'; if the subquery returns no rows, the result of EXISTS is 'false'.\" The page never discusses NOT EXISTS, so the card's fact is EXISTS plus NOT.",
+     "problem": "The answer (True) is right, but you can read it off the words: \"NOT EXISTS\" plus \"the subquery returns zero rows\" gives True without knowing any SQL. It is a definition card. Its explanation (\"NOT EXISTS is true for an empty subquery result\") just repeats the statement.",
+     "suggestedFix": "Replace (keeps answer True; difficulty 3). Statement: \"`WHERE NOT EXISTS (SELECT 1 FROM b WHERE b.id = a.id)` keeps a row of a whose id is null.\" (89 chars). Explanation: \"In the subquery, b.id = null yields null, so no b row qualifies; EXISTS is false and NOT EXISTS keeps the outer row, which an inner join on id would drop.\" (154 chars). Source: https://www.postgresql.org/docs/18/functions-subquery.html. This is about a null outer key, not a null inside a NOT IN list, so it does not repeat sr2-12. With both replacements, true statements average 83.3 chars and false ones 78.8, which stays inside the 5-char rule."
+    }
+   ],
+   "notes": "I checked all 12 r5 cards: 6 true, 6 false. I downloaded the three cited PostgreSQL 18 pages with curl (each returned HTTP 200, \"Documentation → PostgreSQL 18\") and read the exact wording. I also searched the deck's other sections for overlapping facts. Flags: 2, both weak_card (sr5-03, sr5-07).\n\nCards that pass, with the sentence that settles each:\n- sr5-01 (F): \"It is an error to use a query that returns more than one row or more than one column as a scalar subquery.\"\n- sr5-02 (T): \"if, during a particular execution, the subquery returns no rows, there is no error; the scalar result is taken to be null.\"\n- sr5-04 (F): \"the result depends only on whether any rows are returned, and not on the contents of those rows.\" The INTERSECT exception the page mentions does not apply to `SELECT 0 FROM t`. \"0 means false\" is a realistic misconception, so this is not a strawman.\n- sr5-05 (T): \"The subquery will generally only be executed long enough to determine whether at least one row is returned ... It is unwise to write a subquery that has side effects.\"\n- sr5-06 (F): \"it produces at most one output row for each tab1 row, even if there are several matching tab2 rows.\"\n- sr5-08 (F): \"SOME is a synonym for ANY.\"\n- sr5-09 (T): \"The result of ALL is 'true' if all rows yield true (including the case where the subquery returns no rows).\" This holds even when the left side is null.\n- sr5-10 (F): \"NOT IN is equivalent to <> ALL.\" The card does not test nulls, as the prompt requires.\n- sr5-11 (T): \"PostgreSQL allows AS and the alias to be omitted\" (queries-table-expressions.html 7.2.1.3). The 16.0 release notes confirm the version: \"Allow subqueries in the FROM clause to omit aliases.\" Two small points, not flagged:\n  - The cited page cannot confirm \"Since PostgreSQL 16\" on its own. That part only checks against https://www.postgresql.org/docs/release/16.0/.\n  - The explanation just restates the statement. It could add that the SQL standard requires an alias and the docs call writing one good practice for portable SQL.\n- sr5-12 (F): \"This allows them to reference columns provided by preceding FROM items.\" The JOIN-tree case (items on the left side of the JOIN) are also preceding items, so no exception applies.\n\nOther checks:\n- Duplicates: none. Outside r5, the only nearby cards are sr2-12 (NOT IN with a null in the list) and sr7-12 (filtering row_number needs a subquery); neither rests on an r5 fact.\n- PostgreSQL 19: the 19 notes only change how NOT IN is planned, not what any of these cards return.\n- Length and balance: all statements are under 120 chars and all explanations under 240. True cards average 77.5 chars and false ones 78.8."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr6-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (queries-union.html), supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/queries-union.html: \"INTERSECT returns all rows that are both in the result of query1 and in the result of query2.\" The statement just restates what the word INTERSECT means, so it is a definition card that anyone can answer from the name.",
+     "problem": "Definition and name giveaway. Nobody who knows what 'intersect' means would answer False, so the card teaches nothing beyond the keyword.",
+     "suggestedFix": "Replace with a true card on an r6 fact the deck does not test yet (data-modifying WITH statements run to completion). Statement (111 chars, answer TRUE): \"In PostgreSQL, an UPDATE inside WITH runs to completion even if the primary query ignores its RETURNING output.\" Explanation (152 chars): \"Data-modifying statements in WITH are executed exactly once and always to completion, whether the primary query reads all, some or none of their output.\" Source: https://www.postgresql.org/docs/18/queries-with.html (\"executed exactly once, and always to completion, independently of whether the primary query reads all (or indeed any) of their output\"). factKey: modifying-cte-runs-to-completion."
+    },
+    {
+     "id": "sql-fundamentals-sr6-03",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official PostgreSQL 18 docs (sql-select.html), supports the explanation",
+     "evidence": "https://www.postgresql.org/docs/18/sql-select.html: \"With ALL, a row that has m duplicates in the left table and n duplicates in the right table will appear max(m-n,0) times in the result set.\" When m <= n, EXCEPT ALL does remove the row completely, so the unqualified \"removes a matching value completely\" is true in some cases. \"Value\" also blurs the row semantics.",
+     "problem": "Because the copy counts are not stated, an expert could say the statement holds whenever the right input has at least as many copies as the left. The answer depends on counts the card leaves out.",
+     "suggestedFix": "Statement (104 chars, answer FALSE): \"With EXCEPT ALL, a row found 3 times in the left input and once in the right is removed from the result.\" Explanation (147 chars): \"EXCEPT ALL keeps max(m-n,0) copies of a row, so 3 left copies minus 1 right copy leaves 2 in the result. Plain EXCEPT would drop that row entirely.\" Keep the sql-select.html URL."
+    },
+    {
+     "id": "sql-fundamentals-sr6-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (queries-with.html), supports it only indirectly",
+     "evidence": "https://www.postgresql.org/docs/18/queries-with.html: \"Instead we need to recognize whether we have reached the same row again while following a particular path of links.\" and \"The CYCLE clause specifies first the list of columns to track for cycle detection, then a column name that will show whether a cycle has been detected, and finally the name of another column that will track the path.\" The page never uses the terms \"cyclic branch\" or \"independent branches eligible for expansion\".",
+     "problem": "The statement uses vague words the docs do not use and never says it means the CYCLE clause of WITH RECURSIVE (CREATE SEQUENCE also has a CYCLE option). \"CYCLE stops a cyclic branch\" also hints at the answer from the keyword itself, so a player who does not know the feature would guess True.",
+     "suggestedFix": "Statement (112 chars, answer TRUE): \"In WITH RECURSIVE, CYCLE flags a repeat of the tracked columns on the current path even when other columns differ.\" Explanation (145 chars): \"CYCLE tracks the listed columns in a path array; a row that repeats them on its own path gets the cycle mark column set and is not expanded further.\" Keep the queries-with.html URL."
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (6 true, 6 false; the balance holds with the suggested fixes). All three source URLs load (HTTP 200) and are official PostgreSQL 18 pages: queries-union.html, queries-with.html and sql-select.html. I searched the PostgreSQL 19 beta release notes and found no change to set operations, CTEs, SEARCH or CYCLE, so no card's answer differs between 18 and 19. Cards that passed:\n- 01: \\\"it eliminates duplicate rows from its result, in the same way as DISTINCT, unless UNION ALL is used\\\".\n- 05: \\\"INTERSECT binds more tightly than those two operators. Thus query1 UNION query2 INTERSECT query3 means query1 UNION (query2 INTERSECT query3)\\\".\n- 06: sql-select says \\\"A WITH query that is referenced more than once in FROM is computed only once, unless specified otherwise with NOT MATERIALIZED\\\".\n- 07: queries-with says a non-recursive, side-effect-free WITH query \\\"can be folded into the parent query ... By default, this happens if the parent query references the WITH query just once\\\".\n- 08: \\\"So long as the working table is not empty, repeat these steps\\\". The \\\"fully evaluated\\\" qualifier correctly allows for a parent LIMIT stopping evaluation early.\n- 09: \\\"Sometimes, using UNION instead of UNION ALL can accomplish this by discarding rows that duplicate previous output rows\\\".\n- 10: SEARCH only adds \\\"a column name that will contain the result data that can be used for sorting\\\", and \\\"This approach merely provides a convenient way to order the results afterwards\\\".\n- 12: sql-select says \\\"the effects of a data-modifying statement in WITH cannot be seen from other parts of the query, other than by reading its RETURNING output\\\". queries-with says \\\"All the statements are executed with the same snapshot\\\".\nOne minor point I did not flag: on card 04, no PostgreSQL 18 page literally says \\\"by position\\\". queries-union.html only says \\\"the same number of columns and the corresponding columns have compatible data types\\\", and typeconv-union-case.html resolves types \\\"separately to each output column\\\". The False answer is still correct, but the explanation's \\\"pair columns by position\\\" is implied by the page, not quoted from it. Cards 06 and 07 are the two sides of one documentation sentence (referenced once means inlined, referenced more than once means computed once). The prompt's r6 scope lists both explicitly, so I did not flag them as duplicates. I found no card elsewhere in the deck that rests on the same fact as an r6 card."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr7-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://www.postgresql.org/docs/18/sql-expressions.html (PostgreSQL 18.6 docs), official and current",
+     "evidence": "sql-expressions.html 4.2.8: \"The PARTITION BY clause groups the rows of the query into partitions, which are processed separately by the window function.\" The fact is correct, but the statement gives its own answer away: `PARTITION BY dept` plus \"that row's department\" lets a player who knows nothing about window functions answer True from the words alone. Its `avg(pay) OVER (...)` example also shows the fact that sr7-10 tests (an ordinary aggregate works as a window function when OVER follows it).",
+     "problem": "Name giveaway: the answer comes from reading `PARTITION BY dept` as \"by department\". It also overlaps sr7-10. The section's scope item \"window functions keeping every row instead of collapsing rows as GROUP BY does\" is not tested by any r7 card.",
+     "suggestedFix": "Replace with a TRUE card on the scope item that is missing. Statement: \"`avg(pay) OVER (PARTITION BY dept)` returns one result row per input row, not one row per department.\" Explanation: \"A window function does not collapse rows the way GROUP BY does: each row keeps its own columns and gets its department's average next to them.\" Source: https://www.postgresql.org/docs/18/tutorial-window.html"
+    },
+    {
+     "id": "sql-fundamentals-sr7-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://www.postgresql.org/docs/18/functions-window.html, official and current",
+     "evidence": "functions-window.html Table 9.67: \"lag ( value anycompatible [, offset integer [, default anycompatible ]] ) ... Returns value evaluated at the row that is offset rows before the current row within the partition; if there is no such row, instead returns default\". The answer and explanation are correct, but the false reading (lag reads the first row of the frame) only describes first_value. Anyone who has studied lag knows it reads the preceding row, and the name \"lag\" already says so.",
+     "problem": "Strawman: hardly anyone who has studied this would answer True, and the function name hints at the answer. A more useful false card in the same spot is the default argument of lag.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"`lag(pay, 1, 0) OVER (ORDER BY id)` returns null for the first row of the partition.\" Explanation: \"lag returns its third argument when no row lies offset rows before the current row, so the first row gets 0. Without a default argument it would return null there.\" Same URL. The behaviour is the same in PostgreSQL 18 and 19."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards against https://www.postgresql.org/docs/18/ pages, all of which return 200 and are titled \"PostgreSQL 18.6 Documentation\": tutorial-window.html, functions-window.html, sql-expressions.html and queries-table-expressions.html. The section is balanced: 6 true and 6 false.\n\nCards that pass, with the sentence that settles each:\n- sr7-01: \"The window ORDER BY does not even have to match the order in which the rows are output.\"\n- sr7-03: tutorial-window.html says row_number numbers rows \"with tied rows numbered in an unspecified order\", and its example gives the two 5200 peers 2 and 3. functions-window.html: \"Returns the number of the current row within its partition\".\n- sr7-04: \"Returns the rank of the current row, with gaps; that is, the row_number of the first row in its peer group.\"\n- sr7-06: \"first_value, last_value, and nth_value consider only the rows within the window frame, which by default contains the rows from the start of the partition through the last peer of the current row.\"\n- sr7-07: \"dividing the partition as equally as possible.\" The explanation's \"differ in size by at most one row\" is not stated on the page, but it follows from \"as equally as possible\" and matches how it behaves. Not flagged.\n- sr7-08 (sql-expressions.html): \"Without ORDER BY, this means all rows of the partition are included in the window frame, since all rows become peers of the current row.\" Also tutorial-window.html: \"When ORDER BY is omitted the default frame consists of all rows in the partition.\"\n- sr7-09: \"In GROUPS mode ... the frame starts or ends the specified number of peer groups before or after the current row's peer group, where a peer group is a set of rows that are equivalent in the ORDER BY ordering.\"\n- sr7-10: \"any built-in or user-defined general-purpose or statistical aggregate can be used as a window function\". Also functions-window.html: \"Aggregate functions act as window functions only when an OVER clause follows the call\".\n- sr7-11 (queries-table-expressions.html 7.2.5): \"these functions are evaluated after any grouping, aggregation, and HAVING filtering is performed ... the rows seen by the window functions are the group rows\".\n- sr7-12: \"Window functions are permitted only in the SELECT list and the ORDER BY clause of the query. They are forbidden elsewhere, such as in GROUP BY, HAVING and WHERE clauses.\" The page also shows the sub-select pattern for filtering on row_number.\n\nThings I noted but did not flag:\n- sr7-11 and sr7-12 both come from the same rule (window functions logically run after WHERE, GROUP BY and HAVING). Someone who knows sr7-11 can work out sr7-12. The prompt lists the two as separate r7 scope items, so I kept both, but the reviewer may want to merge one.\n- sr7-10 is fairly easy, and any example of an aggregate with OVER on another card hints at it. The suggested sr7-02 replacement still uses avg ... OVER, so that hint remains.\n- No answer changes in PostgreSQL 19. Its IGNORE NULLS and RESPECT NULLS options leave the default behaviour of lag and last_value as it is.\n- No retired features, and the hedge words are balanced: \"can\" appears once in a true card (sr7-10) and once in a false card (sr7-12).\n- The default-frame and running-total peer fact appears only in sr7-06, and only through last_value. It does not duplicate another section."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr8-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18.6 docs, supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/ddl-identity-columns.html: \"If BY DEFAULT is selected, then the user-specified value takes precedence.\" The card is correct, but the keyword DEFAULT gives the answer away: a default is by definition what applies when you supply no value, so a player can answer True without knowing identity columns. The prompt's 'no name giveaway' rule applies. The real trap is on the ALWAYS side: \"In an INSERT command, if ALWAYS is selected, a user-specified value is only accepted if the INSERT statement specifies OVERRIDING SYSTEM VALUE.\"",
+     "problem": "The answer can be read from the keyword BY DEFAULT. The card skips the distinction that matters, which is how GENERATED ALWAYS handles explicit values.",
+     "suggestedFix": "Replace with a TRUE card (keeps 6/6 balance). Statement: \"An INSERT giving its own value for a GENERATED ALWAYS AS IDENTITY column succeeds with OVERRIDING SYSTEM VALUE.\" (111 chars). Explanation: \"With GENERATED ALWAYS, an INSERT may set the identity column only by adding OVERRIDING SYSTEM VALUE; BY DEFAULT columns take the user value as given.\" Same URL."
+    },
+    {
+     "id": "sql-fundamentals-sr8-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18.6 docs, supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/ddl-constraints.html: \"CASCADE specifies that when a referenced row is deleted, row(s) referencing it should be automatically deleted as well.\" The card is correct, but the action name CASCADE plus ON DELETE already says that deletes spread. Nobody who studied would answer False, so it is close to a truism or giveaway. The section's more useful fact, the default action, is tested nowhere in the deck: \"NO ACTION means that if any referencing rows still exist when the constraint is checked, an error is raised; this is the default behavior if you do not specify anything.\"",
+     "problem": "The answer can be read from the keyword CASCADE. The default NO ACTION behaviour and how it differs from RESTRICT, both listed in the section, go untested.",
+     "suggestedFix": "Replace with a TRUE card (keeps 6/6 balance). Statement: \"A foreign key's default delete action, NO ACTION, makes a DELETE of a still-referenced row raise an error.\" (106 chars). Explanation: \"NO ACTION, the default, raises an error if referencing rows still exist when the check runs; unlike RESTRICT, its check can be deferred to commit.\" Same URL, factKey foreign-key-default-no-action."
+    }
+   ],
+   "notes": "All 12 r8 source URLs are under /docs/18/, load with HTTP 200, and show 'PostgreSQL 18.6 Documentation'. Quotes that settle the cards that pass: 01, sql-createtable: \\\"The PRIMARY KEY constraint specifies that a column or columns of a table can contain only unique (non-duplicate), nonnull values\\\". 02, ddl-constraints: \\\"By default, two null values are not considered equal in this comparison\\\" (the page also says the standard leaves this implementation-defined, so 'In PostgreSQL' is correct). 03: the unique constraint is violated only when \\\"the values of all of the columns included in the constraint are equal\\\", so (NULL,1) and (NULL,2) differ in b even under NULLS NOT DISTINCT, and the PG15 attribution matches the prompt's verified list. 04, ddl-constraints: \\\"a check constraint is satisfied if the check expression evaluates to true or the null value\\\". 06, ddl-identity-columns: \\\"An identity column, however, does not guarantee uniqueness.\\\" 07, datatype-numeric: serial \\\"is equivalent to\\\" CREATE SEQUENCE plus `integer NOT NULL DEFAULT nextval(...)`, and the types are \\\"not true types, but merely a notational convenience\\\". 08, sql-createtable: \\\"the refcolumn list must refer to the columns of a non-deferrable unique or primary key constraint or be the columns of a non-partial unique index\\\". 09, ddl-constraints: \\\"a mix of null and non-null values is guaranteed to fail a MATCH FULL constraint\\\". 10, ddl-constraints: \\\"the declaration of a foreign key constraint does not automatically create an index on the referencing columns\\\". 12, sql-syntax-lexical: \\\"unquoted names are always folded to lower case\\\" (the page notes this is incompatible with the standard). No r8 card rests on the same fact as another card in the deck: r9-07 (partial unique index scope) and r10-11 (nextval after ROLLBACK) are separate facts. No answer differs between PostgreSQL 18 and 19. The section balance is 6 true and 6 false, and both replacements are true, so the balance holds. Minor point, not flagged: 01's wording 'if its other component is unique' is a slightly artificial condition, but it is still a realistic misconception about composite keys."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr9-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://www.postgresql.org/docs/18/indexes-expressional.html (official, PostgreSQL 18)",
+     "evidence": "indexes-expressional.html: \"SELECT * FROM test1 WHERE lower(col1) = 'value'; This query can use an index if one has been defined on the result of the lower(col1) function\". The card restates the page's own example, and the statement says the indexed expression and the filtered expression are the same (lower(name) on both sides). Anyone can answer True from the wording alone, without knowing that the planner matches an index only on the exact expression.",
+     "problem": "Give-away and near-copy of the doc example. Because both expressions are identical, the statement reads as true by common sense, so the card never tests the real trap (an index on name does not serve lower(name), and the reverse).",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"In PostgreSQL, a unique index on `lower(email)` rejects 'Bob@Example' when 'bob@example' is already stored.\" Explanation: \"A unique index on lower(email) compares the stored lowercase values, so emails that differ only in case collide, a rule a plain UNIQUE constraint on email cannot express.\" Same URL. The page supports it: \"If we were to declare this index UNIQUE, it would prevent creation of rows whose col1 values differ only in case\"."
+    },
+    {
+     "id": "sql-fundamentals-sr9-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://www.postgresql.org/docs/18/indexes-multicolumn.html (official, PostgreSQL 18)",
+     "evidence": "indexes-multicolumn.html: \"For example, given an index on (x, y), and a query condition WHERE y = 7700, a B-tree index scan might be able to apply the skip scan optimization.\" The card is \"In PostgreSQL 18 and later, skip scan can use a B-tree index on `(x, y)` for `WHERE y = 7`\": the doc sentence with 7700 changed to 7. The fact itself is correct and the version is attributed correctly (release-18).",
+     "problem": "Near-copy of the source sentence with one number changed, which the prompt's original-wording rule forbids. Naming \"skip scan\" in the statement also hints at the answer, because skipping over the leading column is what the name says.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"In PostgreSQL 18 and later, a B-tree index on `(status, created_on)` can narrow a search filtering only on created_on.\" Explanation: \"Skip scan repeats an index search for each distinct leading value, which pays off when status has few distinct values; with many, the planner usually prefers a sequential scan.\" Same URL."
+    }
+   ],
+   "notes": "I fetched all 9 cited URLs (all under /docs/18/) and each returned 200. Checked: 12 cards, 6 true and 6 false. Average statement length is about 90 characters for true cards and 94 for false ones, so within the 5-character rule.\n\nCards that pass, with the sentence that settles each:\n- 01 (B-tree default): indexes-types.html, \"By default, the CREATE INDEX command creates B-tree indexes\"; sql-createindex.html, \"The default method is btree.\"\n- 02 (IS NULL): \"an IS NULL or IS NOT NULL condition on an index column can be used with a B-tree index.\"\n- 03 (leading wildcard): \"col LIKE 'foo%' ... but not col LIKE '%bar'\". Saying \"narrow\" correctly excludes a full index scan with a filter.\n- 04 (cost-based choice): using-explain.html, \"it is this number that the planner seeks to minimize\" and \"you'll nearly always get a sequential scan plan whether indexes are available or not\". Optional: indexes-intro.html has a clearer sentence, \"it will use the index in queries when it thinks doing so would be more efficient than a sequential table scan.\"\n- 05 (write overhead): indexes-intro.html, \"This adds overhead to data manipulation operations.\" This one is close to common sense, but the section list names it, so it passes.\n- 07 (partial unique index): \"This enforces uniqueness among the rows that satisfy the index predicate, without constraining those that do not.\"\n- 09 (index-only scans): \"Visibility information is not stored in index entries, only in heap entries ... checks the visibility map bit\".\n- 10 (INCLUDE): \"the uniqueness condition applies to just column x, not to the combination of x and y.\"\n- 11 (CONCURRENTLY): \"a regular CREATE INDEX command can be performed within a transaction block, but CREATE INDEX CONCURRENTLY cannot.\"\n- 12 (EXPLAIN ANALYZE): \"because EXPLAIN ANALYZE actually runs the query, any side-effects will happen as usual\".\n\nNone of these answers changes between PostgreSQL 18 and the 19 beta.\n\nDuplicates: none. r8-08 (a non-partial unique index as a foreign key target), r8-10 (no automatic index on foreign key columns) and r13-09 (a partial unique index blocking REFRESH CONCURRENTLY) each rest on different facts from r9-07 and r9-10.\n\nCoverage gaps, not flagged: no card tests ANALYZE keeping planner statistics current, the non-C locale pattern operator class, or CREATE INDEX blocking writes but not reads."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr10-10",
+     "verdict": "explanation_error",
+     "urlStatus": "200, official PostgreSQL 18 docs (tutorial-transactions.html)",
+     "evidence": "https://www.postgresql.org/docs/18/tutorial-transactions.html: \"ROLLBACK TO is the only way to regain control of a transaction block that was put in aborted state by the system due to an error, short of rolling it back completely and starting again.\" The answer (False) is right, but in the aborted state every command except transaction control fails (SQLSTATE 25P02 in_failed_sql_transaction, https://www.postgresql.org/docs/18/errcodes-appendix.html). Plain SELECTs are rejected too.",
+     "problem": "The explanation says an aborted transaction \"rejects further data writes\", which suggests reads still work. All further commands are rejected until ROLLBACK TO or ROLLBACK, so the explanation teaches a narrower and wrong rule.",
+     "suggestedFix": "Keep the statement and answer (False). New explanation (151 chars): \"After an error, PostgreSQL ignores further commands in the transaction block; ROLLBACK TO an earlier savepoint or a full ROLLBACK is the only way back.\""
+    },
+    {
+     "id": "sql-fundamentals-sr10-04",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official PostgreSQL 18 docs (sql-begin.html); tutorial-transactions.html is the better source",
+     "evidence": "https://www.postgresql.org/docs/18/protocol-flow.html (54.2.2.1): \"When a simple Query message contains more than one SQL statement (separated by semicolons), those statements are executed as a single transaction, unless explicit transaction control commands are included\". Tutorial: \"If you do not issue a BEGIN command, then each individual statement has an implicit BEGIN and (if successful) COMMIT wrapped around it.\"",
+     "problem": "The answer (True) matches the tutorial. But an expert could answer False: a multi-statement string such as `psql -c 'INSERT ...; SELECT 1/0'` runs outside BEGIN as one implicit transaction, so the INSERT is rolled back. Also, sql-begin.html does not state the per-statement autocommit fact as clearly as the tutorial or sql-start-transaction.html do.",
+     "suggestedFix": "Keep it True. Statement (107 chars): \"In PostgreSQL, a statement sent by itself outside a transaction block runs in its own implicit transaction.\" Explanation: \"PostgreSQL wraps such a statement in an implicit BEGIN and, if it succeeds, COMMIT; this behaviour is often called autocommit.\" URL: https://www.postgresql.org/docs/18/tutorial-transactions.html"
+    },
+    {
+     "id": "sql-fundamentals-sr10-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (tutorial-transactions.html)",
+     "evidence": "https://www.postgresql.org/docs/18/tutorial-transactions.html: \"we can issue the command ROLLBACK instead of COMMIT, and all our updates so far will be canceled.\"",
+     "problem": "This is a definition card: \"ROLLBACK cancels the transaction's writes\" follows from what the word rollback means, so a player answers True from the term alone. The section's ACID-as-glossary scope has no card on consistency or isolation yet.",
+     "suggestedFix": "Replace with a True card. Statement (111 chars): \"In the PostgreSQL glossary, ACID consistency means the database's data complies with its integrity constraints.\" Explanation (153 chars): \"The glossary defines consistency as data complying with integrity constraints; a transaction whose violations remain unresolved at commit is rolled back.\" URL: https://www.postgresql.org/docs/18/glossary.html (Consistency entry). Misconception it targets: confusing ACID C with replica or CAP consistency."
+    },
+    {
+     "id": "sql-fundamentals-sr10-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs (tutorial-transactions.html)",
+     "evidence": "https://www.postgresql.org/docs/18/tutorial-transactions.html: \"All the transaction's database changes between defining the savepoint and rolling back to it are discarded, but changes earlier than the savepoint are kept.\"",
+     "problem": "The answer (False) is correct but close to a strawman. \"Roll back TO savepoint s\" already says the state returns to s, so a player can reject the claim from the command name without knowing anything about savepoints.",
+     "suggestedFix": "Replace with a False card (keeps the 6/6 balance). Statement: \"`RELEASE SAVEPOINT s` discards the row changes made after savepoint s was established.\" Explanation: \"RELEASE SAVEPOINT destroys the savepoint but merges its later changes into the enclosing transaction; ROLLBACK TO is the command that discards them.\" URL: https://www.postgresql.org/docs/18/sql-release-savepoint.html (\"All changes made since the creation of the savepoint that didn't already get rolled back are merged into the transaction or savepoint that was active when the named savepoint was created.\")"
+    }
+   ],
+   "notes": "I checked all 12 r10 cards in raw/sql-fundamentals-b3.json against their pages under docs/18. Every page returned 200. The section balance is right (6 True: 01-05 and 09; 6 False: 06-08 and 10-12). No r10 fact repeats a card in another section: r8 covers identity and serial definitions, not rollback gaps, and r11-03 and r11-12 cover different facts.\n\nCards that passed, with the sentence that settles each:\n- 02: \"The updates made so far by an open transaction are invisible to other transactions until the transaction completes, whereupon all the updates become visible simultaneously.\" (tutorial-transactions)\n- 03: \"All changes made by the transaction become visible to others and are guaranteed to be durable if a crash occurs.\" (sql-commit) The \"logged table\" wording correctly excludes unlogged tables.\n- 05: \"START TRANSACTION has the same functionality as BEGIN.\" (sql-begin)\n- 06: \"Issuing BEGIN when already inside a transaction block will provoke a warning message. The state of the transaction is not affected.\" (sql-begin)\n- 07: \"we do not need to flush data pages to disk on every transaction commit\" (wal-intro)\n- 09: \"After rolling back to a savepoint, it continues to be defined, so you can roll back to it several times.\" (tutorial-transactions); sql-rollback-to says \"The savepoint remains valid and can be rolled back to again later\".\n- 11: \"the value obtained by nextval is not reclaimed for re-use if the calling transaction later aborts\" (functions-sequence)\n- 12: \"Since these functions return the start time of the current transaction, their values do not change during the transaction.\" (functions-datetime 9.9.5)\n\nThe fixes for 01 and 08 add one True card and one False card, so the balance stays the same. The RELEASE SAVEPOINT replacement for 08 does not overlap with 09, which tests that a savepoint stays valid after ROLLBACK TO. I avoided \"later savepoints are destroyed\" as the 08 replacement because it sits too close to 09. Length balance after the fixes should be checked again by whoever applies them."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 r11 cards (sr11-01 to sr11-12, in raw/sql-fundamentals-b3.json). Every source URL is under /docs/18/ and loads with HTTP 200. Each page supports its card, including the corrected fact in the explanation of each false card.\n\nEvidence per card:\n- **01 (false).** sql-set-transaction.html: \"In PostgreSQL READ UNCOMMITTED is treated as READ COMMITTED.\"\n- **02 (false).** sql-set-transaction.html: \"A statement can only see rows committed before it began\" and \"READ COMMITTED mode takes a new snapshot for each command\".\n- **03 (true).** sql-set-transaction.html: \"All statements of the current transaction can only see rows committed before the first query or data-modification statement was executed in this transaction.\" transaction-iso.html words it as \"the first non-transaction-control statement\". Either way the snapshot is not taken at BEGIN, so the answer holds.\n- **04 (true).** transaction-iso.html: \"PostgreSQL's Repeatable Read implementation does not allow phantom reads.\"\n- **05 (false).** transaction-iso.html: \"ERROR: could not serialize access due to concurrent update ... because a repeatable read transaction cannot modify or lock rows changed by other transactions after the repeatable read transaction began.\"\n- **06 (true).** transaction-iso.html: Repeatable Read \"prevents all of the phenomena described in Table 13.1 except for serialization anomalies.\" This also holds under the standard, so leaving out \"In PostgreSQL\" is correct.\n- **07 (false).** transaction-iso.html: \"In PostgreSQL these locks do not cause any blocking and therefore can not play any part in causing a deadlock.\" The one case where Serializable blocks (SERIALIZABLE READ ONLY DEFERRABLE waiting at start) does not delay writers, so the answer holds.\n- **08 (true).** mvcc-serialization-failure-handling.html: \"It is important to retry the complete transaction, including all logic that decides which SQL to issue and/or which values to use.\" 40001 is confirmed as serialization_failure.\n- **09 (true).** mvcc-intro.html: \"reading never blocks writing and writing never blocks reading.\"\n- **10 (false).** routine-vacuuming.html: \"an UPDATE or DELETE of a row does not immediately remove the old version of the row ... This is done by running VACUUM.\" Heap page pruning can also reclaim dead tuples outside VACUUM, but never at commit time, so the answer stands. The explanation matches the documentation's own simplification.\n- **11 (false).** sql-select.html: \"With NOWAIT, the statement reports an error, rather than waiting, if a selected row cannot be locked immediately. With SKIP LOCKED, any selected rows that cannot be immediately locked are skipped.\"\n- **12 (true).** explicit-locking.html 13.3.4: \"PostgreSQL automatically detects deadlock situations and resolves them by aborting one of the transactions involved, allowing the other(s) to complete.\"\n\nRule checks:\n- **Balance.** 6 true and 6 false. Average statement length is 98.0 for true and 95.5 for false.\n- **Lengths.** All statements are 120 characters or less and all explanations are 240 or less.\n- **Difficulty.** 5 easy, 5 medium and 2 hard, close to the 40/40/20 target.\n- **Wording tells.** \"automatically\" appears once in a true card (12) and once in a false card (10). \"In PostgreSQL\" is used where the behaviour is PostgreSQL-specific.\n- **Duplicates and mirrors.** I compared r11 against the related cards elsewhere in the deck (sr6-12, sr9-11, sr10-04/05/06, sr12-09, sr13-08/09) and found no duplicate or mirrored fact.\n\nMinor observations, below the threshold for a flag:\n- **04 and 06** both rest on the Repeatable Read row of Table 13.1, but they test different cells (phantoms prevented, serialization anomalies allowed). Knowing one does not give the other.\n- **03 and 12** stay close to the wording of their source sentences. Neither repeats a full sentence with only a word or two changed.\n- **12** is easy and somewhat guessable from \"deadlock detector\", but it has a real misconception behind it (waiting forever, or aborting every transaction involved)."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr12-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PG18 docs (dml-insert.html), current",
+     "evidence": "https://www.postgresql.org/docs/18/dml-insert.html: \"It is also possible to insert the result of a query (which might be no rows, one row, or many rows)\". The answer is right, but a query that returns no rows inserting no rows is common sense. No developer who has studied SQL would answer False, so the card teaches nothing about INSERT ... SELECT.",
+     "problem": "Truism. The answer follows from what an empty source means. It does not test a realistic INSERT ... SELECT misconception.",
+     "suggestedFix": "Replace (keeps answer True): \"`INSERT INTO t (a, b) SELECT y, x FROM s` fills a from y, matching columns by position.\" (87 chars). Explanation: \"INSERT pairs the values from VALUES or a query with the target column list left to right; the query's output column names play no part.\" Source: https://www.postgresql.org/docs/18/sql-insert.html (\"The values supplied by the VALUES clause or query are associated with the explicit or implicit column list left-to-right.\")"
+    },
+    {
+     "id": "sql-fundamentals-sr12-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PG18 docs (sql-update.html), current",
+     "evidence": "https://www.postgresql.org/docs/18/sql-update.html: \"DEFAULT: Set the column to its default value (which will be NULL if no specific default expression has been assigned to it).\" The answer (False) is right. But the statement itself says the column is declared `DEFAULT 7`, so nobody who studied would believe SET col = DEFAULT gives null.",
+     "problem": "Strawman. The statement gives away its own answer by naming the declared default. The realistic trap is what DEFAULT does when no default is declared (null, not an error).",
+     "suggestedFix": "Replace (keeps answer False): \"For a nullable column whose definition lacks a DEFAULT clause, `UPDATE ... SET col = DEFAULT` raises an error.\" (110 chars). Explanation: \"DEFAULT assigns the column's declared default, or null when none is declared, so the update succeeds and the column becomes null.\" Same URL."
+    },
+    {
+     "id": "sql-fundamentals-sr12-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PG18 docs (sql-insert.html), current",
+     "evidence": "https://www.postgresql.org/docs/18/sql-insert.html: \"ON CONFLICT DO UPDATE guarantees an atomic INSERT or UPDATE outcome; provided there is no independent error, one of those two outcomes is guaranteed, even under high concurrency.\" The answer (True) is right. But \"unconditional ... inserts or updates a proposed row on success\" is nearly a tautology: a successful unconditional upsert has by definition inserted or updated. The fact that matters, the guarantee under concurrency, appears only in the explanation.",
+     "problem": "Close to a truism. \"On success\" makes the statement true by construction, so the concurrency guarantee the section asks for is never tested in the statement itself.",
+     "suggestedFix": "Replace (keeps answer True): \"In PostgreSQL, ON CONFLICT DO UPDATE inserts or updates even when a concurrent session inserts the same key.\" (108 chars). Explanation: \"Barring an independent error, DO UPDATE guarantees an insert or an update even under high concurrency, rather than a unique violation from a racing insert.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r12 cards. Each source URL (dml-insert, sql-update, sql-delete, dml-returning, sql-insert, sql-merge, all under /docs/18/) returned HTTP 200 and supports its card.\n\nAnswers confirmed with quotes:\n- 04: \"PostgreSQL lets you reference columns of other tables in the WHERE condition by specifying the other tables in the USING clause.\"\n- 05: dml-returning shows \"new.price - old.price AS price_change\" for old and new values in 18.\n- 06: excluded is \"the special table representing the row proposed for insertion\".\n- 07: \"For ON CONFLICT DO UPDATE, a conflict_target must be provided.\"\n- 08: \"exclusion constraints are not supported as arbiters with ON CONFLICT DO UPDATE.\"\n- 09: \"Only rows for which this expression returns true will be updated, although all rows will be locked.\"\n- 11: \"will not be allowed to affect any single existing row more than once; a cardinality violation error will be raised.\"\n- 12: sql-merge says RETURNING is computed \"over the row(s) inserted, updated, or deleted\". The PG17 release notes say \"Allow MERGE to use the RETURNING clause\", so the \"Since PostgreSQL 17\" attribution is correct.\n\nNo duplicates found against other sections. sr13-12 (SET g = DEFAULT on a generated column) is a different fact from sr12-02 and from its proposed replacement. None of the r12 answers changes under PG19's ON CONFLICT DO SELECT.\n\nMinor point, not flagged: card 05 reuses the doc's example expression new.price - old.price word for word.\n\nThe section stays balanced at 6 True and 6 False. With the three replacements, average statement length is about 96 characters for the true cards and 94 for the false ones, within the 5-character rule.\n\nHedge words are evenly split: \"can\" and \"allows\" appear in true cards 03 and 05, and \"allows\", \"accepts\" and \"can\" in false cards 07, 08 and 11."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "sql-fundamentals-sr13-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official PostgreSQL 18 docs, supports the card",
+     "evidence": "https://www.postgresql.org/docs/18/ddl-generated-columns.html: \"A virtual generated column occupies no storage and is computed when it is read.\" The fact is correct, but the statement asks whether INSERT computes a VIRTUAL column's value \"for storage\". The keyword VIRTUAL gives the answer away: a player who knows only the English meaning of \"virtual\" answers False. That is the name giveaway and definition card the prompt forbids (\"a statement whose answer follows from the meaning of a term in it\").",
+     "problem": "The answer can be read from the word VIRTUAL against \"for storage\". It tests the meaning of a term, not PostgreSQL behaviour.",
+     "suggestedFix": "Replace with a false card (keeps r13 at 6 true and 6 false). Statement: \"In PostgreSQL, a STORED generated column keeps its old value when an UPDATE changes a column its expression uses.\" Explanation: \"A stored generated column is computed whenever its row is written, on INSERT and on UPDATE. Unlike a column default, which is evaluated once at insert, it never keeps a stale value.\" Source: https://www.postgresql.org/docs/18/ddl-generated-columns.html (\"A stored generated column is computed when it is written (inserted or updated)\" and \"a generated column is updated whenever the row changes and cannot be overridden\"). appliesTo: PostgreSQL 18."
+    }
+   ],
+   "notes": "I checked all 12 r13 cards in raw/sql-fundamentals-b4.json against the PostgreSQL 18 pages. I downloaded each page with curl (all returned HTTP 200) and searched it for the settling sentence. Balance is 6 true (01, 02, 04, 06, 08, 11) and 6 false (03, 05, 07, 09, 10, 12). The 11 cards that passed:\n- 01: sql-createview.html says \"the query is run every time the view is referenced in a query\".\n- 02: the same page says CREATE OR REPLACE VIEW \"must generate the same columns ... but it may add additional columns to the end of the list\". Its Compatibility section calls CREATE OR REPLACE VIEW an extension, so \"In PostgreSQL\" is right.\n- 03: the same page says \"The view's select list must not contain any aggregates, window functions or set-returning functions.\"\n- 04: the same page says new rows \"are checked to ensure that they are visible through the view. If they are not, the update will be rejected\"; CASCADED is assumed.\n- 05: sql-creatematerializedview.html says the view \"will be flagged as unscannable and cannot be queried until REFRESH MATERIALIZED VIEW is used\".\n- 06: sql-refreshmaterializedview.html says the command \"completely replaces the contents ... The old contents are discarded.\"\n- 07: rules-materializedviews.html says \"the materialized view cannot subsequently be directly updated\".\n- 08: sql-refreshmaterializedview.html says a refresh without CONCURRENTLY \"could block other connections which are trying to read from the materialized view\".\n- 09: the same page says CONCURRENTLY needs a unique index that \"must not be an expression index or include a WHERE clause\".\n- 11: ddl-generated-columns.html says \"A generated column is by default of the virtual kind\", and sql-createtable.html says \"VIRTUAL is the default\". The version is named.\n- 12: sql-update.html says \"For a generated column, specifying this [DEFAULT] is permitted but merely specifies the normal behavior of computing the column from its generation expression\", and ddl-generated-columns.html says \"the keyword DEFAULT may be specified\".\n\nOther checks:\n- **Duplicates:** I compared the section with the rest of the deck. sr12-02 (SET col = DEFAULT on an ordinary default) is a different fact from sr13-12. No other section tests materialized view refresh blocking.\n- **PostgreSQL 19:** I found no version risk. None of these facts changes in the 19 beta notes the prompt lists.\n- **Borderline cards I let pass:** 01 is close to a definition, but the section list names that fact explicitly. 06 and 07 are easy, but each targets a realistic misconception: that a refresh is incremental, and that a materialized view is updatable like a simple view."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 r14 cards and none needs a flag. Every source URL returned HTTP 200 and sits under /docs/18/. Each page supports its card, including the corrected fact that the explanation of a false card gives.\n\nQuoted evidence, card by card:\n- 01: datatype-numeric.html says \"The types decimal and numeric are equivalent.\"\n- 02: the same page says numeric \"is especially recommended for storing monetary amounts and other quantities where exactness is required\".\n- 03: functions-math.html says \"For numeric, ties are broken by rounding away from zero.\"\n- 04: datatype-numeric.html says \"PostgreSQL treats NaN values as equal, and greater than all non-NaN values.\" It says this for both numeric and float.\n- 05: functions-math.html says \"for integral types, division truncates the result towards zero\" and gives the example (-5) / 2 → -2.\n- 06: datatype-numeric.html says \"float with no precision specified is taken to mean double precision.\"\n- 07: datatype-character.html says \"if one explicitly casts a value to character varying(n) or character(n), then an over-length value will be truncated to n characters without raising an error. (This too is required by the SQL standard.)\" Leaving \"In PostgreSQL\" out is therefore correct.\n- 08: the same page says \"Values of type character are physically padded with spaces to the specified width n, and are stored and displayed that way.\"\n- 09: the same page says \"There is no performance difference among these three types, apart from increased storage space when using the blank-padded type, and a few extra CPU cycles to check the length when storing into a length-constrained column.\"\n- 10: datatype-datetime.html says \"The SQL standard requires that writing just timestamp be equivalent to timestamp without time zone, and PostgreSQL honors that behavior.\"\n- 11: the same page says \"the value is stored internally as UTC, and the originally stated or assumed time zone is not retained\". It also says output \"is always converted from UTC to the current timezone zone\".\n- 12: functions-uuid.html says uuidv7 \"Generates a version 7 (time-ordered) UUID. The timestamp is computed using UNIX timestamp with millisecond precision + sub-millisecond timestamp + random.\" That matches the explanation, and the card names PG18 as required.\n\nI found no version issue: none of these facts changes in the PG19 beta notes.\n\nForm checks pass:\n- **True/false balance:** 6 true, 6 false.\n- **Statement length:** true cards average 85.0 characters, false cards 86.8.\n- **Difficulty mix:** 5 easy, 5 medium, 2 hard.\n- **Explanation length:** all under 240 characters.\n- **Duplicates:** no other card in the deck tests the same facts. sr2-09 uses integer division only as a COALESCE short-circuit example, and sr4-10 is about the type avg returns.\n\nMinor observations, not flagged:\n1. Cards 06 and 10 use the same false template, \"a column declared X uses the Y type by default\". That reaches the prompt's limit of two false cards per template in the whole deck, so no other false card may reuse it. Within this section, the two cards look alike in form and both are false.\n2. Card 04 is a hedged false statement (\"can make a self-comparison with = return false\"), so the right answer means \"cannot\", which is close to a double negative. It is accurate, but a clearer optional rewrite with the same false answer would be: \"In PostgreSQL, comparing two numeric NaN values with = returns false, as IEEE 754 specifies.\""
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "sql-fundamentals-sr3-02",
+     "sql-fundamentals-sr3-03"
+    ],
+    "why": "Mirrored halves of one fact: the outer side of an outer join is kept. sr3-02 says LEFT JOIN keeps unmatched left rows with null right columns, and sr3-03 says RIGHT JOIN drops unmatched right rows (false). By symmetry, knowing either card answers the other. The prompt's 'two sides of one distinction are one fact' rule applies.",
+    "dropId": "sql-fundamentals-sr3-03"
+   },
+   {
+    "ids": [
+     "sql-fundamentals-sr5-04",
+     "sql-fundamentals-sr5-07"
+    ],
+    "why": "Both rest on 'EXISTS is true exactly when the subquery returns at least one row'. sr5-04 tests EXISTS(SELECT 0) over a non-empty table. sr5-07 tests NOT EXISTS over an empty result, which is the logical negation of the same rule and close to a definition card. Knowing one answer gives the other.",
+    "dropId": "sql-fundamentals-sr5-07"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "outer-join-preserved-side",
+    "ids": [
+     "sql-fundamentals-sr3-02",
+     "sql-fundamentals-sr3-03",
+     "sql-fundamentals-sr3-04"
+    ],
+    "why": "LEFT, RIGHT and FULL preserved-side cards mirror each other. sr3-02's explanation ('LEFT JOIN preserves unmatched left rows') answers sr3-03 and sr3-04 by symmetry."
+   },
+   {
+    "name": "and-or-null-dominance",
+    "ids": [
+     "sql-fundamentals-sr2-04",
+     "sql-fundamentals-sr2-05",
+     "sql-fundamentals-sr2-06"
+    ],
+    "why": "Mirrored truth-table cards. sr2-04's explanation ('a false operand makes AND false even when the other is unknown') points straight at TRUE OR NULL being true (sr2-05), and the three together show the dominance pattern."
+   },
+   {
+    "name": "null-equality-vs-distinct-from",
+    "ids": [
+     "sql-fundamentals-sr2-01",
+     "sql-fundamentals-sr2-02"
+    ],
+    "why": "NULL = NULL (false card) against NULL IS DISTINCT FROM NULL (true card). sr2-02's 'null-safe, two nulls compare as equal' framing implies plain = is not null-safe, which answers sr2-01."
+   },
+   {
+    "name": "null-condition-drops-row",
+    "ids": [
+     "sql-fundamentals-sr2-03",
+     "sql-fundamentals-sr3-12"
+    ],
+    "why": "sr2-03's explanation (WHERE discards rows whose condition is null) is the exact reason a WHERE b.id > 0 after a LEFT JOIN removes the null-extended rows (sr3-12)."
+   },
+   {
+    "name": "null-skipping-functions",
+    "ids": [
+     "sql-fundamentals-sr2-07",
+     "sql-fundamentals-sr2-08"
+    ],
+    "why": "GREATEST ignoring nulls and concat ignoring nulls use the same 'function skips null arguments' idea. Either explanation hints at the other answer."
+   },
+   {
+    "name": "null-skipping-aggregates",
+    "ids": [
+     "sql-fundamentals-sr2-11",
+     "sql-fundamentals-sr4-09"
+    ],
+    "why": "sr2-11's explanation says count(expression) counts only non-null values, which strongly hints that avg also skips null inputs (sr4-09)."
+   },
+   {
+    "name": "empty-input-aggregate-row",
+    "ids": [
+     "sql-fundamentals-sr4-04",
+     "sql-fundamentals-sr4-05",
+     "sql-fundamentals-sr4-08"
+    ],
+    "why": "sr4-08's explanation ('sum returns null for an empty input') implies an aggregate over no rows still yields a row (sr4-04). sr4-05's single-group explanation hints at the same one-row result."
+   },
+   {
+    "name": "where-before-aggregation",
+    "ids": [
+     "sql-fundamentals-sr4-02",
+     "sql-fundamentals-sr4-03"
+    ],
+    "why": "sr4-02's explanation (HAVING filters groups after the aggregates; WHERE works on rows before) gives away that an aggregate call in WHERE is invalid (sr4-03)."
+   },
+   {
+    "name": "window-processing-position",
+    "ids": [
+     "sql-fundamentals-sr7-11",
+     "sql-fundamentals-sr7-12"
+    ],
+    "why": "sr7-11's explanation places window calculation after grouping and HAVING, so a window call in WHERE (sr7-12) is visibly impossible."
+   },
+   {
+    "name": "where-forbidden-reference-template",
+    "ids": [
+     "sql-fundamentals-sr1-03",
+     "sql-fundamentals-sr4-03",
+     "sql-fundamentals-sr7-12"
+    ],
+    "why": "The same false template, 'WHERE can use X' (an alias, an aggregate, a window function). Dealt together, the pattern shows and answers the others."
+   },
+   {
+    "name": "result-order-without-order-by",
+    "ids": [
+     "sql-fundamentals-sr1-02",
+     "sql-fundamentals-sr1-10",
+     "sql-fundamentals-sr6-10",
+     "sql-fundamentals-sr7-01"
+    ],
+    "why": "sr1-02's explanation (order is unspecified unless ORDER BY defines it) answers the other cards: tied LIMIT rows (sr1-10), a SEARCH clause (sr6-10) and a window ORDER BY (sr7-01) do not fix output order. sr7-01's explanation restates the rule."
+   },
+   {
+    "name": "limit-ties",
+    "ids": [
+     "sql-fundamentals-sr1-05",
+     "sql-fundamentals-sr1-10"
+    ],
+    "why": "Both test ties at the LIMIT/FETCH boundary. The existence of WITH TIES, and sr1-10's explanation ('a unique ordering fixes the subset'), hint at each other."
+   },
+   {
+    "name": "scalar-subquery-cardinality",
+    "ids": [
+     "sql-fundamentals-sr5-01",
+     "sql-fundamentals-sr5-02"
+    ],
+    "why": "A complementary true/false pair: two rows gives an error, zero rows gives null. Shown together, the contrast gives both answers away."
+   },
+   {
+    "name": "exists-row-presence",
+    "ids": [
+     "sql-fundamentals-sr5-04",
+     "sql-fundamentals-sr5-07"
+    ],
+    "why": "sr5-04's explanation ('EXISTS tests for returned rows') answers sr5-07 (NOT EXISTS over an empty result). They are also listed as duplicates."
+   },
+   {
+    "name": "join-vs-semijoin-multiplicity",
+    "ids": [
+     "sql-fundamentals-sr3-01",
+     "sql-fundamentals-sr5-06"
+    ],
+    "why": "Contrast pair from the prompt: an inner join repeats the outer row for each match, EXISTS keeps it once. Each explanation hints at the other card's answer."
+   },
+   {
+    "name": "not-in-semantics",
+    "ids": [
+     "sql-fundamentals-sr2-12",
+     "sql-fundamentals-sr5-10"
+    ],
+    "why": "sr2-12's explanation describes NOT IN as failing unless every element comparison finds no match, which is <> ALL. That answers sr5-10, and sr5-10's explanation in turn frames the null trap."
+   },
+   {
+    "name": "union-dedup",
+    "ids": [
+     "sql-fundamentals-sr6-01",
+     "sql-fundamentals-sr6-09"
+    ],
+    "why": "sr6-09's explanation ('recursive UNION discards rows matching earlier output') shows that UNION removes duplicates, which answers sr6-01."
+   },
+   {
+    "name": "recursive-cte-termination",
+    "ids": [
+     "sql-fundamentals-sr6-08",
+     "sql-fundamentals-sr6-09",
+     "sql-fundamentals-sr6-11"
+    ],
+    "why": "sr6-09's explanation (no new working rows) gives away sr6-08 (the recursion stops when the working table is empty). The CYCLE card (sr6-11) is about the same cycle-stopping mechanics."
+   },
+   {
+    "name": "cte-materialization-default",
+    "ids": [
+     "sql-fundamentals-sr6-06",
+     "sql-fundamentals-sr6-07"
+    ],
+    "why": "Two sides of one rule: inlined when referenced once, computed once when referenced twice. sr6-07's explanation ('folds into its parent ... when the parent references it once') implies the twice-referenced case and answers sr6-06."
+   },
+   {
+    "name": "default-window-frame",
+    "ids": [
+     "sql-fundamentals-sr7-06",
+     "sql-fundamentals-sr7-08"
+    ],
+    "why": "Two sides of the default-frame distinction. sr7-08's explanation (without ORDER BY the frame is the whole partition) implies that with ORDER BY the frame stops early, which answers sr7-06."
+   },
+   {
+    "name": "unique-null-handling",
+    "ids": [
+     "sql-fundamentals-sr8-02",
+     "sql-fundamentals-sr8-03"
+    ],
+    "why": "The existence of UNIQUE NULLS NOT DISTINCT (sr8-03) implies the default treats nulls as distinct (sr8-02). sr8-02's explanation states it outright."
+   },
+   {
+    "name": "uncommitted-visibility",
+    "ids": [
+     "sql-fundamentals-sr10-02",
+     "sql-fundamentals-sr11-01"
+    ],
+    "why": "sr10-02 (changes become visible to others at COMMIT) hints that no level, Read Uncommitted included, exposes uncommitted changes (sr11-01)."
+   },
+   {
+    "name": "commit-durability-wal",
+    "ids": [
+     "sql-fundamentals-sr10-03",
+     "sql-fundamentals-sr10-07"
+    ],
+    "why": "sr10-07's explanation ('at commit, durable WAL records suffice') confirms crash durability after COMMIT (sr10-03)."
+   },
+   {
+    "name": "savepoint-rollback",
+    "ids": [
+     "sql-fundamentals-sr10-08",
+     "sql-fundamentals-sr10-09",
+     "sql-fundamentals-sr10-10"
+    ],
+    "why": "All three test savepoint mechanics. sr10-09's statement and sr10-10's explanation ('recover with ROLLBACK TO an earlier savepoint') hint at what ROLLBACK TO keeps (sr10-08), and the reverse."
+   },
+   {
+    "name": "transaction-snapshot-timing",
+    "ids": [
+     "sql-fundamentals-sr11-02",
+     "sql-fundamentals-sr11-03",
+     "sql-fundamentals-sr11-04"
+    ],
+    "why": "Read Committed's per-statement snapshot against Repeatable Read's single snapshot: each explanation answers the other side. A fixed snapshot (sr11-03) also strongly implies no phantom reads (sr11-04)."
+   },
+   {
+    "name": "serialization-error-retry",
+    "ids": [
+     "sql-fundamentals-sr11-05",
+     "sql-fundamentals-sr11-08"
+    ],
+    "why": "sr11-08's retry-after-40001 card signals that Repeatable Read fails rather than overwriting, which answers sr11-05. sr11-05's explanation names the serialization error."
+   },
+   {
+    "name": "update-set-default",
+    "ids": [
+     "sql-fundamentals-sr12-02",
+     "sql-fundamentals-sr13-12"
+    ],
+    "why": "sr12-02 shows SET col = DEFAULT is legal and evaluates the default, which hints that UPDATE does not reject SET g = DEFAULT on a generated column (sr13-12)."
+   },
+   {
+    "name": "matview-refresh-blocking",
+    "ids": [
+     "sql-fundamentals-sr13-08",
+     "sql-fundamentals-sr13-09"
+    ],
+    "why": "The CONCURRENTLY card (sr13-09) implies that a regular refresh blocks readers (sr13-08). Both cover the same refresh-locking topic."
+   },
+   {
+    "name": "generated-column-kinds",
+    "ids": [
+     "sql-fundamentals-sr13-10",
+     "sql-fundamentals-sr13-11"
+    ],
+    "why": "sr13-11's explanation contrasts VIRTUAL with an explicit STORED, which gives away that VIRTUAL values are not computed for storage (sr13-10)."
+   },
+   {
+    "name": "bare-type-declaration-template",
+    "ids": [
+     "sql-fundamentals-sr14-01",
+     "sql-fundamentals-sr14-06",
+     "sql-fundamentals-sr14-10"
+    ],
+    "why": "The same template appears three times: 'a column declared `X` uses type Y (by default)'. Two of the three are false (float to real, timestamp to timestamptz). Dealt together, the template shows and reveals the answers."
+   }
+  ],
+  "tells": "Read all 168 cards (84 true, 84 false). Statement lengths are balanced overall (true 84.2 characters on average, false 83.5) and within 5 characters in every section; the largest gaps are r9 (90.3 true vs 94.5 false) and r3 (80.8 vs 76.8). Explanations average 88.9 (true) and 85.3 (false). Length is not a tell. Wording tells I found:\n\n(1) A version prefix (\"Since PostgreSQL N\" / \"In PostgreSQL N and later\") predicts True: 7 true, 1 false. True: sr5-11, sr8-03, sr9-06, sr12-05, sr12-12, sr13-11, sr14-12. False: only sr13-10.\n\n(2) \"alone/solely\" predicts False: 0 true, 4 false (sr1-04, sr4-12, sr8-08, sr9-09).\n\n(3) \"zero\" predicts True: 8 true, 1 false. True: sr2-09, sr3-11, sr5-02, sr5-07, sr5-09, sr12-01, sr13-06, sr14-05. False: sr4-08.\n\n(4) In r2, the stated result is a tell. \"evaluates to true\" is always false (sr2-01, sr2-12) and \"evaluates to false\" is always true (sr2-02, sr2-04). A statement claiming a null result is false 4 times out of 5 (false: sr2-03, sr2-05, sr2-07, sr8-04; true: sr2-06).\n\n(5) \"The PostgreSQL documentation recommends ...\" is 2 of 2 true (sr11-08, sr14-02).\n\n(6) Weaker tells:\n- \"automatically\": 2 true (sr11-12, sr14-08), 4 false (sr8-10, sr11-10, sr13-03, sr13-10).\n- \"drops/discards\": 1 true (sr3-12), 3 false (sr3-03, sr3-04, sr10-08).\n- \"several\": 3 true (sr1-08, sr3-01, sr8-02), 1 false (sr1-10).\n- \"one\": 10 true, 4 false.\n- Any mention of null: 16 true, 10 false.\n- \"In PostgreSQL\": leans false, 41 false vs 33 true. Unprefixed statements lean true, 51 vs 43. In r11 \"In PostgreSQL\" appears on 11 of 12 cards, 7 of them false.\n- Hedges are balanced and are not a tell: \"can\" 15 true / 16 false, \"by default\" 6 / 6, \"allows\" 2 / 2, \"accepts\" 2 / 2, \"rejects\" 3 / 3.\n\n(7) Recurring false templates over the prompt's limit of 2:\n- \"WHERE can reference X\": sr1-03, sr4-03, sr7-12 (3 false).\n- \"Something other than the query's ORDER BY fixes output order\": sr1-02, sr6-10, sr7-01, plus sr1-10 (3 or 4 false).\n- \"In PostgreSQL, X automatically does Y\": sr8-10, sr11-10, sr13-10 (3 false).\n\nAt the limit of 2:\n- \"A column declared bare `X` uses Y by default\": sr14-06, sr14-10. The true sr14-01 has the same shape.\n- \"Outer join drops an unmatched row\": sr3-03, sr3-04.\n- \"X is updatable/writable\": sr13-03, sr13-07.\n\n(8) Name giveaways:\n- sr13-10: \"VIRTUAL ... computed for storage\" is false by the meaning of the word VIRTUAL.\n- sr8-11: \"ON DELETE CASCADE removes referencing rows\" follows from the word CASCADE.\n- sr11-12: the deadlock detector aborts a transaction.\n\n(9) Definition or truism cards that are all True, so a player who guesses True on any textbook definition wins them: sr3-02, sr4-01, sr5-07, sr6-02, sr8-11, sr9-01, sr9-05, sr10-01, sr10-02, sr13-01.\n\nNo factual errors found on spot checks (null sort order, IS NULL on B-tree, ON CONFLICT WHERE locking, generated column DEFAULT in UPDATE, integer division, NaN equality). Note that sr2-07 (GREATEST) is outside the r2 section brief."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "sql-fundamentals-sr1-09",
+    "reason": "weak_card: near-definition of DISTINCT ON with a hedge ('can keep') that makes it true under any reading; r1 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr1-11",
+    "reason": "weak_card: restates the queries-limit.html sentence with a few words changed and leans toward a give-away; r1 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr2-07",
+    "reason": "out_of_scope: GREATEST is outside the r2 topic list; also removes the null-skipping-functions conflict with sr2-08. r2 stays at 10 cards (6T/4F)."
+   },
+   {
+    "id": "sql-fundamentals-sr2-10",
+    "reason": "weak_card: name giveaway, since NULLIF(4, 4) returning null can be read from the name 'null if'; r2 stays at 10 cards (6T/4F)."
+   },
+   {
+    "id": "sql-fundamentals-sr3-03",
+    "reason": "duplicate (verifier and scan): the mirror of sr3-02, since RIGHT JOIN is LEFT JOIN with the inputs swapped; also close to a strawman. r3 stays at 11 cards (6T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr4-01",
+    "reason": "weak_card: truism, because 'GROUP BY city returns one row per city' follows from the clause name; the cited tutorial page covers only the aggregate case. r4 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr4-11",
+    "reason": "weak_card: name giveaway (FILTER restricts rows) that nearly copies the sql-select sentence, and it never tests the per-aggregate scope; r4 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr5-03",
+    "reason": "weak_card: the sql-expressions sentence ('act as constants during any one evaluation') with words swapped, and close to a truism; r5 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr5-07",
+    "reason": "weak_card plus scan duplicate of sr5-04: NOT EXISTS over an empty result is the negation of the EXISTS rule and readable from the words; r5 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr6-02",
+    "reason": "weak_card: definition and name giveaway, since INTERSECT keeping rows in both results is what the word means; r6 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr6-11",
+    "reason": "weak_card: uses vague terms the docs do not use ('cyclic branch', 'independent branches eligible for expansion'), never names WITH RECURSIVE, and the keyword CYCLE hints the answer; r6 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr7-02",
+    "reason": "weak_card: name giveaway (PARTITION BY dept means per department), and its avg ... OVER example overlaps sr7-10; r7 stays at 10 cards (5T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr7-05",
+    "reason": "weak_card: strawman, since nobody who studied lag believes it reads the first row of the frame and the name hints at the answer; r7 stays at 10 cards (5T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr8-05",
+    "reason": "weak_card: name giveaway, since BY DEFAULT accepting a user value follows from the word DEFAULT; r8 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr8-11",
+    "reason": "weak_card: name giveaway, since ON DELETE CASCADE deleting referencing rows is what CASCADE says; r8 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr9-06",
+    "reason": "weak_card: the indexes-multicolumn sentence with 7700 changed to 7, and the term 'skip scan' hints the answer; r9 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr9-08",
+    "reason": "weak_card: restates the doc's lower(col1) example with the same expression on both sides, so it is true by common sense; r9 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "sql-fundamentals-sr10-01",
+    "reason": "weak_card: definition card, since ROLLBACK cancelling the transaction's writes follows from the word rollback; r10 stays at 10 cards (5T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr10-08",
+    "reason": "weak_card: close to a strawman, since 'ROLLBACK TO SAVEPOINT s' already says the state returns to s; r10 stays at 10 cards (5T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr12-01",
+    "reason": "weak_card: truism, since an empty source query inserting zero rows is common sense; r12 stays at 9 cards (4T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr12-02",
+    "reason": "weak_card: strawman, since the statement names the declared DEFAULT 7 and so gives away that SET col = DEFAULT does not assign null; r12 stays at 9 cards (4T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr12-10",
+    "reason": "weak_card: near-tautology, since an unconditional upsert that succeeds has by definition inserted or updated; the concurrency guarantee appears only in the explanation. r12 stays at 9 cards (4T/5F)."
+   },
+   {
+    "id": "sql-fundamentals-sr13-10",
+    "reason": "weak_card: name giveaway, since VIRTUAL versus 'computed for storage' is answered by the meaning of the word; r13 stays at 11 cards (6T/5F)."
+   }
+  ],
+  "source": [
+   {
+    "id": "sql-fundamentals-sr4-04",
+    "title": "7.2. Table Expressions",
+    "url": "https://www.postgresql.org/docs/18/queries-table-expressions.html"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "sql-fundamentals-sr6-03",
+    "reason": "ambiguous: the original 'removes a matching value completely' is true whenever the right input has at least as many copies as the left. Fixing the copy counts makes the answer unambiguous.",
+    "statement": "With EXCEPT ALL, a row with 3 copies on the left and 1 on the right is absent from the result.",
+    "answer": false,
+    "explanation": "EXCEPT ALL keeps max(m-n,0) copies of a row, so 3 copies on the left and 1 on the right leave 2 copies in the result.",
+    "misconception": "EXCEPT ALL removes a row completely as soon as the right input contains it.",
+    "sourceTitle": "SELECT",
+    "sourceUrl": "https://www.postgresql.org/docs/18/sql-select.html"
+   },
+   {
+    "id": "sql-fundamentals-sr10-04",
+    "reason": "ambiguous: 'each statement outside a transaction block' could be read as covering a multi-statement query string, which runs as one implicit transaction. Restricted to a single statement sent alone.",
+    "statement": "In PostgreSQL, a single statement sent outside BEGIN runs in its own implicit transaction.",
+    "answer": true,
+    "explanation": "Outside BEGIN, PostgreSQL runs in autocommit mode: such a statement gets an implicit BEGIN and, if it succeeds, a COMMIT, otherwise a rollback.",
+    "misconception": "",
+    "sourceTitle": "BEGIN",
+    "sourceUrl": "https://www.postgresql.org/docs/18/sql-begin.html"
+   },
+   {
+    "id": "sql-fundamentals-sr10-10",
+    "reason": "explanation_error: 'rejects further data writes' implied that reads still work in an aborted transaction. Statement and answer unchanged; the explanation now follows tutorial-transactions.html.",
+    "statement": "In PostgreSQL, a valid `UPDATE` can resume an aborted transaction after a statement error.",
+    "answer": false,
+    "explanation": "An error puts the transaction block in an aborted state; ROLLBACK TO an earlier savepoint, or rolling back the whole transaction, is the only way to regain control.",
+    "misconception": "A valid data-modifying statement clears an error's aborted transaction state.",
+    "sourceTitle": "3.4. Transactions",
+    "sourceUrl": "https://www.postgresql.org/docs/18/tutorial-transactions.html"
+   },
+   {
+    "id": "sql-fundamentals-sr1-04",
+    "reason": "tell: 'alone/solely' appeared only in false cards (4 of 4). Same fact (an output alias cannot be used inside an ORDER BY expression), same answer, without 'solely'. The query is analogous to the doc's 'ORDER BY sum + c -- wrong' example.",
+    "statement": "For t(a, b), `SELECT a + b AS total FROM t ORDER BY total * 2` is a valid query.",
+    "answer": false,
+    "explanation": "An output column name in ORDER BY has to stand alone; inside an expression such as total * 2 it is not recognised, so the query fails.",
+    "misconception": "ORDER BY expressions can use SELECT-list aliases.",
+    "sourceTitle": "7.5. Sorting Rows (ORDER BY)",
+    "sourceUrl": "https://www.postgresql.org/docs/18/queries-order.html"
+   },
+   {
+    "id": "sql-fundamentals-sr8-08",
+    "reason": "tell: removes 'alone' (4 of 4 occurrences were false cards). Same fact (a non-unique index does not qualify columns as a foreign key target), same answer.",
+    "statement": "In PostgreSQL, a non-unique index on a column is enough to let a foreign key reference that column.",
+    "answer": false,
+    "explanation": "A foreign key target needs a primary key, a unique constraint, or a non-partial unique index.",
+    "misconception": "Any index qualifies its columns as a referenced foreign key target.",
+    "sourceTitle": "CREATE TABLE",
+    "sourceUrl": "https://www.postgresql.org/docs/18/sql-createtable.html"
+   },
+   {
+    "id": "sql-fundamentals-sr9-09",
+    "reason": "tell: removes 'alone' (4 of 4 occurrences were false cards). Same fact (visibility information is not in index entries), same answer.",
+    "statement": "In PostgreSQL, index entries store the row visibility information that an index-only scan checks.",
+    "answer": false,
+    "explanation": "Visibility data lives in heap entries, not index entries; an index-only scan checks the visibility map and visits the table row when the page is not all-visible.",
+    "misconception": "Index entries contain row visibility data.",
+    "sourceTitle": "11.9. Index-Only Scans and Covering Indexes",
+    "sourceUrl": "https://www.postgresql.org/docs/18/indexes-index-only-scans.html"
+   },
+   {
+    "id": "sql-fundamentals-sr2-02",
+    "reason": "tell: in r2, 'evaluates to true' was always false and 'evaluates to false' always true. Same fact (two nulls compare as equal under the null-safe operator), same answer (true), now stated through the doc's own IS NOT DISTINCT FROM row (NULL IS NOT DISTINCT FROM NULL -> t). Shortened to keep r2 true and false lengths within 5 characters.",
+    "statement": "`NULL IS NOT DISTINCT FROM NULL` evaluates to true.",
+    "answer": true,
+    "explanation": "IS NOT DISTINCT FROM treats null as a comparable value, so two nulls count as equal and the result is true rather than null.",
+    "misconception": "",
+    "sourceTitle": "9.2. Comparison Functions and Operators",
+    "sourceUrl": "https://www.postgresql.org/docs/18/functions-comparison.html"
+   },
+   {
+    "id": "sql-fundamentals-sr5-09",
+    "reason": "tell: 'zero' marked true cards (8 true, 1 false). Same fact (ALL over an empty subquery is true), same answer, without 'zero'.",
+    "statement": "A comparison such as `x > ALL (subquery)` returns true when the subquery result is empty.",
+    "answer": true,
+    "explanation": "ALL is true when every subquery row yields true, which includes the case of a subquery that returns no rows.",
+    "misconception": "",
+    "sourceTitle": "9.24. Subquery Expressions",
+    "sourceUrl": "https://www.postgresql.org/docs/18/functions-subquery.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "outer-join-preserved-side",
+    "ids": [
+     "sql-fundamentals-sr3-02",
+     "sql-fundamentals-sr3-04"
+    ]
+   },
+   {
+    "name": "and-or-null-dominance",
+    "ids": [
+     "sql-fundamentals-sr2-04",
+     "sql-fundamentals-sr2-05",
+     "sql-fundamentals-sr2-06"
+    ]
+   },
+   {
+    "name": "null-equality-vs-distinct-from",
+    "ids": [
+     "sql-fundamentals-sr2-01",
+     "sql-fundamentals-sr2-02"
+    ]
+   },
+   {
+    "name": "null-condition-drops-row",
+    "ids": [
+     "sql-fundamentals-sr2-03",
+     "sql-fundamentals-sr3-12"
+    ]
+   },
+   {
+    "name": "null-skipping-aggregates",
+    "ids": [
+     "sql-fundamentals-sr2-11",
+     "sql-fundamentals-sr4-09"
+    ]
+   },
+   {
+    "name": "empty-input-aggregate-row",
+    "ids": [
+     "sql-fundamentals-sr4-04",
+     "sql-fundamentals-sr4-05",
+     "sql-fundamentals-sr4-08"
+    ]
+   },
+   {
+    "name": "where-before-aggregation",
+    "ids": [
+     "sql-fundamentals-sr4-02",
+     "sql-fundamentals-sr4-03"
+    ]
+   },
+   {
+    "name": "window-processing-position",
+    "ids": [
+     "sql-fundamentals-sr7-11",
+     "sql-fundamentals-sr7-12"
+    ]
+   },
+   {
+    "name": "where-forbidden-reference-template",
+    "ids": [
+     "sql-fundamentals-sr1-03",
+     "sql-fundamentals-sr4-03",
+     "sql-fundamentals-sr7-12"
+    ]
+   },
+   {
+    "name": "result-order-without-order-by",
+    "ids": [
+     "sql-fundamentals-sr1-02",
+     "sql-fundamentals-sr1-10",
+     "sql-fundamentals-sr6-10",
+     "sql-fundamentals-sr7-01"
+    ]
+   },
+   {
+    "name": "limit-ties",
+    "ids": [
+     "sql-fundamentals-sr1-05",
+     "sql-fundamentals-sr1-10"
+    ]
+   },
+   {
+    "name": "scalar-subquery-cardinality",
+    "ids": [
+     "sql-fundamentals-sr5-01",
+     "sql-fundamentals-sr5-02"
+    ]
+   },
+   {
+    "name": "join-vs-semijoin-multiplicity",
+    "ids": [
+     "sql-fundamentals-sr3-01",
+     "sql-fundamentals-sr5-06"
+    ]
+   },
+   {
+    "name": "not-in-semantics",
+    "ids": [
+     "sql-fundamentals-sr2-12",
+     "sql-fundamentals-sr5-10"
+    ]
+   },
+   {
+    "name": "union-dedup",
+    "ids": [
+     "sql-fundamentals-sr6-01",
+     "sql-fundamentals-sr6-09"
+    ]
+   },
+   {
+    "name": "set-operation-all-multiplicity",
+    "ids": [
+     "sql-fundamentals-sr6-01",
+     "sql-fundamentals-sr6-03"
+    ]
+   },
+   {
+    "name": "recursive-cte-termination",
+    "ids": [
+     "sql-fundamentals-sr6-08",
+     "sql-fundamentals-sr6-09"
+    ]
+   },
+   {
+    "name": "cte-materialization-default",
+    "ids": [
+     "sql-fundamentals-sr6-06",
+     "sql-fundamentals-sr6-07"
+    ]
+   },
+   {
+    "name": "default-window-frame",
+    "ids": [
+     "sql-fundamentals-sr7-06",
+     "sql-fundamentals-sr7-08"
+    ]
+   },
+   {
+    "name": "unique-null-handling",
+    "ids": [
+     "sql-fundamentals-sr8-02",
+     "sql-fundamentals-sr8-03"
+    ]
+   },
+   {
+    "name": "uncommitted-visibility",
+    "ids": [
+     "sql-fundamentals-sr10-02",
+     "sql-fundamentals-sr11-01"
+    ]
+   },
+   {
+    "name": "commit-durability-wal",
+    "ids": [
+     "sql-fundamentals-sr10-03",
+     "sql-fundamentals-sr10-07"
+    ]
+   },
+   {
+    "name": "savepoint-rollback",
+    "ids": [
+     "sql-fundamentals-sr10-09",
+     "sql-fundamentals-sr10-10"
+    ]
+   },
+   {
+    "name": "transaction-snapshot-timing",
+    "ids": [
+     "sql-fundamentals-sr11-02",
+     "sql-fundamentals-sr11-03",
+     "sql-fundamentals-sr11-04"
+    ]
+   },
+   {
+    "name": "serialization-error-retry",
+    "ids": [
+     "sql-fundamentals-sr11-05",
+     "sql-fundamentals-sr11-08"
+    ]
+   },
+   {
+    "name": "matview-refresh-blocking",
+    "ids": [
+     "sql-fundamentals-sr13-08",
+     "sql-fundamentals-sr13-09"
+    ]
+   },
+   {
+    "name": "bare-type-declaration-template",
+    "ids": [
+     "sql-fundamentals-sr14-01",
+     "sql-fundamentals-sr14-06",
+     "sql-fundamentals-sr14-10"
+    ]
+   }
+  ],
+  "sectionBalance": "After edits there are 145 cards: 68 true and 77 false. r1: 10 cards, 4T/6F (avg length T 78.0, F 82.3). r2: 10 cards, 6T/4F (T 59.8, F 55.8). r3: 11 cards, 6T/5F (T 80.8, F 80.8). r4: 10 cards, 4T/6F (T 70.8, F 70.3). r5: 10 cards, 4T/6F (T 79.5, F 78.8). r6: 10 cards, 4T/6F (T 80.2, F 83.8). r7: 10 cards, 5T/5F (T 83.0, F 83.2). r8: 10 cards, 4T/6F (T 87.8, F 89.8). r9: 10 cards, 4T/6F (T 91.0, F 95.7). r10: 10 cards, 5T/5F (T 88.6, F 84.8). r11: 12 cards, 6T/6F (T 98.0, F 95.5). r12: 9 cards, 4T/5F (T 95.5, F 91.2). r13: 11 cards, 6T/5F (T 95.2, F 92.0). r14: 12 cards, 6T/6F (T 85.0, F 86.8). Every section has at least 9 cards and no split worse than 4/6, and true and false average lengths stay within 5 characters in every section.",
+  "notes": "I downloaded these PostgreSQL 18 pages (all HTTP 200) and checked every rewrite word by word against them: queries-table-expressions, sql-select, tutorial-transactions, sql-begin, functions-comparison, functions-subquery, sql-createtable, indexes-index-only-scans, queries-order, ddl-constraints. Settling quotes:\n- sr6-03: \"a row that has m duplicates in the left table and n duplicates in the right table will appear max(m-n,0) times\".\n- sr10-04: \"By default (without BEGIN), PostgreSQL executes transactions in 'autocommit' mode, that is, each statement is executed in its own transaction and a commit is implicitly performed at the end of the statement (if execution was successful, otherwise a rollback is done)\". I kept the sql-begin URL because it backs the autocommit wording; tutorial-transactions would also work.\n- sr10-10: \"ROLLBACK TO is the only way to regain control of a transaction block that was put in aborted state by the system due to an error, short of rolling it back completely\".\n- sr4-04 (source only): \"If a query contains aggregate function calls, but no GROUP BY clause, grouping still occurs: the result is a single group row\" and \"(which is output even if no input rows were present)\".\n- sr2-02: \"NULL IS NOT DISTINCT FROM NULL → t (rather than NULL)\".\n- sr5-09: \"The result of ALL is 'true' if all rows yield true (including the case where the subquery returns no rows)\".\n- sr1-04: \"an output column name has to stand alone, that is, it cannot be used in an expression\".\n- sr8-08: \"the refcolumn list must refer to the columns of a non-deferrable unique or primary key constraint or be the columns of a non-partial unique index\".\n- sr9-09: \"Visibility information is not stored in index entries, only in heap entries\".\n\nEvery weak_card, out_of_scope and duplicate was dropped, not rewritten, because no section fell below 9 cards or past a 4/6 split. r12 is now at the 9-card minimum, and r1, r4, r5, r6, r8 and r9 sit at 4T/6F, so any further false-card drop in those sections needs a true backfill.\n\nThe drops leave these r-list topics untested: DISTINCT ON with ORDER BY, NULLIF, IN with a null, the GROUP BY without aggregates = DISTINCT equivalence, FILTER scope, a correlated subquery referencing an outer column, data-modifying WITH running to completion, CYCLE, a window function keeping every row, lag's default argument, GENERATED ALWAYS with OVERRIDING SYSTEM VALUE, FK default NO ACTION, skip scan, the unique expression index, ACID consistency, RELEASE SAVEPOINT, INSERT ... SELECT column-by-position, SET col = DEFAULT with no declared default (null), upsert under concurrency, and STORED generated columns recomputed on UPDATE. The verifiers' suggested replacements for these look sound, but I did not verify them on the official pages, so they are not in this edit set. A backfill round could use them after checking.\n\nTell fixes:\n- I rewrote 5 statements without changing fact or answer: sr1-04, sr8-08 and sr9-09 drop 'alone/solely', sr2-02 breaks the r2 'evaluates to true = false' pattern, and sr5-09 drops 'zero'.\n- sr4-12 still uses 'alone', but it is the only card left that does.\n- Unresolved: the version prefix ('Since PostgreSQL N' / 'In PostgreSQL N and later') is now 6 true, 0 false (sr5-11, sr8-03, sr12-05, sr12-12, sr13-11, sr14-12), because sr13-10 was the only false one and it was dropped. Rewording cannot fix this, since the prompt requires the version on 15+ features. A later round should add one or two false cards about a 15+ feature, such as a versioned false card on NULLS NOT DISTINCT, VIRTUAL or uuidv7.\n\nDeck-wide balance is 68 true and 77 false after the drops.\n\nConflict groups:\n- I dropped null-skipping-functions, exists-row-presence, update-set-default and generated-column-kinds because only one member was left in each.\n- I removed dropped members from outer-join-preserved-side, recursive-cte-termination and savepoint-rollback.\n- I added set-operation-all-multiplicity (sr6-01, sr6-03): the rewritten EXCEPT ALL card's copy arithmetic hints that set operations without ALL remove duplicates.\n- sr2-02 now sits even closer to sr2-01 (NULL = NULL vs NULL IS NOT DISTINCT FROM NULL); it stays in null-equality-vs-distinct-from.\n\nFiles read: content/raw/sql-fundamentals-b1.json to b4.json and content/prompts/ready-v2-sql-fundamentals.txt. No files were edited."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "sql-fundamentals-sr6-03",
+    "decision": "keep",
+    "statement": "With EXCEPT ALL, a row with 3 copies on the left and 1 on the right is absent from the result.",
+    "answer": false,
+    "explanation": "EXCEPT ALL keeps max(m-n,0) copies of a row, so 3 copies on the left and 1 on the right leave 2 copies in the result.",
+    "reason": "Both lenses keep it. Confirmed on sql-select.html, EXCEPT Clause: with ALL, a row with m duplicates on the left and n on the right appears max(m-n,0) times. 3 and 1 give 2 copies, so the answer false is unambiguous."
+   },
+   {
+    "id": "sql-fundamentals-sr10-04",
+    "decision": "keep",
+    "statement": "In PostgreSQL, a single statement sent outside BEGIN runs in its own implicit transaction.",
+    "answer": true,
+    "explanation": "Outside BEGIN, PostgreSQL runs in autocommit mode: such a statement gets an implicit BEGIN and, if it succeeds, a COMMIT, otherwise a rollback.",
+    "reason": "Both lenses keep it. Confirmed on sql-begin.html: without BEGIN, PostgreSQL runs in autocommit mode, each statement in its own transaction, with an implicit commit if it succeeds and a rollback otherwise."
+   },
+   {
+    "id": "sql-fundamentals-sr10-10",
+    "decision": "keep",
+    "statement": "In PostgreSQL, a valid `UPDATE` can resume an aborted transaction after a statement error.",
+    "answer": false,
+    "explanation": "An error puts the transaction block in an aborted state; ROLLBACK TO an earlier savepoint, or rolling back the whole transaction, is the only way to regain control.",
+    "reason": "Both lenses keep it. Confirmed on tutorial-transactions.html: ROLLBACK TO is the only way to regain control of a transaction block put in aborted state by an error, short of rolling it back completely."
+   },
+   {
+    "id": "sql-fundamentals-sr1-04",
+    "decision": "fixed",
+    "statement": "In PostgreSQL, for t(a, b), `SELECT a + b AS total FROM t ORDER BY total * 2` is a valid query.",
+    "answer": false,
+    "explanation": "In ORDER BY, an output column name must stand alone; inside an expression such as total * 2 it is read as an input column of t, which has no total, so the query errors.",
+    "reason": "Merged the fact lens fix. The wording lens had no objection to the fix's form, and the 'is a valid query' pattern still appears only twice. sql-select.html Compatibility presents name resolution in ORDER BY as PostgreSQL's interpretation (SQL-92 allowed output names only, PostgreSQL extends this). It also says names inside an expression are always taken as input-column names. So the card needs 'In PostgreSQL', and the explanation now gives the doc's actual reason. queries-order.html confirms the 'sum + c -- wrong' example. Statement 95 chars, explanation 168."
+   },
+   {
+    "id": "sql-fundamentals-sr8-08",
+    "decision": "keep",
+    "statement": "In PostgreSQL, a non-unique index on a column is enough to let a foreign key reference that column.",
+    "answer": false,
+    "explanation": "A foreign key target needs a primary key, a unique constraint, or a non-partial unique index.",
+    "reason": "Both lenses keep it. Confirmed on sql-createtable.html REFERENCES: the refcolumn list must refer to a non-deferrable unique or primary key constraint, or to the columns of a non-partial unique index. The deck's assumed context (no DEFERRABLE) covers the omission of 'non-deferrable'."
+   },
+   {
+    "id": "sql-fundamentals-sr9-09",
+    "decision": "fixed",
+    "statement": "In PostgreSQL, index entries store the visibility information that an index-only scan checks.",
+    "answer": false,
+    "explanation": "Visibility data lives in heap entries, not index entries; an index-only scan checks the visibility map and visits the table row when the page is not all-visible.",
+    "reason": "Merged the fact lens fix: dropped 'row' (97 to 93 chars). This brings the r9 false average back within 5 characters of the true average, as the balance rule requires. The fact is unchanged. Confirmed on indexes-index-only-scans.html: visibility information is not stored in index entries, only in heap entries. The scan checks the visibility map bit and visits the heap entry when the bit is not set."
+   },
+   {
+    "id": "sql-fundamentals-sr2-02",
+    "decision": "keep",
+    "statement": "`NULL IS NOT DISTINCT FROM NULL` evaluates to true.",
+    "answer": true,
+    "explanation": "IS NOT DISTINCT FROM treats null as a comparable value, so two nulls count as equal and the result is true rather than null.",
+    "reason": "Both lenses keep it. The wording lens's minor note about the missing prefix is accepted for length balance. Confirmed on functions-comparison.html: 'NULL IS NOT DISTINCT FROM NULL → t (rather than NULL)', and the predicate returns true when both inputs are null."
+   },
+   {
+    "id": "sql-fundamentals-sr5-09",
+    "decision": "keep",
+    "statement": "A comparison such as `x > ALL (subquery)` returns true when the subquery result is empty.",
+    "answer": true,
+    "explanation": "ALL is true when every subquery row yields true, which includes the case of a subquery that returns no rows.",
+    "reason": "Both lenses keep it. Confirmed on functions-subquery.html: the result of ALL is true if all rows yield true, including the case where the subquery returns no rows."
+   }
+  ]
+ }
+}

@@ -549,6 +549,15 @@ describe("the real content", () => {
           ["linux", "Linux", []],
         ],
       ],
+      [
+        "backend",
+        "Backend",
+        [
+          ["python", "Python", []],
+          ["nodejs", "Node.js", []],
+          ["sql", "SQL", []],
+        ],
+      ],
     ]);
   });
 
@@ -661,8 +670,9 @@ describe("the real content: Solutions Architect Associate", () => {
   });
 });
 
-// Fifteen decks entered after step 2 shipped: a third AWS deck, a second Google Cloud deck, the first Azure deck,
-// four Frontend platforms with two more Web platform decks, and the DevOps platforms. This pins what the deploy builds from
+// Twenty decks entered after step 2 shipped: a third AWS deck, a second Google Cloud deck, two Azure decks,
+// four Frontend platforms with two more Web platform decks, the DevOps platforms with a second Kubernetes deck, and
+// the Backend area. This pins what the deploy builds from
 // every reviewed file in the repository, which the blocks above never build all at once.
 describe("the real content: the decks added after step 2", () => {
   function readContent(path: string): unknown {
@@ -686,6 +696,11 @@ describe("the real content: the decks added after step 2", () => {
     "git-fundamentals",
     "github-actions",
     "linux-command-line",
+    "azure-az-104",
+    "kubernetes-ckad",
+    "python-fundamentals",
+    "nodejs-fundamentals",
+    "sql-fundamentals",
   ];
   const output = buildDecks({
     catalog: readContent("catalog.json"),
@@ -702,7 +717,7 @@ describe("the real content: the decks added after step 2", () => {
         [
           ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03", "aws-dva-c02"]],
           ["gcp", "Google Cloud", ["gcp-cdl", "gcp-ace"]],
-          ["azure", "Azure", ["azure-az-900"]],
+          ["azure", "Azure", ["azure-az-900", "azure-az-104"]],
         ],
       ],
       [
@@ -721,11 +736,20 @@ describe("the real content: the decks added after step 2", () => {
         "DevOps",
         [
           ["docker", "Docker", ["docker-fundamentals"]],
-          ["kubernetes", "Kubernetes", ["kubernetes-kcna"]],
+          ["kubernetes", "Kubernetes", ["kubernetes-kcna", "kubernetes-ckad"]],
           ["terraform", "Terraform", ["terraform-associate"]],
           ["git", "Git", ["git-fundamentals"]],
           ["github", "GitHub", ["github-actions"]],
           ["linux", "Linux", ["linux-command-line"]],
+        ],
+      ],
+      [
+        "backend",
+        "Backend",
+        [
+          ["python", "Python", ["python-fundamentals"]],
+          ["nodejs", "Node.js", ["nodejs-fundamentals"]],
+          ["sql", "SQL", ["sql-fundamentals"]],
         ],
       ],
     ]);
@@ -946,6 +970,78 @@ describe("the real content: the decks added after step 2", () => {
         ["SHL", "Shell and redirection", 21],
         ["TOL", "Tools, ssh and packages", 31],
         ["SYS", "systemd and the journal", 10],
+      ],
+    ],
+    [
+      "azure-az-104",
+      "104",
+      "Administrator Associate",
+      "Azure Administrator Associate",
+      145,
+      [
+        ["IDN", "Identity and governance", 27],
+        ["STO", "Storage", 29],
+        ["CMP", "Compute resources", 40],
+        ["NET", "Virtual networking", 29],
+        ["MON", "Monitoring and backup", 20],
+      ],
+    ],
+    [
+      "kubernetes-ckad",
+      "CKD",
+      "Application Developer",
+      "Kubernetes Application Developer",
+      146,
+      [
+        ["DSN", "Design and build", 28],
+        ["DEP", "Deployment", 27],
+        ["OBS", "Observability and maintenance", 27],
+        ["CFG", "Configuration and security", 37],
+        ["NET", "Services and networking", 27],
+      ],
+    ],
+    [
+      "python-fundamentals",
+      "PYT",
+      "Fundamentals",
+      "Python Fundamentals",
+      151,
+      [
+        ["OBJ", "Objects and values", 21],
+        ["COL", "Strings and collections", 23],
+        ["FNC", "Scopes and functions", 22],
+        ["FLO", "Iteration, errors and cleanup", 31],
+        ["CLS", "Classes and modules", 32],
+        ["TYP", "Types and matching", 22],
+      ],
+    ],
+    [
+      "nodejs-fundamentals",
+      "NOD",
+      "Fundamentals",
+      "Node.js Fundamentals",
+      137,
+      [
+        ["RUN", "Runtime and event loop", 29],
+        ["MOD", "Modules and packages", 19],
+        ["COR", "Core modules", 47],
+        ["PRC", "Errors and processes", 22],
+        ["DEV", "Tooling and releases", 20],
+      ],
+    ],
+    [
+      "sql-fundamentals",
+      "SQL",
+      "Fundamentals",
+      "SQL Fundamentals",
+      145,
+      [
+        ["QRY", "Queries and NULL logic", 20],
+        ["JNS", "Joins and subqueries", 21],
+        ["AGG", "Aggregates, CTEs and windows", 30],
+        ["SCH", "Keys, constraints and types", 22],
+        ["IDX", "Indexes and views", 21],
+        ["TXN", "Transactions and writes", 31],
       ],
     ],
   ];
