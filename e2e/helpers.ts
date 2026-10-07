@@ -46,6 +46,8 @@ export const CDL_WHOLE: RoutePick = {
 
 export const CLF_ID = "aws-clf-c02";
 export const CDL_ID = "gcp-cdl";
+/** The Security and compliance section of CLF. */
+export const SEC_ID = "SEC";
 
 /** The accessible name of the continue line after a round on CLF / SEC / Classic. */
 export const CONTINUE_CLF_SECURITY = "Continue: AWS Cloud Practitioner, Security and compliance, Classic.";

@@ -9,16 +9,19 @@ import { expect, type Page, type Response } from "@playwright/test";
 import {
   CLF_ID,
   CLF_SECURITY,
+  SEC_ID,
   answerCard,
   atHome,
+  atStep,
   chooseRoute,
   deckAnswers,
   inClass,
   openHome,
+  option,
   seeResults,
   stepTitle,
 } from "./helpers";
-import { expectNetworkGone, goOffline, test, waitForWorker } from "./offline";
+import { expectNetworkGone, goOffline, test, toDeckStep, waitForWorker } from "./offline";
 
 test.use({ reducedMotion: "reduce", serviceWorkers: "allow" });
 
@@ -103,8 +106,9 @@ test("offline, a stored round whose deck has no copy shows the load failure, and
   await openHome(page);
   await waitForWorker(page);
   await goOffline(page, net);
-  await page.evaluate(() =>
-    sessionStorage.setItem("truthy.pending.v1", JSON.stringify({ route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" })),
+  await page.evaluate(
+    ({ deckId, sectionId }) => sessionStorage.setItem("truthy.pending.v1", JSON.stringify({ route: { deckId, sectionId }, mode: "classic" })),
+    { deckId: CLF_ID, sectionId: SEC_ID },
   );
 
   let deckRequests = 0;
@@ -144,8 +148,18 @@ test("a network that is gone while the browser still says it is online: a deck w
   const opened = await page.reload();
   expect(opened?.fromServiceWorker()).toBe(true);
   await atHome(page);
-  // The deck step offers every deck as it does online, CLF too, which the device holds no copy of.
-  await chooseRoute(page, CLF_SECURITY);
+  // The deck step offers every deck as it does online, CLF too, which the device holds no copy of: the browser
+  // says it is online, so no deck is labelled as needing a connection and every deck can be chosen.
+  await toDeckStep(page, CLF_SECURITY.area, CLF_SECURITY.platform);
+  await expect(page.getByRole("button", { name: CLF_SECURITY.deck })).toBeVisible();
+  await expect(page.getByText("Needs a connection")).toHaveCount(0);
+  await expect(page.getByRole("group", { name: /needs a connection/ })).toHaveCount(0);
+  await option(page, CLF_SECURITY.deck).click();
+  await atStep(page, "Choose a section");
+  await option(page, CLF_SECURITY.section!).click();
+  await atStep(page, "Choose how to play");
+  await option(page, CLF_SECURITY.mode).click();
+  await atStep(page, "Your pass is ready");
   const play = documentLoad(page, "/play");
   await page.getByRole("button", { name: "Start round" }).click();
   expect((await play).fromServiceWorker()).toBe(true);
