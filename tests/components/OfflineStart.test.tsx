@@ -32,6 +32,11 @@ function fakeClient({ waiting = false, applied = true }: { waiting?: boolean; ap
   return { client, calls, finishStart };
 }
 
+/** Lets every pending promise settle: a macrotask runs only after the microtasks queued before it. */
+function settle(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, "", "/");
@@ -41,7 +46,7 @@ describe("openApp: the safe moment when the app opens", () => {
   it("on /, with an update waiting: registers first, then applies it and reloads once it has taken over", async () => {
     const { client, calls, finishStart } = fakeClient({ waiting: true });
     const reload = vi.fn();
-    const opening = openApp(client, "/", reload);
+    const opening = openApp(client, "/", reload, () => "/");
     expect(calls).toEqual(["start"]);
     finishStart();
     await opening;
@@ -53,7 +58,7 @@ describe("openApp: the safe moment when the app opens", () => {
     const { client, finishStart } = fakeClient({ waiting: true, applied: false });
     const reload = vi.fn();
     finishStart();
-    await openApp(client, "/", reload);
+    await openApp(client, "/", reload, () => "/");
     expect(client.applyUpdate).toHaveBeenCalledTimes(1);
     expect(reload).not.toHaveBeenCalled();
   });
@@ -62,7 +67,7 @@ describe("openApp: the safe moment when the app opens", () => {
     const { client, finishStart } = fakeClient({ waiting: false });
     const reload = vi.fn();
     finishStart();
-    await openApp(client, "/", reload);
+    await openApp(client, "/", reload, () => "/");
     expect(client.applyUpdate).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
   });
@@ -71,7 +76,7 @@ describe("openApp: the safe moment when the app opens", () => {
     const { client, calls, finishStart } = fakeClient({ waiting: true });
     const reload = vi.fn();
     finishStart();
-    await openApp(client, path, reload);
+    await openApp(client, path, reload, () => path);
     expect(calls).toEqual(["start"]);
     expect(reload).not.toHaveBeenCalled();
   });
@@ -140,6 +145,37 @@ describe("OfflineStart", () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(client.applyUpdate).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  // Spec section 7: never on /play while a round is open. Registration can take seconds (it queues behind an update
+  // job that installs a new version), and the start flow opens /play with router.push while the layout stays.
+  it("a move to /play before registration settles applies nothing", async () => {
+    window.history.replaceState(null, "", "/");
+    const { client, finishStart } = fakeClient({ waiting: true });
+    const reload = vi.fn();
+    render(<OfflineStart services={{ offline: client }} reload={reload} />);
+    await waitFor(() => expect(client.start).toHaveBeenCalledTimes(1));
+    window.history.pushState(null, "", "/play");
+    finishStart();
+    await settle();
+    expect(client.applyUpdate).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("leaving / while the update applies does not reload", async () => {
+    window.history.replaceState(null, "", "/");
+    const { client, finishStart } = fakeClient({ waiting: true });
+    // The player opens /play in the up to APPLY_TIMEOUT_MS the new version takes to control the page.
+    client.applyUpdate = vi.fn(async () => {
+      window.history.pushState(null, "", "/play");
+      return true;
+    });
+    const reload = vi.fn();
+    finishStart();
+    render(<OfflineStart services={{ offline: client }} reload={reload} />);
+    await waitFor(() => expect(client.applyUpdate).toHaveBeenCalledTimes(1));
+    await settle();
     expect(reload).not.toHaveBeenCalled();
   });
 });

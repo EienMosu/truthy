@@ -9,12 +9,18 @@ import { useEffect, useRef } from "react";
 import { browserAppServices, type AppServices } from "@/src/app-state/services";
 import type { OfflineClient } from "@/src/offline/register";
 
-/** Registers the worker; then, on / only, lets a waiting update take over and reloads once it has. */
-export async function openApp(offline: OfflineClient, path: string, reload: () => void): Promise<void> {
+/**
+ * Registers the worker; then, when the page opened on /, lets a waiting update take over and reloads once it
+ * has. Registration can take seconds, and the start flow may open /play meanwhile with the layout still
+ * mounted, so the page must also still be on / when registration settles and when the update has taken over
+ * (spec section 7: never on /play while a round is open). Otherwise nothing is applied and nothing reloads:
+ * a new version that already took over leaves the loaded code running, as in a second tab (spec section 10).
+ */
+export async function openApp(offline: OfflineClient, path: string, reload: () => void, currentPath: () => string): Promise<void> {
   await offline.start();
-  if (path !== "/") return;
+  if (path !== "/" || currentPath() !== "/") return;
   if (!offline.updateWaiting()) return;
-  if (await offline.applyUpdate()) reload();
+  if ((await offline.applyUpdate()) && currentPath() === "/") reload();
 }
 
 export interface OfflineStartProps {
@@ -28,6 +34,10 @@ function reloadPage(): void {
   window.location.reload();
 }
 
+function pagePath(): string {
+  return window.location.pathname;
+}
+
 export function OfflineStart({ services = browserAppServices, reload = reloadPage }: OfflineStartProps) {
   // Once per page load: the layout stays mounted across in-app moves between / and /play, and React runs
   // an effect twice in development.
@@ -35,7 +45,7 @@ export function OfflineStart({ services = browserAppServices, reload = reloadPag
   useEffect(() => {
     if (opened.current) return;
     opened.current = true;
-    void openApp(services.offline, window.location.pathname, reload);
+    void openApp(services.offline, pagePath(), reload, pagePath);
   }, [services, reload]);
   return null;
 }
