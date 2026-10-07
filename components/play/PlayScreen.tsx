@@ -197,7 +197,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // is still being dealt when a way back starts (Leave round on the loading screen) never opens: useRound drops
   // the deal, so nothing is played under the update that the way back applies and the page load that follows.
   const goingToStart = useRef(false);
-  const { status, dispatch, retry, restart, progressStore } = useRound(services, goHome, goingToStart);
+  const { status, dispatch, retry, restart, recoverDropped, progressStore } = useRound(services, goHome, goingToStart);
   // When the full page load started, on services.monotonic, or null while none has. A load that has not
   // replaced the page after FULL_LOAD_WAIT_MS lifts the guard at the next press. Waiting for pageshow would
   // not do: location.replace took /play's history entry, so this page never comes back from the back-forward
@@ -223,8 +223,10 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     loadLost.current = true;
     goingToStart.current = false;
     loadingSince.current = null;
+    // A round dropped while the load was under way gives way to the load failure, so Try again can deal it.
+    recoverDropped();
     return false;
-  }, [services]);
+  }, [services, recoverDropped]);
   const leaveToStart = useCallback(() => {
     if (wayBackPending()) return;
     goingToStart.current = true;
@@ -238,8 +240,9 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
         goingToStart.current = false;
         // The mark was set before the way back, which then failed before it moved: no start takes it.
         services.clearReturnToStart?.();
+        recoverDropped();
       });
-  }, [router, services, wayBackPending]);
+  }, [router, services, wayBackPending, recoverDropped]);
   // An in-app way back lifts the guard at once, but on a slow network router.replace("/") can still be waiting
   // for its payload. Play again and Try again drop that way back, so they take back its mark: a start that the
   // back gesture opened later, with no control used, would otherwise take it, as the mark in memory has no age.

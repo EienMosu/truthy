@@ -464,6 +464,59 @@ describe("PlayScreen: a waiting update is never applied during a round", () => {
     expect(screen.queryByRole("button", { name: "True" })).toBeNull();
   });
 
+  // The dropped round's place is taken by the load failure once the guard lifts with the screen still there, so
+  // the player can play (Try again) or leave again. Without it the loading screen keeps only Leave round, and with
+  // no start entry behind /play each press would start the same lost load again.
+  it("shows the load failure in place of a dropped round when the guard lifts after the full page load was lost", async () => {
+    const stopLoading = vi.fn();
+    h = withOffline(fakeOffline(true));
+    h.services = { ...h.services, stopLoading };
+    h.network.hold = true;
+    render(<PlayScreen services={h.services} />);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    h.network.hold = false;
+    await act(async () => h.network.release());
+    await waitFor(() => expect(h.network.calls).toHaveLength(2));
+    await act(async () => {});
+    expect(screen.queryByRole("alert")).toBeNull();
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    await act(async () => {});
+    expect(stopLoading).toHaveBeenCalledTimes(1);
+    // No start entry is behind /play: that press started the full page load again, under the guard.
+    expect(location.replace).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "True" })).toBeNull();
+    // Once that load is lost too, Try again stops it and deals the round.
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+    expect(stopLoading).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the load failure in place of a dropped round when the way back throws", async () => {
+    let takeOver: (value: boolean) => void = () => {};
+    const backToStart = vi.fn((): boolean => {
+      throw new Error("the history cannot be read");
+    });
+    h = withOffline(fakeOffline(true, () => new Promise<boolean>((resolve) => (takeOver = resolve))));
+    h.services = { ...h.services, backToStart };
+    h.network.hold = true;
+    render(<PlayScreen services={h.services} />);
+    fireEvent.click(screen.getByRole("button", { name: "Leave round" }));
+    h.network.hold = false;
+    await act(async () => h.network.release());
+    await waitFor(() => expect(h.network.calls).toHaveLength(2));
+    await act(async () => {});
+    // The update does not take over in time, and the in-app way back then throws.
+    await act(async () => takeOver(false));
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("alert")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
+  });
+
   it("does not apply it when /play sends a page load without a round to the start", async () => {
     const offline = fakeOffline(true);
     h = withOffline(offline, harness(null));

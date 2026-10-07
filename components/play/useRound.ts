@@ -112,6 +112,12 @@ export interface UseRoundResult {
   retry: () => void;
   /** A new round on the same route and mode, dealt with the card history as stored now ("Play again"). */
   restart: () => void;
+  /**
+   * The way back that made the hook drop a deal (see `leaving`) is over and the screen is still there (its load
+   * was lost, or it failed): the load failure takes the dropped round's place, with Try again to deal it again.
+   * Nothing happens when no deal was dropped.
+   */
+  recoverDropped: () => void;
   /** The progress store on the device, for recording a round. */
   progressStore: () => ProgressStore;
 }
@@ -205,6 +211,8 @@ type LoadState = { kind: "loading" } | { kind: "redirecting" } | { kind: "error"
  * starts it while a round is still being dealt). A deal that settles then is dropped, whatever it brings: no round
  * opens under a page that is leaving, where the update the way back applies and its full page load could land in
  * the middle of it (spec section 7). A deal started after the way back is over (Play again, Try again) counts.
+ * When that way back is over with the screen still there, recoverDropped puts the load failure in the dropped
+ * round's place: dealing at once could race the next way back, which the same press may already have started.
  */
 export function useRound(services: PlayServices, goHome: () => void, leaving?: { readonly current: boolean }): UseRoundResult {
   const [round, send] = useReducer(roundReducer, null);
@@ -212,6 +220,8 @@ export function useRound(services: PlayServices, goHome: () => void, leaving?: {
   const [attempt, setAttempt] = useState(0);
   // The index the last round was dealt from: Play again does not wait the whole fetch timeout for it again.
   const knownIndex = useRef<DeckIndex | null>(null);
+  // Whether a deal settled while the screen was leaving and was dropped, so the screen still shows it loading.
+  const dropped = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,7 +233,11 @@ export function useRound(services: PlayServices, goHome: () => void, leaving?: {
     }
     prepareRound(pending, services, knownIndex.current).then(
       (prepared) => {
-        if (cancelled || leaving?.current) return;
+        if (cancelled) return;
+        if (leaving?.current) {
+          dropped.current = true;
+          return;
+        }
         if (prepared === null) {
           setLoad({ kind: "redirecting" });
           goHome();
@@ -238,7 +252,10 @@ export function useRound(services: PlayServices, goHome: () => void, leaving?: {
         // A LoadError is the network or the cache. Anything else is a bug in dealing or pruning: it is
         // logged, and the player still sees the one message the screen has.
         if (!(reason instanceof LoadError)) console.error(reason);
-        if (leaving?.current) return;
+        if (leaving?.current) {
+          dropped.current = true;
+          return;
+        }
         setLoad({ kind: "error", message: LOAD_FAILED_MESSAGE });
       },
     );
@@ -248,9 +265,16 @@ export function useRound(services: PlayServices, goHome: () => void, leaving?: {
   }, [attempt, services, goHome, leaving]);
 
   const again = useCallback(() => {
+    dropped.current = false;
     send({ type: "clear" });
     setLoad({ kind: "loading" });
     setAttempt((n) => n + 1);
+  }, []);
+
+  const recoverDropped = useCallback(() => {
+    if (!dropped.current) return;
+    dropped.current = false;
+    setLoad({ kind: "error", message: LOAD_FAILED_MESSAGE });
   }, []);
 
   const dispatch = useCallback((event: RoundEvent) => send(event), []);
@@ -260,5 +284,5 @@ export function useRound(services: PlayServices, goHome: () => void, leaving?: {
   if (load.kind === "ready") status = round === null ? { kind: "loading" } : { kind: "ready", round, ticket: load.ticket };
   else status = load;
 
-  return { status, dispatch, retry: again, restart: again, progressStore };
+  return { status, dispatch, retry: again, restart: again, recoverDropped, progressStore };
 }
