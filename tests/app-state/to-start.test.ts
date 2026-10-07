@@ -93,6 +93,31 @@ describe("goToStart: a new version took over this page earlier without a reload"
   });
 });
 
+// The play screen lost a full page load that a way back started (it never replaced the page): the next way back
+// does not try the same load again.
+describe("goToStart: the in-app way is asked for", () => {
+  it("takes it whatever waits or took over earlier, and applies nothing", async () => {
+    const offline = fakeOffline(true, async () => true, true);
+    const backToStart = vi.fn(() => false);
+    const router = { replace: vi.fn() };
+    await expect(goToStart(servicesWith(offline, backToStart), router, { inApp: true })).resolves.toBe(false);
+    expect(location.replace).not.toHaveBeenCalled();
+    expect(offline.applyUpdate).not.toHaveBeenCalled();
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).toHaveBeenCalledWith("/");
+  });
+
+  it("goes back to the start's entry when it is right behind /play", async () => {
+    const offline = fakeOffline(false, async () => true, true);
+    const backToStart = vi.fn(() => true);
+    const router = { replace: vi.fn() };
+    await expect(goToStart(servicesWith(offline, backToStart), router, { inApp: true })).resolves.toBe(false);
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalled();
+    expect(location.replace).not.toHaveBeenCalled();
+  });
+});
+
 describe("goToStart: nothing is waiting", () => {
   it("goes back to the start's entry when it is right behind /play, and applies nothing", async () => {
     const offline = fakeOffline(false);

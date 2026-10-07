@@ -203,12 +203,17 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
   // no start takes it now, and the mark in memory has no age, so a start that the back gesture opened later,
   // with no control used, would focus its step 1 title.
   const loadingSince = useRef<number | null>(null);
+  // Set when the guard lifted after a lost load. The next way back then takes the in-app way, as when no update
+  // was applied: once a new version has taken over, every way back is a full page load, which would most likely
+  // stall again, and in a home screen app, which has no back gesture, the player could never reach the start.
+  const loadLost = useRef(false);
   const wayBackPending = useCallback(() => {
     if (!goingToStart.current) return false;
     const since = loadingSince.current;
     if (since === null || services.monotonic() - since < FULL_LOAD_WAIT_MS) return true;
     services.stopLoading?.();
     services.clearReturnToStart?.();
+    loadLost.current = true;
     goingToStart.current = false;
     loadingSince.current = null;
     return false;
@@ -217,7 +222,7 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     if (wayBackPending()) return;
     goingToStart.current = true;
     services.markReturnToStart?.();
-    void goToStart(services, router)
+    void goToStart(services, router, { inApp: loadLost.current })
       .then((loading) => {
         if (loading) loadingSince.current = services.monotonic();
         else goingToStart.current = false;

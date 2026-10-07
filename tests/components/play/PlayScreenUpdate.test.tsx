@@ -235,12 +235,14 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
     await act(async () => {});
     expect(screen.getByRole("heading", { name: "Round complete" })).toBeTruthy();
     expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
-    // The load stalled and the old page is still there: the result's buttons work again.
+    // The load stalled and the old page is still there: the result's buttons work again. The lost load is not
+    // tried again: this way back is the in-app one, which settles at once.
     h.advance(1);
     fireEvent.click(screen.getByRole("button", { name: "Close results" }));
-    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(2));
-    expect(offline.applyUpdate).toHaveBeenCalledTimes(2);
-    h.advance(FULL_LOAD_WAIT_MS);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/"));
+    expect(location.replace).toHaveBeenCalledTimes(1);
+    expect(offline.applyUpdate).toHaveBeenCalledTimes(1);
+    // The router is a stand-in, so the screen stays, and Play again deals a new round.
     fireEvent.click(screen.getByRole("button", { name: "Play again" }));
     expect(await screen.findByRole("button", { name: "True" })).toBeTruthy();
     expect(FULL_LOAD_WAIT_MS).toBe(RETURN_MAX_AGE_MS);
@@ -295,6 +297,34 @@ describe("PlayScreen: a waiting update is applied on the way back to the start",
       later.mockRestore();
     }
     expect(stored).toBeNull();
+  });
+
+  // A version took over earlier without a reload, so every way back is a full page load. Were the lost load tried
+  // again, Close results would stall each time, and in a home screen app, which has no back gesture, the player
+  // could only Play again and never reach the start.
+  it("takes the in-app way back after a page load that was lost, rather than the same page load again", async () => {
+    const offline = fakeOffline(false, async () => true, true);
+    const backToStart = vi.fn(() => false);
+    const stopLoading = vi.fn();
+    const markReturnToStart = vi.fn();
+    const clearReturnToStart = vi.fn();
+    const setup = withOffline(offline);
+    setup.services = { ...setup.services, backToStart, stopLoading, markReturnToStart, clearReturnToStart };
+    await playToResult(setup);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await waitFor(() => expect(location.replace).toHaveBeenCalledTimes(1));
+    expect(backToStart).not.toHaveBeenCalled();
+    h.advance(FULL_LOAD_WAIT_MS);
+    fireEvent.click(screen.getByRole("button", { name: "Close results" }));
+    await act(async () => {});
+    expect(stopLoading).toHaveBeenCalledTimes(1);
+    expect(location.replace).toHaveBeenCalledTimes(1);
+    expect(backToStart).toHaveBeenCalledTimes(1);
+    expect(router.replace).toHaveBeenCalledWith("/");
+    // The lost load's mark is taken back before this way back sets its own, which the start then takes.
+    expect(clearReturnToStart).toHaveBeenCalledTimes(1);
+    expect(markReturnToStart).toHaveBeenCalledTimes(2);
+    expect(clearReturnToStart.mock.invocationCallOrder[0]).toBeLessThan(markReturnToStart.mock.invocationCallOrder[1] ?? 0);
   });
 
   it("does not stop a page load when no way back started one", async () => {
