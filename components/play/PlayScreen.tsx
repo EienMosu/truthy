@@ -30,6 +30,7 @@ import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { EASE, EASE_IN, FALL } from "@/components/easing";
 import { pad2 } from "@/components/format";
 import { CloseIcon } from "@/components/icons";
+import { goToStart } from "@/src/app-state/to-start";
 import { plainText } from "@/src/content/text";
 import { SWIPE } from "@/src/input/swipe";
 import { TIMED, currentCard, isDecided, lastAnswer, livesLeft, scoreOf, type RoundEvent, type RoundState } from "@/src/engine/round";
@@ -177,11 +178,18 @@ export function PlayScreen({ services = browserPlayServices }: PlayScreenProps) 
     services.markPlayEntry?.();
   }, [services]);
   // The player's own ways home (Leave round, Choose another route, Close results): the start then focuses its
-  // step 1 title. A page load of /play without a round goes home too, but that is not a way back.
+  // step 1 title. A page load of /play without a round goes home too, but that is not a way back. They are
+  // also the safe moment for a waiting update (spec section 7): goToStart applies it and opens the start with
+  // a full page load. Until the way back it started has settled, another press of a way back does nothing.
+  const goingToStart = useRef(false);
   const leaveToStart = useCallback(() => {
+    if (goingToStart.current) return;
+    goingToStart.current = true;
     services.markReturnToStart?.();
-    goHome();
-  }, [goHome, services]);
+    void goToStart(services, router).finally(() => {
+      goingToStart.current = false;
+    });
+  }, [router, services]);
 
   // A round in progress with answers that are not in the card history yet, or a decided round whose result
   // has not been opened. Leaving any other way than the close control (the phone's back gesture, the
