@@ -262,6 +262,9 @@ describe("an update applied without a reload", () => {
     };
     expect(await client.applyUpdate()).toBe(false);
     expect(client.updateApplied()).toBe(false);
+    // A failed ask does not count: a version that takes over later (another tab's update) was not asked for here.
+    fake.changeController();
+    expect(client.updateApplied()).toBe(false);
     fake.registration.waiting = null;
     expect(await client.applyUpdate()).toBe(false);
     expect(client.updateApplied()).toBe(false);
