@@ -181,7 +181,18 @@ export async function playRound(
   total = 10,
   from = 1,
 ): Promise<Played[]> {
-  const answers = await deckAnswers(page, deckId);
+  return playRoundWith(page, await deckAnswers(page, deckId), choose, method, total, from);
+}
+
+/** playRound with the deck's answers read before (deckAnswers): the offline specs read them while online. */
+export async function playRoundWith(
+  page: Page,
+  answers: Map<string, boolean>,
+  choose: (number: number, truth: boolean) => boolean,
+  method: AnswerMethod = "buttons",
+  total = 10,
+  from = 1,
+): Promise<Played[]> {
   const played: Played[] = [];
   for (let number = from; number <= total; number += 1) {
     const { statement, truth } = await waitForCard(page, answers, number, total);
