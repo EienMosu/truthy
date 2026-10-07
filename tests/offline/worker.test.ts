@@ -298,6 +298,17 @@ describe("any other page", () => {
   });
 });
 
+describe("any other page without a kept 404 page", () => {
+  // The spec names the kept 404 page as the offline answer; with none kept (a cache that lost it), the worker has
+  // nothing of its own to show, so the page load fails as the network failed and the browser shows its offline page.
+  it("fails as the network failed when the network is gone", async () => {
+    const { worker, network, caches } = await installed();
+    await (await caches.open(OWN)).entries.delete(`${ORIGIN}${NOT_FOUND_PROBE}`);
+    network.offline = true;
+    await expect(worker.respond(navigate("/nope"))).rejects.toThrow("Failed to fetch");
+  });
+});
+
 describe("hashed files, icons and the manifest", () => {
   it.each(["/_next/static/chunks/main.js", "/icon.svg?icon.hash1.svg", "/icon-192.png", "/apple-icon.png", "/manifest.webmanifest"])(
     "%s comes from the cache without the network",
@@ -327,6 +338,19 @@ describe("hashed files, icons and the manifest", () => {
     const response = await worker.respond(get(path));
     expect(response?.status).toBe(404);
     expect((await caches.open(OWN)).paths()).not.toContain(path);
+  });
+
+  it("serves the network's answer for a file it does not hold when keeping the file fails", async () => {
+    const { worker, caches } = await installed();
+    const own = await caches.open(OWN);
+    own.put = async () => {
+      throw new Error("QuotaExceededError: the device is full");
+    };
+    const path = "/_next/static/chunks/lazy.js";
+    const response = await worker.respond(get(path));
+    expect(response?.status).toBe(200);
+    expect(await response?.text()).toBe(`file ${path}`);
+    expect(own.paths()).not.toContain(path);
   });
 
   it("fails as the network failed for a file it does not hold", async () => {
