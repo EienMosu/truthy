@@ -1,0 +1,536 @@
+{
+  "deck": "prometheus-fundamentals",
+  "block": "b4",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "",
+  "cards": [
+    {
+      "id": "prometheus-fundamentals-sr13-01",
+      "section": "r13",
+      "statement": "Prometheus keeps the active TSDB head chunks that are still receiving samples in memory.",
+      "answer": true,
+      "explanation": "The TSDB head keeps mutable chunks in memory while it builds them from incoming samples.",
+      "misconception": "",
+      "factKey": "head-active-block-memory",
+      "topic": "TSDB head data",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB head implementation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/head.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-02",
+      "section": "r13",
+      "statement": "Prometheus can recover recent head samples by replaying the WAL after a server restart.",
+      "answer": true,
+      "explanation": "Prometheus replays logged samples during startup to rebuild recent data that lacks a persistent block.",
+      "misconception": "",
+      "factKey": "wal-restart-recovery",
+      "topic": "WAL recovery",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB head implementation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/head.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-03",
+      "section": "r13",
+      "statement": "Prometheus can read a block's raw sample values from that block's index file.",
+      "answer": false,
+      "explanation": "A block's index associates labels with series and chunk references; chunk files hold the sample values.",
+      "misconception": "The index file contains the block's raw sample values.",
+      "factKey": "block-index-series-lookup",
+      "topic": "Block index lookup",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB index format",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/docs/format/index.md"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-04",
+      "section": "r13",
+      "statement": "Prometheus keeps source blocks on disk while it writes their compacted replacement block.",
+      "answer": true,
+      "explanation": "Compaction needs temporary disk space because its source blocks coexist with the new output block.",
+      "misconception": "",
+      "factKey": "compaction-temporary-disk-headroom",
+      "topic": "Block compaction",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Storage",
+        "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-05",
+      "section": "r13",
+      "statement": "With both policies configured, Prometheus's retention cleanup waits for time and size limits to trigger together.",
+      "answer": false,
+      "explanation": "With both policies set, the first triggering retention policy governs deletion.",
+      "misconception": "Time and size retention conditions need to trigger together.",
+      "factKey": "retention-first-trigger-wins",
+      "topic": "Retention policy interaction",
+      "tags": [
+        "Prometheus",
+        "storage.tsdb.retention.time",
+        "storage.tsdb.retention.size"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB retention implementation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-06",
+      "section": "r13",
+      "statement": "Prometheus removes the largest persistent blocks first when its configured size retention is exceeded.",
+      "answer": false,
+      "explanation": "Size retention selects the oldest persistent blocks for deletion, prioritizing recency rather than block size.",
+      "misconception": "Size retention prioritizes deletion by individual block size.",
+      "factKey": "size-retention-oldest-first",
+      "topic": "Size retention deletion",
+      "tags": [
+        "Prometheus",
+        "storage.tsdb.retention.size"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB retention implementation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-07",
+      "section": "r13",
+      "statement": "With time retention acting alone, Prometheus keeps blocks that partly overlap the retention window.",
+      "answer": true,
+      "explanation": "Time retention removes whole expired blocks, so a retained block may still contain samples older than the retention duration.",
+      "misconception": "",
+      "factKey": "time-retention-whole-block-expiry",
+      "topic": "Time retention blocks",
+      "tags": [
+        "Prometheus",
+        "storage.tsdb.retention.time"
+      ],
+      "appliesTo": "Prometheus 3.15.0 with time retention enabled and size retention disabled",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB retention implementation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-08",
+      "section": "r13",
+      "statement": "Prometheus removes expired persistent blocks through a background retention-cleanup process.",
+      "answer": true,
+      "explanation": "Retention cleanup runs in the background, so crossing an expiration boundary need not release disk space immediately.",
+      "misconception": "",
+      "factKey": "expiration-background-cleanup",
+      "topic": "Retention cleanup timing",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB retention implementation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-09",
+      "section": "r13",
+      "statement": "Prometheus enforces storage.tsdb.retention.size as a strict ceiling on total TSDB disk use.",
+      "answer": false,
+      "explanation": "Size retention deletes persistent blocks; WAL and head-chunk disk usage can exceed the configured limit.",
+      "misconception": "Size retention strictly caps the entire database directory.",
+      "factKey": "size-retention-total-disk-ceiling",
+      "topic": "Size retention limits",
+      "tags": [
+        "Prometheus",
+        "storage.tsdb.retention.size"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Storage",
+        "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-10",
+      "section": "r13",
+      "statement": "Prometheus documentation recommends TSDB snapshots when operators create database backups.",
+      "answer": true,
+      "explanation": "Prometheus recommends snapshots for backups; copying live storage files risks losing data recorded since the latest block.",
+      "misconception": "",
+      "factKey": "snapshot-backup-recommendation",
+      "topic": "TSDB database backups",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Storage",
+        "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-11",
+      "section": "r13",
+      "statement": "Prometheus documentation lists NFS as a supported filesystem for local TSDB storage.",
+      "answer": false,
+      "explanation": "Prometheus excludes NFS from supported local-storage filesystems because its filesystem behavior risks unrecoverable corruption.",
+      "misconception": "NFS is a supported filesystem for Prometheus local storage.",
+      "factKey": "local-tsdb-filesystem-support",
+      "topic": "TSDB filesystem support",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Storage",
+        "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr13-12",
+      "section": "r13",
+      "statement": "Prometheus's local TSDB replicates persistent blocks across a group of Prometheus servers.",
+      "answer": false,
+      "explanation": "Prometheus's local TSDB is a single-node database; it provides no built-in clustered replication.",
+      "misconception": "Prometheus local storage includes replication among servers.",
+      "factKey": "local-tsdb-single-node",
+      "topic": "Local storage durability",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Storage",
+        "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-01",
+      "section": "r14",
+      "statement": "Prometheus feeds a remote write destination's shard queues from its write-ahead log.",
+      "answer": true,
+      "explanation": "Prometheus reads ingested samples from the WAL into a destination's shard-owned queues before sending them.",
+      "misconception": "",
+      "factKey": "remote-write-wal-backed-queues",
+      "topic": "Remote write buffering",
+      "tags": [
+        "Prometheus",
+        "remote_write"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Remote write tuning",
+        "url": "https://prometheus.io/docs/practices/remote_write/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-02",
+      "section": "r14",
+      "statement": "Prometheus adjusts remote write shard counts as incoming rate and outstanding sample backlog change.",
+      "answer": true,
+      "explanation": "Remote write recalculates its sending parallelism from workload, queued samples and send duration, within configured shard bounds.",
+      "misconception": "",
+      "factKey": "remote-write-adaptive-shards",
+      "topic": "Remote write parallelism",
+      "tags": [
+        "Prometheus",
+        "min_shards",
+        "max_shards"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Remote write tuning",
+        "url": "https://prometheus.io/docs/practices/remote_write/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-03",
+      "section": "r14",
+      "statement": "Prometheus keeps unsent remote write samples in the WAL until their destination recovers.",
+      "answer": false,
+      "explanation": "Remote write's outage buffer is finite. WAL cleanup can remove older samples before a prolonged destination outage ends.",
+      "misconception": "The WAL guarantees delivery after a destination outage of arbitrary length.",
+      "factKey": "remote-write-finite-outage-buffer",
+      "topic": "Remote write buffering",
+      "tags": [
+        "Prometheus",
+        "remote_write"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Remote write tuning",
+        "url": "https://prometheus.io/docs/practices/remote_write/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-04",
+      "section": "r14",
+      "statement": "Prometheus replaces a nonempty series label with the matching external_labels value during remote write.",
+      "answer": false,
+      "explanation": "During remote write, Prometheus fills external labels missing from a series and preserves its existing nonempty label values.",
+      "misconception": "Configured external labels override labels already present on outgoing series.",
+      "factKey": "external-labels-outbound-fallback",
+      "topic": "External label handling",
+      "tags": [
+        "Prometheus",
+        "external_labels"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 configuration reference",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-05",
+      "section": "r14",
+      "statement": "Prometheus 3.15.0 uses send_native_histograms: false to disable native histogram sending for remote write v2.",
+      "answer": false,
+      "explanation": "For io.prometheus.write.v2.Request, Prometheus ignores send_native_histograms and enables native histogram sending. Remote write v1 honors the setting and defaults it to false.",
+      "misconception": "send_native_histograms controls native histogram sending for both remote write protocols.",
+      "factKey": "remote-native-sending-protocol",
+      "topic": "Native histogram delivery",
+      "tags": [
+        "Prometheus",
+        "send_native_histograms",
+        "io.prometheus.write.v2.Request"
+      ],
+      "appliesTo": "Prometheus 3.15.0, protobuf_message: io.prometheus.write.v2.Request",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Remote write defaults and protocol-specific configuration behavior can change across releases.",
+      "source": {
+        "title": "Prometheus 3.15.0 configuration reference",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-06",
+      "section": "r14",
+      "statement": "With remote read configured, Prometheus evaluates PromQL locally over samples fetched from remote storage.",
+      "answer": true,
+      "explanation": "Remote read supplies raw series data for selectors and time ranges; Prometheus runs the expression over that data.",
+      "misconception": "",
+      "factKey": "remote-read-promql-evaluates-locally",
+      "topic": "Remote read evaluation",
+      "tags": [
+        "Prometheus",
+        "PromQL",
+        "remote_read"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Storage",
+        "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-07",
+      "section": "r14",
+      "statement": "For remote write v1, Prometheus retries requests after a receiver responds with an HTTP 5xx status.",
+      "answer": true,
+      "explanation": "Prometheus treats HTTP 5xx responses as retryable failures and backs off between attempts.",
+      "misconception": "",
+      "factKey": "remote-write-retryable-failures",
+      "topic": "Remote write retries",
+      "tags": [
+        "Prometheus",
+        "remote_write"
+      ],
+      "appliesTo": "Prometheus 3.15.0, remote write v1",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus Remote-Write 1.0 specification",
+        "url": "https://prometheus.io/docs/specs/prw/remote_write_spec/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-08",
+      "section": "r14",
+      "statement": "Prometheus's /federate endpoint replays stored history for series selected by match[].",
+      "answer": false,
+      "explanation": "Prometheus's /federate endpoint exports selected series' current samples rather than their historical sample sequences.",
+      "misconception": "Federation copies selected series' historical samples.",
+      "factKey": "federation-current-samples",
+      "topic": "Federation sample scope",
+      "tags": [
+        "Prometheus",
+        "/federate",
+        "match[]"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Federation",
+        "url": "https://prometheus.io/docs/prometheus/latest/federation/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-09",
+      "section": "r14",
+      "statement": "Prometheus's /federate endpoint repeats a series in its response when two match[] selectors both select it.",
+      "answer": false,
+      "explanation": "Prometheus combines match[] results as a union of series; overlapping selectors contribute a matching series once.",
+      "misconception": "Overlapping federation selectors produce duplicate series.",
+      "factKey": "federation-match-selector-union",
+      "topic": "Federation selector matching",
+      "tags": [
+        "Prometheus",
+        "/federate",
+        "match[]"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Federation",
+        "url": "https://prometheus.io/docs/prometheus/latest/federation/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-10",
+      "section": "r14",
+      "statement": "Prometheus evaluates sum(g) as a match[] argument to /federate for stored float gauge g.",
+      "answer": false,
+      "explanation": "A match[] argument is an instant-vector selector, such as g or g{job=\"api\"}; PromQL aggregation expressions belong outside that argument.",
+      "misconception": "Federation match[] accepts arbitrary PromQL expressions returning instant vectors.",
+      "factKey": "federation-match-instant-selectors",
+      "topic": "Federation selector syntax",
+      "tags": [
+        "Prometheus",
+        "PromQL",
+        "/federate",
+        "match[]"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Federation",
+        "url": "https://prometheus.io/docs/prometheus/latest/federation/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-11",
+      "section": "r14",
+      "statement": "In Prometheus's documented federation hierarchy, higher tiers collect aggregated series from lower tiers.",
+      "answer": true,
+      "explanation": "The documented hierarchy keeps detailed metrics in lower-tier servers and gathers their aggregates at higher tiers.",
+      "misconception": "",
+      "factKey": "hierarchical-federation-aggregate-series",
+      "topic": "Hierarchical federation",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Federation",
+        "url": "https://prometheus.io/docs/prometheus/latest/federation/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr14-12",
+      "section": "r14",
+      "statement": "With cross-service federation, Prometheus stores selected peer-service metrics beside its own collected metrics.",
+      "answer": true,
+      "explanation": "The receiving server pulls selected metrics from a service's peer, combining those measurements with its locally collected dataset.",
+      "misconception": "",
+      "factKey": "cross-service-federation-local-datasets",
+      "topic": "Cross-service federation",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Federation",
+        "url": "https://prometheus.io/docs/prometheus/latest/federation/"
+      }
+    }
+  ]
+}

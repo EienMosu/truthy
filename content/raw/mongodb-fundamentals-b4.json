@@ -1,0 +1,1060 @@
+{
+  "deck": "mongodb-fundamentals",
+  "block": "b4",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "The exact b1 factKey strings are unavailable in retained context, so b4 reconstructs descriptive keys for the planned concepts. Atomicity and transaction retry contrasts each use one card to avoid mirrored facts; transaction session binding and standalone availability are separate. r14 combines oplog acknowledgment and secondary application into one fact and uses another card for the phase bounded by wtimeout. The oplog fact tests no-op updateMany() entry creation.",
+  "cards": [
+    {
+      "id": "mongodb-fundamentals-sr13-01",
+      "section": "r13",
+      "statement": "MongoDB makes an updateMany() outside a transaction atomic across the documents it changes.",
+      "answer": false,
+      "explanation": "MongoDB makes each document modification atomic, while other operations may interleave with updateMany(). The multi-document operation has no single atomic boundary.",
+      "misconception": "A multi-document update inherits operation-wide atomicity from its individual document writes.",
+      "factKey": "multidocument-write-atomicity-boundary",
+      "topic": "Write atomicity",
+      "tags": [
+        "MongoDB",
+        "db.collection.updateMany()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Atomicity and Transactions",
+        "url": "https://www.mongodb.com/docs/manual/core/write-operations-atomicity/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-02",
+      "section": "r13",
+      "statement": "A transaction on a replica set associates its operations with the same session.",
+      "answer": true,
+      "explanation": "MongoDB binds a transaction to a session. The application associates the transaction's operations with that same session.",
+      "misconception": "",
+      "factKey": "transaction-session-association",
+      "topic": "Transaction sessions",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Transactions",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-03",
+      "section": "r13",
+      "statement": "A standalone mongod can run a multi-document transaction within a client session.",
+      "answer": false,
+      "explanation": "A standalone mongod rejects multi-document transactions. A session by itself does not add transaction support to that deployment.",
+      "misconception": "Starting a client session enables multi-document transactions on a standalone server.",
+      "factKey": "standalone-transaction-unavailability",
+      "topic": "Transaction deployment support",
+      "tags": [
+        "MongoDB",
+        "mongod"
+      ],
+      "appliesTo": "MongoDB 9.0 standalone",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Production Considerations",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions-production-consideration/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-04",
+      "section": "r13",
+      "statement": "MongoDB hides data changes from outside reads throughout a replica set transaction that aborts.",
+      "answer": true,
+      "explanation": "Writes in an aborted transaction stay invisible to readers outside it. MongoDB discards the pending changes when it aborts the transaction.",
+      "misconception": "",
+      "factKey": "transaction-abort-outside-visibility",
+      "topic": "Transaction abort behavior",
+      "tags": [
+        "MongoDB",
+        "Session.abortTransaction()"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Session.abortTransaction()",
+        "url": "https://www.mongodb.com/docs/manual/reference/method/session.aborttransaction/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-05",
+      "section": "r13",
+      "statement": "A replica set transaction can use read preference secondary for its find() operations.",
+      "answer": false,
+      "explanation": "A transaction containing reads uses read preference primary. Its find() operations read on the primary rather than following secondary routing.",
+      "misconception": "Read-only operations within a transaction follow a secondary read preference.",
+      "factKey": "transaction-primary-read-preference",
+      "topic": "Transaction read routing",
+      "tags": [
+        "MongoDB",
+        "db.collection.find()",
+        "primary",
+        "secondary"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Transactions",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-06",
+      "section": "r13",
+      "statement": "MongoDB returns an error for an explicit per-operation write concern inside a replica set transaction.",
+      "answer": true,
+      "explanation": "A transaction takes write concern at its own level. Specifying write concern on an individual write inside it is an error; commit uses the transaction setting.",
+      "misconception": "",
+      "factKey": "transaction-write-concern-scope",
+      "topic": "Transaction concern scope",
+      "tags": [
+        "MongoDB",
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Transactions",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-07",
+      "section": "r13",
+      "statement": "A replica set transaction with snapshot read concern and w:1 commit guarantees a majority-committed snapshot.",
+      "answer": false,
+      "explanation": "A transaction using snapshot read concern gains the majority-committed snapshot guarantee when it commits with majority write concern. A w:1 commit leaves that guarantee absent.",
+      "misconception": "Snapshot read concern alone supplies its majority-committed transaction guarantee regardless of commit write concern.",
+      "factKey": "transaction-snapshot-majority-commit",
+      "topic": "Transaction snapshot guarantee",
+      "tags": [
+        "MongoDB",
+        "snapshot",
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Concern \"snapshot\"",
+        "url": "https://www.mongodb.com/docs/manual/reference/read-concern-snapshot/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-08",
+      "section": "r13",
+      "statement": "A replica set transaction can abort with a write conflict after an outside write changes its target document.",
+      "answer": true,
+      "explanation": "If an outside write changes a document during an in-progress transaction and the transaction later tries to modify it, MongoDB aborts the transaction with a write conflict.",
+      "misconception": "",
+      "factKey": "transaction-outside-write-conflict",
+      "topic": "Transaction write conflicts",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Production Considerations",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions-production-consideration/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-09",
+      "section": "r13",
+      "statement": "MongoDB automatically aborts expired replica set transactions through periodic cleanup after their lifetime limit.",
+      "answer": true,
+      "explanation": "A transaction exceeding its configured lifetime becomes expired. Periodic cleanup aborts expired transactions rather than granting them unlimited time to commit.",
+      "misconception": "",
+      "factKey": "transaction-lifetime-expiration",
+      "topic": "Transaction resource limits",
+      "tags": [
+        "MongoDB",
+        "transactionLifetimeLimitSeconds"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "MongoDB Server Parameters for a Self-Managed Deployment",
+        "url": "https://www.mongodb.com/docs/manual/reference/parameters/#mongodb-parameter-param.transactionLifetimeLimitSeconds"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-10",
+      "section": "r13",
+      "statement": "mongod treats TransactionTooLargeForCache as a reason to automatically retry a replica set transaction.",
+      "answer": false,
+      "explanation": "mongod leaves a TransactionTooLargeForCache failure unretried. Repeating the unchanged transaction is likely to encounter the same cache constraint.",
+      "misconception": "MongoDB automatically retries a transaction that is too large for the available cache.",
+      "factKey": "transaction-too-large-cache-retry",
+      "topic": "Transaction resource limits",
+      "tags": [
+        "MongoDB",
+        "TransactionTooLargeForCache",
+        "mongod"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Handle Transactions in Applications with the Drivers API",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions-in-applications/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-11",
+      "section": "r13",
+      "statement": "In MongoDB 9.0, mongod can cap concurrent multi-document transactions from external clients on a replica set.",
+      "answer": true,
+      "explanation": "An enabled server-wide limit rejects new external-client transactions with TooManyOpenTransactions once reached. It governs concurrently open transactions.",
+      "misconception": "",
+      "factKey": "external-client-transaction-concurrency-limit-9-0",
+      "topic": "Transaction resource limits",
+      "tags": [
+        "MongoDB",
+        "mongod",
+        "maxConcurrentMultiDocumentTransactions",
+        "TooManyOpenTransactions"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "MongoDB 9.0 adds this external-client concurrency limit; later releases may revise its scope.",
+      "source": {
+        "title": "MongoDB Server Parameters for a Self-Managed Deployment",
+        "url": "https://www.mongodb.com/docs/manual/reference/parameters/#mongodb-parameter-param.maxConcurrentMultiDocumentTransactions"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr13-12",
+      "section": "r13",
+      "statement": "On a replica set, UnknownTransactionCommitResult tells the application to replay the transaction's data writes.",
+      "answer": false,
+      "explanation": "UnknownTransactionCommitResult calls for retrying commit. A TransientTransactionError instead permits retrying the whole transaction.",
+      "misconception": "An uncertain commit outcome calls for rerunning the data-changing operations in a new transaction.",
+      "factKey": "transaction-error-retry-scope",
+      "topic": "Transaction retry scope",
+      "tags": [
+        "MongoDB",
+        "UnknownTransactionCommitResult",
+        "TransientTransactionError"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Handle Transactions in Applications with the Drivers API",
+        "url": "https://www.mongodb.com/docs/manual/core/transactions-in-applications/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-01",
+      "section": "r14",
+      "statement": "On a replica set, \"local\" reads may show document changes before those changes replicate to other members.",
+      "answer": true,
+      "explanation": "Read concern \"local\" uses data available on the member serving the read. It places no majority replication condition on that data.",
+      "misconception": "",
+      "factKey": "local-read-unreplicated-visibility",
+      "topic": "Read concern visibility",
+      "tags": [
+        "readConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Concern \"local\"",
+        "url": "https://www.mongodb.com/docs/manual/reference/read-concern-local/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-02",
+      "section": "r14",
+      "statement": "A replica set can merge results from several members to fulfill a read concern \"majority\" query.",
+      "answer": false,
+      "explanation": "MongoDB serves a majority read from the selected member's majority-committed view. It does not merge query results from several replica-set members.",
+      "misconception": "Majority read concern merges matching documents from a quorum of members.",
+      "factKey": "majority-read-single-member-view",
+      "topic": "Read concern visibility",
+      "tags": [
+        "readConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Concern \"majority\"",
+        "url": "https://www.mongodb.com/docs/manual/reference/read-concern-majority/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-03",
+      "section": "r14",
+      "statement": "On a replica set, find() supports read concern \"snapshot\" outside a multi-document transaction.",
+      "answer": true,
+      "explanation": "MongoDB supports snapshot reads for find outside transactions. The read uses majority-committed data from one point in time.",
+      "misconception": "",
+      "factKey": "snapshot-read-outside-transactions",
+      "topic": "Snapshot read scope",
+      "tags": [
+        "readConcern",
+        "db.collection.find()"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Concern \"snapshot\"",
+        "url": "https://www.mongodb.com/docs/manual/reference/read-concern-snapshot/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-04",
+      "section": "r14",
+      "statement": "A replica-set primary can give multi-document queries linearizable guarantees with read concern \"linearizable\".",
+      "answer": false,
+      "explanation": "MongoDB's linearizable guarantees apply to reads whose filters uniquely identify a single document. The concern does not extend that guarantee to a multi-document result.",
+      "misconception": "Selecting linearizable read concern extends its guarantee to queries returning multiple documents.",
+      "factKey": "linearizable-read-single-document-scope",
+      "topic": "Linearizable read scope",
+      "tags": [
+        "readConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica-set primary, outside transactions",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Concern \"linearizable\"",
+        "url": "https://www.mongodb.com/docs/manual/reference/read-concern-linearizable/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-05",
+      "section": "r14",
+      "statement": "On a replica set, {w:1} requests write acknowledgment after the primary applies the operation.",
+      "answer": true,
+      "explanation": "With numeric w equal to 1, the primary supplies the acknowledgment. That acknowledgment reports the write's local application.",
+      "misconception": "",
+      "factKey": "write-w-one-primary-acknowledgment",
+      "topic": "Write acknowledgment scope",
+      "tags": [
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Write Concern for Replica Sets",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-06",
+      "section": "r14",
+      "statement": "For numeric write concern greater than 1, a replica set counts non-voting secondary acknowledgments.",
+      "answer": true,
+      "explanation": "For numeric w greater than 1, data-bearing secondaries contribute acknowledgments even when they have no vote. Voting status does not exclude them from that count.",
+      "misconception": "",
+      "factKey": "numeric-write-concern-nonvoting-members",
+      "topic": "Write acknowledgment scope",
+      "tags": [
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, numeric w greater than 1, outside transactions",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Write Concern for Replica Sets",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-07",
+      "section": "r14",
+      "statement": "With WiredTiger, a replica-set primary acknowledges {w:1,j:true} before writing the change to its on-disk journal.",
+      "answer": false,
+      "explanation": "The primary acknowledges {w:1,j:true} after the journal record reaches disk. Keeping the record in an in-memory buffer falls short of that request.",
+      "misconception": "j:true requests eventual journaling after the primary acknowledges the write.",
+      "factKey": "journal-write-concern-disk-acknowledgment",
+      "topic": "Journal acknowledgment scope",
+      "tags": [
+        "writeConcern",
+        "WiredTiger"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set with WiredTiger, outside transactions",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Write Concern",
+        "url": "https://www.mongodb.com/docs/manual/reference/write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-08",
+      "section": "r14",
+      "statement": "MongoDB retains a replica set's successful data changes when waiting for write concern exceeds wtimeout.",
+      "answer": true,
+      "explanation": "A wtimeout error ends the acknowledgment wait. Successful changes on the primary remain and can continue replicating.",
+      "misconception": "",
+      "factKey": "write-timeout-retains-successful-changes",
+      "topic": "Write timeout behavior",
+      "tags": [
+        "writeConcern",
+        "wtimeout"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Write Concern for Replica Sets",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-09",
+      "section": "r14",
+      "statement": "In a replica set, wtimeout limits how long the primary spends applying the write operation.",
+      "answer": false,
+      "explanation": "MongoDB starts the wtimeout propagation wait after the write succeeds on the primary. It does not bound the primary's modification work.",
+      "misconception": "wtimeout bounds the primary's write execution time.",
+      "factKey": "write-timeout-propagation-phase",
+      "topic": "Write timeout behavior",
+      "tags": [
+        "writeConcern",
+        "wtimeout"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Write Concern",
+        "url": "https://www.mongodb.com/docs/manual/reference/write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-10",
+      "section": "r14",
+      "statement": "In MongoDB 9.0, majority write acknowledgment means a replica set's acknowledging secondaries have applied the change.",
+      "answer": false,
+      "explanation": "Majority acknowledgment follows recording the change in the required members' oplogs. Secondary application proceeds asynchronously and can still lag.",
+      "misconception": "Majority acknowledgment waits for secondary document changes to finish.",
+      "factKey": "majority-ack-oplog-before-application",
+      "topic": "Majority acknowledgment behavior",
+      "tags": [
+        "writeConcern",
+        "oplog"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, outside transactions",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "MongoDB 8.0 changed the acknowledgment boundary; later releases may revise it.",
+      "source": {
+        "title": "Write Concern",
+        "url": "https://www.mongodb.com/docs/manual/reference/write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-11",
+      "section": "r14",
+      "statement": "By default, a primary-secondary-arbiter replica set uses {w:\"majority\"} with custom defaults unset.",
+      "answer": false,
+      "explanation": "A primary-secondary-arbiter replica set has implicit write concern {w:1}. Its data-bearing voting members do not outnumber its voting majority.",
+      "misconception": "An arbiter preserves majority as the implicit write concern.",
+      "factKey": "arbiter-topology-implicit-write-concern",
+      "topic": "Implicit write concern",
+      "tags": [
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 primary-secondary-arbiter replica set, custom defaults unset",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "MongoDB may revise its topology-dependent implicit write-concern defaults.",
+      "source": {
+        "title": "Write Concern",
+        "url": "https://www.mongodb.com/docs/manual/reference/write-concern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr14-12",
+      "section": "r14",
+      "statement": "A causally consistent replica-set session guarantees read-your-writes with majority read and write concerns.",
+      "answer": true,
+      "explanation": "The session orders its reads after its own writes. Using majority read and write concerns preserves this guarantee through replica-set failures.",
+      "misconception": "",
+      "factKey": "causal-session-majority-read-own-writes",
+      "topic": "Causal read guarantees",
+      "tags": [
+        "MongoDB",
+        "readConcern",
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, causally consistent session with majority read and write concerns",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Causal Consistency and Read and Write Concerns",
+        "url": "https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-01",
+      "section": "r15",
+      "statement": "In a replica set, clients send insertOne() writes for ordinary collections to the primary member.",
+      "answer": true,
+      "explanation": "The replica set primary receives client writes and applies their changes. A client's insertOne() targets that writable member.",
+      "misconception": "",
+      "factKey": "replica-set-primary-client-writes",
+      "topic": "Replica set writes",
+      "tags": [
+        "MongoDB",
+        "db.collection.insertOne()"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replica Set Primary",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-primary/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-02",
+      "section": "r15",
+      "statement": "Replica set secondaries replay the primary's oplog asynchronously into their own data sets.",
+      "answer": true,
+      "explanation": "A secondary copies oplog operations and applies them to its own data set. This replay runs asynchronously relative to the primary's application of writes.",
+      "misconception": "",
+      "factKey": "replica-set-secondary-asynchronous-replay",
+      "topic": "Oplog replication",
+      "tags": [
+        "MongoDB",
+        "oplog"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replica Set Secondary Members",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-secondary/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-03",
+      "section": "r15",
+      "statement": "MongoDB records updateMany() in a replica set's oplog when its matched documents stay unchanged.",
+      "answer": false,
+      "explanation": "An updateMany() that changes no document data creates no oplog entry. Matching documents and completing successfully still produces no replication record for that operation.",
+      "misconception": "A successful update creates an oplog entry even when it makes no data change.",
+      "factKey": "oplog-noop-update-entry",
+      "topic": "Oplog replication",
+      "tags": [
+        "MongoDB",
+        "oplog",
+        "db.collection.updateMany()"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replica Set Oplog",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-oplog/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-04",
+      "section": "r15",
+      "statement": "By default, a MongoDB client routes reads to the primary when it connects to a replica set.",
+      "answer": true,
+      "explanation": "MongoDB's default read preference is primary. A client uses that member for reads unless the application selects another read preference.",
+      "misconception": "",
+      "factKey": "read-preference-default-primary",
+      "topic": "Read preference routing",
+      "tags": [
+        "MongoDB",
+        "primary"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Preference",
+        "url": "https://www.mongodb.com/docs/manual/core/read-preference/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-05",
+      "section": "r15",
+      "statement": "A client using nearest read preference can select a replica set's primary for a read.",
+      "answer": true,
+      "explanation": "The nearest mode considers eligible primaries and secondaries together. A primary inside the acceptable latency window is a candidate for the read.",
+      "misconception": "",
+      "factKey": "read-preference-nearest-primary-eligible",
+      "topic": "Read preference routing",
+      "tags": [
+        "MongoDB",
+        "nearest"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Preference",
+        "url": "https://www.mongodb.com/docs/manual/core/read-preference/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-06",
+      "section": "r15",
+      "statement": "By default, a client using secondary read preference can fall back to a replica set's primary.",
+      "answer": false,
+      "explanation": "The secondary mode selects secondary members. If eligible secondaries are unavailable, the read fails rather than falling back to the primary.",
+      "misconception": "The secondary read preference includes an automatic primary fallback.",
+      "factKey": "read-preference-secondary-primary-fallback",
+      "topic": "Read preference routing",
+      "tags": [
+        "MongoDB",
+        "secondary"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Preference",
+        "url": "https://www.mongodb.com/docs/manual/core/read-preference/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-07",
+      "section": "r15",
+      "statement": "With secondary read preference, a replica set client uses the first tag set with eligible matching members.",
+      "answer": true,
+      "explanation": "The client tries tag sets in list order and uses the first set with eligible matches. Later tag sets stop contributing once an earlier set matches.",
+      "misconception": "",
+      "factKey": "read-preference-ordered-tag-sets",
+      "topic": "Read preference routing",
+      "tags": [
+        "MongoDB",
+        "members[n].tags"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set, secondary read preference",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Read Preference Tag Set Lists",
+        "url": "https://www.mongodb.com/docs/manual/core/read-preference-tags/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-08",
+      "section": "r15",
+      "statement": "A replica set elects a new primary using votes from a majority of its configured voting members.",
+      "answer": true,
+      "explanation": "A successful replica set election needs a majority of the configured voting members. Reachable members holding a minority of votes cannot elect a primary.",
+      "misconception": "",
+      "factKey": "replica-set-election-voting-majority",
+      "topic": "Replica set elections",
+      "tags": [
+        "MongoDB",
+        "members[n].votes"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replica Set Elections",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-elections/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-09",
+      "section": "r15",
+      "statement": "A replica set arbiter stores application documents alongside the primary and secondaries.",
+      "answer": false,
+      "explanation": "An arbiter participates in elections but holds no copy of the application data set. It contributes voting capacity rather than a replicated document copy.",
+      "misconception": "An arbiter maintains application data like a secondary replica set member.",
+      "factKey": "replica-set-arbiter-data-storage",
+      "topic": "Replica set members",
+      "tags": [
+        "MongoDB",
+        "arbiter"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replica Set Arbiter",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-arbiter/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-10",
+      "section": "r15",
+      "statement": "A replica set member with priority:0 and votes:1 remains eligible to become primary in an election.",
+      "answer": false,
+      "explanation": "A priority:0 member is ineligible to become primary even when it has votes:1. Its voting role and its eligibility to lead are separate settings.",
+      "misconception": "Giving a priority-zero member an election vote preserves its eligibility to become primary.",
+      "factKey": "replica-set-priority-zero-electability",
+      "topic": "Replica set members",
+      "tags": [
+        "MongoDB",
+        "members[n].priority",
+        "members[n].votes"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Priority 0 Replica Set Members",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-priority-0-member/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-11",
+      "section": "r15",
+      "statement": "A replica set's successful {w:1} acknowledgment protects the write from rollback after a primary failure.",
+      "answer": false,
+      "explanation": "A write acknowledged with {w:1} can roll back after failover if secondaries had not replicated it. The former primary discards that divergent write when rejoining the set.",
+      "misconception": "Successful primary acknowledgment makes a write immune to replica set failover rollback.",
+      "factKey": "replica-set-uncommitted-write-rollback",
+      "topic": "Failover rollback",
+      "tags": [
+        "MongoDB",
+        "writeConcern"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Rollbacks During Replica Set Failover",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-rollbacks/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr15-12",
+      "section": "r15",
+      "statement": "The highest-priority available replica set member becomes primary before a lower-priority member.",
+      "answer": false,
+      "explanation": "A lower-priority member can become primary briefly while a higher-priority member is available. Priority influences elections through a best-effort process.",
+      "misconception": "Member priority guarantees that the highest-priority available candidate wins the first election.",
+      "factKey": "replica-set-priority-election-best-effort",
+      "topic": "Replica set elections",
+      "tags": [
+        "MongoDB",
+        "members[n].priority"
+      ],
+      "appliesTo": "MongoDB 9.0 replica set",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replica Set Elections",
+        "url": "https://www.mongodb.com/docs/manual/core/replica-set-elections/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-01",
+      "section": "r16",
+      "statement": "For a sharded collection, mongos can target a query with full shard-key equality to one shard.",
+      "answer": true,
+      "explanation": "Equality on the full shard key identifies the chunk containing the requested value. mongos directs that query to the shard owning the chunk.",
+      "misconception": "",
+      "factKey": "mongos-full-key-targeted-query",
+      "topic": "Sharded query routing",
+      "tags": [
+        "mongos"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Routing with mongos",
+        "url": "https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-02",
+      "section": "r16",
+      "statement": "In a sharded cluster, mongos can keep the authoritative chunk-to-shard map in its own local storage.",
+      "answer": false,
+      "explanation": "Config servers store the cluster metadata, including chunk ranges and their shard locations. mongos keeps a cache of that metadata for use in routing.",
+      "misconception": "The router stores the authoritative partition map rather than caching metadata from config servers.",
+      "factKey": "config-server-authoritative-chunk-metadata",
+      "topic": "Sharded cluster metadata",
+      "tags": [
+        "mongos",
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Config Servers",
+        "url": "https://www.mongodb.com/docs/manual/core/sharded-cluster-config-servers/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-03",
+      "section": "r16",
+      "statement": "MongoDB requires a populated collection's supporting index to start with {tenant:1} before sharding it on {tenant:1}.",
+      "answer": true,
+      "explanation": "Before sharding a populated collection, its shard key needs a supporting index. A compound index qualifies when the shard key is its leading prefix.",
+      "misconception": "",
+      "factKey": "shard-key-supporting-index-prefix",
+      "topic": "Shard key indexes",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Shard Key Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-shard-key-indexes/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-04",
+      "section": "r16",
+      "statement": "MongoDB's shard-key guidance favors low cardinality to improve a sharded collection's horizontal scaling.",
+      "answer": false,
+      "explanation": "Few distinct shard-key values limit the possible chunks and reduce effective horizontal scaling. MongoDB recommends high cardinality where possible.",
+      "misconception": "A small set of shard-key values improves the ability to spread data across more shards.",
+      "factKey": "low-cardinality-horizontal-scaling-limit",
+      "topic": "Shard key selection",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Choose a Shard Key",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-05",
+      "section": "r16",
+      "statement": "In a sharded collection, a frequently repeated shard-key value can concentrate load on one chunk.",
+      "answer": true,
+      "explanation": "Many documents sharing a shard-key value concentrate data and workload in its chunk. Highly frequent values can make that chunk a cluster bottleneck.",
+      "misconception": "",
+      "factKey": "frequent-shard-key-value-hotspot",
+      "topic": "Shard key selection",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Choose a Shard Key",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-06",
+      "section": "r16",
+      "statement": "Hashed sharding helps spread inserts with steadily increasing shard-key values across a sharded cluster.",
+      "answer": true,
+      "explanation": "Hashing distributes an increasing sequence across the hashed key space. Incoming inserts spread beyond the range containing the largest original key values.",
+      "misconception": "",
+      "factKey": "hashed-monotonic-insert-distribution",
+      "topic": "Sharding distribution",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Hashed Sharding",
+        "url": "https://www.mongodb.com/docs/manual/core/hashed-sharding/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-07",
+      "section": "r16",
+      "statement": "In a sharded collection, MongoDB assigns a document at a chunk's upper boundary to that chunk.",
+      "answer": false,
+      "explanation": "A chunk includes its lower boundary and excludes its upper boundary. MongoDB uses those boundaries to assign shard-key values to non-overlapping ranges.",
+      "misconception": "A chunk owns documents whose shard-key value equals its upper bound.",
+      "factKey": "chunk-upper-boundary-exclusion",
+      "topic": "Chunk range ownership",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data Partitioning with Chunks",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-data-partitioning/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-08",
+      "section": "r16",
+      "statement": "In MongoDB 9.0, the balancer judges a sharded collection's data balance by comparing chunk counts between shards.",
+      "answer": false,
+      "explanation": "The balancer monitors the amount of collection data on each shard. Equal chunk counts can still represent unequal data amounts.",
+      "misconception": "The balancer treats matching chunk counts as its measure of balanced collection data.",
+      "factKey": "balancer-data-amount-versus-chunk-count",
+      "topic": "Sharded data balancing",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Sharded Cluster Balancer",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-balancer-administration/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-09",
+      "section": "r16",
+      "statement": "In a sharded cluster, refineCollectionShardKey can replace an existing shard-key field with a different field.",
+      "answer": false,
+      "explanation": "refineCollectionShardKey appends suffix fields to the existing key. Changing existing key fields uses resharding with a new shard key.",
+      "misconception": "Refining a shard key replaces fields in the existing key rather than extending its suffix.",
+      "factKey": "refine-appends-versus-reshard-replaces",
+      "topic": "Shard key evolution",
+      "tags": [
+        "refineCollectionShardKey",
+        "reshardCollection"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Change a Shard Key",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-change-a-shard-key/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-10",
+      "section": "r16",
+      "statement": "On sharded collections, mongos supports retryable updateOne() changing non-_id shard-key values with full-key equality.",
+      "answer": true,
+      "explanation": "A shard-key value change uses mongos and full shard-key equality in the filter. A retryable write meets the operation requirement; a transaction is another permitted context.",
+      "misconception": "",
+      "factKey": "shard-key-value-retryable-change",
+      "topic": "Shard key evolution",
+      "tags": [
+        "mongos",
+        "db.collection.updateOne()"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded collection, retryable updateOne() through mongos with full shard-key equality",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Change a Document's Shard Key Value",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-change-shard-key-value/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-11",
+      "section": "r16",
+      "statement": "MongoDB permits a unique {tenant:1,email:1} index on a ranged sharded collection whose shard key is {tenant:1}.",
+      "answer": true,
+      "explanation": "A unique compound index on a ranged sharded collection qualifies when its leading prefix is the shard key. Here, tenant supplies that prefix.",
+      "misconception": "",
+      "factKey": "sharded-unique-index-shard-key-prefix",
+      "topic": "Sharded unique constraints",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Shard Key Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-shard-key-indexes/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr16-12",
+      "section": "r16",
+      "statement": "A default _id index can enforce _id uniqueness across different shards for a collection sharded on {tenant:1}.",
+      "answer": false,
+      "explanation": "When _id is outside the shard key, its default index enforces uniqueness within a shard. Documents on different shards can share an _id value.",
+      "misconception": "The default _id index enforces uniqueness across shards even when _id is outside the shard key.",
+      "factKey": "sharded-id-index-per-shard-uniqueness",
+      "topic": "Sharded unique constraints",
+      "tags": [
+        "MongoDB",
+        "_id"
+      ],
+      "appliesTo": "MongoDB 9.0 sharded cluster",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Shard Key Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/sharding-shard-key-indexes/"
+      }
+    }
+  ]
+}

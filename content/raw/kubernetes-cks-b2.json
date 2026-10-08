@@ -1,0 +1,881 @@
+{
+  "deck": "kubernetes-cks",
+  "block": "b2",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced bootstrap-credential-retirement with shared-bootstrap-discovery-forgery and node-firewall-supplements-pod-isolation with node-firewall-kubelet-control-plane-path to test specific security consequences instead of general hardening advice.",
+  "cards": [
+    {
+      "id": "kubernetes-cks-s2.2-01",
+      "section": "2.2",
+      "statement": "A kubelet with anonymous authentication disabled directly rejects unauthenticated HTTPS requests.",
+      "answer": true,
+      "explanation": "The kubelet returns 401 Unauthorized when a caller fails authentication and anonymous access is disabled.",
+      "misconception": "",
+      "factKey": "kubelet-anonymous-rejection",
+      "topic": "Kubelet authentication",
+      "tags": [
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubelet authentication/authorization",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/kubelet-authn-authz/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-02",
+      "section": "2.2",
+      "statement": "A kubelet using client certificate authentication enforces Kubernetes RBAC permissions by default.",
+      "answer": false,
+      "explanation": "Client certificates establish identity. A kubelet's default authorization allows authenticated requests; Webhook authorization delegates permission checks to the API server.",
+      "misconception": "Kubelet certificate authentication automatically activates RBAC authorization.",
+      "factKey": "kubelet-authentication-authorization-separation",
+      "topic": "Kubelet authentication",
+      "tags": [
+        "kubelet",
+        "RBAC"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubelet authentication/authorization",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/kubelet-authn-authz/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-03",
+      "section": "2.2",
+      "statement": "A kubelet with token webhook authentication validates a presented ServiceAccount token through the API server.",
+      "answer": true,
+      "explanation": "The kubelet sends a TokenReview to its configured API server, so bearer-token identity checks use that server's authentication.",
+      "misconception": "",
+      "factKey": "kubelet-token-webhook-validation",
+      "topic": "Kubelet authentication",
+      "tags": [
+        "kubelet",
+        "ServiceAccount",
+        "TokenReview"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubelet authentication/authorization",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/kubelet-authn-authz/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-04",
+      "section": "2.2",
+      "statement": "The API server verifies the kubelet's serving certificate on its default HTTPS connection to that kubelet.",
+      "answer": false,
+      "explanation": "The API server's default kubelet connection skips serving-certificate verification. Configuring a trusted kubelet CA bundle closes this server-identity gap.",
+      "misconception": "HTTPS automatically verifies the kubelet's server identity.",
+      "factKey": "kubelet-serving-certificate-validation",
+      "topic": "Kubelet transport",
+      "tags": [
+        "kube-apiserver",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Communication between Nodes and the Control Plane",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/control-plane-node-communication/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-05",
+      "section": "2.2",
+      "statement": "With kubelet Webhook authorization, a caller's get on nodes/proxy permits container command execution.",
+      "answer": true,
+      "explanation": "Some kubelet command endpoints accept WebSocket GET requests. Their authorization uses get, making nodes/proxy access more powerful than read access.",
+      "misconception": "",
+      "factKey": "nodes-proxy-get-command-execution",
+      "topic": "Kubelet authorization",
+      "tags": [
+        "kubelet",
+        "RBAC"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubelet authentication/authorization",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/kubelet-authn-authz/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-06",
+      "section": "2.2",
+      "statement": "Kubernetes admission controllers validate container commands sent directly to a kubelet's HTTPS endpoint.",
+      "answer": false,
+      "explanation": "Commands sent directly to the kubelet bypass Kubernetes admission. Restrict this separate endpoint to preserve the cluster's security boundary.",
+      "misconception": "API server admission also covers direct kubelet commands.",
+      "factKey": "direct-kubelet-admission-bypass",
+      "topic": "Endpoint bypasses",
+      "tags": [
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes API Server Bypass Risks",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/api-server-bypass-risks/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-07",
+      "section": "2.2",
+      "statement": "With authorization disabled, etcd accepts data writes from a client using a trusted health-check certificate.",
+      "answer": true,
+      "explanation": "Client-certificate authentication alone gives a trusted etcd client broad data access; a certificate's health-check purpose supplies no restriction.",
+      "misconception": "",
+      "factKey": "etcd-healthcheck-certificate-power",
+      "topic": "Endpoint bypasses",
+      "tags": [
+        "etcd"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes API Server Bypass Risks",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/api-server-bypass-risks/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-08",
+      "section": "2.2",
+      "statement": "Kubernetes RBAC limits the objects a client may modify through a direct connection to the etcd API.",
+      "answer": false,
+      "explanation": "Direct etcd clients bypass Kubernetes RBAC. Kubernetes API permissions do not restrict this separate data-access route.",
+      "misconception": "Direct etcd requests inherit Kubernetes RBAC permissions.",
+      "factKey": "direct-etcd-rbac-bypass",
+      "topic": "Endpoint bypasses",
+      "tags": [
+        "etcd",
+        "RBAC"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes API Server Bypass Risks",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/api-server-bypass-risks/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-09",
+      "section": "2.2",
+      "statement": "For a CNI enforcement flaw, kubeadm leaves the provider's security update separate from control plane upgrades.",
+      "answer": true,
+      "explanation": "kubeadm leaves CNI provider upgrades to operators. A provider's fix for vulnerable networking code follows that project's upgrade instructions.",
+      "misconception": "",
+      "factKey": "cni-security-maintenance-separation",
+      "topic": "Security maintenance",
+      "tags": [
+        "kubeadm"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Upgrading kubeadm clusters",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s2.2-10",
+      "section": "2.2",
+      "statement": "A kubeadm control plane upgrade installs the kubelet patch for a worker-node kubelet vulnerability.",
+      "answer": false,
+      "explanation": "A kubelet security fix has to reach the affected node's kubelet binary. The control plane upgrade leaves that installation to the operator.",
+      "misconception": "A control plane upgrade also patches worker kubelet binaries.",
+      "factKey": "kubelet-security-patch-separation",
+      "topic": "Security maintenance",
+      "tags": [
+        "kubeadm",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Upgrading kubeadm clusters",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-01",
+      "section": "3.1",
+      "statement": "Container-focused node operating systems reduce the host attack surface exposed by a container escape.",
+      "answer": true,
+      "explanation": "These node operating systems isolate system components and provide essential container services, reducing host services an escaped process can target.",
+      "misconception": "",
+      "factKey": "container-focused-node-os",
+      "topic": "Node attack surface",
+      "tags": [
+        "Kubernetes"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Cloud Native Security and Kubernetes",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/cloud-native-security/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-02",
+      "section": "3.1",
+      "statement": "Running a container as an unprivileged user prevents network protocol kernel module autoload.",
+      "answer": false,
+      "explanation": "Unprivileged processes can trigger some protocol modules by opening suitable sockets. Remove or block unused modules on Kubernetes nodes.",
+      "misconception": "An unprivileged container cannot trigger kernel module loading.",
+      "factKey": "unprivileged-kernel-module-autoload",
+      "topic": "Node attack surface",
+      "tags": [
+        "Kubernetes"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Securing a Cluster",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/securing-a-cluster/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-03",
+      "section": "3.1",
+      "statement": "Write access to a kubelet's configured static Pod manifests gives a user a path to launch local workloads.",
+      "answer": true,
+      "explanation": "The kubelet watches its configured manifest directory and starts Pods from added files. Protecting writes to that source protects local workload creation.",
+      "misconception": "",
+      "factKey": "static-pod-source-write-risk",
+      "topic": "Host access controls",
+      "tags": [
+        "kubelet",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create static Pods",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/configure-pod-container/static-pod/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-04",
+      "section": "3.1",
+      "statement": "A user with a node's container runtime socket access can launch containers outside Kubernetes RBAC.",
+      "answer": true,
+      "explanation": "The runtime accepts local commands through its socket. Its filesystem access controls protect this route to container creation.",
+      "misconception": "",
+      "factKey": "runtime-socket-rbac-boundary",
+      "topic": "Host access controls",
+      "tags": [
+        "Kubernetes"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes API Server Bypass Risks",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/api-server-bypass-risks/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-05",
+      "section": "3.1",
+      "statement": "An admission rule blocking a runtime socket's exact path can leave access through a parent hostPath mount.",
+      "answer": true,
+      "explanation": "Restricting the socket's exact path is insufficient when a workload receives a hostPath mount that includes its parent directory.",
+      "misconception": "",
+      "factKey": "runtime-socket-parent-mount-exposure",
+      "topic": "Host access controls",
+      "tags": [
+        "hostPath"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/volumes/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-06",
+      "section": "3.1",
+      "statement": "A Pod's read-only hostPath mount protects mounted kubelet credentials from disclosure to the Pod.",
+      "answer": false,
+      "explanation": "Read-only hostPath access still exposes readable host files. A workload can steal privileged kubelet credentials through such a mount.",
+      "misconception": "Read-only hostPath access also protects file confidentiality.",
+      "factKey": "readonly-hostpath-credential-exposure",
+      "topic": "Host access controls",
+      "tags": [
+        "hostPath",
+        "kubelet",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/volumes/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-07",
+      "section": "3.1",
+      "statement": "A bootstrap token holder can forge cluster-info signatures for another client using the same token.",
+      "answer": true,
+      "explanation": "Bootstrap discovery uses the token as a shared signing secret. A client that knows it can create a valid discovery signature, so sharing one token across clients weakens this trust boundary.",
+      "misconception": "",
+      "factKey": "shared-bootstrap-discovery-forgery",
+      "topic": "Bootstrap trust",
+      "tags": [
+        "kubeadm",
+        "ConfigMap"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Authenticating with Bootstrap Tokens",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-08",
+      "section": "3.1",
+      "statement": "On a swap-enabled node where kubelet detects unsupported noswap, Secret volume backing confines credentials to RAM.",
+      "answer": false,
+      "explanation": "When the kernel rejects noswap, the kubelet warns and continues. Secret volume tmpfs contents can then reach persistent swap storage.",
+      "misconception": "Memory-backed Secret volumes stay off persistent storage under swap.",
+      "factKey": "secret-tmpfs-swap-risk",
+      "topic": "Node attack surface",
+      "tags": [
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Swap memory management",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/swap-memory-management/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-09",
+      "section": "3.1",
+      "statement": "kubectl treats an untrusted kubeconfig as inert data when accessing a Kubernetes cluster.",
+      "answer": false,
+      "explanation": "A crafted kubeconfig can execute malicious code on kubectl's host. Inspect configurations from untrusted sources before use.",
+      "misconception": "A kubeconfig cannot execute code or expose files on its consumer's host.",
+      "factKey": "untrusted-kubeconfig-host-execution",
+      "topic": "Host access controls",
+      "tags": [
+        "kubectl"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Organizing Cluster Access Using kubeconfig Files",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.1-10",
+      "section": "3.1",
+      "statement": "An admission allowlist confines an untrusted Pod to its approved read-write hostPath directory.",
+      "answer": false,
+      "explanation": "Directory allowlisting needs read-only hostPath mounts to preserve the intended boundary; an untrusted writer can subvert a writable mount.",
+      "misconception": "Admission directory allowlisting securely confines read-write hostPath access.",
+      "factKey": "writable-hostpath-allowlist-escape",
+      "topic": "Host access controls",
+      "tags": [
+        "hostPath",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Volumes",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/volumes/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-01",
+      "section": "3.2",
+      "statement": "With direct API server-to-kubelet networking, a node firewall blocking that path breaks kubectl logs.",
+      "answer": true,
+      "explanation": "The API server retrieves Pod logs through the kubelet's HTTPS endpoint. Node firewall rules need to preserve this control-plane path for log requests to succeed.",
+      "misconception": "",
+      "factKey": "node-firewall-kubelet-control-plane-path",
+      "topic": "Node network hardening",
+      "tags": [
+        "kube-apiserver",
+        "kubelet",
+        "kubectl"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Communication between Nodes and the Control Plane",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/control-plane-node-communication/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-02",
+      "section": "3.2",
+      "statement": "A loaded AppArmor profile in complain mode reports attempted access outside its allow rules.",
+      "answer": true,
+      "explanation": "AppArmor complain mode reports profile violations for review; it does not turn those reports into an enforcing access policy.",
+      "misconception": "",
+      "factKey": "apparmor-complain-mode-effect",
+      "topic": "AppArmor enforcement",
+      "tags": [
+        "AppArmor"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Linux kernel security constraints for Pods and containers",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/linux-kernel-security-constraints/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-03",
+      "section": "3.2",
+      "statement": "When its requested Localhost AppArmor profile is missing, kubelet can start a Pod with RuntimeDefault.",
+      "answer": false,
+      "explanation": "A Pod requesting a Localhost AppArmor profile fails to start when that profile is unavailable on its node. Kubernetes does not substitute RuntimeDefault.",
+      "misconception": "Kubernetes falls back to RuntimeDefault when a requested local AppArmor profile is unavailable.",
+      "factKey": "apparmor-missing-local-profile",
+      "topic": "AppArmor availability",
+      "tags": [
+        "AppArmor",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Access to Resources with AppArmor",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tutorials/security/apparmor/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-04",
+      "section": "3.2",
+      "statement": "The default scheduler can place an AppArmor-constrained Pod using its inventory of loaded node profiles.",
+      "answer": false,
+      "explanation": "The scheduler does not track loaded AppArmor profiles. Administrators can use node labels and placement constraints to select nodes prepared for the workload.",
+      "misconception": "The scheduler discovers which AppArmor profiles each node has loaded.",
+      "factKey": "apparmor-scheduler-profile-awareness",
+      "topic": "AppArmor availability",
+      "tags": [
+        "AppArmor",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Access to Resources with AppArmor",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tutorials/security/apparmor/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-05",
+      "section": "3.2",
+      "statement": "An investigator can prove a container's root-process AppArmor profile using the node's loaded-profile list alone.",
+      "answer": false,
+      "explanation": "A node's list shows available profiles. Inspect /proc/1/attr/current inside the container to establish the AppArmor profile attached to its root process.",
+      "misconception": "Loading an AppArmor profile establishes that a particular container process uses it.",
+      "factKey": "apparmor-process-profile-evidence",
+      "topic": "AppArmor evidence",
+      "tags": [
+        "AppArmor"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Access to Resources with AppArmor",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tutorials/security/apparmor/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-06",
+      "section": "3.2",
+      "statement": "The seccomp SCMP_ACT_LOG action permits a matching syscall through its filter while recording it.",
+      "answer": true,
+      "explanation": "SCMP_ACT_LOG records a syscall and permits execution. That action supplies observations for building a restrictive profile.",
+      "misconception": "",
+      "factKey": "seccomp-log-action-effect",
+      "topic": "seccomp enforcement",
+      "tags": [
+        "seccomp"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Syscalls with seccomp",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tutorials/security/seccomp/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-07",
+      "section": "3.2",
+      "statement": "An attacker can exploit a kernel vulnerability through a syscall permitted by a container's seccomp profile.",
+      "answer": true,
+      "explanation": "Permitted syscalls remain available to an attacker, including paths to vulnerable kernel behavior. seccomp reduces exposure rather than validating those code paths.",
+      "misconception": "",
+      "factKey": "seccomp-allowed-syscall-exploitation",
+      "topic": "seccomp coverage",
+      "tags": [
+        "seccomp"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Linux kernel security constraints for Pods and containers",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/linux-kernel-security-constraints/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-08",
+      "section": "3.2",
+      "statement": "The runtime retains a configured seccompProfile when it starts a container with privileged: true.",
+      "answer": false,
+      "explanation": "Privileged containers run with seccomp Unconfined. An explicit profile in the workload specification does not keep syscall filtering active.",
+      "misconception": "An explicit seccompProfile remains effective when the container runs privileged.",
+      "factKey": "privileged-seccomp-override",
+      "topic": "seccomp enforcement",
+      "tags": [
+        "seccomp"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Syscalls with seccomp",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tutorials/security/seccomp/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-09",
+      "section": "3.2",
+      "statement": "A seccomp allowlist derived from one application release establishes compatibility with a later release.",
+      "answer": false,
+      "explanation": "An application update may introduce needed syscalls outside a previous allowlist. Test the updated workload against its seccomp profile.",
+      "misconception": "A seccomp profile proven compatible with one application release also validates later releases.",
+      "factKey": "seccomp-profile-update-compatibility",
+      "topic": "seccomp compatibility",
+      "tags": [
+        "seccomp"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Linux kernel security constraints for Pods and containers",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/linux-kernel-security-constraints/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s3.2-10",
+      "section": "3.2",
+      "statement": "RuntimeDefault seccomp profiles can impose different restrictions across container runtimes and their releases.",
+      "answer": true,
+      "explanation": "RuntimeDefault uses the node runtime's profile. Different runtimes or runtime releases may therefore permit different syscall sets.",
+      "misconception": "",
+      "factKey": "runtime-default-seccomp-variation",
+      "topic": "seccomp compatibility",
+      "tags": [
+        "seccomp"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict a Container's Syscalls with seccomp",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tutorials/security/seccomp/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-01",
+      "section": "4.1",
+      "statement": "With Pod Security Admission enabled, a namespace's Restricted warn mode rejects a Pod that violates its policy.",
+      "answer": false,
+      "explanation": "Pod Security Admission's Restricted warn mode returns a user-facing warning and permits the policy violation through that check.",
+      "misconception": "Warn mode rejects violating Pods instead of permitting them with a warning.",
+      "factKey": "psa-warn-admission-effect",
+      "topic": "Admission modes",
+      "tags": [
+        "Pod Security Admission",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod Security Admission",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/pod-security-admission/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-02",
+      "section": "4.1",
+      "statement": "Pod Security Admission lets a namespace enforce Baseline while using Restricted checks in its warn mode.",
+      "answer": true,
+      "explanation": "Pod Security Admission uses independent mode-level labels. Operators can check a stricter target in warn mode while enforcing a compatible level.",
+      "misconception": "",
+      "factKey": "psa-independent-mode-levels",
+      "topic": "Admission modes",
+      "tags": [
+        "Pod Security Admission",
+        "Pod Security Standards"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Enforce Pod Security Standards with Namespace Labels",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-namespace-labels/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-03",
+      "section": "4.1",
+      "statement": "Pod Security Admission can supply secure field defaults to a Pod before applying a namespace's Restricted policy.",
+      "answer": false,
+      "explanation": "Pod Security Admission validates submitted Pods rather than setting security fields. Supply required values in the workload or a separate mutating admission step.",
+      "misconception": "Pod Security Admission sets secure defaults as part of its validation.",
+      "factKey": "psa-validation-defaulting-boundary",
+      "topic": "Admission mutation",
+      "tags": [
+        "Pod Security Admission",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Migrate from PodSecurityPolicy to the Built-In PodSecurity Admission Controller",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-04",
+      "section": "4.1",
+      "statement": "Pod Security Admission preserves a namespace's v1.35 checks across upgrades when enforce-version stays v1.35.",
+      "answer": true,
+      "explanation": "A Pod Security Admission version label fixes a mode's checks to that Kubernetes minor's policy instead of following the latest policy.",
+      "misconception": "",
+      "factKey": "psa-policy-version-pin",
+      "topic": "Policy versions",
+      "tags": [
+        "Pod Security Admission"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Enforce Pod Security Standards with Namespace Labels",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-namespace-labels/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-05",
+      "section": "4.1",
+      "statement": "Pod Security Admission rejects a Deployment whose template violates its namespace's Restricted enforce policy.",
+      "answer": false,
+      "explanation": "Pod Security Admission's enforce mode checks Pods created from a Deployment, rather than the Deployment request. Workload templates receive audit and warning checks.",
+      "misconception": "Enforce mode rejects workload templates at Deployment admission.",
+      "factKey": "psa-workload-template-enforce-boundary",
+      "topic": "Workload admission",
+      "tags": [
+        "Pod Security Admission",
+        "Deployment",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod Security Admission",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/pod-security-admission/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-06",
+      "section": "4.1",
+      "statement": "Pod Security Admission exempts Deployment Pods created by a ReplicaSet controller using an exempt ServiceAccount.",
+      "answer": true,
+      "explanation": "The ReplicaSet controller submits Pod creation using its own identity. Exempting that account extends the Pod Security Admission bypass to other users' workloads.",
+      "misconception": "",
+      "factKey": "psa-controller-account-exemption",
+      "topic": "Admission exemptions",
+      "tags": [
+        "Pod Security Admission",
+        "ReplicaSet",
+        "ServiceAccount",
+        "Deployment"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod Security Admission",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/pod-security-admission/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-07",
+      "section": "4.1",
+      "statement": "A user with unrestricted namespace patch access can weaken that namespace's labeled Pod Security Admission enforcement.",
+      "answer": true,
+      "explanation": "Changing namespace labels can relax Pod Security Admission's policy level. Reserve namespace update rights for trusted users.",
+      "misconception": "",
+      "factKey": "psa-namespace-label-authority",
+      "topic": "Namespace authority",
+      "tags": [
+        "Pod Security Admission",
+        "Namespace"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Migrate from PodSecurityPolicy to the Built-In PodSecurity Admission Controller",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-08",
+      "section": "4.1",
+      "statement": "In a namespace enforcing Baseline v1.35, Pod Security Admission rejects a nonexempt Pod with a nonempty HTTP probe host.",
+      "answer": true,
+      "explanation": "The Baseline policy includes the probe host restriction introduced in v1.34. An HTTP probe's host field has to be empty or omitted.",
+      "misconception": "",
+      "factKey": "baseline-probe-host-restriction",
+      "topic": "Baseline admission",
+      "tags": [
+        "Pod Security Admission",
+        "Pod Security Standards",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod Security Standards",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/pod-security-standards/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-09",
+      "section": "4.1",
+      "statement": "A Linux Pod can pass Restricted admission with Pod and container seccompProfile omitted if its node uses seccompDefault.",
+      "answer": false,
+      "explanation": "Restricted Pod Security Admission requires an explicit RuntimeDefault or Localhost seccomp profile at Pod or container level. Node runtime defaulting leaves the required API field absent.",
+      "misconception": "Node seccomp runtime defaults satisfy Restricted admission's explicit-profile requirement.",
+      "factKey": "restricted-seccomp-explicit-profile",
+      "topic": "Restricted admission",
+      "tags": [
+        "Pod Security Admission",
+        "Pod Security Standards",
+        "seccomp"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pod Security Standards",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/pod-security-standards/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.1-10",
+      "section": "4.1",
+      "statement": "After a namespace switches to Restricted enforce mode, Pod Security Admission evicts its running violating Pods.",
+      "answer": false,
+      "explanation": "Changing a namespace's enforce label checks existing Pods and reports violations as warnings. Pod Security Admission leaves those running Pods in place.",
+      "misconception": "Strengthening an enforce policy evicts existing noncompliant Pods.",
+      "factKey": "psa-existing-pod-policy-change",
+      "topic": "Policy transitions",
+      "tags": [
+        "Pod Security Admission",
+        "Namespace",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Enforce Pod Security Standards with Namespace Labels",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-namespace-labels/"
+      }
+    }
+  ]
+}

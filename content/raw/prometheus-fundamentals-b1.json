@@ -1,0 +1,1292 @@
+{
+  "deck": "prometheus-fundamentals",
+  "block": "b1",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "Confirmed on 2026-10-08: [Download](https://prometheus.io/download/) lists Prometheus 3.15.0 as Latest with release-label date 2026-09-24 and Alertmanager 0.34.1 as Latest with release-label date 2026-09-17. The separate Prometheus LTS listing is 3.13.4, dated 2026-09-29. Latest matches the requested pins. The [Prometheus release](https://github.com/prometheus/prometheus/releases/tag/v3.15.0) and [Alertmanager release](https://github.com/prometheus/alertmanager/releases/tag/v0.34.1) confirm those version and date labels; Prometheus's GitHub publication display is September 25, distinct from its September 24 release-label date. Read the [migration guide](https://prometheus.io/docs/prometheus/latest/migration/), [feature flags](https://prometheus.io/docs/prometheus/latest/feature_flags/), and [3.15.0 configuration reference](https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md). Native histograms are stable since 3.8.0; the native-histograms flag is a no-op since 3.9. Configuration activates scraping: scrape_native_histograms defaults to false globally and is overridable per job. always_scrape_classic_histograms controls genuine classic companions; convert_classic_histograms_to_nhcb preserves custom boundaries. The pinned configuration also distinguishes remote write v1, where send_native_histograms defaults to false, from io.prometheus.write.v2.Request, where that option is ignored and native sending is enabled. Sending settings neither activate scraping nor establish receiver capability. Scope pages opened: [Data model](https://prometheus.io/docs/concepts/data_model/), [Metric types](https://prometheus.io/docs/concepts/metric_types/), [Naming](https://prometheus.io/docs/practices/naming/), [Histograms and summaries](https://prometheus.io/docs/practices/histograms/), [Native Histograms](https://prometheus.io/docs/specs/native_histograms/), [Functions](https://prometheus.io/docs/prometheus/latest/querying/functions/), [Overview](https://prometheus.io/docs/introduction/overview/), [Jobs and instances](https://prometheus.io/docs/concepts/jobs_instances/), [Configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/), [Instrumentation](https://prometheus.io/docs/practices/instrumentation/), [Writing exporters](https://prometheus.io/docs/instrumenting/writing_exporters/), [Pushgateway guidance](https://prometheus.io/docs/practices/pushing/), [Querying basics](https://prometheus.io/docs/prometheus/latest/querying/basics/), [Operators](https://prometheus.io/docs/prometheus/latest/querying/operators/), [Recording rules](https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/), [Alerting rules](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/), [Rule tests](https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/), [Recording-rule practices](https://prometheus.io/docs/practices/rules/), [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/), [Alertmanager configuration](https://prometheus.io/docs/alerting/latest/configuration/), [Storage](https://prometheus.io/docs/prometheus/latest/storage/), [Remote write](https://prometheus.io/docs/practices/remote_write/), and [Federation](https://prometheus.io/docs/prometheus/latest/federation/). Supplemental checks opened [UTF-8 guidance](https://prometheus.io/docs/guides/utf8/), [Exposition formats](https://prometheus.io/docs/instrumenting/exposition_formats/), [TSDB append validation](https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/head_append.go), and [function signatures](https://github.com/prometheus/prometheus/blob/v3.15.0/promql/parser/functions.go). Matching tagged query, storage, federation, migration, feature-flag, and Alertmanager configuration sources were checked where relevant. No selected behavior from living documentation advances beyond the pins. Documentation qualifications remain: broad native-layout claims need NHCB-specific limits; NHCBs reconcile shared custom boundaries with other NHCBs but are incompatible with standard exponential layouts. Broad native remote-sending advice omits the v2 exception. Storage prose still uses retention CLI flags that the pinned configuration marks deprecated in favor of storage.tsdb.retention settings. Jobs documentation still references the deprecated extra-scrape-metrics flag; the current option is extra_scrape_metrics. Deprecated Alertmanager match and match_re fields are excluded. Experimental PromQL functions and modifiers, concurrent rule evaluation, start-timestamp experiments, encoding details, and holt_winters/double_exponential_smoothing are excluded. Exposition exclusivity, client-support matrices, and transitional Alertmanager matcher-parser defaults remain unreconciled and are excluded. No remaining planned fact requires unsupported scope. Section grouping is this deck's own, under devops > Prometheus > topics > Fundamentals.",
+  "plan": [
+    {
+      "section": "r1",
+      "facts": [
+        "series-labelset-identity",
+        "metric-name-internal-label",
+        "empty-label-equivalence",
+        "reserved-label-prefix",
+        "utf8-name-validity",
+        "legacy-charset-compatibility",
+        "label-value-utf8",
+        "special-float-values",
+        "sample-timestamp-resolution",
+        "mixed-series-sample-types",
+        "quoted-metric-name-notation",
+        "conflicting-float-timestamp-rejection"
+      ]
+    },
+    {
+      "section": "r2",
+      "facts": [
+        "counter-restart-reset",
+        "gauge-current-value-choice",
+        "distribution-observation-choice",
+        "histogram-counter-gauge-flavors",
+        "float-type-metadata-validation",
+        "base-unit-guidance",
+        "unit-suffix-guidance",
+        "counter-total-suffix-guidance",
+        "single-quantity-per-metric",
+        "metric-namespace-prefix-guidance",
+        "recording-rule-name-aggregation-level",
+        "label-name-redundancy-guidance"
+      ]
+    },
+    {
+      "section": "r3",
+      "facts": [
+        "classic-bucket-cumulative-counts",
+        "nhcb-standard-layout-incompatibility",
+        "negative-observations-sum-rate-safety",
+        "summary-client-quantile-calculation",
+        "summary-quantile-aggregation-limit",
+        "histogram-quantile-estimation",
+        "classic-quantile-le-preservation",
+        "native-composite-sample-components",
+        "standard-exponential-layout-reconciliation",
+        "native-component-extraction-float-omission",
+        "nhcb-conversion-preserves-boundaries",
+        "summary-sum-count-aggregation"
+      ]
+    },
+    {
+      "section": "r4",
+      "facts": [
+        "scrape-pull-initiation",
+        "job-label-target-group",
+        "evaluation-versus-scrape-schedule",
+        "scrape-timeout-interval-bound",
+        "per-job-scrape-override",
+        "scrape-metrics-path",
+        "up-scrape-success-boundary",
+        "scrape-duration-diagnostic",
+        "honor-labels-conflict-resolution",
+        "content-type-fallback-requirement",
+        "native-histogram-scrape-activation",
+        "classic-histogram-companion-setting"
+      ]
+    },
+    {
+      "section": "r5",
+      "facts": [
+        "static-dynamic-job-target-sources",
+        "file-discovery-live-updates",
+        "target-relabel-configured-order",
+        "discovery-meta-label-removal",
+        "relabel-address-scrape-endpoint",
+        "relabel-param-url-query",
+        "relabel-drop-target-match",
+        "relabel-replace-capture-expansion",
+        "relabel-labelkeep-name-filter",
+        "metric-relabel-generated-up-exclusion",
+        "write-relabel-outgoing-filter",
+        "alert-relabel-after-external-labels"
+      ]
+    },
+    {
+      "section": "r6",
+      "facts": [
+        "owned-code-client-instrumentation",
+        "exporter-collect-during-scrape",
+        "expensive-exporter-cache-disclosure",
+        "online-request-error-latency-signals",
+        "completed-request-count-alignment",
+        "batch-last-success-signal",
+        "known-zero-series-initialization",
+        "event-time-as-metric-value",
+        "bounded-label-dimensions",
+        "exporter-partial-failure-signaling",
+        "pushgateway-service-batch-outcome",
+        "pushgateway-pushed-series-lifecycle"
+      ]
+    },
+    {
+      "section": "r7",
+      "facts": [
+        "time-function-scalar-type",
+        "range-selector-window-samples",
+        "range-query-repeated-evaluation",
+        "range-query-root-expression-types",
+        "label-equality-exact-match",
+        "label-regex-full-anchoring",
+        "promql-regex-dot-newline",
+        "repeated-label-matcher-conjunction",
+        "selector-nonempty-matcher-validity",
+        "keyword-metric-selector-workaround",
+        "scalar-single-float-conversion",
+        "scalar-conversion-empty-label-set"
+      ]
+    },
+    {
+      "section": "r8",
+      "facts": [
+        "irate-last-two-counter-samples",
+        "rate-counter-reset-adjustment",
+        "rate-window-end-extrapolation",
+        "increase-window-unit-scaling",
+        "rate-before-series-aggregation",
+        "documented-rate-alert-preference",
+        "delta-gauge-extrapolation",
+        "deriv-gauge-linear-regression",
+        "resets-native-bucket-disappearance",
+        "changes-histogram-flavor-equality",
+        "over-time-equal-sample-weight",
+        "native-counter-rate-composite-output"
+      ]
+    },
+    {
+      "section": "r9",
+      "facts": [
+        "aggregation-grouping-labels",
+        "count-vector-cardinality",
+        "topk-original-labels",
+        "min-max-native-samples",
+        "sum-mixed-sample-group",
+        "avg-vector-sample-weighting",
+        "comparison-filter-versus-bool",
+        "on-ignoring-match-labels",
+        "group-modifier-cardinality",
+        "unmatched-arithmetic-series",
+        "arithmetic-metric-name-removal",
+        "set-operators-sample-values"
+      ]
+    },
+    {
+      "section": "r10",
+      "facts": [
+        "offset-selector-placement",
+        "negative-offset-forward-selection",
+        "at-fixed-selection-time",
+        "subquery-expression-range",
+        "subquery-default-resolution",
+        "range-left-boundary-exclusion",
+        "evaluation-grid-sample-times",
+        "lookback-newest-eligible-sample",
+        "staleness-query-exclusion",
+        "explicit-timestamp-staleness",
+        "absent-emptiness-versus-zero",
+        "absent-over-time-empty-window"
+      ]
+    },
+    {
+      "section": "r11",
+      "facts": [
+        "rule-files-loading",
+        "rule-group-missed-iteration",
+        "within-group-sequential-order",
+        "recording-output-metric-name",
+        "promtool-rule-syntax-check",
+        "promtool-rule-test-fixtures",
+        "alert-vector-presence",
+        "alert-for-continuity",
+        "keep-firing-for-extension",
+        "alert-annotation-identity",
+        "alerts-synthetic-sample-value",
+        "prometheus-alertmanager-handoff"
+      ]
+    },
+    {
+      "section": "r12",
+      "facts": [
+        "alertmanager-alert-deduplication",
+        "group-by-label-values",
+        "group-wait-initial-notification",
+        "group-interval-existing-group",
+        "repeat-interval-unchanged-group",
+        "routing-parent-fallback",
+        "child-route-setting-inheritance",
+        "route-matchers-conjunction",
+        "route-continue-siblings",
+        "inhibition-equal-labels",
+        "silence-matcher-selection",
+        "suppression-prometheus-state-boundary"
+      ]
+    },
+    {
+      "section": "r13",
+      "facts": [
+        "head-active-block-memory",
+        "wal-restart-recovery",
+        "block-index-series-lookup",
+        "compaction-temporary-disk-headroom",
+        "retention-first-trigger-wins",
+        "size-retention-oldest-first",
+        "time-retention-whole-block-expiry",
+        "expiration-background-cleanup",
+        "size-retention-total-disk-ceiling",
+        "snapshot-backup-recommendation",
+        "local-tsdb-filesystem-support",
+        "local-tsdb-single-node"
+      ]
+    },
+    {
+      "section": "r14",
+      "facts": [
+        "remote-write-wal-backed-queues",
+        "remote-write-adaptive-shards",
+        "remote-write-finite-outage-buffer",
+        "external-labels-outbound-fallback",
+        "remote-native-sending-protocol",
+        "remote-read-promql-evaluates-locally",
+        "remote-write-retryable-failures",
+        "federation-current-samples",
+        "federation-match-selector-union",
+        "federation-match-instant-selectors",
+        "hierarchical-federation-aggregate-series",
+        "cross-service-federation-local-datasets"
+      ]
+    }
+  ],
+  "notes": "",
+  "cards": [
+    {
+      "id": "prometheus-fundamentals-sr1-01",
+      "section": "r1",
+      "statement": "Prometheus merges stored samples with one metric name into one series across different label sets.",
+      "answer": false,
+      "explanation": "A metric name plus its label set identifies a series. Different label sets produce separate series.",
+      "misconception": "A shared metric name merges differently labeled samples.",
+      "factKey": "series-labelset-identity",
+      "topic": "Series identity",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data model",
+        "url": "https://prometheus.io/docs/concepts/data_model/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-02",
+      "section": "r1",
+      "statement": "Prometheus represents a stored series' metric name in the internal __name__ label.",
+      "answer": true,
+      "explanation": "The __name__ label carries the metric name in Prometheus's internal label model.",
+      "misconception": "",
+      "factKey": "metric-name-internal-label",
+      "topic": "Series identity",
+      "tags": [
+        "Prometheus",
+        "__name__"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Querying basics",
+        "url": "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-03",
+      "section": "r1",
+      "statement": "Prometheus treats an empty-valued label as a distinct identity from an absent label.",
+      "answer": false,
+      "explanation": "An empty label value and an absent label are equivalent in Prometheus's data model.",
+      "misconception": "An empty label creates a separate identity from an absent label.",
+      "factKey": "empty-label-equivalence",
+      "topic": "Series identity",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data model",
+        "url": "https://prometheus.io/docs/concepts/data_model/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-04",
+      "section": "r1",
+      "statement": "Prometheus reserves label names beginning with __ for its internal use.",
+      "answer": true,
+      "explanation": "The double-underscore prefix belongs to Prometheus internals rather than application label dimensions.",
+      "misconception": "",
+      "factKey": "reserved-label-prefix",
+      "topic": "Label constraints",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data model",
+        "url": "https://prometheus.io/docs/concepts/data_model/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-05",
+      "section": "r1",
+      "statement": "Prometheus 3.15.0 accepts UTF-8 metric names with metric_name_validation_scheme: utf8.",
+      "answer": true,
+      "explanation": "The utf8 validation scheme permits metric names beyond the older ASCII character pattern.",
+      "misconception": "",
+      "factKey": "utf8-name-validity",
+      "topic": "Name compatibility",
+      "tags": [
+        "Prometheus",
+        "metric_name_validation_scheme"
+      ],
+      "appliesTo": "Prometheus 3.15.0, metric_name_validation_scheme: utf8",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "UTF-8 in Prometheus",
+        "url": "https://prometheus.io/docs/guides/utf8/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-06",
+      "section": "r1",
+      "statement": "Prometheus docs favor unrestricted UTF-8 names for the widest tool compatibility.",
+      "answer": false,
+      "explanation": "Prometheus documentation recommends traditional name character patterns for wider ecosystem compatibility.",
+      "misconception": "Unrestricted UTF-8 names have the widest existing tool compatibility.",
+      "factKey": "legacy-charset-compatibility",
+      "topic": "Name compatibility",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "The documentation's compatibility guidance can evolve as surrounding tools adopt UTF-8 names.",
+      "source": {
+        "title": "Data model",
+        "url": "https://prometheus.io/docs/concepts/data_model/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-07",
+      "section": "r1",
+      "statement": "Prometheus label values support UTF-8 text, including non-ASCII characters.",
+      "answer": true,
+      "explanation": "Label values can carry UTF-8 strings, such as human-readable names in multiple languages.",
+      "misconception": "",
+      "factKey": "label-value-utf8",
+      "topic": "Label constraints",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data model",
+        "url": "https://prometheus.io/docs/concepts/data_model/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-08",
+      "section": "r1",
+      "statement": "Prometheus rejects +Inf as an invalid value in a float sample.",
+      "answer": false,
+      "explanation": "Positive infinity is a valid float sample value, alongside ordinary finite numbers.",
+      "misconception": "Stored float samples accept finite numbers alone.",
+      "factKey": "special-float-values",
+      "topic": "Sample values",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Exposition formats",
+        "url": "https://prometheus.io/docs/instrumenting/exposition_formats/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-09",
+      "section": "r1",
+      "statement": "Prometheus stores sample timestamps with millisecond precision.",
+      "answer": true,
+      "explanation": "Prometheus's sample timestamps distinguish milliseconds; submillisecond timing falls outside that precision.",
+      "misconception": "",
+      "factKey": "sample-timestamp-resolution",
+      "topic": "Sample timestamps",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data model",
+        "url": "https://prometheus.io/docs/concepts/data_model/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-10",
+      "section": "r1",
+      "statement": "A Prometheus time series keeps one sample value type throughout its lifetime.",
+      "answer": false,
+      "explanation": "A series can contain float samples and native histogram samples at different times.",
+      "misconception": "A series has a permanently fixed sample value type.",
+      "factKey": "mixed-series-sample-types",
+      "topic": "Sample values",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Querying basics",
+        "url": "https://prometheus.io/docs/prometheus/latest/querying/basics/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-11",
+      "section": "r1",
+      "statement": "Prometheus writes a dotted metric name inside braces and quotes in its series notation.",
+      "answer": true,
+      "explanation": "A name such as api.requests uses the quoted form {\"api.requests\"} in series notation.",
+      "misconception": "",
+      "factKey": "quoted-metric-name-notation",
+      "topic": "Name compatibility",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Exposition formats",
+        "url": "https://prometheus.io/docs/instrumenting/exposition_formats/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr1-12",
+      "section": "r1",
+      "statement": "Prometheus can store two different float values for one series at the same timestamp.",
+      "answer": false,
+      "explanation": "Prometheus rejects a new float sample that conflicts with the existing value at the same series timestamp.",
+      "misconception": "Different float values can coexist at the same series timestamp.",
+      "factKey": "conflicting-float-timestamp-rejection",
+      "topic": "Sample timestamps",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 TSDB append validation",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/head_append.go"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-01",
+      "section": "r2",
+      "statement": "Prometheus counters can reset to zero when the process that maintains them restarts.",
+      "answer": true,
+      "explanation": "Counters accumulate events during a process lifetime, with restart resets permitted.",
+      "misconception": "",
+      "factKey": "counter-restart-reset",
+      "topic": "Metric selection",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric types",
+        "url": "https://prometheus.io/docs/concepts/metric_types/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-02",
+      "section": "r2",
+      "statement": "Prometheus documentation recommends a counter for tracking requests currently in flight.",
+      "answer": false,
+      "explanation": "Use a gauge for in-flight requests because the current count falls as requests finish.",
+      "misconception": "A current count should use a counter even when it decreases.",
+      "factKey": "gauge-current-value-choice",
+      "topic": "Metric selection",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric types",
+        "url": "https://prometheus.io/docs/concepts/metric_types/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-03",
+      "section": "r2",
+      "statement": "Prometheus histograms and summaries record observations such as request durations or response sizes.",
+      "answer": true,
+      "explanation": "These metric types record distributions of observations rather than a single current measurement.",
+      "misconception": "",
+      "factKey": "distribution-observation-choice",
+      "topic": "Metric selection",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Histograms and summaries",
+        "url": "https://prometheus.io/docs/practices/histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-04",
+      "section": "r2",
+      "statement": "A Prometheus gauge histogram accumulates its bucket counts over the process lifetime.",
+      "answer": false,
+      "explanation": "A gauge histogram represents a distribution's current state, with bucket populations that can rise or fall.",
+      "misconception": "Gauge histograms have the same cumulative semantics as counter histograms.",
+      "factKey": "histogram-counter-gauge-flavors",
+      "topic": "Histogram flavors",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric types",
+        "url": "https://prometheus.io/docs/concepts/metric_types/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-05",
+      "section": "r2",
+      "statement": "Prometheus 3.15.0 requires a counter TYPE declaration before rate() processes float samples.",
+      "answer": false,
+      "explanation": "PromQL treats stored float series as untyped; operators choose functions according to the metric's semantics.",
+      "misconception": "Float TYPE metadata enforces the choice of PromQL function.",
+      "factKey": "float-type-metadata-validation",
+      "topic": "Metric selection",
+      "tags": [
+        "Prometheus",
+        "PromQL",
+        "rate"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "Float type handling is evolving and future versions may add stronger query validation.",
+      "source": {
+        "title": "Metric types",
+        "url": "https://prometheus.io/docs/concepts/metric_types/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-06",
+      "section": "r2",
+      "statement": "Prometheus documentation recommends seconds as the base unit for duration metrics.",
+      "answer": true,
+      "explanation": "The naming guide favors base units so metrics use a consistent scale.",
+      "misconception": "",
+      "factKey": "base-unit-guidance",
+      "topic": "Naming conventions",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-07",
+      "section": "r2",
+      "statement": "A duration metric named response_latency follows Prometheus's recommended unit-suffix convention.",
+      "answer": false,
+      "explanation": "Prometheus recommends a plural unit suffix, such as _seconds, on names for duration metrics.",
+      "misconception": "A duration name follows the unit-suffix convention even when it omits the unit.",
+      "factKey": "unit-suffix-guidance",
+      "topic": "Naming conventions",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-08",
+      "section": "r2",
+      "statement": "Prometheus naming guidance recommends _total as a suffix for metrics that accumulate event counts.",
+      "answer": true,
+      "explanation": "The _total suffix signals an accumulating count to readers of metrics and queries.",
+      "misconception": "",
+      "factKey": "counter-total-suffix-guidance",
+      "topic": "Naming conventions",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-09",
+      "section": "r2",
+      "statement": "Prometheus naming guidance treats queue capacity and queue occupancy as one metric quantity.",
+      "answer": false,
+      "explanation": "Prometheus's naming guide recommends separate metrics for capacity and occupancy because they measure different quantities.",
+      "misconception": "Labels should combine different logical quantities under one metric.",
+      "factKey": "single-quantity-per-metric",
+      "topic": "Naming conventions",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-10",
+      "section": "r2",
+      "statement": "Prometheus naming guidance recommends an application prefix for application-specific metrics.",
+      "answer": true,
+      "explanation": "An application prefix associates a metric with the domain that produces it.",
+      "misconception": "",
+      "factKey": "metric-namespace-prefix-guidance",
+      "topic": "Naming conventions",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-11",
+      "section": "r2",
+      "statement": "The level in Prometheus's recommended recording-rule names describes the output's aggregation labels.",
+      "answer": true,
+      "explanation": "In the level:metric:operations pattern, level identifies the output's aggregation level and retained labels.",
+      "misconception": "",
+      "factKey": "recording-rule-name-aggregation-level",
+      "topic": "Recording rule naming",
+      "tags": [
+        "Prometheus",
+        "PromQL"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Recording rules naming practices",
+        "url": "https://prometheus.io/docs/practices/rules/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr2-12",
+      "section": "r2",
+      "statement": "http_requests_total_method follows Prometheus naming guidance for a metric with a method label.",
+      "answer": false,
+      "explanation": "Prometheus advises leaving label names out of metric names because aggregation can remove those labels.",
+      "misconception": "Repeating label names in metric names clarifies aggregated results.",
+      "factKey": "label-name-redundancy-guidance",
+      "topic": "Naming conventions",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-01",
+      "section": "r3",
+      "statement": "A classic Prometheus histogram includes observations from smaller buckets in a larger bucket's count.",
+      "answer": true,
+      "explanation": "Classic bucket counts are cumulative through the inclusive upper boundary named by le.",
+      "misconception": "",
+      "factKey": "classic-bucket-cumulative-counts",
+      "topic": "Classic histogram buckets",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metric types",
+        "url": "https://prometheus.io/docs/concepts/metric_types/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-02",
+      "section": "r3",
+      "statement": "PromQL can merge an NHCB and a standard exponential native histogram into one histogram result.",
+      "answer": false,
+      "explanation": "NHCBs reconcile with other NHCBs; their custom layouts are incompatible with standard exponential layouts.",
+      "misconception": "Custom and standard exponential native layouts merge with each other.",
+      "factKey": "nhcb-standard-layout-incompatibility",
+      "topic": "Native histogram layouts",
+      "tags": [
+        "Prometheus",
+        "PromQL"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Native Histograms",
+        "url": "https://prometheus.io/docs/specs/native_histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-03",
+      "section": "r3",
+      "statement": "A counter classic histogram's _sum remains suitable for rate() when observations include negative values.",
+      "answer": false,
+      "explanation": "Negative observations can decrease a classic histogram's _sum. rate() treats such decreases as counter resets.",
+      "misconception": "Classic histogram sums retain counter semantics with negative observations.",
+      "factKey": "negative-observations-sum-rate-safety",
+      "topic": "Observation sums",
+      "tags": [
+        "Prometheus",
+        "rate"
+      ],
+      "appliesTo": "Prometheus 3.15.0, counter classic histogram with negative observations",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Histograms and summaries",
+        "url": "https://prometheus.io/docs/practices/histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-04",
+      "section": "r3",
+      "statement": "Prometheus calculates a summary's exported quantiles from its _sum and _count series.",
+      "answer": false,
+      "explanation": "The instrumented application calculates summary quantiles before exposing them to Prometheus.",
+      "misconception": "The server reconstructs summary quantiles from sum and count.",
+      "factKey": "summary-client-quantile-calculation",
+      "topic": "Summary quantiles",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Histograms and summaries",
+        "url": "https://prometheus.io/docs/practices/histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-05",
+      "section": "r3",
+      "statement": "Averaging per-instance summary p99 values gives the p99 for their combined observations.",
+      "answer": false,
+      "explanation": "Summary quantiles do not combine into a valid percentile of the pooled observations.",
+      "misconception": "The average of instance percentiles is a fleet percentile.",
+      "factKey": "summary-quantile-aggregation-limit",
+      "topic": "Summary quantiles",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Histograms and summaries",
+        "url": "https://prometheus.io/docs/practices/histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-06",
+      "section": "r3",
+      "statement": "PromQL histogram_quantile() estimates a percentile from histogram bucket data.",
+      "answer": true,
+      "explanation": "Bucket data groups observations, so the function interpolates when the quantile lies inside a bucket.",
+      "misconception": "",
+      "factKey": "histogram-quantile-estimation",
+      "topic": "Histogram quantiles",
+      "tags": [
+        "Prometheus",
+        "PromQL",
+        "histogram_quantile"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Query functions",
+        "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-07",
+      "section": "r3",
+      "statement": "Classic histogram aggregation for histogram_quantile() retains le as a grouping label.",
+      "answer": true,
+      "explanation": "histogram_quantile() needs le to identify classic bucket boundaries after aggregation.",
+      "misconception": "",
+      "factKey": "classic-quantile-le-preservation",
+      "topic": "Histogram quantiles",
+      "tags": [
+        "Prometheus",
+        "PromQL",
+        "histogram_quantile",
+        "le"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Query functions",
+        "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-08",
+      "section": "r3",
+      "statement": "Prometheus stores a native histogram's buckets, observation count and observation sum together in one sample.",
+      "answer": true,
+      "explanation": "A native histogram sample carries the distribution components as one composite value.",
+      "misconception": "",
+      "factKey": "native-composite-sample-components",
+      "topic": "Native histogram samples",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Native Histograms",
+        "url": "https://prometheus.io/docs/specs/native_histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-09",
+      "section": "r3",
+      "statement": "PromQL merges standard exponential native histogram resolutions by reducing them to a common resolution.",
+      "answer": true,
+      "explanation": "Standard exponential schemas reconcile by merging finer buckets into coarser compatible buckets.",
+      "misconception": "",
+      "factKey": "standard-exponential-layout-reconciliation",
+      "topic": "Native histogram layouts",
+      "tags": [
+        "Prometheus",
+        "PromQL"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Native Histograms",
+        "url": "https://prometheus.io/docs/specs/native_histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-10",
+      "section": "r3",
+      "statement": "histogram_sum() and histogram_count() extract values from both float and native histogram samples.",
+      "answer": false,
+      "explanation": "histogram_sum() and histogram_count() read native histogram samples and omit float elements.",
+      "misconception": "Native histogram extraction functions also process float elements.",
+      "factKey": "native-component-extraction-float-omission",
+      "topic": "Native histogram queries",
+      "tags": [
+        "Prometheus",
+        "PromQL",
+        "histogram_sum",
+        "histogram_count"
+      ],
+      "appliesTo": "Prometheus 3.15.0, input vector mixes float and native histogram samples",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Query functions",
+        "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-11",
+      "section": "r3",
+      "statement": "Prometheus maps classic boundaries onto exponential buckets with convert_classic_histograms_to_nhcb: true.",
+      "answer": false,
+      "explanation": "NHCB conversion retains the classic histogram's custom bucket boundaries.",
+      "misconception": "NHCB conversion replaces custom boundaries with exponential buckets.",
+      "factKey": "nhcb-conversion-preserves-boundaries",
+      "topic": "Native histogram layouts",
+      "tags": [
+        "Prometheus",
+        "convert_classic_histograms_to_nhcb"
+      ],
+      "appliesTo": "Prometheus 3.15.0, convert_classic_histograms_to_nhcb: true",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 configuration reference",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr3-12",
+      "section": "r3",
+      "statement": "PromQL can aggregate observation sums and counts from summaries across instances.",
+      "answer": true,
+      "explanation": "Summary sums and counts are additive, so they combine across instances.",
+      "misconception": "",
+      "factKey": "summary-sum-count-aggregation",
+      "topic": "Summary observations",
+      "tags": [
+        "Prometheus",
+        "PromQL"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Histograms and summaries",
+        "url": "https://prometheus.io/docs/practices/histograms/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-01",
+      "section": "r4",
+      "statement": "Prometheus initiates HTTP requests to collect metrics from configured scrape targets.",
+      "answer": true,
+      "explanation": "Prometheus collects target metrics by requesting their exposed metrics endpoints.",
+      "misconception": "",
+      "factKey": "scrape-pull-initiation",
+      "topic": "Scrape collection",
+      "tags": [
+        "Prometheus"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview",
+        "url": "https://prometheus.io/docs/introduction/overview/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-02",
+      "section": "r4",
+      "statement": "By default, Prometheus uses the job label to distinguish endpoints within a scrape job.",
+      "answer": false,
+      "explanation": "The job label identifies the configured job; instance distinguishes its scrape endpoints.",
+      "misconception": "The job label identifies each endpoint inside a job.",
+      "factKey": "job-label-target-group",
+      "topic": "Jobs and instances",
+      "tags": [
+        "Prometheus",
+        "job",
+        "instance"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Jobs and instances",
+        "url": "https://prometheus.io/docs/concepts/jobs_instances/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-03",
+      "section": "r4",
+      "statement": "Prometheus uses evaluation_interval to schedule collection of metrics from scrape targets.",
+      "answer": false,
+      "explanation": "scrape_interval schedules target collection. evaluation_interval schedules rule evaluation.",
+      "misconception": "The rule evaluation interval controls scrape frequency.",
+      "factKey": "evaluation-versus-scrape-schedule",
+      "topic": "Scrape scheduling",
+      "tags": [
+        "Prometheus",
+        "evaluation_interval",
+        "scrape_interval"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configuration",
+        "url": "https://prometheus.io/docs/prometheus/latest/configuration/configuration/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-04",
+      "section": "r4",
+      "statement": "Prometheus requires scrape_timeout to be at most the effective scrape_interval.",
+      "answer": true,
+      "explanation": "A scrape timeout cannot exceed the scrape interval configured for that job.",
+      "misconception": "",
+      "factKey": "scrape-timeout-interval-bound",
+      "topic": "Scrape scheduling",
+      "tags": [
+        "Prometheus",
+        "scrape_timeout",
+        "scrape_interval"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configuration",
+        "url": "https://prometheus.io/docs/prometheus/latest/configuration/configuration/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-05",
+      "section": "r4",
+      "statement": "A Prometheus scrape job can override the global scrape_interval with its own setting.",
+      "answer": true,
+      "explanation": "The job-level scrape_interval takes precedence over the global value for that job.",
+      "misconception": "",
+      "factKey": "per-job-scrape-override",
+      "topic": "Scrape scheduling",
+      "tags": [
+        "Prometheus",
+        "scrape_interval"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configuration",
+        "url": "https://prometheus.io/docs/prometheus/latest/configuration/configuration/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-06",
+      "section": "r4",
+      "statement": "By default, Prometheus keeps the instance label when metrics_path changes for the same target host and port.",
+      "answer": true,
+      "explanation": "The default instance label comes from the target address; metrics_path changes the requested resource path.",
+      "misconception": "",
+      "factKey": "scrape-metrics-path",
+      "topic": "Scrape collection",
+      "tags": [
+        "Prometheus",
+        "metrics_path",
+        "instance"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configuration",
+        "url": "https://prometheus.io/docs/prometheus/latest/configuration/configuration/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-07",
+      "section": "r4",
+      "statement": "Prometheus up=1 confirms that the target application is serving its users successfully.",
+      "answer": false,
+      "explanation": "up=1 reports a successful metrics scrape; application health needs application-specific signals.",
+      "misconception": "A successful metrics scrape proves the application's user-facing health.",
+      "factKey": "up-scrape-success-boundary",
+      "topic": "Scrape diagnostics",
+      "tags": [
+        "Prometheus",
+        "up"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Jobs and instances",
+        "url": "https://prometheus.io/docs/concepts/jobs_instances/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-08",
+      "section": "r4",
+      "statement": "Prometheus scrape_duration_seconds measures time since the target's last successful scrape.",
+      "answer": false,
+      "explanation": "scrape_duration_seconds reports the duration of a scrape, rather than the age of its last success.",
+      "misconception": "Scrape duration is elapsed time since the previous successful scrape.",
+      "factKey": "scrape-duration-diagnostic",
+      "topic": "Scrape diagnostics",
+      "tags": [
+        "Prometheus",
+        "scrape_duration_seconds"
+      ],
+      "appliesTo": "Prometheus 3.15.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Jobs and instances",
+        "url": "https://prometheus.io/docs/concepts/jobs_instances/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-09",
+      "section": "r4",
+      "statement": "With honor_labels: true, Prometheus keeps its configured job label when the target also exports job.",
+      "answer": false,
+      "explanation": "honor_labels: true preserves the scraped job value when it conflicts with the server's job label.",
+      "misconception": "honor_labels preserves server-side labels during a conflict.",
+      "factKey": "honor-labels-conflict-resolution",
+      "topic": "Scrape label conflicts",
+      "tags": [
+        "Prometheus",
+        "honor_labels",
+        "job"
+      ],
+      "appliesTo": "Prometheus 3.15.0, honor_labels: true",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configuration",
+        "url": "https://prometheus.io/docs/prometheus/latest/configuration/configuration/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-10",
+      "section": "r4",
+      "statement": "Prometheus 3.15.0 can parse an unknown Content-Type as text with fallback_scrape_protocol unset.",
+      "answer": false,
+      "explanation": "An unrecognized Content-Type fails the scrape unless a suitable fallback_scrape_protocol is configured.",
+      "misconception": "Unknown scrape Content-Type values automatically fall back to text.",
+      "factKey": "content-type-fallback-requirement",
+      "topic": "Scrape protocols",
+      "tags": [
+        "Prometheus",
+        "fallback_scrape_protocol"
+      ],
+      "appliesTo": "Prometheus 3.15.0, fallback_scrape_protocol unset",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.0 migration guide",
+        "url": "https://prometheus.io/docs/prometheus/latest/migration/"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-11",
+      "section": "r4",
+      "statement": "Prometheus 3.15.0 sets scrape_native_histograms to false in its default configuration.",
+      "answer": true,
+      "explanation": "Prometheus recognizes native samples during scraping when scrape_native_histograms is true globally or for the job.",
+      "misconception": "",
+      "factKey": "native-histogram-scrape-activation",
+      "topic": "Native histogram activation",
+      "tags": [
+        "Prometheus",
+        "scrape_native_histograms"
+      ],
+      "appliesTo": "Prometheus 3.15.0, default scrape_native_histograms setting",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "This card tests a version-pinned default that can change in a major release.",
+      "source": {
+        "title": "Prometheus 3.15.0 configuration reference",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md"
+      }
+    },
+    {
+      "id": "prometheus-fundamentals-sr4-12",
+      "section": "r4",
+      "statement": "always_scrape_classic_histograms: true preserves exposed classic companions during native histogram scraping.",
+      "answer": true,
+      "explanation": "With always_scrape_classic_histograms: true, Prometheus also ingests classic parts exposed alongside native parts.",
+      "misconception": "",
+      "factKey": "classic-histogram-companion-setting",
+      "topic": "Native histogram activation",
+      "tags": [
+        "Prometheus",
+        "always_scrape_classic_histograms",
+        "scrape_native_histograms"
+      ],
+      "appliesTo": "Prometheus 3.15.0, scrape_native_histograms: true and always_scrape_classic_histograms: true",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Prometheus 3.15.0 configuration reference",
+        "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md"
+      }
+    }
+  ]
+}

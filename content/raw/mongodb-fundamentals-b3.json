@@ -1,0 +1,1050 @@
+{
+  "deck": "mongodb-fundamentals",
+  "block": "b3",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replace esr-equality-field-placement with equality-fields-relative-order to test index guidance beyond the ESR acronym. Replace multikey-array-projection-coverage with multikey-expr-index-ineligibility to avoid repeating whole-array fetching. Replace unique-email-duplicate-insert with unique-index-collation-conflict to test a concrete uniqueness case. Replace schema-versions-coexist-in-collection with schema-version-multiple-field-path-indexes and schema-version-dependent-query-paths with schema-version-marker-document-field to avoid overlap with r2 and r5.",
+  "cards": [
+    {
+      "id": "mongodb-fundamentals-sr9-01",
+      "section": "r9",
+      "statement": "MongoDB indexes \"profile.city\" as an embedded field path when createIndex() uses that key.",
+      "answer": true,
+      "explanation": "An index key such as {\"profile.city\":1} indexes the city field inside profile. MongoDB makes that index available for queries on the nested field.",
+      "misconception": "",
+      "factKey": "nested-field-path-index",
+      "topic": "Single field indexes",
+      "tags": [
+        "MongoDB",
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create an Index on a Single Field",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-single/create-single-field-index/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-02",
+      "section": "r9",
+      "statement": "MongoDB updates the email index when updateOne() changes a document's indexed email value.",
+      "answer": true,
+      "explanation": "Changing an indexed field updates its corresponding index keys as part of the write. The index continues to reflect the document's current email value.",
+      "misconception": "",
+      "factKey": "indexed-write-maintenance",
+      "topic": "Index write maintenance",
+      "tags": [
+        "MongoDB",
+        "db.collection.updateOne()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Write Operation Performance",
+        "url": "https://www.mongodb.com/docs/manual/core/write-performance/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-03",
+      "section": "r9",
+      "statement": "The {tenant:1,status:1} index supports a query filtered by tenant alone.",
+      "answer": true,
+      "explanation": "The leading tenant key forms a prefix of {tenant:1,status:1}. MongoDB makes the index available for a tenant filter even when the query omits status.",
+      "misconception": "",
+      "factKey": "compound-leading-prefix",
+      "topic": "Compound index prefixes",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Compound Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-04",
+      "section": "r9",
+      "statement": "The {score:-1,name:1} index supports sort({score:1,name:1}) for a query with an empty filter.",
+      "answer": false,
+      "explanation": "A compound index supplies its specified sort directions or their complete reverse. Sorting both fields ascending changes just the score direction here.",
+      "misconception": "A compound index independently reverses each field's sort direction.",
+      "factKey": "compound-sort-relative-directions",
+      "topic": "Compound index sorting",
+      "tags": [
+        "MongoDB",
+        "cursor.sort()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Compound Index Sort Order",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/sort-order/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-05",
+      "section": "r9",
+      "statement": "The {tenant:1,score:1} index supports sorting by score for a query with tenant equality.",
+      "answer": true,
+      "explanation": "An equality condition fixes the preceding tenant key. MongoDB can then obtain score order from the trailing index key.",
+      "misconception": "",
+      "factKey": "nonprefix-sort-equality-keys",
+      "topic": "Compound index sorting",
+      "tags": [
+        "MongoDB",
+        "cursor.sort()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use Indexes to Sort Query Results",
+        "url": "https://www.mongodb.com/docs/manual/tutorial/sort-results-with-indexes/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-06",
+      "section": "r9",
+      "statement": "An {email:1} index can cover find({email:\"a\"},{email:1,phone:1,_id:0}).",
+      "answer": false,
+      "explanation": "The phone result field is absent from the email index. MongoDB needs document data to return phone, so that index does not cover this query.",
+      "misconception": "Indexing the filter field suffices to cover a query that returns other fields.",
+      "factKey": "covered-query-result-fields",
+      "topic": "Covered query eligibility",
+      "tags": [
+        "MongoDB",
+        "db.collection.find()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Query Optimization",
+        "url": "https://www.mongodb.com/docs/manual/core/query-optimization/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-07",
+      "section": "r9",
+      "statement": "The {email:1} index can cover find({email:null},{email:1,_id:0}).",
+      "answer": false,
+      "explanation": "A query with equality to null is ineligible for coverage. MongoDB must examine document data even when the filter and returned field occur in the index.",
+      "misconception": "A null-equality query is covered when its named fields are indexed.",
+      "factKey": "null-equality-prevents-coverage",
+      "topic": "Covered query eligibility",
+      "tags": [
+        "MongoDB",
+        "db.collection.find()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Query Optimization",
+        "url": "https://www.mongodb.com/docs/manual/core/query-optimization/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-08",
+      "section": "r9",
+      "statement": "MongoDB's explain() includes index search intervals in an IXSCAN stage of a winning plan.",
+      "answer": true,
+      "explanation": "The winning plan's IXSCAN node includes the index intervals that MongoDB plans to search. Its position can be nested inside inputStage or queryPlan.",
+      "misconception": "",
+      "factKey": "explain-index-scan-stage",
+      "topic": "Explain plan evidence",
+      "tags": [
+        "MongoDB",
+        "db.collection.explain()",
+        "IXSCAN"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "MongoDB documents explain output fields as subject to change.",
+      "source": {
+        "title": "Explain Results",
+        "url": "https://www.mongodb.com/docs/manual/reference/explain-results/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-09",
+      "section": "r9",
+      "statement": "MongoDB's explain() totalDocsExamined counts documents that survive the query filter.",
+      "answer": false,
+      "explanation": "totalDocsExamined includes document examinations that end in rejection by a filter. It measures read work rather than the number of matching results.",
+      "misconception": "totalDocsExamined reports the result count after filtering.",
+      "factKey": "explain-documents-examined",
+      "topic": "Explain plan evidence",
+      "tags": [
+        "MongoDB",
+        "db.collection.explain()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Explain Results",
+        "url": "https://www.mongodb.com/docs/manual/reference/explain-results/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-10",
+      "section": "r9",
+      "statement": "MongoDB's index guidance puts the most selective equality field first when a query has several equality fields.",
+      "answer": false,
+      "explanation": "Multiple equality fields may appear in any order relative to each other in a compound index. Their relative placement need not follow a selectivity ranking.",
+      "misconception": "MongoDB prescribes a selectivity ranking among equality keys in a compound index.",
+      "factKey": "equality-fields-relative-order",
+      "topic": "Index field ordering",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "The ESR (Equality, Sort, Range) Guideline",
+        "url": "https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-11",
+      "section": "r9",
+      "statement": "MongoDB's index guidance supports placing a highly selective range field before the sort field.",
+      "answer": true,
+      "explanation": "A highly selective range can reduce candidate data enough to justify placing it before sort fields. MongoDB documents this ERS alternative to ESR.",
+      "misconception": "",
+      "factKey": "selective-range-ers-alternative",
+      "topic": "Index field ordering",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "The ESR (Equality, Sort, Range) Guideline",
+        "url": "https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr9-12",
+      "section": "r9",
+      "statement": "MongoDB selects an index as the winning plan as soon as the index is eligible for the query.",
+      "answer": false,
+      "explanation": "Index eligibility makes an index a possible plan component. MongoDB ranks candidate plans, so another plan may win for the query.",
+      "misconception": "An eligible index guarantees its own selection by the query optimizer.",
+      "factKey": "index-eligibility-versus-plan-choice",
+      "topic": "Query optimizer choice",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Query Plans",
+        "url": "https://www.mongodb.com/docs/manual/core/query-plans/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-01",
+      "section": "r10",
+      "statement": "MongoDB turns an ordinary index multikey automatically when an indexed field contains an array.",
+      "answer": true,
+      "explanation": "MongoDB detects array values in indexed fields and records the multikey status. Creating the index uses the ordinary createIndex() method.",
+      "misconception": "",
+      "factKey": "automatic-array-multikey-index",
+      "topic": "Multikey index creation",
+      "tags": [
+        "MongoDB",
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create an Index on an Array Field",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/create-multikey-index-basic/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-02",
+      "section": "r10",
+      "statement": "MongoDB can insert {tags:[\"blue\"],codes:[\"X\"]} into a collection with a compound {tags:1,codes:1} index.",
+      "answer": false,
+      "explanation": "A compound {tags:1,codes:1} index rejects parallel arrays in both fields of one document. That document violates the compound multikey restriction.",
+      "misconception": "The per-document array restriction permits parallel arrays in a compound index.",
+      "factKey": "compound-multikey-per-document-restriction",
+      "topic": "Compound multikey restrictions",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multikey Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-03",
+      "section": "r10",
+      "statement": "MongoDB can accept repeated elements in one document's indexed array under a unique multikey index.",
+      "answer": true,
+      "explanation": "Repeating a key within the same document is permitted by a unique multikey index. MongoDB stores that repeated index entry once.",
+      "misconception": "",
+      "factKey": "unique-multikey-within-document-repeats",
+      "topic": "Unique multikey behavior",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Unique Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-unique/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-04",
+      "section": "r10",
+      "statement": "Query $elemMatch can let MongoDB intersect lower and upper bounds for an indexed array field.",
+      "answer": true,
+      "explanation": "For an indexed array, joining range predicates with query $elemMatch lets MongoDB intersect their index bounds into a tighter interval.",
+      "misconception": "",
+      "factKey": "elemmatch-multikey-bounds-intersection",
+      "topic": "Multikey query bounds",
+      "tags": [
+        "MongoDB",
+        "$elemMatch"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multikey Index Bounds",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/multikey-index-bounds/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-05",
+      "section": "r10",
+      "statement": "MongoDB can verify a candidate's tags value equals [\"blue\",\"green\"] from multikey entries before fetching it.",
+      "answer": false,
+      "explanation": "For whole-array equality, multikey entries locate candidates. MongoDB fetches each candidate document to verify its complete array value.",
+      "misconception": "Multikey entries contain enough information to verify a candidate's full array value.",
+      "factKey": "whole-array-match-document-fetch",
+      "topic": "Multikey query eligibility",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multikey Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-06",
+      "section": "r10",
+      "statement": "MongoDB can use a multikey index to resolve a query $expr comparison on the indexed array field.",
+      "answer": false,
+      "explanation": "A comparison inside query $expr is ineligible for multikey index support. MongoDB evaluates that comparison from document data.",
+      "misconception": "Query $expr comparisons receive multikey index support for indexed arrays.",
+      "factKey": "multikey-expr-index-ineligibility",
+      "topic": "Multikey query eligibility",
+      "tags": [
+        "MongoDB",
+        "$expr"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multikey Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-07",
+      "section": "r10",
+      "statement": "In MongoDB 9.0, a running query may fail when a concurrent write makes its referenced indexed field multikey.",
+      "answer": true,
+      "explanation": "A concurrent multikey transition can raise QueryKilledError in a query referencing that field. MongoDB recommends rerunning the query after the write finishes.",
+      "misconception": "",
+      "factKey": "concurrent-multikey-transition-query-error",
+      "topic": "Concurrent multikey changes",
+      "tags": [
+        "MongoDB",
+        "QueryKilledError"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "may_change",
+      "volatilityNote": "MongoDB 9.0 introduces this query failure behavior; later releases may revise it.",
+      "source": {
+        "title": "Compatibility Changes in MongoDB 9.0",
+        "url": "https://www.mongodb.com/docs/manual/release-notes/9.0-compatibility/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-08",
+      "section": "r10",
+      "statement": "One text index can serve $text queries across both title and summary fields in a collection.",
+      "answer": true,
+      "explanation": "A text index may include multiple string fields. Defining title and summary as text keys makes either field available to the same $text search.",
+      "misconception": "",
+      "factKey": "text-index-multiple-fields",
+      "topic": "Text index configuration",
+      "tags": [
+        "MongoDB",
+        "$text"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Text Indexes on Self-Managed Deployments",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-09",
+      "section": "r10",
+      "statement": "The $text query predicate can use a regular ascending string index to supply its word matches.",
+      "answer": false,
+      "explanation": "The $text query predicate needs a text index. A regular ascending index on the same string field does not satisfy that prerequisite.",
+      "misconception": "An ordinary string-field index provides the word-search support needed by $text.",
+      "factKey": "text-query-special-index-prerequisite",
+      "topic": "Text query matching",
+      "tags": [
+        "MongoDB",
+        "$text"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Text Indexes on Self-Managed Deployments",
+        "url": "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-10",
+      "section": "r10",
+      "statement": "The $text search string \"coffee cake\" combines its unquoted terms with AND matching.",
+      "answer": false,
+      "explanation": "The unquoted $search value \"coffee cake\" uses OR between its terms. A document matching either search term qualifies.",
+      "misconception": "Unquoted words in a $text search string impose AND matching.",
+      "factKey": "text-unquoted-search-terms-or",
+      "topic": "Text query matching",
+      "tags": [
+        "MongoDB",
+        "$text"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "$text (query predicate operator)",
+        "url": "https://www.mongodb.com/docs/manual/reference/operator/query/text/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-11",
+      "section": "r10",
+      "statement": "The $text query predicate returns matches in descending relevance order by default.",
+      "answer": false,
+      "explanation": "$text assigns relevance scores but leaves score ordering unspecified. An explicit sort such as {score:{$meta:\"textScore\"}} requests descending score order.",
+      "misconception": "A $text predicate implicitly sorts its results by relevance.",
+      "factKey": "text-score-explicit-sort",
+      "topic": "Text relevance ordering",
+      "tags": [
+        "MongoDB",
+        "$text",
+        "$meta",
+        "cursor.sort()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "$text (query predicate operator)",
+        "url": "https://www.mongodb.com/docs/manual/reference/operator/query/text/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr10-12",
+      "section": "r10",
+      "statement": "The $text query predicate treats words enclosed in double quotes within $search as an exact phrase.",
+      "answer": true,
+      "explanation": "Double quotes around a multi-word phrase inside the $search value request a phrase match. The words need to appear together in that order.",
+      "misconception": "",
+      "factKey": "text-quoted-phrase-search",
+      "topic": "Text query matching",
+      "tags": [
+        "MongoDB",
+        "$text"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "$text (query predicate operator)",
+        "url": "https://www.mongodb.com/docs/manual/reference/operator/query/text/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-01",
+      "section": "r11",
+      "statement": "A unique email index with collation:{locale:\"en\",strength:2} rejects email:\"A@X\" when another document has email:\"a@x\".",
+      "answer": true,
+      "explanation": "A unique index uses its collation to compare string keys. With English strength 2, changing letter case still produces a duplicate-key conflict.",
+      "misconception": "",
+      "factKey": "unique-index-collation-conflict",
+      "topic": "Unique index constraints",
+      "tags": [
+        "db.collection.createIndex()",
+        "collation"
+      ],
+      "appliesTo": "MongoDB 9.0, ordinary unsharded collection, index collation:{locale:\"en\",strength:2}",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "db.collection.createIndex()",
+        "url": "https://www.mongodb.com/docs/manual/reference/method/db.collection.createindex/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-02",
+      "section": "r11",
+      "statement": "A unique {team:1,email:1} index rejects a repeated email even when the team value differs.",
+      "answer": false,
+      "explanation": "A compound unique index constrains the complete combination of indexed values. The same email paired with a different team forms a different index key.",
+      "misconception": "A unique compound index enforces a separate uniqueness constraint on each indexed field.",
+      "factKey": "unique-compound-key-combination",
+      "topic": "Unique index constraints",
+      "tags": [
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Unique Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-unique/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-03",
+      "section": "r11",
+      "statement": "MongoDB can create a unique {email:1} index despite duplicate email values in separate stored documents.",
+      "answer": false,
+      "explanation": "Existing duplicate index keys prevent a unique index from being built. Stored documents need to satisfy the constraint before the build can succeed.",
+      "misconception": "Unique index creation applies its constraint to future writes and accepts existing duplicate keys.",
+      "factKey": "unique-build-existing-duplicates",
+      "topic": "Unique index constraints",
+      "tags": [
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Unique Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-unique/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-04",
+      "section": "r11",
+      "statement": "db.c.createIndex({email:1},{unique:true}) gives email:null and missing email the same null index key.",
+      "answer": true,
+      "explanation": "In this full single-field unique index, an explicit null and an absent email both produce a null key. Those documents compete for the same unique entry.",
+      "misconception": "",
+      "factKey": "unique-single-field-null-missing-key",
+      "topic": "Unique index constraints",
+      "tags": [
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Unique Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-unique/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-05",
+      "section": "r11",
+      "statement": "MongoDB omits active:false documents from an {active:1} index with partialFilterExpression:{active:true}.",
+      "answer": true,
+      "explanation": "The partial filter determines which documents receive entries in this index. Documents with active:false stay stored in the collection but lack an entry in that index.",
+      "misconception": "",
+      "factKey": "partial-filter-indexed-subset",
+      "topic": "Partial index scope",
+      "tags": [
+        "partialFilterExpression"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Partial Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-partial/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-06",
+      "section": "r11",
+      "statement": "The query {email:\"a@x\"} qualifies for an email index with partialFilterExpression:{active:true}.",
+      "answer": false,
+      "explanation": "This query can also match inactive documents, so the partial index could omit valid results. Eligible query conditions need to imply the index filter.",
+      "misconception": "Matching an indexed field makes a query eligible for a partial index even when the query omits the filter condition.",
+      "factKey": "partial-query-result-completeness",
+      "topic": "Partial query eligibility",
+      "tags": [
+        "partialFilterExpression",
+        "db.collection.find()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Partial Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-partial/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-07",
+      "section": "r11",
+      "statement": "An index on email can use partialFilterExpression:{active:true} even when active is outside the index key.",
+      "answer": true,
+      "explanation": "A partial index filter can inspect fields outside the key pattern. Here, email determines the key while active determines document inclusion.",
+      "misconception": "",
+      "factKey": "partial-filter-nonkey-fields",
+      "topic": "Partial index scope",
+      "tags": [
+        "partialFilterExpression"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Partial Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-partial/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-08",
+      "section": "r11",
+      "statement": "A unique email index with partialFilterExpression:{active:true} rejects duplicate emails among inactive documents.",
+      "answer": false,
+      "explanation": "The unique constraint covers documents matching the partial filter. Documents with active:false fall outside that scope, so their email values can repeat.",
+      "misconception": "A partial unique index enforces uniqueness for documents outside its filter.",
+      "factKey": "partial-unique-filter-scope",
+      "topic": "Partial index scope",
+      "tags": [
+        "partialFilterExpression",
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Partial Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-partial/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-09",
+      "section": "r11",
+      "statement": "MongoDB treats expiresAt:\"2020-01-01T00:00:00Z\" as ineligible for TTL expiration on that field.",
+      "answer": true,
+      "explanation": "TTL expiration examines BSON Date values. A date-looking string remains a string and supplies no eligible date value to the TTL index.",
+      "misconception": "",
+      "factKey": "ttl-date-value-eligibility",
+      "topic": "TTL index eligibility",
+      "tags": [
+        "expireAfterSeconds",
+        "Date"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "TTL Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-ttl/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-10",
+      "section": "r11",
+      "statement": "A compound {createdAt:1,userId:1} index can expire documents using expireAfterSeconds.",
+      "answer": false,
+      "explanation": "MongoDB ignores expireAfterSeconds on a compound index. TTL expiration uses a single-field index.",
+      "misconception": "A compound index becomes a TTL index when its options include expireAfterSeconds.",
+      "factKey": "ttl-single-field-restriction",
+      "topic": "TTL index eligibility",
+      "tags": [
+        "expireAfterSeconds",
+        "db.collection.createIndex()"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "TTL Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-ttl/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-11",
+      "section": "r11",
+      "statement": "MongoDB can calculate TTL expiration from the earliest BSON Date in an indexed array of dates.",
+      "answer": true,
+      "explanation": "For an indexed array containing dates, the lowest date supplies the TTL expiration threshold. Adding a later date leaves that earlier threshold in effect.",
+      "misconception": "",
+      "factKey": "ttl-array-earliest-date",
+      "topic": "TTL expiration behavior",
+      "tags": [
+        "expireAfterSeconds",
+        "Date"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "TTL Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-ttl/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr11-12",
+      "section": "r11",
+      "statement": "MongoDB removes a TTL-indexed document at the exact instant its indexed date reaches the expiration threshold.",
+      "answer": false,
+      "explanation": "MongoDB deletes expired documents during background work. An expired document can remain in the collection while that work waits or catches up.",
+      "misconception": "The TTL expiration threshold is a guaranteed exact deletion deadline.",
+      "factKey": "ttl-background-deletion-delay",
+      "topic": "TTL expiration behavior",
+      "tags": [
+        "expireAfterSeconds"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "TTL Indexes",
+        "url": "https://www.mongodb.com/docs/manual/core/index-ttl/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-01",
+      "section": "r12",
+      "statement": "MongoDB favors embedding bounded child data that an application fetches together with its parent.",
+      "answer": true,
+      "explanation": "Embedding children with their parent keeps related data fetched together in one record. The application retrieves that group with a single database operation.",
+      "misconception": "",
+      "factKey": "embedding-coread-workload-fit",
+      "topic": "Embedding tradeoffs",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Embedded Data in Your MongoDB Schema",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/embedding/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-02",
+      "section": "r12",
+      "statement": "MongoDB favors embedding bounded related values that an application repeatedly changes together.",
+      "answer": true,
+      "explanation": "Frequently changing related values together is a documented reason to embed them. Keeping that group in one document matches the application's write workload.",
+      "misconception": "",
+      "factKey": "embedding-coupdate-workload-fit",
+      "topic": "Embedding tradeoffs",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best Practices for Data Modeling in MongoDB",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/best-practices/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-03",
+      "section": "r12",
+      "statement": "MongoDB favors embedding a related entity that applications usually query independently of its parent.",
+      "answer": false,
+      "explanation": "References suit a related entity frequently queried on its own. Keeping its data in a separate document lets the application access the entity independently.",
+      "misconception": "Embedding is the preferred relationship model even when the related entity has an independent read workload.",
+      "factKey": "independent-entity-reference-fit",
+      "topic": "Embedding tradeoffs",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Reference Data in Your MongoDB Schema",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/referencing/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-04",
+      "section": "r12",
+      "statement": "MongoDB propagates an entity's source document changes to copies embedded in other documents.",
+      "answer": false,
+      "explanation": "The application maintains copies in other documents with additional writes. Frequent source changes increase the work needed to keep those copied values consistent.",
+      "misconception": "MongoDB keeps duplicated values synchronized as an intrinsic consequence of updating their source.",
+      "factKey": "duplicate-data-update-cost",
+      "topic": "Duplicate data",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data Consistency",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/data-consistency/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-05",
+      "section": "r12",
+      "statement": "Unbounded embedded arrays pose a performance risk for MongoDB queries as the parent document grows.",
+      "answer": true,
+      "explanation": "An array that keeps accumulating entries can strain application resources and decrease index performance. The data model needs a plan for that continuing growth.",
+      "misconception": "",
+      "factKey": "unbounded-array-growth-risk",
+      "topic": "Array growth",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Avoid Unbounded Arrays",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-antipatterns/unbounded-arrays/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-06",
+      "section": "r12",
+      "statement": "MongoDB's modeling guidance favors embedding when one parent has a very large number of children.",
+      "answer": false,
+      "explanation": "MongoDB's modeling guidance points toward references when the child side has high cardinality. Children can live in separate documents linked to their parent.",
+      "misconception": "A high-cardinality child relationship strengthens the case for embedding the child population in its parent.",
+      "factKey": "high-cardinality-child-reference-fit",
+      "topic": "Embedding tradeoffs",
+      "tags": [
+        "MongoDB"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best Practices for Data Modeling in MongoDB",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/best-practices/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-07",
+      "section": "r12",
+      "statement": "An application using the Computed pattern stores a derived result for later reads.",
+      "answer": true,
+      "explanation": "The Computed pattern saves a derived value in MongoDB ahead of reads. The application fetches that stored result instead of computing it again on demand.",
+      "misconception": "",
+      "factKey": "computed-pattern-stored-derived-values",
+      "topic": "Computed values",
+      "tags": [
+        "MongoDB",
+        "Computed pattern"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Store Computed Data",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/computed-values/computed-schema-pattern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-08",
+      "section": "r12",
+      "statement": "Periodic Computed pattern refreshes keep stored summaries current as their source data changes.",
+      "answer": false,
+      "explanation": "A periodically refreshed computed value can lag source changes made after its last refresh. Reads between refreshes may return an earlier derived result.",
+      "misconception": "Periodic refresh keeps a stored computed result current with source data at the moment of any read.",
+      "factKey": "periodic-computed-value-staleness",
+      "topic": "Computed values",
+      "tags": [
+        "MongoDB",
+        "Computed pattern"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Store Computed Data",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/computed-values/computed-schema-pattern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-09",
+      "section": "r12",
+      "statement": "For pagination, the Bucket pattern puts a page's related records together in one document.",
+      "answer": true,
+      "explanation": "Page-sized buckets group records according to the application's pagination needs. A read of the appropriate bucket retrieves the records for one page.",
+      "misconception": "",
+      "factKey": "bucket-pattern-page-sized-groups",
+      "topic": "Bucket pattern",
+      "tags": [
+        "MongoDB",
+        "Bucket pattern"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Group Data with the Bucket Pattern",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-10",
+      "section": "r12",
+      "statement": "In the Outlier pattern, MongoDB moves overflow values to another collection when has_extras becomes true.",
+      "answer": false,
+      "explanation": "The Outlier pattern uses application logic to write overflow values to a separate collection. A has_extras field marks those extras; setting it does not trigger a server-managed move.",
+      "misconception": "The Outlier pattern's marker activates built-in server handling for overflowing arrays.",
+      "factKey": "outlier-pattern-application-overflow-handling",
+      "topic": "Outlier pattern",
+      "tags": [
+        "MongoDB",
+        "Outlier pattern"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Group Data with the Outlier Pattern",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/outlier-pattern/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-11",
+      "section": "r12",
+      "statement": "The Schema Versioning Pattern can call for indexes on both field paths when a later document layout moves a field.",
+      "answer": true,
+      "explanation": "When schema versions store a field at different document paths, supporting queries on those locations may need separate indexes. Index planning follows the stored layouts.",
+      "misconception": "",
+      "factKey": "schema-version-multiple-field-path-indexes",
+      "topic": "Schema evolution",
+      "tags": [
+        "MongoDB",
+        "Schema Versioning Pattern"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Maintain Different Schema Versions",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/"
+      }
+    },
+    {
+      "id": "mongodb-fundamentals-sr12-12",
+      "section": "r12",
+      "statement": "The Schema Versioning Pattern can identify a document's layout through a schemaVersion collection option.",
+      "answer": false,
+      "explanation": "The application stores schemaVersion as a field in document data. Individual documents carry the marker that identifies their layout.",
+      "misconception": "The schema-version marker belongs to collection metadata rather than the documents that use different layouts.",
+      "factKey": "schema-version-marker-document-field",
+      "topic": "Schema evolution",
+      "tags": [
+        "MongoDB",
+        "Schema Versioning Pattern"
+      ],
+      "appliesTo": "MongoDB 9.0",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Maintain Different Schema Versions",
+        "url": "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/"
+      }
+    }
+  ]
+}

@@ -1,0 +1,889 @@
+{
+  "deck": "kubernetes-cks",
+  "block": "b3",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Plan repairs: replaced short-lived-secret-leak-window with mounted-secret-api-permission-reduction to test Kubernetes credential exposure; incomplete-sbom-dependency-blind-spot with sbom-format-metadata-completeness for verified Trivy metadata requirements; virtual-control-plane-data-plane-gap with virtual-control-plane-cluster-policy-isolation to avoid repeating worker isolation; and istio-sidecar-mtls-proxy-boundary with istio-service-identity-impersonation-check to avoid repeating TLS termination.",
+  "cards": [
+    {
+      "id": "kubernetes-cks-s4.2-01",
+      "section": "4.2",
+      "statement": "An admitted Pod exposes its mounted Secret to its creator despite RBAC restrictions on that user's direct Secret reads.",
+      "answer": true,
+      "explanation": "A Pod creator chooses code that consumes the mounted Secret, exposing its value through workload access rather than direct API reads.",
+      "misconception": "",
+      "factKey": "pod-creation-secret-exposure",
+      "topic": "Secret permissions",
+      "tags": [
+        "Secret",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Good practices for Kubernetes Secrets",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/secrets-good-practices/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-02",
+      "section": "4.2",
+      "statement": "Removing a retired etcd member from a Kubernetes cluster also sanitizes the Secret data on its durable storage.",
+      "answer": false,
+      "explanation": "Retired etcd storage can retain Secret data; sanitize its durable media separately.",
+      "misconception": "Retiring an etcd member also erases its stored Secrets.",
+      "factKey": "retired-etcd-storage-secret-remanence",
+      "topic": "etcd storage",
+      "tags": [
+        "etcd",
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Good practices for Kubernetes Secrets",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/secrets-good-practices/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-03",
+      "section": "4.2",
+      "statement": "Mounting a needed Secret lets operators avoid granting its Pod's ServiceAccount namespace-wide Secret API read access.",
+      "answer": true,
+      "explanation": "Secret mounts provide needed values while keeping the Pod's ServiceAccount outside a broader Secret-read permission grant.",
+      "misconception": "",
+      "factKey": "mounted-secret-api-permission-reduction",
+      "topic": "Secret permissions",
+      "tags": [
+        "Secret",
+        "ServiceAccount",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Security Checklist",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/security-checklist/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-04",
+      "section": "4.2",
+      "statement": "Under default Linux container isolation, a compromised sidecar reads a Secret mounted solely into its sibling.",
+      "answer": false,
+      "explanation": "Secret mounts grant container-specific access. Restrict them to containers that need the credentials.",
+      "misconception": "Siblings inherit Secret volume access from sharing a Pod.",
+      "factKey": "per-container-secret-exposure",
+      "topic": "Secret permissions",
+      "tags": [
+        "Secret",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Good practices for Kubernetes Secrets",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/secrets-good-practices/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-05",
+      "section": "4.2",
+      "statement": "With Secrets encrypted in etcd, an application's crash-dump logs can still expose Secret environment variables.",
+      "answer": true,
+      "explanation": "Secret values in environment variables can enter crash dumps and logs after the application receives plaintext.",
+      "misconception": "",
+      "factKey": "application-logging-secret-leak",
+      "topic": "Secret exposure",
+      "tags": [
+        "Secret",
+        "etcd"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Security Checklist",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/security-checklist/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-06",
+      "section": "4.2",
+      "statement": "Kubernetes Secret encryption at rest can configure TLS automatically on etcd's peer connections.",
+      "answer": false,
+      "explanation": "etcd peer connections require their own TLS configuration; Kubernetes data encryption settings do not enable peer TLS.",
+      "misconception": "Secret encryption at rest automatically configures etcd peer TLS.",
+      "factKey": "etcd-peer-transit-boundary",
+      "topic": "etcd transport",
+      "tags": [
+        "etcd",
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Good practices for Kubernetes Secrets",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/secrets-good-practices/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-07",
+      "section": "4.2",
+      "statement": "With KMS v2 configured, the API server encrypts Secret data locally while a remote KMS protects its key material.",
+      "answer": true,
+      "explanation": "The API server handles payload encryption with derived DEKs; the external KMS protects key material instead of receiving Secret payloads.",
+      "misconception": "",
+      "factKey": "kms-v2-envelope-key-separation",
+      "topic": "KMS encryption",
+      "tags": [
+        "KMS v2",
+        "Secret",
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using a KMS provider for data encryption",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kms-provider/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-08",
+      "section": "4.2",
+      "statement": "With KMS v2, revoking remote KEK access can immediately stop API server decryption using cached plaintext key material.",
+      "answer": false,
+      "explanation": "KMS v2's cached plaintext keys support decryption during remote KMS outages.",
+      "misconception": "Revoking remote KMS access invalidates cached plaintext keys.",
+      "factKey": "kms-v2-cached-key-revocation-lag",
+      "topic": "KMS encryption",
+      "tags": [
+        "KMS v2",
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using a KMS provider for data encryption",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kms-provider/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-09",
+      "section": "4.2",
+      "statement": "For KMS v2, the API server rejects an Encrypt response whose key_id differs from the plugin's Status key_id.",
+      "answer": true,
+      "explanation": "KMS v2 treats Status as the authoritative key ID; conflicting Encrypt responses mark the plugin unhealthy.",
+      "misconception": "",
+      "factKey": "kms-v2-key-id-status-authority",
+      "topic": "KMS encryption",
+      "tags": [
+        "KMS v2",
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using a KMS provider for data encryption",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kms-provider/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.2-10",
+      "section": "4.2",
+      "statement": "For an API server using a configured KMS v2 plugin, rotating the remote KEK requires restarting that API server.",
+      "answer": false,
+      "explanation": "The API server detects KMS v2 key rotation through Status polling and keeps running during the change.",
+      "misconception": "KMS v2 remote-key rotation requires an API server restart.",
+      "factKey": "kms-v2-rotation-restart-assumption",
+      "topic": "KMS encryption",
+      "tags": [
+        "KMS v2",
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using a KMS provider for data encryption",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kms-provider/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-01",
+      "section": "4.3",
+      "statement": "With ordinary containers sharing a worker node, namespace separation confines a container escape to its tenant.",
+      "answer": false,
+      "explanation": "Namespaces group API resources and policies; they do not separate a shared node's kernel.",
+      "misconception": "Namespace boundaries contain host access gained through a container escape.",
+      "factKey": "namespace-tenant-isolation-layering",
+      "topic": "Tenant isolation",
+      "tags": [
+        "Kubernetes",
+        "Namespace",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-tenancy",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/multi-tenancy/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-02",
+      "section": "4.3",
+      "statement": "A tenant's virtual control plane isolates cluster-wide admission webhooks from other tenants' API configurations.",
+      "answer": true,
+      "explanation": "Separate tenant control planes avoid conflicts over cluster-scoped objects such as admission webhooks, giving tenants independent API policy configuration.",
+      "misconception": "",
+      "factKey": "virtual-control-plane-cluster-policy-isolation",
+      "topic": "Tenant isolation",
+      "tags": [
+        "Kubernetes",
+        "ValidatingWebhookConfiguration",
+        "MutatingWebhookConfiguration"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-tenancy",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/multi-tenancy/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-03",
+      "section": "4.3",
+      "statement": "Dedicated tenant nodes prevent lateral movement through Kubernetes credentials exposed on a compromised node.",
+      "answer": false,
+      "explanation": "An attacker can use node-exposed credentials against shared cluster services to reach other tenants.",
+      "misconception": "Dedicated worker nodes confine the reach of their exposed Kubernetes credentials.",
+      "factKey": "tenant-node-shared-control-services",
+      "topic": "Tenant isolation",
+      "tags": [
+        "Kubernetes",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-tenancy",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/multi-tenancy/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-04",
+      "section": "4.3",
+      "statement": "A configured VM-backed sandbox runtime adds a kernel boundary between a tenant's workload and its Linux host.",
+      "answer": true,
+      "explanation": "A VM-backed sandbox gives the workload a separate kernel, adding isolation beyond ordinary containers' shared host kernel.",
+      "misconception": "",
+      "factKey": "sandbox-host-escape-boundary",
+      "topic": "Sandbox runtimes",
+      "tags": [
+        "Kubernetes",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-tenancy",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/multi-tenancy/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-05",
+      "section": "4.3",
+      "statement": "When a RuntimeClass handler is unavailable, kubelet can start its Pod with the node's default runtime handler.",
+      "answer": false,
+      "explanation": "A Pod fails when its selected RuntimeClass handler is unavailable; kubelet does not substitute the default handler.",
+      "misconception": "RuntimeClass handler failures silently fall back to the node's default runtime.",
+      "factKey": "runtimeclass-handler-availability",
+      "topic": "Sandbox runtimes",
+      "tags": [
+        "RuntimeClass",
+        "kubelet",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Runtime Class",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/containers/runtime-class/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-06",
+      "section": "4.3",
+      "statement": "With IPsec encryption enabled, Cilium encrypts cross-node traffic between known Cilium-managed Pod endpoints.",
+      "answer": true,
+      "explanation": "Cilium IPsec protects traffic between its managed Pod endpoints on different nodes.",
+      "misconception": "",
+      "factKey": "cilium-encryption-configured-endpoints",
+      "topic": "Cilium encryption",
+      "tags": [
+        "Cilium",
+        "IPsec"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "IPsec Transparent Encryption",
+        "url": "https://docs.cilium.io/en/stable/security/network/encryption-ipsec/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-07",
+      "section": "4.3",
+      "statement": "With WireGuard encryption enabled, Cilium-managed Pods exchange same-node traffic through an encrypted tunnel.",
+      "answer": false,
+      "explanation": "Cilium leaves same-node traffic outside its WireGuard tunnel; local host access already exposes the plaintext.",
+      "misconception": "Cilium WireGuard encryption also tunnels local traffic between Pods on one node.",
+      "factKey": "cilium-same-node-plaintext",
+      "topic": "Cilium encryption",
+      "tags": [
+        "Cilium",
+        "WireGuard"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "WireGuard Transparent Encryption",
+        "url": "https://docs.cilium.io/en/stable/security/network/encryption-wireguard/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-08",
+      "section": "4.3",
+      "statement": "With Cilium IPsec encryption enabled, a node capture can show decrypted inner traffic alongside encrypted ESP packets.",
+      "answer": true,
+      "explanation": "The host recirculates decrypted IPsec packets for processing. A capture can include plaintext after decryption alongside outer ESP packets.",
+      "misconception": "",
+      "factKey": "cilium-encryption-node-capture-interpretation",
+      "topic": "Cilium encryption",
+      "tags": [
+        "Cilium",
+        "IPsec"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "IPsec Transparent Encryption",
+        "url": "https://docs.cilium.io/en/stable/security/network/encryption-ipsec/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-09",
+      "section": "4.3",
+      "statement": "In Istio sidecar mode, PERMISSIVE lets server Envoy upgrade a plaintext client's connection to mutual TLS.",
+      "answer": false,
+      "explanation": "PERMISSIVE accepts plaintext alongside mutual TLS. A client sending plaintext keeps that connection unencrypted.",
+      "misconception": "PERMISSIVE upgrades directly received plaintext connections rather than accepting plaintext.",
+      "factKey": "istio-permissive-plaintext-migration",
+      "topic": "Istio encryption",
+      "tags": [
+        "Istio",
+        "Envoy",
+        "PeerAuthentication"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Security",
+        "url": "https://istio.io/latest/docs/concepts/security/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s4.3-10",
+      "section": "4.3",
+      "statement": "In Istio sidecar mode, client Envoy can reject a server's valid mesh certificate for a mismatched HTTP service.",
+      "answer": true,
+      "explanation": "Istio's client Envoy checks whether the server's ServiceAccount identity is authorized to run the target service. A trusted mesh certificate alone does not establish that association.",
+      "misconception": "",
+      "factKey": "istio-service-identity-impersonation-check",
+      "topic": "Istio encryption",
+      "tags": [
+        "Istio",
+        "Envoy",
+        "ServiceAccount"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Security",
+        "url": "https://istio.io/latest/docs/concepts/security/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-01",
+      "section": "5.1",
+      "statement": "Kubernetes recommends ephemeral debug containers as an alternative to packaging debug utilities in production images.",
+      "answer": true,
+      "explanation": "Keep the production image focused on the application and its dependencies. An ephemeral debug container provides troubleshooting tools separately.",
+      "misconception": "",
+      "factKey": "minimal-image-unused-content",
+      "topic": "Image attack surface",
+      "tags": [
+        "Kubernetes",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Security Checklist — Images",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/security/security-checklist/#images"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-02",
+      "section": "5.1",
+      "statement": "Node OS updates can patch a minimal image's retained libraries through the node's package manager.",
+      "answer": false,
+      "explanation": "An image packages its application and system libraries separately from the host. Fix a packaged library in a new image and recreate the container from that image.",
+      "misconception": "Patching a node's operating system also patches libraries packaged inside its container images.",
+      "factKey": "minimal-image-retained-package-patching",
+      "topic": "Image attack surface",
+      "tags": [
+        "Kubernetes"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Containers — Container images and host independence",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/containers/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-03",
+      "section": "5.1",
+      "statement": "Cosign applies an expected-builder policy during a build attestation's basic signature verification.",
+      "answer": false,
+      "explanation": "Signature verification authenticates the attestation. Enforcing a required builder needs policy validation of the attestation's predicate.",
+      "misconception": "Verifying a build attestation's signature also evaluates deployment rules about its build process.",
+      "factKey": "build-attestation-predicate-policy",
+      "topic": "Build provenance",
+      "tags": [
+        "Cosign"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "In-Toto Attestations — Validate In-Toto Attestations",
+        "url": "https://docs.sigstore.dev/cosign/verifying/attestation/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-04",
+      "section": "5.1",
+      "statement": "With OS and library detection enabled, Trivy's image SBOM limits coverage to operating-system packages.",
+      "answer": false,
+      "explanation": "Trivy's image SBOM includes detected operating-system packages and supported language dependencies. An OS package list alone misses part of that dependency inventory.",
+      "misconception": "Image SBOM inventory covers operating-system packages but leaves language dependencies to another report.",
+      "factKey": "sbom-os-language-inventory",
+      "topic": "SBOM evidence",
+      "tags": [
+        "Trivy"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SBOM — Supported packages and SPDX relationships",
+        "url": "https://trivy.dev/docs/latest/supply-chain/sbom/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-05",
+      "section": "5.1",
+      "statement": "Trivy's SPDX relationships show investigators which inventoried packages depend on a suspect library.",
+      "answer": true,
+      "explanation": "SPDX dependency relationships connect an inventoried library to the packages that need it, helping investigators trace where that dependency enters the image.",
+      "misconception": "",
+      "factKey": "sbom-dependency-relationship-evidence",
+      "topic": "SBOM evidence",
+      "tags": [
+        "Trivy",
+        "SPDX"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SBOM — Supported packages and SPDX relationships",
+        "url": "https://trivy.dev/docs/latest/supply-chain/sbom/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-06",
+      "section": "5.1",
+      "statement": "Trivy can find new vulnerabilities in an unchanged SBOM when it rescans with updated vulnerability data.",
+      "answer": true,
+      "explanation": "Trivy matches inventoried package versions against its vulnerability database. New advisory data can change the findings for the same inventory.",
+      "misconception": "",
+      "factKey": "sbom-inventory-current-vulnerability-verdict",
+      "topic": "SBOM evidence",
+      "tags": [
+        "Trivy"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Trivy SBOM command — Vulnerability scanning and database updates",
+        "url": "https://trivy.dev/docs/latest/references/configuration/cli/trivy_sbom/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-07",
+      "section": "5.1",
+      "statement": "An SBOM's valid SPDX structure establishes the package metadata Trivy needs for accurate vulnerability matching.",
+      "answer": false,
+      "explanation": "Trivy relies on custom SBOM properties for accurate scanning. A valid SPDX document can still omit metadata needed for reliable package identification.",
+      "misconception": "A valid SBOM format guarantees the metadata quality needed for accurate vulnerability scanning.",
+      "factKey": "sbom-format-metadata-completeness",
+      "topic": "SBOM evidence",
+      "tags": [
+        "Trivy",
+        "SPDX"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SBOM scanning — External SBOM metadata limitation",
+        "url": "https://trivy.dev/docs/latest/target/sbom/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-08",
+      "section": "5.1",
+      "statement": "By default, Trivy returns a success exit status to CI after an image scan reports vulnerability findings.",
+      "answer": true,
+      "explanation": "A CI job that treats scanner success as approval can publish an image with findings. Set a failure exit status for the chosen policy and make the pipeline honor it.",
+      "misconception": "",
+      "factKey": "ci-scan-report-policy-gate",
+      "topic": "Pipeline trust",
+      "tags": [
+        "Trivy"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Trivy's default exit-code behavior is a project CLI default that could change across releases.",
+      "source": {
+        "title": "Trivy configuration — Exit Code",
+        "url": "https://trivy.dev/docs/latest/configuration/others/#exit-code"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-09",
+      "section": "5.1",
+      "statement": "Shared node-level registry credentials let the kubelet enforce tenant-specific access to private images.",
+      "answer": false,
+      "explanation": "Pods on a node can access private registries authorized by shared node credentials. Namespace separation does not give those credentials a separate authorization scope for each tenant.",
+      "misconception": "Shared registry credentials on a node preserve separate image access rights for individual tenants.",
+      "factKey": "private-registry-artifact-disclosure",
+      "topic": "Registry access",
+      "tags": [
+        "Kubernetes",
+        "kubelet",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Images — Using a private registry",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/containers/images/#using-a-private-registry"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.1-10",
+      "section": "5.1",
+      "statement": "An attacker controlling a CI system's OIDC identity can obtain Sigstore certificates under that identity.",
+      "answer": true,
+      "explanation": "Sigstore can issue certificates to a compromised OIDC identity. Protecting the CI identity remains part of the signing trust boundary.",
+      "misconception": "",
+      "factKey": "ci-signing-identity-compromise",
+      "topic": "Pipeline trust",
+      "tags": [
+        "Sigstore",
+        "Fulcio"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Sigstore Threat Model — OIDC account compromise",
+        "url": "https://docs.sigstore.dev/about/threat-model/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-01",
+      "section": "5.2",
+      "statement": "An installed policy-controller with opt-in webhooks skips registry checks for namespaces outside its opt-in selection.",
+      "answer": true,
+      "explanation": "An unselected namespace sits outside policy-controller validation, so namespace selection defines the registry policy's coverage.",
+      "misconception": "",
+      "factKey": "permitted-registry-admission-policy",
+      "topic": "Registry admission",
+      "tags": [
+        "policy-controller",
+        "ValidatingWebhookConfiguration"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes Policy Controller",
+        "url": "https://docs.sigstore.dev/policy-controller/overview/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-02",
+      "section": "5.2",
+      "statement": "A registry policy's static pass authority verifies the signer of an image it admits through policy-controller.",
+      "answer": false,
+      "explanation": "policy-controller's static pass authority accepts matching images without checking their signatures.",
+      "misconception": "Registry allowance also proves a trusted signer.",
+      "factKey": "registry-allowlist-signature-assumption",
+      "topic": "Registry admission",
+      "tags": [
+        "policy-controller",
+        "ClusterImagePolicy"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes Policy Controller",
+        "url": "https://docs.sigstore.dev/policy-controller/overview/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-03",
+      "section": "5.2",
+      "statement": "A Pod's image digest pin prevents a registry tag change from substituting different container code.",
+      "answer": true,
+      "explanation": "A digest identifies fixed image content. The kubelet uses that content even if a registry moves a tag.",
+      "misconception": "",
+      "factKey": "image-digest-content-pinning",
+      "topic": "Image content pinning",
+      "tags": [
+        "Pod",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Images",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/containers/images/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-04",
+      "section": "5.2",
+      "statement": "A valid image signature establishes that the workload is safe for production use in a Kubernetes cluster.",
+      "answer": false,
+      "explanation": "Software safety needs a separate assessment; signature verification does not evaluate the workload's behavior.",
+      "misconception": "A valid signature proves production safety.",
+      "factKey": "valid-signature-software-safety",
+      "topic": "Artifact trust",
+      "tags": [
+        "Sigstore"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Threat Model",
+        "url": "https://docs.sigstore.dev/about/threat-model/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-05",
+      "section": "5.2",
+      "statement": "Cosign keyless verification checks an expected certificate identity together with its expected OIDC issuer.",
+      "answer": true,
+      "explanation": "An authorization policy identifies both the intended signer and the identity provider trusted to authenticate that signer.",
+      "misconception": "",
+      "factKey": "keyless-signer-issuer-authorization",
+      "topic": "Signer authorization",
+      "tags": [
+        "Cosign"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Verifying Signatures",
+        "url": "https://docs.sigstore.dev/cosign/verifying/verify/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-06",
+      "section": "5.2",
+      "statement": "Cosign validates the signed image digest against its target image when default claim checks remain enabled.",
+      "answer": true,
+      "explanation": "Cosign's claim checks compare the image digest in the signature payload with the image being verified.",
+      "misconception": "",
+      "factKey": "signature-payload-image-binding",
+      "topic": "Signature image binding",
+      "tags": [
+        "Cosign"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Verifying Signatures",
+        "url": "https://docs.sigstore.dev/cosign/verifying/verify/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-07",
+      "section": "5.2",
+      "statement": "In an opted-in namespace, policy-controller automatically pins admitted image tags to resolved digests.",
+      "answer": true,
+      "explanation": "policy-controller's tag resolution ties deployment to the content evaluated during admission.",
+      "misconception": "",
+      "factKey": "policy-controller-admitted-tag-binding",
+      "topic": "Deployment verification",
+      "tags": [
+        "policy-controller"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes Policy Controller",
+        "url": "https://docs.sigstore.dev/policy-controller/overview/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-08",
+      "section": "5.2",
+      "statement": "In an opted-in namespace, policy-controller rejects violations of its sole matching policy configured in warn mode.",
+      "answer": false,
+      "explanation": "With a sole matching policy in warn mode, policy-controller admits noncompliant images and returns a warning.",
+      "misconception": "Policy warnings block image admission.",
+      "factKey": "policy-controller-warning-admission-effect",
+      "topic": "Deployment verification",
+      "tags": [
+        "policy-controller",
+        "ClusterImagePolicy"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes Policy Controller",
+        "url": "https://docs.sigstore.dev/policy-controller/overview/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-09",
+      "section": "5.2",
+      "statement": "During validation, policy-controller admits an image that passes one matching enforce policy and fails another.",
+      "answer": false,
+      "explanation": "policy-controller combines matching enforcing ClusterImagePolicy resources with AND; admission requires satisfying them.",
+      "misconception": "Matching image policies are alternatives.",
+      "factKey": "matching-image-policies-conjunction",
+      "topic": "Deployment verification",
+      "tags": [
+        "policy-controller",
+        "ClusterImagePolicy"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubernetes Policy Controller",
+        "url": "https://docs.sigstore.dev/policy-controller/overview/"
+      }
+    },
+    {
+      "id": "kubernetes-cks-s5.2-10",
+      "section": "5.2",
+      "statement": "Cosign invalidates a historically valid keyless image signature when its signing certificate expires.",
+      "answer": false,
+      "explanation": "Cosign uses a trusted timestamp to evaluate certificate validity at signing time, preserving later verification.",
+      "misconception": "Certificate expiry invalidates historical signatures.",
+      "factKey": "historical-keyless-certificate-validity",
+      "topic": "Certificate validity",
+      "tags": [
+        "Cosign",
+        "Fulcio"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Timestamps",
+        "url": "https://docs.sigstore.dev/cosign/verifying/timestamps/"
+      }
+    }
+  ]
+}

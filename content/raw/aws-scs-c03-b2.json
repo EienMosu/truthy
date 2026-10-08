@@ -1,0 +1,1040 @@
+{
+  "deck": "aws-scs-c03",
+  "block": "b2",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced shield-automatic-mitigation-web-acl-rule-group with shield-health-based-unhealthy-mitigation-threshold because AWS has announced retirement of the former feature on January 29, 2027 ([AWS retirement notice](https://aws.amazon.com/blogs/security/aws-shield-advanced-is-embracing-the-aws-waf-anti-ddos-managed-rule-group-what-changes-and-how-to-prepare/)). Replaced dns-firewall-fail-open-forwarding with dns-firewall-default-failure-enforcement and direct-connect-macsec-must-encrypt-failure with direct-connect-last-ckn-enforcement-reversion to avoid answers inferable from setting names.",
+  "cards": [
+    {
+      "id": "aws-scs-c03-s2.2-01",
+      "section": "2.2",
+      "statement": "An Amazon EBS snapshot can capture an EC2 instance's RAM for a forensic investigation.",
+      "answer": false,
+      "explanation": "An EBS snapshot captures volume data. Responders need a separate memory acquisition to preserve volatile RAM evidence.",
+      "misconception": "A disk snapshot also captures the running instance's memory.",
+      "factKey": "ebs-snapshot-volatile-memory",
+      "topic": "Forensic acquisition",
+      "tags": [
+        "Amazon EBS",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Security Incident Response Guide: Collect and analyze forensic evidence",
+        "url": "https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/aws-security-incident-response-guide.pdf"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-02",
+      "section": "2.2",
+      "statement": "A responder who stops an EBS-backed EC2 instance erases forensic data on its instance store volumes.",
+      "answer": true,
+      "explanation": "Stopping an EBS-backed EC2 instance erases its instance store data. Responders need to acquire relevant local-disk artifacts before stopping it.",
+      "misconception": "",
+      "factKey": "ec2-stop-instance-store-evidence",
+      "topic": "Forensic acquisition",
+      "tags": [
+        "Amazon EC2",
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Stop and start Amazon EC2 instances",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-03",
+      "section": "2.2",
+      "statement": "EC2 termination protection blocks an intruder's OS shutdown when instance shutdown behavior is terminate.",
+      "answer": false,
+      "explanation": "DisableApiTermination protects against EC2 API termination. An OS-initiated shutdown still terminates the instance when InstanceInitiatedShutdownBehavior is terminate.",
+      "misconception": "API termination protection also prevents termination initiated inside the operating system.",
+      "factKey": "ec2-termination-protection-os-shutdown",
+      "topic": "Instance containment",
+      "tags": [
+        "Amazon EC2",
+        "DisableApiTermination",
+        "InstanceInitiatedShutdownBehavior"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Change instance termination protection",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_ChangingDisableAPITermination.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-04",
+      "section": "2.2",
+      "statement": "A responder can end tracked EC2 connections immediately by replacing the instance's security groups.",
+      "answer": false,
+      "explanation": "Changing an EC2 instance's security groups leaves existing tracked connections active until they time out. Quarantine rules therefore need a separate way to end those connections.",
+      "misconception": "Attaching isolation security groups immediately breaks established tracked connections.",
+      "factKey": "quarantine-security-group-tracked-connections",
+      "topic": "Instance containment",
+      "tags": [
+        "Amazon EC2",
+        "Amazon VPC"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon EC2 security group connection tracking",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-connection-tracking.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-05",
+      "section": "2.2",
+      "statement": "Deactivating an IAM user's access key automatically revokes sessions already created with that key.",
+      "answer": false,
+      "explanation": "Deactivating a long-term access key leaves previously issued temporary credentials usable. Responders need to revoke those sessions separately to contain that access.",
+      "misconception": "Disabling a compromised access key also invalidates temporary credentials acquired with it.",
+      "factKey": "access-key-deactivation-existing-sts-sessions",
+      "topic": "Credential containment",
+      "tags": [
+        "AWS Identity and Access Management",
+        "AWS Security Token Service"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Security Incident Response Guide: Technique and access containment",
+        "url": "https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/aws-security-incident-response-guide.pdf"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-06",
+      "section": "2.2",
+      "statement": "IAM's role-session revocation policy denies requests from sessions issued before its configured cutoff.",
+      "answer": true,
+      "explanation": "The IAM role-session revocation policy uses an explicit Deny with aws:TokenIssueTime earlier than a timestamp. Sessions created after that cutoff fall outside this Deny.",
+      "misconception": "",
+      "factKey": "role-revocation-token-issue-cutoff",
+      "topic": "Credential containment",
+      "tags": [
+        "AWS Identity and Access Management",
+        "aws:TokenIssueTime"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Revoke IAM role temporary security credentials",
+        "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_revoke-sessions.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-07",
+      "section": "2.2",
+      "statement": "CloudTrail uses the same sharedEventID for records of one AWS action delivered to different accounts.",
+      "answer": true,
+      "explanation": "CloudTrail records with matching sharedEventID values describe the same action across accounts. This helps responders correlate caller-side and resource-owner evidence.",
+      "misconception": "",
+      "factKey": "cloudtrail-shared-event-cross-account-correlation",
+      "topic": "Evidence correlation",
+      "tags": [
+        "AWS CloudTrail"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "CloudTrail record contents for management, data, and network activity events",
+        "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-08",
+      "section": "2.2",
+      "statement": "CloudTrail's responseElements value of null proves that a recorded read-only API request fails.",
+      "answer": false,
+      "explanation": "CloudTrail records null responseElements for read-only APIs, including successful requests. That field alone is insufficient evidence of API failure.",
+      "misconception": "A missing response payload means the recorded request failed.",
+      "factKey": "cloudtrail-readonly-null-response-evidence",
+      "topic": "Evidence interpretation",
+      "tags": [
+        "AWS CloudTrail"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "CloudTrail record contents for management, data, and network activity events",
+        "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-09",
+      "section": "2.2",
+      "statement": "Amazon Detective can automatically group findings involving the same IAM role sessions for investigation.",
+      "answer": true,
+      "explanation": "Detective uses relationships such as shared role sessions to connect findings and entities. Responders use the group to investigate activity across the involved resources.",
+      "misconception": "",
+      "factKey": "detective-finding-group-incident-links",
+      "topic": "Evidence correlation",
+      "tags": [
+        "Amazon Detective"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Analyzing finding groups",
+        "url": "https://docs.aws.amazon.com/detective/latest/userguide/groups-about.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-10",
+      "section": "2.2",
+      "statement": "An Amazon GuardDuty Execution:EC2/MaliciousFile finding proves that the detected malware runs on the instance.",
+      "answer": false,
+      "explanation": "Execution:EC2/MaliciousFile reports malicious files found by a disk scan. The finding establishes their presence, rather than proving that the instance executed them.",
+      "misconception": "The Execution prefix on a malware scan finding proves execution of the detected file.",
+      "factKey": "guardduty-file-scan-execution-inference",
+      "topic": "Evidence interpretation",
+      "tags": [
+        "Amazon GuardDuty",
+        "Execution:EC2/MaliciousFile"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Malware Protection for EC2 finding types",
+        "url": "https://docs.aws.amazon.com/guardduty/latest/ug/findings-malware-protection.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-11",
+      "section": "2.2",
+      "statement": "A responder's live artifact collection on an Amazon EC2 instance can change evidence on that instance.",
+      "answer": true,
+      "explanation": "Running collection tools on a live EC2 system changes system data and artifacts. Responders document these changes when assessing the integrity of the evidence.",
+      "misconception": "",
+      "factKey": "ec2-live-artifact-collection-evidence-mutation",
+      "topic": "Forensic acquisition",
+      "tags": [
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Security Incident Response Guide: Collect and analyze forensic evidence",
+        "url": "https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/aws-security-incident-response-guide.pdf"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s2.2-12",
+      "section": "2.2",
+      "statement": "Amazon EBS lets a responder preserve disk evidence at request time while snapshot transfer continues.",
+      "answer": true,
+      "explanation": "EBS snapshots preserve volume data as it exists when requested. Writes made while the snapshot transfers to Amazon S3 leave that captured disk evidence unchanged.",
+      "misconception": "",
+      "factKey": "ebs-snapshot-point-in-time-evidence",
+      "topic": "Forensic acquisition",
+      "tags": [
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create Amazon EBS snapshots",
+        "url": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-creating-snapshot.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-01",
+      "section": "3.1",
+      "statement": "AWS WAF continues evaluating later web ACL rules after a matching rule uses the Count action.",
+      "answer": true,
+      "explanation": "AWS WAF's Count action records a match and leaves the final allow-or-block decision to subsequent web ACL evaluation.",
+      "misconception": "",
+      "factKey": "waf-count-nonterminating-evaluation",
+      "topic": "WAF rule evaluation",
+      "tags": [
+        "AWS WAF"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using rule actions in AWS WAF",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-action.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-02",
+      "section": "3.1",
+      "statement": "AWS WAF can enforce a rate-based rule as a precise cap on requests in its evaluation window.",
+      "answer": false,
+      "explanation": "AWS WAF estimates request rates and applies rate limiting near the configured threshold. Its rate-based rules do not guarantee an exact request-rate cap.",
+      "misconception": "Rate-based rules enforce an exact request-rate ceiling.",
+      "factKey": "waf-rate-rule-approximate-threshold",
+      "topic": "WAF rate enforcement",
+      "tags": [
+        "AWS WAF"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Rate-based rule caveats in AWS WAF",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-rate-based-caveats.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-03",
+      "section": "3.1",
+      "statement": "AWS WAF uses a configured forwarded IP header for geo match evaluation.",
+      "answer": true,
+      "explanation": "An AWS WAF geo match rule configured for forwarded IPs derives location from the first IP address in the specified request header. This changes which address the location check evaluates.",
+      "misconception": "",
+      "factKey": "waf-geo-forwarded-ip-source",
+      "topic": "WAF geographic controls",
+      "tags": [
+        "AWS WAF"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Geographic match rule statement",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/waf-rule-statement-type-geo-match.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-04",
+      "section": "3.1",
+      "statement": "For CloudFront requests, AWS WAF can match a JA3 fingerprint across changes in source IP address.",
+      "answer": true,
+      "explanation": "JA3 reflects a client's TLS configuration. An AWS WAF fingerprint rule can keep matching that configuration as its source IP address changes.",
+      "misconception": "",
+      "factKey": "waf-ja3-tls-client-fingerprint",
+      "topic": "WAF client fingerprints",
+      "tags": [
+        "AWS WAF",
+        "Amazon CloudFront"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Reduce risks of user sign-up fraud and SMS pumping with Amazon Cognito user pools",
+        "url": "https://aws.amazon.com/blogs/security/reduce-risks-of-user-sign-up-fraud-and-sms-pumping-with-amazon-cognito-user-pools/"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-05",
+      "section": "3.1",
+      "statement": "AWS WAF's Continue oversize setting extends body inspection beyond the configured size limit.",
+      "answer": false,
+      "explanation": "With Continue oversize handling, AWS WAF inspects the body content within the inspection limit. Extra body bytes remain outside that rule's inspection.",
+      "misconception": "Continue causes AWS WAF to inspect body bytes beyond the inspection limit.",
+      "factKey": "waf-oversize-continue-inspection-extent",
+      "topic": "WAF inspection coverage",
+      "tags": [
+        "AWS WAF"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Oversize web request components in AWS WAF",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/waf-oversize-request-components.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-06",
+      "section": "3.1",
+      "statement": "AWS WAF's Count return override lets a group evaluate rules after its first matching Block rule.",
+      "answer": false,
+      "explanation": "A rule group's Count return override changes its result at the web ACL level. The first matching terminating rule still stops evaluation inside the group.",
+      "misconception": "A Count override of the group's returned action converts its internal blocking rules to non-terminating rules.",
+      "factKey": "waf-group-count-override-internal-evaluation",
+      "topic": "WAF rule evaluation",
+      "tags": [
+        "AWS WAF"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overriding rule group actions in AWS WAF",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/web-acl-rule-group-override-options.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-07",
+      "section": "3.1",
+      "statement": "An unhealthy associated Route 53 check can lower Shield Advanced's mitigation threshold for an Elastic IP.",
+      "answer": true,
+      "explanation": "Shield Advanced uses associated Route 53 health checks to adjust attack sensitivity for protected Elastic IP addresses. An unhealthy check permits mitigation at lower thresholds.",
+      "misconception": "",
+      "factKey": "shield-health-based-unhealthy-mitigation-threshold",
+      "topic": "Health based mitigation",
+      "tags": [
+        "AWS Shield Advanced",
+        "Amazon Route 53"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Health-based detection using health checks with Shield Advanced and Route 53",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/ddos-advanced-health-checks.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-08",
+      "section": "3.1",
+      "statement": "Amazon CloudFront automatically interrupts an active download when its signed URL reaches expiration.",
+      "answer": false,
+      "explanation": "CloudFront checks signed URL expiration when the HTTP request starts. A download that begins before expiration can complete after expiration on the existing connection.",
+      "misconception": "Signed URL expiration cuts off a download already underway.",
+      "factKey": "cloudfront-signed-url-inflight-expiration",
+      "topic": "CloudFront content access",
+      "tags": [
+        "Amazon CloudFront"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use signed URLs",
+        "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-09",
+      "section": "3.1",
+      "statement": "Amazon CloudFront can assign native geographic restrictions to individual cache behaviors.",
+      "answer": false,
+      "explanation": "CloudFront's native geographic restriction setting applies at the distribution level. Different restrictions for content subsets require a different control or separate distributions.",
+      "misconception": "Native geographic restrictions are configured per cache behavior.",
+      "factKey": "cloudfront-georestriction-distribution-scope",
+      "topic": "CloudFront geographic controls",
+      "tags": [
+        "Amazon CloudFront"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict the geographic distribution of your content",
+        "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/georestrictions.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-10",
+      "section": "3.1",
+      "statement": "An Amazon S3 CORS rule directly grants object read permission to callers from its AllowedOrigins.",
+      "answer": false,
+      "explanation": "Amazon S3 CORS rules control cross-origin browser behavior. Bucket policies and ACLs still determine object access permission when CORS is enabled.",
+      "misconception": "An allowed CORS origin receives S3 object permissions from the CORS rule.",
+      "factKey": "s3-cors-permission-independence",
+      "topic": "S3 browser access",
+      "tags": [
+        "Amazon S3"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using cross-origin resource sharing (CORS)",
+        "url": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/cors.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-11",
+      "section": "3.1",
+      "statement": "An origin that validates Amazon CloudFront's secret custom header can reject requests that bypass CloudFront.",
+      "answer": true,
+      "explanation": "CloudFront adds the configured custom header to origin requests. An origin that enforces its secret value can reject direct requests that lack this credential.",
+      "misconception": "",
+      "factKey": "cloudfront-custom-header-origin-restriction",
+      "topic": "CloudFront origin protection",
+      "tags": [
+        "Amazon CloudFront"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict access to files",
+        "url": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-overview.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.1-12",
+      "section": "3.1",
+      "statement": "For non-exclusive association, AWS IoT Core requires MQTT client IDs to match thing names for thing policy variables.",
+      "answer": true,
+      "explanation": "With non-exclusive thing association, AWS IoT Core uses the MQTT client ID to identify the thing for policy-variable evaluation. The client ID must match that thing's registered name.",
+      "misconception": "",
+      "factKey": "iot-policy-thing-variable-client-binding",
+      "topic": "IoT policy binding",
+      "tags": [
+        "AWS IoT Core"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Thing policy variables",
+        "url": "https://docs.aws.amazon.com/iot/latest/developerguide/thing-policy-variables.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-01",
+      "section": "3.2",
+      "statement": "EC2 Image Builder runs a configured security test workflow before distributing the generated image.",
+      "answer": true,
+      "explanation": "When a pipeline includes a test workflow, Image Builder runs the test stage before beginning image distribution.",
+      "misconception": "",
+      "factKey": "image-builder-test-before-distribution",
+      "topic": "Hardened Image Pipeline",
+      "tags": [
+        "EC2 Image Builder"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Manage build, test, and distribution workflows for Image Builder images",
+        "url": "https://docs.aws.amazon.com/imagebuilder/latest/userguide/manage-image-workflows.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-02",
+      "section": "3.2",
+      "statement": "Amazon ECS can vend temporary task execution role credentials directly to application containers.",
+      "answer": false,
+      "explanation": "Amazon ECS supplies task execution role credentials to its agents. Application containers do not receive those credentials directly.",
+      "misconception": "Amazon ECS delivers execution-role credentials to the application containers.",
+      "factKey": "ecs-task-execution-role-credential-exposure",
+      "topic": "Container Credential Delivery",
+      "tags": [
+        "Amazon ECS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon ECS task execution IAM role",
+        "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-03",
+      "section": "3.2",
+      "statement": "Distinct Amazon ECS task roles create a security boundary between tasks on the same EC2 instance.",
+      "answer": false,
+      "explanation": "On EC2, task roles do not create container isolation. A container may access credentials belonging to co-located tasks unless additional controls block that access.",
+      "misconception": "Assigning different task roles supplies a security isolation boundary on a shared EC2 host.",
+      "factKey": "ecs-ec2-task-role-isolation-boundary",
+      "topic": "Container Credential Isolation",
+      "tags": [
+        "Amazon ECS",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Amazon ECS task IAM role",
+        "url": "https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-04",
+      "section": "3.2",
+      "statement": "In hybrid mode, Amazon Inspector can obtain eligible unmanaged EC2 instances' inventory from Amazon EBS snapshots.",
+      "answer": true,
+      "explanation": "For eligible instances lacking usable SSM inventory, Inspector's agentless method extracts package inventory from EBS snapshots.",
+      "misconception": "",
+      "factKey": "inspector-hybrid-snapshot-inventory",
+      "topic": "Compute Scan Coverage",
+      "tags": [
+        "Amazon Inspector",
+        "Amazon EC2",
+        "Amazon EBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scanning Amazon EC2 instances with Amazon Inspector",
+        "url": "https://docs.aws.amazon.com/inspector/latest/user/scanning-ec2.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-05",
+      "section": "3.2",
+      "statement": "With continuous scanning, Amazon Inspector rescans eligible ECR images when it adds a relevant CVE.",
+      "answer": true,
+      "explanation": "A newly added vulnerability can change the assessment of an existing image. Inspector's continuous scanning refreshes findings for images within the configured coverage period.",
+      "misconception": "",
+      "factKey": "inspector-ecr-cve-rescanning",
+      "topic": "Container Scan Coverage",
+      "tags": [
+        "Amazon Inspector",
+        "Amazon ECR"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scanning Amazon Elastic Container Registry container images with Amazon Inspector",
+        "url": "https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-06",
+      "section": "3.2",
+      "statement": "Amazon Inspector Lambda standard scanning can detect vulnerabilities in custom application source code.",
+      "answer": false,
+      "explanation": "Lambda standard scanning checks dependencies for package vulnerabilities. Lambda code scanning assesses vulnerabilities in custom application code.",
+      "misconception": "Lambda standard scanning covers custom source-code vulnerabilities.",
+      "factKey": "inspector-lambda-standard-custom-code",
+      "topic": "Lambda Scan Coverage",
+      "tags": [
+        "Amazon Inspector",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scanning AWS Lambda functions with Amazon Inspector",
+        "url": "https://docs.aws.amazon.com/inspector/latest/user/scanning-lambda.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-07",
+      "section": "3.2",
+      "statement": "GuardDuty Runtime Monitoring can inspect process execution through a security agent on supported workloads.",
+      "answer": true,
+      "explanation": "The GuardDuty security agent supplies runtime behavior that includes process execution, expanding visibility into activity within a workload.",
+      "misconception": "",
+      "factKey": "guardduty-runtime-agent-visibility",
+      "topic": "Runtime Threat Detection",
+      "tags": [
+        "Amazon GuardDuty"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "GuardDuty Runtime Monitoring",
+        "url": "https://docs.aws.amazon.com/guardduty/latest/ug/runtime-monitoring.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-08",
+      "section": "3.2",
+      "statement": "Session Manager can record commands executed through an SSH tunnel in its session logs.",
+      "answer": false,
+      "explanation": "Session Manager serves as a tunnel for SSH and cannot log the commands inside that encrypted session; the command transcript is unavailable from its session logging.",
+      "misconception": "Enabling Session Manager session logging records commands inside tunneled SSH connections.",
+      "factKey": "session-manager-tunnel-command-logging",
+      "topic": "Administrative Access Evidence",
+      "tags": [
+        "AWS Systems Manager Session Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Systems Manager Session Manager",
+        "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-09",
+      "section": "3.2",
+      "statement": "For direct SSH connections, EC2 Instance Connect requires a network path from the client to the instance.",
+      "answer": true,
+      "explanation": "EC2 Instance Connect supplies SSH authentication by delivering a public key. The client still needs network reachability to the instance for a direct SSH connection.",
+      "misconception": "",
+      "factKey": "instance-connect-ssh-network-dependency",
+      "topic": "Administrative Access Paths",
+      "tags": [
+        "EC2 Instance Connect"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Connect to a Linux instance using EC2 Instance Connect",
+        "url": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-connect-methods.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-10",
+      "section": "3.2",
+      "statement": "AWS-RunPatchBaseline marks a managed node compliant when its Scan operation completes successfully.",
+      "answer": false,
+      "explanation": "Scan reports the managed node's patch state. A successful Scan can report missing approved patches; it leaves their installation to an Install operation.",
+      "misconception": "A successful patch scan establishes that the node meets its patch baseline.",
+      "factKey": "patch-manager-scan-versus-install",
+      "topic": "Patch Remediation Effect",
+      "tags": [
+        "AWS Systems Manager Patch Manager",
+        "AWS-RunPatchBaseline"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SSM Command document for patching: AWS-RunPatchBaseline",
+        "url": "https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-aws-runpatchbaseline.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-11",
+      "section": "3.2",
+      "statement": "Amazon Bedrock Guardrails can apply a denied-topic policy to user inputs and model responses.",
+      "answer": true,
+      "explanation": "A configured denied-topic filter evaluates the topics in a user's query and the model's response, helping enforce the application's subject-area restrictions.",
+      "misconception": "",
+      "factKey": "bedrock-denied-topics-input-response",
+      "topic": "Generative AI Safeguards",
+      "tags": [
+        "Amazon Bedrock Guardrails"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Detect and filter harmful content by using Amazon Bedrock Guardrails",
+        "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.2-12",
+      "section": "3.2",
+      "statement": "ApplyGuardrail runs the application's foundation model as part of checking supplied text against a guardrail.",
+      "answer": false,
+      "explanation": "ApplyGuardrail assesses supplied text separately from model inference. An application can request that assessment before it invokes a foundation model.",
+      "misconception": "ApplyGuardrail invokes the application's foundation model during guardrail assessment.",
+      "factKey": "bedrock-applyguardrail-independent-inference",
+      "topic": "Guardrail Inference Separation",
+      "tags": [
+        "Amazon Bedrock Guardrails",
+        "ApplyGuardrail"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use the ApplyGuardrail API in your application",
+        "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-use-independent-api.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-01",
+      "section": "3.3",
+      "statement": "An Amazon EC2 security group reference permits instance traffic across subnets through a routed middlebox.",
+      "answer": false,
+      "explanation": "Across a middlebox route, instance security groups need the other instance's private IP or subnet CIDR as the source. Referencing its security group does not authorize that path.",
+      "misconception": "Security group references authorize the source instance even when a middlebox sits on the route.",
+      "factKey": "security-group-reference-middlebox-path",
+      "topic": "VPC traffic controls",
+      "tags": [
+        "Amazon EC2",
+        "Amazon VPC"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Security group rules",
+        "url": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-02",
+      "section": "3.3",
+      "statement": "An Amazon VPC network ACL can block an EC2 instance's DNS queries to the VPC's AmazonProvidedDNS address.",
+      "answer": false,
+      "explanation": "Amazon VPC exempts its AmazonProvidedDNS resolver traffic from network ACL filtering, even when a matching deny rule exists.",
+      "misconception": "A subnet network ACL applies its deny rules to queries sent to the Amazon-provided resolver.",
+      "factKey": "network-acl-amazon-dns-exemption",
+      "topic": "VPC traffic controls",
+      "tags": [
+        "Amazon VPC",
+        "Route 53 Resolver"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Control subnet traffic with network access control lists",
+        "url": "https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-03",
+      "section": "3.3",
+      "statement": "AWS Network Firewall still applies its stateful rules to packets that match a stateless Pass action.",
+      "answer": false,
+      "explanation": "A stateless Pass action ends packet inspection in AWS Network Firewall. Forward to stateful rules is the action that sends a packet onward for stateful inspection.",
+      "misconception": "Passing stateless inspection still subjects a packet to the stateful rule engine.",
+      "factKey": "network-firewall-stateless-pass-bypass",
+      "topic": "Network inspection",
+      "tags": [
+        "AWS Network Firewall"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Defining rule actions in AWS Network Firewall",
+        "url": "https://docs.aws.amazon.com/network-firewall/latest/developerguide/rule-action.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-04",
+      "section": "3.3",
+      "statement": "With strict rule order, AWS Network Firewall's Drop established default permits TCP connection handshakes.",
+      "answer": true,
+      "explanation": "The AWS Network Firewall Drop established default lets TCP establish a connection before deciding on application traffic. This makes application-layer pass rules usable in a default-deny policy.",
+      "misconception": "",
+      "factKey": "network-firewall-drop-established-handshake",
+      "topic": "Network inspection",
+      "tags": [
+        "AWS Network Firewall"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managing evaluation order for Suricata compatible rules in AWS Network Firewall",
+        "url": "https://docs.aws.amazon.com/network-firewall/latest/developerguide/suricata-rule-evaluation-order.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-05",
+      "section": "3.3",
+      "statement": "For inter-VPC flows on one AWS Transit Gateway, appliance mode automatically pins both directions to one inspection AZ.",
+      "answer": true,
+      "explanation": "AWS Transit Gateway appliance mode pins an inspection VPC attachment to the chosen Availability Zone for a flow, preserving the return path for stateful inspection.",
+      "misconception": "",
+      "factKey": "transit-gateway-appliance-flow-symmetry",
+      "topic": "Stateful inspection routing",
+      "tags": [
+        "AWS Transit Gateway"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How AWS Transit Gateway works",
+        "url": "https://docs.aws.amazon.com/vpc/latest/tgw/how-transit-gateways-work.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-06",
+      "section": "3.3",
+      "statement": "Network Access Analyzer can confirm that an attacker has sent packets along a path reported in a finding.",
+      "answer": false,
+      "explanation": "Network Access Analyzer infers possible paths from network configuration. Its findings show configured exposure, rather than observed packet traffic.",
+      "misconception": "A finding from configuration analysis proves that traffic actually traversed the reported path.",
+      "factKey": "network-access-analyzer-runtime-evidence",
+      "topic": "Network exposure analysis",
+      "tags": [
+        "Network Access Analyzer"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How Network Access Analyzer works",
+        "url": "https://docs.aws.amazon.com/vpc/latest/network-access-analyzer/how-network-access-analyzer-works.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-07",
+      "section": "3.3",
+      "statement": "Route 53 Resolver returns SERVFAIL by default when an associated DNS Firewall fails to answer a query.",
+      "answer": true,
+      "explanation": "The default DNS Firewall failure policy blocks queries whose firewall evaluation times out. Route 53 Resolver returns SERVFAIL, preserving enforcement during an outage.",
+      "misconception": "",
+      "factKey": "dns-firewall-default-failure-enforcement",
+      "topic": "DNS filtering resilience",
+      "tags": [
+        "Route 53 Resolver",
+        "Route 53 Resolver DNS Firewall"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "DNS Firewall VPC configuration",
+        "url": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-dns-firewall-vpc-configuration.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-08",
+      "section": "3.3",
+      "statement": "Engineers can isolate AWS Transit Gateway segments by propagating VPC routes into selected route tables.",
+      "answer": true,
+      "explanation": "Transit gateway route propagation installs a VPC's CIDRs into chosen route tables. A segment learns those routes through the table its attachment uses.",
+      "misconception": "",
+      "factKey": "transit-gateway-route-propagation-segmentation",
+      "topic": "Transit Gateway segmentation",
+      "tags": [
+        "AWS Transit Gateway"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "How AWS Transit Gateway works",
+        "url": "https://docs.aws.amazon.com/vpc/latest/tgw/how-transit-gateways-work.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-09",
+      "section": "3.3",
+      "statement": "Adding an AWS Client VPN route automatically authorizes authenticated clients to reach its destination.",
+      "answer": false,
+      "explanation": "AWS Client VPN route tables choose network paths. Separate authorization rules determine which authenticated clients may reach a destination network.",
+      "misconception": "A Client VPN route also grants destination access to authenticated clients.",
+      "factKey": "client-vpn-route-authorization-independence",
+      "topic": "Private access policies",
+      "tags": [
+        "AWS Client VPN"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Client VPN routes",
+        "url": "https://docs.aws.amazon.com/vpn/latest/clientvpn-admin/cvpn-working-routes.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-10",
+      "section": "3.3",
+      "statement": "With group and endpoint policies defined, AWS Verified Access requires both policy documents to allow a request.",
+      "answer": true,
+      "explanation": "An endpoint policy adds an access gate to the group policy. AWS Verified Access grants a request when both configured policy documents allow it.",
+      "misconception": "",
+      "factKey": "verified-access-group-endpoint-policy-intersection",
+      "topic": "Private access policies",
+      "tags": [
+        "AWS Verified Access"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Verified Access policy evaluation",
+        "url": "https://docs.aws.amazon.com/verified-access/latest/ug/auth-policies-policy-eval.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-11",
+      "section": "3.3",
+      "statement": "AWS Network Firewall automatically redirects subnet traffic through a firewall endpoint when engineers create it.",
+      "answer": false,
+      "explanation": "Engineers insert AWS Network Firewall endpoints into traffic paths by updating VPC routes. Creating an endpoint leaves existing routes in place.",
+      "misconception": "Creating a firewall endpoint automatically puts it into the subnet's existing traffic path.",
+      "factKey": "network-firewall-endpoint-routing-dependency",
+      "topic": "Stateful inspection routing",
+      "tags": [
+        "AWS Network Firewall",
+        "Amazon VPC"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "VPC route table configuration for AWS Network Firewall",
+        "url": "https://docs.aws.amazon.com/network-firewall/latest/developerguide/vpc-config-route-tables.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s3.3-12",
+      "section": "3.3",
+      "statement": "On scheduled secret deletion, AWS Direct Connect changes must_encrypt to should_encrypt after removing the last CKN.",
+      "answer": true,
+      "explanation": "When scheduled secret deletion leads AWS Direct Connect to disassociate a connection's final CKN, the service changes must_encrypt to should_encrypt to avoid sudden packet loss.",
+      "misconception": "",
+      "factKey": "direct-connect-last-ckn-enforcement-reversion",
+      "topic": "Hybrid link enforcement",
+      "tags": [
+        "AWS Direct Connect",
+        "AWS Secrets Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "AWS may revise its automatic response to deletion of the final MACsec key.",
+      "source": {
+        "title": "MAC Security in Direct Connect",
+        "url": "https://docs.aws.amazon.com/directconnect/latest/UserGuide/MACsec.html"
+      }
+    }
+  ]
+}
