@@ -1,0 +1,881 @@
+{
+  "deck": "kubernetes-cka",
+  "block": "b2",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "",
+  "cards": [
+    {
+      "id": "kubernetes-cka-s2.3-01",
+      "section": "2.3",
+      "statement": "The kubelet exposes node resource metrics through its `/metrics/resource` endpoint.",
+      "answer": true,
+      "explanation": "The endpoint publishes summarized node resource statistics for the resource metrics pipeline.",
+      "misconception": "",
+      "factKey": "kubelet-resource-metrics-endpoint",
+      "topic": "Resource Metrics",
+      "tags": [
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource metrics pipeline",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-02",
+      "section": "2.3",
+      "statement": "The kubelet uses a separate cAdvisor Deployment to collect container resource metrics.",
+      "answer": false,
+      "explanation": "cAdvisor collection code is included in the kubelet; it needs no separate Deployment.",
+      "misconception": "The kubelet depends on a separately deployed cAdvisor service.",
+      "factKey": "cadvisor-embedded-kubelet",
+      "topic": "Resource Metrics",
+      "tags": [
+        "kubelet",
+        "cAdvisor",
+        "Deployment"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource metrics pipeline",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-03",
+      "section": "2.3",
+      "statement": "With metrics-server installed, kube-apiserver can serve the Metrics API through the API aggregation layer.",
+      "answer": true,
+      "explanation": "Registering the Metrics API as an APIService routes resource metric requests to metrics-server.",
+      "misconception": "",
+      "factKey": "metrics-server-api-aggregation",
+      "topic": "Resource Metrics",
+      "tags": [
+        "metrics-server",
+        "kube-apiserver",
+        "APIService"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource metrics pipeline",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-04",
+      "section": "2.3",
+      "statement": "With metrics-server installed, it restores resource metric history from disk after a Pod restart.",
+      "answer": false,
+      "explanation": "metrics-server keeps short-term metrics in memory; restarting its Pod loses that state.",
+      "misconception": "metrics-server persists resource metrics for recovery after restarts.",
+      "factKey": "metrics-server-history-retention",
+      "topic": "Resource Metrics",
+      "tags": [
+        "metrics-server"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Tools for Monitoring Resources",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-usage-monitoring/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-05",
+      "section": "2.3",
+      "statement": "With metrics-server installed, its resource Metrics API can report Pod filesystem usage.",
+      "answer": false,
+      "explanation": "The resource Metrics API exposes CPU and memory usage; filesystem usage needs a fuller monitoring pipeline.",
+      "misconception": "The resource Metrics API includes filesystem usage.",
+      "factKey": "resource-metrics-filesystem-exclusion",
+      "topic": "Resource Metrics",
+      "tags": [
+        "metrics-server",
+        "Metrics API"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource metrics pipeline",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-06",
+      "section": "2.3",
+      "statement": "kube-scheduler uses live CPU usage to decide whether a node has room for another Pod.",
+      "answer": false,
+      "explanation": "kube-scheduler accounts for CPU requests. Low measured CPU usage does not free CPU already committed through requests.",
+      "misconception": "kube-scheduler finds available CPU from measured usage rather than requests.",
+      "factKey": "scheduler-requests-versus-usage",
+      "topic": "Node Allocatable",
+      "tags": [
+        "kube-scheduler"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource Management for Pods and Containers",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-07",
+      "section": "2.3",
+      "statement": "The kubelet subtracts `kubeReserved` from node capacity to calculate allocatable resources.",
+      "answer": true,
+      "explanation": "Resources reserved for Kubernetes system daemons reduce the amount available to scheduled Pods.",
+      "misconception": "",
+      "factKey": "daemon-reservations-reduce-allocatable",
+      "topic": "Node Allocatable",
+      "tags": [
+        "kubelet",
+        "KubeletConfiguration"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Reserve Compute Resources for System Daemons",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-08",
+      "section": "2.3",
+      "statement": "The kubelet reserves hard-eviction memory headroom when calculating Node Allocatable.",
+      "answer": true,
+      "explanation": "Memory reserved through `evictionHard` stays outside the Pod resource budget, even if system daemons reserve nothing.",
+      "misconception": "",
+      "factKey": "eviction-headroom-reduces-allocatable",
+      "topic": "Node Allocatable",
+      "tags": [
+        "kubelet",
+        "KubeletConfiguration"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Reserve Compute Resources for System Daemons",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-09",
+      "section": "2.3",
+      "statement": "kube-apiserver publishes its system metrics in Prometheus format for monitoring scrapers.",
+      "answer": true,
+      "explanation": "Monitoring systems scrape this text format to build component dashboards and alerts.",
+      "misconception": "",
+      "factKey": "component-metrics-prometheus-format",
+      "topic": "Component Metrics",
+      "tags": [
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metrics For Kubernetes System Components",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/system-metrics/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.3-10",
+      "section": "2.3",
+      "statement": "A scraper reads kube-scheduler's internal metrics from kube-apiserver's `/metrics` endpoint.",
+      "answer": false,
+      "explanation": "Scrape kube-scheduler's own `/metrics` endpoint for its internal metrics.",
+      "misconception": "kube-apiserver centrally exposes other control plane components' internal metrics.",
+      "factKey": "component-metrics-direct-scraping",
+      "topic": "Component Metrics",
+      "tags": [
+        "kube-scheduler",
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Metrics For Kubernetes System Components",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/system-metrics/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-01",
+      "section": "2.4",
+      "statement": "The container runtime sends application stdout and stderr to the node's systemd journal.",
+      "answer": false,
+      "explanation": "Container output uses CRI log files; the runtime's own logs use journald.",
+      "misconception": "Container logs use journald.",
+      "factKey": "runtime-cri-log-format",
+      "topic": "Container Log Handling",
+      "tags": [
+        "kubelet",
+        "containerd"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-02",
+      "section": "2.4",
+      "statement": "The kubelet's `podLogsDir` setting lets administrators choose a directory other than `/var/log/pods`.",
+      "answer": true,
+      "explanation": "Set `podLogsDir` in KubeletConfiguration to relocate Pod container logs.",
+      "misconception": "",
+      "factKey": "kubelet-podlogsdir-customization",
+      "topic": "Container Log Handling",
+      "tags": [
+        "kubelet",
+        "KubeletConfiguration"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubelet Configuration (v1beta1)",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-03",
+      "section": "2.4",
+      "statement": "The container runtime rotates logs using its own `containerLogMaxSize` setting.",
+      "answer": false,
+      "explanation": "`containerLogMaxSize` configures the kubelet's container log rotation.",
+      "misconception": "The runtime owns the container log rotation configuration.",
+      "factKey": "kubelet-container-log-rotation",
+      "topic": "Container Log Rotation",
+      "tags": [
+        "kubelet",
+        "KubeletConfiguration",
+        "containerd"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kubelet Configuration (v1beta1)",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-04",
+      "section": "2.4",
+      "statement": "The kubelet reads the container log file when handling a `kubectl logs` request.",
+      "answer": true,
+      "explanation": "The kubelet returns local log file contents through the API.",
+      "misconception": "",
+      "factKey": "kubelet-serves-log-files",
+      "topic": "Container Log Handling",
+      "tags": [
+        "kubectl logs",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-05",
+      "section": "2.4",
+      "statement": "`kubectl logs` returns retained rotated files along with the latest container log file.",
+      "answer": false,
+      "explanation": "`kubectl logs` returns the latest file, excluding retained older files.",
+      "misconception": "kubectl logs includes rotated files.",
+      "factKey": "kubectl-logs-latest-rotation-file",
+      "topic": "Container Log Rotation",
+      "tags": [
+        "kubectl logs",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-06",
+      "section": "2.4",
+      "statement": "By default, the kubelet erases a container's previous logs when that container restarts.",
+      "answer": false,
+      "explanation": "The kubelet retains the preceding container's logs after a restart.",
+      "misconception": "Restarts erase previous container logs.",
+      "factKey": "restarted-container-log-retention",
+      "topic": "Container Log Retention",
+      "tags": [
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-07",
+      "section": "2.4",
+      "statement": "By default, the kubelet removes a Pod's container logs from the node when it evicts the Pod.",
+      "answer": true,
+      "explanation": "Eviction removes Pod containers and their local logs.",
+      "misconception": "",
+      "factKey": "eviction-removes-node-container-logs",
+      "topic": "Container Log Retention",
+      "tags": [
+        "kubelet",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-08",
+      "section": "2.4",
+      "statement": "The Kubernetes documentation recommends a DaemonSet for a node-level logging agent.",
+      "answer": true,
+      "explanation": "Node-level agents collect local container files across cluster nodes.",
+      "misconception": "",
+      "factKey": "node-logging-agent-daemonset",
+      "topic": "Cluster Log Collection",
+      "tags": [
+        "DaemonSet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-09",
+      "section": "2.4",
+      "statement": "With a sidecar logging agent forwarding to a backend instead of stdout, `kubectl logs` can read its collected logs.",
+      "answer": false,
+      "explanation": "Retrieve a sidecar logging agent's forwarded application logs from its backend.",
+      "misconception": "Backend records appear in kubectl logs.",
+      "factKey": "agent-sidecar-log-access",
+      "topic": "Cluster Log Collection",
+      "tags": [
+        "kubectl logs",
+        "Pod"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Logging Architecture",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.4-10",
+      "section": "2.4",
+      "statement": "Raising kube-apiserver's log verbosity exposes detailed request traces in its output.",
+      "answer": true,
+      "explanation": "Higher verbosity adds detailed events that help an administrator investigate kube-apiserver behavior.",
+      "misconception": "",
+      "factKey": "component-log-verbosity",
+      "topic": "Component Log Verbosity",
+      "tags": [
+        "kube-apiserver"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "System Logs",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/system-logs/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-01",
+      "section": "2.5",
+      "statement": "By default, kubeadm init deploys kube-proxy as a systemd service for the cluster's Linux nodes.",
+      "answer": false,
+      "explanation": "kubeadm init installs kube-proxy through the API server as a DaemonSet. Inspect that workload to locate its Pods.",
+      "misconception": "kubeadm installs kube-proxy as a host systemd service.",
+      "factKey": "kubeadm-kube-proxy-daemonset",
+      "topic": "Proxy troubleshooting",
+      "tags": [
+        "kubeadm",
+        "kube-proxy",
+        "DaemonSet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Implementation details",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-02",
+      "section": "2.5",
+      "statement": "An administrator checks kube-proxy's startup logs to identify the active Service proxy mode on a failing node.",
+      "answer": true,
+      "explanation": "kube-proxy reports its selected proxy mode in startup logs, helping an administrator choose the appropriate node-level checks.",
+      "misconception": "",
+      "factKey": "kube-proxy-mode-log-diagnosis",
+      "topic": "Proxy troubleshooting",
+      "tags": [
+        "kube-proxy"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debug Services",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-application/debug-service/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-03",
+      "section": "2.5",
+      "statement": "In iptables mode, kube-proxy installs Service forwarding rules in the kernel of each node in the cluster.",
+      "answer": true,
+      "explanation": "Inspect the rules on the affected node when debugging Service forwarding. kube-proxy synchronizes its node's rules with cluster state.",
+      "misconception": "",
+      "factKey": "kube-proxy-rules-node-location",
+      "topic": "Proxy troubleshooting",
+      "tags": [
+        "kube-proxy",
+        "Service"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Virtual IPs and Service Proxies",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/networking/virtual-ips/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-04",
+      "section": "2.5",
+      "statement": "Before the Pod network add-on is installed, Pending CoreDNS Pods indicate a failed kubeadm initialization.",
+      "answer": false,
+      "explanation": "Pending CoreDNS Pods are expected before the administrator installs a Pod network add-on. They can be part of a successful kubeadm initialization.",
+      "misconception": "Pending CoreDNS Pods before network installation mean cluster initialization failed.",
+      "factKey": "coredns-pending-network-addon",
+      "topic": "DNS troubleshooting",
+      "tags": [
+        "kubeadm",
+        "CoreDNS"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Troubleshooting kubeadm",
+        "url": "https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/troubleshooting-kubeadm/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-05",
+      "section": "2.5",
+      "statement": "With the log plugin's default configuration, CoreDNS records received DNS queries even when they succeed.",
+      "answer": true,
+      "explanation": "The CoreDNS log plugin makes received queries visible during DNS troubleshooting, including successful lookups.",
+      "misconception": "",
+      "factKey": "coredns-log-plugin-query-visibility",
+      "topic": "DNS troubleshooting",
+      "tags": [
+        "CoreDNS"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debugging DNS Resolution",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-06",
+      "section": "2.5",
+      "statement": "An administrator inspects the DNS Service's EndpointSlices to check the DNS server addresses it exposes.",
+      "answer": true,
+      "explanation": "The DNS Service's EndpointSlices list backend server addresses for checking whether Service forwarding has a destination.",
+      "misconception": "",
+      "factKey": "dns-service-endpointslice-inspection",
+      "topic": "DNS troubleshooting",
+      "tags": [
+        "Service",
+        "EndpointSlice"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debugging DNS Resolution",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-07",
+      "section": "2.5",
+      "statement": "CoreDNS can keep Service DNS records current when RBAC grants get instead of list and watch.",
+      "answer": false,
+      "explanation": "CoreDNS needs list and watch permissions on Services and EndpointSlices to discover records and follow their changes.",
+      "misconception": "get permission replaces the list and watch permissions CoreDNS needs.",
+      "factKey": "coredns-service-endpointslice-rbac",
+      "topic": "DNS troubleshooting",
+      "tags": [
+        "CoreDNS",
+        "Service",
+        "EndpointSlice",
+        "ClusterRole"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debugging DNS Resolution",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-08",
+      "section": "2.5",
+      "statement": "An administrator fixes CoreDNS forwarding loops by pointing kubelet's resolv-conf at a systemd-resolved stub.",
+      "answer": false,
+      "explanation": "Point kubelet's resolv-conf at /run/systemd/resolve/resolv.conf to supply upstream resolvers. The stub can create a forwarding loop.",
+      "misconception": "The systemd-resolved stub file supplies suitable upstream DNS configuration.",
+      "factKey": "systemd-stub-dns-forwarding-loop",
+      "topic": "DNS troubleshooting",
+      "tags": [
+        "CoreDNS",
+        "kubelet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Debugging DNS Resolution",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-09",
+      "section": "2.5",
+      "statement": "An administrator prevents Pod routing conflicts by placing the Pod network range inside the host network range.",
+      "answer": false,
+      "explanation": "Keep Pod network ranges separate from host networks. Overlapping ranges can break routing.",
+      "misconception": "Nesting the Pod network inside the host network avoids routing conflicts.",
+      "factKey": "pod-network-host-range-overlap",
+      "topic": "Network troubleshooting",
+      "tags": [
+        "kubeadm"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Creating a cluster with kubeadm",
+        "url": "https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s2.5-10",
+      "section": "2.5",
+      "statement": "With a plugin that enforces NetworkPolicy, a policy can block traffic to a healthy Service backend.",
+      "answer": true,
+      "explanation": "A healthy backend can still be unreachable because a NetworkPolicy restricts traffic to its Pod. Review the policies during network troubleshooting.",
+      "misconception": "",
+      "factKey": "enforcing-networkpolicy-blocked-traffic",
+      "topic": "Network troubleshooting",
+      "tags": [
+        "NetworkPolicy",
+        "Service"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Network Policies",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/network-policies/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-01",
+      "section": "3.1",
+      "statement": "A DaemonSet using OnDelete replaces its existing Pods when an administrator changes the Pod template.",
+      "answer": false,
+      "explanation": "With OnDelete, the DaemonSet controller waits for an administrator to delete an existing Pod before replacing it with the changed template.",
+      "misconception": "OnDelete applies template changes to existing Pods immediately.",
+      "factKey": "daemonset-ondelete-template-update",
+      "topic": "DaemonSet updates",
+      "tags": [
+        "DaemonSet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Perform a Rolling Update on a DaemonSet",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-02",
+      "section": "3.1",
+      "statement": "With RollingUpdate, a StatefulSet's partition lets the controller update Pods at or above that ordinal.",
+      "answer": true,
+      "explanation": "During a partitioned StatefulSet rollout, Pods below the partition retain the earlier template.",
+      "misconception": "",
+      "factKey": "statefulset-partition-update-boundary",
+      "topic": "StatefulSet updates",
+      "tags": [
+        "StatefulSet"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "StatefulSets",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/controllers/statefulset/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-03",
+      "section": "3.1",
+      "statement": "With Secret encryption configured, kube-apiserver uses the first listed provider for new Secret writes.",
+      "answer": true,
+      "explanation": "Provider order in EncryptionConfiguration determines how kube-apiserver stores new Secret writes.",
+      "misconception": "",
+      "factKey": "encryption-first-provider-writes",
+      "topic": "Secret encryption",
+      "tags": [
+        "kube-apiserver",
+        "EncryptionConfiguration",
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Encrypting Confidential Data at Rest",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/encrypt-data/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-04",
+      "section": "3.1",
+      "statement": "When an administrator enables Secret encryption, kube-apiserver also rewrites previously stored Secrets.",
+      "answer": false,
+      "explanation": "Existing Secrets keep their stored representation until rewritten. An administrator can use kubectl replace to apply the new encryption configuration.",
+      "misconception": "Changing the encryption configuration migrates existing Secrets automatically.",
+      "factKey": "encryption-existing-secrets-rewrite",
+      "topic": "Secret encryption",
+      "tags": [
+        "kube-apiserver",
+        "Secret"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Encrypting Confidential Data at Rest",
+        "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/encrypt-data/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-05",
+      "section": "3.1",
+      "statement": "The HorizontalPodAutoscaler controller runs within the kube-controller-manager process.",
+      "answer": true,
+      "explanation": "The kube-controller-manager process hosts the controller that reconciles HorizontalPodAutoscaler objects.",
+      "misconception": "",
+      "factKey": "hpa-controller-manager-location",
+      "topic": "Workload autoscaling",
+      "tags": [
+        "HorizontalPodAutoscaler",
+        "kube-controller-manager"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "kube-controller-manager",
+        "url": "https://v1-35.docs.kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-06",
+      "section": "3.1",
+      "statement": "The HPA can compute CPU utilization from usage when a target Pod's CPU requests are unset.",
+      "answer": false,
+      "explanation": "The HPA needs CPU requests to compute utilization. Missing requests leave utilization undefined for that metric.",
+      "misconception": "Measured CPU usage alone is enough to calculate HPA utilization.",
+      "factKey": "hpa-missing-requests-undefined-utilization",
+      "topic": "Workload autoscaling",
+      "tags": [
+        "HorizontalPodAutoscaler"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Horizontal Pod Autoscaling",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-07",
+      "section": "3.1",
+      "statement": "With multiple working metrics, an HPA chooses the largest replica count proposed by those metrics.",
+      "answer": true,
+      "explanation": "The HPA evaluates metrics separately and selects the greatest proposed replica count, subject to its configured bounds.",
+      "misconception": "",
+      "factKey": "hpa-largest-metric-replica-proposal",
+      "topic": "Workload autoscaling",
+      "tags": [
+        "HorizontalPodAutoscaler"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Horizontal Pod Autoscaling",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-08",
+      "section": "3.1",
+      "statement": "Since Kubernetes v1.30, an HPA's ContainerResource metric automatically follows a container through a name change.",
+      "answer": false,
+      "explanation": "ContainerResource selects a container by its configured name. An administrator updates the HPA when renaming that container.",
+      "misconception": "ContainerResource tracks container identity across renames.",
+      "factKey": "hpa-container-resource-target-scope",
+      "topic": "Workload autoscaling",
+      "tags": [
+        "HorizontalPodAutoscaler"
+      ],
+      "appliesTo": "Kubernetes v1.30 and later",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Horizontal Pod Autoscaling",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-09",
+      "section": "3.1",
+      "statement": "The HPA's scale-down stabilization uses the highest replica recommendation in its configured window.",
+      "answer": true,
+      "explanation": "Scale-down stabilization considers recent recommendations to prevent a brief drop in demand from immediately removing replicas.",
+      "misconception": "",
+      "factKey": "hpa-scale-down-stabilization",
+      "topic": "Workload autoscaling",
+      "tags": [
+        "HorizontalPodAutoscaler"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Horizontal Pod Autoscaling",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/"
+      }
+    },
+    {
+      "id": "kubernetes-cka-s3.1-10",
+      "section": "3.1",
+      "statement": "kubeadm init installs the VerticalPodAutoscaler controller as a standard cluster add-on.",
+      "answer": false,
+      "explanation": "VerticalPodAutoscaler is a separate add-on that an administrator installs in the cluster.",
+      "misconception": "kubeadm includes VerticalPodAutoscaler in its standard add-ons.",
+      "factKey": "vpa-separate-addon",
+      "topic": "Workload autoscaling",
+      "tags": [
+        "kubeadm",
+        "VerticalPodAutoscaler"
+      ],
+      "appliesTo": "Kubernetes v1.35",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Vertical Pod Autoscaling",
+        "url": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/autoscaling/vertical-pod-autoscale/"
+      }
+    }
+  ]
+}

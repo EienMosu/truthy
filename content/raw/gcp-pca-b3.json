@@ -1,0 +1,869 @@
+{
+  "deck": "gcp-pca",
+  "block": "b3",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replace artifact-registry-immutable-image-tags with artifact-registry-cleanup-keep-precedence to avoid repeating an immutable-protection override. Replace service-catalog-terraform-distribution with service-catalog-terraform-state-project to test deployment state ownership. Replace dr-runbook-outage-accessibility with dr-cd-toolchain-artifact-availability because the official DR guide explicitly documents that recovery dependency.",
+  "cards": [
+    {
+      "id": "gcp-pca-s3.1-01",
+      "section": "3.1",
+      "statement": "A narrower resource-level IAM allow policy can reduce a user's broader inherited permissions.",
+      "answer": false,
+      "explanation": "IAM combines local and inherited allow grants. A narrower grant at a child resource adds permissions rather than reducing permissions inherited from its parent.",
+      "misconception": "A child resource's narrower allow policy removes permissions granted by its parent.",
+      "factKey": "iam-parent-allow-policy-inheritance",
+      "topic": "IAM inheritance boundaries",
+      "tags": [
+        "Identity and Access Management"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using resource hierarchy for access control",
+        "url": "https://docs.cloud.google.com/iam/docs/resource-hierarchy-access-control"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-02",
+      "section": "3.1",
+      "statement": "Organization policy constraints can block service account key creation even when IAM permits that operation.",
+      "answer": true,
+      "explanation": "An enforced service account key creation constraint prevents key creation even for principals with the corresponding IAM permission. This provides a guardrail across affected projects.",
+      "misconception": "",
+      "factKey": "organization-policy-resource-behavior-constraints",
+      "topic": "Resource policy guardrails",
+      "tags": [
+        "Organization Policy Service",
+        "Identity and Access Management"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best practices for using service accounts securely",
+        "url": "https://docs.cloud.google.com/iam/docs/best-practices-service-accounts"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-03",
+      "section": "3.1",
+      "statement": "Cloud KMS Admin includes ciphertext decryption permission for direct calls to the Cloud KMS API.",
+      "answer": false,
+      "explanation": "Cloud KMS Admin lacks direct decryption permission. Key management and direct cryptographic use need separate grants, supporting separation of duties.",
+      "misconception": "Cloud KMS Admin includes direct decryption permission alongside key administration.",
+      "factKey": "kms-key-administration-use-separation",
+      "topic": "Encryption duty separation",
+      "tags": [
+        "Cloud Key Management Service",
+        "Cloud KMS Admin"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Permissions and roles",
+        "url": "https://docs.cloud.google.com/kms/docs/reference/permissions-and-roles"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-04",
+      "section": "3.1",
+      "statement": "Cloud EKM's external key manager can revoke a Google Cloud project's permission to use an encryption key.",
+      "answer": true,
+      "explanation": "Cloud EKM lets the external key manager control a project's permission to use its external key. Revoking that permission stops subsequent cryptographic requests.",
+      "misconception": "",
+      "factKey": "cloud-ekm-external-key-control",
+      "topic": "External key control",
+      "tags": [
+        "Cloud External Key Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Cloud External Key Manager",
+        "url": "https://docs.cloud.google.com/kms/docs/ekm"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-05",
+      "section": "3.1",
+      "statement": "Secret Manager can replace an existing secret version's payload when an application rotates its credentials.",
+      "answer": false,
+      "explanation": "Secret Manager keeps a version's payload immutable. A rotated credential belongs in a new version, preserving the value referenced by existing version-specific consumers.",
+      "misconception": "Rotating a credential replaces the payload of its existing secret version.",
+      "factKey": "secret-manager-version-immutability",
+      "topic": "Credential rotation boundaries",
+      "tags": [
+        "Secret Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Add a secret version",
+        "url": "https://docs.cloud.google.com/secret-manager/docs/add-secret-version"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-06",
+      "section": "3.1",
+      "statement": "VPC Service Controls restricts protected API access from unauthorized networks despite permissive IAM grants.",
+      "answer": true,
+      "explanation": "VPC Service Controls enforces service-perimeter access independently of IAM. Its network restrictions provide another boundary when an IAM policy exposes protected data.",
+      "misconception": "",
+      "factKey": "vpc-service-controls-iam-defense-layer",
+      "topic": "Data exfiltration boundaries",
+      "tags": [
+        "VPC Service Controls",
+        "Identity and Access Management"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of VPC Service Controls",
+        "url": "https://docs.cloud.google.com/vpc-service-controls/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-07",
+      "section": "3.1",
+      "statement": "Service account impersonation gives a deployment tool short-lived credentials for a service account.",
+      "answer": true,
+      "explanation": "Service account impersonation issues time-limited credentials for an authorized caller. A deployment tool uses the service account's access for that limited credential lifetime.",
+      "misconception": "",
+      "factKey": "service-account-impersonation-short-lived-credentials",
+      "topic": "Temporary service credentials",
+      "tags": [
+        "Identity and Access Management"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service account impersonation",
+        "url": "https://docs.cloud.google.com/iam/docs/service-account-impersonation"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-08",
+      "section": "3.1",
+      "statement": "Workload Identity Federation limits resource-access IAM grants to service accounts that workloads impersonate.",
+      "answer": false,
+      "explanation": "Workload Identity Federation supports IAM grants to identities in a workload identity pool. Service account impersonation is an alternative for resources or APIs that need it.",
+      "misconception": "IAM grants for federated workloads target impersonated service accounts rather than external identities.",
+      "factKey": "workload-identity-federation-external-workloads",
+      "topic": "External workload access",
+      "tags": [
+        "Workload Identity Federation",
+        "Identity and Access Management"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Workload Identity Federation",
+        "url": "https://docs.cloud.google.com/iam/docs/workload-identity-federation"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-09",
+      "section": "3.1",
+      "statement": "Binary Authorization automatically reruns an attested test suite before permitting an image deployment.",
+      "answer": false,
+      "explanation": "Binary Authorization verifies attestations that record completed checks. It uses that signed evidence for admission instead of rerunning the attested test suite.",
+      "misconception": "Binary Authorization reruns a test suite instead of verifying its attestation at deployment.",
+      "factKey": "binary-authorization-attestation-enforcement",
+      "topic": "Supply chain admission",
+      "tags": [
+        "Binary Authorization"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Binary Authorization overview",
+        "url": "https://docs.cloud.google.com/binary-authorization/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.1-10",
+      "section": "3.1",
+      "statement": "Model Armor uses Sensitive Data Protection to screen sensitive data in prompts and model responses.",
+      "answer": true,
+      "explanation": "Model Armor integrates Sensitive Data Protection inspection with its prompt and response screening. That gives an AI application a data-leakage check on both sides of a model interaction.",
+      "misconception": "",
+      "factKey": "model-armor-prompt-response-screening",
+      "topic": "AI leakage screening",
+      "tags": [
+        "Model Armor",
+        "Sensitive Data Protection"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Model Armor's filter integrations and screening capabilities continue to evolve.",
+      "source": {
+        "title": "Model Armor overview",
+        "url": "https://docs.cloud.google.com/model-armor/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-01",
+      "section": "3.2",
+      "statement": "Assured Workloads scopes a control package to a folder and the projects and resources beneath it.",
+      "answer": true,
+      "explanation": "An Assured Workloads folder defines the workload's compliance boundary. Its selected control package sets guardrails for projects and resources inside that folder.",
+      "misconception": "",
+      "factKey": "assured-workloads-folder-control-boundary",
+      "topic": "Regulated workload boundaries",
+      "tags": [
+        "Assured Workloads"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of Assured Workloads",
+        "url": "https://docs.cloud.google.com/assured-workloads/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-02",
+      "section": "3.2",
+      "statement": "Access Transparency lets a customer approve Google personnel access before engineers read customer data.",
+      "answer": false,
+      "explanation": "Access Transparency records Google personnel's actions when they access customer data. Access Approval provides the customer authorization step for covered access requests.",
+      "misconception": "Access Transparency requires customer approval before Google personnel access data.",
+      "factKey": "access-transparency-versus-approval",
+      "topic": "Provider access oversight",
+      "tags": [
+        "Access Transparency",
+        "Access Approval"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of Access Transparency",
+        "url": "https://docs.cloud.google.com/assured-workloads/access-transparency/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-03",
+      "section": "3.2",
+      "statement": "Sensitive Data Protection can tokenize legacy IDs while preserving their length and character set.",
+      "answer": true,
+      "explanation": "Sensitive Data Protection's format preserving encryption keeps the encrypted value's length and character set, which helps retain compatibility with legacy field schemas.",
+      "misconception": "",
+      "factKey": "sensitive-data-protection-format-preserving-tokenization",
+      "topic": "Sensitive identifier tokenization",
+      "tags": [
+        "Sensitive Data Protection"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Pseudonymization",
+        "url": "https://docs.cloud.google.com/sensitive-data-protection/docs/pseudonymization"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-04",
+      "section": "3.2",
+      "statement": "Key Access Justifications supplies reasons for supported service-based and direct API key use.",
+      "answer": true,
+      "explanation": "Key Access Justifications provides justification codes for key operations from supported services and direct API calls. This coverage includes automated workloads rather than being limited to Google personnel access.",
+      "misconception": "",
+      "factKey": "key-access-justifications-request-context",
+      "topic": "Key access governance",
+      "tags": [
+        "Key Access Justifications",
+        "Cloud KMS"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of Key Access Justifications",
+        "url": "https://docs.cloud.google.com/assured-workloads/key-access-justifications/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-05",
+      "section": "3.2",
+      "statement": "Cloud Logging automatically stores a project's Admin Activity and System Event audit logs in its _Required bucket.",
+      "answer": true,
+      "explanation": "Cloud Logging keeps Admin Activity and System Event audit logs in the generating project's _Required bucket. Routing copies elsewhere preserves that local audit record.",
+      "misconception": "",
+      "factKey": "required-log-bucket-audit-types",
+      "topic": "Required audit evidence",
+      "tags": [
+        "Cloud Logging",
+        "Cloud Audit Logs"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Cloud Audit Logs overview",
+        "url": "https://docs.cloud.google.com/logging/docs/audit"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-06",
+      "section": "3.2",
+      "statement": "BigQuery treats Data Access audit logging as an opt-in feature for newly created projects.",
+      "answer": false,
+      "explanation": "BigQuery generates Data Access audit logs by default. An architect planning an audit trail can rely on this service-specific default rather than an initial opt-in step.",
+      "misconception": "BigQuery requires an initial opt-in to generate Data Access audit logs.",
+      "factKey": "bigquery-data-access-audit-default",
+      "topic": "Data access evidence",
+      "tags": [
+        "BigQuery",
+        "Cloud Audit Logs"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Cloud Audit Logs overview",
+        "url": "https://docs.cloud.google.com/logging/docs/audit"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-07",
+      "section": "3.2",
+      "statement": "Cloud Logging automatically blocks deletion of a project containing a retention-locked log bucket.",
+      "answer": false,
+      "explanation": "Cloud Logging's retention lock leaves project deletion available. Add a project lien separately to protect the containing project and its audit logs against accidental deletion.",
+      "misconception": "A log bucket retention lock also prevents deletion of its containing project.",
+      "factKey": "logging-retention-lock-audit-preservation",
+      "topic": "Audit preservation boundaries",
+      "tags": [
+        "Cloud Logging",
+        "Resource Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure log buckets",
+        "url": "https://docs.cloud.google.com/logging/docs/buckets"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-08",
+      "section": "3.2",
+      "statement": "Organization Policy Service can suspend existing resources outside a new allowed-location policy.",
+      "answer": false,
+      "explanation": "The resource locations constraint applies to new resource creation. Resources created before the policy remain in place and continue operating, so existing violations need separate remediation.",
+      "misconception": "A newly enforced resource location constraint suspends previously deployed resources outside the allowed locations.",
+      "factKey": "resource-location-constraint-existing-resources",
+      "topic": "Data residency enforcement",
+      "tags": [
+        "Organization Policy Service"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict resource locations",
+        "url": "https://docs.cloud.google.com/organization-policy/restrict-locations"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-09",
+      "section": "3.2",
+      "statement": "Signing Google's HIPAA BAA transfers evaluation of the customer's application compliance to Google.",
+      "answer": false,
+      "explanation": "Google's BAA supports HIPAA compliance, while the customer evaluates its own compliance and secures its environment and applications.",
+      "misconception": "Google takes over evaluating the customer's application compliance after signing the HIPAA BAA.",
+      "factKey": "hipaa-baa-customer-compliance-evaluation",
+      "topic": "HIPAA customer obligations",
+      "tags": [
+        "Google Cloud"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "HIPAA compliance on Google Cloud and Google Workspace",
+        "url": "https://docs.cloud.google.com/docs/security/compliance/hipaa"
+      }
+    },
+    {
+      "id": "gcp-pca-s3.2-10",
+      "section": "3.2",
+      "statement": "Customers can obtain Google's core SOC 2 Type II reports through Compliance Reports Manager.",
+      "answer": true,
+      "explanation": "Google makes core SOC 2 Type II reports available through Compliance Reports Manager. These reports provide third-party evidence about Google's controls during the audit period.",
+      "misconception": "",
+      "factKey": "soc2-compliance-reports-manager",
+      "topic": "Third-party audit evidence",
+      "tags": [
+        "Compliance Reports Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SOC 2: compliance",
+        "url": "https://cloud.google.com/security/compliance/soc-2"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-01",
+      "section": "4.1",
+      "statement": "Cloud Build private pool workers can run inside the customer's VPC network used for private access.",
+      "answer": false,
+      "explanation": "Cloud Build hosts private pool workers in a Google-owned service producer network. A peering connection gives those workers access to the customer's private resources.",
+      "misconception": "Private access places private pool workers inside the customer's VPC network.",
+      "factKey": "cloud-build-private-pool-network-access",
+      "topic": "Build network boundaries",
+      "tags": [
+        "Cloud Build"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Private pools overview",
+        "url": "https://docs.cloud.google.com/build/docs/private-pools/private-pools-overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-02",
+      "section": "4.1",
+      "statement": "Artifact Registry cleanup policies can delete an artifact matching both a keep policy and a delete policy.",
+      "answer": false,
+      "explanation": "Artifact Registry keeps artifacts that match both a cleanup keep policy and a delete policy. Keep-policy precedence protects designated artifacts from broader cleanup rules.",
+      "misconception": "A matching delete policy takes precedence over a cleanup keep policy.",
+      "factKey": "artifact-registry-cleanup-keep-precedence",
+      "topic": "Artifact retention controls",
+      "tags": [
+        "Artifact Registry"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Configure cleanup policies",
+        "url": "https://docs.cloud.google.com/artifact-registry/docs/repositories/cleanup-policy"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-03",
+      "section": "4.1",
+      "statement": "Cloud Deploy promotes the same release through the ordered deployment targets in a delivery pipeline.",
+      "answer": true,
+      "explanation": "A Cloud Deploy pipeline defines the promotion sequence. Promoting a release creates a rollout for its destination target, keeping that release's delivery coordinated across environments.",
+      "misconception": "",
+      "factKey": "cloud-deploy-delivery-target-order",
+      "topic": "Delivery pipeline progression",
+      "tags": [
+        "Cloud Deploy"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of Cloud Deploy",
+        "url": "https://docs.cloud.google.com/deploy/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-04",
+      "section": "4.1",
+      "statement": "Cloud Deploy carries a staging rollout's approval forward to a production target that requires approval.",
+      "answer": false,
+      "explanation": "Cloud Deploy approvals authorize a rollout to a specific target. A later rollout into an approval-protected production target needs its own approval.",
+      "misconception": "Approval of a release in staging authorizes its later production rollout.",
+      "factKey": "cloud-deploy-target-approval-boundary",
+      "topic": "Deployment approval scope",
+      "tags": [
+        "Cloud Deploy"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Promote your release and manage approvals",
+        "url": "https://docs.cloud.google.com/deploy/docs/promote-release"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-05",
+      "section": "4.1",
+      "statement": "Teams select a Secure Source Manager instance's region to control where that instance hosts repositories.",
+      "answer": true,
+      "explanation": "Secure Source Manager hosts repositories within a regionally deployed instance. Architects select the instance's region when repository placement is a requirement.",
+      "misconception": "",
+      "factKey": "secure-source-manager-regional-repositories",
+      "topic": "Repository regional placement",
+      "tags": [
+        "Secure Source Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Secure Source Manager overview",
+        "url": "https://docs.cloud.google.com/secure-source-manager/docs/overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-06",
+      "section": "4.1",
+      "statement": "Infrastructure Manager previews can show planned deletions before a team applies a Terraform update.",
+      "answer": true,
+      "explanation": "Infrastructure Manager executes a Terraform plan for a preview. Teams review the intended resource changes before they authorize provisioning or deletion.",
+      "misconception": "",
+      "factKey": "infrastructure-manager-preview-change-review",
+      "topic": "Infrastructure change review",
+      "tags": [
+        "Infrastructure Manager",
+        "Terraform"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Preview a deployment",
+        "url": "https://docs.cloud.google.com/infrastructure-manager/docs/preview-deployment"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-07",
+      "section": "4.1",
+      "statement": "Service Catalog stores a user's Terraform deployment state in the catalog administrator's project.",
+      "answer": false,
+      "explanation": "Service Catalog's Terraform deployment state is created and stored in the project where the user deploys the configuration. Sharing the configuration leaves that state in the consuming project.",
+      "misconception": "Shared Terraform solutions centralize consuming users' deployment state in the catalog project.",
+      "factKey": "service-catalog-terraform-state-project",
+      "topic": "Provisioning state ownership",
+      "tags": [
+        "Service Catalog",
+        "Terraform"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Creating a Terraform configuration",
+        "url": "https://docs.cloud.google.com/service-catalog/docs/terraform-configuration"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-08",
+      "section": "4.1",
+      "statement": "Google recommends focusing incident postmortems on processes, tools, and technologies that contribute to failures.",
+      "answer": true,
+      "explanation": "Google's postmortem guidance examines the system behind an incident rather than assigning blame. This helps teams identify changes that prevent a recurrence.",
+      "misconception": "",
+      "factKey": "blameless-postmortem-systemic-cause-focus",
+      "topic": "Postmortem causal analysis",
+      "tags": [
+        "Google Cloud Well-Architected Framework"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Conduct thorough postmortems",
+        "url": "https://docs.cloud.google.com/architecture/framework/reliability/conduct-postmortems"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-09",
+      "section": "4.1",
+      "statement": "Google recommends using file-level restoration checks in place of tests of the recovered application stack.",
+      "answer": false,
+      "explanation": "Google's recovery guidance includes testing the application stack and critical infrastructure with restored data. File restoration alone does not establish that the application works.",
+      "misconception": "Checking restored files validates application recovery in place of tests using the restored data.",
+      "factKey": "dr-testing-data-restoration-validation",
+      "topic": "Recovery test validation",
+      "tags": [
+        "Google Cloud Well-Architected Framework"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Perform testing for recovery from data loss",
+        "url": "https://docs.cloud.google.com/architecture/framework/reliability/perform-testing-for-recovery-from-data-loss"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.1-10",
+      "section": "4.1",
+      "statement": "Google recommends hosting CD tools and deployment artifacts so they remain operational during a disaster.",
+      "answer": true,
+      "explanation": "Google's DR planning guidance treats the CD environment and artifacts as recovery dependencies. Their hosting design needs to preserve availability and operation when disaster strikes.",
+      "misconception": "",
+      "factKey": "dr-cd-toolchain-artifact-availability",
+      "topic": "Recovery deployment dependencies",
+      "tags": [],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Disaster recovery planning guide",
+        "url": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-01",
+      "section": "4.2",
+      "statement": "The Well-Architected Framework says sole-tenant node costs can qualify as capital expenditure.",
+      "answer": true,
+      "explanation": "The cost pillar lists Compute Engine sole-tenant nodes as a service whose costs might receive capital-expenditure treatment.",
+      "misconception": "",
+      "factKey": "sole-tenant-capex-classification",
+      "topic": "Cloud accounting exceptions",
+      "tags": [
+        "Compute Engine",
+        "Google Cloud Well-Architected Framework"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Accounting guidance for sole-tenant node payments can change.",
+      "source": {
+        "title": "Well-Architected Framework: Cost optimization pillar",
+        "url": "https://docs.cloud.google.com/architecture/framework/cost-optimization"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-02",
+      "section": "4.2",
+      "statement": "Compute Engine's idle VM recommender can treat low CPU usage as sufficient evidence of inactivity.",
+      "answer": false,
+      "explanation": "Compute Engine evaluates CPU and network activity when identifying idle VMs. Low CPU usage alone leaves the network evidence unaccounted for.",
+      "misconception": "The idle VM recommender treats low CPU utilization as sufficient to establish inactivity.",
+      "factKey": "recommender-idle-vm-usage-evidence",
+      "topic": "Compute recommendation evidence",
+      "tags": [
+        "Compute Engine",
+        "Recommender"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Idle VM recommendations",
+        "url": "https://docs.cloud.google.com/compute/docs/instances/idle-vm-recommendations-overview"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-03",
+      "section": "4.2",
+      "statement": "Compute Engine bases machine type recommendations on peak CPU utilization rather than sampled averages.",
+      "answer": false,
+      "explanation": "Compute Engine uses averaged CPU metrics for machine type recommendations. Short bursts can be missed, so a recommended smaller VM may lack needed burst capacity.",
+      "misconception": "Machine type recommendations capture peak CPU demand rather than relying on interval averages.",
+      "factKey": "recommender-machine-type-utilization-history",
+      "topic": "Compute recommendation evidence",
+      "tags": [
+        "Compute Engine",
+        "Recommender"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Apply machine type recommendations to VM instances",
+        "url": "https://docs.cloud.google.com/compute/docs/instances/apply-machine-type-recommendations-for-instances"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-04",
+      "section": "4.2",
+      "statement": "Cloud Billing's detailed usage cost export can directly attribute Compute Engine charges to individual VM resources.",
+      "answer": true,
+      "explanation": "The detailed Cloud Billing export adds resource-level cost data. Teams use the VM identity in eligible usage records to investigate which instance drives spending.",
+      "misconception": "",
+      "factKey": "billing-export-resource-level-detail",
+      "topic": "Resource cost attribution",
+      "tags": [
+        "Cloud Billing",
+        "BigQuery",
+        "Compute Engine"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Export Cloud Billing data to BigQuery",
+        "url": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-05",
+      "section": "4.2",
+      "statement": "Cloud Billing groups late-reported usage into the invoice for the month in which that usage occurs.",
+      "answer": false,
+      "explanation": "Late-reported Cloud Billing usage can appear on a later invoice. Invoice-month data is the basis for invoice reconciliation, while usage timestamps track when consumption occurs.",
+      "misconception": "The usage month and invoice month coincide for late-reported usage.",
+      "factKey": "billing-export-late-cost-adjustments",
+      "topic": "Billing period reconciliation",
+      "tags": [
+        "Cloud Billing",
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Structure of Detailed data export",
+        "url": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-tables/detailed-usage"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-06",
+      "section": "4.2",
+      "statement": "Cloud Billing automatically associates a resource label with usage incurred after the label is applied.",
+      "answer": true,
+      "explanation": "Cloud Billing records cost labels from the time a resource receives them. Earlier usage retains its earlier attribution, so labels need to be in place before the period being analyzed.",
+      "misconception": "",
+      "factKey": "billing-labels-nonretroactive-allocation",
+      "topic": "Label cost attribution",
+      "tags": [
+        "Cloud Billing"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Structure of Detailed data export",
+        "url": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-tables/detailed-usage"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-07",
+      "section": "4.2",
+      "statement": "Cloud Billing pauses spend-based commitment fees when eligible workloads stop using the committed resources.",
+      "answer": false,
+      "explanation": "A spend-based commitment obligates payment for its term despite lower usage. Reducing workload consumption leaves the agreed commitment payment in force.",
+      "misconception": "Stopping eligible workloads pauses the fees for a spend-based commitment.",
+      "factKey": "cud-unused-commitment-charges",
+      "topic": "Commitment utilization risk",
+      "tags": [
+        "Cloud Billing",
+        "Committed use discounts"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Spend-based committed use discounts",
+        "url": "https://docs.cloud.google.com/docs/cuds-multiprice"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-08",
+      "section": "4.2",
+      "statement": "Cloud Billing bases its initial CUD recommendations on an organization's submitted growth forecasts.",
+      "answer": false,
+      "explanation": "Cloud Billing generates initial CUD recommendations from historical and recent usage. An architect compares that evidence with future plans before purchasing a commitment.",
+      "misconception": "Initial CUD recommendations derive commitment quantities from submitted business growth forecasts.",
+      "factKey": "cud-recommendation-historical-usage",
+      "topic": "Commitment sizing evidence",
+      "tags": [
+        "Cloud Billing",
+        "Recommender"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Get recommendations for committed use discounts (CUDs)",
+        "url": "https://docs.cloud.google.com/docs/cuds-recommender"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-09",
+      "section": "4.2",
+      "statement": "The Well-Architected Framework recommends tailoring cost reports to the team that receives them.",
+      "answer": true,
+      "explanation": "Google recommends audience-specific cost reports that give teams relevant, actionable spending information. This helps teams manage costs without excessive reporting detail.",
+      "misconception": "",
+      "factKey": "finops-cost-information-team-access",
+      "topic": "Team cost visibility",
+      "tags": [
+        "Google Cloud Well-Architected Framework",
+        "Cloud Billing"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Foster a culture of cost awareness",
+        "url": "https://docs.cloud.google.com/architecture/framework/cost-optimization/foster-culture-cost-awareness"
+      }
+    },
+    {
+      "id": "gcp-pca-s4.2-10",
+      "section": "4.2",
+      "statement": "The Well-Architected Framework recommends learning from cloud experiments as part of operational improvement.",
+      "answer": true,
+      "explanation": "Google's operational excellence guidance encourages teams to experiment with tools and technologies and share what they learn. It treats ongoing cloud skill development as part of operational improvement.",
+      "misconception": "",
+      "factKey": "op-excellence-continuous-learning-experimentation",
+      "topic": "Operational team learning",
+      "tags": [
+        "Google Cloud Well-Architected Framework"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Continuously improve and innovate",
+        "url": "https://docs.cloud.google.com/architecture/framework/operational-excellence/continuously-improve-and-innovate"
+      }
+    }
+  ]
+}
