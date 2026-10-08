@@ -1,0 +1,869 @@
+{
+  "deck": "gcp-pde",
+  "block": "b4",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced factKey bigquery-batch-priority-query-price in 5.3 with bigquery-batch-priority-execution-parity: no current official page states that batch and interactive queries cost the same, so the card tests the documented behaviour instead (batch priority changes queuing, and a started batch query runs the same as an interactive one, per the Run a query page). Card 5.5-07 tests the single-cluster side of the routing trade-off under the planned factKey bigtable-multicluster-read-your-writes, and 5.5-01 tests regional placement under dataflow-automatic-zone-selection. Checker pass 2026-10-08: rewrote 4.3-01 (dataset listings only), 4.3-05 (Marketplace-integrated listings only), 5.1-02 (per-user wording gave the answer away; now tests on-demand scope, factKey bigquery-custom-quota-on-demand-scope), 5.1-05, 5.1-09 (catchup on re-enable instead of the definition), 5.3-07 (old false version was arguable via the source-without-timestamp exception; now tests maximum versus average, factKey dataflow-system-latency-maximum), 5.3-08, 5.3-09 (factKey monitoring-retest-window-every-value), 5.5-01 (hedged, factKey dataflow-regional-placement-zone-failure), 5.5-07 (factKey bigtable-single-cluster-read-your-writes), and explanations of 5.1-04 and 5.5-10.",
+  "cards": [
+    {
+      "id": "gcp-pde-s4.3-01",
+      "section": "4.3",
+      "statement": "A BigQuery sharing dataset subscription creates a linked dataset that reads the publisher's tables in place.",
+      "answer": true,
+      "explanation": "A linked dataset is a read-only pointer to the publisher's shared dataset. Subscribers query its current tables and views from their own project while BigQuery replicates no data.",
+      "misconception": "",
+      "factKey": "sharing-linked-dataset-live-access",
+      "topic": "BigQuery sharing",
+      "tags": [
+        "BigQuery sharing",
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Introduction to BigQuery sharing",
+        "url": "https://docs.cloud.google.com/bigquery/docs/analytics-hub-introduction"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-02",
+      "section": "4.3",
+      "statement": "The Analytics Hub Viewer role lets a user subscribe to a BigQuery sharing listing and create its linked dataset.",
+      "answer": false,
+      "explanation": "Analytics Hub Viewer lets a user browse the exchanges and listings they can see. Subscribing needs the Analytics Hub Subscriber role, or the user requests access from the publisher.",
+      "misconception": "Permission to browse a listing also includes permission to subscribe to it.",
+      "factKey": "sharing-viewer-subscription-permission",
+      "topic": "BigQuery sharing",
+      "tags": [
+        "BigQuery sharing",
+        "Analytics Hub Viewer"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Introduction to BigQuery sharing",
+        "url": "https://docs.cloud.google.com/bigquery/docs/analytics-hub-introduction"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-03",
+      "section": "4.3",
+      "statement": "BigQuery sharing egress restrictions let a publisher block subscribers from copying or exporting linked dataset tables.",
+      "answer": true,
+      "explanation": "With data egress restricted on a listing, copy, clone, export and snapshot operations are unavailable, and so are writes to destination tables. Publishers can also restrict query results.",
+      "misconception": "",
+      "factKey": "sharing-publisher-egress-controls",
+      "topic": "BigQuery sharing",
+      "tags": [
+        "BigQuery sharing",
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Introduction to BigQuery sharing",
+        "url": "https://docs.cloud.google.com/bigquery/docs/analytics-hub-introduction"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-04",
+      "section": "4.3",
+      "statement": "BigQuery sharing lets a publisher delete a Pub/Sub topic listing while its linked subscriptions remain active.",
+      "answer": false,
+      "explanation": "A listing with a shared Pub/Sub topic and active subscriptions cannot be deleted. The publisher first revokes them, which detaches each linked Pub/Sub subscription from the shared topic.",
+      "misconception": "Deleting a shared topic listing cleans up its active subscriber subscriptions automatically.",
+      "factKey": "sharing-pubsub-subscription-cleanup",
+      "topic": "Stream sharing",
+      "tags": [
+        "BigQuery sharing",
+        "Pub/Sub"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Stream sharing with Pub/Sub",
+        "url": "https://docs.cloud.google.com/bigquery/docs/analytics-hub-stream-sharing"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-05",
+      "section": "4.3",
+      "statement": "Active Cloud Marketplace orders govern linked dataset access for Marketplace-integrated BigQuery sharing listings.",
+      "answer": true,
+      "explanation": "Subscribing to a Cloud Marketplace-integrated listing creates a linked resource in the subscriber project, and active Cloud Marketplace orders then manage access to it.",
+      "misconception": "",
+      "factKey": "sharing-marketplace-commercial-listings",
+      "topic": "Commercial data listings",
+      "tags": [
+        "BigQuery sharing",
+        "Google Cloud Marketplace"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Commercialize listings on Google Cloud Marketplace",
+        "url": "https://docs.cloud.google.com/bigquery/docs/analytics-hub-cloud-marketplace"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-06",
+      "section": "4.3",
+      "statement": "BigQuery rejects an aggregation threshold query in a data clean room when one result group has too few privacy units.",
+      "answer": false,
+      "explanation": "Under the aggregation threshold analysis rule, BigQuery omits groups whose distinct privacy unit count falls below the threshold. The query still returns the groups that meet it.",
+      "misconception": "A single group under the threshold makes the whole aggregation query fail.",
+      "factKey": "clean-room-aggregation-threshold-output",
+      "topic": "Data clean rooms",
+      "tags": [
+        "BigQuery",
+        "BigQuery data clean rooms"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Restrict data access using analysis rules",
+        "url": "https://docs.cloud.google.com/bigquery/docs/analysis-rules"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-07",
+      "section": "4.3",
+      "statement": "BigQuery query templates hide the template's routine definition from data clean room subscribers.",
+      "answer": true,
+      "explanation": "Query templates share approved table-valued functions. Subscribers run only the approved queries and see the table input parameter, while the routine definition stays hidden.",
+      "misconception": "",
+      "factKey": "clean-room-query-template-constraints",
+      "topic": "Data clean rooms",
+      "tags": [
+        "BigQuery",
+        "BigQuery data clean rooms"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use query templates",
+        "url": "https://docs.cloud.google.com/bigquery/docs/query-templates"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-08",
+      "section": "4.3",
+      "statement": "A BigQuery authorized dataset gives views created in it later access to the shared dataset's tables.",
+      "answer": true,
+      "explanation": "Authorizing a dataset covers its current and future views. A user who can query a view in that dataset reads the shared tables through it without access to the shared dataset.",
+      "misconception": "",
+      "factKey": "authorized-dataset-future-view-trust",
+      "topic": "Cross-team sharing",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Authorized datasets",
+        "url": "https://docs.cloud.google.com/bigquery/docs/authorized-datasets"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-09",
+      "section": "4.3",
+      "statement": "Data Studio checks a report viewer's own dataset access when a data source uses owner's credentials.",
+      "answer": false,
+      "explanation": "Owner's credentials authorize data access with the data source owner's account, so viewers need no dataset access of their own. Viewer's credentials make every viewer use their own access.",
+      "misconception": "Owner's credentials still check each viewer's own access to the dataset.",
+      "factKey": "data-studio-viewer-credential-scope",
+      "topic": "Report data access",
+      "tags": [
+        "Data Studio",
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data credentials",
+        "url": "https://docs.cloud.google.com/data-studio/data-credentials"
+      }
+    },
+    {
+      "id": "gcp-pde-s4.3-10",
+      "section": "4.3",
+      "statement": "The publishing project pays the query charges when users query a BigQuery public dataset.",
+      "answer": false,
+      "explanation": "Google pays to store BigQuery public datasets. Each query is billed to the project that runs the job, subject to the monthly on-demand free tier.",
+      "misconception": "Public dataset queries are billed to the provider rather than to the querying project.",
+      "factKey": "public-dataset-query-billing",
+      "topic": "Public datasets",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "BigQuery public datasets",
+        "url": "https://docs.cloud.google.com/bigquery/public-data"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-01",
+      "section": "5.1",
+      "statement": "BigQuery capacity-based compute pricing bills each query for the number of bytes that the query processes.",
+      "answer": false,
+      "explanation": "Capacity pricing charges for compute capacity, measured in slots over time. On-demand pricing is the model that bills the bytes each query processes.",
+      "misconception": "Both BigQuery compute pricing models meter queries by bytes processed.",
+      "factKey": "bigquery-compute-meter-selection",
+      "topic": "BigQuery compute pricing",
+      "tags": [
+        "BigQuery",
+        "BigQuery editions"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "BigQuery pricing",
+        "url": "https://cloud.google.com/bigquery/pricing"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-02",
+      "section": "5.1",
+      "statement": "BigQuery custom query quotas cap on-demand usage, while queries that run on reservation slots fall outside them.",
+      "answer": true,
+      "explanation": "Custom quotas limit data processed per day at project or user level, and these query usage quotas apply only to the on-demand pricing model.",
+      "misconception": "",
+      "factKey": "bigquery-custom-quota-on-demand-scope",
+      "topic": "Query cost controls",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create custom query quotas",
+        "url": "https://docs.cloud.google.com/bigquery/docs/custom-quotas"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-03",
+      "section": "5.1",
+      "statement": "A workflow template's cluster selector deletes its chosen Managed Service for Apache Spark cluster after the workflow.",
+      "answer": false,
+      "explanation": "A cluster selector runs the workflow on an existing cluster that matches its labels, and that cluster persists. A managed cluster is the option that the workflow creates and then deletes.",
+      "misconception": "Cluster selectors give existing clusters the same ephemeral lifecycle as managed clusters.",
+      "factKey": "spark-workflow-managed-cluster-lifecycle",
+      "topic": "Spark cluster lifecycle",
+      "tags": [
+        "Managed Service for Apache Spark"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Overview of Managed Service for Apache Spark Workflow Templates",
+        "url": "https://docs.cloud.google.com/dataproc/docs/concepts/workflows/overview"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-04",
+      "section": "5.1",
+      "statement": "Managed Service for Apache Spark autoscaling adds workers when on-cluster HDFS utilization runs high.",
+      "answer": false,
+      "explanation": "Autoscaling acts on YARN metrics (memory by default, optionally cores). Google says it is not intended for scaling on-cluster HDFS, because HDFS utilization is not an autoscaling signal.",
+      "misconception": "HDFS storage pressure triggers cluster autoscaling.",
+      "factKey": "spark-autoscaling-hdfs-capacity-signal",
+      "topic": "Spark cluster autoscaling",
+      "tags": [
+        "Managed Service for Apache Spark"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Autoscale clusters",
+        "url": "https://docs.cloud.google.com/dataproc/docs/concepts/configuring-clusters/autoscaling"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-05",
+      "section": "5.1",
+      "statement": "After Spot preemption, Compute Engine reprovisions a Managed Service for Apache Spark cluster's secondary workers.",
+      "answer": true,
+      "explanation": "When Spot VMs are preempted, the secondary worker group can run at reduced capacity until Compute Engine reprovisions them. Secondary workers are processing-only and store no data.",
+      "misconception": "",
+      "factKey": "spark-spot-secondary-worker-tolerance",
+      "topic": "Spark worker capacity",
+      "tags": [
+        "Managed Service for Apache Spark",
+        "Spot VMs"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managed Service for Apache Spark secondary workers",
+        "url": "https://docs.cloud.google.com/dataproc/docs/concepts/compute/secondary-vms"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-06",
+      "section": "5.1",
+      "statement": "In Managed Airflow, a deferred task keeps its worker slot occupied until the trigger it waits on fires.",
+      "answer": false,
+      "explanation": "While a deferrable operator waits, a trigger in the environment's triggerer monitors the job and no worker slot is occupied. Deferrable mode needs at least one triggerer.",
+      "misconception": "Deferring a task still ties up its worker slot.",
+      "factKey": "airflow-deferrable-worker-slots",
+      "topic": "Airflow DAG design",
+      "tags": [
+        "Managed Airflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use deferrable operators in Airflow DAGs",
+        "url": "https://docs.cloud.google.com/composer/docs/composer-3/use-deferrable-operators"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-07",
+      "section": "5.1",
+      "statement": "In Apache Airflow, the default XCom backend stores the values that tasks push in object storage.",
+      "answer": false,
+      "explanation": "Airflow's default XCom backend stores values in the Airflow metadata database, so XComs suit small amounts of data. Large values such as dataframes call for another path, such as an object storage backend.",
+      "misconception": "XComs are stored in object storage by default and suit large payloads.",
+      "factKey": "airflow-xcom-small-metadata",
+      "topic": "Airflow DAG design",
+      "tags": [
+        "Apache Airflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "XComs",
+        "url": "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/xcoms.html"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-08",
+      "section": "5.1",
+      "statement": "In Apache Airflow, best practice has tasks write with UPSERT rather than INSERT so a rerun adds no duplicates.",
+      "answer": true,
+      "explanation": "Airflow guidance treats tasks like database transactions. Because a rerun with INSERT can duplicate rows, idempotent tasks use UPSERT and work on the partition for their data interval.",
+      "misconception": "",
+      "factKey": "airflow-idempotent-task-boundaries",
+      "topic": "Airflow DAG design",
+      "tags": [
+        "Apache Airflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Best Practices",
+        "url": "https://airflow.apache.org/docs/apache-airflow/stable/best-practices.html"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-09",
+      "section": "5.1",
+      "statement": "In Apache Airflow, unpausing a DAG with catchup on creates runs for the intervals missed while it was paused.",
+      "answer": true,
+      "explanation": "Catchup also triggers when a DAG is turned off for a period and then re-enabled: the scheduler creates a run for each data interval not yet run. Backfill reruns a chosen past period.",
+      "misconception": "",
+      "factKey": "airflow-catchup-missed-intervals",
+      "topic": "Airflow scheduling",
+      "tags": [
+        "Apache Airflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Dag Runs",
+        "url": "https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dag-run.html"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.1-10",
+      "section": "5.1",
+      "statement": "BigQuery scheduled queries can authenticate as a service account instead of the user who created them.",
+      "answer": true,
+      "explanation": "A scheduled query runs with user credentials or as a service account, chosen at creation or updated later. Users signed in with a federated identity need a service account.",
+      "misconception": "",
+      "factKey": "bigquery-scheduled-query-run-identity",
+      "topic": "Scheduled queries",
+      "tags": [
+        "BigQuery",
+        "BigQuery Data Transfer Service"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Scheduling queries",
+        "url": "https://docs.cloud.google.com/bigquery/docs/scheduling-queries"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-01",
+      "section": "5.3",
+      "statement": "BigQuery lets a folder's reservation assignment override a project's own assignment within that folder.",
+      "answer": false,
+      "explanation": "A project uses its single most specific reservation assignment. A project assignment overrides a folder assignment, which overrides an organization assignment.",
+      "misconception": "Higher levels of the resource hierarchy take precedence over project assignments.",
+      "factKey": "bigquery-assignment-hierarchy-precedence",
+      "topic": "BigQuery reservations",
+      "tags": [
+        "BigQuery",
+        "BigQuery editions"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand reservations",
+        "url": "https://docs.cloud.google.com/bigquery/docs/reservations-workload-management"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-02",
+      "section": "5.3",
+      "statement": "BigQuery charges for a reservation's baseline slots even during periods when no queries use them.",
+      "answer": true,
+      "explanation": "Baseline slots are always allocated to the reservation and always charged. Autoscaling slots add capacity above the baseline and are charged for the slots scaled up.",
+      "misconception": "",
+      "factKey": "bigquery-baseline-minimum-capacity",
+      "topic": "BigQuery reservations",
+      "tags": [
+        "BigQuery",
+        "BigQuery editions"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand slots",
+        "url": "https://docs.cloud.google.com/bigquery/docs/slots-autoscaling-intro"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-03",
+      "section": "5.3",
+      "statement": "BigQuery shares idle slots between reservations in different administration projects of one organization.",
+      "answer": false,
+      "explanation": "Idle slot capacity stays within one administration project and one region. Reservations in separate administration projects, or in separate organizations, do not share idle slots.",
+      "misconception": "Idle slots flow freely between all reservations of an organization.",
+      "factKey": "bigquery-idle-slot-sharing-region-scope",
+      "topic": "BigQuery reservations",
+      "tags": [
+        "BigQuery",
+        "BigQuery editions"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand reservations",
+        "url": "https://docs.cloud.google.com/bigquery/docs/reservations-workload-management"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-04",
+      "section": "5.3",
+      "statement": "BigQuery lets an administrator create an autoscaling reservation before purchasing any slot commitment.",
+      "answer": true,
+      "explanation": "Slot commitments are optional for autoscaling reservations. They give a discounted rate for consistently used slots, so buying one is a cost decision rather than a prerequisite.",
+      "misconception": "",
+      "factKey": "bigquery-capacity-commitment-optionality",
+      "topic": "BigQuery reservations",
+      "tags": [
+        "BigQuery",
+        "BigQuery editions"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Understand slots",
+        "url": "https://docs.cloud.google.com/bigquery/docs/slots-autoscaling-intro"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-05",
+      "section": "5.3",
+      "statement": "BigQuery gives a batch-priority query fewer slots than an interactive query once it starts running.",
+      "answer": false,
+      "explanation": "Batch priority affects queuing: batch queries are more likely to wait when compute is fully used. After a batch query starts, it runs the same as an interactive query.",
+      "misconception": "Batch priority throttles a query while it executes.",
+      "factKey": "bigquery-batch-priority-execution-parity",
+      "topic": "Query priority",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Run a query",
+        "url": "https://docs.cloud.google.com/bigquery/docs/running-queries"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-06",
+      "section": "5.3",
+      "statement": "In INFORMATION_SCHEMA.JOBS, a script's parent job reports slot usage that includes its child jobs.",
+      "answer": true,
+      "explanation": "A multi-statement script job summarizes the values of its child jobs. Slot and cost analyses exclude the SCRIPT statement type to avoid counting total_slot_ms twice.",
+      "misconception": "",
+      "factKey": "bigquery-job-total-slot-ms",
+      "topic": "Job monitoring",
+      "tags": [
+        "BigQuery",
+        "INFORMATION_SCHEMA.JOBS"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "JOBS view",
+        "url": "https://docs.cloud.google.com/bigquery/docs/information-schema-jobs"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-07",
+      "section": "5.3",
+      "statement": "Dataflow streaming system latency reports the average time that data items have spent processing or waiting.",
+      "answer": false,
+      "explanation": "System latency is the current maximum time that any data item has been processing or awaiting processing, including time spent waiting inside a source.",
+      "misconception": "System latency is an average across items rather than the longest wait of any item.",
+      "factKey": "dataflow-system-latency-maximum",
+      "topic": "Streaming job metrics",
+      "tags": [
+        "Dataflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Dataflow job metrics",
+        "url": "https://docs.cloud.google.com/dataflow/docs/guides/using-monitoring-intf"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-08",
+      "section": "5.3",
+      "statement": "Pub/Sub oldest unacknowledged message age that rises under a small, flat backlog suggests a few unprocessable messages.",
+      "answer": true,
+      "explanation": "When backlog size stays flat while its oldest unacknowledged message keeps aging, a few messages may be failing processing. Application logs show whether they crash the subscriber code.",
+      "misconception": "",
+      "factKey": "pubsub-small-backlog-old-message-age",
+      "topic": "Subscription backlog monitoring",
+      "tags": [
+        "Pub/Sub",
+        "Cloud Monitoring"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Monitor Pub/Sub in Cloud Monitoring",
+        "url": "https://docs.cloud.google.com/pubsub/docs/monitoring"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-09",
+      "section": "5.3",
+      "statement": "Cloud Monitoring meets a metric-threshold condition once most aligned values in its retest window violate the threshold.",
+      "answer": false,
+      "explanation": "For one time series, every aligned measurement in the retest window must violate the threshold, and a single non-violating value resets the window.",
+      "misconception": "A majority of violating values within the retest window is enough to meet the condition.",
+      "factKey": "monitoring-retest-window-every-value",
+      "topic": "Alerting policies",
+      "tags": [
+        "Cloud Monitoring"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Behavior of metric-based alerting policies",
+        "url": "https://docs.cloud.google.com/monitoring/alerts/concepts-indepth"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.3-10",
+      "section": "5.3",
+      "statement": "BigQuery forwards resource labels to Cloud Billing, so exported billing data can group charges by label.",
+      "answer": true,
+      "explanation": "Labels on BigQuery resources reach the billing system. Teams query the Cloud Billing export in BigQuery by label to break down charges by team, workload or environment.",
+      "misconception": "",
+      "factKey": "billing-export-label-cost-attribution",
+      "topic": "Cost attribution",
+      "tags": [
+        "BigQuery",
+        "Cloud Billing"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Introduction to labels",
+        "url": "https://docs.cloud.google.com/bigquery/docs/labels-intro"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-01",
+      "section": "5.5",
+      "statement": "With regional placement, Dataflow can ride out a zonal failure by recreating a job's workers in other zones.",
+      "answer": true,
+      "explanation": "Regional placement picks a zone for each worker at creation across the region's zones. It needs Streaming Engine or Dataflow Shuffle and covers worker VMs, not zonal backend resources.",
+      "misconception": "",
+      "factKey": "dataflow-regional-placement-zone-failure",
+      "topic": "Dataflow zone resilience",
+      "tags": [
+        "Dataflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Dataflow regions",
+        "url": "https://docs.cloud.google.com/dataflow/docs/concepts/regional-endpoints"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-02",
+      "section": "5.5",
+      "statement": "Dataflow can start a replacement streaming job from a snapshot in a different region from the snapshot.",
+      "answer": false,
+      "explanation": "Dataflow stores a snapshot in the job's region, and jobs created from it run in that same region. If the snapshot includes Pub/Sub sources, the new job seeks to those Pub/Sub snapshots.",
+      "misconception": "Dataflow snapshots can move a streaming job to another region.",
+      "factKey": "dataflow-snapshot-region-portability",
+      "topic": "Streaming job recovery",
+      "tags": [
+        "Dataflow",
+        "Pub/Sub"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Use Dataflow snapshots",
+        "url": "https://docs.cloud.google.com/dataflow/docs/guides/using-snapshots"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-03",
+      "section": "5.5",
+      "statement": "Pub/Sub can seek a new subscription to a snapshot taken from another subscription on the same topic.",
+      "answer": true,
+      "explanation": "A snapshot records a subscription's acknowledgment state plus later messages. Seeking another subscription on the topic to it copies that state, for example to replay after a bad deployment.",
+      "misconception": "",
+      "factKey": "pubsub-snapshot-cross-subscription-replay",
+      "topic": "Message replay",
+      "tags": [
+        "Pub/Sub"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replay and purge messages with seek",
+        "url": "https://docs.cloud.google.com/pubsub/docs/replay-overview"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-04",
+      "section": "5.5",
+      "statement": "BigQuery lets dataset owners query fail-safe data themselves once the table's time travel window has ended.",
+      "answer": false,
+      "explanation": "Fail-safe storage retains deleted data for emergency recovery, but users cannot query or recover it directly. Recovering data from fail-safe goes through Cloud Customer Care.",
+      "misconception": "Fail-safe extends time travel as another user-queryable window.",
+      "factKey": "bigquery-failsafe-user-access",
+      "topic": "BigQuery data recovery",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Data retention with time travel and fail-safe",
+        "url": "https://docs.cloud.google.com/bigquery/docs/time-travel"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-05",
+      "section": "5.5",
+      "statement": "A BigQuery table snapshot keeps a table's data available after the base table's time travel window passes.",
+      "answer": true,
+      "explanation": "A table snapshot persists until its own expiration, so it keeps a record longer than time travel allows. Snapshots are read-only; restoring one creates a standard table.",
+      "misconception": "",
+      "factKey": "bigquery-table-snapshot-retention-independence",
+      "topic": "BigQuery data recovery",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Introduction to table snapshots",
+        "url": "https://docs.cloud.google.com/bigquery/docs/table-snapshots-intro"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-06",
+      "section": "5.5",
+      "statement": "BigQuery managed disaster recovery can complete a soft failover while the primary region is offline.",
+      "answer": false,
+      "explanation": "A soft failover waits until committed changes replicate and needs both regions available. A hard failover promotes the secondary at once, even with the primary offline, and can lose data.",
+      "misconception": "Soft failover is the option for a primary region that is down.",
+      "factKey": "bigquery-disaster-soft-failover-data-loss",
+      "topic": "BigQuery disaster recovery",
+      "tags": [
+        "BigQuery"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managed disaster recovery",
+        "url": "https://docs.cloud.google.com/bigquery/docs/managed-disaster-recovery"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-07",
+      "section": "5.5",
+      "statement": "Bigtable gives read-your-writes consistency on a replicated instance when an app profile uses single-cluster routing.",
+      "answer": true,
+      "explanation": "Replication between Bigtable clusters is eventually consistent. Sending an application's reads and writes to one cluster gives read-your-writes consistency, while other clusters can lag behind.",
+      "misconception": "",
+      "factKey": "bigtable-single-cluster-read-your-writes",
+      "topic": "Bigtable replication consistency",
+      "tags": [
+        "Bigtable"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replication overview",
+        "url": "https://docs.cloud.google.com/bigtable/docs/replication-overview"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-08",
+      "section": "5.5",
+      "statement": "Spanner point-in-time recovery reverts an existing database in place to its state at an earlier timestamp.",
+      "answer": false,
+      "explanation": "To recover a whole Spanner database, engineers back up or export it at a past timestamp within the version retention period, then restore or import it into a new database.",
+      "misconception": "Point-in-time recovery rewinds the live database itself.",
+      "factKey": "spanner-pitr-postincident-backup",
+      "topic": "Spanner data recovery",
+      "tags": [
+        "Spanner"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Point-in-time recovery (PITR) overview",
+        "url": "https://docs.cloud.google.com/spanner/docs/pitr"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-09",
+      "section": "5.5",
+      "statement": "A Cloud SQL for MySQL replica that an engineer promotes before replication lag reaches zero can miss transactions.",
+      "answer": true,
+      "explanation": "Google advises stopping writes and waiting for replication lag to reach zero before promotion. A replica promoted earlier can lack transactions committed on the primary.",
+      "misconception": "",
+      "factKey": "cloudsql-replica-promotion-replication-lag",
+      "topic": "Replica promotion",
+      "tags": [
+        "Cloud SQL for MySQL"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Manage read replicas",
+        "url": "https://docs.cloud.google.com/sql/docs/mysql/replication/manage-replicas"
+      }
+    },
+    {
+      "id": "gcp-pde-s5.5-10",
+      "section": "5.5",
+      "statement": "Loading a Managed Airflow snapshot applies the saved scale and networking settings to the target environment.",
+      "answer": false,
+      "explanation": "Managed Airflow (formerly Cloud Composer) loads configuration overrides, environment variables, PyPI packages, the Airflow database and the dags, data and plugins folders. Scale and networking stay unchanged.",
+      "misconception": "A snapshot load reproduces the source environment's infrastructure configuration.",
+      "factKey": "airflow-environment-snapshot-contents",
+      "topic": "Airflow environment recovery",
+      "tags": [
+        "Managed Airflow"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Save and load environment snapshots",
+        "url": "https://docs.cloud.google.com/composer/docs/composer-3/save-load-snapshots"
+      }
+    }
+  ]
+}
