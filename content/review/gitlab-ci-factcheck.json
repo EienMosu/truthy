@@ -1,0 +1,1080 @@
+{
+ "deck": "gitlab-ci",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr1-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://docs.gitlab.com/ci/jobs/#job-names), official, current",
+     "evidence": "https://docs.gitlab.com/ci/jobs/#job-names lists the reserved names: \"image, services, stages, before_script, after_script, variables, cache, include\". The same section says: \"If multiple jobs have the same name in a file, only one is added to the pipeline, and it's difficult to predict which one is chosen.\"",
+     "problem": "The answer can be read from the wording. Any player who has seen a .gitlab-ci.yml knows `stages` is a top-level keyword, so \"GitLab reserves `stages` as a configuration keyword\" is close to a truism: it follows from what `stages` already is and teaches nothing that decides whether a pipeline works. The phrase \"when developers choose job names\" is also awkward. The section scope names a more useful fact that no card in the deck tests yet: what happens to duplicate job names in one file.",
+     "suggestedFix": "Replace and keep the answer True. Statement: \"If one file defines two jobs with the same name, GitLab adds only one of them to the pipeline.\" Explanation: \"GitLab keeps just one of the same-named jobs, and the docs warn that it is hard to predict which one, so give each job in a file a unique name.\" factKey: duplicate-job-name-single-job. Source: https://docs.gitlab.com/ci/jobs/#job-names"
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (6 true, 6 false). I opened /ci/yaml/, /ci/jobs/, /ci/pipelines/ and /ci/yaml/lint/ on 2026-10-08. All load and are official. Only sr1-11 is flagged.\n\nQuotes that settle the passing cards:\n- sr1-01: \"the order of keywords is not important unless otherwise specified\" (/ci/yaml/).\n- sr1-02: \"Default configuration does not merge with job configuration. If the job already has a keyword defined, the job keyword takes precedence\" (/ci/yaml/#default).\n- sr1-03: \"Global defaults are not passed to downstream pipelines\" (/ci/yaml/#default).\n- sr1-04: under inherit:variables, \"a list indicates which specific variables are inherited by that job\" (/ci/jobs/#control-the-inheritance-of-default-keywords-and-variables).\n- sr1-05: \"If `stages` is not defined ... the default pipeline stages are: .pre, build, test, deploy, .post\".\n- sr1-06: \"If a job does not specify a stage, the job is assigned the test stage.\" This sentence sits under the `stages` heading, so the #stages anchor is right.\n- sr1-07: \"Stages run in sequence, while the jobs in a stage run in parallel\" (/ci/pipelines/).\n- sr1-08: \"Jobs in the current stage are not stopped and continue to run\" (/ci/yaml/#stages). The statement's \"By default\" covers workflow:auto_cancel:on_job_failure, which sr2-11 tests separately.\n- sr1-09: \"If a pipeline contains only jobs in the .pre or .post stages, it does not run\".\n- sr1-10: Hide a job section, which says hidden jobs can be templates through extends or anchors (/ci/jobs/#hide-a-job).\n- sr1-12: \"The CI lint tool checks the syntax of GitLab CI/CD configuration, including configuration added with the includes keyword\" (/ci/yaml/lint/).\n\nMinor points, not flagged:\n- sr1-07 is the easiest card. Its hedge \"can ... when runners are available\" leans toward True. Its explanation's phrase \"share an execution level\" is not GitLab terminology; \"Stages run in sequence, while the jobs in a stage run in parallel\" would read better.\n- sr1-01 could be sharper as \"The order in which jobs appear in .gitlab-ci.yml decides which job of a stage starts first\". As written, an expert would still answer False.\n- sr1-05 has an explanation that only restates the statement.\n\nDuplicate check against r2 to r14 found no shared fact:\n- sr1-02 (default does not merge) is a separate fact from sr13-09 (extends replaces arrays) and sr6-01 (variable override).\n- sr1-04 (inherit:variables) is a separate fact from sr6-02 (variables: {}).\n- sr1-08 is a separate fact from sr2-11."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr2-04",
+     "verdict": "ambiguous",
+     "urlStatus": "200, loads (https://docs.gitlab.com/ci/jobs/job_execution/). Official and current, and it supports the default behaviour only.",
+     "evidence": "job_execution: \"Failure of these commands doesn't influence the overall job status\". The YAML reference (https://docs.gitlab.com/ci/yaml/#after_script) says the same: \"Don't affect the job's exit code. If the script section succeeds and the after_script times out or fails, the job exits with code 0\". But https://docs.gitlab.com/ci/runners/configure_runners/#ignore-errors-in-after_script says: \"By default, GitLab Runner ignores any errors that happen when after_script runs. To set the job to fail immediately on errors when after_script runs, set the AFTER_SCRIPT_IGNORE_ERRORS CI/CD variable to false.\" The runner source (gitlab-runner common/build.go) confirms this: when AfterScriptIgnoreErrors is false and the script succeeded, `err = afterScriptErr` and the job fails.",
+     "problem": "The statement has no 'by default'. Any job can set the documented CI/CD variable AFTER_SCRIPT_IGNORE_ERRORS: false, and then an after_script failure does fail a job whose script succeeded. An expert can defend True.",
+     "suggestedFix": "Answer stays false. Statement: \"By default, an `after_script` failure marks a job as failed even when its `script` section succeeded.\" Explanation: \"GitLab Runner ignores after_script errors by default, so the job keeps its script result. Setting the AFTER_SCRIPT_IGNORE_ERRORS variable to false lets an after_script error fail the job.\" Add https://docs.gitlab.com/ci/runners/configure_runners/#ignore-errors-in-after_script as the source, or keep job_execution and mention the variable."
+    },
+    {
+     "id": "gitlab-ci-sr2-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads (https://docs.gitlab.com/ci/yaml/#allow_failureexit_codes). Official, current, and it supports the card.",
+     "evidence": "\"The job is allow_failure: true for any of the listed exit codes, and allow_failure false for any other exit code.\" (https://docs.gitlab.com/ci/yaml/#allow_failureexit_codes)",
+     "problem": "Near-truism. If you list the exit codes that are allowed to fail, then other codes failing normally follows from the keyword itself. No learner who studied would answer False, and the explanation only restates the statement.",
+     "suggestedFix": "Replace with a true card on a section fact no other card covers (skipped jobs count as successful). Statement: \"GitLab treats a skipped job in an earlier stage as successful when it evaluates `when: on_success`.\" Explanation: \"For on_success and on_failure, skipped jobs in earlier stages, such as manual jobs nobody started, count as successful, so later jobs still run.\" Source: https://docs.gitlab.com/ci/yaml/#when (\"Skipped jobs in earlier stages, for example manual jobs that have not been started, are considered successful.\")."
+    },
+    {
+     "id": "gitlab-ci-sr2-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads (https://docs.gitlab.com/ci/jobs/job_control/#run-a-one-dimensional-matrix-of-parallel-jobs). Official, current, and it supports the card.",
+     "evidence": "\"To run a job multiple times in parallel in a single pipeline, but with different values for each instance of the job, use the parallel:matrix keyword\" (https://docs.gitlab.com/ci/jobs/job_control/#run-a-one-dimensional-matrix-of-parallel-jobs)",
+     "problem": "Definition card. The answer follows from the words 'parallel' and 'matrix' in the keyword name, which the prompt forbids. The section's CI_NODE_INDEX and CI_NODE_TOTAL facts are left untested.",
+     "suggestedFix": "Replace with a true card. Statement: \"GitLab sets `CI_NODE_TOTAL` to 1 for a job that omits the `parallel` keyword.\" Explanation: \"CI_NODE_TOTAL holds the number of parallel instances of a job; GitLab sets it to 1 for jobs that do not use parallel, so scripts can read it in any job.\" Source: https://docs.gitlab.com/ci/variables/predefined_variables/ (\"The total number of instances of this job running in parallel. Set to 1 if the job does not use parallel.\")."
+    }
+   ],
+   "notes": "Checked all 12 r2 cards (gitlab-ci-sr2-01 to -12, all in raw/gitlab-ci-b1.json). Live docs.gitlab.com pages were fetched with curl and compared with the master doc sources. Every source URL returns 200, and every anchor exists on the live page. The answer is 6 true and 6 false, and the fixes keep that.\n\nThe other 9 cards pass:\n- 01: /ci/yaml/#before_script says \"The combined scripts execute together in a single shell\"; job_execution lists before_script and script in one step.\n- 02: \"Manual variable exports ... in one context are not available in other contexts\", plus the YAML reference: \"Don't have access to ... variables exported in script scripts\".\n- 03: the after_script History note says 17.0; the script page says \"commands run if a job is canceled while the before_script or script section ... are running\". Feature flag enabled by default in 17.0, GA in 17.3. The explanation's word \"Normal\" correctly leaves out force cancel.\n- 05: \"The job fails with failure type of script_failure, but not other failure types\". job_execution says after_script runs \"regardless of whether previous steps failed\". That does not contradict a true card, but it is a soft docs inconsistency to watch.\n- 06: \"If allow_failure: true is set, the job is always considered successful, and later jobs with when: on_failure don't start if this job fails.\"\n- 08: \"test_advanced is retried up to 2 times if the exit code is 137 or if it had a runner system failure\". Confirmed in lib/gitlab/ci/build/auto_retry.rb: `retry_on_reason_or_always? || retry_on_exit_code?`.\n- 09: \"The job-level timeout can be longer than the project timeout, but can't be longer than the runner's timeout.\"\n- 10: \"conservative: Cancel the pipeline, but only if no jobs with interruptible: false have started yet. Default when not defined.\"\n- 11: \"all: Cancel the pipeline and all running jobs as soon as one job fails.\"\n\nMinor observations, not flagged:\n- 01 and 02 are the two sides of the before_script vs after_script shell split. The prompt's r2 scope lists both explicitly, so I accepted them.\n- 05 tests the obvious half of the script_failure fact.\n- 10's explanation mostly restates the statement.\n- In 11, the value name `all` partly hints the answer.\n- 09 uses appliesTo \"GitLab Runner 19.4\" although timeout precedence is decided on the GitLab side.\n\nImportant for the whole deck: the prompt's own misconception list says after_script \"cannot fail a job whose script succeeded\". That holds only by default, because the AFTER_SCRIPT_IGNORE_ERRORS: false variable is documented and enforced in runner code. Any card in another deck or batch that reuses that absolute has the same ambiguity as 04."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr3-12",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, anchor #group-jobs-by-stage-or-needs-configuration present, official and current",
+     "evidence": "https://docs.gitlab.com/ci/pipelines/#group-jobs-by-stage-or-needs-configuration: \"To group the jobs by `needs` configuration, select **Job dependencies**.\" and \"`lint-job` is configured with `needs: []` and depends on no jobs, so it displays in the first column, despite being in the `test` stage.\"",
+     "problem": "The fact is right, but the wording gives the answer away. If you call the view a 'dependency view', saying it groups jobs by their dependencies (`needs`) is true by definition. A player who knows nothing about GitLab would answer True, and no learner would answer False. The explanation only repeats the statement.",
+     "suggestedFix": "Replace (stays True): \"In the Job dependencies view of the pipeline graph, a `needs: []` job from the test stage appears in the first column.\" (118 chars) Explanation: \"Grouping by Job dependencies arranges jobs in columns by their needs, so a job that needs nothing shows in the leftmost column whatever its stage.\" (146 chars) Keep the same URL."
+    },
+    {
+     "id": "gitlab-ci-sr3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, anchor #specify-a-parallelized-job-using-needs-with-multiple-parallelized-jobs present, official and current",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#needsparallelmatrix: \"Use `needs:parallel:matrix` to execute jobs out-of-order depending on parallelized jobs.\" ... \"The `linux:rspec` job runs as soon as the `linux:build: [aws, app1]` job finishes.\"",
+     "problem": "The answer can be read from the keyword's name. A keyword called needs:parallel:matrix that 'selects specific combinations from a producer matrix job' is the obvious meaning, so nobody who studied would answer False (strawman or giveaway). It is also rated difficulty 3, but it does not test a real distinction. The behaviour that matters is that the job starts as soon as the selected instance finishes.",
+     "suggestedFix": "Replace (stays True, same factKey needs-matrix-subset): \"A job using `needs:parallel:matrix` for one combination can start while other instances of that matrix job still run.\" (117 chars) Explanation: \"needs:parallel:matrix points at the chosen instances only, so linux:rspec needing [aws, app1] runs as soon as linux:build: [aws, app1] finishes.\" (144 chars) URL: https://docs.gitlab.com/ci/yaml/#needsparallelmatrix"
+    },
+    {
+     "id": "gitlab-ci-sr3-03",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, anchor #stageless-pipelines present, official and current",
+     "evidence": "The cited section https://docs.gitlab.com/ci/yaml/needs/#stageless-pipelines only says \"You can omit the `stage` and `stages` keywords and use only `needs` to define job order. All jobs without a `stage` keyword run in the default `test` stage\". It never states the same-stage rule. The YAML reference states it directly: https://docs.gitlab.com/ci/yaml/#needs \"You can refer to jobs in the same stage as the job you are configuring.\"",
+     "problem": "The answer (True) is right. However, the cited anchor supports the card only by inference from an example, not with a sentence the player could check. The explanation just restates the statement and adds no reason or context.",
+     "suggestedFix": "Change the URL to https://docs.gitlab.com/ci/yaml/#needs. New explanation (stays True): \"Since `needs` can point at a job in its own stage, jobs of one stage can run in sequence. In a stageless pipeline every job sits in test and needs alone sets the order.\" (168 chars)"
+    },
+    {
+     "id": "gitlab-ci-sr3-06",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, anchor #fetching-artifacts present, official and current",
+     "evidence": "The cited section https://docs.gitlab.com/ci/jobs/job_artifacts/#fetching-artifacts names only \"the `dependencies` or `needs:artifacts` keywords\": \"When you use these keywords, the default behavior changes and artifacts are fetched from only the jobs you specify.\" The plain-`needs` rule is stated at https://docs.gitlab.com/ci/yaml/#needsartifacts: \"When a job uses `needs`, it no longer downloads all artifacts from previous stages by default ... With `needs` you can only download artifacts from the jobs listed in the `needs` configuration.\"",
+     "problem": "The answer (False) and the explanation are correct. However, the cited page talks about needs:artifacts, not plain `needs`, so a reader checking the card has to infer that a plain needs entry counts as needs:artifacts set to true. A better official sentence exists.",
+     "suggestedFix": "Change the URL to https://docs.gitlab.com/ci/yaml/#needsartifacts. Keep the statement and the explanation (stays False)."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards, all in raw/gitlab-ci-b1.json. The section has 6 true cards (01, 03, 05, 07, 11, 12) and 6 false cards (02, 04, 06, 08, 09, 10), and the suggested replacements keep that balance.\n\nEvery source URL loads (HTTP 200) on docs.gitlab.com, and every anchor exists in the live HTML. I checked the text against the current doc sources (gitlab-org/gitlab master, doc/ci/yaml/_index.md, doc/ci/yaml/needs.md, doc/ci/jobs/job_control.md, doc/ci/jobs/job_artifacts.md, doc/ci/pipelines/_index.md).\n\nCards that pass:\n- 01: needs.md says \"The job starts immediately after those dependencies finish, even if other jobs in earlier stages are still running.\"\n- 02: \"Use `needs: []` to set a job to start immediately when the pipeline is created.\"\n- 04: the YAML reference says \"it depends on all jobs created in parallel, not just one job.\"\n- 07: needs:artifacts accepts true (default) or false.\n- 08: \"If a needed job has `optional: false`, but it was not added to the pipeline, the pipeline fails to start\". There is an edge case where the consuming job is also excluded, but it does not reasonably change the reading.\n- 09: rules:needs: \"the job's `needs` configuration is completely replaced with the `needs` in the rule\".\n- 10: needs:project is Premium and Ultimate per its Tier line, and the statement names the tier. The doc says \"If there is a pipeline running for the ref, a job with `needs:project` does not wait for the pipeline to complete.\"\n- 11: needs:pipeline: \"The latest pipeline status from the default branch is replicated to the job.\" The YAML reference shows no tier.\n\nNone of the r3 cards depends on behaviour from after 19.4. The 19.5 `optional` option of needs:pipeline:job belongs to r12 and is not used here.\n\nDuplicates: I found no duplicate in the rest of the deck. sr9-09 (later stages download all earlier artifacts by default) and sr9-10 (dependencies only from earlier stages) are separate facts from sr3-06 and sr3-03, and the prompt assigns them to r9. sr3-04 (plain needs waits for every instance) and sr3-05 (needs:parallel:matrix picks a subset) sit close together, as the prompt's plan intended. The suggested replacement for 05 tests when the job starts, not the subset-versus-all split, to avoid mirroring 04.\n\nSmaller observations, not flagged:\n- 08 uses the word \"required\", which hints a little at the answer.\n- 07's explanation mostly restates its statement."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr4-06",
+     "verdict": "duplicate",
+     "urlStatus": "loads (https://docs.gitlab.com/ci/yaml/#rulesinterruptible), official, supports the card",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#rulesinterruptible: \"The rule-level `rules:interruptible` overrides the job-level `interruptible`, and only applies when the specific rule triggers the job.\" https://docs.gitlab.com/ci/yaml/#rulesif: \"`when` configuration in `rules` takes precedence over `when` at the job-level.\"",
+     "problem": "The answer is right, but the card rests on the same fact as gitlab-ci-sr4-04: a matching rule's attribute overrides the same attribute set at job level. A player who knows sr4-04 (rules:when beats job-level when) can answer sr4-06 straight away, and the reverse also holds. The two cards differ only in which keyword they name.",
+     "suggestedFix": "Replace with a false card on operator precedence, a fact listed for r4 that no other card tests. Statement (answer false): \"In `rules:if`, GitLab evaluates `||` before `&&` in an expression that lacks parentheses.\" Explanation: \"Without parentheses, `&&` binds before `||` in `rules:if`, so `$A || $B && $C` means `$A || ($B && $C)`. Use parentheses to group conditions explicitly.\" Source: https://docs.gitlab.com/ci/jobs/job_rules/#join-variable-expressions-together (\"For the precedence of operators, `&&` evaluates before `||`.\")"
+    },
+    {
+     "id": "gitlab-ci-sr4-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://docs.gitlab.com/ci/yaml/#rulesvariables), official, supports the card",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#rulesvariables: \"Use `variables` in `rules` to define variables for specific conditions.\"",
+     "problem": "This is a name giveaway and close to a definition. The keyword `rules:variables` already says it sets variables inside a rule, so nobody who studied would answer False, and the hedge \"can assign\" makes the card even easier. Its only non-obvious angle, that it beats job-level variables, belongs to the r6 precedence order and to the override pattern of sr4-04.",
+     "suggestedFix": "Replace with a true card on the OR logic inside rules:changes. It complements the AND logic of sr4-02 without restating it. Statement (answer true): \"`rules:changes` with several paths matches when at least one of those listed paths has changed.\" Explanation: \"The paths listed under `rules:changes` combine with OR logic: a change to any one listed file or glob match is enough for that condition to be true.\" Source: https://docs.gitlab.com/ci/yaml/#ruleschanges (\"`changes` resolves to `true` if any of the matching files are changed (an `OR` operation).\")"
+    },
+    {
+     "id": "gitlab-ci-sr4-12",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (https://docs.gitlab.com/ci/yaml/deprecated_keywords/#onlyrefs--exceptrefs), official; it supports the default but only implies the merge request exclusion",
+     "evidence": "https://docs.gitlab.com/ci/yaml/deprecated_keywords/#onlyrefs--exceptrefs: \"If a job does not use `only`, `except`, or `rules`, then `only` is set to `branches` and `tags` by default.\" https://docs.gitlab.com/ci/jobs/job_rules/#avoid-duplicate-pipelines: \"Jobs with no rules default to `except: merge_requests`, so `job-with-no-rules` runs in all cases except merge requests.\"",
+     "problem": "The answer (False) is right, but the statement never names the jobs it is about. \"Jobs using its implicit default filters\" is not a GitLab term. It could be read as jobs under workflow:rules, jobs with default:, or jobs that have rules without an if, so a player who knows the fact may still not see that the card means jobs with no rules, only or except. Also, the cited page only implies the merge request exclusion: it says branches and tags. The page that states it outright is job_rules.",
+     "suggestedFix": "Reword and keep the answer false. Statement: \"A job that omits `rules`, `only` and `except` is added to merge request pipelines.\" Explanation: \"Such a job defaults to `only: branches` and `tags`, which works like `except: merge_requests`, so it runs in branch and tag pipelines but not in merge request pipelines.\" Better URL: https://docs.gitlab.com/ci/jobs/job_rules/#avoid-duplicate-pipelines"
+    }
+   ],
+   "notes": "I checked all 12 r4 cards (sr4-01 to sr4-12, all in gitlab-ci-b1.json). I checked them against the live pages docs.gitlab.com/ci/yaml/, /ci/jobs/job_rules/, /ci/jobs/job_control/ and /ci/yaml/deprecated_keywords/, which all load, and against the raw doc sources on gitlab-org/gitlab master. The section is balanced at 6 true and 6 false, and the three fixes keep that balance (sr4-05 true to true, sr4-06 false to false, sr4-12 stays false).\n\nCards that pass, with the sentence that settles each:\n- sr4-01 (false): \"Rules are evaluated in order until the first match.\"\n- sr4-02 (true): \"The rule evaluates to true only when all included keywords evaluate to true.\"\n- sr4-03 (false): \"allow_failure is false, which is the default setting for jobs that have when: manual defined inside rules.\"\n- sr4-04 (true): \"when configuration in rules takes precedence over when at the job-level.\"\n- sr4-07 (true): \"Variable pattern matching with regular expressions uses the RE2 regular expression syntax.\" Since GitLab 19.2, rules:changes:regexp and rules:exists:regexp use Ruby regex rather than RE2, but the card names rules:if, so it stays true.\n- sr4-08 (false): \"Variables on the right side of =~ and !~ expressions are evaluated as regular expressions. The regular expression must be enclosed in forward slashes.\" The wording \"slash-delimited variable\" is awkward but clear enough.\n- sr4-09 (false): \"For new branch pipelines or when there is no Git push event, rules: changes always evaluates to true... tag pipelines, scheduled pipelines, and manual pipelines, all do not have a Git push event.\"\n- sr4-10 (true): \"Merge request pipelines, rules:changes compares the changes with the target MR branch.\" The explanation's phrase \"listed file paths\" is slightly loose but not wrong.\n- sr4-11 (true): \"With job-level rules:exists, GitLab searches for the files in the project and ref that runs the pipeline.\" The explanation's \"unless the rule specifies another project\" matches rules:exists:project.\n\nCross-deck checks:\n- sr4-09 and sr4-10 do not duplicate sr11-12 (compare_to with merged results pipelines).\n- sr4-12 does not duplicate sr5-09 or sr11-01.\n\nThe r4 brief also lists \"only/except deprecated but usable\", \"the docs' advice not to mix only/except with rules\" and \"migrating to rules\", but no r4 card tests them. That is a coverage gap, not a defect.\n\nAll source URLs load and are official."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr5-08",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.gitlab.com/ci/variables/predefined_variables/#variable-availability (anchor present, official, current)",
+     "evidence": "https://docs.gitlab.com/ci/variables/predefined_variables/#variable-availability: \"Pre-pipeline variables are available before the pipeline is created. These variables are the only variables that can be used with include:rules\" and \"Job-only: These variables are only made available to each job when a runner picks up the job and runs it, and: ... Cannot be used with workflow, include, or rules.\" The answer is right and the source supports it, but the label \"job-only\" in the statement gives the answer away: a player who has never used include:rules can still reason that job-only variables do not exist when includes are resolved.",
+     "problem": "Answer readable from the wording. Pairing \"job-only\" with an include-time keyword makes False the obvious guess, so the card does not test the real fact: only pre-pipeline variables work in include:rules, and pipeline-phase variables do not.",
+     "suggestedFix": "Replace (answer stays false). Statement: \"`include:rules` can test `CI_PIPELINE_IID`, a predefined variable that GitLab sets while it creates the pipeline.\" Explanation: \"Only pre-pipeline predefined variables, such as CI_PIPELINE_SOURCE or CI_COMMIT_BRANCH, work in include:rules. Pipeline-phase variables like CI_PIPELINE_IID arrive too late to select files.\" CI_PIPELINE_IID is listed with Pipeline availability on the same page. Keep the URL."
+    },
+    {
+     "id": "gitlab-ci-sr5-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.gitlab.com/ci/yaml/workflow/#common-if-clauses-for-workflowrules (anchor present, official, current; the page title is now \"workflow keyword\")",
+     "evidence": "https://docs.gitlab.com/ci/yaml/workflow/: \"if: '$CI_PIPELINE_SOURCE == \"push\"' Control when both branch pipelines and tag pipelines run.\" https://docs.gitlab.com/ci/jobs/job_rules/#ci_pipeline_source-predefined-variable: \"push For pipelines triggered by a Git push event, including for branches and tags.\" The answer is right, but the statement says \"pipelines created by pushing tags\", and the word \"pushing\" points straight at the value `push`.",
+     "problem": "Wording tell. Anyone can match \"pushing\" to `push` and answer True without knowing that tag pipelines have no separate source value, which is the misconception the card should test.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"In `workflow:rules`, one `$CI_PIPELINE_SOURCE == \"push\"` rule matches pushed branches and new tags alike.\" Explanation: \"Git pushes of branches and of new tags both get the push pipeline source. No separate tag value exists, so one push rule governs branch and tag pipelines; use CI_COMMIT_TAG to tell them apart.\" Keep the URL."
+    }
+   ],
+   "notes": "All 12 r5 cards are in raw/gitlab-ci-b2.json (gitlab-ci-sr5-01 to sr5-12): 6 true, 6 false. True statements average 81.3 characters and false ones 85.2, so the gap is within the 5-character limit. Hedge words are balanced: \"can\" appears in 2 true and 2 false statements. Every source URL returned 200 on docs.gitlab.com, and every anchor exists on the page.\n\nHow each passing card checked out:\n- 01: workflow page says \"control when pipelines are created\" and \"evaluated before jobs\". The YAML reference says workflow:rules \"controls whether or not a whole pipeline is created\".\n- 02: \"when, can only be always or never when used with workflow\".\n- 03: \"If the variable is already defined at the top level as a default variable, the workflow variable takes precedence and overrides the default variable\".\n- 04: workflow:name accepts \"A string. CI/CD variables. A combination of both.\"\n- 06: \"web For pipelines created by selecting New pipeline in the GitLab UI\".\n- 07: CI_COMMIT_BRANCH is \"Not available in merge request pipelines or tag pipelines\".\n- 09: workflow page example with \"$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS / when: never\". CI_OPEN_MERGE_REQUESTS is Pre-pipeline.\n- 10: \"An empty pipeline ... is still created\" and \"The pipeline status is Skipped\".\n- 11: \"The ci.skip push option does not skip merge request pipelines.\"\n- 12: \"Scheduled pipelines execute with the permissions of the user who owns the schedule.\" A manual run uses the runner's own permissions, and the statement already says \"automatic\".\n\nVersion check: skipping merge request pipelines with [ci skip] in the merge request title is marked \"Introduced in GitLab 19.5\" on /ci/pipelines/. No r5 card relies on it, and card 11 (the ci.skip push option) is still correct for 19.4.\n\nDuplicate check against the rest of the deck found nothing:\n- sr6-01 tests a job variable overriding a top-level variable, which is a different keyword from sr5-03.\n- sr12-09 covers the parent_pipeline source.\n- sr11-01 covers merge_request_event rules coming from include.\n\nMinor, not flagged:\n- The explanations of 03, 04 and 12 mostly restate their statements and add little context. For 12, it could mention that a manual run of a schedule uses the runner's permissions, or that a Maintainer can take ownership.\n- Cards 01, 05 and 09 give the source title as \"CI/CD workflow\", but the page is now titled \"workflow keyword\"."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr6-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.gitlab.com/ci/variables/, anchor define-a-cicd-variable-in-the-gitlab-ciyml-file present)",
+     "evidence": "https://docs.gitlab.com/ci/variables/#define-a-cicd-variable-in-the-gitlab-ciyml-file : \"Variables saved in the `.gitlab-ci.yml` file are visible to all users with access to the repository, and should store only non-sensitive project configuration.\" The answer and source are correct.",
+     "problem": "The answer can be worked out by common sense: anyone who can read a repository can read the text of .gitlab-ci.yml, values included. Nobody who has studied would answer True, so the card is close to a truism or strawman and teaches little. Replacing it also lets the section fix a wording tell (see sr6-08): all four precedence cards (05, 07, 08, 09) are true.",
+     "suggestedFix": "Replace with a TRUE card on the predefined variables that cannot be overridden (listed in the r6 scope, not yet tested). Statement: \"GitLab keeps its own `CI_ENVIRONMENT_SLUG` value in a deployment job even when a project variable has that name.\" Explanation: \"Most predefined variables have the lowest precedence, but no other variable source can override CI_ENVIRONMENT_ID, CI_ENVIRONMENT_SLUG, CI_ENVIRONMENT_URL or CI_PAGES_URL.\" Source: https://docs.gitlab.com/ci/variables/#cicd-variable-precedence (\"Not all predefined variables have the lowest precedence. You cannot override `CI_ENVIRONMENT_ID`, `CI_ENVIRONMENT_SLUG`, `CI_ENVIRONMENT_URL`, or `CI_PAGES_URL`.\"). Pair this with the false replacement for sr6-08 to keep the section at 6 true and 6 false."
+    },
+    {
+     "id": "gitlab-ci-sr6-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.gitlab.com/ci/variables/dotenv_variables/)",
+     "evidence": "https://docs.gitlab.com/ci/variables/dotenv_variables/ : \"Dotenv variables take precedence over job variables and default variables defined in `.gitlab-ci.yml`, but not over project, group, instance, or pipeline variables.\" The fact is correct, but r6 has four precedence-ranking cards (05, 07, 08, 09), all true, and three of them use the same \"GitLab gives X precedence over Y\" pattern.",
+     "problem": "This is a wording tell, which breaks the rule that true and false statements must use the same patterns. In r6 every statement that ranks two variable sources is true, so a player who knows nothing can answer them all True. sr6-08 also overlaps in spirit with sr6-07: both say that a project variable beats a lower source from the pipeline. The more useful dotenv fact, that a dotenv value beats the job's own YAML variable, is not tested at all.",
+     "suggestedFix": "Replace with a FALSE precedence card. Statement: \"A job's own `variables` value overrides a same-named variable from a needed job's dotenv report.\" Explanation: \"Dotenv report variables outrank job and default variables from .gitlab-ci.yml, while project, group, instance and pipeline variables still outrank dotenv values.\" Same URL, https://docs.gitlab.com/ci/variables/dotenv_variables/. Together with the true replacement for sr6-03, the section stays at 6 true and 6 false."
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (6 true, 6 false) against the live docs.gitlab.com pages and the current doc source (gitlab-org/gitlab master doc/ci/variables/_index.md, doc/ci/variables/dotenv_variables.md, doc/ci/yaml/_index.md). Every source URL returned 200, and every anchor exists on its page. The other 10 cards pass. The key quotes:\n- sr6-01: /ci/yaml/#default-variables says \"The variable defined in the job takes precedence\".\n- sr6-02: \"If you don't want default variables to be available in a job, set variables to {}\".\n- sr6-04: the project variables prerequisite is the Maintainer role.\n- sr6-05: \"the variable defined in Subgroup 2 takes precedence\".\n- sr6-06: instance variables require \"administrator access to the instance\", Offering Self-Managed and Dedicated.\n- sr6-07: the docs' worked example prints \"Deploying to production, because a project variable outranks both values set in the .gitlab-ci.yml file\".\n- sr6-10: \"The setting in the downstream project applies. GitLab checks the user's role in the downstream project.\"\n- sr6-11: \"The path to the temporary file as the environment variable value.\"\n- sr6-12: History says \"Expand variable option disabled by default in GitLab 18.6\", and \"CI/CD variables defined in the UI are not expanded by default\".\n\nCaveat on sr6-09 (manual job variables above pipeline variables): this is true per the current precedence list (\"1. Manual job variables, set when you run a manual job. 1. Pipeline variables ...\"). But that ordering arrived with commit af7509ac on 2026-09-09, \"Correct and clarify CI/CD variable precedence\". Before that, the docs listed manual job variables as having \"the same precedence\" as pipeline variables. The commit presents this as a doc correction, not a behaviour change, and it matches the runner variable build order, where job variables are added after pipeline variables. I kept the card but it is worth watching. That commit also added the rules:variables and workflow:rules:variables tiers, the non-overridable predefined variables, and the note that secrets and inputs sit outside the order. The sr6-03 replacement relies on that same commit.\n\nMinor, not flagged: sr6-12's explanation says \"until the creator enables\" it, but any user with the role needed to edit the variable can enable it.\n\nDeck overlap checked: sr1-04 (inherit:variables), sr5-03 (workflow:rules:variables over top-level), sr7-02 (Masked default since 18.3), sr12-08/11 and sr14-09 (inputs fixed at creation) are related but test different facts. Because sr14-09 already covers inputs, the sr6-03 replacement deliberately avoids an inputs card.\n\nSection coverage gaps (not flags): no r6 card tests the YAML octal parsing trap, deployment variables, or variables:expand defaulting to true in YAML."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr7-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.gitlab.com/ci/yaml/#secrets, Tier: Premium, Ultimate)",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#secrets: \"Use secrets to specify CI/CD secrets to: Retrieve from an external secrets provider. Make available in the job as CI/CD variables (file type by default).\" The statement is close to a paraphrase of this opening sentence, and the explanation (\"A job explicitly requests external secret values with the secrets keyword\") just repeats it.",
+     "problem": "The answer is right but you can read it from the keyword's name: a keyword called `secrets` that fetches secrets from a secrets provider. Nobody who has studied would answer False, so it teaches nothing (truism/name giveaway). It is also a near-copy of the reference's first sentence.",
+     "suggestedFix": "Replace and keep it True. Statement (114 chars): \"In GitLab Premium and Ultimate, `secrets:token` picks which ID token a job sends to the external secrets provider.\" Explanation (200 chars): \"The secrets:token keyword names one of the job's id_tokens, so a job that defines several ID tokens tells GitLab Runner which JWT to present when it authenticates to Vault or another secrets provider.\" Source: https://docs.gitlab.com/ci/yaml/#secretstoken (\"Use secrets:token to explicitly select a token to use when authenticating with the external secrets provider ... Supported values: The name of an ID token\")."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards in raw/gitlab-ci-b2.json against the live docs.gitlab.com pages, fetched 2026-10-08. All returned 200: /ci/pipelines/merge_request_pipelines/, /ci/variables/, /ci/jobs/ci_job_token/, /ci/secrets/id_token_authentication/ and /ci/yaml/. The section is balanced 6 True / 6 False. Average statement length is 83.7 for true cards and 87.3 for false ones, within the 5-character rule.\n\nCards that passed, with the sentence that settles each:\n- 01: \"Introduced in GitLab 18.1 ... Merge request pipelines can only access these protected resources when: Both the source and target branches are protected. The user triggering the pipeline has push/merge access to the target branch. Both source and target branches belong to the same project.\" No feature flag is involved.\n- 02: \"Default visibility changed from Visible to Masked in GitLab 18.3\" and \"Visibility: Select Visible, Masked (default), or Masked and hidden.\"\n- 03: \"Masking a CI/CD variable is not a guaranteed way to prevent malicious users from accessing variable values.\"\n- 04: \"Hiding a variable is only possible when creating a new variable, you cannot update an existing variable to be hidden.\"\n- 05: on /ci/variables/, \"By default, pipelines from forked projects can't access the CI/CD variables available to the parent project.\" The MR pipelines page adds \"Uses the fork project's CI/CD configuration, resources, and project CI/CD variables.\" This is a different fact from sr11-03 (where the pipeline runs), so it is not a duplicate.\n- 06: \"The token is valid only while the job is running. After the job finishes, the token access is revoked.\"\n- 07: \"The token receives the same access level as the user that triggered the pipeline ... A user can trigger a job by pushing a commit, running a manual job, or owning a scheduled pipeline.\"\n- 08: \"Beginning in GitLab 19.0, CI/CD job tokens use the JWT standard by default. ... This setting is only available until the GitLab 20.0 release.\"\n- 09: \"Adding a project to the allowlist does not give additional permissions to the members of the allowlisted project.\"\n- 10: \"When you use a job token to push to the project, no CI/CD pipelines are triggered.\"\n- 11: the id_tokens example, \"In this example, the two tokens have different aud claims.\"\n\nMinor points that are not flagged:\n- sr7-09: the \"its\" in \"added to its CI/CD job token allowlist\" has an unclear antecedent. Suggest \"a project's CI/CD job token allowlist\".\n- sr7-11: the true answer is fairly easy to guess because the hedge verb \"can\" sits on a true statement. It is acceptable because a learner could believe aud is set once per project.\n- sr7-02: \"created in the UI\" could be stretched to cover variables typed into the Run pipeline form, which are not masked. This is unlikely to be read that way.\n\nCoverage gaps against the prompt's r7 scope, not flagged per card: no card tests that protected variables are limited to protected branches and tags, the protected-branch actions that need merge or push permission (manual or scheduled pipelines, manual jobs, retrying or canceling jobs), or the masking requirements (single line, no spaces, at least 8 characters). The prompt allows the masking requirements to be tested once."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr8-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.gitlab.com/ci/runners/configure_runners/#runner-is-allowed-to-run-untagged-jobs)",
+     "evidence": "configure_runners: \"Example 1: The runner is configured to run untagged jobs and has the docker tag. A job that has no tags defined is executed and run.\" The fact is correct, but the statement says a runner accepts untagged jobs 'when Run untagged jobs is enabled', so the answer can be read straight from the setting's name.",
+     "problem": "Name giveaway: the only thing tested is that a setting called Run untagged jobs runs untagged jobs. A player who doesn't know GitLab answers True from the wording. The section's other tag fact (a runner needs every tag the job lists) is already covered by sr8-03.",
+     "suggestedFix": "Replace with a True card on tag case sensitivity, which the prompt lists for r8. Statement (88 chars): \"GitLab treats runner tags `Docker` and `docker` as two different tags when it matches jobs.\" Explanation: \"Job and runner tags are case-sensitive, so a job tagged docker waits for a runner whose tag list has docker in lowercase. A runner tagged Docker does not count.\" Answer: true, so the section stays 6 true / 6 false. Source: https://docs.gitlab.com/ci/yaml/#tags (\"An array of tag names, which are case-sensitive.\")."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (sr8-01 to sr8-12) against their source pages, fetched today from docs.gitlab.com (all returned HTTP 200). The section is balanced at 6 true and 6 false. It shares no fact with cards in other sections: I grepped the deck for runner, tag, executor, image, concurrency, lock and role cards.\n\nCards that pass, with the sentence that settles each one:\n- 01 (true): runners_scope: \"Create a project runner with a runner authentication token Prerequisites: You must have the Maintainer role for the project.\"\n- 02 (true): new_creation_workflow: \"Create a runner directly in the GitLab UI or programmatically. Receive a runner authentication token.\"\n- 03 (false): configure_runners: \"For a runner to be selected to run a job, it must have all of the tags defined in the job script block.\"\n- 05 (true): configure_runners: \"configure them to only run jobs on protected branches, or jobs that have protected tags.\"\n- 06 (false): runners_scope says a locked runner \"cannot be enabled for other projects\", and the checkbox is named \"Lock to current projects\". So locking keeps the existing assignments. The page shows this only through the checkbox name and never says it outright, but that is enough.\n- 07 (false): runners_scope: \"Instance runners process jobs by using a fair usage queue\"; group runners use \"a first in, first out queue\".\n- 08 (false): runner/executors: the Kubernetes executor \"creates a new Pod (with a build container and services containers) for each GitLab CI/CD job.\"\n- 09 (true): /ci/yaml/: \"Use image:docker to pass options to runners using the Docker executor or the Kubernetes executor.\"\n- 10 (false): advanced-configuration, global section: concurrent \"Limits how many jobs can run concurrently, across all registered runners... this value sets a maximum for all of those values combined.\"\n- 11 (true): /runner/: \"For compatibility reasons, the GitLab Runner major.minor version should stay in sync with the GitLab major and minor version.\"\n- 12 (false): hosted_runners/linux: \"Untagged jobs run on the small Linux x86-64 runner.\" The may_change volatility is set correctly.\n\nFor card 04's replacement, the claim that tags are case-sensitive comes from the /ci/yaml/#tags line (\"An array of tag names, which are case-sensitive\") and from the prompt's own list of r8 facts. My web search budget ran out, so I could not separately confirm how runners match tags. Check that before adopting the replacement. If it fails, a True alternative is: \"A runner tagged `docker` with Run untagged jobs enabled picks up both untagged jobs and jobs tagged `docker`\" (configure_runners, Example 1).\n\nMinor wording notes, not flagged: sr8-02's phrase \"creates a runner for registration\" reads awkwardly. sr8-12 puts \"require\" on a false statement, so count it in the deck-wide balance of requirement words."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr9-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.gitlab.com/ci/yaml/#cachepolicy loads and supports the card",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#cachepolicy: \"To set a job to only download the cache when the job starts, but never upload changes when the job finishes, use cache:policy:pull.\" The fact is correct, but the policy name itself gives the answer away.",
+     "problem": "Name giveaway that is close to a strawman. A policy called `pull` that \"uploads its changed cache\" reads as false from the keyword value alone, so a player who does not know GitLab can answer it. The behaviour worth testing is the default, pull-push, which a developer who leaves cache:policy out actually depends on.",
+     "suggestedFix": "Replacement (answer false): \"Without a `cache:policy` setting, a job downloads the cache at start and leaves it unchanged at the end.\" Explanation: \"The default cache:policy is pull-push: the job downloads the cache when it starts and uploads changes when it ends. Use pull for read-only jobs and push for jobs that only build the cache.\" Keep URL https://docs.gitlab.com/ci/yaml/#cachepolicy and factKey cache-policy-default-pull-push."
+    },
+    {
+     "id": "gitlab-ci-sr9-12",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://docs.gitlab.com/ci/jobs/job_artifacts/#keep-artifacts-from-most-recent-successful-jobs loads and supports the fact",
+     "evidence": "https://docs.gitlab.com/ci/jobs/job_artifacts/#keep-artifacts-from-most-recent-successful-jobs: \"By default, for each Git ref (branch or tag), GitLab preserves artifacts from the following: The latest pipeline for the ref, even if it failed or is blocked by a manual job. The most recent successful pipeline, if it's different from the latest pipeline. Any expire_in configuration does not apply to these artifacts.\" The setting is named \"Keep artifacts from most recent successful jobs\".",
+     "problem": "The answer is correct, but the wording gives it away. \"With latest artifact retention enabled ... removes the latest successful pipeline's artifacts\" contradicts itself, so the player can answer without knowing anything. The card also calls the setting \"latest artifact retention\", which is not GitLab's name for it, and it hides the key fact that this retention is on by default.",
+     "suggestedFix": "Replacement (answer false): \"By default, GitLab deletes a branch's newest successful pipeline artifacts once their `artifacts:expire_in` time passes.\" Explanation: \"By default, Keep artifacts from most recent successful jobs keeps, for each ref, the artifacts of the latest pipeline and the most recent successful one, and expire_in does not apply to them.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (all in raw/gitlab-ci-b3.json), which split 6 true and 6 false. I read the current docs.gitlab.com pages: /ci/caching/, /ci/jobs/job_artifacts/, /ci/yaml/ (the cache, cache:key, cache:key:files, cache:policy, artifacts:expire_in, artifacts:reports, artifacts:when and dependencies sections) and /ci/yaml/artifacts_reports/. Every page returned 200. Ten cards pass:\n\n- sr9-01: settled by \"Different projects cannot share the cache.\"\n- sr9-02: settled by \"By default, protected and non-protected branches do not share the cache.\" This is the exact safe phrasing the prompt requires. Since 18.4.5 a Maintainer pipeline on an unprotected branch gets the -protected suffix, so with the default key the cache can effectively be shared. The statement stays defensible because the docs still state it this way. The explanation (\"Separate cache keys form a security boundary\") is thin and could mention the -protected/-non_protected suffix, but it is not wrong.\n- sr9-03: true for 19.4: \"The cache key is a SHA computed from the content of the listed files.\" Caveat: GitLab commit 5aa84f02 (2025-09-09, around GitLab 18.4) switched cache:key:files from commit-based to content-based and added cache:key:files_commits. Older material still says commit SHA, and the history note has since been removed from the docs. The card is correct for the pinned version. Adding \"since GitLab 18.4\" to the explanation would be a good idea, but I could not confirm the exact release because web search was unavailable.\n- sr9-05: \"If no cache is found, the job runs without using a cache.\" This is borderline common sense, but it is tied to fallback_keys and to the section topic \"caching as an optimization\". Not flagged.\n- sr9-06: \"the cache might be overwritten because caches are restored before artifacts.\"\n- sr9-07: \"By default, artifacts are uploaded only when the job succeeds (on_success).\"\n- sr9-08: \"Artifacts created for artifacts: reports are always uploaded, regardless of the job results (success or failure).\"\n- sr9-09: \"By default, jobs fetch all artifacts from jobs defined in previous stages.\" This is a close paraphrase but acceptable.\n- sr9-10: \"The specified jobs must all be in earlier stages ... To fetch artifacts from a job in the same stage, you must use needs:artifacts.\"\n- sr9-11: \"always: Always upload artifacts (except when jobs time out).\"\n\nDuplicates: there are none. sr3-06 (needs limits artifact downloads) and sr9-09 (the default download from earlier stages) rest on different facts. The two replacements keep the section at 6 true and 6 false.\n\nI only read pages, through curl and the GitLab API, and edited nothing. Fetched pages are cached in a scratch folder"
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr10-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; anchor #protect-manual-jobs present (Tier: Premium, Ultimate)",
+     "evidence": "https://docs.gitlab.com/ci/jobs/job_control/#protect-manual-jobs: \"add the users, roles, or groups that are authorized to run the manual job to the Allowed to Deploy list. Only users in this list or GitLab administrators can run this manual job.\" The fact is correct, but the statement says that a list named \"Allowed to deploy\" restricts who starts deployment jobs.",
+     "problem": "The setting's name gives the answer away: a player who knows nothing about protected environments answers True from the words \"Allowed to deploy ... restricts who starts ... deployment jobs\". \"Protected manual deployment jobs\" is also vague (the docs mean manual jobs that deploy to a protected environment). The section's other protected-environment fact, deployment-only access for a group invited with the Reporter role, is not tested anywhere in the deck.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement (120 chars): \"In GitLab Premium and Ultimate, a group invited with the Reporter role can get deploy access to a protected environment.\" Explanation: \"Invited groups with the Reporter role can be added to Allowed to deploy, which gives their members deployment-only access: they deploy without push or merge access to the branch.\" URL: https://docs.gitlab.com/ci/environments/protected_environments/#deployment-only-access-to-protected-environments (\"Invited groups added to the project with Reporter role, appear in the dropdown list for deployment-only access.\")"
+    },
+    {
+     "id": "gitlab-ci-sr10-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; anchor #deployment-tier-of-environments present",
+     "evidence": "https://docs.gitlab.com/ci/environments/#deployment-tier-of-environments: \"GitLab guesses deployment tiers from the environment name based on these patterns ... To avoid the automatic guessing, use the deployment_tier keyword.\" The pattern table maps /(dev|review|trunk)/i to development.",
+     "problem": "The answer can be read from the keyword's name: a statement that a keyword called deployment_tier sets the tier is answered True without any GitLab knowledge. The useful fact, that GitLab guesses the tier from the environment name, appears only as a premise.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement (105 chars): \"An environment named `review/feature-x` gets the development tier when its job sets no `deployment_tier`.\" Explanation: \"GitLab guesses a tier from the environment name, and names matching dev, review or trunk become development. The deployment_tier keyword overrides the guess.\" Same URL."
+    },
+    {
+     "id": "gitlab-ci-sr10-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; anchor #add-a-resource-group present (Tier: Free, Premium, Ultimate)",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#resource_group: \"Use resource_group to create a resource group that ensures a job is mutually exclusive across different pipelines for the same project.\" The card says \"`resource_group` makes jobs with the same resource mutually exclusive across pipelines in a project.\"",
+     "problem": "The statement repeats the YAML reference sentence with a few words changed, which the prompt forbids (\"do not reproduce a sentence of the official page with a word or two changed\"). Once \"mutually exclusive\" is in the statement, the answer is close to readable from the wording. The fact itself is correct.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement (109 chars): \"Two pipelines on different branches of one project run their `resource_group: production` jobs one at a time.\" Explanation: \"A resource group belongs to the project, not to one pipeline or branch, so a job waits while another job of the same group runs anywhere in that project.\" URL: https://docs.gitlab.com/ci/resource_groups/#add-a-resource-group"
+    },
+    {
+     "id": "gitlab-ci-sr10-09",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, current; anchor #run-a-job-after-a-delay present",
+     "evidence": "https://docs.gitlab.com/ci/jobs/job_control/#run-a-job-after-a-delay: \"The timer of a delayed job starts immediately after the previous stage completes. Similar to other types of jobs, a delayed job's timer doesn't start unless the previous stage passes.\"",
+     "problem": "As a general claim the answer False is right. But the statement names no stage. A delayed job in the pipeline's first stage, or one with `needs: []`, has nothing to wait for, so its timer starts as soon as the pipeline is created. An expert could defend True for that case. Naming a job in a later stage removes the exception.",
+     "suggestedFix": "Reword (keeps answer FALSE). Statement (120 chars): \"GitLab starts the `start_in` timer of a delayed deploy job while the pipeline's build and test stages are still running.\" Explanation: \"A delayed job's timer starts only after the previous stage completes successfully, so the start_in wait adds to the time the earlier stages take.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards (gitlab-ci-sr10-01 to -12, all in gitlab-ci-b3.json). Answers are 6 true and 6 false. Every source URL returned 200 on docs.gitlab.com on 2026-10-08, and every anchor exists on its page.\n\nNo card has a wrong answer. Four cards are flagged: sr10-07, sr10-10 and sr10-12 as weak_card (two name giveaways and one near-copy of the source), and sr10-09 as ambiguous (the first-stage or `needs: []` exception). Each fix keeps the card's answer, so the section stays 6 true and 6 false. The sr10-12 replacement uses \"can\" in a true statement, so the deck's hedge-word count should be checked against it.\n\nCards that passed, with the sentence that settles each:\n- **sr10-01:** /ci/environments/ says \"If an environment of that name doesn't exist when the pipeline runs, it is created.\" The YAML reference agrees.\n- **sr10-02:** The YAML reference entry for environment:name says \"You can't use variables defined in a script section.\" The source table on /ci/variables/where_variables_can_be_used/ says environment:name is \"similar to environment:url\", which excludes \"variables created in the job's script\". The dotenv route works only for environment:url, so it does not weaken the card.\n- **sr10-03:** The source anchor supports the card only through its example (`on_stop: stop_review` plus a separate stop_review job). https://docs.gitlab.com/ci/yaml/#environmenton_stop states it directly: \"It declares a different job that runs to close the environment\". That URL would be a stronger source. The card is borderline easy but not a strawman.\n- **sr10-04:** /ci/environments/#default-stopping-behavior says \"GitLab automatically stops environments when the associated branch is deleted or merged.\" Issue 428625 is still a proposal, the Environments API auto_stop_setting still defaults to \"always\", and volatility is correctly set to may_change.\n- **sr10-05:** The YAML reference says \"Every time the review app is deployed, that lifetime is also reset to 1 day.\"\n- **sr10-06:** The YAML reference says \"prepare: Indicates that the job is only preparing the environment. It does not trigger deployments.\" The environments page says it \"effectively bypasses deployment creation\".\n- **sr10-08:** /ci/jobs/job_control/ says \"The pipeline shows a status of blocked.\" It does not restate the rules:when: manual allow_failure default that belongs to r4.\n- **sr10-11:** /ci/environments/deployment_safety/ says \"Job age is determined by the job start time, not the commit time\".\n\nNo r10 card shares a fact with another card in the deck. I checked every non-r10 card mentioning environments, manual, delayed, resource_group, Reporter or tier (sr1-05, sr4-03, sr5-02, sr6-09, sr13-06 and others): none rests on the same fact. Scope items with no card in r10: renaming, delete-after-stop, verify/access, manual_confirmation, unscheduling, manual-job variables, the permission to merge needed to run a manual job, and deploy freezes. The section still covers its breadth with 12 cards.\n\nDownloaded page copies are in a scratch folder"
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr11-01",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official docs.gitlab.com page, anchor #configure-merge-request-pipelines resolves; live page matches the master doc source",
+     "evidence": "https://docs.gitlab.com/ci/pipelines/merge_request_pipelines/#configure-merge-request-pipelines: \"Rules defined in `include:` (for example, with `include:component`) do not satisfy this requirement. You must define matching `rules:` or `workflow: rules` directly in `.gitlab-ci.yml`.\" The doc MR that added this note (gitlab-org/gitlab!224455, Feb 2026, from a support ticket) describes it as: \"rules defined only on `include:` (for example with `include:component`) do not satisfy the requirement\". In other words, it means rules on the include entry (include:rules), not job or workflow rules inside an included file. Included files are merged into the configuration before it is evaluated, and GitLab's own template Workflows/MergeRequest-Pipelines.gitlab-ci.yml (deprecated, still shipped) enables merge request pipelines only through an included `workflow:rules` with `if: $CI_MERGE_REQUEST_IID`.",
+     "problem": "The card reads the note as \"a rule in an included file\". That is the broader and probably wrong reading. A job or workflow rule that matches merge_request_event inside an included file or component does produce merge request pipelines, so an expert could defend True. The explanation also repeats the contested \"directly in .gitlab-ci.yml\" claim as a fact.",
+     "suggestedFix": "Replacement (answer false). Statement: \"Rules on an `include:` entry, such as one for a component, can satisfy the merge request pipeline prerequisite.\" (111 chars). Explanation: \"Rules on an include: entry only decide whether the file is included. Merge request pipelines need job rules or workflow:rules that match CI_PIPELINE_SOURCE == \"merge_request_event\".\" (181 chars). Keep the same URL."
+    },
+    {
+     "id": "gitlab-ci-sr11-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, anchor #enable-merged-results-pipelines resolves",
+     "evidence": "https://docs.gitlab.com/ci/pipelines/merged_results_pipelines/#enable-merged-results-pipelines: \"You must have the Maintainer or Owner role for the project.\"",
+     "problem": "The card is correct and its source supports it, but anyone can guess it. A Maintainer can change almost every project setting, so a player who knows nothing about merged results pipelines still answers True. It tests no behaviour that decides whether a pipeline works.",
+     "suggestedFix": "Replacement (answer true; this section has no card yet on Merge immediately). Statement: \"In GitLab Premium and Ultimate, Merge immediately cancels and restarts the pipelines of the rest of the merge train.\" Explanation: \"Merging immediately cancels the other train pipelines and starts new ones that include the merged commits, which is why the docs reserve it for critical cases.\" (159 chars). URL: https://docs.gitlab.com/ci/pipelines/merge_trains/#skip-the-merge-train-and-merge-immediately (\"The merge train pipelines for all other merge requests on the train are canceled.\" and \"Merging immediately can use a lot of CI/CD resources\")."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards (gitlab-ci-sr11-01 to -12, in content/raw/gitlab-ci-b3.json) against the live docs.gitlab.com pages and the current master doc sources: merge_request_pipelines, merged_results_pipelines and merge_trains. All three return 200 and every cited anchor resolves. Their Tier lines are Free/Premium/Ultimate, Premium/Ultimate and Premium/Ultimate. Every card that needs Premium and Ultimate names it.\n\nCards that pass, with the sentence that settles each:\n- 02: \"Run on the contents of the source branch only and ignore the content of the target branch.\"\n- 03: \"Is created and runs in the fork (source) project, not the parent (target) project.\"\n- 04: \"Uses the CI/CD configuration present in the fork project's branch.\"\n- 05: \"Unless you trigger the pipeline through the API or the /rebase quick action, GitLab shows a warning that you must accept before the pipeline runs.\" The statement correctly limits this to the UI.\n- 06: \"In these cases, GitLab runs a standard merge request pipeline instead.\"\n- 08: \"You must have merged results pipelines enabled.\"\n- 09: \"testing each merge request against the combined changes of every merge request ahead of it in the queue.\"\n- 10: \"The pipelines all run in parallel.\" Since GitLab 19.0 the parallel pipeline limit can be set to 1, which processes merge requests sequentially. The default is 20, and the statement says \"by default\", so it stays false.\n- 11: \"GitLab removes that merge request from the merge train, and starts new pipelines for all the merge requests that were queued after it.\" A job that succeeds after `retry` does not remove the merge request, but then the pipeline has not failed.\n- 12: \"merged results pipelines use the temporary merged commit as the base for comparison. This commit contains changes from both your merge request branch and the target branch.\"\n\nBalance after the suggested fixes stays at 6 true and 6 false.\n\nOverlaps I noted but did not flag:\n- sr11-03 (fork merge request pipelines run in the fork) sits close to sr7-05 (a fork pipeline does not get the parent's variables). The prompt deliberately splits these two.\n- sr4-12 (jobs without rules are left out of merge request pipelines) is next to sr11-01, but rests on a different fact.\n\nOne thing for the r4 reviewer: the workflow docs show jobs without rules running in merge request pipelines once workflow:rules allows them. sr4-12's flat claim may deserve a look.\n\nThe web search budget was used up, so I made the independent checks with the GitLab API (commit history of the merge request pipelines doc and the description of merge request 224455) and the raw doc and template sources."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr12-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://docs.gitlab.com/ci/yaml/#triggerstrategy loads, official and current; the anchor exists",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#triggerstrategy: \"mirror: Mirrors the status of the downstream pipeline exactly.\" The answer can be read from the keyword value itself, because a value called `mirror` mirrors the status. The card also sits right next to sr12-02 (default success at creation versus waiting under trigger:strategy is one two-way distinction), and it uses \"each\" in a true statement. The same section of the page has an untested fact that the prompt lists for r12: \"Blocking manual jobs in the downstream pipeline must run before the trigger job is marked as successful or failed.\"",
+     "problem": "Name giveaway: knowing the English word \"mirror\" is enough to answer True. The card also nearly restates the other side of sr12-02.",
+     "suggestedFix": "Replace with a TRUE card (the section keeps 6 true and 6 false). Statement (116 chars): \"Since GitLab 18.2, a `trigger:strategy: mirror` job waits until blocking manual jobs in its downstream pipeline run.\" Explanation: \"Under trigger:strategy, blocking manual jobs in the downstream pipeline must run before the trigger job gets a final status, while optional manual jobs do not hold it.\" Keep the URL https://docs.gitlab.com/ci/yaml/#triggerstrategy and appliesTo \"GitLab 18.2 and later\"."
+    },
+    {
+     "id": "gitlab-ci-sr12-04",
+     "verdict": "duplicate",
+     "urlStatus": "200, https://docs.gitlab.com/ci/yaml/#triggerforward loads, official and current; the anchor exists",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#triggerforward: \"Forwarded variables do not get forwarded again in nested downstream pipelines by default, unless the nested downstream trigger job also uses trigger:forward.\" The same section says \"CI/CD variables forwarded to downstream pipelines with trigger:forward are pipeline variables\" and \"pipeline_variables: true or false (default)\". So non-forwarding at the nested level follows directly from the fact that sr12-11 tests (pipeline variables are not forwarded by default). The wording \"reuses upstream `trigger:forward` settings for received pipeline variables\" is also hard to parse.",
+     "problem": "This card rests on the same fact as gitlab-ci-sr12-11 (trigger jobs do not forward pipeline variables unless trigger:forward:pipeline_variables is true). Forwarded variables arrive as pipeline variables, so a player who knows sr12-11 can answer sr12-04, and both cards are false for the same reason.",
+     "suggestedFix": "Replace with a FALSE card on the other r12 forwarding fact the prompt lists, high precedence. Statement (108 chars): \"A same-named variable in the downstream `.gitlab-ci.yml` overrides a variable that the trigger job forwards.\" Explanation: \"Forwarded variables arrive as pipeline variables, which have high precedence, so they usually overwrite a same-named variable defined in the downstream configuration.\" URL https://docs.gitlab.com/ci/yaml/#triggerforward (\"If a variable with the same name is defined in the downstream pipeline, that variable is usually overwritten by the forwarded variable.\")."
+    },
+    {
+     "id": "gitlab-ci-sr12-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://docs.gitlab.com/ci/yaml/#needspipelinejob loads, official and current; the anchor exists",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#needspipelinejob: \"needs:pipeline: A pipeline ID. Must be a pipeline present in the same parent-child pipeline hierarchy.\" and \"You cannot use needs:pipeline:job in a trigger job, or to fetch artifacts from a multi-project pipeline. To fetch artifacts from a multi-project pipeline use needs:project.\" The answer is right, but the word \"unrelated\" signals False: few players who studied would expect a keyword to pull artifacts from an unrelated project. The realistic misconception is using needs:pipeline:job for a multi-project downstream pipeline instead of needs:project.",
+     "problem": "Strawman and wording tell: \"unrelated project's pipeline\" makes the false answer guessable without knowing the keyword.",
+     "suggestedFix": "Keep it FALSE and sharpen it to the realistic confusion. Statement (116 chars): \"In GitLab Premium and Ultimate, a multi-project downstream job fetches upstream artifacts with `needs:pipeline:job`.\" Explanation: \"needs:pipeline:job accepts only a pipeline in the same parent-child hierarchy. A multi-project downstream pipeline fetches upstream artifacts with needs:project.\" Keep URL https://docs.gitlab.com/ci/yaml/#needspipelinejob."
+    }
+   ],
+   "notes": "All 12 r12 cards are in raw/gitlab-ci-b3.json (gitlab-ci-sr12-01 to -12), with 6 true and 6 false. I fetched every source URL on 2026-10-08. All returned 200 and every anchor exists on https://docs.gitlab.com/ci/pipelines/downstream_pipelines/ and https://docs.gitlab.com/ci/yaml/. GitLab 19.5 is not released yet (due 2026-10-15). The only 19.5 item near this section is the `optional` key of needs:pipeline:job, and no card uses it.\n\nCards that pass, with the evidence that settles them:\n- 01 (F): \"Trigger jobs do not use runners.\"\n- 02 (T): \"The trigger job shows passed if the downstream pipeline is created successfully\". The YAML reference adds: \"the default, which is for the trigger job to be marked as success as soon as the downstream pipeline is created\".\n- 05 (T): \"Run under the same project, ref, and commit SHA as the parent pipeline.\"\n- 06 (T): \"Are automatically canceled if the pipeline is configured with interruptible when a new pipeline is created for the same ref.\" The interruptible reference agrees: \"the downstream pipeline is also canceled\" if no job with interruptible: false has started. This card does not duplicate sr2-10, which tests conservative mode, or sr4-06.\n- 07 (F): trigger:project says \"By default, the multi-project pipeline triggers for the default branch. Use trigger:branch to specify a different branch.\"\n- 08 (T): \"The user triggering the upstream pipeline must have permission to start pipelines in the downstream project\". This is borderline common sense, but the prompt lists it, so I did not flag it.\n- 09 (F): \"In child pipelines, $CI_PIPELINE_SOURCE always has a value of parent_pipeline\".\n- 10 (T): \"Set include: artifact to the generated artifact, and set include: job to the job that created the artifact\".\n- 11 (F): \"Pipeline variables are not passed to downstream pipelines by default. Use trigger:forward\".\n\nFixes keep the section at 6 true and 6 false:\n- 03 is replaced with a true card.\n- 04 is replaced with a false card.\n- 12 stays false.\n\nThe sr12-03 replacement does not overlap sr10-08, which tests the blocked pipeline status. The sr12-04 replacement does not overlap the r6 cards: sr6-07 is project versus YAML precedence and sr6-09 is manual job variables. The explanation of sr3-11 (needs:pipeline status mirroring) is outside r12 and unaffected."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr13-12",
+     "verdict": "explanation_error",
+     "urlStatus": "200, https://docs.gitlab.com/ci/yaml/yaml_optimization/#reference-tags loads, official, current; anchor present",
+     "evidence": "Page says: \"You can use multiple `!reference` tags to build up an array with `rules`, `script`, or stages.\" followed by \"With all other keywords, you get a `config should be an array of` validation error.\" The same page then has the section \"Nest `!reference` tags in `script`, `before_script`, and `after_script`\" (\"You can nest `!reference` tags up to 10 levels deep in `script`, `before_script`, and `after_script` sections\"), with arrays mixing a `!reference` item and plain commands, and the `test` example uses `after_script: - !reference [.teardown, after_script]`. The answer (True) is right.",
+     "problem": "The explanation copies the docs' sentence that every keyword except rules, script and stages gives a validation error. That teaches something false: before_script and after_script accept nested !reference lists, and the same page documents this. \"stages\" is also a global keyword and not part of a job, so it does not belong in a sentence about what a job can build. The statement and answer are fine.",
+     "suggestedFix": "Keep the statement and the True answer, and replace the explanation with: \"GitLab flattens the referenced rule lists into one rules array, in the order the tags appear. script, before_script and after_script accept nested !reference lists the same way.\" (176 characters). Keep the source URL."
+    },
+    {
+     "id": "gitlab-ci-sr13-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://docs.gitlab.com/ci/yaml/#includeremote loads, official, current; anchor present",
+     "evidence": "https://docs.gitlab.com/ci/yaml/#includeremote: \"A public URL accessible by an HTTP/HTTPS `GET` request: Authentication with the remote URL is not supported.\" But https://docs.gitlab.com/ci/yaml/includes/#use-variables-with-include says \"In `include` sections in your `.gitlab-ci.yml` file, you can use: Project variables. Group variables. Instance variables...\". So a URL such as .../repository/files/x/raw?ref=main&private_token=$TOKEN, built from a project variable, fetches a private file. This workaround is widely published.",
+     "problem": "The answer (False) matches the docs, but \"a private URL that requires HTTP authentication to read\" can be read to include a URL that authenticates with a token in its query string. That works with include:remote because project variables are allowed in include. An expert who knows that workaround could defend True. The fact that should be tested is narrower: GitLab itself sends no credentials.",
+     "suggestedFix": "Statement (False): \"`include:remote` sends an access token header so GitLab can fetch a YAML file from a private URL.\" Explanation: \"include:remote fetches the URL with a plain HTTP or HTTPS GET and supports no authentication. For a private project on the same GitLab instance, use include:project.\" Keep the source URL https://docs.gitlab.com/ci/yaml/#includeremote. This keeps the section at 6 true and 6 false."
+    }
+   ],
+   "notes": "I checked all 12 r13 cards (raw/gitlab-ci-b4.json, sr13-01 to sr13-12) against the live docs.gitlab.com pages: /ci/yaml/ (#include, #includelocal, #includeproject, #includeremote, #includeintegrity), /ci/yaml/includes/ (#override-included-configuration-values) and /ci/yaml/yaml_optimization/ (#merge-details, #exclude-a-key-from-extends, #anchors, #reference-tags). Every page returned 200 and every anchor exists. I also checked the GitLab master doc sources, and the wording matches the live pages.\n\nThe other 10 cards pass, with these settling quotes:\n- **01:** \"Using a specific SHA hash, which should be the most stable option. Use the full 40-character SHA hash...\"\n- **02:** \"Always evaluated first and then merged with the content of the `.gitlab-ci.yml` file, regardless of the position of the `include` keyword.\"\n- **03:** \"The other keywords do not change. This method is called _merging_.\"\n- **04:** \"Job, the `include` files are not fetched again... Pipeline, the `include` files are fetched again.\"\n- **05:** \"If a nested `include` is in a configuration file in a different project, `include: local` checks that other project for the file.\"\n- **06:** \"For any private project in `include:project`, the user running the pipeline must have at least the Reporter role.\"\n- **08:** \"If `integrity` does not match the actual content, the remote file is not processed and the pipeline fails.\" (since GitLab 17.9, no feature flag)\n- **09:** \"`script` does not merge, but `script: ['rake rspec']` overwrites...\"\n- **10:** the merged result shows test4 with `variables: null`.\n- **11:** \"Anchors are only valid in the file they were defined in.\"\n\nMinor points I did not flag:\n- **01:** the explanation calls the fully qualified ref \"the other suggested option\". The docs list a third consideration: protected branch and protected tag rules on the ref.\n- **04:** the explanation says a new pipeline fetches includes again. On the current docs, include:cache has been generally available since GitLab 19.0, and a cached include:remote file is not refetched until its TTL expires. The prompt puts include:cache out of scope, but that prompt assumption looks stale and should be rechecked deck-wide.\n- **06 and sr14:** r14 has no card on the Reporter role for component projects, so card 06 is not a duplicate.\n\nBalance and coverage:\n- The section is balanced at 6 true and 6 false, with average statement lengths of 102.3 (true) and 99.2 (false) characters. All statements are 120 characters or fewer and all explanations are 240 or fewer.\n- Coverage gaps against the section list (no flag, because the cards are not wrong): there is no card on include:template, include:rules (r5-08 touches include:rules variables only), extends with multiple parents or hidden template jobs, or the << merge key.\n- No duplicates with other sections. The nearest overlaps (r11-01 on included rules, r14-03 and r14-04 on include:component) rest on different facts."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "gitlab-ci-sr14-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, docs.gitlab.com/ci/inputs/ current (inputs GA since 17.0)",
+     "evidence": "https://docs.gitlab.com/ci/inputs/#cicd-inputs-and-variables-comparison: \"Once passed at pipeline initialization, input values are interpolated in the CI/CD configuration and remain fixed for the entire pipeline run.\"",
+     "problem": "The answer is correct, but the statement closely paraphrases the source sentence (\"remain fixed for the entire pipeline run\" becomes \"stay fixed for the whole pipeline\"). Its own clause \"once GitLab interpolates them at pipeline creation\" also gives the answer away: anything written into the configuration at creation is fixed by definition, so a player who knows nothing about inputs can still answer True.",
+     "suggestedFix": "Keep the answer True and test the other half of the same misconception, that inputs are not CI/CD variables. Statement: \"Inputs reach a job's script through `$[[ inputs.name ]]` interpolation rather than as CI/CD variables in the job environment.\" Explanation: \"GitLab interpolates inputs into the configuration when the pipeline is created. They are not CI/CD variables, so a script sees an input's value where $[[ inputs.name ]] places it.\" Keep the URL https://docs.gitlab.com/ci/inputs/#cicd-inputs-and-variables-comparison."
+    },
+    {
+     "id": "gitlab-ci-sr14-12",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, docs.gitlab.com/ci/inputs/#for-configuration-added-with-include current",
+     "evidence": "https://docs.gitlab.com/ci/inputs/#for-configuration-added-with-include: \"A file added with include cannot access inputs defined in other files, or the including file. To use a value from an included file, pass it explicitly with include:inputs.\"",
+     "problem": "The fact and the answer (False) are correct. However, the statement is the source sentence with its negation flipped (\"A file added with include cannot access inputs defined in ... the including file\" becomes \"A file added with include can read the inputs defined in the file that includes it\"). That breaks the rule against reproducing a sentence of the official page with a word or two changed.",
+     "suggestedFix": "Keep the answer False and reword it as a realistic nested-include case. Statement: \"Inputs a component receives through `include:inputs` are also available in the files that component includes.\" Explanation: \"An input exists only in the file whose spec:inputs header defines it. A file the component includes gets the value only when the component passes it on with its own include:inputs.\" Keep the same URL."
+    },
+    {
+     "id": "gitlab-ci-sr14-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, docs.gitlab.com/ci/components/#component-versions current",
+     "evidence": "https://docs.gitlab.com/ci/components/#component-versions: \"A tag, for example: 1.0.0. If a tag and commit SHA exist with the same name, the commit SHA takes precedence over the tag. ... A branch name, for example main. If a branch and tag exist with the same name, the tag takes precedence over the branch.\"",
+     "problem": "The answer (True) is correct. But a tag named exactly like a 40-character commit SHA almost never happens in a real project, so the card tests an obscure detail. The prompt says hard cards must be \"a real distinction between two similar things, not an obscure detail\". The tag-versus-branch rule from the same list is the version-resolution case developers actually hit, for example a release branch and a tag that share a name.",
+     "suggestedFix": "Keep the answer True. Statement: \"If a branch and a tag share a name, `include:component` uses the tag as the component version.\" Explanation: \"If a branch and a tag share a name, GitLab resolves the include:component version to the tag. A commit SHA outranks both, and ~latest or a partial version comes last.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards (6 true: 01, 04, 06, 07, 09, 11; 6 false: 02, 03, 05, 08, 10, 12), using the live text of https://docs.gitlab.com/ci/components/, https://docs.gitlab.com/ci/inputs/ and https://docs.gitlab.com/ci/yaml/ (all loaded 2026-10-08). All three flags are weak_card, and each suggested replacement keeps the card's answer, so the section's 6/6 true and false balance is unchanged.\n\nCards that passed, with the evidence that settles them:\n- **01:** \"Only the template.yml file is used by other projects using the component. Other files in these directories are not released with the component.\"\n- **02:** \"All components in the project are versioned together ... If a component requires different versioning ... moved to a dedicated component project.\"\n- **03:** \"You can only reference components in the same GitLab instance as your project.\" The mirror section, \"Use a GitLab.com component on GitLab Self-Managed\", is marked Tier: Premium, Ultimate, so the explanation's tier note is right. The topic label \"Component versions\" is a minor mislabel, not worth a flag.\n- **05:** \"~latest does not include pre-releases, for example 1.0.1-rc, which are not considered production-ready\" and \"To fetch a pre-release version, specify the full version.\"\n- **06:** \"You must use the release keyword in a CI/CD job to create the release, not the Releases API.\" I tried to refute it: `glab release create --publish-to-catalog` exists, but https://docs.gitlab.com/cli/release/create/ marks it EXPERIMENTAL and it needs a feature flag (ci_release_cli_catalog_publish_option). The pinning rules exclude that, so the card stands.\n- **07:** \"The header must be at the top of the file, separated from the rest of the configuration with ---.\" The explanation also correctly says the --- is needed when the file contains jobs.\n- **08:** \"Inputs are mandatory if default is not specified.\"\n- **10:** \"By default, inputs expect strings\", and the type list reads \"string (default when not specified)\". Leaving out the type means the input is validated as a string, so arrays and booleans are rejected.\n- **11:** /ci/inputs/ \"Array inputs with options\" says \"Introduced in GitLab 19.0\" with no feature flag, plus \"The pipeline fails to start if any value in the array input does not match a listed option.\" The version is named in the statement and appliesTo.\n\nDuplicate check: no card outside r14 touches components, inputs or the CI/CD Catalog. The suggested replacement for 09 (\"inputs are not CI/CD variables\") is a fact no other card uses, and it avoids the r13 fact about a retry reusing the configuration.\n\nThings that are not flags but worth knowing:\n- Section coverage is uneven. Nothing tests trigger:inputs or trigger:include:inputs, spec:inputs:regex, ~latest and partial versions working only for Catalog releases, same-named jobs merging between a component and the pipeline, the CI/CD Catalog project setting, or GitLab's recommendation to prefer pipeline inputs over pipeline variables. Inputs have four cards on how they are defined.\n- The \"Component versions\" topic label is used for card 03, which is about same-instance inclusion.\n\nWeb search hit its session budget, so I verified by fetching docs.gitlab.com pages directly (WebFetch and curl). No files were edited."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "gitlab-ci-sr12-02",
+     "gitlab-ci-sr12-03"
+    ],
+    "why": "Both test the trigger-job status distinction: sr12-02 says a default trigger job succeeds once the downstream pipeline is created, and sr12-03 says trigger:strategy: mirror makes it match the downstream status. These are the two sides of one fact, and each answer gives away the other. sr12-03 is also close to a name giveaway, since 'mirror' means 'matches the downstream status'.",
+    "dropId": "gitlab-ci-sr12-03"
+   },
+   {
+    "ids": [
+     "gitlab-ci-sr9-07",
+     "gitlab-ci-sr9-08"
+    ],
+    "why": "The prompt lists 'artifacts upload only for successful jobs unless artifacts:when says otherwise, while artifacts:reports are always uploaded' as one misconception to test once. sr9-07 (artifacts:paths not uploaded on failure) and sr9-08 (reports uploaded on failure) are the two sides of that one distinction. sr9-07 is the weaker card: its explanation's word 'Ordinary' signals that reports behave differently, and sr9-11 already tests artifacts:when.",
+    "dropId": "gitlab-ci-sr9-07"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "trigger-job-status",
+    "ids": [
+     "gitlab-ci-sr12-02",
+     "gitlab-ci-sr12-03"
+    ],
+    "why": "sr12-03 shows that an option exists to make the trigger job track the downstream status, so the default does not, which answers sr12-02. sr12-02's explanation ('rather than the result of the downstream jobs') in turn hints at sr12-03."
+   },
+   {
+    "name": "artifact-upload-conditions",
+    "ids": [
+     "gitlab-ci-sr9-07",
+     "gitlab-ci-sr9-08",
+     "gitlab-ci-sr9-11"
+    ],
+    "why": "The explanations of sr9-07 and sr9-11 say 'ordinary artifact uploads', which implies report artifacts behave differently (sr9-08). sr9-08's explanation ('for both successful and failed jobs') contrasts with the on_success default in sr9-07."
+   },
+   {
+    "name": "artifact-download-scope",
+    "ids": [
+     "gitlab-ci-sr3-06",
+     "gitlab-ci-sr9-09",
+     "gitlab-ci-sr3-07"
+    ],
+    "why": "sr3-06's false statement describes exactly the default from sr9-09 (download from every earlier-stage job), and its explanation says needs restricts that. Seeing sr9-09 or sr3-07 next to it makes the needs contrast easy to guess."
+   },
+   {
+    "name": "same-stage-producer",
+    "ids": [
+     "gitlab-ci-sr3-03",
+     "gitlab-ci-sr9-10"
+    ],
+    "why": "A mirrored true/false pair: needs accepts a job in the same stage (true), dependencies accepts one in the same stage (false). Dealt together, a player can answer by analogy or by contrast instead of by knowledge."
+   },
+   {
+    "name": "needs-scheduling",
+    "ids": [
+     "gitlab-ci-sr3-01",
+     "gitlab-ci-sr3-02"
+    ],
+    "why": "sr3-01's explanation says needs schedules the job after its listed producers instead of the whole stage. That makes it obvious that an empty needs list does not wait for the previous stage (sr3-02, false)."
+   },
+   {
+    "name": "mr-pipeline-rules-requirement",
+    "ids": [
+     "gitlab-ci-sr4-12",
+     "gitlab-ci-sr11-01"
+    ],
+    "why": "sr11-01's explanation says merge request pipelines need a matching merge_request_event job rule or workflow rule. That gives away sr4-12: jobs with no rules are not added to merge request pipelines. sr4-12's explanation hints back the other way."
+   },
+   {
+    "name": "fork-pipelines",
+    "ids": [
+     "gitlab-ci-sr7-05",
+     "gitlab-ci-sr11-03",
+     "gitlab-ci-sr11-04",
+     "gitlab-ci-sr11-05"
+    ],
+    "why": "sr7-05 ('a pipeline running in a fork') and sr11-05 (a warning to accept before running in the parent) present running in the parent as a deliberate exception, which answers sr11-03 (false). sr11-04's wording ('run in the parent project') has the same effect. sr11-04's statement sets up the configuration question that sr7-05 and sr11-05 touch."
+   },
+   {
+    "name": "mr-vs-merged-results",
+    "ids": [
+     "gitlab-ci-sr11-02",
+     "gitlab-ci-sr11-06",
+     "gitlab-ci-sr11-12"
+    ],
+    "why": "The explanations of sr11-06 and sr11-12 describe the temporary merged commit that contains target-branch changes. That is the contrast which answers sr11-02 (a merge request pipeline tests the source branch alone)."
+   },
+   {
+    "name": "merge-train-merged-results",
+    "ids": [
+     "gitlab-ci-sr11-08",
+     "gitlab-ci-sr11-09"
+    ],
+    "why": "sr11-09 (each train pipeline includes the changes of the merge requests ahead of it) implies merged-commit testing. That strongly hints that merge trains depend on merged results pipelines (sr11-08, false)."
+   },
+   {
+    "name": "downstream-permission-checks",
+    "ids": [
+     "gitlab-ci-sr6-10",
+     "gitlab-ci-sr12-08"
+    ],
+    "why": "sr6-10's explanation says GitLab checks the user's role in the downstream project for multi-project triggers. That gives away sr12-08: the triggering user needs permission in the downstream project."
+   },
+   {
+    "name": "trigger-forward",
+    "ids": [
+     "gitlab-ci-sr12-04",
+     "gitlab-ci-sr12-11"
+    ],
+    "why": "sr12-11's explanation says pipeline variables pass only with trigger:forward pipeline_variables: true, and sr12-04's explanation says each trigger job controls its own forwarding. Both rest on the same 'forwarding is explicit per trigger' idea, and sr12-04's statement ('received pipeline variables') hints at sr12-11."
+   },
+   {
+    "name": "project-variable-precedence",
+    "ids": [
+     "gitlab-ci-sr6-07",
+     "gitlab-ci-sr6-08"
+    ],
+    "why": "Same template ('GitLab gives project variable(s) precedence over a same-named ...'), and both are true. Each explanation says project values win, so a player who sees one can pattern-match the other."
+   },
+   {
+    "name": "yaml-variable-override",
+    "ids": [
+     "gitlab-ci-sr5-03",
+     "gitlab-ci-sr6-01"
+    ],
+    "why": "Twin true statements: '<keyword> variable overrides the same-named top-level variable'. Seeing one makes the other a pattern match."
+   },
+   {
+    "name": "replace-not-append",
+    "ids": [
+     "gitlab-ci-sr1-02",
+     "gitlab-ci-sr13-09"
+    ],
+    "why": "sr13-09 (true: a job's own script replaces the template's array instead of adding to it) lets a player answer sr1-02 (false: default before_script is appended to a job's own) by analogy, and the reverse."
+   },
+   {
+    "name": "include-merge-semantics",
+    "ids": [
+     "gitlab-ci-sr13-02",
+     "gitlab-ci-sr13-03"
+    ],
+    "why": "sr13-03's explanation ('keys the local job leaves unset keep their included values') implies that keys the local file sets win, which answers sr13-02. sr13-02's explanation ('values in .gitlab-ci.yml take precedence') hints that same-named jobs are merged."
+   },
+   {
+    "name": "cross-file-reuse",
+    "ids": [
+     "gitlab-ci-sr13-11",
+     "gitlab-ci-sr13-12"
+    ],
+    "why": "sr13-11's explanation says to use extends or !reference tags to reuse configuration from another file, which gives away sr13-12 (true: !reference to rule lists elsewhere)."
+   },
+   {
+    "name": "config-fixed-at-creation",
+    "ids": [
+     "gitlab-ci-sr13-04",
+     "gitlab-ci-sr14-09"
+    ],
+    "why": "sr13-04's explanation (a retried job uses the configuration fetched at pipeline creation) and sr14-09's explanation (inputs are interpolated when the configuration is fetched) state the same timing principle, and each hints at the other's answer."
+   },
+   {
+    "name": "input-types",
+    "ids": [
+     "gitlab-ci-sr14-10",
+     "gitlab-ci-sr14-11"
+    ],
+    "why": "sr14-10's explanation lists the array type and says inputs default to string, and sr14-11's statement names an 'array type input', which hints that types must be declared. Each nudges the other."
+   },
+   {
+    "name": "untagged-jobs",
+    "ids": [
+     "gitlab-ci-sr8-04",
+     "gitlab-ci-sr8-12"
+    ],
+    "why": "Both are about runners accepting untagged jobs. sr8-04's true statement (Run untagged jobs) makes sr8-12's false claim (hosted runners require a tag) easier to reject, and sr8-12's explanation says hosted runners accept untagged jobs."
+   },
+   {
+    "name": "script-shell-context",
+    "ids": [
+     "gitlab-ci-sr2-01",
+     "gitlab-ci-sr2-02"
+    ],
+    "why": "The two sides of the shell-context distinction (before_script and script share one shell, after_script runs in a separate one). sr2-02's explanation ('separate shell') contrasts directly with sr2-01's statement."
+   },
+   {
+    "name": "interruptible-auto-cancel",
+    "ids": [
+     "gitlab-ci-sr2-10",
+     "gitlab-ci-sr12-06"
+    ],
+    "why": "sr2-10's statement and explanation describe new-commit auto-cancel for pipelines on the same ref. That hints that interruptible child pipelines are canceled the same way (sr12-06, true)."
+   },
+   {
+    "name": "job-drop-top-level-variables",
+    "ids": [
+     "gitlab-ci-sr1-04",
+     "gitlab-ci-sr6-02"
+    ],
+    "why": "Both are ways to drop top-level variables in one job. sr1-04's explanation (the other top-level variables are excluded) primes the idea that a job can opt out, which hints that variables: {} does not keep them (sr6-02, false)."
+   }
+  ],
+  "tells": "168 cards, 84 true and 84 false. Every section has 6 true and 6 false. Average statement length is 89.8 for true and 89.5 for false, and within each section the gap stays under 5 characters, so length is not a tell. The answer tells are in wording.\n\n(1) STRONGEST TELL. A statement that starts with 'Since GitLab N' is always true: 7 true, 0 false (sr2-03, sr6-12, sr7-01, sr7-02, sr7-08, sr12-03, sr14-11). The prompt forces version-tagged cards, but it never says that false ones are forbidden. A player who answers True to every 'Since GitLab' card scores 7/7. Fix: rewrite 2 to 3 of them as false (for example a wrong default for the changed behaviour), or drop the version prefix where it is not required.\n\n(2) 'Recommends' or 'docs suggest' is always true: 2/2 (sr8-11, sr13-01).\n\n(3) Precedence and override wording leans true: 8 true (sr4-04, sr5-03, sr6-01, sr6-05, sr6-07, sr6-08, sr6-09, sr10-07) against 3 false (sr2-09, sr4-06, sr13-02). The exact template 'GitLab gives X precedence over Y' is true 3/3 (sr6-05, sr6-07, sr6-08).\n\n(4) The word 'same' leans true: 11 true (sr1-07, sr3-03, sr5-03, sr6-01, sr6-05, sr6-07, sr6-08, sr6-09, sr10-10, sr12-05, sr12-06) against 3 false (sr8-08, sr9-01, sr9-10).\n\n(5) 'reuse/reuses' is always false: 0 true, 5 false (sr8-08, sr9-01, sr12-04, sr13-03, sr13-11).\n\n(6) 'first' is always false: 0/3 (sr1-06 first stage, sr3-04 first instance, sr8-07 first in, first out).\n\n(7) A recurring false template goes over the prompt's cap of 2: 'something propagates or is inherited across a boundary (parent to child, upstream to nested downstream, parent project to fork, including file to included file)'. That template is false 6 times (sr1-03, sr7-05, sr12-04, sr12-09, sr12-11, sr14-12), with only one true counterpart (sr12-05).\n\n(8) Templates at the cap of 2:\n- 'X adds or appends its values to Y's list', false 2 (sr1-02, sr3-09), with sr13-09 as the true 'replaces instead of adding'.\n- 'X waits for Y', false 2 (sr3-02, sr3-10).\n- 'a timer or age is measured from creation or commit time', false 2 (sr10-09, sr10-11).\n- 'a lower role (Developer, group Owner) can do X', false 2/2 (sr6-04, sr6-06), against 'the Maintainer role grants' true (sr8-01, sr11-07).\n\n(9) Mild leans:\n- 'supports' is 1 true / 3 false (sr4-07; sr5-02, sr9-10, sr11-08).\n- 'by default' is 7 true / 10 false (true: sr4-11, sr6-12, sr7-02, sr7-08, sr9-02, sr9-09, sr12-02; false: sr4-03, sr4-09, sr7-05, sr7-10, sr9-07, sr11-03, sr11-10, sr12-04, sr12-07, sr12-11).\n- Statements opening with 'A job' are 7 true / 11 false.\n\n(10) Balanced, no action needed: 'can' (17 true / 16 false), 'requires' (2/2), 'each' (3/2), Premium and Ultimate statements (6/5), GitLab Runner as the subject (5/3).\n\n(11) Definitional or name-giveaway cards a player can answer from the words alone:\n- sr12-03: 'mirror' matches the downstream status.\n- sr3-12: the dependency view groups jobs by needs.\n- sr5-01: workflow:rules controls whether a pipeline is created.\n- sr2-12: parallel:matrix creates job instances with different variable combinations.\n- sr1-10: a dot hides a job.\n- sr1-07: jobs in the same stage run concurrently.\nAll six are true, which adds to the 'plain true-sounding definition = true' lean.\n\n(12) Batch style difference: b4 cards (sections r13 and r14, written by Opus) have explanations of about 145 to 151 characters, against about 95 to 115 for b1 to b3. Statements in r10 to r14 also run about 10 to 15 characters longer. This is not an answer tell, because true and false are balanced inside each section. In r4, true explanations average 78 characters against 95 for false, but explanations are shown only after the player answers."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "gitlab-ci-sr1-11",
+    "reason": "weak_card: a truism. `stages` is plainly a top-level keyword. Dropping it leaves r1 at 11 cards (5T/6F), so no replacement is needed."
+   },
+   {
+    "id": "gitlab-ci-sr2-07",
+    "reason": "weak_card: the false side follows from the keyword itself (listed exit codes are allowed, so others fail), and the explanation only restates it. r2 stays at 10 cards, 5T/5F once sr2-04 is rewritten as true."
+   },
+   {
+    "id": "gitlab-ci-sr2-12",
+    "reason": "weak_card: a definition card. The answer can be read from the name `parallel:matrix`."
+   },
+   {
+    "id": "gitlab-ci-sr3-05",
+    "reason": "weak_card: a name giveaway (`needs:parallel:matrix` selects matrix combinations). r3 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "gitlab-ci-sr3-12",
+    "reason": "weak_card: the 'dependency view' grouping jobs by needs is true by definition."
+   },
+   {
+    "id": "gitlab-ci-sr4-05",
+    "reason": "weak_card: a name giveaway. `rules:variables` sets variables in a rule."
+   },
+   {
+    "id": "gitlab-ci-sr4-06",
+    "reason": "duplicate of sr4-04: a matching rule's attribute overrides the job-level attribute."
+   },
+   {
+    "id": "gitlab-ci-sr4-12",
+    "reason": "ambiguous, and no clean rewrite is possible. The merge request pipelines page shows `workflow: rules: - if: $CI_PIPELINE_SOURCE == \"merge_request_event\"` with a rule-less job1 that 'runs in merge request pipelines'. So a job without rules, only or except does join merge request pipelines when workflow:rules allows them, and the suggested 'A job that omits rules, only and except is added to merge request pipelines' (false) is defensibly true. Stating the no-workflow case would need a negation. r4 keeps 9 cards (5T/4F)."
+   },
+   {
+    "id": "gitlab-ci-sr5-05",
+    "reason": "weak_card: wording tell. 'pushing' points straight at the value `push`. r5 stays at 10 cards (5T/5F)."
+   },
+   {
+    "id": "gitlab-ci-sr5-08",
+    "reason": "weak_card: the label 'job-only' next to an include-time keyword gives away False."
+   },
+   {
+    "id": "gitlab-ci-sr6-03",
+    "reason": "weak_card: common sense says anyone who can read the repository can read the values in .gitlab-ci.yml. r6 stays at 10 cards (5T/5F)."
+   },
+   {
+    "id": "gitlab-ci-sr6-08",
+    "reason": "weak_card: a third true card on the 'GitLab gives X precedence over Y' template, a wording tell, and it overlaps sr6-07 (a project variable beats a lower pipeline source)."
+   },
+   {
+    "id": "gitlab-ci-sr7-12",
+    "reason": "weak_card: a name giveaway and a near copy of the reference's opening sentence for `secrets`. r7 stays at 11 cards (5T/6F)."
+   },
+   {
+    "id": "gitlab-ci-sr8-04",
+    "reason": "weak_card: a name giveaway (Run untagged jobs runs untagged jobs). r8 stays at 11 cards (5T/6F)."
+   },
+   {
+    "id": "gitlab-ci-sr9-04",
+    "reason": "weak_card: a name giveaway (a `pull` policy that uploads). sr9-12 is rewritten instead to keep r9 at 6T/4F."
+   },
+   {
+    "id": "gitlab-ci-sr9-07",
+    "reason": "Scan duplicate of sr9-08: both are sides of the one 'artifacts on success only vs reports always' misconception, and sr9-11 already tests artifacts:when."
+   },
+   {
+    "id": "gitlab-ci-sr10-07",
+    "reason": "weak_card: a name giveaway (deployment_tier sets the tier). sr10-10 is rewritten to keep r10 at 4T/6F."
+   },
+   {
+    "id": "gitlab-ci-sr10-12",
+    "reason": "weak_card: a name giveaway (Allowed to deploy restricts who deploys) with a vague 'protected manual deployment jobs'."
+   },
+   {
+    "id": "gitlab-ci-sr11-07",
+    "reason": "weak_card: guessable. A Maintainer can change almost any project setting. r11 stays at 11 cards (5T/6F)."
+   },
+   {
+    "id": "gitlab-ci-sr12-03",
+    "reason": "weak_card plus scan duplicate of sr12-02: a name giveaway ('mirror'), and the other side of the trigger-status distinction."
+   },
+   {
+    "id": "gitlab-ci-sr12-04",
+    "reason": "duplicate of sr12-11: forwarded variables are pipeline variables, so the nested non-forwarding follows from the same fact."
+   },
+   {
+    "id": "gitlab-ci-sr12-12",
+    "reason": "weak_card: 'unrelated project's pipeline' makes False a strawman. r12 keeps 9 cards (5T/4F), so no rewrite is needed."
+   },
+   {
+    "id": "gitlab-ci-sr14-04",
+    "reason": "weak_card: an obscure detail (a tag named like a 40-character SHA). r14 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "gitlab-ci-sr14-09",
+    "reason": "weak_card: it paraphrases the source sentence and its own clause ('once GitLab interpolates them at pipeline creation') gives the answer away."
+   },
+   {
+    "id": "gitlab-ci-sr14-12",
+    "reason": "weak_card: the source sentence with its negation flipped, which breaks the rule against near copies."
+   }
+  ],
+  "source": [
+   {
+    "id": "gitlab-ci-sr3-03",
+    "title": "CI/CD YAML syntax reference",
+    "url": "https://docs.gitlab.com/ci/yaml/#needs"
+   },
+   {
+    "id": "gitlab-ci-sr3-06",
+    "title": "CI/CD YAML syntax reference",
+    "url": "https://docs.gitlab.com/ci/yaml/#needsartifacts"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "gitlab-ci-sr2-04",
+    "reason": "ambiguous: the old statement had no 'by default', and AFTER_SCRIPT_IGNORE_ERRORS: false lets an after_script error fail the job. Rewritten with 'By default' and flipped to true. This states the same fact, moves 'by default' onto a true card (that phrase leaned false), and brings r2 to 5T/5F after the two drops. Confirmed on configure_runners: 'By default, GitLab Runner ignores any errors that happen when after_script runs. To set the job to fail immediately on errors when after_script runs, set the AFTER_SCRIPT_IGNORE_ERRORS CI/CD variable to false.'",
+    "statement": "By default, a job whose `script` succeeded still passes when its `after_script` fails.",
+    "answer": true,
+    "explanation": "GitLab Runner ignores after_script errors by default, so the job keeps the result of its script. Setting the AFTER_SCRIPT_IGNORE_ERRORS variable to false makes such an error fail the job.",
+    "misconception": "",
+    "sourceTitle": "Configuring runners",
+    "sourceUrl": "https://docs.gitlab.com/ci/runners/configure_runners/#ignore-errors-in-after_script"
+   },
+   {
+    "id": "gitlab-ci-sr3-03",
+    "reason": "source_problem: the stageless anchor supports the card only by inference. /ci/yaml/#needs states 'You can refer to jobs in the same stage as the job you are configuring.' The explanation only restated the statement, so it now adds the consequence. The statement and answer are unchanged.",
+    "statement": "GitLab accepts a job's `needs` dependency on a producer assigned to the same pipeline stage.",
+    "answer": true,
+    "explanation": "needs can name a job in the consumer's own stage, and the consumer starts once that job finishes, so jobs of one stage can run in sequence.",
+    "misconception": "",
+    "sourceTitle": "CI/CD YAML syntax reference",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/#needs"
+   },
+   {
+    "id": "gitlab-ci-sr3-06",
+    "reason": "source_problem: the job_artifacts anchor covers only dependencies and needs:artifacts. /ci/yaml/#needsartifacts states 'When a job uses needs, it no longer downloads all artifacts from previous stages by default ... With needs you can only download artifacts from the jobs listed in the needs configuration.' The statement, answer and explanation are unchanged.",
+    "statement": "A job with `needs` downloads artifacts from each completed job in earlier stages.",
+    "answer": false,
+    "explanation": "A job using `needs` restricts artifact downloads to the producers named in its dependency list.",
+    "misconception": "Adding needs retains the ordinary broad artifact downloads.",
+    "sourceTitle": "CI/CD YAML syntax reference",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/#needsartifacts"
+   },
+   {
+    "id": "gitlab-ci-sr9-12",
+    "reason": "weak_card (self-contradicting wording, non-official setting name). Rewritten rather than dropped because dropping sr9-04, sr9-07 and sr9-12 would leave r9 at 6T/3F. Confirmed on job_artifacts: 'By default, for each Git ref (branch or tag), GitLab preserves artifacts from ... The most recent successful pipeline ... Any expire_in configuration does not apply to these artifacts.'",
+    "statement": "By default, GitLab deletes a branch's newest successful pipeline artifacts once their `artifacts:expire_in` time passes.",
+    "answer": false,
+    "explanation": "By default, GitLab keeps the artifacts of each ref's latest pipeline and of its most recent successful pipeline, and expire_in does not apply to them. A project can turn this off.",
+    "misconception": "An expire_in deadline removes the artifacts of a ref's most recent successful pipeline.",
+    "sourceTitle": "Job artifacts",
+    "sourceUrl": "https://docs.gitlab.com/ci/jobs/job_artifacts/#keep-artifacts-from-most-recent-successful-jobs"
+   },
+   {
+    "id": "gitlab-ci-sr10-09",
+    "reason": "ambiguous: a first-stage or needs: [] delayed job has no earlier stage to wait for. The statement now names a later-stage job. Confirmed on job_control: 'The timer of a delayed job starts immediately after the previous stage completes. Similar to other types of jobs, a delayed job's timer doesn't start unless the previous stage passes.'",
+    "statement": "GitLab starts the `start_in` timer of a delayed job in the deploy stage while the build and test stages still run.",
+    "answer": false,
+    "explanation": "A delayed job's timer starts only after the previous stage completes successfully, so the start_in wait adds to the time the earlier stages take.",
+    "misconception": "A delayed job's timer starts while earlier stages are still running.",
+    "sourceTitle": "Control how jobs run",
+    "sourceUrl": "https://docs.gitlab.com/ci/jobs/job_control/#run-a-job-after-a-delay"
+   },
+   {
+    "id": "gitlab-ci-sr10-10",
+    "reason": "weak_card (near copy of the YAML reference sentence). Rewritten rather than dropped because dropping sr10-07, sr10-10 and sr10-12 would leave r10 at 3T/6F, and this keeps the section's only resource_group card. Confirmed at /ci/yaml/#resource_group: 'ensures a job is mutually exclusive across different pipelines for the same project ... only one of the jobs starts. The other jobs wait until the resource_group is free.'",
+    "statement": "GitLab runs the `resource_group: production` jobs of two pipelines on different branches of one project one at a time.",
+    "answer": true,
+    "explanation": "A resource group makes a job mutually exclusive across the project's pipelines, whatever their branch, so a job waits while another job of that group runs.",
+    "misconception": "",
+    "sourceTitle": "CI/CD YAML syntax reference",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/#resource_group"
+   },
+   {
+    "id": "gitlab-ci-sr11-01",
+    "reason": "ambiguous: 'a rule in an included file' can be read as job or workflow rules inside an included file, which do produce merge request pipelines. Narrowed to rules on the include: entry, which is false under either reading of the docs note: 'Rules defined in include: (for example, with include:component) do not satisfy this requirement.' The explanation drops the contested 'directly in .gitlab-ci.yml'.",
+    "statement": "Rules on an `include:` entry, such as an `include:component`, count as the rules that merge request pipelines need.",
+    "answer": false,
+    "explanation": "Rules defined in include:, for example with include:component, do not count. Merge request pipelines need job rules or workflow:rules that match CI_PIPELINE_SOURCE == \"merge_request_event\".",
+    "misconception": "Rules on an include entry satisfy the merge request pipeline rules requirement.",
+    "sourceTitle": "Merge request pipelines",
+    "sourceUrl": "https://docs.gitlab.com/ci/pipelines/merge_request_pipelines/#configure-merge-request-pipelines"
+   },
+   {
+    "id": "gitlab-ci-sr13-07",
+    "reason": "ambiguous: a URL that carries a token in its query string (built from a project variable) does fetch a private file. The card now tests that GitLab itself sends no credentials. Confirmed at /ci/yaml/#includeremote: 'A public URL accessible by an HTTP/HTTPS GET request: Authentication with the remote URL is not supported.'",
+    "statement": "`include:remote` sends an access token header so GitLab can fetch a YAML file from a private URL.",
+    "answer": false,
+    "explanation": "include:remote fetches the URL with a plain HTTP or HTTPS GET and supports no authentication. For a file in a private project on the same instance, use include:project.",
+    "misconception": "include:remote can send credentials to fetch a file from an authenticated URL.",
+    "sourceTitle": "CI/CD YAML syntax reference",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/#includeremote"
+   },
+   {
+    "id": "gitlab-ci-sr13-12",
+    "reason": "explanation_error: the old explanation said every keyword other than rules, script and stages gives a validation error, but the same page documents nested !reference in before_script and after_script. The new explanation stays on rules only. The statement and answer are unchanged and supported by 'You can use multiple !reference tags to build up an array with rules, script, or stages.'",
+    "statement": "A job can build its `rules` array from several `!reference` tags that point at rule lists elsewhere.",
+    "answer": true,
+    "explanation": "Each tag inserts the rule list it points at, and GitLab combines the lists into one rules array, so shared rule sets can be mixed per job.",
+    "misconception": "",
+    "sourceTitle": "Optimize GitLab CI/CD configuration files",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/yaml_optimization/#reference-tags"
+   },
+   {
+    "id": "gitlab-ci-sr6-05",
+    "reason": "tell: breaks the 'GitLab gives X precedence over Y' template (true 3/3) and removes a true 'same'. The fact (closest subgroup wins) and the answer are unchanged. Docs: 'If the same variable name exists in a group and its subgroups, the job uses the value from the closest subgroup.'",
+    "statement": "When a parent group and its subgroup both define `DEPLOY_ENV`, jobs in the subgroup's projects get the subgroup's value.",
+    "answer": true,
+    "explanation": "An inherited group variable comes from the nearest subgroup that defines its name, rather than a more distant ancestor.",
+    "misconception": "",
+    "sourceTitle": "CI/CD variables",
+    "sourceUrl": "https://docs.gitlab.com/ci/variables/#cicd-variable-precedence"
+   },
+   {
+    "id": "gitlab-ci-sr8-08",
+    "reason": "tell: removes 'reuses' (always false, 5/5). The fact (a new Pod per job) and the answer are unchanged.",
+    "statement": "The Kubernetes executor runs the jobs of one pipeline stage in the same Pod.",
+    "answer": false,
+    "explanation": "GitLab Runner asks Kubernetes to create a fresh Pod for each CI/CD job.",
+    "misconception": "The Kubernetes executor shares one Pod between jobs in the same stage.",
+    "sourceTitle": "Executors",
+    "sourceUrl": "https://docs.gitlab.com/runner/executors/#kubernetes-executor"
+   },
+   {
+    "id": "gitlab-ci-sr9-01",
+    "reason": "tell: removes 'reuse' (always false). The fact (caches are never shared between projects) and the answer are unchanged.",
+    "statement": "Jobs in different projects can share one cache by choosing the same `cache:key`.",
+    "answer": false,
+    "explanation": "GitLab scopes caches to a project. Matching cache keys do not make one project's cache available to another.",
+    "misconception": "Identical cache keys make caches available across projects.",
+    "sourceTitle": "Caching in GitLab CI/CD",
+    "sourceUrl": "https://docs.gitlab.com/ci/caching/#cache"
+   },
+   {
+    "id": "gitlab-ci-sr13-11",
+    "reason": "tell: removes 'reuse' (always false). The fact (anchors work only in their own file) and the answer are unchanged.",
+    "statement": "A YAML alias in `.gitlab-ci.yml` can point to an anchor defined in a file added with `include`.",
+    "answer": false,
+    "explanation": "YAML anchors are valid in the file that defines them. To reuse configuration from another file, use extends or !reference tags.",
+    "misconception": "YAML anchors work across files combined with include.",
+    "sourceTitle": "Optimize GitLab CI/CD configuration files",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/yaml_optimization/#anchors"
+   },
+   {
+    "id": "gitlab-ci-sr3-04",
+    "reason": "tell: removes 'first' (always false, 3/3). The fact (needing a parallel job waits for all of its instances) and the answer are unchanged.",
+    "statement": "`needs` on a parallel job lets its consumer start once any one of its instances succeeds.",
+    "answer": false,
+    "explanation": "A plain dependency on a parallel job waits for every instance of that producer.",
+    "misconception": "Any successful parallel instance satisfies a plain needs dependency.",
+    "sourceTitle": "CI/CD YAML syntax reference",
+    "sourceUrl": "https://docs.gitlab.com/ci/yaml/#needs"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "artifact-upload-conditions",
+    "ids": [
+     "gitlab-ci-sr9-08",
+     "gitlab-ci-sr9-11"
+    ]
+   },
+   {
+    "name": "artifact-download-scope",
+    "ids": [
+     "gitlab-ci-sr3-06",
+     "gitlab-ci-sr9-09",
+     "gitlab-ci-sr3-07"
+    ]
+   },
+   {
+    "name": "same-stage-producer",
+    "ids": [
+     "gitlab-ci-sr3-03",
+     "gitlab-ci-sr9-10"
+    ]
+   },
+   {
+    "name": "needs-scheduling",
+    "ids": [
+     "gitlab-ci-sr3-01",
+     "gitlab-ci-sr3-02"
+    ]
+   },
+   {
+    "name": "fork-pipelines",
+    "ids": [
+     "gitlab-ci-sr7-05",
+     "gitlab-ci-sr11-03",
+     "gitlab-ci-sr11-04",
+     "gitlab-ci-sr11-05"
+    ]
+   },
+   {
+    "name": "mr-vs-merged-results",
+    "ids": [
+     "gitlab-ci-sr11-02",
+     "gitlab-ci-sr11-06",
+     "gitlab-ci-sr11-12"
+    ]
+   },
+   {
+    "name": "merge-train-merged-results",
+    "ids": [
+     "gitlab-ci-sr11-08",
+     "gitlab-ci-sr11-09"
+    ]
+   },
+   {
+    "name": "downstream-permission-checks",
+    "ids": [
+     "gitlab-ci-sr6-10",
+     "gitlab-ci-sr12-08"
+    ]
+   },
+   {
+    "name": "yaml-variable-override",
+    "ids": [
+     "gitlab-ci-sr5-03",
+     "gitlab-ci-sr6-01"
+    ]
+   },
+   {
+    "name": "replace-not-append",
+    "ids": [
+     "gitlab-ci-sr1-02",
+     "gitlab-ci-sr13-09"
+    ]
+   },
+   {
+    "name": "include-merge-semantics",
+    "ids": [
+     "gitlab-ci-sr13-02",
+     "gitlab-ci-sr13-03"
+    ]
+   },
+   {
+    "name": "cross-file-reuse",
+    "ids": [
+     "gitlab-ci-sr13-11",
+     "gitlab-ci-sr13-12"
+    ]
+   },
+   {
+    "name": "input-types",
+    "ids": [
+     "gitlab-ci-sr14-10",
+     "gitlab-ci-sr14-11"
+    ]
+   },
+   {
+    "name": "script-shell-context",
+    "ids": [
+     "gitlab-ci-sr2-01",
+     "gitlab-ci-sr2-02"
+    ]
+   },
+   {
+    "name": "interruptible-auto-cancel",
+    "ids": [
+     "gitlab-ci-sr2-10",
+     "gitlab-ci-sr12-06"
+    ]
+   },
+   {
+    "name": "job-drop-top-level-variables",
+    "ids": [
+     "gitlab-ci-sr1-04",
+     "gitlab-ci-sr6-02"
+    ]
+   },
+   {
+    "name": "private-include-sources",
+    "ids": [
+     "gitlab-ci-sr13-06",
+     "gitlab-ci-sr13-07"
+    ]
+   },
+   {
+    "name": "after-script-outcome",
+    "ids": [
+     "gitlab-ci-sr2-04",
+     "gitlab-ci-sr2-05"
+    ]
+   }
+  ],
+  "sectionBalance": "r1: 11 cards, 5T/6F. r2: 10, 5T/5F (sr2-04 rewritten as true). r3: 10, 4T/6F. r4: 9, 5T/4F. r5: 10, 5T/5F. r6: 10, 5T/5F. r7: 11, 5T/6F. r8: 11, 5T/6F. r9: 10, 6T/4F (sr9-12 rewritten). r10: 10, 4T/6F (sr10-10 rewritten). r11: 11, 5T/6F. r12: 9, 5T/4F. r13: 12, 6T/6F. r14: 9, 4T/5F. Deck: 143 cards, 69 true and 74 false.",
+  "notes": "I checked every rewrite on 2026-10-08 against the live docs.gitlab.com page (HTTP 200, anchor present) and the gitlab-org/gitlab master doc source. All statements are 120 characters or fewer and all explanations 240 or fewer.\n\nDecisions that depart from the verifier suggestions:\n(1) sr2-04 flips from false to true. It tests the same fact with an explicit 'By default'. That balances r2 and moves 'by default' onto a true card.\n(2) sr4-12 is dropped, not reworded. The merge request pipelines page has an example (workflow:rules matching merge_request_event, plus a job1 without rules described as 'This job runs in merge request pipelines'). So the prompt's misconception 'jobs without rules, only or except do not appear in merge request pipelines' is false once workflow:rules allows them. Any future card on the implicit only: branches/tags default must name the no-workflow:rules case.\n(3) In sr11-01 and sr13-07, the explanations avoid the contested 'directly in .gitlab-ci.yml' and include:project details.\n\nWhere balance forced a rewrite instead of a drop: r9 (sr9-12 rewritten, sr9-04 and sr9-07 dropped) and r10 (sr10-10 rewritten, sr10-07 and sr10-12 dropped).\n\nRemaining tells that tell rewrites cannot fix without changing answers:\n- 'Since GitLab N' is still true 6/6 (sr2-03, sr6-12, sr7-01, sr7-02, sr7-08, sr14-11). The prompt requires the version inside these statements. A later pass should add 2 to 3 false version-tagged cards, for example a wrong default for a changed behaviour.\n- The cross-boundary propagation template is still false 4 times (sr1-03, sr7-05, sr12-09, sr12-11), against the cap of 2.\n- 'reuse' is now false only in sr13-03.\n- 'first' is false 2/2 (sr1-06, sr8-07).\n\nWatch items:\n- sr13-04's explanation says a new pipeline fetches includes again. include:cache (GA since 19.0 per the verifier) changes that when it is used. The prompt keeps include:cache out of scope, so this holds for the default, but the prompt assumption should be rechecked.\n- sr6-09's ranking of manual job variables above pipeline variables comes from a 2026-09-09 doc correction.\n- sr9-03's file-content cache key changed around GitLab 18.4.\n\nRemoved scan groups whose members were dropped: trigger-job-status, mr-pipeline-rules-requirement, trigger-forward, project-variable-precedence, config-fixed-at-creation, untagged-jobs.\n\nAdded groups:\n- private-include-sources (sr13-06, sr13-07): sr13-07's explanation points to include:project for private files.\n- after-script-outcome (sr2-04, sr2-05): both concern how after_script relates to job failure."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "gitlab-ci-sr2-04",
+    "decision": "keep",
+    "statement": "By default, a job whose `script` succeeded still passes when its `after_script` fails.",
+    "answer": true,
+    "explanation": "GitLab Runner ignores after_script errors by default, so the job keeps the result of its script. Setting the AFTER_SCRIPT_IGNORE_ERRORS variable to false makes such an error fail the job.",
+    "reason": "Both lenses keep. Confirmed on configure_runners: 'By default, GitLab Runner ignores any errors that happen when after_script runs ... set the AFTER_SCRIPT_IGNORE_ERRORS CI/CD variable to false.' /ci/yaml/#after_script: 'If the script section succeeds and the after_script times out or fails, the job exits with code 0 (Job Succeeded).'"
+   },
+   {
+    "id": "gitlab-ci-sr3-03",
+    "decision": "fixed",
+    "statement": "In one stage, a job that lists another job of the same stage in `needs` waits for that job to finish before it starts.",
+    "answer": true,
+    "explanation": "A job's needs can name a job in its own stage. The job then waits for that job to finish, so jobs of one stage can run in sequence.",
+    "reason": "Wording lens fix merged: 'GitLab accepts' was a true-leaning hedge verb and 'producer' jargon. Its proposed 'starts only after' added the absolute 'only', so the merged statement says 'waits for ... before it starts' instead (118 chars); 'consumer' also dropped from the explanation. Same fact and answer. Confirmed on /ci/yaml/#needs: 'You can refer to jobs in the same stage as the job you are configuring.'"
+   },
+   {
+    "id": "gitlab-ci-sr3-06",
+    "decision": "keep",
+    "statement": "A job with `needs` downloads artifacts from each completed job in earlier stages.",
+    "answer": false,
+    "explanation": "A job using `needs` restricts artifact downloads to the producers named in its dependency list.",
+    "reason": "Both lenses keep. Confirmed at /ci/yaml/#needsartifacts: 'When a job uses needs, it no longer downloads all artifacts from previous stages by default ... With needs you can only download artifacts from the jobs listed in the needs configuration.'"
+   },
+   {
+    "id": "gitlab-ci-sr9-12",
+    "decision": "keep",
+    "statement": "By default, GitLab deletes a branch's newest successful pipeline artifacts once their `artifacts:expire_in` time passes.",
+    "answer": false,
+    "explanation": "By default, GitLab keeps the artifacts of each ref's latest pipeline and of its most recent successful pipeline, and expire_in does not apply to them. A project can turn this off.",
+    "reason": "Both lenses keep; statement exactly 120 chars. Confirmed on job_artifacts: preserves 'The latest pipeline for the ref ... The most recent successful pipeline' and 'Any expire_in configuration does not apply to these artifacts'; clearing 'Keep artifacts from most recent successful jobs' turns it off."
+   },
+   {
+    "id": "gitlab-ci-sr10-09",
+    "decision": "keep",
+    "statement": "GitLab starts the `start_in` timer of a delayed job in the deploy stage while the build and test stages still run.",
+    "answer": false,
+    "explanation": "A delayed job's timer starts only after the previous stage completes successfully, so the start_in wait adds to the time the earlier stages take.",
+    "reason": "Both lenses keep. Confirmed on job_control: 'The timer of a delayed job starts immediately after the previous stage completes ... a delayed job's timer doesn't start unless the previous stage passes.'"
+   },
+   {
+    "id": "gitlab-ci-sr10-10",
+    "decision": "keep",
+    "statement": "GitLab runs the `resource_group: production` jobs of two pipelines on different branches of one project one at a time.",
+    "answer": true,
+    "explanation": "A resource group makes a job mutually exclusive across the project's pipelines, whatever their branch, so a job waits while another job of that group runs.",
+    "reason": "Both lenses keep. Confirmed at /ci/yaml/#resource_group: 'ensures a job is mutually exclusive across different pipelines for the same project ... only one of the jobs starts. The other jobs wait until the resource_group is free.'"
+   },
+   {
+    "id": "gitlab-ci-sr11-01",
+    "decision": "keep",
+    "statement": "Rules on an `include:` entry, such as an `include:component`, count as the rules that merge request pipelines need.",
+    "answer": false,
+    "explanation": "Rules defined in include:, for example with include:component, do not count. Merge request pipelines need job rules or workflow:rules that match CI_PIPELINE_SOURCE == \"merge_request_event\".",
+    "reason": "Both lenses keep. Confirmed on merge_request_pipelines: 'Rules defined in include: (for example, with include:component) do not satisfy this requirement. You must define matching rules: or workflow: rules directly in .gitlab-ci.yml.'"
+   },
+   {
+    "id": "gitlab-ci-sr13-07",
+    "decision": "keep",
+    "statement": "`include:remote` sends an access token header so GitLab can fetch a YAML file from a private URL.",
+    "answer": false,
+    "explanation": "include:remote fetches the URL with a plain HTTP or HTTPS GET and supports no authentication. For a file in a private project on the same instance, use include:project.",
+    "reason": "Both lenses keep. Confirmed at /ci/yaml/#includeremote: 'A public URL accessible by an HTTP/HTTPS GET request: Authentication with the remote URL is not supported.'"
+   },
+   {
+    "id": "gitlab-ci-sr13-12",
+    "decision": "keep",
+    "statement": "A job can build its `rules` array from several `!reference` tags that point at rule lists elsewhere.",
+    "answer": true,
+    "explanation": "Each tag inserts the rule list it points at, and GitLab combines the lists into one rules array, so shared rule sets can be mixed per job.",
+    "reason": "Both lenses keep. Confirmed on yaml_optimization#reference-tags: multiple !reference tags build an array with rules, script or stages; example deploy_job uses '- !reference [.rules_prod]' and '- !reference [.rules_staging]'."
+   },
+   {
+    "id": "gitlab-ci-sr6-05",
+    "decision": "keep",
+    "statement": "When a parent group and its subgroup both define `DEPLOY_ENV`, jobs in the subgroup's projects get the subgroup's value.",
+    "answer": true,
+    "explanation": "An inherited group variable comes from the nearest subgroup that defines its name, rather than a more distant ancestor.",
+    "reason": "Both lenses keep. Confirmed on /ci/variables/: 'If the same variable name exists in a group and its subgroups, the job uses the value from the closest subgroup.'"
+   },
+   {
+    "id": "gitlab-ci-sr8-08",
+    "decision": "keep",
+    "statement": "The Kubernetes executor runs the jobs of one pipeline stage in the same Pod.",
+    "answer": false,
+    "explanation": "GitLab Runner asks Kubernetes to create a fresh Pod for each CI/CD job.",
+    "reason": "Both lenses keep. Confirmed on /runner/executors/: 'creates a new Pod (with a build container and services containers) for each GitLab CI/CD job.'"
+   },
+   {
+    "id": "gitlab-ci-sr9-01",
+    "decision": "keep",
+    "statement": "Jobs in different projects can share one cache by choosing the same `cache:key`.",
+    "answer": false,
+    "explanation": "GitLab scopes caches to a project. Matching cache keys do not make one project's cache available to another.",
+    "reason": "Both lenses keep. Confirmed on /ci/caching/: 'Different projects cannot share the cache.'"
+   },
+   {
+    "id": "gitlab-ci-sr13-11",
+    "decision": "keep",
+    "statement": "A YAML alias in `.gitlab-ci.yml` can point to an anchor defined in a file added with `include`.",
+    "answer": false,
+    "explanation": "YAML anchors are valid in the file that defines them. To reuse configuration from another file, use extends or !reference tags.",
+    "reason": "Both lenses keep. Confirmed on yaml_optimization#anchors: 'You cannot use YAML anchors across multiple files when using the include keyword. Anchors are only valid in the file they were defined in.'"
+   },
+   {
+    "id": "gitlab-ci-sr3-04",
+    "decision": "keep",
+    "statement": "`needs` on a parallel job lets its consumer start once any one of its instances succeeds.",
+    "answer": false,
+    "explanation": "A plain dependency on a parallel job waits for every instance of that producer.",
+    "reason": "Both lenses keep. Confirmed at /ci/yaml/#needs: 'If needs refers to a job that uses the parallel keyword, it depends on all jobs created in parallel, not just one job.'"
+   }
+  ]
+ }
+}
