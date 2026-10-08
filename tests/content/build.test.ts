@@ -532,6 +532,7 @@ describe("the real content", () => {
         [
           ["nextjs", "Next.js", ["nextjs-rendering"]],
           ["react", "React", []],
+          ["vue", "Vue", []],
           ["javascript", "JavaScript", []],
           ["typescript", "TypeScript", []],
           ["css", "CSS", []],
@@ -548,6 +549,7 @@ describe("the real content", () => {
           ["ansible", "Ansible", []],
           ["git", "Git", []],
           ["github", "GitHub", []],
+          ["gitlab", "GitLab", []],
           ["linux", "Linux", []],
         ],
       ],
@@ -675,8 +677,8 @@ describe("the real content: Solutions Architect Associate", () => {
   });
 });
 
-// Thirty decks entered after step 2 shipped: two more AWS decks, two more Google Cloud decks, three Azure decks,
-// five Frontend platforms with three more Web platform decks, the DevOps platforms with three Kubernetes decks, and
+// Thirty-four decks entered after step 2 shipped: two more AWS decks, three more Google Cloud decks, four Azure decks,
+// six Frontend platforms with three more Web platform decks, the DevOps platforms with three Kubernetes decks, and
 // the Backend area. This pins what the deploy builds from
 // every reviewed file in the repository, which the blocks above never build all at once.
 describe("the real content: the decks added after step 2", () => {
@@ -716,6 +718,10 @@ describe("the real content: the decks added after step 2", () => {
     "go-fundamentals",
     "java-fundamentals",
     "graphql-fundamentals",
+    "gitlab-ci",
+    "vue-fundamentals",
+    "azure-az-400",
+    "gcp-pde",
   ];
   const output = buildDecks({
     catalog: readContent("catalog.json"),
@@ -731,8 +737,8 @@ describe("the real content: the decks added after step 2", () => {
         "Cloud",
         [
           ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03", "aws-dva-c02", "aws-aif-c01"]],
-          ["gcp", "Google Cloud", ["gcp-cdl", "gcp-ace", "gcp-pca"]],
-          ["azure", "Azure", ["azure-az-900", "azure-az-104", "azure-az-305"]],
+          ["gcp", "Google Cloud", ["gcp-cdl", "gcp-ace", "gcp-pca", "gcp-pde"]],
+          ["azure", "Azure", ["azure-az-900", "azure-az-104", "azure-az-305", "azure-az-400"]],
         ],
       ],
       [
@@ -741,6 +747,7 @@ describe("the real content: the decks added after step 2", () => {
         [
           ["nextjs", "Next.js", ["nextjs-rendering"]],
           ["react", "React", ["react-fundamentals"]],
+          ["vue", "Vue", ["vue-fundamentals"]],
           ["javascript", "JavaScript", ["javascript-fundamentals"]],
           ["typescript", "TypeScript", ["typescript-fundamentals"]],
           ["css", "CSS", ["css-fundamentals"]],
@@ -757,6 +764,7 @@ describe("the real content: the decks added after step 2", () => {
           ["ansible", "Ansible", ["ansible-fundamentals"]],
           ["git", "Git", ["git-fundamentals"]],
           ["github", "GitHub", ["github-actions"]],
+          ["gitlab", "GitLab", ["gitlab-ci"]],
           ["linux", "Linux", ["linux-command-line"]],
         ],
       ],
@@ -1206,6 +1214,64 @@ describe("the real content: the decks added after step 2", () => {
         ["SCH", "Schema, directives and introspection", 32],
         ["RUN", "Execution and errors", 23],
         ["PRA", "HTTP and best practices", 18],
+      ],
+    ],
+    [
+      "gitlab-ci",
+      "GLC",
+      "CI/CD",
+      "GitLab CI/CD",
+      143,
+      [
+        ["PIP", "Pipelines, jobs and needs", 31],
+        ["RUL", "Rules and workflow", 19],
+        ["VAR", "Variables and security", 21],
+        ["RUN", "Runners, artifacts and cache", 21],
+        ["DEP", "Deployments and merge requests", 21],
+        ["REU", "Downstream pipelines and reuse", 30],
+      ],
+    ],
+    [
+      "vue-fundamentals",
+      "VUE",
+      "Fundamentals",
+      "Vue Fundamentals",
+      146,
+      [
+        ["BAS", "Basics and templates", 41],
+        ["REA", "Reactivity and lifecycle", 29],
+        ["CMP", "Components", 42],
+        ["BLT", "Built-in components", 11],
+        ["ECO", "Router and Pinia", 23],
+      ],
+    ],
+    [
+      "azure-az-400",
+      "400",
+      "DevOps Engineer Expert",
+      "Microsoft DevOps Engineer Expert",
+      144,
+      [
+        ["PRC", "Processes and communication", 27],
+        ["SCM", "Source control", 18],
+        ["PIP", "Packages, tests and pipelines", 27],
+        ["DEP", "Deployment, IaC and maintenance", 27],
+        ["SEC", "Security and compliance", 27],
+        ["MON", "Instrumentation", 18],
+      ],
+    ],
+    [
+      "gcp-pde",
+      "PDE",
+      "Professional Data Engineer",
+      "Google Professional Data Engineer",
+      145,
+      [
+        ["DES", "Designing processing systems", 36],
+        ["ING", "Ingesting and processing", 27],
+        ["STO", "Storing the data", 27],
+        ["ANA", "Analysis, ML and sharing", 27],
+        ["OPS", "Maintaining and automating", 28],
       ],
     ],
   ];
