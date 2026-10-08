@@ -1,0 +1,1134 @@
+{
+ "deck": "graphql-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr1-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Document (anchor exists; spec index lists September 2025 as Latest Release, Sep 3, 2025)",
+     "evidence": "#sec-Document: \"A document contains multiple definitions, either executable or representative of a GraphQL type system.\" and \"Otherwise, if a GraphQL document contains multiple operations, each operation must be named.\" The answer is correct and the source supports it. But sr1-07's statement (\"...when a multi-operation request omits operationName\") and sr1-05's statement (\"...when it is the document's single operation\") both take for granted that a document can hold several operations. A player who has seen either card can answer this one from that premise, so it teaches little. It is also close to a definition of a document.",
+     "problem": "The answer is given away by the premise of sr1-07 (and sr1-05) in the same section. What is left is a near-definition of a document that adds no fact of its own.",
+     "suggestedFix": "Replace it with a true card on the r1 sub-fact the section names (several subscription operations per document), sourced from https://spec.graphql.org/September2025/#sec-Single-Root-Field. Statement (True): \"A document may hold two subscription operations, each selecting a different single root field.\" Explanation: \"The spec notes that a document may contain any number of operations with different root fields, including several subscription operations, as long as each operation is named.\""
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (all in graphql-fundamentals-b1.json) against the September 2025 spec (https://spec.graphql.org/September2025/, HTTP 200). I downloaded it and searched the text, and every cited anchor exists. spec.graphql.org still lists \"Latest Release September 2025\" (Wed, Sep 3, 2025) and a Prerelease Working Draft dated Sep 28, 2026, with no September 2026 edition. None of the r1 facts differ in the draft.\n\nBalance: 6 true (01, 03, 05, 08, 11, 12) and 6 false (02, 04, 06, 07, 09, 10). Average statement length is 78.2 for true and 73.7 for false, so the gap is within 5 characters. Hedge words are spread across both sides: \"may\" in true 03 and 05, \"may\" and \"permits\" in false 06 and 10.\n\nCards that passed, with the spec text that settles each:\n- 01: \"mutation – a write followed by a fetch.\"\n- 02: \"A Document which contains TypeSystemDefinitionOrExtension must not be executed; ... should return a descriptive error\", and #sec-Executable-Definitions says such a document \"is invalid for execution\".\n- 04: The shorthand needs a query \"which defines no variables and has no directives applied to it\"; \"Descriptions are not permitted on query shorthand.\"\n- 05: Under Lone Anonymous Operation, anonymous operations are restricted only when there are \"more than 1\" operations.\n- 06: Counter Example 112: \"It is invalid even if the type of each operation is different.\"\n- 07: GetOperation: \"Otherwise raise a request error requiring operationName.\"\n- 08: \"collectedFieldsMap must have exactly one entry, which must not be an introspection field.\" The wording \"root response name\" is actually more precise than \"root field\".\n- 09: \"Names in GraphQL are case-sensitive.\"\n- 10: The Letter production is A-Z and a-z only.\n- 11: Commas are \"syntactically and semantically insignificant\".\n- 12: Executable descriptions \"MUST NOT affect the execution, validation, or response\"; the card names the edition and appliesTo is GraphQL September 2025.\n\nMinor points, not flagged:\n- sr1-05's cited section (#sec-Lone-Anonymous-Operation) supports the card only through its formal rule. Its explanatory text talks about the shorthand and never shows an anonymous operation with variables. #sec-Directives-Are-Unique-Per-Location (Example 173, `query ($foo: Boolean = true, $bar: Boolean = false)`) shows one explicitly and is a stronger second reference.\n- sr1-08 uses algorithm-like wording (\"A service collects exactly one root response name\") that is correct but opaque. A plainer version would be clearer for players, for example: \"A subscription selecting two root fields, even through a fragment, fails validation\" (True).\n- The right fact in sr1-02's explanation (\"should return a descriptive error\") comes from #sec-Document, not from the cited #sec-Executable-Definitions. Both are on the same single-page spec, so it is still checkable."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr2-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads; https://spec.graphql.org/September2025/#sec-Argument-Names exists and supports the rule",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Argument-Names: \"Every argument provided to a field or directive must be defined in the set of possible arguments of that field or directive.\" The answer (false) is right. The problem is the condition \"when its value is a scalar\": it is an arbitrary exception that nobody who studied would believe, so the card is a strawman. Its misconception, \"Any scalar-valued argument name is acceptable\", is not a belief a learner holds. It is also very close to sr4-12 (unknown input object fields rejected), because knowing one rule nearly gives the other.",
+     "problem": "Strawman. The scalar-value condition is invented, and the card nearly mirrors sr4-12's unknown-input-field rejection.",
+     "suggestedFix": "Replace with a false card on a fact the section lists but no card tests (aliases on top-level fields). Statement: \"An operation's top-level fields keep their field names as response names, since aliases are for nested fields.\" (answer: false). Explanation: \"The spec allows an alias on a top-level field, as in `zuck: user(id: 4)`, so the response key becomes zuck instead of user.\" URL https://spec.graphql.org/September2025/#sec-Field-Alias (\"The fields at the top level of an operation can also be given an alias\")."
+    },
+    {
+     "id": "graphql-fundamentals-sr2-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads; #sec-Objects exists",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Objects: \"Object values should be serialized as ordered maps, where the selected field names (or aliases) are the keys\". The card is true, but a response that mirrors the nesting of `user { name }` is the most basic, self-evident GraphQL fact: anyone who has seen one example answers True, and no realistic False version exists. Meanwhile the section's listed fact \"selecting down to leaf fields of scalar or enum type\" has no card. https://spec.graphql.org/September2025/#sec-Leaf-Field-Selections: \"A field subselection is not allowed on leaf fields. A leaf field is any field with a scalar or enum unwrapped type.\"",
+     "problem": "Truism. Nested selection producing a nested result is obvious from the syntax and teaches nothing, while the leaf-field rule in the section scope goes untested.",
+     "suggestedFix": "Replace with a true card. Statement: \"Adding a subselection such as `{ id }` to a field of type `Int` makes the operation invalid.\" (answer: true). Explanation: \"Leaf Field Selections forbids a subselection on scalar and enum fields and requires one on object, interface and union fields, so every operation ends in leaf fields.\" URL https://spec.graphql.org/September2025/#sec-Leaf-Field-Selections. It uses a non-empty subselection, so the draft's empty-selection-set change does not affect it."
+    },
+    {
+     "id": "graphql-fundamentals-sr2-11",
+     "verdict": "ambiguous",
+     "urlStatus": "200, loads; #sec-Objects.Field-Ordering exists and supports the ordering rule",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Objects.Field-Ordering: \"If a fragment is spread before other fields, the fields that fragment specifies occur in the response before the following fields.\" and \"If a field is queried multiple times in a selection, it is ordered by the first time it is encountered.\" In the spec's Example 55/56, the Matching fragment specifies `foo`, but `foo` stays at its earlier position, not at the spread. \"where its spread first contributes them\" can be read as \"at the spread position\", which is false for such fields, or as \"where the field is first contributed\", which is true. The clumsy wording makes either answer defensible.",
+     "problem": "The phrase \"where its spread first contributes them\" is unclear. An expert can point to a fragment field selected earlier (the spec's own `foo` example) that is not placed at the spread.",
+     "suggestedFix": "Statement: \"For `{ id ...Info email }` with Info matching, JSON should list Info's fields between `id` and `email`.\" (answer: true). Explanation: \"A spread contributes its fields at its position, and the spec says JSON should keep that order textually; a field already selected earlier keeps its first position.\" Same URL, #sec-Objects.Field-Ordering."
+    },
+    {
+     "id": "graphql-fundamentals-sr2-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, loads; #sec-Language.Arguments exists",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Language.Arguments: \"Arguments may be provided in any syntactic order and maintain identical semantic meaning.\" The answer (true) is right, but the word \"named\" in \"Reordering named arguments preserves the meaning\" gives it away: named (keyword) arguments are order-independent in most languages, so a player can answer from the wording alone.",
+     "problem": "Wording giveaway. \"named arguments\" signals order independence without any GraphQL knowledge.",
+     "suggestedFix": "Statement: \"A service gives `pic(w: 1, h: 2)` and `pic(h: 2, w: 1)` the same meaning.\" (answer: true). Explanation: \"GraphQL matches arguments to the field's definitions by name, and the spec states that arguments may appear in any syntactic order with identical semantic meaning.\" Same URL."
+    },
+    {
+     "id": "graphql-fundamentals-sr2-02",
+     "verdict": "source_problem",
+     "urlStatus": "200, loads; #sec-Language.Arguments exists but does not show any field's return type",
+     "evidence": "The cited https://spec.graphql.org/September2025/#sec-Language.Arguments shows `profilePic(size: 100)` but never says what type profilePic returns, so the page alone does not prove that a scalar-returning field takes arguments. https://spec.graphql.org/September2025/#sec-Field-Arguments does: \"For example, a Person type with a picture field could accept an argument to determine what size of an image to return.\" with `picture(size: Int): Url`, Url being a scalar. That matches the explanation's \"picture field taking a size argument\". The answer (false) and the explanation are correct.",
+     "problem": "The cited section does not show the return type, so it does not support the card's central claim (arguments on scalar-returning fields).",
+     "suggestedFix": "Change the URL to https://spec.graphql.org/September2025/#sec-Field-Arguments and keep the statement and explanation."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards against my own copy of https://spec.graphql.org/September2025/ (HTTP 200, headed \"September 2025 Edition\"). Every cited anchor exists: #sec-Objects, #sec-Language.Arguments, #sec-Argument-Names, #sec-Argument-Uniqueness, #sec-Field-Alias, #sec-Field-Selections, #sec-Field-Selection-Merging, #sec-Selection-Sets and #sec-Objects.Field-Ordering.\n\nNo card has a wrong answer. Five are flagged: 04 (strawman), 01 (truism), 11 (ambiguous wording), 03 (wording giveaway) and 02 (cited section lacks the return type). The suggested replacements keep the section at 6 true and 6 false.\n\nThese cards passed:\n- **05:** quote: \"More than one argument with the same name in an argument set is ambiguous and invalid.\"\n- **06:** quote: \"you can define a different response name by specifying an alias.\"\n- **07:** #sec-Field-Selections says \"There are no limitations on alias names.\" The \"__\" reservation (#sec-Names, Reserved Names) applies only to names within a type system.\n- **08:** \"If the parent types of fieldA and fieldB are equal or if either is not an Object Type: ... must have identical sets of arguments.\" Counter Example 129 shows this.\n- **09:** SameResponseShape applies to every pair, and the spec says \"leaf types must not differ\" (Counter Example 131). Matching leaf types is necessary but not sufficient, because nullability must match too. That does not break the true answer.\n- **10:** quote: \"will receive exactly that information and nothing more\".\n- **12:** quote: \"if directives result in fields being excluded, they are not considered in the ordering of fields\" (Example 57/58).\n\nNo r2 card depends on the draft-only empty selection set, and none duplicates a card in another section; r11-06 (single execution per response name) and r12-07 (alias in the error path) rest on different facts.\n\nTwo section facts are untested: the Leaf Field Selections rule and aliases on top-level fields. The replacements for 01 and 04 cover them.\n\nMinor wording notes, not flagged:\n- 12: \"fixes ... before\" reads awkwardly but has one meaning.\n- 04 and sr4-12: both rest on unknown-name rejection (argument names here, input object field names there). If 04 is kept in some form, avoid a second \"the service ignores extra ...\" template."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr3-06",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official September 2025 spec, anchor #sec-Fragment-Name-Uniqueness present",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Fragment-Name-Uniqueness: \"Let fragments be all fragment definitions in the document named fragmentName. fragments must be a set of one.\" and \"each fragment's name must be unique within a document.\"",
+     "problem": "The statement says the validator treats fragment names \"as unique within each operation\". Uniqueness across the whole document also means names are unique within whatever any one operation uses, so a careful reader can answer True. The card only works if the player reads \"within each operation\" as \"scoped per operation\", which the wording does not say. Fragment definitions also do not belong to an operation, so the premise is unclear.",
+     "suggestedFix": "Replace (answer false): \"A document may hold two fragment definitions named `UserFields` if different operations spread them.\" Explanation: \"Fragment names must be unique within the whole document because spreads refer to definitions by name; two definitions named UserFields make it invalid.\" Keep the same URL."
+    },
+    {
+     "id": "graphql-fundamentals-sr3-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official September 2025 spec, anchor #sec-Fragments-on-Object-Interface-or-Union-Types present",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Type-Conditions: \"Fragments cannot be specified on any input value (scalar, enumeration, or input object). Fragments can be specified on object types, interfaces, and unions.\" #sec-Fragments-on-Object-Interface-or-Union-Types: \"The target type of fragment must have kind UNION, INTERFACE, or OBJECT.\"",
+     "problem": "The answer (false) and the explanation are correct, but the premise does not hold together. String is a scalar and has no fields, so \"a named fragment on `String` when its selected fields return strings\" describes something that cannot exist, and nobody who studied would answer True. That makes it a strawman. The misconception (\"a type condition describes the scalar values returned by its fields\") is not one a learner realistically holds. A fragment on an input object type is the mistake people actually make.",
+     "suggestedFix": "Replace (answer false): \"A named fragment may use an input object type such as `ReviewInput` as its type condition.\" Explanation: \"Type conditions must name an object, interface or union type. Scalars, enums and input objects are input types, so a fragment on ReviewInput fails validation.\" Same URL, or https://spec.graphql.org/September2025/#sec-Type-Conditions."
+    },
+    {
+     "id": "graphql-fundamentals-sr3-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official September 2025 spec, anchor #sec-Language.Fragments present; the same sentence is also in the current draft",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Language.Fragments: \"Fragments are the primary unit of composition in GraphQL.\"",
+     "problem": "The statement is the spec's sentence with a word or two changed (\"treats fragments as the primary unit for composing GraphQL selections\"), which the rules forbid. It is also a giveaway: no realistic misconception points to False, so a player who knows nothing would answer True. The explanation only repeats the statement. The prompt lists the phrase as safe from the draft rewrite, but that does not make it a teaching card.",
+     "suggestedFix": "Replace (answer true): \"A fragment spread can pass validation even if an inline fragment inside it never matches the parent type.\" Explanation: \"The spread rule checks only the fragment's own type condition: the spec's catOrDogNameFragment spread on Dog is valid although its `... on Cat` part never returns data.\" URL: https://spec.graphql.org/September2025/#sec-Abstract-Spreads-in-Object-Scope (or #sec-Fragment-Spread-Is-Possible). Quote: \"no valid results would ever be returned. However we do not specify this as invalid because we only consider the fragment declaration, not its body.\""
+    },
+    {
+     "id": "graphql-fundamentals-sr3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official September 2025 spec, anchor #sec-Inline-Fragments present",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Inline-Fragments: \"Inline fragments may also be used to apply a directive to a group of fields.\"",
+     "problem": "The fact is correct and in scope, but the statement is a near-copy of the spec's sentence: it keeps \"apply a directive to a group of fields\" and only moves the subject. The rules forbid reproducing a source sentence with a word or two changed. The explanation (\"A directive on an inline fragment applies to that fragment's grouped selection set\") just repeats the statement and adds no context.",
+     "suggestedFix": "Replace (answer true): \"`... @include(if: $full) { email phone }` is a valid way to include two fields under one condition.\" Explanation: \"An inline fragment may omit its type condition and carry @skip or @include, so one directive decides whether the whole group of fields is selected.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards. They are in graphql-fundamentals-b1.json: 6 true (01, 03, 04, 05, 10, 11) and 6 false (02, 06, 07, 08, 09, 12). I downloaded the September 2025 spec (HTTP 200) and confirmed every cited anchor exists there: #sec-Language.Fragments, #sec-Type-Conditions, #sec-Inline-Fragments, #sec-Fragment-Name-Uniqueness, #sec-Fragments-Must-Be-Used, #sec-Fragment-Spread-Target-Defined, #sec-Fragment-Spreads-Must-Not-Form-Cycles, #sec-Fragment-Spread-Is-Possible and #sec-Fragments-on-Object-Interface-or-Union-Types. I read the text of each section. spec.graphql.org still lists September 2025 as the latest release (Prerelease Working Draft dated Sep 28, 2026), and https://spec.graphql.org/September2026/ returns 404. I also compared the current draft. It rewrites only the paragraph on the purpose of fragments around component data needs. The inline fragment text and the \"primary unit of composition\" sentence are unchanged, so no r3 answer depends on the version.\n\nThe other cards pass:\n- 01: the spread syntax.\n- 03: \\\"Selections within fragments only return values when the concrete type of the object it is operating on matches the type of the fragment.\\\"\n- 04: \\\"If the TypeCondition is omitted, an inline fragment is considered to be of the same type as the enclosing context.\\\" Paraphrased, but acceptably reworded.\n- 07: Counter Example 152 and \\\"fragment must be the target of at least one spread in the document.\\\"\n- 08: \\\"Named fragment spreads must refer to fragments defined within the document.\\\"\n- 09: Counter Example 156, a cycle through owner and pets.\n- 10: \\\"As long as there exists at least one object type that exists in the intersection of the possible types of the scope and the spread, the spread is considered valid.\\\"\n- 12: the InlineFragment grammar has no name, and \\\"Inline fragments are not considered fragment definitions.\\\"\n\nNo r3 card rests on the same fact as r2-11 (fragment field order), r4-02 (fragment variables), r6-09/r6-11 (direct selection on interfaces and unions), r6-12, r10-01 or r9.\n\nEach replacement keeps the flagged card's answer, so the section stays at 6 true and 6 false. The replacements for 05 and 11 are true; those for 02 and 06 are false. Card 04 is close to the source sentence too, but I did not flag it."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [],
+   "notes": "All 12 r4 cards pass, so none are flagged. The cards are in graphql-fundamentals-b1.json, sr4-01 to sr4-12: 6 true, 6 false. Average statement length is 90.0 characters for true cards and 91.7 for false ones. The longest statement is 105 characters and the longest explanation is 129. Hedge words are spread across both answers (\"may\" appears in true cards 01 and 10 and in false card 03).\n\nHow I checked: I downloaded https://spec.graphql.org/September2025/ (HTTP 200; the page reads \"September 2025 Edition\"). Every cited anchor exists on it: #sec-Variable-Uniqueness, #sec-All-Variable-Uses-Defined, #sec-All-Variables-Used, #sec-Coercing-Variable-Values, #sec-All-Variable-Usages-Are-Allowed, #sec-String-Value.Block-Strings, #sec-Int, #sec-Float, #sec-Enums, #sec-List and #sec-Input-Objects. I compared each card with the text of the section it cites.\n\nThe sentence that settles each card:\n- **01 (true):** \"It is valid for multiple operations to define a variable with the same name.\" Uniqueness is checked per operation, so different types are fine.\n- **02 (true):** \"Fragments can appear within multiple operations and therefore variable usages must correspond to variable definitions in all of those operations.\"\n- **03 (false):** \"Unused variables cause a validation error.\"\n- **04 (false):** CoerceVariableValues uses the default only when \"hasValue is not true and defaultValue exists\". If a value is given and it is null, the algorithm adds an entry with the value null. For a non-null variable type, a null value raises a request error, so the card is still false.\n- **05 (true):** IsVariableUsageAllowed allows a nullable variable at a non-null position when \"a default value exists for variableDefinition and is not the value null\".\n- **06 (false):** AreTypesCompatible compares the item types. The location item type Int! is non-null and the variable item type Int is not, so it returns false. The top-level exemption in IsNonNullPosition does not apply, because [Int!] is itself nullable.\n- **07 (false):** \"Whitespace, line terminators, quote, and backslash characters may all be used unescaped to enable verbatim text.\" The static semantics interpret only \\\"\"\" inside a block string.\n- **08 (false):** Int input: \"only integer input values are accepted. All other input values, including strings with numeric content, must raise a request error\". This is input coercion, so it does not clash with sr5-05, which is about result coercion.\n- **09 (true):** Float input: \"both integer and float input values are accepted. Integer input values are coerced to Float by adding an empty fractional part\".\n- **10 (true):** Enums: \"for most transport serializations that do not, strings may be interpreted as the enum input value with the same name\". The card's \"may\" keeps the spec's strength.\n- **11 (true):** List input coercion turns a single non-list value into \"a list of size one\". The spec's table shows [Int] given 1 becomes [1].\n- **12 (false):** Input objects: \"must not contain any entries with names not defined by a field of this input object type, otherwise a request error must be raised\". The table shows { b: 123, c: \"xyz\" } giving \"Error: Unexpected field c\".\n\nNone of these depend on the edition: the October 2021 rules are the same, and none of the September 2026 draft changes touch them.\n\nTwo borderline points, neither enough to flag:\n- **sr4-02** states the rule descriptively (\"declares\") rather than as a requirement. A pedant could say an invalid document might not declare it. The spec does say \"must\", so \"must declare\" would be allowed if a clearer wording is wanted.\n- **sr4-04 and sr7-10** both rest on \"explicit null differs from omission\": sr4-04 for variable defaults, sr7-10 for input object field entries. The prompt assigns both of these to their sections on purpose, and knowing one does not strictly give the other's answer, so I did not mark them as duplicates.\n\nOne optional wording change: sr4-08's explanation says '\"123\" remains a string input'. Saying it \"raises a request error\" would match the spec more exactly. It is not wrong as written."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr5-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Scalars loads (heading 'September 2025 Edition', anchor present) and supports the card",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Scalars: \"This URL must link to a human-readable specification of the data format, serialization, and coercion rules for the scalar.\" The card is true. Its only content is that a directive called @specifiedBy points to a specification, which a player can read off the directive's name. 'links to a human-readable specification of its format' also stays very close to the spec sentence, which breaks the original-wording rule.",
+     "problem": "The answer can be read from the name (specifiedBy leads to a specification), and the statement nearly copies the source sentence. It teaches almost nothing beyond the directive's name.",
+     "suggestedFix": "Replacement (answer TRUE, keeps the 6/6 balance): \"The spec recommends keeping a custom scalar's specification URL unchanged once it has been defined.\" Explanation: \"Changing a defined @specifiedBy URL could disrupt tooling or bring breaking changes through the linked document; if that document is still in flux, the service should link to a fixed version.\" Source: https://spec.graphql.org/September2025/#sec-Scalars (\"Custom scalar specification URLs should not be changed once defined.\")"
+    },
+    {
+     "id": "graphql-fundamentals-sr5-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Scalars loads and supports the card",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Scalars: \"a GraphQL service which provides a type by these names must adhere to the behavior described for them in this document.\" The same section also says of result coercion that \"the precise rules of coercion are left to the implementation\". So 'the built-in coercion rules' is loose wording for result coercion, and 'supplies its own Boolean implementation' never says the type is named Boolean.",
+     "problem": "This is close to a truism. 'If you implement Boolean, you follow Boolean's rules' is guessable from the wording. It never says that the deciding point is reusing the name, and 'built-in coercion rules' overstates how fixed result coercion is.",
+     "suggestedFix": "Replacement (answer TRUE, keeps the balance): \"A schema that redefines `Boolean` to accept the strings \\\"yes\\\" and \\\"no\\\" as input violates the spec.\" Explanation: \"A service that provides a type named Int, Float, String, Boolean or ID must keep the behavior the spec defines for it, and Boolean input accepts only boolean input values.\" Source: https://spec.graphql.org/September2025/#sec-Scalars"
+    }
+   ],
+   "notes": "I checked all 12 r5 cards, found in graphql-fundamentals-b2.json: 6 true (03, 04, 05, 06, 08, 11) and 6 false (01, 02, 07, 09, 10, 12). Average statement length is 81.7 characters for true and 83.8 for false. I downloaded https://spec.graphql.org/September2025/ (HTTP 200, headed 'September 2025 Edition'). Every cited anchor exists: #sec-Scalars, #sec-Int, #sec-Float, #sec-String, #sec-ID, #sec--specifiedBy, #sec-Enums, #sec-Enum-Value. I checked each card against the exact spec text.\n\nThe cards that passed, with the sentence that settles each:\n- 01: Int is \"a signed 32-bit numeric non-fractional value\", and a result below -2^31 or at or above 2^31 means \"an execution error should be raised\". The explanation keeps the 'should'.\n- 02: \"Non-finite floating-point internal values (NaN and Infinity) cannot be coerced to Float and must raise an execution error.\"\n- 03: \"How the String is encoded internally (for example UTF-8) is left to the service implementation.\"\n- 04: \"While it is often numeric, it must always serialize as a String.\" The September 2025 edition is named, as the rules require.\n- 05: Int result coercion lists \"returning 123 for the string \\\"123\\\"\" as an example. It is the contrast to sr4-08 (Int input rejects \"123\"), which the prompt deliberately puts in a different section, so it is not a duplicate.\n- 07: DateTime is not built in. Custom scalars are defined by the service, and the spec's own DateTime example points to scalars.graphql.org, not to the spec.\n- 09: @specifiedBy \"must not appear on built-in scalar types\".\n- 10: \"If a built-in scalar type is not referenced anywhere in a schema ... then it must not be included.\" In practice String and Boolean are always referenced, because the introspection types use them, so only Int, Float and ID can actually be left out. The false answer still holds.\n- 11: \"It is recommended that Enum values be 'all caps'.\" The explanation passes but adds nothing: it only repeats the statement and gives no reason. A better one would say that enum values are unquoted names in literals and responses.\n- 12: \"Enums are not references for a numeric value ... They may serialize as a string: the name of the represented value\", and the JSON Serialization table maps Enum Value to String.\n\nOther checks:\n- No r5 fact repeats one in another section. sr4-08 and sr4-10 (input coercion) and sr10 (introspection) do not test specifiedByURL, the 32-bit range or enum serialization.\n- 01 (Int is 32-bit) and 06 (the contract that comes with a built-in scalar's name) are close neighbours. If 06 is replaced, use the Boolean example suggested above rather than an Int one, so the two do not overlap.\n- No version issue: everything except 04 is unchanged since October 2021, and 04 names the edition."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr6-06",
+     "verdict": "ambiguous",
+     "urlStatus": "200, loads; https://spec.graphql.org/September2025/#sec-Objects.Type-Validation (anchor present, September 2025 edition)",
+     "evidence": "IsValidImplementation in https://spec.graphql.org/September2025/#sec-Objects.Type-Validation: \"If field is deprecated then implementedField must also be deprecated.\" The answer False matches this rule, but the statement \"an object uses @deprecated on a field whose interface field has `isDeprecated: false`\" is a bare description of something an author does, not a claim about validity. Read literally, an author can write that SDL, and the result is just an invalid schema, so a player can defend True. It also mixes SDL with an introspection value. The explanation \"An implementing field is deprecated only when the corresponding interface field is deprecated\" reads as if deprecation were inherited or automatic. The actual rule is a validity condition: the implementing field may be deprecated only if the interface field is.",
+     "problem": "The statement does not say whether the schema is valid, so it can be read as True. The explanation also misstates the rule as a status that follows from the interface field instead of a schema validity condition.",
+     "suggestedFix": "Answer False. Statement: \"Since the September 2025 edition, an object field may be deprecated while the interface field it implements is not.\" Explanation: \"Since September 2025, a deprecated implementing field requires the interface field it implements to be deprecated too. Deprecating only the object's field makes the schema invalid.\""
+    },
+    {
+     "id": "graphql-fundamentals-sr6-12",
+     "verdict": "duplicate",
+     "urlStatus": "200, loads; https://spec.graphql.org/September2025/#sec-Value-Completion supports it (\"When completing a field with an abstract return type, that is an Interface or Union return type, first the abstract type must be resolved to a relevant Object type.\")",
+     "evidence": "Card graphql-fundamentals-sr10-01 (True): \"A service returns the concrete object's type name for `__typename` inside an interface selection set.\" Its explanation says __typename \"reports the actual object type for the current result\". sr10-08 likewise says possibleTypes lists \"the object types that a value of the abstract type can resolve to\". A player who knows that __typename returns the concrete object type already knows that the service resolves each abstract value to one concrete object type, so the two cards rest on the same fact. Spec (https://spec.graphql.org/September2025/#sec-Unions): \"Object types declare what interfaces they implement, but are not aware of what unions contain them.\" No r6 card tests this listed fact yet.",
+     "problem": "Once sr10-01 is answered, this card's answer is already known. It is also close to a definition of abstract types, so it teaches little.",
+     "suggestedFix": "Replace with a True card. Statement: \"A schema records union membership in the union's definition, leaving the member object type's definition unchanged.\" Explanation: \"Unions list their member object types, and object types never name the unions that contain them, so adding a member edits only the union (or a union extension).\" Source: https://spec.graphql.org/September2025/#sec-Unions"
+    },
+    {
+     "id": "graphql-fundamentals-sr6-04",
+     "verdict": "explanation_error",
+     "urlStatus": "200, loads; https://spec.graphql.org/September2025/#sec-Objects.Type-Validation supports the answer",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Objects.Type-Validation: \"That named argument on field must accept the same type (invariant) as that named argument on implementedField.\" https://spec.graphql.org/September2025/#sec-Float: Float input coercion accepts integer input values. The explanation's second sentence, \"Numeric input coercion does not permit substituting Float for Int\", puts the reason in input coercion. In fact a Float argument does accept every Int value. The substitution is invalid because the schema rule makes argument types invariant, not because of coercion.",
+     "problem": "The answer (False) is correct, but the explanation gives the wrong reason. It suggests that input coercion forbids the change, while coercion would accept Int values for a Float argument. Invariance is the real reason.",
+     "suggestedFix": "Keep the answer False and the statement. New explanation: \"An implementing field must accept each interface argument with the same (invariant) type, so `Int` stays `Int`. That Float inputs also accept integers does not relax this schema rule.\""
+    }
+   ],
+   "notes": "I read the spec text from https://spec.graphql.org/September2025/ (HTTP 200, September 2025 Edition). All five source anchors used by r6 exist and load: #sec-Objects.Type-Validation, #sec-Interfaces, #sec-Unions, #sec-Field-Selections and #sec-Value-Completion. The other 9 cards pass. Each is checked against the quoted sentence below.\n- 01 (T): \"An Object type must define one or more fields.\" The phrase \"it exposes\" is loose but does not change the answer.\n- 02 (T): \"The field must have a unique name within that Object type; no two fields may share the same name.\"\n- 03 (T): IsValidImplementationFieldType unwraps Non-Null on the implementing field, so String! is valid for String.\n- 05 (T): \"field may include additional arguments not defined in implementedField, but any additional argument must not be required, e.g. must not be of a non-nullable type.\"\n- 07 (T): Example 65, \"type Business implements NamedEntity & ValuedEntity\".\n- 08 (F): \"Transitively implemented interfaces ... must also be defined on an implementing type or interface.\"\n- 09 (F): \"When selecting fields on an interface type, only those fields declared on the interface may be queried\", plus Example 69 for the fragment route. The fragment part of the explanation is backed by #sec-Interfaces rather than the cited #sec-Field-Selections, which is acceptable.\n- 10 (F): \"Scalar, Interface and Union types must not be member types of a Union.\"\n- 11 (F): \"fields may not be directly selected from a union-typed selection set, with the exception of the meta-field __typename\".\nBalance is 6 True / 6 False, and the suggested fixes keep it: the 06 replacement is False, the 12 replacement is True, and 04 changes only its explanation.\nMinor observations, not flagged:\n- 09 and 11 share the false template \"A query directly selects X from Y\". That is within the two-per-template limit, but the deck should not add a third.\n- Several statements describe an action (\"A query directly selects\", \"An object automatically declares\") rather than validity. 08 and 09 still read clearly as False, but this style is what made 06 ambiguous.\n- No r6 card tests the \"__\" field-name prefix, interface self-implementation or cycles, or objects never being valid inputs. That is acceptable given sr7-07 covers the input/output split."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 r7 cards (sr7-01 to sr7-12, all in graphql-fundamentals-b2.json) against the September 2025 text at https://spec.graphql.org/September2025/. The page returns 200 with the heading \"September 2025 Edition\", and every anchor the cards cite exists: #sec-Non-Null, #sec-Combining-List-and-Non-Null, #sec-List, #sec-Input-Objects, #sec-OneOf-Input-Objects and #sec-Required-Arguments. On 2026-10-08 the versions page at https://spec.graphql.org/ still lists September 2025 as the latest release and the 2026-09-28 build only as a Prerelease Working Draft; https://spec.graphql.org/September2026/ returns 404. No card is flagged. The source sentence that settles each one:\n\n- **01** (true): \"By default, all types in GraphQL are nullable; the null value is a valid response for all of the above types.\" (#sec-Non-Null)\n- **02** (false): the [Int!] row of the result table gives null as the result for an internal value of null, so the outer list may be null. (#sec-Combining-List-and-Non-Null)\n- **03** (true): \"if the inner type of a Non-Null is a List (e.g. [T]!), then null is not accepted however an empty list is accepted\", and the rules \"apply in a recursive fashion\", so [String!]! also accepts []. (#sec-Combining-List-and-Non-Null)\n- **04** (false): \"A Non-Null type must not wrap another Non-Null type.\" (#sec-Non-Null)\n- **05** (true): \"An argument is required if the argument type is non-null and does not have a default value. Otherwise, the argument is optional.\" (#sec-Required-Arguments) It cites the Required Arguments rule as the prompt asks, which avoids inconsistency (b).\n- **06** (true): \"If a list's item type is nullable, then errors occurring during preparation or coercion of an individual item in the list must result in the value null at that position in the list along with an execution error added to the response.\" (#sec-List)\n- **07** (false): \"An input object is never a valid result. Input Object types cannot be the return type of an Object or Interface field.\" (#sec-Input-Objects)\n- **08** (false): there is no single sentence, but the grammar settles it. InputFieldsDefinition is a list of InputValueDefinition, which has no ArgumentsDefinition. The Note on the same page adds that Object types \"can contain fields that define arguments ... neither of which is appropriate for use as an input argument\". (#sec-Input-Objects)\n- **09** (true): \"at least one of the fields in the chain of references must be either a nullable or a List type\", plus Example 81, which is valid because \"the field self may be omitted or the value null\". (#sec-Input-Objects) The statement says \"may define\", so the default-value-cycle rule cannot make it false. The word \"ordinary\" keeps OneOf types, whose cycle rule the draft rewrites, out of it.\n- **10** (true): \"If the value null was provided for an input object field, and the field's type is not a non-null type, an entry in the coerced unordered map is given the value null.\" (#sec-Input-Objects)\n- **11** (false): \"the value to be coerced must contain exactly one entry and that entry must not be null or the null literal, otherwise a request error must be raised\". The coercion table also shows `{ a: null }` failing with \"Value for member field a must be non-null\". (#sec-OneOf-Input-Objects)\n- **12** (false): under Type Validation, \"If the Input Object is a OneOf Input Object then: The type of the input field must be nullable. The input field must not have a default value.\" (#sec-Input-Objects)\n\nThe section is balanced: 6 true (01, 03, 05, 06, 09, 10) and 6 false (02, 04, 07, 08, 11, 12). Average statement length is 92.2 characters for true and 89.7 for false, within the 5-character limit. Hedge and coverage words are spread across both sides: \"may\" appears in true 09 and false 07 and 11, \"automatically\" in true 10 and \"must\" in false 12. Every statement is under 120 characters and every explanation under 240. Cards 11 and 12 name the September 2025 edition and set appliesTo correctly. None of the cards rests on one of the spec inconsistencies the prompt lists.\n\nBorderline points that I did not flag:\n\n1. **sr7-04 (Non-Null wrapping Non-Null) is close to a strawman.** `String!!` cannot be written in SDL at all, so few people who studied would answer True. I kept it because the prompt names this fact in r7's scope.\n2. **sr7-10 is close to sr4-04.** sr4-04 says an explicit null variable is not replaced by its default; both rest on the idea that explicit null differs from omission. The prompt deliberately gives the variable side to r4 and the input-field map entry to r7, so I did not count it as a duplicate.\n3. **sr7-10 reads awkwardly.** \"explicitly null nullable field\" is clumsy, and \"automatically\" seems to be there only to balance the word counts. If it gets polished, one option (true, 107 characters) is: \"When a client passes null to a nullable field of an ordinary input object, the coerced map holds that field as null.\"\n\nI found no source, scope, retirement or version problems in this section."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr8-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Operation-Type-Existence loads (heading 'September 2025 Edition'), official and current",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Operation-Type-Existence: \"If the schema does not include the necessary root operation type for the kind of an operation defined in the document, that operation is invalid since it cannot be executed.\" The answer (False) is right, but the statement is a strawman: no learner who has studied thinks a service quietly routes a mutation through the query root. The realistic misconception, which the September 2025 rule corrects, is that such a mutation passes validation and only fails when execution starts (this was how many implementations behaved before the rule existed).",
+     "problem": "Strawman. The false claim ('runs mutations through the query root') is not a belief anyone who studied would hold, so the card teaches little. The rule's real point is that the failure now happens at validation, not at execution.",
+     "suggestedFix": "Replacement (answer False, keeps r8 at 6 true / 6 false): statement \"In the September 2025 spec, a mutation sent to a schema with no mutation root passes validation and fails in execution.\" (119 chars). Explanation: \"The Operation Type Existence rule makes a mutation invalid when the schema has no mutation root, so validation rejects it and execution never starts.\" (149 chars). Keep the URL #sec-Operation-Type-Existence. This does not overlap sr10-04, which tests __Schema.mutationType returning null."
+    },
+    {
+     "id": "graphql-fundamentals-sr8-06",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Root-Operation-Types loads, official and current",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Root-Operation-Types: \"When using the type system definition language, a document must include at most one schema definition.\" But https://spec.graphql.org/September2025/#sec-Schema-Extension: \"Schema extensions are used to represent a schema which has been extended from a previous schema. For example, this might be used by a GraphQL service which adds additional operation types\". So `schema { query: Query }` followed by `extend schema { mutation: Mutation }` puts the query and mutation roots in two separate `schema` blocks.",
+     "problem": "A player who knows `extend schema` can defend True for 'split its query and mutation roots across separate `schema` definitions', because the backticked keyword also appears in the extension and the spec says extensions add operation types. The explanation's \"That definition declares the root types together\" is also misleading, since an extension can add a root operation type later.",
+     "suggestedFix": "Replacement (answer False): statement \"An SDL document may contain two `schema { ... }` definitions when each declares a different root operation type.\" (112 chars). Explanation: \"An SDL document holds at most one schema definition. To add a root operation type to a schema already defined, SDL uses a schema extension such as `extend schema { mutation: Mutation }`.\" (186 chars). Keep the URL #sec-Root-Operation-Types."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (6 true, 6 false; average statement length is 96.8 for true and 100.3 for false, within the 5-character limit) against https://spec.graphql.org/September2025/. The page loaded (HTTP 200), is headed \"September 2025 Edition\", and every cited anchor exists (sec-Root-Operation-Types, sec-Operation-Type-Existence, sec-Schema, sec-Input-and-Output-Types, sec-Object-Extensions, sec-Type-System-Descriptions, sec-Schema-Coordinates). The whole spec is one HTML page, so every anchor is official and current.\n\nTwo cards are flagged: sr8-03 (strawman) and sr8-06 (ambiguous because of `extend schema`).\n\nThe 10 cards that pass, with the evidence that settles each:\n- sr8-01: \"The query root operation type must be provided and must be an Object type.\"\n- sr8-02: \"The query, mutation, and subscription root types must all be different types if provided.\"\n- sr8-04: The schema definition can be omitted only when \"...no other type uses any default root type name, and the schema does not have a description.\"\n- sr8-05: Example 41 says \"The schema definition must be included, otherwise the \\\"Mutation\\\" type would be incorrectly presumed to be the mutation root operation type.\"\n- sr8-07: \"All types within a GraphQL schema must have unique names. No two provided types may have the same name.\"\n- sr8-08: \"Some kinds of types, like Scalar and Enum types, can be used as both input types and output types.\"\n- sr8-10: \"Any fields of an Object type extension must not be already defined on the previous Object type.\"\n- sr8-11: __Schema declares `description: String`, and the Descriptions section says descriptions are \"made available via introspection\". `description` also exists on __Schema in October 2021, so the appliesTo value is right.\n- sr8-12: \"There is no schema coordinate which indicates a union member; this preserves the uniqueness property of a schema coordinate.\"\n\nMinor points, not flagged:\n1. sr8-09 (the query root used as a field's return type) is true, but no sentence in the spec states it outright. It follows from two passages: a root must \"be an Object type\", and object fields may return Object types. Nothing in the spec forbids it, and Example 41 uses a type named Mutation as an ordinary field type. A stronger explanation would avoid the unquoted phrase \"ordinary Object type with an entry-point role\".\n2. sr8-11 would be easier to check with the anchor https://spec.graphql.org/September2025/#sec-The-__Schema-Type, where the field is declared. The statement shows the exact field, so it is easy to guess True, but it stays acceptable.\n3. sr8-08 (enum is both an input and an output type) and sr7-07 (an input object cannot be a return type) both rest on the Input and Output Types classification. They test different type kinds in a three-way split, so I did not count them as duplicates.\n4. I found no other r8 card that duplicates a card elsewhere in the deck. sr10-04 (mutationType null) and sr8-01/sr8-03 test different facts."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr9-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec--include loads (September 2025 Edition), anchor present",
+     "evidence": "https://spec.graphql.org/September2025/#sec--include: \"Neither @skip nor @include has precedence over the other. In the case that both the @skip and @include directives are provided on the same field or fragment, it must be queried only if the @skip condition is false and the @include condition is true.\" The card supports the answer, but skip(if: false) plus include(if: true) is the case where both directives already say keep. Anyone who knows either directive on its own answers True, so the card never tests the fact that neither directive takes precedence.",
+     "problem": "Close to a truism: the conditions do not conflict, so the card never tests the fact it names (combined conditions, no precedence). A player can answer it from each directive's meaning alone.",
+     "suggestedFix": "Test the conflicting case and keep the answer True. Statement: \"An executor omits a field that carries both `@skip(if: true)` and `@include(if: true)`.\" (87 chars, True). Explanation: \"Neither @skip nor @include takes precedence: a selection is kept only when the skip condition is false and the include condition is true, so a true skip condition excludes it.\" (175 chars). Keep the URL #sec--include."
+    },
+    {
+     "id": "graphql-fundamentals-sr9-09",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Directives-Are-in-Valid-Locations loads, anchor present",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Type-System.Directives: \"Directives must only be used in the locations they are declared to belong in.\" Example 92 there: \"directive @example on FIELD_DEFINITION | ARGUMENT_DEFINITION\" annotates SDL field definitions. The intended fact is correct. But \"applies to a field in an operation\" can mean \"takes effect when that field is selected\". In that reading a FIELD_DEFINITION directive does apply: the deck's own r13 scope names type system directives such as @auth that are enforced during execution when an operation selects the field.",
+     "problem": "The verb \"applies to\" has two readings: \"can be written on\" (False) and \"affects\" (an expert could defend True, because type system directives on FIELD_DEFINITION govern how selected fields resolve).",
+     "suggestedFix": "Statement: \"A directive declared only `on FIELD_DEFINITION` may be written on a field selection inside an operation.\" (104 chars, False). Explanation: \"FIELD_DEFINITION is a type system location for field definitions in SDL. A directive used on a field selection in an operation must declare the executable location FIELD.\" (170 chars). Keep the URL #sec-Directives-Are-in-Valid-Locations."
+    },
+    {
+     "id": "graphql-fundamentals-sr9-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Type-System.Directives loads, anchor present",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Type-System.Directives: \"Repeatable directives are often useful when the same directive should be used with different arguments at a single location\". The answer is correct, but it can be read from the word \"repeatable\" in the statement. Note: the obvious contrast card, @skip twice on one field being invalid (Counter Example 172), would duplicate sr10-11, where @skip's isRepeatable is false.",
+     "problem": "Name giveaway: the statement says that a directive called \"repeatable\" can be repeated. This is a definition card.",
+     "suggestedFix": "Test the per-location scope of the uniqueness rule and keep the answer True. Statement: \"A non-repeatable custom directive may appear once on each of two fields in the same operation.\" (94 chars, True). Explanation: \"The Directives Are Unique per Location rule limits a non-repeatable directive to one use per location. Two fields are two locations, so each may carry it once.\" (159 chars). URL: https://spec.graphql.org/September2025/#sec-Directives-Are-Unique-per-Location"
+    },
+    {
+     "id": "graphql-fundamentals-sr9-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://spec.graphql.org/September2025/#sec-Type-System.Directives loads, anchor present",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Type-System.Directives: \"While defining a directive, it must not reference itself directly or indirectly: Counter Example No 94 directive @invalidExample(arg: String @invalidExample) on ARGUMENT_DEFINITION\". The card's `directive @audit(arg: String @audit) on ARGUMENT_DEFINITION` is the same counter example with only the name changed. The answer (False) is correct.",
+     "problem": "Near-copy of the spec's Counter Example 94 with one identifier renamed, which the prompt's original-wording rule forbids. It also tests only the direct case, which a reader of that one example recognises on sight.",
+     "suggestedFix": "Test the indirect self-reference that the Type Validation rules name, and keep the answer False. Statement: \"A directive definition may take an argument whose input type has a field annotated with that same directive.\" (108 chars, False). Explanation: \"A directive definition must not reference itself directly or indirectly. An argument type whose input field uses the directive is an indirect self-reference, so the schema is invalid.\" (183 chars). Keep the URL #sec-Type-System.Directives (Type Validation: \"must not contain the use of a Directive which references itself indirectly by referencing a Type or Directive which transitively includes a reference to this Directive\")."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (all in graphql-fundamentals-b3.json) against the September 2025 edition. It was downloaded directly (HTTP 200, headed \"September 2025 Edition\") and every cited anchor exists. The answers are balanced at 6 True and 6 False, and every suggested replacement keeps the answer of the card it replaces, so the balance holds.\n\nPassed, with the settling quote:\n- sr9-02: Counter Example 171 under Directives Are in Valid Locations: \"@skip does not provide QUERY as a valid location\".\n- sr9-03: Single Root Field, CollectSubscriptionFields: \"selection must not provide the @include directive\". This applies whatever the condition is, so a constant true does not make it valid.\n- sr9-04: \"reason: String! = \\\"No longer supported\\\"\".\n- sr9-05: The @deprecated locations include ARGUMENT_DEFINITION.\n- sr9-06: \"The @deprecated directive must not appear on required (non-null without a default) arguments or input object field definitions\". Input Objects type validation also says \"The @deprecated directive must not be applied to this input field\".\n- sr9-07: Field Deprecation: \"It is still legal to include these fields in a selection set\".\n- sr9-10: Directive Order Is Significant: \"Directives may be provided in a specific syntactic order which may have semantic interpretation\".\n- sr9-12: \"it is recommended to prefix the directive's name ... (which will not include _ in their name)\". \"Service-specific\" goes slightly past the spec's wording, which also gives @rfc_live for proposals, but it matches the @fb_auth example. Acceptable.\n\nOverlap check: I compared the section with the other cards that mention directives (sr1-04, sr2-12, sr3-05, sr5-09, sr6-06, sr10-09, sr10-11, sr14-10) and found no duplicates. One trap: a replacement for sr9-08 built on Counter Example 172 (@skip used twice on one field) would duplicate sr10-11 (@skip's isRepeatable is false), so I proposed the per-location scope of the uniqueness rule instead.\n\nMinor, not flagged: sr9-08, sr9-10, sr9-11 and sr9-12 carry the generic tag \"GraphQL\" rather than the names they test (repeatable, @deprecated and so on)."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [],
+   "notes": "All 12 r10 cards (graphql-fundamentals-sr10-01 to -12, in raw/graphql-fundamentals-b3.json) pass. Split is 6 true (01, 03, 04, 06, 08, 11) and 6 false (02, 05, 07, 09, 10, 12).\n\nSource check: https://spec.graphql.org/September2025/ returned HTTP 200 and is headed \"September 2025 Edition\". All six cited anchors exist on that page.\n\nSpec text that settles each card:\n- 01: \"It returns the name of the concrete Object type at that point during execution.\"\n- 02: \"__typename may not be included as a root field in a subscription operation.\"\n- 03: \"accessible from the meta-fields __schema and __type which are accessible from the type of the root of a query operation.\"\n- 04: \"mutationType is the root type of a mutation operation, if supported. Otherwise null.\"\n- 05 and 06: For LIST, \"ofType must return a type of any kind. All other fields must return null.\" So the name is null and ofType points at String!, which has kind NON_NULL.\n- 07: \"interfaces must return the set of interfaces that an object implements (if none, interfaces must return the empty set).\"\n- 08: possibleTypes \"They must be object types.\"\n- 09: \"Accepts the argument includeDeprecated which defaults to false. If true, deprecated enum values are also returned.\"\n- 10: \"defaultValue may return a String encoding (using the GraphQL language) of the default value\". The type is String, so the value can never be a JSON number.\n- 11: `directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT` has no repeatable keyword, so isRepeatable is false.\n- 12: \"introspection should return items in the same source order for each element list: object fields, input object fields, arguments, enum values, directives, union member types, and implemented interfaces.\"\n\nRefutation attempts that failed:\n- 09 avoids the includeDeprecated nullability mismatch between section 4.2 (Boolean! = false) and Appendix D (Boolean = false). It tests only the default.\n- 10 holds no matter how the default is encoded, because the field's type is String.\n- 12 is still false for schemas not built from SDL: the spec never recommends alphabetical order. The explanation leaves out the spec's condition \"when a schema is produced from a TypeSystemDocument\", which is an acceptable simplification.\n- Only 12 needs an edition. It names September 2025 in the statement and in appliesTo, and the card is not false because of the edition name. The other 11 cards describe behaviour that is the same in October 2021 and September 2025.\n\nDuplicate check against the rest of the deck found no clash:\n- 02 is a different fact from sr1-08 (one root field per subscription) and sr9-03 (@include at the subscription root).\n- 11 is different from sr9-08 (a repeatable directive used twice).\n- 04 is different from sr8-01, sr8-03 and the other root type rules.\n- None repeats sr8-11 (__Schema.description) or sr5-10 (built-in scalars in introspection).\n\nMinor point, not flagged: card 11 cites #sec-The-__Directive-Type, which defines isRepeatable. The @skip definition that proves @skip is not repeatable is at #sec--skip, on the same single-page spec, so the cited URL still covers the whole card.\n\nCard 01 (__typename returns the concrete type) and card 03 (__schema and __type on the query root) are easy. The prompt names both in r10's scope, so they are not truisms."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr11-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, anchor #sec-Subscription present on https://spec.graphql.org/September2025/ (the settling sentence is in 6.2.3.2 Response Stream)",
+     "evidence": "https://spec.graphql.org/September2025/#sec-Response-Stream: \"Each event from the underlying source stream triggers execution of the subscription selection set using that event's value as the initialValue.\" The statement \"The executor uses each subscription event's value as the initial value for executing its selection set\" is the same sentence with a few words moved, which breaks the prompt's 'own words' rule. The answer (True) and the explanation are correct.",
+     "problem": "A near-copy of the spec sentence. The fact is right and in scope, but the wording breaks the original-wording rule. The cited anchor is the parent Subscription section, not the Response Stream subsection that holds the sentence.",
+     "suggestedFix": "Keep answer True. Statement: \"For every subscription event, the executor runs the selection set against that event's payload as its root object.\" Explanation: \"Each source stream event is passed in as the initial value, so the root fields of a subscription resolve against the event payload, not against the service's usual root value.\" URL: https://spec.graphql.org/September2025/#sec-Response-Stream"
+    }
+   ],
+   "notes": "I checked all 12 r11 cards (6 true: 01, 02, 04, 05, 07, 10; 6 false: 03, 06, 08, 09, 11, 12). Every source URL loaded with HTTP 200, and every cited anchor exists in the September 2025 edition. I checked each card against the spec text and the graphql.org Execution and Mutations pages:\n- 01: \\\"may execute a request without immediately validating it if that exact same request is known to have been validated before\\\" (#sec-Validating-Requests). Correct.\n- 02: \\\"extensions (optional): A map reserved for implementation-specific additional information\\\" (#sec-Execution). Correct. Minor concern: the word \\\"extensions\\\" next to \\\"custom metadata\\\" leans toward a giveaway. A sharper true alternative: \\\"Since the September 2025 edition, the spec says keys in a request's `extensions` map should use unique prefixes.\\\"\n- 03: graphql.org/learn/execution/ says \\\"obj: The previous object ... args: The arguments provided to the field\\\". Correct.\n- 04: \\\"each value in the collection of values returned by resolver may itself be retrieved asynchronously\\\" (#sec-Value-Resolution, a non-normative note). Correct.\n- 05: \\\"If the return type is another Object type, then the field execution process continues recursively by collecting and executing subfields\\\" (#sec-Value-Completion). Correct. It is close to obvious, but specific enough to pass.\n- 06: \\\"multiple references to fields with the same response name will only be executed once\\\" (#sec-Field-Collection). Correct.\n- 07: \\\"fields other than top-level mutation fields must always be side effect-free and idempotent\\\" (#sec-Normal-and-Serial-Execution). Correct, and the spec uses \\\"must\\\".\n- 08: \\\"determine the corresponding entry in the result map for each item to completion before it continues on to the next entry\\\" (#sec-Normal-and-Serial-Execution). Correct.\n- 09: graphql.org/learn/mutations/ says \\\"there's no way for GraphQL to revert the successful portions of the operation\\\". Correct.\n- 11: Unsubscribe \\\"in turn also cancels the Source Stream\\\" (#sec-Unsubscribe). Correct.\n- 12: \\\"GraphQL requests do not require any specific serialization format or transport mechanism ... should be chosen by the implementing service\\\" (#sec-Execution). Correct.\n\nI found no wrong answers, version problems or retired terms. There are no duplicates with other sections. sr12-03 tests the response `extensions` entry, which is a separate fact that the prompt assigns to r12. If card 10 is rewritten as suggested, the section stays at 6 true and 6 false."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr12-01",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, https://spec.graphql.org/September2025/#sec-Request-Error-Result loads; the anchor exists and the page is the pinned September 2025 edition",
+     "evidence": "September 2025, #sec-Request-Error-Result: \"The request error result map must not contain an entry with key \\\"data\\\".\" (https://spec.graphql.org/September2025/#sec-Request-Error-Result). October 2021, 7.1.2 Data: \"If an error was raised before execution begins, the data entry should not be present in the result.\" (https://spec.graphql.org/October2021/, checked only to confirm the version difference). The prompt's STEP 1 lists \"the definitions of execution result and request error result\" among the September 2025 changes.",
+     "problem": "The answer (False) is right for September 2025, but it depends on the edition. In October 2021 a missing data entry was only a 'should not', so including data: null was discouraged but still allowed, and an expert could defend 'may include' as True. The statement does not name the edition, and appliesTo says 'GraphQL October 2021 and September 2025', which is wrong for this fact. The version-pinning rule asks a card like this to name the edition.",
+     "suggestedFix": "Keep answer False and pin the edition. Statement (107 chars): \"Since the September 2025 edition, a service may include `data: null` when a request fails document validation.\" Explanation (148 chars): \"A validation failure yields a request error result, and the September 2025 spec says that result must not contain a data entry at all, not even null.\" Set appliesTo to \"GraphQL September 2025\". The source URL stays the same."
+    }
+   ],
+   "notes": "All 12 r12 cards were checked against https://spec.graphql.org/September2025/ (fetched, HTTP 200, all cited anchors present) and https://graphql.org/learn/error-handling/ (HTTP 200). The section is balanced at 6 True and 6 False, with average statement lengths of 97.2 (true) and 95.0 (false). All statements are 120 characters or fewer and all explanations 240 or fewer.\n\nThe sentences that settle the cards that pass:\n- 02: \"If the request completed without raising any errors, this entry must not be present.\" (#sec-Execution-Result)\n- 03: \"This entry is reserved for implementers to extend the protocol however they see fit, and hence there are no additional restrictions on its contents.\" (#sec-Extensions)\n- 04: \"Nested execution is halted and sibling execution attempts to continue, producing partial result.\" (#sec-Errors)\n- 05: \"If the parent response position may be null then it resolves to null, otherwise if it is a Non-Null type, the execution error is further propagated to its parent response position.\" (#sec-Handling-Execution-Errors)\n- 06: \"the \\\"errors\\\" list must not be further affected. That is, only one error should be added to the errors list per response position.\" (#sec-Handling-Execution-Errors)\n- 07: \"If a path segment is associated with an aliased field it must use the aliased name.\" (#sec-Response-Position)\n- 08: \"the path for the error should include the full path to the result field where the error was raised, even if that field is not present in the response.\" (#sec-Errors)\n- 09: \"both positive numbers starting from 1 which describe the beginning of an associated syntax element\" (#sec-Errors)\n- 10: \"Any request error raised as a result of input coercion during CoerceArgumentValues() should be treated instead as an execution error.\" (#sec-Coercing-Field-Arguments; the algorithm also raises an execution error)\n- 11: \"Clients must ignore any entries other than those described above.\" (#sec-Additional-Entries)\n- 12: graphql.org Error Handling page, \"Use errors-as-data for domain errors\", \"This pattern makes errors discoverable through introspection\", and the table row \"Domain constraint | errors-as-data | Insufficient inventory\".\n\nI confirmed in October 2021 that cards 03, 06, 07, 08 and 10 have the same meaning in both editions, so their appliesTo is correct.\n\nNear-overlaps I did not flag, because the prompt deliberately splits these facts between sections:\n- sr12-04 (sibling fields continue after an execution error) and sr7-06 (a failed item in an `[Int]` list becomes null) rest on a similar principle.\n- sr12-03 (the response extensions map is unrestricted) and sr11-02 (the request extensions map). The explanation of sr11-02 says \"with unrestricted contents\", which nearly gives away sr12-03. Consider removing that phrase from sr11-02.\n\nGaps in coverage, not defects: no r12 card tests that data should be null when every position up to the root is Non-Null, JSON enum serialization, or the client advice on graphql.org's Robust Applications page."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr13-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://graphql.org/learn/security/ loads, official and current, and it supports the answer",
+     "evidence": "https://graphql.org/learn/security/: \"Keep in mind that trusted documents can't be used for public APIs because the operations sent by third-party clients won't known in advance.\" The same page defines trusted documents as \"an allowlist of operations that can be executed against a schema\".",
+     "problem": "The answer is right, but the statement contradicts itself. An allowlist that accepts \"arbitrary new operations\" is impossible by definition, so anyone who knows that trusted documents are an allowlist can reject it from the wording alone. That makes it a strawman and a wording giveaway rather than a test of graphql.org's guidance that trusted documents fit first-party clients only.",
+     "suggestedFix": "Replace (answer stays False). Statement (107 chars): \"graphql.org says trusted documents suit public GraphQL APIs whose operations come from third-party clients.\" Explanation (162 chars): \"graphql.org says trusted documents can't serve public APIs, since third-party operations aren't known in advance; they fit APIs whose clients are all first-party.\" Keep the URL https://graphql.org/learn/security/."
+    },
+    {
+     "id": "graphql-fundamentals-sr13-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://graphql.org/learn/security/ loads, official and current, and it supports the answer",
+     "evidence": "https://graphql.org/learn/security/: \"Note that disabling introspection can be used as a form of 'security through obscurity,' but will not be sufficient to entirely obscure a GraphQL API by itself.\" Recap: \"they will typically not be sufficient when used on their own (a document allowlist is likely to be a more effective solution)\".",
+     "problem": "The answer is right, but the statement stacks two unsupported absolutes (\"by itself fully conceals\") that only a false statement would carry. This breaks the rule against absolutes and wording tells: a test-wise player answers False without knowing graphql.org's guidance.",
+     "suggestedFix": "Replace (answer stays False). Statement (99 chars): \"graphql.org says disabling introspection keeps attackers from learning a production GraphQL schema.\" Explanation (173 chars): \"graphql.org calls disabling introspection security through obscurity that is not enough alone; for sensitive schema details it points to trusted documents and authorization.\" Same URL."
+    },
+    {
+     "id": "graphql-fundamentals-sr13-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://graphql.org/learn/security/ loads, official and current, and it supports the card",
+     "evidence": "https://graphql.org/learn/security/: \"details about errors that are raised during field execution should be masked as they may reveal sensitive information about the server or underlying data sources.\" and \"Hiding detailed error information in GraphQL responses outside of development environments is important because, even with introspection disabled, an attacker could ultimately infer the shape of an entire schema by running numerous operations with incorrect field names.\"",
+     "problem": "The card is true, but hiding error details in production is general API security common sense, not specific to GraphQL, so it is close to a truism that any developer answers True. The GraphQL-specific point that the prompt's r13 scope names (\"hiding detailed error messages and field suggestions in production\") is the field suggestions in validation errors, which leak the schema.",
+     "suggestedFix": "Replace (answer stays True). Statement (110 chars): \"graphql.org recommends hiding field suggestions in validation error messages outside development environments.\" Explanation (about 150 chars): \"Field suggestions help debugging, but graphql.org warns they let an attacker infer a schema's shape by sending many operations with wrong field names.\" Same URL. Do not mention disabled introspection in this explanation, because that is card 11's fact."
+    }
+   ],
+   "notes": "I checked all 12 r13 cards (6 true, 6 false) against the live pages, fetched on 2026-10-08 with HTTP 200: https://graphql.org/learn/serving-over-http/ for cards 01-08 and https://graphql.org/learn/security/ for cards 09-12. Every answer matches the page. Sentences that settle the cards that pass:\n- 01: \"a GraphQL server operates on a single URL/endpoint, usually /graphql, and all GraphQL requests for a given service should be directed to this endpoint\".\n- 02: \"the GET HTTP method may only be used for query operations, so if a client requests execution of a mutation operation then it must use the POST method instead\".\n- 03: \"the term query here is a misnomer: the document may contain any valid GraphQL operations\".\n- 04: \"If a response contains a data key and its value is not null, then the server should respond with a 2xx status code ... even if the response includes errors\".\n- 05: \"the client should include the application/graphql-response+json in the Accept header\".\n- 06: the server stores \"identified GraphQL documents using a technique such as persisted documents ... This allows the client to send a short document identifier instead of the full query text\".\n- 07: \"GraphQL should be placed after all authentication middleware\"; the recap says \"The server should handle user authentication before a GraphQL request is validated\".\n- 08: \"field-level authorization should be enforced by the business logic called from resolvers during GraphQL's ExecuteRequest(), allowing for a partial response to be generated\".\n- 10: \"it's recommended to apply a separate smaller limit to how deeply lists can be nested\".\n\nThe page still says the GraphQL over HTTP spec is \"not yet finalized\", so the may_change volatility on cards 01-06 is right. Cards 07-08 (stable) are graphql.org guidance and not the HTTP draft, which is also fine. None of the cards repeats a fact from another section; I searched the other batches for endpoint, persisted, auth, introspection, masking, trusted and depth. True and false statements are similar in length and pattern.\n\nMinor point, not flagged: card 08 puts \"over HTTP\" into a sentence about authorization. It reads awkwardly but does not change the answer.\n\nFlags: cards 09 and 11 are weak because their own wording gives the False answer away (a self-contradictory allowlist, and the stacked absolutes \"by itself fully\"). Card 12 is near-truism general security advice; the replacement tests GraphQL's field suggestions instead. Every replacement keeps the card's answer, so the section stays 6 true and 6 false."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "graphql-fundamentals-sr14-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://graphql.org/learn/caching/ (official, current)",
+     "evidence": "https://graphql.org/learn/caching/: \"The critical functionality that the client needs is the ability to derive a globally unique identifier for their caching. While having the server derive that ID simplifies the client, the client can also derive the identifier. This could be as simple as combining the type of the object (queried with __typename) with some type-unique identifier.\" The page never discusses giving two different types one cache key.",
+     "problem": "Strawman. Nobody who has studied caching would say that a User and a Product with the same local ID share one cache key, so the card does not test the guide's actual point: the client can build the key itself. It is also marked difficulty 3 but is easy, and the page says nothing about this scenario.",
+     "suggestedFix": "Keep it False. Statement: \"graphql.org's caching guide says a client cache depends on the server exposing a globally unique id field.\" Explanation: \"A client can also derive a globally unique cache key itself, for example by combining the object's __typename with a type-unique identifier, as graphql.org's caching guide describes.\" Same URL."
+    },
+    {
+     "id": "graphql-fundamentals-sr14-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://graphql.org/learn/governance-versioning/ (official, current, headed \"Schema Change Management\")",
+     "evidence": "https://graphql.org/learn/governance-versioning/: \"Remove deprecated elements only when usage drops to acceptable levels or the deadline passes.\" and \"Use a predictable process for introducing breaking changes: add the new element, deprecate the old one, migrate clients, then remove the deprecated element.\" and \"Before deprecating anything, add the replacement field, type, or argument.\"",
+     "problem": "Strawman with a wording tell. Removing a field \"as soon as\" it is deprecated defeats the whole point of deprecation, so nobody who has studied it would answer True, and the guess can be made from the wording alone. A better card would test the order of the add, deprecate, migrate, remove lifecycle.",
+     "suggestedFix": "Keep it False. Statement: \"graphql.org's schema change guide deprecates an old field before its replacement field is added.\" Explanation: \"The guide's lifecycle is add, deprecate, migrate, remove: the replacement is added first, so clients can switch to it as soon as the old field is marked deprecated.\" Same URL, keep may_change."
+    },
+    {
+     "id": "graphql-fundamentals-sr14-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://graphql.org/learn/governance-versioning/ (official, current)",
+     "evidence": "https://graphql.org/learn/governance-versioning/: \"Adding optional arguments to fields is generally safe, but requires default behavior that matches how the field worked before the argument existed.\" and, under dangerous changes, \"When you add a new type implementing an existing interface, queries returning that interface might receive the new type unexpectedly.\"",
+     "problem": "The source supports the answer, but the clause \"even when its default changes existing result order\" gives it away. Changing what existing clients receive is plainly unsafe, so a player who does not know the guide can answer False from the wording.",
+     "suggestedFix": "Keep it False. Statement: \"graphql.org's schema change guide lists adding a new interface implementation as a safe additive change.\" Explanation: \"The guide calls this a dangerous change: fields returning the interface may suddenly return the new object type, so clients should check __typename rather than assume specific types.\" Same URL, keep may_change. This is a different fact from card 09 (enum values)."
+    },
+    {
+     "id": "graphql-fundamentals-sr14-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://relay.dev/graphql/connections.htm (the cursor connections spec that graphql.org/learn/pagination/ links to)",
+     "evidence": "https://relay.dev/graphql/connections.htm section 2.1.2: \"A 'Connection Type' must contain a field called pageInfo. This field must return a non-null PageInfo object, as defined in the 'PageInfo' section below.\"",
+     "problem": "The answer is right, but the statement nearly copies the source sentence (\"must return a non-null PageInfo object\" becomes \"requires ... to return a non-null PageInfo object\"), which breaks the original-wording rule. The explanation only restates the statement and adds no reason or context.",
+     "suggestedFix": "Keep it True and reword. Statement: \"In the cursor connections spec, a connection type's pageInfo field has the type `PageInfo!`.\" Explanation: \"A connection type must expose pageInfo as a non-null PageInfo object, so a client can read hasNextPage and the cursors even when the edges list is empty.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards (6 true, 6 false) against pages fetched on 2026-10-08: graphql.org/learn/pagination/, global-object-identification/, caching/, schema-design/, governance-versioning/ and performance/, plus relay.dev/graphql/connections.htm. Every URL returned 200, and every source supports its card's answer.\n\nThese cards pass:\n- 01 (base64-encoded cursors). Pagination page: \"As a reminder that the cursors are opaque and their format should not be relied upon, we suggest base64 encoding them.\"\n- 02 (friendship time). Pagination page: \"if we wanted to expose 'friendship time' in the API, having it live on the edge is a natural place to put it.\"\n- 04 (backward pagination uses last with before). Connections spec 4.2: \"last takes a non-negative integer. before takes the cursor type\".\n- 05 (node returns null). Global Object Identification page: \"the user may have deleted their account. In this case, the result of querying this field should be null.\"\n- 07 (continuous evolution). Schema Design page: \"GraphQL takes a strong opinion on avoiding versioning by providing the tools for the continuous evolution of a GraphQL schema.\" Minor: the explanation's \"single schema\" and \"adopt new capabilities at their own pace\" come from the governance-versioning page, not schema-design. Schema-design still supports the core claim, so I did not flag it.\n- 09 (adding an enum value is dangerous). Governance page: \"Adding values to an enum is technically additive, but clients might not handle unknown values gracefully.\"\n- 11 (batching is explicit). Performance page: \"This is commonly solved by a batching technique ... by using a tool like Facebook's DataLoader.\"\n- 12 (GZIP). Performance page: \"It's encouraged that any production GraphQL services enable GZIP\".\n\nOther checks:\n- No duplicates with other sections. I searched the deck for cursor, Node, __typename, enum, deprecation, batching, GZIP and versioning cards; r9 and r10 cover deprecation as spec mechanics only.\n- The connections spec is cited exactly twice (03 and 04), as the prompt allows. No card tests cursor type, totalCount or the PageInfo field list.\n- The three Schema Change Management cards (08, 09, 10) are correctly set to may_change.\n\nThe four replacements keep the section's 6 true and 6 false balance: 06, 08 and 10 stay False and 03 stays True."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "graphql-fundamentals-sr7-01",
+     "graphql-fundamentals-sr7-02"
+    ],
+    "why": "Both rest on the same rule: a type without ! is nullable, so null is a valid result. sr7-01 applies it to `name: String`; sr7-02 applies it to the outer list of `[String!]`, and its explanation (\"the outer List is nullable, so a null result for the whole list is valid\") answers sr7-01 outright. sr7-01 is close to a truism and adds nothing that sr7-02 does not already teach. This is a borderline call; if it is not treated as a duplicate, the pair stays in the nullable-by-default conflict group.",
+    "dropId": "graphql-fundamentals-sr7-01"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "nullable-by-default",
+    "ids": [
+     "graphql-fundamentals-sr7-01",
+     "graphql-fundamentals-sr7-02"
+    ],
+    "why": "sr7-02's explanation says a wrapper without ! is nullable and so accepts null, which gives away sr7-01 (`name: String` accepts null)."
+   },
+   {
+    "name": "subscription-root",
+    "ids": [
+     "graphql-fundamentals-sr1-08",
+     "graphql-fundamentals-sr10-02",
+     "graphql-fundamentals-sr9-03"
+    ],
+    "why": "sr10-02's statement (\"its single root field\") assumes the one-root-field rule that sr1-08 tests. sr9-03 and sr10-02 both ask what is allowed at the subscription root, so seeing one primes the other."
+   },
+   {
+    "name": "shorthand-vs-anonymous",
+    "ids": [
+     "graphql-fundamentals-sr1-04",
+     "graphql-fundamentals-sr1-05"
+    ],
+    "why": "sr1-04's explanation lists the shorthand conditions (no variables, directives or description), and sr1-05 asks about an anonymous lone query with variables. They are the two sides of the shorthand versus anonymous-operation distinction, and dealt together each frames the other."
+   },
+   {
+    "name": "document-name-uniqueness",
+    "ids": [
+     "graphql-fundamentals-sr1-06",
+     "graphql-fundamentals-sr3-06"
+    ],
+    "why": "sr3-06's explanation says fragment names are unique across the whole document, an analogy that strongly hints that operation names are also document-wide (sr1-06 false)."
+   },
+   {
+    "name": "unused-definitions",
+    "ids": [
+     "graphql-fundamentals-sr3-07",
+     "graphql-fundamentals-sr4-03"
+    ],
+    "why": "Both use the same false template (an unused definition passes when <condition>), and each explanation says unused definitions invalidate the document. Knowing one answers the other."
+   },
+   {
+    "name": "field-merging-parent-types",
+    "ids": [
+     "graphql-fundamentals-sr2-08",
+     "graphql-fundamentals-sr2-09"
+    ],
+    "why": "These are the two sides of one field-merging distinction (same parent type needs identical arguments; different object types need only the same response shape). sr2-09's statement and explanation imply that same-parent selections are stricter."
+   },
+   {
+    "name": "response-field-order",
+    "ids": [
+     "graphql-fundamentals-sr2-11",
+     "graphql-fundamentals-sr2-12"
+    ],
+    "why": "sr2-12's explanation (\"the first included occurrence determines the position\") hints at sr2-11's first-contribution rule, and the reverse."
+   },
+   {
+    "name": "alias-response-name",
+    "ids": [
+     "graphql-fundamentals-sr2-06",
+     "graphql-fundamentals-sr12-07"
+    ],
+    "why": "sr2-06 establishes that the alias is the response name, and sr12-07's explanation says the error path uses response names. Each strongly predicts the other."
+   },
+   {
+    "name": "int-string-123-input-vs-result",
+    "ids": [
+     "graphql-fundamentals-sr4-08",
+     "graphql-fundamentals-sr5-05"
+    ],
+    "why": "A mirrored true/false pair on the string \"123\" for Int: input coercion rejects it (sr4-08 false), result coercion may accept it (sr5-05 true). Dealt together, one answer cues the opposite answer for the other."
+   },
+   {
+    "name": "enum-json-string",
+    "ids": [
+     "graphql-fundamentals-sr4-10",
+     "graphql-fundamentals-sr5-12"
+    ],
+    "why": "sr4-10's explanation (JSON has no enum representation, so a string names the value) hints that enum results serialize as their names (sr5-12 false), and sr5-12's explanation hints back at sr4-10."
+   },
+   {
+    "name": "explicit-null-vs-omitted",
+    "ids": [
+     "graphql-fundamentals-sr4-04",
+     "graphql-fundamentals-sr7-10",
+     "graphql-fundamentals-sr7-11"
+    ],
+    "why": "All three rest on the idea that an explicit null is a supplied value distinct from omission. sr7-10's explanation (a null is recorded as a provided entry) answers sr4-04 (default not applied to explicit null), and sr4-04's explanation cues sr7-10."
+   },
+   {
+    "name": "oneof-pair",
+    "ids": [
+     "graphql-fundamentals-sr7-11",
+     "graphql-fundamentals-sr7-12"
+    ],
+    "why": "Paired OneOf facts in mirrored form (declared nullable versus supplied value must be non-null). sr7-12's explanation about nullable declarations and choosing one member frames sr7-11's null-value question."
+   },
+   {
+    "name": "custom-scalar-specifiedby",
+    "ids": [
+     "graphql-fundamentals-sr5-07",
+     "graphql-fundamentals-sr5-08",
+     "graphql-fundamentals-sr5-09"
+    ],
+    "why": "sr5-08's statement (\"A custom scalar's @specifiedBy URL\") and explanation (the service's contract for format and coercion) give away both sr5-09 (@specifiedBy only on custom scalars) and sr5-07 (the service defines DateTime's format)."
+   },
+   {
+    "name": "interface-field-variance",
+    "ids": [
+     "graphql-fundamentals-sr6-03",
+     "graphql-fundamentals-sr6-04",
+     "graphql-fundamentals-sr6-05"
+    ],
+    "why": "These are the parts of the implementing-field contract (covariant return, invariant argument types, extra optional arguments). sr6-05's \"minimum argument contract\" and sr6-03's covariance shape a player's answer to sr6-04, as a mirrored return-versus-argument pair."
+   },
+   {
+    "name": "abstract-direct-selection",
+    "ids": [
+     "graphql-fundamentals-sr6-09",
+     "graphql-fundamentals-sr6-11"
+    ],
+    "why": "The same false template (\"A query directly selects X from <abstract type>\"), and both explanations say the field is reached through a fragment. One answers the other."
+   },
+   {
+    "name": "union-members-objects",
+    "ids": [
+     "graphql-fundamentals-sr6-10",
+     "graphql-fundamentals-sr10-08"
+    ],
+    "why": "sr6-10's explanation (\"A union's members are object types\") gives away sr10-08 (possibleTypes lists concrete object types), and sr10-08 cues sr6-10 as false."
+   },
+   {
+    "name": "concrete-runtime-type",
+    "ids": [
+     "graphql-fundamentals-sr3-03",
+     "graphql-fundamentals-sr6-12",
+     "graphql-fundamentals-sr10-01"
+    ],
+    "why": "All three say an abstract result resolves to one concrete object type, which is then used for fragment matching and __typename. Each makes the others obvious."
+   },
+   {
+    "name": "input-output-types",
+    "ids": [
+     "graphql-fundamentals-sr7-07",
+     "graphql-fundamentals-sr8-08"
+    ],
+    "why": "sr8-08's explanation (enums qualify for both input and output) and sr7-07's (input objects serve input positions only) are the two halves of the input/output type split. Each hints at the other."
+   },
+   {
+    "name": "schema-definition-omission",
+    "ids": [
+     "graphql-fundamentals-sr8-04",
+     "graphql-fundamentals-sr8-05"
+    ],
+    "why": "Both are September 2025 conditions for when SDL needs an explicit schema definition. Learning one tightened condition (a description, or a non-root type named Mutation) strongly cues the other, and they form a true/false pair on the same template."
+   },
+   {
+    "name": "query-only-schema",
+    "ids": [
+     "graphql-fundamentals-sr8-03",
+     "graphql-fundamentals-sr10-04"
+    ],
+    "why": "sr10-04 says a query-only schema reports mutationType null, meaning it does not support mutations. That hints sr8-03 is false (mutations do not run through the query root)."
+   },
+   {
+    "name": "deprecated-arguments-inputs",
+    "ids": [
+     "graphql-fundamentals-sr9-05",
+     "graphql-fundamentals-sr9-06"
+    ],
+    "why": "sr9-05's \"optional argument\" wording and sr9-06's explanation (forbidden only when non-null without a default) split one rule into a mirrored true/false pair."
+   },
+   {
+    "name": "repeatable-directives",
+    "ids": [
+     "graphql-fundamentals-sr9-08",
+     "graphql-fundamentals-sr10-11"
+    ],
+    "why": "sr10-11's explanation (@skip is declared without repeatable) and sr9-08's (repeatable permits multiple uses) explain each other."
+   },
+   {
+    "name": "introspection-wrapper-types",
+    "ids": [
+     "graphql-fundamentals-sr10-05",
+     "graphql-fundamentals-sr10-06"
+    ],
+    "why": "sr10-05's explanation (wrappers have a null name and are identified by kind) and sr10-06's ofType/kind walk through the same wrapper model. Each hints at the other."
+   },
+   {
+    "name": "mutation-nested-execution",
+    "ids": [
+     "graphql-fundamentals-sr11-07",
+     "graphql-fundamentals-sr11-08",
+     "graphql-fundamentals-sr1-01"
+    ],
+    "why": "sr11-07's explanation (fields in the mutation's returned selection follow ordinary rules) and sr1-01 (write then fetch the selection) frame sr11-08's question of when the next top-level field starts relative to the previous sub-selection."
+   },
+   {
+    "name": "extensions-maps",
+    "ids": [
+     "graphql-fundamentals-sr11-02",
+     "graphql-fundamentals-sr12-03"
+    ],
+    "why": "sr11-02's explanation (a request extensions map for implementation-specific information with unrestricted contents) states almost word for word the fact sr12-03 tests for the response extensions map."
+   },
+   {
+    "name": "null-propagation",
+    "ids": [
+     "graphql-fundamentals-sr12-05",
+     "graphql-fundamentals-sr12-06",
+     "graphql-fundamentals-sr12-08"
+    ],
+    "why": "sr12-08's statement assumes that propagation stops at the nullable ancestor, which gives away sr12-05. sr12-06's and sr12-08's explanations both describe the error entry staying untouched while the null propagates."
+   },
+   {
+    "name": "nullable-error-isolation",
+    "ids": [
+     "graphql-fundamentals-sr7-06",
+     "graphql-fundamentals-sr12-04",
+     "graphql-fundamentals-sr13-04"
+    ],
+    "why": "sr12-04 (a nullable field error becomes null and siblings continue) and sr7-06 (a failed nullable list item becomes null and other items stay) are the same isolation idea. sr13-04's explanation (2xx when data is non-null alongside errors) confirms that partial data with errors is normal."
+   },
+   {
+    "name": "http-get-post",
+    "ids": [
+     "graphql-fundamentals-sr13-02",
+     "graphql-fundamentals-sr13-03"
+    ],
+    "why": "sr13-02's explanation (mutations are sent with POST) cues sr13-03 (the POST query parameter may hold a mutation), and sr13-03 cues sr13-02 back."
+   },
+   {
+    "name": "authn-authz-placement",
+    "ids": [
+     "graphql-fundamentals-sr13-07",
+     "graphql-fundamentals-sr13-08"
+    ],
+    "why": "Authentication placement (before GraphQL) and authorization placement (during execution) are a contrasting pair from one page. Each explanation states where the other step happens."
+   }
+  ],
+  "tells": "Deck checked: 168 cards (84 true, 84 false). Every section is 6/6. Mean statement length is 89.5 for true and 90.0 for false, and every section is within 5 characters (largest gaps: r11 4.8, r6 4.1, r1 4.5, r8 3.5). Mean explanation length is 118 for true and 122 for false. Length is not a usable tell. Word and template tells a player could use without knowing GraphQL:\n\n1) Justification clause predicts False (strongest tell). A permission is followed by a plausible-sounding reason or condition (\"when its value is a scalar\", \"when their fields match the schema\", \"when the client supplies a value for it\", \"when the supplied items are integers\", \"when its fields are scalars\", \"when each step follows a different object field\", \"when its selected fields return strings\", \"even when its default changes...\", \"when both have type-local ID\"). The regex \"when its/the/their/each/both\" matches 9 False and 1 True: F sr2-04, sr3-02, sr3-07, sr3-09, sr4-03, sr4-06, sr7-07, sr14-06, sr14-08; T sr6-02. Purpose clauses do the same job in further false cards: sr5-09 \"to document a preferred encoding\", sr6-10 \"to include that interface's implementing objects\", sr7-08 \"to configure how the service coerces them\", sr6-04 \"for numeric compatibility\". Overall \"when\" appears in 17 F vs 11 T. This is a recurring false-statement template (\"X is allowed when/to <irrelevant justification>\") on at least 12 false cards, far over the two-per-template limit.\n\n2) \"A query ...\" as the subject: 4 False, 0 True (sr1-06, sr2-08, sr6-09, sr6-11). \"A query directly selects X from <abstract type>\" is the same false template twice (sr6-09, sr6-11). \"directly\" overall: 2 F (sr6-09, sr6-11) vs 1 T (sr8-09).\n\n3) \"says\" versus \"recommends\" in graphql.org cards. \"graphql.org says\" is 9 F / 5 T (F sr11-03, sr11-09, sr13-02, sr13-06, sr13-09, sr13-11, sr14-06, sr14-08, sr14-11; T sr13-01, sr13-03, sr13-08, sr14-05, sr14-09). \"recommends/suggests\" across the deck is 9 T / 4 F (T sr5-11, sr9-12, sr12-12, sr13-05, sr13-10, sr13-12, sr14-01, sr14-07, sr14-12; F sr10-12, sr13-04, sr13-07, sr14-10). \"The spec recommends\" is 2 T / 0 F (sr5-11, sr9-12). In r13/r14 a player can guess True for \"recommends\" and False for \"says\" and score well above chance.\n\n4) Overreach and absolute words appear only in false cards: \"guarantees\" sr9-10; \"fully\" and \"by itself\" sr13-11; \"as soon as\" sr14-10; \"by default\" sr10-09 (its only use, and false); \"zero\" sr10-07, sr12-02 (2 F / 0 T); \"another\" sr3-08, sr7-04, sr12-06 (3 F / 0 T); \"separate\" sr8-06 (1 F); \"automatically\" 2 F (sr6-08, sr14-11) vs 1 T (sr7-10). In sr7-10 (\"The service automatically records an explicitly null ...\") \"automatically\" reads as inserted only to balance the count.\n\n5) Verb templates. \"replace/replaces\" 0 T / 4 F (sr4-04, sr6-04, sr8-10, sr14-10). \"unused\" 0 T / 3 F (sr3-07, sr4-03, sr5-10). \"report(s)\" 0 T / 2 F (sr10-05, sr10-07). \"include(s)\" 4 T / 7 F (F sr2-12, sr5-10, sr6-10, sr9-03, sr10-09, sr12-01, sr12-02). \"A service (may) include(s) <extra entry>\" is false in sr12-01, sr12-02 and sr10-09, and the parallel \"Introspection includes unused built-in scalars\" (sr5-10) is false too: four cards on one false template. In the other direction, \"preserve(s)\" is 3 T / 0 F (sr1-11, sr1-12, sr2-03, the \"doing X preserves meaning/result\" true template), and \"return(s)/returns\" is 14 T / 5 F.\n\n6) Actor tells. \"schema author\" is 3 T / 7 F (F sr7-04, sr7-07, sr7-08, sr7-12, sr9-06, sr9-10, sr9-11; T sr7-09, sr9-05, sr9-08). Statements starting \"The service\" lean True, 9 T / 4 F. Statements starting \"A service\" are about even, 13 T / 16 F.\n\n7) Balanced, so not tells: \"may\" (23 T / 20 F), backtick code (29 T / 26 F), \"In the September 2025 spec\" (7 T / 8 F), \"must\" (2 T / 1 F), \"each\" (4 T / 3 F), \"even\" (3 T / 2 F), \"null\" (11 T / 10 F), \"valid\" (6 T / 7 F).\n\nSuggested rebalancing: rewrite about 8 of the justification-clause false cards as plain claims, and add matching \"when <condition>\" clauses to some true cards. Move some true graphql.org cards to \"says\" and some false ones to \"recommends\". Remove or balance \"replace\", \"unused\", \"zero\", \"another\", \"guarantees\", \"fully\" and \"as soon as\". Rephrase the four \"A query ...\" false cards with other subjects."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "graphql-fundamentals-sr1-03",
+    "reason": "weak_card: sr1-05 and sr1-07 already assume a document can hold several operations, and what remains is close to the definition of a document. r1 keeps 11 cards (5T/6F), so no rewrite is needed."
+   },
+   {
+    "id": "graphql-fundamentals-sr2-01",
+    "reason": "weak_card: truism. Nested selections produce nested results. r2 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr2-03",
+    "reason": "weak_card: the word 'named arguments' tells the player the order does not matter. r2 stays at 9 or more cards with an acceptable split."
+   },
+   {
+    "id": "graphql-fundamentals-sr2-04",
+    "reason": "weak_card: strawman (an undeclared argument becoming valid because its value is a scalar), and it uses the 'when <justification>' false template."
+   },
+   {
+    "id": "graphql-fundamentals-sr3-02",
+    "reason": "weak_card: strawman. A fragment on String whose fields return strings is not something a learner believes. r3 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr3-05",
+    "reason": "weak_card: near-copy of the spec sentence on inline fragments with directives, and the explanation only repeats it."
+   },
+   {
+    "id": "graphql-fundamentals-sr3-11",
+    "reason": "weak_card: the spec sentence 'primary unit of composition' with a word changed. No realistic False reading, so the answer is given away."
+   },
+   {
+    "id": "graphql-fundamentals-sr5-06",
+    "reason": "weak_card: near-truism ('if you implement Boolean you follow Boolean's rules'), and 'built-in coercion rules' overstates how fixed result coercion is. r5 keeps 10 cards (4T/6F, at the limit, not worse)."
+   },
+   {
+    "id": "graphql-fundamentals-sr5-08",
+    "reason": "weak_card: the answer can be read from the directive's name (@specifiedBy links a specification), and the wording is close to the spec sentence."
+   },
+   {
+    "id": "graphql-fundamentals-sr6-12",
+    "reason": "duplicate: sr10-01 (__typename returns the concrete object type) already teaches that each abstract value resolves to one concrete object type. r6 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr7-01",
+    "reason": "scan duplicate: sr7-02 teaches the same rule (a type without ! is nullable, so null is a valid result) and its explanation answers sr7-01. r7 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr8-03",
+    "reason": "weak_card: strawman (mutations quietly routed through the query root). r8 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr9-01",
+    "reason": "weak_card: skip false plus include true never tests the no-precedence rule, because a player can answer from each directive alone. r9 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr9-08",
+    "reason": "weak_card: name giveaway (a 'repeatable' directive can be repeated)."
+   },
+   {
+    "id": "graphql-fundamentals-sr9-11",
+    "reason": "weak_card: the spec's Counter Example 94 with only the directive renamed, which breaks the original-wording rule."
+   },
+   {
+    "id": "graphql-fundamentals-sr11-10",
+    "reason": "weak_card: the spec's Response Stream sentence with words moved. r11 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr13-09",
+    "reason": "weak_card: contradicts itself (an allowlist accepting arbitrary new operations), so the wording gives away False. r13 keeps 9 cards (5T/4F)."
+   },
+   {
+    "id": "graphql-fundamentals-sr13-11",
+    "reason": "weak_card: the stacked absolutes 'by itself fully conceals' give away False."
+   },
+   {
+    "id": "graphql-fundamentals-sr13-12",
+    "reason": "weak_card: hiding error details in production is general security common sense rather than a GraphQL-specific point."
+   },
+   {
+    "id": "graphql-fundamentals-sr14-03",
+    "reason": "weak_card: near-copy of the connections spec sentence, and the explanation only restates it. Rewriting this true card instead would leave r14 at 6T/3F, so sr14-08 (false) is the one rewritten."
+   },
+   {
+    "id": "graphql-fundamentals-sr14-06",
+    "reason": "weak_card: strawman (User and Product sharing one cache key), and the scenario is not on the caching page."
+   },
+   {
+    "id": "graphql-fundamentals-sr14-10",
+    "reason": "weak_card: strawman with the overreach tell 'as soon as'."
+   }
+  ],
+  "source": [
+   {
+    "id": "graphql-fundamentals-sr2-02",
+    "title": "GraphQL Specification: Field Arguments",
+    "url": "https://spec.graphql.org/September2025/#sec-Field-Arguments"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "graphql-fundamentals-sr2-11",
+    "reason": "ambiguous: 'where its spread first contributes them' can be read as the spread position, which is wrong for a field selected earlier (the spec's foo example), or as the first contribution, which is right. The new card fixes the fragment and the fields so only one reading exists. Checked against #sec-Objects.Field-Ordering: 'If a fragment is spread before other fields, the fields that fragment specifies occur in the response before the following fields' and JSON 'should retain this order textually'.",
+    "statement": "JSON for `{ id ...F email }` with `fragment F on User { name }` should put `name` second.",
+    "answer": true,
+    "explanation": "A fragment spread contributes its fields at the spread's position, and a JSON response should keep the response order textually, so a User result lists id, name, email.",
+    "misconception": "",
+    "sourceTitle": "GraphQL Specification: Field Ordering",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Objects.Field-Ordering"
+   },
+   {
+    "id": "graphql-fundamentals-sr3-06",
+    "reason": "ambiguous: 'unique within each operation' is also literally true, because document-wide uniqueness implies it. The new card states a concrete invalid document. Checked against #sec-Fragment-Name-Uniqueness: 'fragments must be a set of one' and 'each fragment's name must be unique within a document'. It avoids the 'when <condition>' tell.",
+    "statement": "One document may hold two definitions of `fragment UserFields`, one for each of its two operations.",
+    "answer": false,
+    "explanation": "Spreads refer to fragment definitions by name, so each fragment name must be unique within the whole document; a second UserFields definition makes it invalid.",
+    "misconception": "Fragment names are scoped per operation, so each operation may define its own UserFields.",
+    "sourceTitle": "GraphQL Specification: Fragment Name Uniqueness",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Fragment-Name-Uniqueness"
+   },
+   {
+    "id": "graphql-fundamentals-sr6-04",
+    "reason": "explanation_error: the old explanation blamed input coercion, but the real reason is the invariant argument rule. The statement keeps its fact and answer but loses the purpose-clause tell ('for numeric compatibility') and 'replace'. The explanation no longer says that Float inputs accept integers, which would give away sr4-09. Checked against #sec-Objects.Type-Validation: 'That named argument on field must accept the same type (invariant) as that named argument on implementedField.'",
+    "statement": "An implementing field may declare `Float` for an argument that its interface field declares as `Int`.",
+    "answer": false,
+    "explanation": "An implementing field must accept each interface argument with the same type (invariant), so an Int argument stays Int; how numeric values coerce plays no part in this schema rule.",
+    "misconception": "Argument types on an implementing field may differ from the interface's when the values are numerically compatible.",
+    "sourceTitle": "GraphQL Specification: Objects, Type Validation",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Objects.Type-Validation"
+   },
+   {
+    "id": "graphql-fundamentals-sr6-06",
+    "reason": "ambiguous: the old statement described an author's action, not validity, and mixed SDL with an introspection value. Its explanation also made deprecation sound inherited. The new card asks about validity and avoids negation. Checked against #sec-Objects.Type-Validation: 'If field is deprecated then implementedField must also be deprecated.'",
+    "statement": "In the September 2025 spec, an object may deprecate a field whose interface field is left undeprecated.",
+    "answer": false,
+    "explanation": "In the September 2025 spec, an implementing field may be deprecated only when the interface field it implements is deprecated too; otherwise the schema is invalid.",
+    "misconception": "An object may deprecate an implementing field independently of the interface field.",
+    "sourceTitle": "GraphQL Specification: Objects, Type Validation",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Objects.Type-Validation"
+   },
+   {
+    "id": "graphql-fundamentals-sr8-06",
+    "reason": "ambiguous: 'separate `schema` definitions' could be defended as True through `extend schema`, which can add a root operation type. The new card shows two literal schema definitions. Checked against #sec-Root-Operation-Types: 'a document must include at most one schema definition'. The extension example in the explanation is checked against #sec-Schema-Extension on the same page.",
+    "statement": "An SDL document may hold both `schema { query: Query }` and `schema { mutation: Mutation }`.",
+    "answer": false,
+    "explanation": "An SDL document holds at most one schema definition; to add a root operation type to a schema already defined, SDL uses an extension such as `extend schema { mutation: Mutation }`.",
+    "misconception": "Each root operation type may get its own schema definition.",
+    "sourceTitle": "GraphQL Specification: Root Operation Types",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Root-Operation-Types"
+   },
+   {
+    "id": "graphql-fundamentals-sr9-09",
+    "reason": "ambiguous: 'applies to a field in an operation' can mean 'takes effect when the field is selected', which is true for type system directives such as @auth. The new card asks only where the directive may be written. Checked against #sec-Directives-Are-in-Valid-Locations and the DirectiveLocation grammar: FIELD is an ExecutableDirectiveLocation and FIELD_DEFINITION a TypeSystemDirectiveLocation; 'Directives must only be used in the locations they are declared to belong in.' Kept short to keep r9's length balance.",
+    "statement": "`directive @x on FIELD_DEFINITION` lets `@x` appear on a field selection.",
+    "answer": false,
+    "explanation": "FIELD_DEFINITION is a type system location for field definitions in SDL; a directive written on a field selection in an operation needs the executable location FIELD.",
+    "misconception": "FIELD_DEFINITION also covers field selections in operations.",
+    "sourceTitle": "GraphQL Specification: Directives Are in Valid Locations",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Directives-Are-in-Valid-Locations"
+   },
+   {
+    "id": "graphql-fundamentals-sr12-01",
+    "reason": "ambiguous: the answer depends on the edition. October 2021 only said data 'should not be present', while September 2025 says the request error result 'must not contain an entry with key \"data\"'. The card now names the edition, and appliesTo should become 'GraphQL September 2025'. Checked against #sec-Request-Error-Result and #sec-Errors ('a request error may occur due to a parse grammar or validation error in the Document'). It also drops the 'when' clause.",
+    "statement": "Since the September 2025 edition, a service may answer a document that fails validation with `data: null`.",
+    "answer": false,
+    "explanation": "A validation failure produces a request error result, and the September 2025 spec says that result must not contain a data entry at all, not even null.",
+    "misconception": "A request error result may carry data set to null.",
+    "sourceTitle": "GraphQL Specification: Request Error Result",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Request-Error-Result"
+   },
+   {
+    "id": "graphql-fundamentals-sr14-08",
+    "reason": "weak_card (giveaway clause), rewritten rather than dropped: dropping sr14-03, 06, 08 and 10 would leave r14 with 8 cards (5T/3F). This uses the verifier's replacement. Checked against graphql.org/learn/governance-versioning/: under 'Handle dangerous changes', 'Adding interface implementations: When you add a new type implementing an existing interface, queries returning that interface might receive the new type unexpectedly.' Keep volatility may_change.",
+    "statement": "graphql.org's schema change guide lists adding a new interface implementation as a safe additive change.",
+    "answer": false,
+    "explanation": "The guide lists it among dangerous changes: fields returning that interface may start returning the new object type, so clients have to be ready for types they did not expect.",
+    "misconception": "Adding a type that implements an existing interface is purely additive and therefore safe.",
+    "sourceTitle": "GraphQL: Schema Change Management",
+    "sourceUrl": "https://graphql.org/learn/governance-versioning/"
+   },
+   {
+    "id": "graphql-fundamentals-sr3-09",
+    "reason": "tell: removes the 'when <justification>' false template ('when each step follows a different object field'). Same fact (no fragment spread cycles, including through child fields, Counter Example 156) and same answer.",
+    "statement": "A fragment may reach itself again through a spread placed inside one of its child fields.",
+    "answer": false,
+    "explanation": "Fragment spread cycles invalidate the document, including cycles that pass through child fields and other fragments.",
+    "misconception": "A spread nested under a child field makes a recursive fragment valid.",
+    "sourceTitle": "GraphQL Specification: Fragment Spreads Must Not Form Cycles",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Fragment-Spreads-Must-Not-Form-Cycles"
+   },
+   {
+    "id": "graphql-fundamentals-sr4-06",
+    "reason": "tell: removes the 'when the supplied items are integers' justification clause. Same fact ([Int] is incompatible with [Int!], AreTypesCompatible) and same answer. No default-value exemption applies, because [Int!] is a nullable list.",
+    "statement": "A variable of type `[Int]` passes validation at an argument of type `[Int!]`.",
+    "answer": false,
+    "explanation": "Validation compares declared types. Nullable list items in `[Int]` are incompatible with the non-null items expected by `[Int!]`.",
+    "misconception": "A list variable with nullable items fits a list argument with non-null items.",
+    "sourceTitle": "GraphQL Specification: All Variable Usages Are Allowed",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-All-Variable-Usages-Are-Allowed"
+   },
+   {
+    "id": "graphql-fundamentals-sr5-09",
+    "reason": "tell: removes the purpose-clause justification ('to document a preferred encoding'). It also fixes r5's length gap after the two true drops (true 76.8 vs false 80.0). Same fact (@specifiedBy 'must not appear on built-in scalar types') and same answer.",
+    "statement": "A schema may attach `@specifiedBy(url:)` to the built-in `String` scalar.",
+    "answer": false,
+    "explanation": "The @specifiedBy directive applies to custom scalars. The spec forbids applying it to built-in scalar types.",
+    "misconception": "@specifiedBy may also document built-in scalars such as String.",
+    "sourceTitle": "GraphQL Specification: @specifiedBy",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec--specifiedBy"
+   },
+   {
+    "id": "graphql-fundamentals-sr7-07",
+    "reason": "tell: removes the 'when its fields are scalars' justification clause and the false-skewed actor 'schema author'. Same fact ('Input Object types cannot be the return type of an Object or Interface field') and same answer.",
+    "statement": "An object field may declare an input object type, such as `ReviewInput`, as its return type.",
+    "answer": false,
+    "explanation": "Input Object types serve input positions. A field's return type must use an output type.",
+    "misconception": "An input object type can also serve as a field's return type.",
+    "sourceTitle": "GraphQL Specification: Input Objects",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Input-Objects"
+   },
+   {
+    "id": "graphql-fundamentals-sr11-08",
+    "reason": "tell (form): after sr11-10 (true) was dropped, r11's false statements averaged 6.8 characters longer than its true ones, and this 113-character false card was the outlier. The rewrite brings the gap to 4.0. Same fact (serial execution completes each top-level field with its sub-selection before the next starts) and same answer.",
+    "statement": "In a mutation, the next top-level field may start while the previous field's sub-selection runs.",
+    "answer": false,
+    "explanation": "Top-level mutation execution waits for the previous field and its selected subfields to finish before starting the next field.",
+    "misconception": "Serial mutation execution waits for the resolver's return but leaves its selected child fields unfinished.",
+    "sourceTitle": "GraphQL Specification: Normal and Serial Execution",
+    "sourceUrl": "https://spec.graphql.org/September2025/#sec-Normal-and-Serial-Execution"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "subscription-root",
+    "ids": [
+     "graphql-fundamentals-sr1-08",
+     "graphql-fundamentals-sr10-02",
+     "graphql-fundamentals-sr9-03"
+    ]
+   },
+   {
+    "name": "shorthand-vs-anonymous",
+    "ids": [
+     "graphql-fundamentals-sr1-04",
+     "graphql-fundamentals-sr1-05"
+    ]
+   },
+   {
+    "name": "document-name-uniqueness",
+    "ids": [
+     "graphql-fundamentals-sr1-06",
+     "graphql-fundamentals-sr3-06"
+    ]
+   },
+   {
+    "name": "unused-definitions",
+    "ids": [
+     "graphql-fundamentals-sr3-07",
+     "graphql-fundamentals-sr4-03"
+    ]
+   },
+   {
+    "name": "field-merging-parent-types",
+    "ids": [
+     "graphql-fundamentals-sr2-08",
+     "graphql-fundamentals-sr2-09"
+    ]
+   },
+   {
+    "name": "response-field-order",
+    "ids": [
+     "graphql-fundamentals-sr2-11",
+     "graphql-fundamentals-sr2-12"
+    ]
+   },
+   {
+    "name": "alias-response-name",
+    "ids": [
+     "graphql-fundamentals-sr2-06",
+     "graphql-fundamentals-sr12-07"
+    ]
+   },
+   {
+    "name": "int-string-123-input-vs-result",
+    "ids": [
+     "graphql-fundamentals-sr4-08",
+     "graphql-fundamentals-sr5-05"
+    ]
+   },
+   {
+    "name": "enum-json-string",
+    "ids": [
+     "graphql-fundamentals-sr4-10",
+     "graphql-fundamentals-sr5-12"
+    ]
+   },
+   {
+    "name": "explicit-null-vs-omitted",
+    "ids": [
+     "graphql-fundamentals-sr4-04",
+     "graphql-fundamentals-sr7-10",
+     "graphql-fundamentals-sr7-11"
+    ]
+   },
+   {
+    "name": "oneof-pair",
+    "ids": [
+     "graphql-fundamentals-sr7-11",
+     "graphql-fundamentals-sr7-12"
+    ]
+   },
+   {
+    "name": "custom-scalar-specifiedby",
+    "ids": [
+     "graphql-fundamentals-sr5-07",
+     "graphql-fundamentals-sr5-09"
+    ]
+   },
+   {
+    "name": "interface-field-variance",
+    "ids": [
+     "graphql-fundamentals-sr6-03",
+     "graphql-fundamentals-sr6-04",
+     "graphql-fundamentals-sr6-05"
+    ]
+   },
+   {
+    "name": "abstract-direct-selection",
+    "ids": [
+     "graphql-fundamentals-sr6-09",
+     "graphql-fundamentals-sr6-11"
+    ]
+   },
+   {
+    "name": "union-members-objects",
+    "ids": [
+     "graphql-fundamentals-sr6-10",
+     "graphql-fundamentals-sr10-08"
+    ]
+   },
+   {
+    "name": "concrete-runtime-type",
+    "ids": [
+     "graphql-fundamentals-sr3-03",
+     "graphql-fundamentals-sr10-01"
+    ]
+   },
+   {
+    "name": "input-output-types",
+    "ids": [
+     "graphql-fundamentals-sr7-07",
+     "graphql-fundamentals-sr8-08"
+    ]
+   },
+   {
+    "name": "schema-definition-omission",
+    "ids": [
+     "graphql-fundamentals-sr8-04",
+     "graphql-fundamentals-sr8-05"
+    ]
+   },
+   {
+    "name": "deprecated-arguments-inputs",
+    "ids": [
+     "graphql-fundamentals-sr9-05",
+     "graphql-fundamentals-sr9-06"
+    ]
+   },
+   {
+    "name": "introspection-wrapper-types",
+    "ids": [
+     "graphql-fundamentals-sr10-05",
+     "graphql-fundamentals-sr10-06"
+    ]
+   },
+   {
+    "name": "mutation-nested-execution",
+    "ids": [
+     "graphql-fundamentals-sr11-07",
+     "graphql-fundamentals-sr11-08",
+     "graphql-fundamentals-sr1-01"
+    ]
+   },
+   {
+    "name": "extensions-maps",
+    "ids": [
+     "graphql-fundamentals-sr11-02",
+     "graphql-fundamentals-sr12-03"
+    ]
+   },
+   {
+    "name": "null-propagation",
+    "ids": [
+     "graphql-fundamentals-sr12-05",
+     "graphql-fundamentals-sr12-06",
+     "graphql-fundamentals-sr12-08"
+    ]
+   },
+   {
+    "name": "nullable-error-isolation",
+    "ids": [
+     "graphql-fundamentals-sr7-06",
+     "graphql-fundamentals-sr12-04",
+     "graphql-fundamentals-sr13-04"
+    ]
+   },
+   {
+    "name": "http-get-post",
+    "ids": [
+     "graphql-fundamentals-sr13-02",
+     "graphql-fundamentals-sr13-03"
+    ]
+   },
+   {
+    "name": "authn-authz-placement",
+    "ids": [
+     "graphql-fundamentals-sr13-07",
+     "graphql-fundamentals-sr13-08"
+    ]
+   },
+   {
+    "name": "dangerous-schema-changes",
+    "ids": [
+     "graphql-fundamentals-sr14-08",
+     "graphql-fundamentals-sr14-09"
+    ]
+   }
+  ],
+  "sectionBalance": "146 cards after edits (84T/84F before; now 70T/76F). The gap is the difference between average true and average false statement length, in characters.\nr1: 11 cards, 5T/6F (gap 3.5)\nr2: 9 cards, 4T/5F (gap 4.2)\nr3: 9 cards, 4T/5F (gap 2.8)\nr4: 12 cards, 6T/6F (gap 3.0)\nr5: 10 cards, 4T/6F (gap 3.2)\nr6: 11 cards, 5T/6F (gap 3.3)\nr7: 11 cards, 5T/6F (gap 1.5)\nr8: 11 cards, 6T/5F (gap 1.0)\nr9: 9 cards, 4T/5F (gap 3.5)\nr10: 12 cards, 6T/6F (gap 3.5)\nr11: 11 cards, 5T/6F (gap 4.0)\nr12: 12 cards, 6T/6F (gap 1.5)\nr13: 9 cards, 5T/4F (gap 4.0)\nr14: 9 cards, 5T/4F (gap 1.2)\nEvery section has at least 9 cards and a split no worse than 4 to 6 per 10. Every section is within the 5-character length gap.",
+  "notes": "Sources: I downloaded https://spec.graphql.org/September2025/ (HTTP 200, headed \"September 2025 Edition\") and confirmed every anchor used in the rewrites. I quote the exact sentences in each rewrite reason. I also fetched graphql.org/learn/governance-versioning/ (200) for sr14-08. The verifiers report that September 2025 is still the latest release (September2026/ returns 404).\n\nRewrites:\n- sr2-11, sr3-06 and sr9-09 had to be rewritten, not dropped. Dropping them would have left r2, r3 and r9 with 8 cards.\n- sr14-08 was rewritten for the same reason: dropping all four weak r14 cards would have left 8 cards at 5T/3F. I rewrote a false card rather than the true sr14-03 so the split stays 5T/4F.\n- sr2-02 changes only its source, to #sec-Field-Arguments. That section shows `picture(size: Int): Url` with the scalar Url. The statement and explanation are unchanged.\n- sr12-01: set appliesTo to \"GraphQL September 2025\" (the card's current value says October 2021 and September 2025).\n- sr2-11 assumes the parent type is User. The explanation says \"a User result\" to make that explicit.\n\nTell rewrites (five, each keeping its fact and answer):\n- sr3-09, sr4-06 and sr7-07 remove the 'when <justification>' false template. sr2-04, sr3-02 and sr14-06 left with drops, and the sr6-04 and sr12-01 rewrites drop their clauses too.\n- Two cards keep the template: sr3-07 and sr4-03, which are also a conflict group. That is the most the rules allow for one template. I left them because I could not find a clean negation-free wording for \"an unused fragment or variable\".\n- sr5-09 removes a purpose clause and fixes r5's length gap.\n- sr11-08 fixes the r11 length gap of 6.8 that appeared after sr11-10 was dropped.\n\nTells not addressed:\n- \"recommends/suggests\" still leans True: 8T/3F after the drops. \"graphql.org says\" is now 5T/5F.\n- \"A query ...\" as the subject of false cards: sr1-06, sr2-08, sr6-09, sr6-11.\n- \"guarantees\" in sr9-10.\n- \"schema author\" now leans 2T/4F.\n- \"automatically\" in sr6-08 (false) and sr7-10 (true).\nIf more tell slots open, the next candidates are sr9-10 ('The spec gives the order of directives at one location no semantic weight.', false, same fact), one 'recommends' true card moved to 'says' (sr14-12 or sr13-05), and sr6-09 or sr6-11 rephrased off 'A query directly selects'.\n\nFacts the deck no longer tests after the drops:\n- the Operation Type Existence rule (sr8-03)\n- the @skip/@include no-precedence rule (sr9-01)\n- direct and indirect directive self-reference (sr9-11)\n- the repeatable keyword (sr9-08)\n- the trusted-documents scope, introspection obscurity and error masking (r13)\n- the deprecation lifecycle, the cursor-cache key and the non-null pageInfo (r14)\n- leaf-field selections and aliases on top-level fields were already untested.\n\nOther notes:\n- Conflict groups: query-only-schema, repeatable-directives and nullable-by-default are removed because a dropped card left each with one member. New group: dangerous-schema-changes (sr14-08 and sr14-09, two items from the same \"dangerous changes\" list).\n- sr11-02's explanation phrase \"with unrestricted contents\" nearly gives away sr12-03. They are already a conflict group, but cutting that phrase is advisable.\n- Source titles in the rewrites use a colon instead of the deck's em dash, following the user's no-em-dash rule. Normalise to the deck's format if needed."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "graphql-fundamentals-sr2-11",
+    "decision": "fixed",
+    "statement": "A JSON response to `user { id ...F email }` with `fragment F on User { name }` should list `name` second.",
+    "answer": true,
+    "explanation": "A fragment spread contributes its fields at the spread's position, and a JSON response should keep the response field order textually, so the user object lists id, name, email.",
+    "reason": "Both lenses flagged the same problem. A bare `{ id ...F email }` reads as a Query-rooted shorthand, and spreading an object fragment `on User` into Query scope is invalid, so an expert could answer False. I took the wording lens's version: it nests the spread under a User-typed field and names the JSON response as what is being produced. On the September 2025 spec I checked 'the fields that fragment specifies occur in the response before the following fields' and 'should retain this order textually'. 105 characters; r2's length balance needs a recheck (old card was 89)."
+   },
+   {
+    "id": "graphql-fundamentals-sr3-06",
+    "decision": "keep",
+    "statement": "One document may hold two definitions of `fragment UserFields`, one for each of its two operations.",
+    "answer": false,
+    "explanation": "Spreads refer to fragment definitions by name, so each fragment name must be unique within the whole document; a second UserFields definition makes it invalid.",
+    "reason": "Both lenses keep it. Spec: 'each fragment's name must be unique within a document'."
+   },
+   {
+    "id": "graphql-fundamentals-sr6-04",
+    "decision": "keep",
+    "statement": "An implementing field may declare `Float` for an argument that its interface field declares as `Int`.",
+    "answer": false,
+    "explanation": "An implementing field must accept each interface argument with the same type (invariant), so an Int argument stays Int; how numeric values coerce plays no part in this schema rule.",
+    "reason": "Both lenses keep it. Spec, IsValidImplementation: 'must accept the same type (invariant)'."
+   },
+   {
+    "id": "graphql-fundamentals-sr6-06",
+    "decision": "keep",
+    "statement": "In the September 2025 spec, an object may deprecate a field whose interface field is left undeprecated.",
+    "answer": false,
+    "explanation": "In the September 2025 spec, an implementing field may be deprecated only when the interface field it implements is deprecated too; otherwise the schema is invalid.",
+    "reason": "Both lenses keep it. Spec: 'If field is deprecated then implementedField must also be deprecated.' The prompt's rule 72 names this as a September 2025 addition, so the statement names the edition. appliesTo: 'GraphQL September 2025'."
+   },
+   {
+    "id": "graphql-fundamentals-sr8-06",
+    "decision": "keep",
+    "statement": "An SDL document may hold both `schema { query: Query }` and `schema { mutation: Mutation }`.",
+    "answer": false,
+    "explanation": "An SDL document holds at most one schema definition; to add a root operation type to a schema already defined, SDL uses an extension such as `extend schema { mutation: Mutation }`.",
+    "reason": "Both lenses keep it. Spec: 'a document must include at most one schema definition'."
+   },
+   {
+    "id": "graphql-fundamentals-sr9-09",
+    "decision": "keep",
+    "statement": "`directive @x on FIELD_DEFINITION` lets `@x` appear on a field selection.",
+    "answer": false,
+    "explanation": "FIELD_DEFINITION is a type system location for field definitions in SDL; a directive written on a field selection in an operation needs the executable location FIELD.",
+    "reason": "Both lenses keep it. Spec: 'Directives must only be used in the locations they are declared to belong in.' In the grammar, FIELD is an executable location and FIELD_DEFINITION a type system location."
+   },
+   {
+    "id": "graphql-fundamentals-sr12-01",
+    "decision": "fixed",
+    "statement": "In the September 2025 spec, a service may answer a document that fails validation with `data: null`.",
+    "answer": false,
+    "explanation": "A validation failure produces a request error result, and the September 2025 spec says that result must not contain a data entry at all, not even null.",
+    "reason": "The wording lens proposed the fix and the fact lens offered the same change as optional. 'Since the September 2025 edition' hints that the edition loosened the rule, and rule 72 forbids cards whose point is an edition change, so the prefix is now 'In the September 2025 spec'. Spec: 'The request error result map must not contain an entry with key \"data\".' appliesTo: 'GraphQL September 2025'. 100 characters."
+   },
+   {
+    "id": "graphql-fundamentals-sr14-08",
+    "decision": "keep",
+    "statement": "graphql.org's schema change guide lists adding a new interface implementation as a safe additive change.",
+    "answer": false,
+    "explanation": "The guide lists it among dangerous changes: fields returning that interface may start returning the new object type, so clients have to be ready for types they did not expect.",
+    "reason": "Both lenses keep it. I fetched graphql.org/learn/governance-versioning/: 'Adding interface implementations' is under 'Handle dangerous changes'. Volatility stays may_change."
+   },
+   {
+    "id": "graphql-fundamentals-sr3-09",
+    "decision": "keep",
+    "statement": "A fragment may reach itself again through a spread placed inside one of its child fields.",
+    "answer": false,
+    "explanation": "Fragment spread cycles invalidate the document, including cycles that pass through child fields and other fragments.",
+    "reason": "Both lenses keep it. Spec: 'The graph of fragment spreads must not form any cycles including spreading itself.'"
+   },
+   {
+    "id": "graphql-fundamentals-sr4-06",
+    "decision": "keep",
+    "statement": "A variable of type `[Int]` passes validation at an argument of type `[Int!]`.",
+    "answer": false,
+    "explanation": "Validation compares declared types. Nullable list items in `[Int]` are incompatible with the non-null items expected by `[Int!]`.",
+    "reason": "Both lenses keep it. AreTypesCompatible fails on the item type, and no default-value exception applies because `[Int!]` is a nullable list."
+   },
+   {
+    "id": "graphql-fundamentals-sr5-09",
+    "decision": "keep",
+    "statement": "A schema may attach `@specifiedBy(url:)` to the built-in `String` scalar.",
+    "answer": false,
+    "explanation": "The @specifiedBy directive applies to custom scalars. The spec forbids applying it to built-in scalar types.",
+    "reason": "Both lenses keep it. Spec: 'It must not appear on built-in scalar types.'"
+   },
+   {
+    "id": "graphql-fundamentals-sr7-07",
+    "decision": "keep",
+    "statement": "An object field may declare an input object type, such as `ReviewInput`, as its return type.",
+    "answer": false,
+    "explanation": "Input Object types serve input positions. A field's return type must use an output type.",
+    "reason": "Both lenses keep it. Spec: 'Input Object types cannot be the return type of an Object or Interface field.'"
+   },
+   {
+    "id": "graphql-fundamentals-sr11-08",
+    "decision": "keep",
+    "statement": "In a mutation, the next top-level field may start while the previous field's sub-selection runs.",
+    "answer": false,
+    "explanation": "Top-level mutation execution waits for the previous field and its selected subfields to finish before starting the next field.",
+    "reason": "Both lenses keep it. Spec, serial execution: 'determine the corresponding entry in the result map for each item to completion before it continues on to the next entry'. The Example 205 trace finishes each sub-selection before the next field."
+   }
+  ]
+ }
+}

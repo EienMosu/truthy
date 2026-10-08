@@ -1,0 +1,1440 @@
+{
+ "deck": "kubernetes-cka",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s1.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/); current docs agree",
+     "evidence": "The page says: \"Support for expanding CSI volumes is enabled by default but it also requires a specific CSI driver to support volume expansion.\" and \"You can only expand a PVC if its storage class's allowVolumeExpansion field is set to true.\" So the answer (false) is right and sourced. The wording is the problem: \"A CSI driver gains resize capability when an administrator enables allowVolumeExpansion\" asks whether a class field adds code to a driver. Nobody who studied would answer True, which makes it a strawman. The real misconception is that the StorageClass flag alone is enough to grow a volume.",
+     "problem": "Strawman: the false reason (a class setting adds a capability to driver software) is not a misconception a learner who studied would hold, so the card gives the answer away.",
+     "suggestedFix": "Replacement (answer false, keeps the 5/5 balance): statement \"Setting allowVolumeExpansion in its StorageClass is enough for a CSI-backed PersistentVolumeClaim to grow.\" Explanation: \"allowVolumeExpansion only permits expansion. The CSI driver must also implement volume expansion; otherwise raising the PVC size does not grow the volume.\" Keep the same source URL."
+    },
+    {
+     "id": "kubernetes-cka-s1.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (https://v1-35.docs.kubernetes.io/docs/concepts/storage/storage-classes/); current docs agree",
+     "evidence": "The page says: \"specifying the WaitForFirstConsumer mode which will delay the binding and provisioning of a PersistentVolume until a Pod using the PersistentVolumeClaim is created. PersistentVolumes will be selected or provisioned conforming to the topology that is specified by the Pod's scheduling constraints.\" The fact is correct, but the mode's name (wait for the first consumer, meaning the Pod) already tells the player that provisioning takes the Pod into account. The hedge verb \"lets\" also marks the statement as true.",
+     "problem": "Name giveaway: a player who does not know Kubernetes can answer True from the words \"WaitForFirstConsumer\" alone, so the card teaches nothing.",
+     "suggestedFix": "Replacement (answer true, keeps the balance), testing the unset-binding-mode behaviour that the 1.1 scope lists and no other card covers: statement \"With volumeBindingMode unset, a StorageClass binds and provisions a volume as soon as its PVC is created.\" Explanation: \"Unset volumeBindingMode means Immediate: binding and provisioning happen when the PVC is created, ignoring the Pod's scheduling constraints, which can leave Pods unschedulable.\" Source quote: \"When unset, Immediate mode is used by default.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 1.1 (5 true: 01, 04, 07, 09, 10; 5 false: 02, 03, 05, 06, 08). Every source URL returned HTTP 200 on 2026-10-08 and is official. I also compared each fact with the current kubernetes.io/docs pages (v1.37), and none contradicts a card.\n\nCards that passed, with the quote that settles each:\n- 01: \"Each StorageClass has a provisioner that determines what volume plugin is used for provisioning PVs.\" The CSI examples use the driver name, for example provisioner: ebs.csi.aws.com.\n- 02: \"Different parameters may be accepted depending on the provisioner.\" This sentence is still on the current page. Minor nuance: CSI external-provisioner reserves csi.storage.k8s.io/* keys (such as fstype) that mean the same across drivers. The statement is a generalisation, so the answer stays false.\n- 03: StorageClass API reference: \"reclaimPolicy controls the reclaimPolicy for dynamically provisioned PersistentVolumes of this storage class. Defaults to Delete.\" The source is the current API reference, not the v1.35 snapshot. That is acceptable.\n- 05: \"If nodeName is used in this case, the scheduler will be bypassed and PVC will remain in pending state.\" This sentence is on both the v1.35 and current pages.\n- 06: \"Not validated - mount of the PVs will simply fail if one is invalid.\" (API reference) and \"Mount options are not validated on either the class or PV.\" (storage-classes page).\n- 07: \"If more than one StorageClass is marked as default, a PersistentVolumeClaim without an explicitly defined storageClassName will be created using the most recently created default StorageClass.\" (change-default-storage-class page).\n- 09: The volumes page mentions \"An external static provisioner ... does not support dynamic provisioning yet\". The storage-classes page states it more directly: \"Local volumes do not support dynamic provisioning in Kubernetes 1.35\". The current page says 1.37, so the fact still holds. The true answer holds even when the static provisioner creates the PVs, because the administrator runs that provisioner.\n- 10: \"FEATURE STATE: Kubernetes v1.34 [stable]\" and \"only where the relevant CSI driver implements the ModifyVolume API.\" The version is stated correctly. Mild concern: the name VolumeAttributesClass hints at the answer.\n\nDuplicates: none found against the other sections. Card 09 (local volumes are not dynamically provisioned) and card 1.2-09 (local PVs need nodeAffinity) rest on different facts. Card 03 and card 1.2-04 (patching the reclaim policy) are also different.\n\nBalance after the suggested fixes: still 5 true and 5 false."
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s1.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, v1.35 snapshot, official",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/volumes/ : \"PersistentVolume volumeMode can be set to \"Block\" (instead of the default value \"Filesystem\") to expose the local volume as a raw block device.\" The fact is correct, but the statement rewords this sentence, and you can read the answer off the field value: volumeMode Block gives a block device. A player can answer True from the word \"Block\" alone. The explanation (\"Block mode supplies a device rather than mounting a filesystem\") only restates it.",
+     "problem": "Name giveaway and near-copy of the source sentence. The real administrator fact behind Filesystem versus Block is not tested: how a Pod consumes a Block volume, or how volumeMode affects binding.",
+     "suggestedFix": "Replacement (answer true): \"A container consumes a Block mode PersistentVolumeClaim through a devicePath in volumeDevices instead of a mountPath.\" Explanation: \"With volumeMode Block, the container lists the volume under volumeDevices with a devicePath; with Filesystem it uses volumeMounts with a mountPath.\" Source: https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/ (\"When adding a raw block device for a Pod, you specify the device path in the container instead of a mount path.\")"
+    },
+    {
+     "id": "kubernetes-cka-s1.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, v1.35 snapshot, official",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/ : \"Warning: Directly editing the size of a PersistentVolume can prevent an automatic resize of that volume. If you edit the capacity of a PersistentVolume, and then edit the .spec of a matching PersistentVolumeClaim to make the size of the PersistentVolumeClaim match the PersistentVolume, then no storage resize happens.\" The statement \"Editing a PersistentVolume's capacity directly can prevent Kubernetes from resizing the underlying storage\" is the warning's first sentence with a few words swapped.",
+     "problem": "The answer is right, but the statement is a near-copy of the source sentence, which breaks the original-wording rule. The hedge \"can prevent\" also hints at True. Testing the concrete situation the docs describe would teach more.",
+     "suggestedFix": "Replacement (answer true, keeps 5/5): \"Raising a PV's capacity and then the PVC's to match leaves the control plane treating the resize as done.\" Explanation: \"The control plane sees that PV and PVC sizes already match and assumes the backing volume was expanded. To expand a bound volume, edit only the PVC.\" Same URL."
+    },
+    {
+     "id": "kubernetes-cka-s1.2-06",
+     "verdict": "source_problem",
+     "urlStatus": "200 (github.com/kubernetes/kubernetes release-1.35 Go source)",
+     "evidence": "The URL is controller source code. It supports the card only through code comments such as \"Controller is controller that removes PVProtectionFinalizer from PVs that are not bound to PVCs\" and the check \"if pv.Status.Phase == v1.VolumeBound\". The v1.35 docs say it plainly at https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/ : \"if an admin deletes a PV that is bound to a PVC, the PV is not removed immediately. PV removal is postponed until the PV is no longer bound to a PVC.\"",
+     "problem": "The answer (true) is right, but a learner who opens the source gets Go code instead of documentation, and the deck rules prefer the pinned v1.35 docs. The statement is also very close to the docs sentence (\"postpones deletion ... remains bound\" against \"PV removal is postponed until the PV is no longer bound\").",
+     "suggestedFix": "Change the URL to https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/ (section Storage Object in Use Protection). Optionally reword (answer true): \"Deleting a PersistentVolume that is still bound to a claim leaves it Terminating until the claim releases it.\" Explanation: \"The kubernetes.io/pv-protection finalizer postpones PV removal until no PVC is bound to it, so the PV shows Terminating meanwhile.\""
+    }
+   ],
+   "notes": "I opened every source with curl and searched the page text for the quoted lines. All 7 URLs return 200. Section balance is 5 true (02, 04, 06, 08, 10) and 5 false (01, 03, 05, 07, 09). No 1.2 card repeats a fact from another section; the closest are 1.1-09 (static local PVs) and 1.2-09 (local PV nodeAffinity), which test different facts.\n\nCards that passed, with the evidence:\n- 01: the namespaces page says \\\"cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes...)\\\".\n- 02: the PV page says \\\"the user will always get at least what they asked for, but the volume may be in excess of what was requested\\\".\n- 03: the source is the current kubernetes.io API reference, not the v1.35 snapshot, but it supports the card: \\\"Retain means the volume will be left in its current phase (Released) for manual reclamation by the administrator\\\". The v1.35 PV page says the same: \\\"not yet available for another claim\\\".\n- 04: the change-pv-reclaim-policy task uses `kubectl patch pv ... persistentVolumeReclaimPolicy`.\n- 05: \\\"The control plane still checks that storage class, access modes, and requested storage size are valid\\\".\n- 07: \\\"Volume access modes do not enforce write protection once the storage has been mounted\\\". ReadWriteOncePod and mount-time constraints do not make this arguable, because the statement says \\\"after mounting\\\".\n- 09: \\\"You must set a PersistentVolume nodeAffinity when using local volumes. The Kubernetes scheduler uses the PersistentVolume nodeAffinity...\\\". The misconception (the node is derived from the path) is borderline strawman but can pass. If it gets reworked: \\\"A local PersistentVolume may leave nodeAffinity unset when the same path exists on every node.\\\" (answer false)\n\nExplanations that only restate their statement and break the rule \\\"for a true statement, add the reason or the context\\\". The answers are right, so these are not flagged, but they are worth fixing:\n- 02 (\\\"A matching volume can exceed the claim's capacity request.\\\"). Suggested: \\\"The binder gives a claim at least what it asked for, possibly a larger PV, and the binding is exclusive, so the extra capacity stays with that one claim.\\\"\n- 04 (\\\"kubectl patch updates the policy on the existing PersistentVolume.\\\"). Suggested: \\\"Typical use: switch a dynamically provisioned volume from Delete to Retain with kubectl patch so its data survives deletion of the claim.\\\"\n\nNot covered by any 1.2 card, if replacements are needed: Retain leaves the storage asset after the PV is deleted, claimRef reservation, the hostPath single-node limit, recovery from expansion failure, and the pvc-protection finalizer."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s2.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current kubernetes.io page says the same",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/ : \"after 1.29, the taint-based eviction implementation has been moved out of node controller into a separate, and independent component called taint-eviction-controller. Users can optionally disable taint-based eviction by setting --controllers=-taint-eviction-controller in kube-controller-manager.\"",
+     "problem": "The fact is correct, but the answer can be read from the name: a statement saying the 'taint-eviction-controller' handles 'evictions caused by node taints' is true by its own wording. This breaks the no-name-giveaway rule. The only part a learner has to know (that it runs inside kube-controller-manager) is not what the card tests.",
+     "suggestedFix": "Replace (keeps True): \"The control plane taints an unreachable node with node.kubernetes.io/unreachable using the NoExecute effect.\" Explanation: \"NoExecute evicts running Pods that lack a matching toleration once any tolerationSeconds expire. The taints added for pressure conditions use NoSchedule instead.\" Same URL; it says \"This effect is added by default for the node.kubernetes.io/not-ready and node.kubernetes.io/unreachable taints.\""
+    },
+    {
+     "id": "kubernetes-cka-s2.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (kubeadm-upgrade page)",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/ : \"To verify that the kubelet service has successfully restarted after the kubelet has been upgraded, you can execute systemctl status kubelet or view the service logs with journalctl -xeu kubelet.\"",
+     "problem": "The card is true and the source supports it, but it is close to a truism. 'Check a service with systemctl status <service>' is general Linux knowledge, and the linux-command-line deck owns systemd. Nobody who studied would answer False, so it teaches nothing about Kubernetes. The useful fact behind it is that kubeadm runs the kubelet as a systemd host service, not as a static Pod like the control plane components.",
+     "suggestedFix": "Replace (keeps True): \"In a kubeadm cluster, systemd runs the kubelet as a host service rather than as a static Pod.\" Explanation: \"The kubeadm package installs a systemd drop-in (10-kubeadm.conf) for the kubelet, so on a failing node you check it with systemctl status kubelet and journalctl.\" URL: https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/ (\"kubeadm ships with configuration for how systemd should run the kubelet\")."
+    },
+    {
+     "id": "kubernetes-cka-s2.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current page agrees",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/leases/ : \"For every Node, there is a Lease object with a matching name in the kube-node-lease namespace. Under the hood, every kubelet heartbeat is an update request to this Lease object, updating the spec.renewTime field for the Lease.\"",
+     "problem": "The card is correct, but it partly gives itself away: the statement pairs 'heartbeat Lease' with a namespace literally named kube-node-lease, so a player who does not know the subject would guess True from the wording. A more instructive heartbeat fact on the node-status page is the split between frequent Lease renewals and rare .status updates.",
+     "suggestedFix": "Replace (keeps True): \"The kubelet renews its node Lease far more often than it rewrites an unchanged Node .status.\" Explanation: \"Leases are lightweight heartbeats. The kubelet writes .status only on a change or after a longer configured interval, which cuts API load in large clusters.\" URL: https://v1-35.docs.kubernetes.io/docs/reference/node/node-status/ (\"Lease updates occur independently from updates to the Node's .status\")."
+    }
+   ],
+   "notes": "All 10 source URLs loaded (HTTP 200) on the v1.35 snapshot. Each card was checked against the matching current kubernetes.io/docs page, and none contradicts its card.\n\nCards that pass:\n- 01: node-status says Ready is \\\"Unknown if the node controller has not heard from the node in the last node-monitor-grace-period\\\".\n- 03: \\\"The scheduler checks taints, not node conditions, when it makes scheduling decisions.\\\"\n- 05: \\\"DaemonSet pods are created with NoExecute tolerations for ... node.kubernetes.io/unreachable ... with no tolerationSeconds\\\".\n- 06: \\\"A Pod is not deleted automatically when a node is unreachable.\\\" The out-of-service taint for non-graceful shutdown is an administrator action, so the explanation's \\\"or an administrator intervenes\\\" covers it.\n- 07: \\\"The kubelet tries to reclaim node-level resources before it evicts end-user pods ... Delete unused images.\\\"\n- 08: \\\"If you use hard eviction thresholds, the kubelet uses a 0s grace period (immediate shutdown)\\\".\n- 10: nodes page: \\\"does not affect existing Pods on the Node ... kubectl cordon\\\".\n\nDuplicates: no card rests on the same fact as a card in another section. 2.1-08 (hard eviction ignores the grace period) and 3.2-09 (preemption honours it) test different facts.\n\nBalance: 5 true and 5 false, and the three replacements all keep True, so the section stays 5/5. Average lengths stay close (true about 93, false about 96 characters).\n\nMinor point, not flagged: card 06's explanation (\\\"until deletion completes\\\") could name the three ways the Pod is removed: the Node object is deleted, the kubelet responds again, or an administrator force-deletes it."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s2.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, supports the card",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/ : \"You can use the check-expiration subcommand to check when certificates expire: kubeadm certs check-expiration\" and \"The command shows expiration/residual time for the client certificates in the /etc/kubernetes/pki folder and for the client certificate embedded in the kubeconfig files used by kubeadm (admin.conf, controller-manager.conf and scheduler.conf).\"",
+     "problem": "Name giveaway. The statement says that `check-expiration` reports expiry, which anyone can read from the subcommand's name. The card is true but teaches nothing beyond the command's name.",
+     "suggestedFix": "Replacement (answer true, keeps the section at 5 true and 5 false). Statement (114 chars): \"kubeadm certs check-expiration also reports the client certificate embedded in the scheduler.conf kubeconfig file.\" Explanation (205 chars): \"Besides the files in /etc/kubernetes/pki, it checks the client certificates embedded in admin.conf, controller-manager.conf and scheduler.conf. kubelet.conf is left out because the kubelet rotates its own.\" Keep the same v1.35 kubeadm-certs URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.2-01",
+     "verdict": "source_problem",
+     "urlStatus": "200, official (v1.35 static-pod task page; current kubernetes.io moved its intro to /docs/concepts/workloads/pods/static-pods/)",
+     "evidence": "The cited page only says the kubelet \"periodically scans the directory and creates/deletes static Pods as YAML/JSON files appear/disappear there\" and \"restarts it if it fails\". Neither sentence covers an edited manifest. The fact is stated at https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/ : \"Updating a file in /etc/kubernetes/manifests will tell the kubelet to restart the static Pod for the corresponding component.\"",
+     "problem": "The answer (true) is correct, but the cited source does not state that changing an existing manifest, for example its image, makes the kubelet recreate the static Pod. It only covers files that appear or disappear and containers that fail.",
+     "suggestedFix": "Change the source to https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/ (title \"Reconfiguring a kubeadm cluster\"). Keep the statement and the answer (true)."
+    },
+    {
+     "id": "kubernetes-cka-s2.2-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, official v1.35 Components overview page",
+     "evidence": "The cited page says only \"kube-controller-manager Runs controllers to implement Kubernetes API behavior.\" It names neither the Deployment controller nor ReplicaSets. https://v1-35.docs.kubernetes.io/docs/concepts/architecture/controller/ : \"Kubernetes comes with a set of built-in controllers that run inside the kube-controller-manager. These built-in controllers provide important core behaviors. The Deployment controller and Job controller are examples...\"; https://v1-35.docs.kubernetes.io/docs/concepts/workloads/controllers/deployment/ : \"The pod-template-hash label is added by the Deployment controller to every ReplicaSet that a Deployment creates or adopts.\"",
+     "problem": "The answer (false) is correct, but the cited page does not support the explanation's fact: that the Deployment controller runs inside kube-controller-manager and is the component that creates a Deployment's ReplicaSet.",
+     "suggestedFix": "Change the source to https://v1-35.docs.kubernetes.io/docs/concepts/architecture/controller/ (title \"Controllers\"). It places the Deployment controller inside kube-controller-manager. Keep the statement and the answer (false)."
+    }
+   ],
+   "notes": "I checked all 10 section 2.2 cards (5 true, 5 false) against the v1.35 snapshot pages and the current kubernetes.io docs. All 10 answers are correct. Three cards are flagged: 09 as a name giveaway, and 01 and 04 because their source pages do not state the fact.\n\nCards that pass:\n- 02 (static Pod cannot refer to a Secret): the v1.35 page and the new current concept page /docs/concepts/workloads/pods/static-pods/ both say \\\"The spec of a static Pod cannot refer to other API objects, such as ServiceAccount, ConfigMap, or Secret.\\\"\n- 03 (scheduler outage leaves Pods Pending): passes, but the explanation is thin. A better one would say that kube-scheduler is the component that binds unassigned Pods to nodes.\n- 05 (running containers survive an API server outage): debug-cluster says \\\"existing pods and services should continue to work normally unless they depend on the Kubernetes API\\\".\n- 06 (no etcd writes without quorum): etcd v3.6 failure modes says \\\"When the majority members of the cluster fail, the etcd cluster fails and cannot accept more writes.\\\"\n- 07 (mirror Pod gives no control): \\\"visible on the API server, but cannot be controlled from there\\\".\n- 08 (crictl during an API server outage): the crictl page says crictl connects to the CRI runtime endpoint on the node. It does not literally mention an API server outage, but the claim follows directly.\n- 10 (.backup files in the manifest directory): the Caution box, present in v1.35 and current docs, says \\\"The kubelet processes all files not starting with a dot in the static Pod directory — there is no filtering by file extension\\\".\n\nNo duplicates with other sections:\n- 01 is not the same fact as s4.3-08 (etcd hostPath after a restore).\n- 09 is not the same fact as s4.2-08 or s4.2-09 (certificate renewal and CA rotation).\n\nHedge words are balanced: \\\"can\\\" appears in two true cards (05, 08) and two false cards (02, 06).\n\nScope gap, not a card error: the 2.2 scope lists leader election through Leases and component logs (journald and /var/log/pods), but no card in 2.2 tests them. The deck covers the logs in 2.4.\n\nCurrent docs (v1.37) move the static Pod intro to a new concept page. The pinned v1.35 URLs still load and agree with it."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s2.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, current kubernetes.io page identical on this point",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/ : \"node level resource metrics: API provided by the kubelet for discovering and retrieving per-node summarized stats available through the /metrics/resource endpoint.\" The fact is right, but the statement reads 'resource metrics through its /metrics/resource endpoint', so a player can answer True from the matching words alone. The explanation only restates the statement.",
+     "problem": "Name giveaway: the endpoint path repeats the words of the claim, so the answer can be read from the wording. The explanation adds no context.",
+     "suggestedFix": "Replace (True): \"metrics-server fetches node and Pod usage from each kubelet, which serves it on its `/metrics/resource` endpoint.\" Explanation: \"The kubelet publishes summarized CPU and memory stats on /metrics/resource. metrics-server v0.6.0 and later scrapes that endpoint on every node and serves the results through the Metrics API.\" Same URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.3-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/ : \"cAdvisor: Daemon for collecting, aggregating and exposing container metrics included in Kubelet.\" The answer (False) is right. But the statement is false for two reasons: cAdvisor is not separate, and a per-node collector would never be a Deployment.",
+     "problem": "Close to a strawman. Nobody who studied would expect a node-level collector to run as a Deployment, so the false statement has a second, give-away reason. The realistic misconception is a standalone cAdvisor running on every node (a DaemonSet), which monitoring setups often deploy.",
+     "suggestedFix": "Replace (False): \"The kubelet relies on a separate cAdvisor DaemonSet on each node to collect container resource metrics.\" Explanation: \"cAdvisor collection code is built into the kubelet, so the resource metrics pipeline needs no separately deployed cAdvisor workload on the nodes.\" Same URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-usage-monitoring/ : \"These metrics are collected by the lightweight, short-term, in-memory metrics-server and are exposed via the metrics.k8s.io API.\" The answer (False) holds.",
+     "problem": "The wording is clumsy and ambiguous. \"With metrics-server installed, it restores...\" has a dangling 'it', and 'after a Pod restart' does not say whose Pod (metrics-server's or a workload's). The source never says 'restarting its Pod loses that state'; that follows only from 'in-memory'.",
+     "suggestedFix": "Replace (False): \"metrics-server writes the usage samples it collects to persistent storage, so they survive a restart of its Pod.\" Explanation: \"The docs call metrics-server lightweight, short-term and in-memory. It keeps no history, so a restart discards collected samples, and long-term data needs a full metrics pipeline.\" Same URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/ : the worked example \"kubeReserved is set to {cpu: 1000m, memory: 2Gi ...} ... 'Allocatable' will be 14.5 CPUs, 28.5Gi of memory\" supports the card. The page also says \"The scheduler treats 'Allocatable' as the available capacity for pods.\"",
+     "problem": "Close to a definition card: a setting named kubeReserved, 'reserved' for daemons, reducing what is left for Pods follows from its name. It also tests the same Allocatable formula as s2.3-08, which is the non-obvious part (hard eviction headroom). The section's capacity-versus-allocatable scope is better served by testing what the scheduler fits against.",
+     "suggestedFix": "Replace (True): \"kube-scheduler fits Pod requests against a node's Allocatable value rather than its full Capacity.\" Explanation: \"The scheduler treats Allocatable, the part of Capacity left after node-level reservations, as the room available to Pods. Allocatable is shown in the Node object and in kubectl describe node.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 2.3 cards in content/raw/kubernetes-cka-b2.json. The section has 5 true cards (01, 03, 07, 08, 09) and 5 false (02, 04, 05, 06, 10), and every suggested replacement keeps the original card's answer, so the balance stays 5/5. All five source URLs return 200 on the v1.35 snapshot, and the current kubernetes.io pages say the same thing.\n\nNo card has a wrong answer. The four flags are wording and quality problems.\n\nThe six cards that pass, with the sentence that settles each:\n- 03: \"You must enable the API aggregation layer and register an APIService for the metrics.k8s.io API.\"\n- 05: \"only offers the minimum CPU and memory metrics to enable automatic scaling using HPA and / or VPA.\" metrics-server returns only CPU and memory.\n- 06: \"although actual memory or CPU resource usage on nodes is very low, the scheduler still refuses to place a Pod on a node if the capacity check fails\" (manage-resources-containers). Load-aware scheduler plugins are not the default.\n- 08: \"if system daemons did not exist on a node, pods cannot use more than capacity - eviction-hard\"\n- 09: \"Kubernetes components emit metrics in Prometheus format\"\n- 10: \"In most cases metrics are available on /metrics endpoint of the HTTP server\", with kube-scheduler listed among those components. kube-apiserver's /metrics does not re-export the scheduler's metrics.\n\nNone of the cards touches the traps the prompt names: no card says the kubelet always uses cAdvisor, none names the Metrics API version, and none tests a numeric default. I searched the other sections for metrics, allocatable, requests and Prometheus and found no duplicates. s3.1-06 (the HPA needs requests) and s2.1-08 (hard eviction grace period) rest on different facts.\n\nMinor observations, not flagged:\n- s2.3-07 and s2.3-08 both come from the Allocatable formula. Strictly they are not duplicates, since knowing one does not give the other, but the s2.3-07 replacement removes the overlap.\n- s2.3-09 is easy, but it is in scope."
+  },
+  {
+   "section": "2.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s2.4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current kubernetes.io page has the same text",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/system-logs/ : \"You can configure log verbosity to see more or less detail. Logs can be as coarse-grained as showing errors within a component, or as fine-grained as showing step-by-step traces of events (like HTTP access logs ...)\" and \"Increasing the value increases the number of logged events.\"",
+     "problem": "This is a truism: higher verbosity means more detail by definition, and the explanation just restates that. It is also ambiguous, because \"request traces\" can be read as kube-apiserver's OpenTelemetry tracing, which is set up through a tracing configuration and has nothing to do with log verbosity. An expert could argue that raising -v does not expose traces.",
+     "suggestedFix": "Replace (answer true): \"In a kubeadm cluster, kube-apiserver's output lands in the node's container logs because it runs as a static Pod.\" Explanation: \"kubeadm runs kube-apiserver as a static Pod, so the container runtime writes its output under /var/log/pods like any other container's logs.\" Source: https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/ (\"The Kubernetes scheduler, controller manager, and API server run within pods (usually static Pods)\"; \"By default, kubelet directs your container runtime to write logs into directories within /var/log/pods\"). Do not mention crictl, because that is the answer of s2.2-08."
+    },
+    {
+     "id": "kubernetes-cka-s2.4-05",
+     "verdict": "duplicate",
+     "urlStatus": "200, official v1.35 snapshot; current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/ : \"Note: Only the contents of the latest log file are available through kubectl logs.\" The sibling deck has the same fact with the same answer: kubernetes-ckad-s3.3-04 (false) \"`kubectl logs` can combine a container's latest log file with older rotated files retained on its node.\"",
+     "problem": "The card is correct and its source supports it. But it rests on exactly the same fact, with the same false answer and the same trick, as kubernetes-ckad-s3.3-04. The prompt forbids retesting a CKAD fact at the same depth. The CKA prompt assigns this fact to CKA 2.4, so the preferred fix is on the CKAD side. If the CKAD card stays, this card has to change.",
+     "suggestedFix": "Preferred: keep this card and replace kubernetes-ckad-s3.3-04. Otherwise replace this card (answer false): \"The kubelet rotates log files that a static Pod component writes into a `/var/log` directory shared from the node.\" Explanation: \"The kubelet rotates only the container logs the runtime writes for it. Files a component writes to a host-shared /var/log need rotation by the OS or the deploy tool, such as logrotate.\" Same logging URL (\"If you deploy Kubernetes cluster components ... to log to a volume shared from the parent node, you need to consider and ensure that those logs are rotated. Kubernetes does not manage that log rotation.\")."
+    },
+    {
+     "id": "kubernetes-cka-s2.4-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/ : \"Using a logging agent in a sidecar container can lead to significant resource consumption. Moreover, you won't be able to access those logs using kubectl logs because they are not controlled by the kubelet.\"",
+     "problem": "The answer (false) is correct and supported. But the wording gives it away: \"forwarding to a backend instead of stdout\" tells any learner who knows that kubectl logs reads container stdout that the answer is False. The explanation is also weak, because it never says why: the logs are outside the kubelet's control.",
+     "suggestedFix": "Replace (answer false): \"Running a logging agent such as fluentd in a sidecar keeps the app's file logs readable through `kubectl logs`.\" Explanation: \"An agent sidecar ships logs straight to its backend, outside the kubelet's control, so kubectl logs cannot show them. Read them in the logging backend.\" Same URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.4-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 for the v1.35 kubelet-config.v1beta1 reference; current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/ : \"podLogsDir is a custom root directory path kubelet will use to place pod's log files. Default: \\\"/var/log/pods/\\\"\". Logging page: \"if the logs are on a separate filesystem from /var, then the kubelet will not track that filesystem's usage, potentially leading to issues if it fills up.\"",
+     "problem": "The field name gives the answer away. A setting called podLogsDir obviously sets the Pod log directory, so a player who knows nothing answers True. The hedge verb \"lets\" also marks it as a true statement. The administrator-relevant fact on the same topic is the caveat about using a separate filesystem.",
+     "suggestedFix": "Replace (answer true): \"With `podLogsDir` on a filesystem separate from `/var`, the kubelet stops tracking that filesystem's disk usage.\" Explanation: \"The kubelet supports a custom podLogsDir on the same disk as /var. On a separate filesystem it does not track that filesystem's usage, so logs there can fill it up unnoticed.\" Source: https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+    },
+    {
+     "id": "kubernetes-cka-s2.4-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/ : \"Because the logging agent must run on every node, it is recommended to run the agent as a DaemonSet.\"",
+     "problem": "The card is close to a giveaway. \"Node-level\" in the statement tells anyone who knows that a DaemonSet runs one Pod per node that the answer is True, so it tests the meaning of DaemonSet rather than a logging fact. The explanation also does not name the reason the docs give.",
+     "suggestedFix": "Replace (answer true): \"A streaming sidecar that copies an app's log file to its own stdout can double the node storage those logs use.\" Explanation: \"The app's file and the sidecar's stdout copy both sit on the node. For an app writing one file, the docs suggest pointing it at /dev/stdout instead.\" Same URL (\"writing logs to a file and then streaming them to stdout can double how much storage you need on the node\")."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 2.4: 5 true, 5 false. The three source URLs return 200: the v1.35 logging, system-logs and kubelet-config.v1beta1 pages. I compared the key sentences with the current kubernetes.io/docs pages, and they are identical.\n\nCards that pass:\n- 01 (false): \\\"the integration with the kubelet is standardized as the CRI logging format\\\" and \\\"By default, kubelet directs your container runtime to write logs into directories within /var/log/pods\\\". journald is for the kubelet and the runtime's own logs.\n- 03 (false): \\\"The kubelet is responsible for rotating container logs\\\". containerLogMaxSize is a KubeletConfiguration field. The explanation is thin but correct.\n- 04 (true): \\\"the kubelet on the node handles the request and reads directly from the log file\\\".\n- 06 (false): \\\"By default, if a container restarts, the kubelet keeps one terminated container with its logs.\\\" This is a different fact from kubernetes-ckad-s3.3-02.\n- 07 (true): \\\"If a pod is evicted from the node, all corresponding containers are also evicted, along with their logs.\\\" The kubelet's container garbage collection treats evicted Pods as deleted.\n\nPoints for the orchestrator:\n- The v1.35 system-logs page contradicts itself. It says components write to stderr and leave redirection to whatever invokes them, and also says \\\"System components inside containers always write to .log files in the /var/log directory, bypassing the default logging mechanism\\\" (legacy kube-up wording). No replacement card relies on either sentence.\n- The suggested replacements keep the section at 5 true and 5 false. They avoid repeating 2.2-08 (crictl).\n- Cards 08 and 09 must not become the two sides of the same split (streaming sidecar visible to kubectl logs versus agent sidecar not visible). For that reason the 08 replacement tests storage cost, not visibility.\n- 05 duplicates kubernetes-ckad-s3.3-04 in the CKAD deck. The CKA scope owns this fact, so the CKAD card is the better one to replace."
+  },
+  {
+   "section": "2.5",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s2.5-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (create-cluster-kubeadm); current page agrees",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/ : \"Take care that your Pod network must not overlap with any of the host networks: you are likely to see problems if there is any overlap.\"",
+     "problem": "Strawman. Putting the Pod range \"inside\" the host range is an overlap, and the statement says that this \"prevents routing conflicts\". The claim contradicts itself, so anyone who has studied answers False. The answer is right and the source supports it, but the card teaches nothing.",
+     "suggestedFix": "Replacement (answer False). Statement: \"With an overlay network add-on, a Pod CIDR may safely overlap the subnet that the nodes use.\" Explanation: \"The kubeadm docs warn that the Pod network must not overlap any host network, whatever add-on you use. Overlapping ranges are likely to cause routing problems on the nodes.\" Keep the same URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.5-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (network-policies); the page never mentions a 'healthy Service backend'",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/network-policies/ : \"In the case of ingress, this means that in some cases you may be able to filter incoming packets based on the actual original source IP, while in other cases, the \"source IP\" that the NetworkPolicy acts on may be the IP of a LoadBalancer or of the Pod's node, etc.\"",
+     "problem": "Truism. The statement says a NetworkPolicy \"can block traffic\", which is the definition of what a NetworkPolicy does. Nobody who knows the term would answer False. It also overlaps the definition-level facts that the 5.1 and CKAD decks own. The page does support the administrator-side troubleshooting fact quoted above: source NAT can happen before NetworkPolicy processing.",
+     "suggestedFix": "Replacement (answer True). Statement: \"With an enforcing plugin, an ingress ipBlock rule may see a load balancer or node IP instead of the client's IP.\" Explanation: \"Source NAT for cluster ingress can happen before NetworkPolicy processing, so an ipBlock rule for external clients may match a node or load balancer address. The result depends on the plugin and the Service implementation.\" Keep the same URL."
+    },
+    {
+     "id": "kubernetes-cka-s2.5-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (dns-debugging-resolution); current kubernetes.io page has the same kubectl get endpointslice step",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/ : \"Are DNS endpoints exposed? You can verify that DNS endpoints are exposed by using the kubectl get endpointslice command.\"",
+     "problem": "Close paraphrase of the page heading, and the answer can be read from the wording: you inspect EndpointSlices to see endpoint addresses. No realistic learner would answer False. The phrase \"the DNS server addresses it exposes\" is also slightly ambiguous. The address the Service exposes to Pods is its ClusterIP, and the ClusterIP is not what the EndpointSlices list; they list the CoreDNS Pod IPs.",
+     "suggestedFix": "Replacement (answer True). Statement: \"When the kube-dns EndpointSlices list zero addresses, DNS queries to the Service's ClusterIP fail.\" Explanation: \"EndpointSlices hold the ready CoreDNS Pod addresses that kube-proxy forwards the kube-dns ClusterIP to. With none listed, queries have no backend, so check the CoreDNS Pods next.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 2.5 (b2), and all their source URLs load as official v1-35.docs.kubernetes.io pages. The split is 5 true (02, 03, 05, 06, 10) and 5 false (01, 04, 07, 08, 09). The three replacements keep each card's answer, so the 5/5 balance holds.\n\nPassed, with the evidence for each:\n- 01: implementation-details says \"kube-proxy is deployed as a DaemonSet\".\n- 02: debug-service says \"the line Using iptables Proxier indicates that kube-proxy is running in \\\"iptables\\\" mode\".\n- 03: virtual-ips says \"Every node in a Kubernetes cluster runs a kube-proxy\" and \"a control loop ensures that the rules on each node are reliably synchronized\". It passes as an easy card that the scope explicitly asks for.\n- 04: troubleshooting-kubeadm says \"coredns is stuck in the Pending state. This is expected and part of the design\". The current kubernetes.io page still says this.\n- 05: the page shows a bare `log` directive and a NOERROR (successful) query in the sample log. It does not literally say \"default configuration\", but that matches CoreDNS log plugin behaviour (all classes are logged by default). A more explicit source would only be coredns.io, which is outside the allowed source list.\n- 07: the page says \"CoreDNS must be able to list service and endpointslice related resources\", and its ClusterRole sample grants list and watch.\n- 08: the page says \"Systemd-resolved moves and replaces /etc/resolv.conf with a stub file that can cause a fatal forwarding loop... use kubelet's --resolv-conf flag to point to the correct resolv.conf (With systemd-resolved, this is /run/systemd/resolve/resolv.conf)\". The current page has the same text.\n\nNo duplicates within the deck:\n- 06 and 5.2-06 (the control plane updates EndpointSlices) rest on different facts.\n- 04 does not repeat any 4.2 card; the 4.2 section has no CoreDNS-before-network card.\n- 03 and 4.2-10 (kubeadm reset leaves the iptables rules) are distinct facts.\n\nNo answer depends on a version difference between v1.35 and v1.37."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s3.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current kubernetes.io page has the same sentence",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/manage-daemon/update-daemon-set/ : \"OnDelete: With OnDelete update strategy, after you update a DaemonSet template, new DaemonSet pods will only be created when you manually delete old DaemonSet pods.\" The answer is right and the source supports it, but the strategy name OnDelete gives the answer away: a player who knows nothing about DaemonSets can still guess False from the name. That breaks the prompt's 'no name giveaway' rule. The section also has no card on kubectl rollout undo for DaemonSets, which the 3.1 scope names.",
+     "problem": "Name giveaway: the strategy name 'OnDelete' tells the player that Pods are replaced only on delete, so the False answer can be read from the wording.",
+     "suggestedFix": "Replace with a False card from the rollback page. Statement: \"After kubectl rollout undo on a DaemonSet, the restored ControllerRevision keeps its original revision number.\" Explanation: \"DaemonSet revisions only roll forward: rolling back from revision 2 to revision 1 renumbers the restored ControllerRevision as revision 3.\" URL: https://v1-35.docs.kubernetes.io/docs/tasks/manage-daemon/rollback-daemon-set/ (\"DaemonSet revisions only roll forward... the ControllerRevision with .revision: 1 will become .revision: 3\")."
+    },
+    {
+     "id": "kubernetes-cka-s3.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; current page identical",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/ : \"Note: If you change the name of a container that a HorizontalPodAutoscaler is tracking, you can make that change in a specific order... you should update the associated HPA to track both the new and old container names.\" The page supports the False answer. But almost nobody who studied would think a metric that selects a container by name follows it through a rename, so this is a strawman built on a side note. Its 'Since Kubernetes v1.30' lead-in also suggests that rename tracking changed in v1.30, when v1.30 is only when container resource metrics became stable. The real point an administrator needs is the one the page stresses: a Resource metric sums all containers of the Pod. On that point a learner can genuinely be wrong.",
+     "problem": "Strawman and trivia: it tests a rename-procedure note instead of what ContainerResource is for, and the version prefix hints at a change that never happened.",
+     "suggestedFix": "Replace with a False card. Statement: \"An HPA metric of type Resource scales on the CPU utilization of the busiest container in each Pod.\" Explanation: \"A Resource metric sums usage across all containers of a Pod against the Pod's requests; to track one container, such as the app but not a sidecar, use a ContainerResource metric (stable since v1.30).\" Same URL (\"Since the resource usages of all the containers are summed up the total pod utilization may not accurately represent the individual container resource usage\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.1 (5 true, 5 false), all in content/raw/kubernetes-cka-b2.json. Every source URL returned 200 from the v1.35 snapshot. I also checked each fact against the current kubernetes.io/docs pages: the HPA, encrypt-data and update-daemon-set sentences that settle these cards are unchanged there. Both replacements I suggest are False, so the section stays at 5 true and 5 false.\n\nCards that pass, with the evidence that settles them:\n- 02, StatefulSet partition: \"all Pods with an ordinal that is greater than or equal to the partition will be updated... All Pods with an ordinal that is less than the partition will not be updated\".\n- 03, first provider: \"The first provider in the list is used to encrypt resources written into the storage\". The explanation is vague: it says provider order \"determines\" storage without naming the first provider. Optional tightening: \"...the first provider encrypts new writes, while reads try each matching provider in order.\"\n- 04, existing Secrets not rewritten: \"Performing a replace operation for each Secret will encrypt that content at rest\" and the kubectl get secrets | kubectl replace -f - recipe. The beta StorageVersionMigrator in v1.35 does not make kube-apiserver rewrite Secrets on its own.\n- 05, HPA in kube-controller-manager: the kube-controller-manager reference lists horizontal-pod-autoscaler-controller under --controllers, and the HPA page says the interval \"is set by the --horizontal-pod-autoscaler-sync-period parameter to the kube-controller-manager\".\n- 06, CPU requests unset: \"if some of the Pod's containers do not have the relevant resource request set, CPU utilization for the Pod will not be defined and the autoscaler will not take any action for that metric\". AverageValue targets do not make this card arguable, because the statement says utilization.\n- 07, multiple metrics: \"the largest of the desired replica counts is chosen\".\n- 09, scale-down stabilization: \"considers all recommendations within a configurable window choosing the highest recommendation\".\n- 10, VPA as a separate add-on: \"VPA must be installed separately in your cluster\". It is borderline easy but not a strawman, and its kubeadm framing does not repeat any 4.2 card.\n\nNo duplicates with other sections: the metrics-server cards in 2.3 and the DaemonSet toleration and StatefulSet cards in 2.1 rest on different facts. Small observation: the vertical-pod-autoscale page oddly says the VPA controller runs \"within the Kubernetes data plane\"; no card depends on it."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s3.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (v1.35 snapshot, official); supports the fact",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ : \"The NodeRestriction admission plugin prevents the kubelet from setting or modifying labels with a node-restriction.kubernetes.io/ prefix.\" The current page says the same. The fact is correct, but the statement says that NodeRestriction protects labels whose prefix is node-restriction.kubernetes.io/, so a player who does not know Kubernetes can guess True from the matching names.",
+     "problem": "The answer can be read from the names: a plugin called NodeRestriction protecting the node-restriction.kubernetes.io/ prefix gives True away. The prompt bans this kind of name giveaway.",
+     "suggestedFix": "Replace it with a TRUE card (keeps the section at 5 true and 5 false). Statement: \"With kubeadm defaults, the API server rejects a kubelet's request to delete its own Node object.\" Explanation: \"kubeadm enables the NodeRestriction admission plugin, which limits a kubelet to its own Node and the Pods bound to it, and stops it from deleting its Node object.\" Source: https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/admission-controllers/ (\"Using the NodeRestriction admission controller prevents kubelets from deleting their Node objects\"). factKey: noderestriction-kubelet-node-delete. This is still the section's single admission card."
+    }
+   ],
+   "notes": "I checked all 10 section 3.2 cards. Every source URL loads, is on the official v1.35 snapshot, and quotes a sentence that supports the card. I also checked the current upstream docs (kubernetes/website main) and found no contradiction.\n- 01: \"deleting deployments or pods bypasses Pod Disruption Budgets\".\n- 02: \"Involuntary disruptions cannot be prevented by PDBs; however they do count against the budget\".\n- 03: \"It is recommended to set AlwaysAllow Unhealthy Pod Eviction Policy ... during a node drain\". This is on the disruptions page itself, and the card uses the required \"The Kubernetes documentation recommends\" form.\n- 04: \"If the node labels change after Kubernetes schedules the Pod, the Pod continues to run\".\n- 05: \"terms are ORed\".\n- 06: \"both must be satisfied\".\n- 08: \"placed in the scheduling queue ahead of lower-priority pods\".\n- 09: \"victims get their graceful termination period\"; the current page keeps this under \"Graceful termination of preemption victims\".\n- 10: \"When Pods are removed, there is no guarantee that the spread constraint remains satisfied\", with the Descheduler as the remedy.\n\nBalance: 5 true and 5 false. Average statement length is 97.4 for true and 92.6 for false, which is within 5. With the suggested replacement for 07 (95 chars), the true average becomes 96.7. No duplicates across the deck: 2.1-08 (hard-eviction grace period) and 4.3-03 (drain before kubelet upgrade) rest on different facts from 3.2-09 and the PDB cards.\n\nMinor points, not flagged:\n- 02's statement follows half of the page sentence closely. It is a borderline near-copy that could be reworded, for example \"A node failure uses up part of a PodDisruptionBudget's allowed disruptions.\"\n- 08 is marked difficulty 1 but is more like 2.\n- 10 leans on the general fact that the scheduler never moves running Pods, so it is a bit easy, but the misconception that spread is actively rebalanced is real.\n- 04: there is a known kubelet-restart re-admission edge case, where a kubelet restart after labels change can reject Pods with a NodeAffinity error. The docs do not cover it, and the card's normal reading stays false.\n- The section has no taint-effect, PriorityClass globalDefault or nodeName cards. That is an acceptable breadth choice with 10 cards."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s4.1-09",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official v1.35 snapshot; identical sentence on current kubernetes.io/docs RBAC page",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/rbac/ : \"If you restrict list or watch by resourceName, clients must include a metadata.name field selector in their list or watch request (that matches the specified resourceName) in order to be authorized. For example: kubectl get configmaps --field-selector=metadata.name=my-configmap\"",
+     "problem": "The fact is right, but the statement is ungrammatical (\"Using an RBAC resourceNames list grant, a client includes...\") and reads as a description of what a client does by itself. Nothing adds the selector automatically: kubectl get without --field-selector is denied. So an expert could answer False to \"a client includes a matching selector\". The statement never says that authorization depends on the selector, and that dependency is the actual fact. The explanation (\"The selector confines the request to the granted resource name\") also leaves out that the request is denied without the selector.",
+     "suggestedFix": "Keep the answer True. Statement: \"kube-apiserver authorizes a resourceNames-limited list only if the request has a matching metadata.name field selector.\" (119 chars; the absolute is the page's own \"must ... in order to be authorized\"). Explanation: \"When a Role limits list or watch with resourceNames, the client has to send a matching metadata.name field selector, for example kubectl get configmaps --field-selector=metadata.name=my-cm.\" (189 chars)"
+    },
+    {
+     "id": "kubernetes-cka-s4.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot; same text on current docs",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/rbac/ : \"You can only create/update a role if at least one of the following things is true: You already have all the permissions contained in the role, at the same scope as the object being modified ... You are granted explicit permission to perform the escalate verb on the roles or clusterroles resource\"; \"Because this is enforced at the API level, it applies even when the RBAC authorizer is not in use.\"",
+     "problem": "The answer is correct, but it can be read from the wording. The statement says a user with \"escalate\" permissions can create Roles that exceed their own access, which only restates the verb's name. That makes it a definition or name-giveaway card that a player can answer True without knowing RBAC. It is also a true card that relies on the hedge \"can\".",
+     "suggestedFix": "Keep the answer True and the same fact family (privilege escalation prevention), but test the part the name does not give away. Statement: \"Kubernetes runs the RBAC escalation check on Role creation even when the RBAC authorizer is turned off.\" (about 100 chars) Explanation: \"Creating a Role with permissions you lack at that scope is refused unless you hold the escalate verb, and the API enforces this check even when the RBAC authorizer is not in use.\" (under 240). factKey: rbac-escalation-check-api-level. Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.1 (kubernetes-cka-s4.1-01 to -10, in raw/kubernetes-cka-b3.json). The section is balanced at 5 True and 5 False, and the average statement length is 98.0 for true cards and 99.6 for false ones. All three source URLs returned HTTP 200 and are official.\n- https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/rbac/ is the v1.35 snapshot. Every sentence I relied on also appears word for word on the current kubernetes.io/docs RBAC page.\n- https://kubernetes.io/docs/reference/kubernetes-api/rbac/role-binding-v1/ is the current API reference.\n- https://kubernetes.io/docs/reference/kubernetes-api/rbac/cluster-role-v1/ is the current API reference.\n- https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/ is the v1.35 snapshot.\n\nEvidence for the cards that passed:\n- 01 (True): \"Because ClusterRoles are cluster-scoped, you can also use them to grant access to: ... non-resource endpoints (like /healthz)\". The card is correct. It is a little easy, because the scope fact that only a ClusterRoleBinding grants these is not what the card tests, but it is acceptable.\n- 02 (False): the RoleBinding API reference says of roleRef \"This field is immutable\", and the RBAC page says \"If you try to change a binding's roleRef, you get a validation error.\"\n- 04 (False): \"You can only create/update a role binding if you already have all the permissions contained in the referenced role ... or if you have been authorized to perform the bind verb on the referenced role.\"\n- 05 (True): the ClusterRole API reference says \"If AggregationRule is set, then the Rules are controller managed and direct changes to Rules will be stomped by the controller.\" The RBAC page says \"The control plane overwrites any values that you manually specify in the rules field of an aggregate ClusterRole.\"\n- 06 (False): \"This role does not allow viewing Secrets, since reading the contents of Secrets enables access to ServiceAccount credentials\".\n- 07 (False): \"edit ... This role does not allow viewing or modifying roles or role bindings.\"\n- 08 (True): \"At each start-up, the API server updates default cluster roles with any missing permissions ... Auto-reconciliation is enabled by default if the RBAC authorizer is active\". RBAC is active in a kubeadm cluster. The explanation is thin, and could mention opting out with the rbac.authorization.kubernetes.io/autoupdate=false annotation.\n- 10 (False): the kubeadm-certs v1.35 page says super-admin.conf has \"Subject: O = system:masters\" and admin.conf has \"Subject: O = kubeadm:cluster-admins, CN = kubernetes-admin\", and that \"the kubeadm:cluster-admins group is bound to the cluster-admin ClusterRole\".\n\nOther checks:\n- No duplicates. Across the other sections, only s2.5-07 (CoreDNS list/watch RBAC) and s4.2-06 (control-plane taint) touch RBAC or kubeadm defaults, and they rest on different facts.\n- 06 and 07 share the template \"the default X ClusterRole includes Y\" (both False). That is two uses, within the prompt's limit of two per deck, so I did not flag it.\n- The section does not cover several scope items: CSRs and kubectl certificate approve, the identity of users from certificate CN and O, ServiceAccount user and group names, and subresources. This is a coverage gap in the plan, not a defect in any card."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s4.2-02",
+     "verdict": "source_problem",
+     "urlStatus": "200, official v1.35 snapshot (container-runtimes page); current kubernetes.io page has the same wording",
+     "evidence": "The cited page hedges on who sets the sysctl: \"By default, the Linux kernel does not allow IPv4 packets to be routed between interfaces. Most Kubernetes cluster networking implementations will change this setting (if needed), but some might expect the administrator to do it for them.\" (https://v1-35.docs.kubernetes.io/docs/setup/production-environment/container-runtimes/). So the page lets an expert argue that the network plugin, not the administrator, enables forwarding. The answer still holds because kubeadm's preflight fails before init when the value is not 1: checks_linux.go in release-1.35 has `FileContentCheck{Path: ipv4Forward, Content: []byte{'1'}}` with ipv4Forward = \"/proc/sys/net/ipv4/ip_forward\" (https://github.com/kubernetes/kubernetes/blob/release-1.35/cmd/kubeadm/app/preflight/checks_linux.go). The network plugin is installed only after init, so it cannot set the value in time.",
+     "problem": "The answer (true) is right, but the source does not settle it. The page itself says most networking implementations set ip_forward, which contradicts \"the administrator enables\". The explanation never gives the real reason it has to be set before init (kubeadm's preflight check).",
+     "suggestedFix": "Keep the statement (true). Explanation: \"kubeadm init's preflight checks fail unless /proc/sys/net/ipv4/ip_forward is 1, and the Pod network add-on is installed only afterwards, so the administrator sets net.ipv4.ip_forward first.\" Add or replace the URL with https://github.com/kubernetes/kubernetes/blob/release-1.35/cmd/kubeadm/app/preflight/checks_linux.go"
+    },
+    {
+     "id": "kubernetes-cka-s4.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot (install-kubeadm); the current page has the same note",
+     "evidence": "\"Note: Docker Engine does not implement the CRI which is a requirement for a container runtime to work with Kubernetes. For that reason, an additional service cri-dockerd has to be installed.\" (https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)",
+     "problem": "The fact is correct, but the statement gives the answer away by name. It names a shim called \"cri-dockerd\" and says it is needed \"as a CRI runtime\". A player who knows nothing can read that it is the CRI adapter for dockerd and guess True, so the card tests reading, not knowledge.",
+     "suggestedFix": "Replacement (true): \"On a kubeadm node running Docker Engine, the kubelet reaches Docker through a separate adapter's CRI socket, not dockerd's own socket.\" Explanation: \"Docker Engine does not implement the CRI, so a kubeadm node also needs the cri-dockerd adapter. kubeadm detects its socket at unix:///var/run/cri-dockerd.sock.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 4.2 cards (5 true: 02, 03, 04, 06, 08; 5 false: 01, 05, 07, 09, 10). All six cited v1-35.docs.kubernetes.io URLs return 200, and I compared each against the current kubernetes.io page: no contradictions. Cards that pass, with the sentence that settles each:\n01: \"Unique hostname, MAC address, and product_uuid for every node.\" and \"If these values are not unique to each node, the installation process may fail\" (install-kubeadm).\n03: \"If multiple or no container runtimes are detected kubeadm will throw an error and will request that you specify which one you want to use\". The release-1.35 runtime.go agrees: \"found multiple CRI endpoints on the host. Please define which one...\".\n05: \"kubeadm will not install or manage kubelet or kubectl for you\".\n06: \"By default, your cluster will not schedule Pods on the control plane nodes\" and \"remove the node-role.kubernetes.io/control-plane:NoSchedule taint\" (create-cluster-kubeadm).\n07: \"--discovery-token-ca-cert-hash ... validate that the root CA public key matches this hash\" and \"The TLS bootstrap uses the shared token to temporarily authenticate\" (kubeadm-join).\n08: \"After running the command you should restart the control plane Pods. This is required since dynamic certificate reload is currently not supported for all components and certificates.\" (kubeadm-certs, also on the current page).\n09: \"Kubeadm does not support rotation or replacement of CA certificates out of the box.\" Minor point, not flagged: \"By default\" in this false statement hints at a non-default CA-rotation mode that does not exist.\n10: \"The kubeadm reset command does not clean any iptables, nftables or IPVS rules applied to the host by kube-proxy.\" (v1.35 and current kubeadm-reset).\nDuplicate check against all other sections of the deck: no card elsewhere tests product_uuid, ip_forward, CRI socket detection, cri-dockerd, kubelet installation, the control-plane taint, the discovery hash, certificate renewal or restart, CA rotation, or kubeadm reset. 2.2-09 (certs check-expiration) and 4.4-05 (CRI v1 registration) rest on different facts.\nSource files: content/raw/kubernetes-cka-b3.json and content/prompts/ready-v2-kubernetes-cka.txt."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s4.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official v1.35 snapshot; the current kubernetes.io page carries the same sentence",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/ : \"Turning a single control plane cluster created without --control-plane-endpoint into a highly available cluster is not supported by kubeadm.\" The answer (False) is correct and the source supports it.",
+     "problem": "The answer is right, but the wording breaks the negation rule. \"initialized with `controlPlaneEndpoint` unset\" means the same as \"without\", a word the rule bans, so the false statement reads as a double negative (supports ... for a cluster where something is unset). The jargon \"HA conversion\" makes it harder to parse. The statement also names the config field controlPlaneEndpoint, while the quoted sentence names the --control-plane-endpoint flag (they are equivalent).",
+     "suggestedFix": "Replacement, answer stays False (keeps the 5/5 balance). Statement (114 chars): \"kubeadm supports adding a shared control plane endpoint after init to turn a single control plane cluster into HA.\" Explanation (161 chars): \"kubeadm does not support turning a single control plane cluster created without --control-plane-endpoint into an HA cluster, so set the endpoint at kubeadm init.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked 10 cards in section 4.3: 5 true (01, 03, 06, 08, 10) and 5 false (02, 04, 05, 07, 09), so the balance is right. etcd has 2 cards (07, 08), within the limit of 3. I opened every source URL and also checked the current kubernetes.io/docs version of each page. Nine cards pass. Card 09 has the correct answer but is flagged as a weak_card because its wording reads as a double negative. Key quotes:\n- 01: upgrade page, first control plane node \"sudo kubeadm upgrade apply v1.35.x\", others \"sudo kubeadm upgrade node\".\n- 02: change-package-repository page: \"there's a dedicated package repository for each Kubernetes minor version\" and \"This step should be done upon upgrading from one to another Kubernetes minor release\".\n- 03: upgrade page, the same in v1.35 and current docs: \"If you are performing a minor version upgrade for any kubelet, you must first drain the node (or nodes) that you are upgrading.\"\n- 04: \"Manually upgrade your CNI provider plugin. Your Container Network Interface (CNI) provider may have its own upgrade instructions to follow.\"\n- 05: skew policy: \"kubelet must not be newer than kube-apiserver. kubelet may be up to three minor versions older\". The card is false because of direction, as the rules require.\n- 06: \"kubectl is supported within one minor version (older or newer) of kube-apiserver.\"\n- 07: etcd.io v3.6 recovery page: \"A cluster restore with etcdutl snapshot restore creates new etcd data directories\" and \"users can only use etcdctl to take the data to a snapshot, but use etcdutl to restore data from a snapshot\". The card avoids the etcdctl restore trap.\n- 08: configure-upgrade-etcd page, the same in v1.35 and current docs: \"first change /etc/kubernetes/manifests/etcd.yaml's volumes.hostPath.path for name: etcd-data to <data-dir-location>\".\n- 10: ha-topology page: \"If one node goes down, both an etcd member and a control plane instance are lost\". It is easy (difficulty 1) and close to a definition, but acceptable because it teaches what stacked means.\nMinor points I did not flag:\n- 03's explanation is thin. It could add that control plane nodes may run CoreDNS or other critical workloads, as the page says.\n- 02's explanation says \"a separate repository for a minor release\"; \"for each minor release\" reads better.\nI found no duplicate with other sections. 2.2-06 (writes during etcd quorum loss) rests on a different fact than 10, and no other section covers skew, drain-before-upgrade, the CNI upgrade or the control plane endpoint."
+  },
+  {
+   "section": "4.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s4.4-10",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official v1.35 snapshot (current kubernetes.io identical)",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/extend-kubernetes/operator/: \"The most common way to deploy an operator is to add the Custom Resource Definition and its associated Controller to your cluster.\" The card's answer is right, but kubernetes-kcna-s1.2-08 (\"Creating a CustomResourceDefinition also starts a controller for the new resource.\", False) tests the same fact: installing CRDs does not run a controller. If you know one answer, you know the other.",
+     "problem": "This card tests the same fact as KCNA card s1.2-08 at about the same depth. Naming kube-controller-manager does not change the fact being tested. The prompt says never to retest a KCNA fact at the same depth.",
+     "suggestedFix": "Replace (False): \"Kubernetes docs say an operator's controller normally runs inside the control plane, next to kube-controller-manager.\" Explanation: \"The operator pattern page says the controller normally runs outside the control plane like any containerized app, for example as a Deployment in the cluster.\" Same URL."
+    },
+    {
+     "id": "kubernetes-cka-s4.4-03",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official v1.35 snapshot",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/: \"To view resources found in a directory containing a kustomization file, run the following command: kubectl kustomize <kustomization_directory>. To apply those resources, run kubectl apply with --kustomize or -k flag\". kubernetes-ckad-s2.3-01 (False): \"`kubectl kustomize` can apply its rendered resources to the current cluster as part of the same command.\"",
+     "problem": "The answer is right, but this card tests the same fact as CKAD card s2.3-01: kubectl kustomize only renders, and kubectl apply -k applies. Adding \"network add-on\" does not make it the administrator's side of the fact.",
+     "suggestedFix": "Replace (False): \"Before `kubectl apply -k` can install an add-on overlay, an administrator installs the standalone kustomize binary.\" Explanation: \"kubectl has built-in Kustomize support since v1.14, so `kubectl kustomize` and `kubectl apply -k` work without a separate kustomize binary.\" Same URL, which says \"Since 1.14, kubectl also supports the management of Kubernetes objects using a kustomization file.\""
+    },
+    {
+     "id": "kubernetes-cka-s4.4-01",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, shows Helm 4.3.0",
+     "evidence": "The cited page https://helm.sh/docs/chart_best_practices/custom_resource_definitions/ only says \"These CRDs are not templated, but will be installed by default when running a helm install for the chart.\" It never says the CRDs go in before the rest of the chart. The ordering is stated on https://helm.sh/docs/topics/charts/: \"When Helm installs a new chart, it will upload the CRDs, pause until the CRDs are made available by the API server, and then start the template engine, render the rest of the chart, and upload it to Kubernetes.\"",
+     "problem": "The answer and the explanation are right. However, the cited page does not support the card's point, which is that CRDs are installed before the chart's custom resources.",
+     "suggestedFix": "Change source URL to https://helm.sh/docs/topics/charts/ (section \"Custom Resource Definitions (CRDs)\"), title \"Charts\". Keep the statement and explanation."
+    },
+    {
+     "id": "kubernetes-cka-s4.4-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official v1.35 snapshot (Windows CSI proxy subsection)",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/volumes/: \"CSI node plugins need to perform various privileged operations like scanning of disk devices and mounting of file systems. These operations differ for each host operating system. For Linux worker nodes, containerized CSI node plugins are typically deployed as privileged containers. For Windows worker nodes, privileged operations for containerized CSI node plugins are supported using csi-proxy\"",
+     "problem": "The statement is true, but a player can guess it from the wording: a component called a \"node plugin\" that does mounting on the node. The \"on Linux\" qualifier also suggests a contrast that the source does not make, because Windows nodes need the same privileged operations (done through csi-proxy). The card does not test deployment, which is the administrator fact the prompt scopes for CSI.",
+     "suggestedFix": "Replace (True): \"On Linux nodes, a CSI driver's containerized node plugin is typically deployed as a privileged container.\" Explanation: \"Node plugins scan disk devices and mount file systems on the host, so Linux nodes typically run them privileged; Windows nodes use csi-proxy for these operations.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 4.4 cards from kubernetes-cka-b4.json. The balance is 5 true (01, 04, 06, 07, 09) and 5 false (02, 03, 05, 08, 10), and every proposed replacement keeps its card's answer. The split by topic is 3 Helm/Kustomize, 4 interface and 3 CRD/operator cards, which matches the prompt.\n\nCards that passed, with the sentence that settles each:\n- 02: The Helm 4.3.0 page says \"There is no support at this time for upgrading or deleting CRDs using Helm.\"\n- 04: The network-plugins page says \"the Container Runtime must be configured to load the CNI plugins\"; the kubelet flags were removed in 1.24. The explanation only restates the statement. Mentioning that the kubelet's CNI flags were removed in v1.24 would make it stick better.\n- 05: The container-runtimes page says \"If a container runtime does not support the v1 API, the kubelet will not register as a node.\"\n- 06: The network-plugins page says \"The Kubernetes project recommends using a plugin that is compatible with the v1.0.0 CNI specification\". The current kubernetes.io page has the same text.\n- 08: The CRD versioning page says \"When an object is written, it is stored at the version designated as the storage version at the time of the write.\"\n- 09: The CRD page says \"You can watch the Established condition of your CustomResourceDefinition to be true\".\n\nI found no version, retirement or recent-change problem in this section. Helm 4.3.0 still has no CRD upgrade support, and CRI v1 has been the only CRI API version since 1.26.\n\nCross-deck search: card 03 tests the same fact as kubernetes-ckad-s2.3-01, and card 10 tests the same fact as kubernetes-kcna-s1.2-08. No other cards in the CKA, CKAD or KCNA decks overlap section 4.4.\n\nDeck-level observation outside this section: the deck has no card on the prompt's crictl, CSIDriver object or CSI sidecar facts."
+  },
+  {
+   "section": "5.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s5.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, v1-35.docs.kubernetes.io/docs/concepts/architecture/nodes/ loads (official v1.35 snapshot) and supports the card",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/nodes/: \"The node controller has multiple roles in a node's life. The first is assigning a CIDR block to the node when it is registered (if CIDR assignment is turned on).\" The answer is correct, but the statement gives it away. The condition \"With node CIDR allocation enabled\" names the feature, and \"the node controller\" is the obvious actor for node CIDRs, so a player can guess True from the wording alone. It also never says which setting turns the allocation on, which is what an administrator actually needs to know. Support for a better card: https://v1-35.docs.kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/: \"If kubeadm is invoked specifying a --pod-network-cidr, the subnet manager feature required for some CNI network plugins is enabled by setting: --allocate-node-cidrs=true --cluster-cidr and --node-cidr-mask-size flags according to the given CIDR\".",
+     "problem": "Name giveaway or near-truism. The answer can be read from the condition in the statement, so the card teaches almost nothing about where Pod CIDRs come from in a kubeadm cluster.",
+     "suggestedFix": "Replacement (answer True, 106 chars): \"When `kubeadm init` gets `--pod-network-cidr`, kube-controller-manager assigns each node a Pod CIDR block.\" Explanation (166 chars): \"kubeadm then sets --allocate-node-cidrs=true and --cluster-cidr on kube-controller-manager, whose node controller gives each registering node a block from that range.\" Use two sources: the kubeadm implementation-details page (v1.35) for the flags and the nodes page for the node controller."
+    },
+    {
+     "id": "kubernetes-cka-s5.1-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200, v1-35.docs.kubernetes.io/docs/concepts/services-networking/network-policies/ loads (official v1.35 snapshot); the current docs say the same",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/network-policies/: \"The Kubernetes control plane sets an immutable label kubernetes.io/metadata.name on all namespaces, the value of the label is the namespace name.\" In the source (https://github.com/kubernetes/kubernetes/blob/release-1.35/pkg/registry/core/namespace/strategy.go, Canonicalize: `ns.Labels[v1.LabelMetadataName] = ns.Name`), the API server does not reject an edit to this label. It accepts the write and then resets the label to the namespace name on every create and update. So `kubectl label ns foo kubernetes.io/metadata.name=bar --overwrite` returns no error, and the value just stays foo.",
+     "problem": "\"Prevents edits\" suggests the control plane rejects the request. An expert who has run the command would say the edit is accepted and then silently overwritten, and could defend False on that. The card also tests that the label cannot change, when the administrator fact this scope wants is that the label lets a namespaceSelector target a namespace by name.",
+     "suggestedFix": "Replacement (answer True, about 113 chars): \"A namespaceSelector can match a namespace by name through the control plane's `kubernetes.io/metadata.name` label.\" Explanation (161 chars): \"The control plane sets this immutable label on every namespace, with the namespace name as its value, so a policy can target one namespace without custom labels.\" Keep the same v1.35 network-policies URL."
+    }
+   ],
+   "notes": "Checked all 10 cards of section 5.1, all in kubernetes-cka-b4.json. 5 are true (01, 03, 04, 06, 07) and 5 are false (02, 05, 08, 09, 10). The true statements average 92.4 characters and the false ones 95.0, which is within the 5-character rule. Every statement is at most 120 characters. Explanations 01, 02, 04 and 09 are 120 to 123 characters, well under the 240 limit. Every source URL returned 200.\n\nEvidence for the cards that pass:\n- 01 (hostNetwork Pod reaches the node's loopback): https://kubernetes.io/docs/reference/kubernetes-api/core/pod-v1/ says \\\"hostNetwork boolean Host networking requested for this pod. Use the host's network namespace.\\\" The v1.35 snapshot has the same text. Reaching localhost is a direct consequence of sharing the namespace (Linux nodes assumed). The URL is the current page rather than the v1.35 snapshot, which the rules allow.\n- 02 (localhost listener shared inside a Pod): https://v1-35.docs.kubernetes.io/docs/concepts/workloads/pods/ says \\\"Within a Pod, containers share an IP address and port space, and can find each other via localhost.\\\"\n- 04 (kubelet reaches local Pods): https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/ says \\\"Agents on a node (such as system daemons, or kubelet) can communicate with all pods on that node.\\\"\n- 05 (status.podIP versus status.podIPs): pod-v1 (current and v1.35) says \\\"podIPs holds the IP addresses allocated to the pod. If this field is specified, the 0th entry must match the podIP field. Pods may be allocated at most 1 value for each of IPv4 and IPv6.\\\"\n- 06 (NetworkPolicy goes in the protected Pods' namespace): the v1.35 network-policies page says \\\"NetworkPolicy spec has all the information needed to define a particular network policy in the given namespace\\\" and \\\"An empty podSelector selects all pods in the namespace.\\\"\n- 08, 09, 10: the v1.35 page's \\\"As of Kubernetes 1.35, the following functionality does not exist in the NetworkPolicy API\\\" list includes \\\"Targeting of services by name\\\", \\\"Anything TLS related (use a service mesh or ingress controller for this)\\\" and \\\"The ability to log network security events (for example connections that are blocked or accepted)\\\". The current page (\\\"As of Kubernetes 1.37\\\") has the identical list.\n\nNo duplicates with other sections. 2.5-10 (a NetworkPolicy blocking traffic to a healthy backend), 4.4-04 (the runtime loads CNI plugins), 5.2-10 (hostNetwork dnsPolicy) and 2.5-09 (Pod range overlapping host networks) each rest on a different fact.\n\nMinor points, not flagged:\n- Card 10's wording (\\\"automatically records ... in its standard API\\\") leans toward sounding implausible, but it is still a realistic misconception, since some plugins do log denied connections.\n- Cards 01 and 05 could cite the pinned v1-35 Pod API URL (https://v1-35.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/) for consistency.\n\nBoth fixes keep the section at 5 true and 5 false."
+  },
+  {
+   "section": "5.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s5.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, supports the card",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/reference/networking/virtual-ips/ : \"During bootstrap, a default ServiceCIDR object named kubernetes is created from the value of the --service-cluster-ip-range command line argument to kube-apiserver\". The answer is true, but the flag name `--service-cluster-ip-range` spells out \"Service IP range\", so a player can read the answer from the wording. The hedge \"can\" also sits on a true statement. The section also has no card on kube-proxy proxy modes, which the 5.2 scope lists (ipvs deprecated since v1.35, nftables recommended). Line 947 of the same page: \"Kubernetes v1.35 [deprecated] This proxy mode is only available on Linux nodes. In ipvs mode...\". The page also says nftables \"is recommended as a replacement for ipvs\".",
+     "problem": "Name giveaway: the flag name gives the answer away, so the card teaches nothing. It also uses up a slot that could cover the proxy-mode fact the section scope asks for.",
+     "suggestedFix": "Replace (answer true). Statement: \"Since Kubernetes v1.35, the Kubernetes docs mark kube-proxy's ipvs mode deprecated and recommend nftables mode instead.\" Explanation: \"The v1.35 docs deprecate ipvs because the kernel IPVS API fits the Services API poorly; nftables mode (stable since v1.33, kernel 5.13 or later) is the recommended replacement.\" appliesTo \"Kubernetes v1.35 and later\". Same URL (virtual-ips)."
+    },
+    {
+     "id": "kubernetes-cka-s5.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v1.35 snapshot, supports the card",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/endpoint-slices/ : \"The control plane automatically creates EndpointSlices for any Kubernetes Service that has a selector specified. These EndpointSlices include references to all the Pods that match the Service selector.\" This is the definition of an EndpointSlice, which is KCNA level, and CKAD owns selectors and EndpointSlices. The admin-side fact in the 5.2 scope is the deprecation. https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/service/ : \"Endpoints (deprecated) FEATURE STATE: Kubernetes v1.33 [deprecated] ... it is recommended that all clients use the EndpointSlice API rather than Endpoints.\"",
+     "problem": "Close to a truism or definition card: anyone who knows what an EndpointSlice is answers True. It tests nothing at administrator depth.",
+     "suggestedFix": "Replace (answer true). Statement: \"Since Kubernetes v1.33, the Endpoints API is deprecated, and EndpointSlice is the API that tracks Service backends.\" Explanation: \"The v1.35 Service page marks Endpoints deprecated since v1.33 (no dual-stack, truncated lists) and recommends that all clients use the EndpointSlice API.\" appliesTo \"Kubernetes v1.33 and later\". URL https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/service/"
+    },
+    {
+     "id": "kubernetes-cka-s5.2-10",
+     "verdict": "explanation_error",
+     "urlStatus": "200, official v1.35 snapshot, supports the answer",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/dns-pod-service/ : \"For Pods running with hostNetwork, you should explicitly set its DNS policy to \"ClusterFirstWithHostNet\". Otherwise, Pods running with hostNetwork and \"ClusterFirst\" will fallback to the behavior of the \"Default\" policy.\" and \"If dnsPolicy is not explicitly specified, then \"ClusterFirst\" is used.\" The current kubernetes.io page has the same wording.",
+     "problem": "The answer (false) is right. The explanation stops at \"leaving dnsPolicy unset selects ClusterFirst\", which suggests the hostNetwork Pod gets cluster DNS. It leaves out the documented fallback to the Default policy, and that fallback is the reason the explicit setting matters.",
+     "suggestedFix": "Keep the statement (answer false) and change the explanation to: \"Leaving dnsPolicy unset gives a Pod ClusterFirst, and a hostNetwork Pod with ClusterFirst falls back to the Default policy, so set ClusterFirstWithHostNet explicitly.\" (166 characters; it does not restate card 09's fact about what Default does.)"
+    }
+   ],
+   "notes": "I checked all 10 cards of section 5.2, all in raw/kubernetes-cka-b4.json: 5 true (01, 02, 06, 08, 09) and 5 false (03, 04, 05, 07, 10). I opened every source URL on v1-35.docs.kubernetes.io (all returned 200) and compared the key wording with the current kubernetes.io docs, which say the same thing. Each suggested replacement keeps the true answer of the card it replaces, so the balance stays 5/5.\n\nCards that pass, with the deciding quote:\n- 01: virtual-ips says \"Kubernetes v1.33 [stable] ... uses IPAddress and ServiceCIDR objects instead of an internal global allocation map\". It was beta and off by default before v1.33, so \"Since v1.33\" is right.\n- 03: source-ip says \"If you set service.spec.externalTrafficPolicy to the value Local, kube-proxy ... does not forward traffic to other nodes. This approach preserves the original source IP address.\"\n- 04: virtual-ips says \"If the traffic policy is Local and there are no node-local endpoints, traffic is dropped by kube-proxy.\"\n- 05: the service page says \"The actual creation of the load balancer happens asynchronously, and information about the provisioned balancer is published in the Service's .status.loadBalancer field.\" It is an easy card and close to a strawman, because anyone who has seen EXTERNAL-IP stuck on <pending> knows the answer. A stronger option would test that a LoadBalancer Service starts out as the equivalent of a NodePort Service.\n- 07: dns-custom-nameservers shows the Corefile in a ConfigMap named coredns in kube-system.\n- 08: dns-custom-nameservers says \"The CoreDNS Service is named kube-dns in the metadata.name field\". That page does not mention kubeadm. The kubeadm implementation-details page does: \"The CoreDNS service is named kube-dns for compatibility reasons with the legacy kube-dns addon.\" That URL would support the card's kubeadm framing better, but this is minor and I did not flag it.\n- 09: dns-pod-service says \"\\\"Default\\\": The Pod inherits the name resolution configuration from the node.\"\n\nCoverage gap: none of the original 5.2 cards tests kube-proxy proxy modes, LoadBalancer starting as a NodePort, .spec.loadBalancerIP being deprecated, kubeadm supporting only CoreDNS, stub domains, or the kubelet writing each Pod's resolv.conf. The replacement for 02 adds the proxy-mode fact.\n\nI found no duplicates with 2.5. Card 2.5-02 is about finding the proxy mode in kube-proxy's logs, card 2.5-06 about the DNS Service's EndpointSlices; both are different facts from the 5.2 cards and from the suggested replacements."
+  },
+  {
+   "section": "5.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "kubernetes-cka-s5.3-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official v1.35 snapshot; matches current kubernetes.io/docs",
+     "evidence": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/ingress-controllers/: \"In order for an Ingress to work in your cluster, there must be an ingress controller running. You need to select at least one ingress controller and make sure it is set up in your cluster.\" https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/ingress/: \"You must have an Ingress controller to satisfy an Ingress. Only creating an Ingress resource has no effect.\" The answer is correct, but the statement is close to a truism. 'Deploys an Ingress controller ... to implement routing for Ingress resources' reads as True from its wording alone, and no studied learner would answer False. The non-obvious part the prompt asks for (kube-controller-manager does not start one) is missing. The v1.35 and current ingress-controllers pages no longer carry the old 'Unlike other types of controllers which run as part of the kube-controller-manager binary' sentence. The kube-controller-manager reference still settles it: its --controllers 'All controllers' list (https://v1-35.docs.kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/) runs from bootstrap-signer-controller to volumeattributesclass-protection-controller and has no Ingress controller. The CKAD deck also has a near twin: 'The API server can accept valid Ingress objects before an administrator installs an Ingress controller.'",
+     "problem": "The card is a truism and a wording giveaway: the statement explains itself, so it teaches nothing at CKA depth. It also misses the administrator-relevant fact, which is that no built-in controller in kube-controller-manager serves Ingress.",
+     "suggestedFix": "Keep the answer true. Statement (113 chars): \"Ingress controllers run outside kube-controller-manager, so an administrator deploys one before Ingress rules take effect.\" Explanation: \"kube-controller-manager ships no Ingress controller, and an Ingress object alone has no effect. An administrator installs a controller add-on, for example with Helm, and exposes it through a Service.\" Source: https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/ingress/ (Prerequisites). The kube-controller-manager reference page above is the second check."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 5.3 (5 true: 03, 04, 06, 08, 09; 5 false: 01, 02, 05, 07, 10). Every source URL loaded and is an official gateway-api.sigs.k8s.io page or a v1-35.docs.kubernetes.io page. Only card 08 is flagged.\n\nCards that pass, with the evidence that settles each one:\n- 01: the GatewayClass type page and the spec say \"The value of this field MUST be a domain prefixed path\", for example example.net/gateway-controller. A Deployment name cannot contain '/', so False holds. The explanation ('assigned controller identifier') is vague. Optional improvement: name the domain-prefixed path format, and use https://gateway-api.sigs.k8s.io/reference/api-types/gatewayclass/ instead of the /api-spec/main/ URL, which describes the development branch rather than the v1.6 release.\n- 02: Gateway has a single spec.gatewayClassName (\"Defines the name of a GatewayClass object used by this Gateway\"). The api-overview page adds \"Each GatewayClass will be handled by a single controller\".\n- 03: api-overview says \"By default, a Route will attach to all listeners of a Gateway\"; sectionName and port narrow the selection. Minor point: the explanation says 'an administrator' uses sectionName, but in the role model the Route owner (Application Developer) sets it. This does not change the answer.\n- 04: security page says \"The Gateway owner must explicitly allow Routes to bind from additional namespaces\"; api-overview says allowedRoutes.namespaces defaults to Same.\n- 05: referencegrant page says \"A ReferenceGrant can only be used to allow references to resources in the same namespace as the ReferenceGrant\", so the grant goes in the Service's namespace. False holds, and the explanation's right fact is correct.\n- 06: traffic-splitting guide says \"weight indicates a proportional split of traffic (rather than percentage)\" and that weight defaults to 1.\n- 07: TLS guide says certificates sit in the Gateway listener's tls.certificateRefs and that downstream TLS is configured at Gateway listeners. Routes have no role. False holds.\n- 09: ingress-controllers page says \"You may deploy any number of ingress controllers using ingress class within a cluster\" and that ingressClassName \"is a replacement of the older annotation method\". It is an easy card, but it is in scope as the prompt sets it.\n- 10: Ingress page says \"The Ingress API is no longer being developed, and will have no further changes or updates made to it\" and that it \"is generally available ... no plans to remove Ingress\". False holds, and the current docs match.\n\nChecks across the section:\n- No card presents Ingress NGINX as an option.\n- No card tests the channel of TLSRoute, TCPRoute or UDPRoute, ListenerSet, or an API version, as the prompt requires.\n- No duplicates within the deck: no other section of kubernetes-cka mentions Ingress, Gateway, HTTPRoute or ReferenceGrant.\n- Cross-deck: card 08 overlaps the CKAD card on the API server accepting Ingress objects before a controller exists. That is the reason the replacement shifts to the kube-controller-manager angle.\n- I deliberately did not suggest an ingress2gateway card as a replacement: the tool's name gives away what it does."
+  }
+ ],
+ "scan": {
+  "cardsRead": 160,
+  "duplicates": [
+   {
+    "ids": [
+     "kubernetes-cka-s2.3-07",
+     "kubernetes-cka-s2.3-08"
+    ],
+    "why": "Both are true and test the same Node Allocatable formula: allocatable is capacity minus reservations. One card covers kubeReserved and the other the evictionHard headroom. A player who knows one can derive the other, and the explanation of 08 ('even if system daemons reserve nothing') points straight at 07. The prompt lists 'capacity versus allocatable (kube-reserved, system-reserved and eviction thresholds)' as a single fact.",
+    "dropId": "kubernetes-cka-s2.3-07"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "allocatable-reservations",
+    "ids": [
+     "kubernetes-cka-s2.3-07",
+     "kubernetes-cka-s2.3-08"
+    ],
+    "why": "Same subtraction formula. If both stay, one confirms the other."
+   },
+   {
+    "name": "wffc-needs-scheduler",
+    "ids": [
+     "kubernetes-cka-s1.1-04",
+     "kubernetes-cka-s1.1-05"
+    ],
+    "why": "The explanation of 05 says nodeName bypasses the scheduler and leaves the WaitForFirstConsumer claim Pending, which shows that WaitForFirstConsumer depends on scheduling (04 True). The explanation of 04 also ties provisioning to the Pod's node selection, which hints that 05 is False."
+   },
+   {
+    "name": "container-log-files",
+    "ids": [
+     "kubernetes-cka-s2.4-01",
+     "kubernetes-cka-s2.4-02",
+     "kubernetes-cka-s2.4-04",
+     "kubernetes-cka-s2.4-05"
+    ],
+    "why": "02 names /var/log/pods as the default location of container logs. 04 says the kubelet reads 'the container log file', and 05 mentions 'rotated files' and 'the latest container log file'. Each of these tells the player that container stdout and stderr go to files, so 01 (the runtime sends them to the systemd journal) is clearly False."
+   },
+   {
+    "name": "kubelet-owns-log-settings",
+    "ids": [
+     "kubernetes-cka-s2.4-02",
+     "kubernetes-cka-s2.4-03"
+    ],
+    "why": "The explanation of 02 places container log settings in KubeletConfiguration. That hints at 03's answer: containerLogMaxSize is a kubelet setting, not a runtime setting."
+   },
+   {
+    "name": "log-retention-restart-vs-eviction",
+    "ids": [
+     "kubernetes-cka-s2.4-06",
+     "kubernetes-cka-s2.4-07"
+    ],
+    "why": "These are two sides of one contrast: logs are kept after a restart (06 False) and removed on eviction (07 True). Dealt together, they read as a mirrored pair."
+   },
+   {
+    "name": "static-pod-kubelet-control",
+    "ids": [
+     "kubernetes-cka-s2.2-01",
+     "kubernetes-cka-s2.2-07",
+     "kubernetes-cka-s2.2-10"
+    ],
+    "why": "01 says the kubelet recreates static Pods from manifests, and 10 says the kubelet watches /etc/kubernetes/manifests. Both give away that the local kubelet, not the API server through the mirror Pod, controls static Pod containers (07 False). The explanation of 07 says the same thing about 01."
+   },
+   {
+    "name": "apiserver-outage-containers",
+    "ids": [
+     "kubernetes-cka-s2.2-05",
+     "kubernetes-cka-s2.2-08"
+    ],
+    "why": "08 has the administrator inspecting containers with crictl during a kube-apiserver outage, so containers must still be running. That gives away 05. Both explanations say the node works without the cluster API."
+   },
+   {
+    "name": "component-outage-no-substitute",
+    "ids": [
+     "kubernetes-cka-s2.2-03",
+     "kubernetes-cka-s2.2-04"
+    ],
+    "why": "The explanation of 03 says the other control-plane components do not replace a missing component. That hints that no ReplicaSet appears while kube-controller-manager is down (04 False)."
+   },
+   {
+    "name": "node-condition-taints",
+    "ids": [
+     "kubernetes-cka-s2.1-03",
+     "kubernetes-cka-s2.1-04"
+    ],
+    "why": "04 says node problems lead to evictions through taints. That hints at 03's answer: the scheduler checks taints, not the DiskPressure condition. The explanation of 03 states taint evaluation outright."
+   },
+   {
+    "name": "component-metrics-endpoints",
+    "ids": [
+     "kubernetes-cka-s2.3-09",
+     "kubernetes-cka-s2.3-10"
+    ],
+    "why": "The statement of 10 mentions kube-apiserver's /metrics endpoint, and its explanation mentions kube-scheduler's own /metrics endpoint. Together they hint that components publish Prometheus-style metrics (09 True)."
+   },
+   {
+    "name": "secret-encryption-new-writes",
+    "ids": [
+     "kubernetes-cka-s3.1-03",
+     "kubernetes-cka-s3.1-04"
+    ],
+    "why": "03 stresses that the first provider applies to 'new Secret writes', and its explanation repeats 'new'. That strongly suggests existing Secrets are not rewritten automatically (04 False)."
+   },
+   {
+    "name": "hpa-takes-highest",
+    "ids": [
+     "kubernetes-cka-s3.1-07",
+     "kubernetes-cka-s3.1-09"
+    ],
+    "why": "Both are true cards where the HPA picks the largest or highest recommendation. Knowing one makes the conservative 'take the max' answer to the other easy to guess."
+   },
+   {
+    "name": "scheduling-not-retroactive",
+    "ids": [
+     "kubernetes-cka-s3.2-04",
+     "kubernetes-cka-s3.2-10",
+     "kubernetes-cka-s2.1-10"
+    ],
+    "why": "Each one is a False claim that Kubernetes evicts or moves Pods that are already running: affinity label change, topology spread after scale-down, cordon. The explanation of one ('a scheduled Pod continues running') gives away the others."
+   },
+   {
+    "name": "cordon-vs-drain",
+    "ids": [
+     "kubernetes-cka-s2.1-10",
+     "kubernetes-cka-s4.3-03"
+    ],
+    "why": "The explanation of 4.3-03 says draining clears workloads, which implies that cordon alone does not evict (2.1-10 False). Its explanation in turn says cordon leaves Pods running."
+   },
+   {
+    "name": "rbac-escalation-verbs",
+    "ids": [
+     "kubernetes-cka-s4.1-03",
+     "kubernetes-cka-s4.1-04"
+    ],
+    "why": "These are parallel escalate and bind mechanisms. 03 shows that exceeding your own access needs an extra verb, which gives away that plain RoleBinding create permission is not enough (04 False). This is effectively a mirrored true and false pair."
+   },
+   {
+    "name": "version-skew-direction",
+    "ids": [
+     "kubernetes-cka-s4.3-05",
+     "kubernetes-cka-s4.3-06"
+    ],
+    "why": "06 presents kubectl's skew window running 'in both directions' as its distinguishing feature, which implies other components may only be older. That hints that 05 (kubelet newer than kube-apiserver) is False, and the explanation of 05 says that directly."
+   },
+   {
+    "name": "etcd-restore-local-datadir",
+    "ids": [
+     "kubernetes-cka-s4.3-07",
+     "kubernetes-cka-s4.3-08"
+    ],
+    "why": "08's premise, 'an etcd restore to a new directory', shows that a restore produces a local data directory, which gives away that 07 (restore over the network to a running member) is False. The explanation of 07 says that it 'creates a restored data directory', which confirms 08."
+   },
+   {
+    "name": "service-ip-range",
+    "ids": [
+     "kubernetes-cka-s5.2-01",
+     "kubernetes-cka-s5.2-02"
+    ],
+    "why": "02's phrase 'initial Service IP range' implies that ranges can be added later. That hints at the ServiceCIDR and IPAddress mechanism in 01, and the two cards cover adjacent parts of the same allocation story."
+   },
+   {
+    "name": "localhost-shared-netns",
+    "ids": [
+     "kubernetes-cka-s5.1-01",
+     "kubernetes-cka-s5.1-02"
+    ],
+    "why": "Both rest on the rule that a shared network namespace means a shared loopback. The explanation of 01 ('shares the node's network namespace, so its loopback reaches listeners') gives away that 02 is False, and the explanation of 02 gives away that 01 is True."
+   },
+   {
+    "name": "networkpolicy-limits",
+    "ids": [
+     "kubernetes-cka-s5.1-08",
+     "kubernetes-cka-s5.1-09",
+     "kubernetes-cka-s5.1-10"
+    ],
+    "why": "All three are false items from the same 'what you can't do with network policies' list. The explanation of 08 (peers selected by labels or IP ranges) and of 09 (control at IP and port level) each give away the others."
+   },
+   {
+    "name": "gateway-cross-namespace-consent",
+    "ids": [
+     "kubernetes-cka-s5.3-04",
+     "kubernetes-cka-s5.3-05"
+    ],
+    "why": "Both teach that the owner of the target resource must consent: allowedRoutes on the listener, and a ReferenceGrant in the namespace of the referenced Service. 04's 'consent on the target side' hints that the ReferenceGrant does not live in the HTTPRoute's namespace (05 False), and the explanation of 05 says it outright."
+   },
+   {
+    "name": "ingress-controller-required",
+    "ids": [
+     "kubernetes-cka-s5.3-08",
+     "kubernetes-cka-s5.3-09"
+    ],
+    "why": "09's premise 'With multiple Ingress controllers running' presents controllers as separately deployed components. That hints that 08 (an administrator deploys an Ingress controller) is True."
+   }
+  ],
+  "tells": "Statement lengths are balanced: the deck averages 98.1 characters for True and 98.0 for False, and every section stays within 5 characters (3.2 is closest to the limit, T 97.4 versus F 92.6). Explanations of false cards run longer on average (107 versus 101 characters). The exploitable patterns are in the wording:\n\n(1) 'The control plane' as the actor is 7 True, 0 False: s1.1-07, s1.2-02, s1.2-06, s4.1-05, s5.1-07, s5.2-01, s5.2-06. A player who answers True whenever 'the control plane' does something gets 7 out of 7.\n\n(2) 'The Kubernetes documentation recommends' is 3 True, 0 False: s2.4-08, s3.2-03, s4.4-06. Every recommendation card is True.\n\n(3) 'automatically' is 4 False, 1 True (False: s3.1-08, s4.2-10, s4.4-02, s5.1-10; True: s2.1-05). This breaks the coverage-word balance rule.\n\n(4) 'instead of' is 3 False, 0 True: s2.4-09, s2.5-07, s4.4-05. The 'X instead of Y still works' template always means False.\n\n(5) Recurring false template 'Kubernetes acts retroactively on existing or running objects', with 6 False: s2.1-06 (StatefulSet creates a replacement), s2.1-10 (cordon evicts), s3.1-01 (OnDelete replaces Pods), s3.1-04 (rewrites previously stored Secrets), s3.2-04 (affinity change evicts), s3.2-10 (scheduler moves running Pods). The words 'running', 'existing' and 'previously' appear in 6 False and 3 True statements. The heuristic 'Kubernetes never touches what is already running' wins about 6 out of 8.\n\n(6) Recurring false template 'kubeadm does more than it does', with 6 False: s2.5-01 (kube-proxy as a systemd service), s3.1-10 (installs VPA), s4.2-05 (installs the kubelet), s4.2-09 (rotates the CA), s4.2-10 (clears iptables), s4.3-04 (upgrades CNI). Only s4.2-06 and s5.2-08 are True claims about kubeadm setting something up. Overall, statements that mention kubeadm are 12 False to 8 True.\n\n(7) The template 'NetworkPolicy does X from its limitations list' carries 3 False (s5.1-08, s5.1-09, s5.1-10), above the limit of two per template.\n\n(8) The template 'default ClusterRole includes or covers Y' has 2 out of 2 False (s4.1-06, s4.1-07).\n\n(9) The template '<x>TrafficPolicy: Local makes kube-proxy do the non-local thing' has 2 out of 2 False (s5.2-03, s5.2-04).\n\n(10) 'kube-scheduler' as the actor leans False, 5 to 3 (False: s2.3-06, s2.3-10, s3.2-05, s3.2-08, s3.2-10).\n\n(11) 'by default' leans True, 6 to 3 (True: s2.4-07, s4.1-08, s4.2-06, s4.4-01, s5.2-08, s5.3-03), and 'before' leans True, 5 to 1 (True: s2.1-07, s4.2-02, s4.2-04, s4.3-03, s4.4-01; False: s2.5-04).\n\n(12) Statements starting with 'An administrator' are 11 True to 5 False. Procedure-sounding 'An administrator does sensible step X' cards are mostly True, and several are near-truisms (s2.1-09 systemctl status kubelet, s1.2-04 patching the reclaim policy, s2.5-10 a NetworkPolicy can block traffic).\n\n(13) Absolute or strong verbs mark False: 'synchronously' (s5.2-05), 'standardized' (s1.1-02), 'overrides' (s1.2-05), 'rejects' (s1.1-06), 'sends' (False 3 out of 3: s2.4-01, s4.3-07, s5.2-04).\n\n(14) Hedge verbs are balanced overall ('can' 15 True, 12 False), but 'lets' leans True, 4 to 1 (s1.1-04, s2.4-02, s3.1-02, s4.3-06 versus s1.1-05)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "kubernetes-cka-s1.1-08",
+    "reason": "weak_card (strawman: a class field adding code to a driver). Section 1.1 can lose only one card, and 1.1-04 is rewritten instead because the Immediate default is otherwise uncovered."
+   },
+   {
+    "id": "kubernetes-cka-s1.2-08",
+    "reason": "weak_card (the volumeMode name gives the answer away; near-copy of the source). 1.2-10 is rewritten to keep the section at 9 cards."
+   },
+   {
+    "id": "kubernetes-cka-s2.1-04",
+    "reason": "weak_card (the taint-eviction-controller name gives the answer away). Dropping it also removes the scan's node-condition-taints conflict with 2.1-03."
+   },
+   {
+    "id": "kubernetes-cka-s2.2-09",
+    "reason": "weak_card (the check-expiration subcommand name gives the answer away)."
+   },
+   {
+    "id": "kubernetes-cka-s2.3-07",
+    "reason": "Scan duplicate of 2.3-08 (same Allocatable formula); the verifier also flagged it as weak_card."
+   },
+   {
+    "id": "kubernetes-cka-s2.4-10",
+    "reason": "weak_card (truism, and ambiguous: 'request traces' can be read as OpenTelemetry tracing, which log verbosity does not control)."
+   },
+   {
+    "id": "kubernetes-cka-s2.5-06",
+    "reason": "weak_card (paraphrase of the page heading; you can read the answer from the wording). 2.5-10 is rewritten instead."
+   },
+   {
+    "id": "kubernetes-cka-s3.1-08",
+    "reason": "weak_card (strawman built on a rename side note; misleading 'Since v1.30' lead-in). Dropped rather than 3.1-01 so the section keeps two rollout cards."
+   },
+   {
+    "id": "kubernetes-cka-s3.2-07",
+    "reason": "weak_card (NodeRestriction protecting the node-restriction.kubernetes.io/ prefix gives the answer away by name)."
+   },
+   {
+    "id": "kubernetes-cka-s4.1-03",
+    "reason": "weak_card (the escalate verb's name gives the answer away). Dropping it also removes the scan's mirrored rbac-escalation-verbs pair with 4.1-04."
+   },
+   {
+    "id": "kubernetes-cka-s4.2-04",
+    "reason": "weak_card (the name cri-dockerd gives away that it is Docker's CRI adapter)."
+   },
+   {
+    "id": "kubernetes-cka-s4.3-09",
+    "reason": "weak_card (reads as a double negative with 'controlPlaneEndpoint unset'). The section stays at 9 cards with 5T/4F."
+   },
+   {
+    "id": "kubernetes-cka-s4.4-07",
+    "reason": "weak_card (you can guess it from 'node plugin' plus mounting, and the suggested replacement is a near-copy of the source sentence). Only one card in 4.4 could be dropped, so the two duplicates (03, 10) are rewritten instead."
+   },
+   {
+    "id": "kubernetes-cka-s5.1-03",
+    "reason": "weak_card (the condition 'with node CIDR allocation enabled' gives the answer away)."
+   },
+   {
+    "id": "kubernetes-cka-s5.2-06",
+    "reason": "weak_card (EndpointSlice definition card). 5.2-02 is rewritten instead; it now covers the proxy-mode fact that no other card in the section tested."
+   },
+   {
+    "id": "kubernetes-cka-s5.3-08",
+    "reason": "weak_card (truism: the statement explains itself). This also removes the scan's ingress-controller-required conflict with 5.3-09."
+   }
+  ],
+  "source": [
+   {
+    "id": "kubernetes-cka-s1.2-06",
+    "title": "Persistent Volumes",
+    "url": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/"
+   },
+   {
+    "id": "kubernetes-cka-s2.2-01",
+    "title": "Reconfiguring a kubeadm cluster",
+    "url": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/"
+   },
+   {
+    "id": "kubernetes-cka-s2.2-04",
+    "title": "Controllers",
+    "url": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/controller/"
+   },
+   {
+    "id": "kubernetes-cka-s4.2-02",
+    "title": "kubeadm preflight checks (checks_linux.go, release-1.35)",
+    "url": "https://github.com/kubernetes/kubernetes/blob/release-1.35/cmd/kubeadm/app/preflight/checks_linux.go"
+   },
+   {
+    "id": "kubernetes-cka-s4.4-01",
+    "title": "Charts",
+    "url": "https://helm.sh/docs/topics/charts/"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "kubernetes-cka-s1.1-04",
+    "reason": "weak_card (name giveaway). Dropping both flagged 1.1 cards would leave 8, so this one gets the verifier's Immediate-default replacement, shortened for length balance. Page: 'When unset, Immediate mode is used by default ... binding and dynamic provisioning occurs once the PersistentVolumeClaim is created.'",
+    "statement": "With volumeBindingMode unset, a new PVC is bound and provisioned once it is created.",
+    "answer": true,
+    "explanation": "An unset volumeBindingMode means Immediate, so the volume is bound or provisioned without knowledge of the Pod's scheduling requirements, which can leave Pods unschedulable.",
+    "misconception": "",
+    "sourceTitle": "Storage Classes",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/storage-classes/"
+   },
+   {
+    "id": "kubernetes-cka-s1.1-07",
+    "reason": "tell: removes 'the control plane' as the actor (7T/0F pattern). Same fact, same answer. Page: 'a PersistentVolumeClaim without an explicitly defined storageClassName will be created using the most recently created default StorageClass.'",
+    "statement": "With several default StorageClasses, a PVC omitting storageClassName gets the newest one.",
+    "answer": true,
+    "explanation": "When more than one class carries the is-default-class annotation, claims that name no class use the newest of those default classes.",
+    "misconception": "",
+    "sourceTitle": "Change the default StorageClass",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/change-default-storage-class/"
+   },
+   {
+    "id": "kubernetes-cka-s1.2-02",
+    "reason": "tell: removes 'the control plane' actor. Same fact, same answer. The explanation now adds context instead of restating the statement (verifier note). Page: 'the user will always get at least what they asked for, but the volume may be in excess of what was requested. Once bound, PersistentVolumeClaim binds are exclusive.'",
+    "statement": "A PersistentVolumeClaim can bind to a matching PersistentVolume larger than the claim's request.",
+    "answer": true,
+    "explanation": "The binder gives a claim at least what it asked for, possibly a larger PV, and the binding is exclusive, so the extra capacity stays with that one claim.",
+    "misconception": "",
+    "sourceTitle": "Persistent Volumes",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/"
+   },
+   {
+    "id": "kubernetes-cka-s1.2-06",
+    "reason": "source_problem: moves from Go controller source to the v1.35 docs. Reworded as the verifier suggested, which also removes 'the control plane' tell. Page: 'PV removal is postponed until the PV is no longer bound to a PVC' and 'a PV is protected when the PV's status is Terminating and the Finalizers list includes kubernetes.io/pv-protection'.",
+    "statement": "Deleting a PersistentVolume still bound to a PVC leaves it Terminating until that binding ends.",
+    "answer": true,
+    "explanation": "The kubernetes.io/pv-protection finalizer postpones PV removal while the PV is bound to a PVC, so the PV shows Terminating in the meantime.",
+    "misconception": "",
+    "sourceTitle": "Persistent Volumes",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/"
+   },
+   {
+    "id": "kubernetes-cka-s1.2-10",
+    "reason": "weak_card (near-copy of the warning, hedge 'can'). Dropping both 1.2-08 and 1.2-10 would leave 8 cards and 3T/5F, so this one gets the verifier's concrete-situation replacement, reworded without 'control plane' and shortened. Page: 'If you edit the capacity of a PersistentVolume, and then edit the .spec of a matching PersistentVolumeClaim ... then no storage resize happens.'",
+    "statement": "Raising a bound PV's capacity by hand, then its PVC's request to match, leaves the volume at its old size.",
+    "answer": true,
+    "explanation": "Kubernetes sees matching PV and PVC sizes and concludes the volume was already grown by hand, so no resize runs. To expand a bound volume, edit only the PVC.",
+    "misconception": "",
+    "sourceTitle": "Persistent Volumes",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/storage/persistent-volumes/"
+   },
+   {
+    "id": "kubernetes-cka-s2.1-02",
+    "reason": "weak_card (kube-node-lease gives the answer away). Three True cards were flagged in 2.1 and only one could be dropped, so this one gets the verifier's replacement. Page: 'The kubelet updates the node's .status either when there is change in status or if there has been no update for a configured interval ... much longer ...' and 'Lease updates occur independently from updates to the Node's .status.' The explanation names default intervals because the gap depends on configuration.",
+    "statement": "The kubelet renews its node Lease far more often than it rewrites an unchanged Node .status.",
+    "answer": true,
+    "explanation": "Leases are lightweight heartbeats. With default intervals, the kubelet writes .status only on a change or after a much longer interval, which cuts API load in large clusters.",
+    "misconception": "",
+    "sourceTitle": "Node Status",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/reference/node/node-status/"
+   },
+   {
+    "id": "kubernetes-cka-s2.1-09",
+    "reason": "weak_card (systemctl truism, LNX overlap). Kept as a rewrite because the section has to stay at 9 or more cards; uses the verifier's replacement. Page: 'kubeadm ships with configuration for how systemd should run the kubelet ... written to /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf and is used by systemd.'",
+    "statement": "In a kubeadm cluster, systemd runs the kubelet as a host service rather than as a static Pod.",
+    "answer": true,
+    "explanation": "The kubeadm package installs a systemd drop-in for the kubelet at /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf, so systemd, not the kubelet's own manifest directory, starts and restarts it.",
+    "misconception": "",
+    "sourceTitle": "Configuring each kubelet in your cluster using kubeadm",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/"
+   },
+   {
+    "id": "kubernetes-cka-s2.2-01",
+    "reason": "source_problem: the static-pod page does not cover edited manifests. Moved to kubeadm-reconfigure: 'Updating a file in /etc/kubernetes/manifests will tell the kubelet to restart the static Pod for the corresponding component.' The statement is lengthened slightly ('an edit to') for 2.2 length balance; fact and answer are unchanged.",
+    "statement": "The kubelet recreates a control-plane static Pod when an edit to its manifest changes the container image.",
+    "answer": true,
+    "explanation": "Updating a file in /etc/kubernetes/manifests tells the kubelet to restart that component's static Pod with the new specification.",
+    "misconception": "",
+    "sourceTitle": "Reconfiguring a kubeadm cluster",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-reconfigure/"
+   },
+   {
+    "id": "kubernetes-cka-s2.2-04",
+    "reason": "source_problem: the Components page does not name the Deployment controller. The Controllers page says: 'Kubernetes comes with a set of built-in controllers that run inside the kube-controller-manager ... The Deployment controller and Job controller are examples'.",
+    "statement": "A Deployment created during a kube-controller-manager outage still receives a new ReplicaSet.",
+    "answer": false,
+    "explanation": "The Deployment controller is a built-in controller inside kube-controller-manager, so while that process is down nothing creates the Deployment's ReplicaSet.",
+    "misconception": "Deployment reconciliation survives a controller-manager outage.",
+    "sourceTitle": "Controllers",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/architecture/controller/"
+   },
+   {
+    "id": "kubernetes-cka-s2.3-01",
+    "reason": "weak_card (the endpoint path repeats the claim). After 2.3-07 is dropped as a duplicate, no other 2.3 card can go. Verifier's replacement, scoped to v0.6.0+ because the page says: 'Metrics resource endpoint /metrics/resource in version v0.6.0+ or Summary API endpoint /stats/summary in older versions'. The explanation avoids naming CPU and memory, which would give away 2.3-05.",
+    "statement": "metrics-server v0.6.0 and later pulls node and Pod usage from each kubelet's `/metrics/resource` endpoint.",
+    "answer": true,
+    "explanation": "The kubelet serves summarized per-node stats on /metrics/resource, and metrics-server scrapes it on every node. Versions before v0.6.0 used the /stats/summary endpoint.",
+    "misconception": "",
+    "sourceTitle": "Resource metrics pipeline",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+   },
+   {
+    "id": "kubernetes-cka-s2.3-02",
+    "reason": "weak_card (the Deployment wording gave a second, giveaway reason). Section floor reached; verifier's DaemonSet replacement. Page: 'cAdvisor: Daemon for collecting, aggregating and exposing container metrics included in Kubelet.'",
+    "statement": "The kubelet relies on a separate cAdvisor DaemonSet on each node to collect container resource metrics.",
+    "answer": false,
+    "explanation": "cAdvisor collection code is built into the kubelet, so the resource metrics pipeline needs no separately deployed cAdvisor workload on the nodes.",
+    "misconception": "Container metrics come from a cAdvisor workload deployed on every node.",
+    "sourceTitle": "Resource metrics pipeline",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+   },
+   {
+    "id": "kubernetes-cka-s2.3-04",
+    "reason": "weak_card (dangling 'it', unclear whose Pod). Section floor reached; verifier's replacement. Page: 'collected by the lightweight, short-term, in-memory metrics-server'.",
+    "statement": "metrics-server writes the usage samples it collects to persistent storage, so they survive a restart of its Pod.",
+    "answer": false,
+    "explanation": "The docs describe metrics-server as lightweight, short-term and in-memory. It keeps no history, so long-term usage data needs a full metrics pipeline.",
+    "misconception": "metrics-server persists the samples it collects.",
+    "sourceTitle": "Tools for Monitoring Resources",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/debug/debug-cluster/resource-usage-monitoring/"
+   },
+   {
+    "id": "kubernetes-cka-s2.4-02",
+    "reason": "weak_card (the field name gives the answer away; hedge 'lets'). Only one 2.4 card can be dropped (10), so this is rewritten using the verifier's separate-filesystem caveat, worded without negation. Page: 'if the logs are on a separate filesystem from /var, then the kubelet will not track that filesystem's usage'.",
+    "statement": "A `podLogsDir` on a filesystem separate from `/var` falls outside the kubelet's disk usage tracking.",
+    "answer": true,
+    "explanation": "The kubelet supports a custom podLogsDir on the same disk as /var. On a separate filesystem it does not track that usage, so logs there can fill it up unnoticed.",
+    "misconception": "",
+    "sourceTitle": "Logging Architecture",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+   },
+   {
+    "id": "kubernetes-cka-s2.4-05",
+    "reason": "duplicate of kubernetes-ckad-s3.3-04. Dropping it would take 2.4 to 8 cards after 2.4-10 goes, so it gets the verifier's alternative replacement. Page: 'If you deploy Kubernetes cluster components ... to log to a volume shared from the parent node, you need to consider and ensure that those logs are rotated. Kubernetes does not manage that log rotation.'",
+    "statement": "The kubelet rotates log files that a static Pod component writes into a `/var/log` directory shared from the node.",
+    "answer": false,
+    "explanation": "Kubernetes does not manage rotation of logs that components write to a volume shared from the node. The node's OS or the deploy tooling has to rotate them.",
+    "misconception": "Kubernetes rotates every log file a cluster component writes.",
+    "sourceTitle": "Logging Architecture",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+   },
+   {
+    "id": "kubernetes-cka-s2.4-08",
+    "reason": "weak_card ('node-level' gives away DaemonSet). Section floor reached; verifier's storage-cost replacement. This also removes one of the three True-only 'The Kubernetes documentation recommends' cards. Page: 'writing logs to a file and then streaming them to stdout can double how much storage you need on the node ... it's recommended to set /dev/stdout as the destination'.",
+    "statement": "A streaming sidecar that copies an app's log file to its own stdout can double the node storage those logs use.",
+    "answer": true,
+    "explanation": "The app's file and the sidecar's stdout copy both sit on the node. For an app that writes a single file, the docs suggest /dev/stdout as its destination.",
+    "misconception": "",
+    "sourceTitle": "Logging Architecture",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+   },
+   {
+    "id": "kubernetes-cka-s2.4-09",
+    "reason": "weak_card ('instead of stdout' gives the answer away). Section floor reached. Based on the verifier's text but rephrased: 'keeps the app's file logs readable' was false for a second reason, because file logs are never in kubectl logs. Page: 'you won't be able to access those logs using kubectl logs because they are not controlled by the kubelet'.",
+    "statement": "A sidecar running a logging agent such as fluentd makes the logs it ships visible through `kubectl logs`.",
+    "answer": false,
+    "explanation": "An agent sidecar ships logs straight to its logging backend, outside the kubelet's control, so kubectl logs cannot show them. Read them in the backend.",
+    "misconception": "Logs shipped by a sidecar agent also appear in kubectl logs.",
+    "sourceTitle": "Logging Architecture",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/cluster-administration/logging/"
+   },
+   {
+    "id": "kubernetes-cka-s2.5-09",
+    "reason": "weak_card (self-contradicting strawman). Only one 2.5 card can be dropped (06), so this gets the verifier's overlay replacement. Page: 'Take care that your Pod network must not overlap with any of the host networks: you are likely to see problems if there is any overlap.'",
+    "statement": "With an overlay network add-on, a Pod CIDR may safely overlap the subnet that the nodes use.",
+    "answer": false,
+    "explanation": "The kubeadm docs warn that the Pod network must not overlap any host network, whatever the add-on. Overlapping ranges are likely to cause routing problems.",
+    "misconception": "Overlay encapsulation makes overlapping Pod and host ranges safe.",
+    "sourceTitle": "Creating a cluster with kubeadm",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/"
+   },
+   {
+    "id": "kubernetes-cka-s2.5-10",
+    "reason": "weak_card (truism). Section floor reached; verifier's ipBlock/SNAT replacement, shortened for 2.5 length balance and without 'instead of'. Page: 'it is not defined whether this happens before or after NetworkPolicy processing ... the \"source IP\" that the NetworkPolicy acts on may be the IP of a LoadBalancer or of the Pod's node'.",
+    "statement": "An enforcing plugin's ipBlock ingress rule may see a node or load balancer IP as the source.",
+    "answer": true,
+    "explanation": "The docs leave undefined whether source NAT happens before or after NetworkPolicy processing, so an ipBlock rule may match a node or load balancer address rather than the client.",
+    "misconception": "",
+    "sourceTitle": "Network Policies",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/network-policies/"
+   },
+   {
+    "id": "kubernetes-cka-s3.1-01",
+    "reason": "weak_card (the OnDelete name gives the answer away). 3.1-08 is dropped instead, which keeps two rollout cards as the 3.1 scope asks. Verifier's rollback replacement. It also removes one card of the 'retroactive' False template. Page: 'DaemonSet revisions only roll forward ... roll back from revision 2 to revision 1, the ControllerRevision with .revision: 1 will become .revision: 3.'",
+    "statement": "After `kubectl rollout undo` on a DaemonSet, the restored ControllerRevision keeps its original revision number.",
+    "answer": false,
+    "explanation": "DaemonSet revisions only roll forward: rolling back from revision 2 to revision 1 turns the restored ControllerRevision into revision 3.",
+    "misconception": "A rollback reuses the old revision number.",
+    "sourceTitle": "Perform a Rollback on a DaemonSet",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/manage-daemon/rollback-daemon-set/"
+   },
+   {
+    "id": "kubernetes-cka-s4.1-09",
+    "reason": "ambiguous (ungrammatical, and it read as what a client does by itself). Verifier's fix. Page: 'If you restrict list or watch by resourceName, clients must include a metadata.name field selector ... in order to be authorized.'",
+    "statement": "kube-apiserver authorizes a resourceNames-limited list only if the request has a matching metadata.name field selector.",
+    "answer": true,
+    "explanation": "When a Role limits list or watch with resourceNames, the client has to send a matching metadata.name field selector, for example kubectl get configmaps --field-selector=metadata.name=my-cm.",
+    "misconception": "",
+    "sourceTitle": "Using RBAC Authorization",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/reference/access-authn-authz/rbac/"
+   },
+   {
+    "id": "kubernetes-cka-s4.2-02",
+    "reason": "source_problem: the container-runtimes page says most network implementations set ip_forward themselves. release-1.35 preflight code has addIPv4Checks -> FileContentCheck{Path: ipv4Forward, Content: '1'} (ipv4Forward = /proc/sys/net/ipv4/ip_forward in checks.go), run from InitNodeChecks and JoinNodeChecks. The explanation now gives the real reason it has to be set before init.",
+    "statement": "Before `kubeadm init`, the administrator enables host IPv4 forwarding on a Linux node used for IPv4 Pod networking.",
+    "answer": true,
+    "explanation": "kubeadm init's preflight checks fail unless /proc/sys/net/ipv4/ip_forward is 1, and the Pod network add-on is installed only afterwards, so the administrator sets net.ipv4.ip_forward first.",
+    "misconception": "",
+    "sourceTitle": "kubeadm preflight checks (checks_linux.go, release-1.35)",
+    "sourceUrl": "https://github.com/kubernetes/kubernetes/blob/release-1.35/cmd/kubeadm/app/preflight/checks_linux.go"
+   },
+   {
+    "id": "kubernetes-cka-s4.2-10",
+    "reason": "tell: removes 'automatically' (4F/1T pattern). Same fact, same answer. Page: 'The kubeadm reset command does not clean any iptables, nftables or IPVS rules applied to the host by kube-proxy.'",
+    "statement": "`kubeadm reset` clears the iptables rules that kube-proxy installs on the node for Service traffic.",
+    "answer": false,
+    "explanation": "kubeadm reset leaves the host's kube-proxy traffic rules in place. An administrator performs any desired rule cleanup separately.",
+    "misconception": "Resetting a kubeadm node also removes kube-proxy's iptables rules.",
+    "sourceTitle": "kubeadm reset",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-reset/"
+   },
+   {
+    "id": "kubernetes-cka-s4.4-01",
+    "reason": "source_problem: the best-practices page does not state the ordering. helm.sh Charts page: 'When Helm installs a new chart, it will upload the CRDs, pause until the CRDs are made available by the API server, and then start the template engine, render the rest of the chart, and upload it'. Statement and explanation are unchanged.",
+    "statement": "By default, `helm install` applies new CRDs from `crds/` before creating an operator chart's custom resources.",
+    "answer": true,
+    "explanation": "Helm registers definitions from crds/ before submitting chart resources that use those newly defined kinds.",
+    "misconception": "",
+    "sourceTitle": "Charts",
+    "sourceUrl": "https://helm.sh/docs/topics/charts/"
+   },
+   {
+    "id": "kubernetes-cka-s4.4-02",
+    "reason": "tell: removes 'automatically'. Same fact, same answer. Page: 'There is no support at this time for upgrading or deleting CRDs using Helm.'",
+    "statement": "During a chart upgrade, Helm upgrades the operator's CRDs stored in its `crds/` directory.",
+    "answer": false,
+    "explanation": "Helm leaves existing `crds/` definitions untouched during upgrades; an administrator manages their changes separately.",
+    "misconception": "Helm manages CRD updates as part of chart upgrades.",
+    "sourceTitle": "Custom Resource Definitions",
+    "sourceUrl": "https://helm.sh/docs/chart_best_practices/custom_resource_definitions/"
+   },
+   {
+    "id": "kubernetes-cka-s4.4-03",
+    "reason": "duplicate of kubernetes-ckad-s2.3-01. Only one 4.4 card can be dropped (07), so this gets the verifier's replacement. Checked against the CKAD and KCNA decks: no card on built-in Kustomize support. Page: 'Kustomize is a standalone tool ... Since 1.14, kubectl also supports the management of Kubernetes objects using a kustomization file.'",
+    "statement": "Before `kubectl apply -k` can install an add-on overlay, an administrator installs the standalone kustomize binary.",
+    "answer": false,
+    "explanation": "kubectl has supported kustomization files since v1.14, so kubectl kustomize and kubectl apply -k work without a separate kustomize binary.",
+    "misconception": "kubectl apply -k needs the separate kustomize CLI.",
+    "sourceTitle": "Declarative Management of Kubernetes Objects Using Kustomize",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/"
+   },
+   {
+    "id": "kubernetes-cka-s4.4-10",
+    "reason": "duplicate of kubernetes-kcna-s1.2-08. Section floor reached; uses the verifier's replacement, with the 'Kubernetes docs say' lead-in removed. Page: 'The Controller will normally run outside of the control plane, much as you would run any containerized application. For example, you can run the controller in your cluster as a Deployment.'",
+    "statement": "An operator's controller normally runs inside the control plane, alongside kube-controller-manager.",
+    "answer": false,
+    "explanation": "The operator pattern page says the controller normally runs outside the control plane like any containerized app, for example as a Deployment in the cluster.",
+    "misconception": "Operator controllers are control plane components.",
+    "sourceTitle": "Operator pattern",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/extend-kubernetes/operator/"
+   },
+   {
+    "id": "kubernetes-cka-s5.1-07",
+    "reason": "ambiguous ('prevents edits': the API server accepts the write and canonicalizes the label). Rewritten around the namespaceSelector use, as the verifier suggested; 'the control plane' is kept out of the statement. Page: 'The Kubernetes control plane sets an immutable label kubernetes.io/metadata.name on all namespaces, the value of the label is the namespace name.'",
+    "statement": "Kubernetes sets a `kubernetes.io/metadata.name` label on every namespace, so a namespaceSelector can match it by name.",
+    "answer": true,
+    "explanation": "The control plane sets this immutable label with the namespace name as its value, so a NetworkPolicy can target one namespace without custom labels.",
+    "misconception": "",
+    "sourceTitle": "Network Policies",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/network-policies/"
+   },
+   {
+    "id": "kubernetes-cka-s5.2-01",
+    "reason": "tell: removes 'the control plane' actor. Same fact (v1.33 stable IPAddress/ServiceCIDR allocation tracking), same answer.",
+    "statement": "Since Kubernetes v1.33, IPAddress and ServiceCIDR objects record Service IP allocations in the Kubernetes API.",
+    "answer": true,
+    "explanation": "IPAddress objects expose Service IP allocations to administrators through the Kubernetes API.",
+    "misconception": "",
+    "sourceTitle": "Virtual IPs and Service Proxies",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/reference/networking/virtual-ips/"
+   },
+   {
+    "id": "kubernetes-cka-s5.2-02",
+    "reason": "weak_card (the flag name gives the answer away). Only one of 02 and 06 can be dropped; this one gets the verifier's ipvs replacement, cut to one fact. This also ends the scan's service-ip-range conflict with 5.2-01. Page: 'IPVS proxy mode FEATURE STATE: Kubernetes v1.35 [deprecated]' and nftables 'is recommended as a replacement for ipvs'; nftables 'v1.33 [stable] ... requires kernel 5.13 or later'.",
+    "statement": "Since Kubernetes v1.35, the Kubernetes docs mark kube-proxy's ipvs proxy mode as deprecated.",
+    "answer": true,
+    "explanation": "The kernel IPVS API fits the Services API poorly. The docs recommend nftables mode, stable since v1.33 and needing kernel 5.13 or later, as the replacement for ipvs.",
+    "misconception": "",
+    "sourceTitle": "Virtual IPs and Service Proxies",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/reference/networking/virtual-ips/"
+   },
+   {
+    "id": "kubernetes-cka-s5.2-10",
+    "reason": "explanation_error: the explanation now includes the documented fallback. Page: 'Otherwise, Pods running with hostNetwork and \"ClusterFirst\" will fallback to the behavior of the \"Default\" policy.' The statement and answer are unchanged.",
+    "statement": "The kubelet applies `ClusterFirstWithHostNet` when a hostNetwork Pod leaves `dnsPolicy` unset.",
+    "answer": false,
+    "explanation": "Leaving dnsPolicy unset gives a Pod ClusterFirst, and a hostNetwork Pod with ClusterFirst falls back to the Default policy, so set ClusterFirstWithHostNet explicitly.",
+    "misconception": "The kubelet automatically chooses the host-network cluster DNS policy.",
+    "sourceTitle": "DNS for Services and Pods",
+    "sourceUrl": "https://v1-35.docs.kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "binding-mode-scheduling",
+    "ids": [
+     "kubernetes-cka-s1.1-04",
+     "kubernetes-cka-s1.1-05"
+    ]
+   },
+   {
+    "name": "container-log-files",
+    "ids": [
+     "kubernetes-cka-s2.4-01",
+     "kubernetes-cka-s2.4-02",
+     "kubernetes-cka-s2.4-04"
+    ]
+   },
+   {
+    "name": "kubelet-owns-log-handling",
+    "ids": [
+     "kubernetes-cka-s2.4-02",
+     "kubernetes-cka-s2.4-03",
+     "kubernetes-cka-s2.4-05"
+    ]
+   },
+   {
+    "name": "log-retention-restart-vs-eviction",
+    "ids": [
+     "kubernetes-cka-s2.4-06",
+     "kubernetes-cka-s2.4-07"
+    ]
+   },
+   {
+    "name": "logging-sidecars-kubectl-logs",
+    "ids": [
+     "kubernetes-cka-s2.4-04",
+     "kubernetes-cka-s2.4-08",
+     "kubernetes-cka-s2.4-09"
+    ]
+   },
+   {
+    "name": "static-pod-kubelet-control",
+    "ids": [
+     "kubernetes-cka-s2.2-01",
+     "kubernetes-cka-s2.2-07",
+     "kubernetes-cka-s2.2-10"
+    ]
+   },
+   {
+    "name": "apiserver-outage-containers",
+    "ids": [
+     "kubernetes-cka-s2.2-05",
+     "kubernetes-cka-s2.2-08"
+    ]
+   },
+   {
+    "name": "component-outage-no-substitute",
+    "ids": [
+     "kubernetes-cka-s2.2-03",
+     "kubernetes-cka-s2.2-04"
+    ]
+   },
+   {
+    "name": "component-metrics-endpoints",
+    "ids": [
+     "kubernetes-cka-s2.3-09",
+     "kubernetes-cka-s2.3-10"
+    ]
+   },
+   {
+    "name": "metrics-pipeline-kubelet",
+    "ids": [
+     "kubernetes-cka-s2.3-01",
+     "kubernetes-cka-s2.3-02"
+    ]
+   },
+   {
+    "name": "secret-encryption-new-writes",
+    "ids": [
+     "kubernetes-cka-s3.1-03",
+     "kubernetes-cka-s3.1-04"
+    ]
+   },
+   {
+    "name": "hpa-takes-highest",
+    "ids": [
+     "kubernetes-cka-s3.1-07",
+     "kubernetes-cka-s3.1-09"
+    ]
+   },
+   {
+    "name": "scheduling-not-retroactive",
+    "ids": [
+     "kubernetes-cka-s3.2-04",
+     "kubernetes-cka-s3.2-10",
+     "kubernetes-cka-s2.1-10"
+    ]
+   },
+   {
+    "name": "cordon-vs-drain",
+    "ids": [
+     "kubernetes-cka-s2.1-10",
+     "kubernetes-cka-s4.3-03"
+    ]
+   },
+   {
+    "name": "node-agents-host-service-vs-pod",
+    "ids": [
+     "kubernetes-cka-s2.1-09",
+     "kubernetes-cka-s2.5-01"
+    ]
+   },
+   {
+    "name": "version-skew-direction",
+    "ids": [
+     "kubernetes-cka-s4.3-05",
+     "kubernetes-cka-s4.3-06"
+    ]
+   },
+   {
+    "name": "etcd-restore-local-datadir",
+    "ids": [
+     "kubernetes-cka-s4.3-07",
+     "kubernetes-cka-s4.3-08"
+    ]
+   },
+   {
+    "name": "helm-crds-lifecycle",
+    "ids": [
+     "kubernetes-cka-s4.4-01",
+     "kubernetes-cka-s4.4-02"
+    ]
+   },
+   {
+    "name": "localhost-shared-netns",
+    "ids": [
+     "kubernetes-cka-s5.1-01",
+     "kubernetes-cka-s5.1-02"
+    ]
+   },
+   {
+    "name": "networkpolicy-limits",
+    "ids": [
+     "kubernetes-cka-s5.1-08",
+     "kubernetes-cka-s5.1-09",
+     "kubernetes-cka-s5.1-10"
+    ]
+   },
+   {
+    "name": "gateway-cross-namespace-consent",
+    "ids": [
+     "kubernetes-cka-s5.3-04",
+     "kubernetes-cka-s5.3-05"
+    ]
+   }
+  ],
+  "sectionBalance": "After the edits: 144 cards, 9 per section. Gap = average True statement length minus average False length, in characters (rule: within 5).\n1.1: 9 cards, 5T/4F (gap +4.9)\n1.2: 9 cards, 4T/5F (+4.1)\n2.1: 9 cards, 4T/5F (+1.7)\n2.2: 9 cards, 4T/5F (-3.2)\n2.3: 9 cards, 4T/5F (+0.5)\n2.4: 9 cards, 4T/5F (+1.0)\n2.5: 9 cards, 4T/5F (+4.2)\n3.1: 9 cards, 5T/4F (-0.3)\n3.2: 9 cards, 4T/5F (+3.7)\n4.1: 9 cards, 4T/5F (-0.8)\n4.2: 9 cards, 4T/5F (+4.0)\n4.3: 9 cards, 5T/4F (+1.5)\n4.4: 9 cards, 4T/5F (-2.2)\n5.1: 9 cards, 4T/5F (+2.5)\n5.2: 9 cards, 4T/5F (-2.8)\n5.3: 9 cards, 4T/5F (-2.5)\nDeck: 67 True / 77 False.",
+  "notes": "I opened every rewrite and source change on its official page (v1-35.docs.kubernetes.io, helm.sh, and the release-1.35 kubeadm source) and confirmed the quoted sentence on 2026-10-08. No answer changed. Every statement is at most 120 characters and every explanation at most 240.\n\nDrop or rewrite policy:\n- Every section started at 10 cards, 5T/5F, so each section could drop only one card.\n- Where 2 to 4 cards in a section were flagged, I dropped the weakest card, or the one that also removed a scan conflict, and rewrote the rest with the verifier's replacement after checking it myself.\n- 13 of the 16 dropped cards were True, because the weak cards were mostly True name giveaways. The deck now leans False (67T/77F), but every section stays within 4/6.\n\nDuplicates:\n- 2.4-05 (CKAD s3.3-04), 4.4-03 (CKAD s2.3-01) and 4.4-10 (KCNA s1.2-08) were rewritten rather than dropped, because their sections had already used their one drop. The new facts are distinct: rotation of host-shared /var/log, kubectl's built-in Kustomize support, and operator controllers running outside the control plane.\n- No CKAD or KCNA card now repeats them. I grepped both decks.\n\nTell rewrites (5, fact and answer kept): 1.1-07, 1.2-02 and 5.2-01 remove 'the control plane' as actor; 4.2-10 and 4.4-02 remove 'automatically'. With the 1.2-06 and 5.1-07 rewrites and the 5.2-06 drop, 'the control plane' as actor now appears only in 4.1-05 (1T, was 7T/0F). 'automatically' is now 1T/1F (2.1-05, 5.1-10), and 'instead of' 2F/0T.\n\nTells still open, beyond the five-rewrite budget, for a later pass:\n- the 'Kubernetes acts on what is already running' False template: 2.1-06, 2.1-10, 3.1-04, 3.2-04, 3.2-10 (5F);\n- 'kubeadm does more than it does': 2.5-01, 3.1-10, 4.2-05, 4.2-09, 4.2-10, 4.3-04 (6F);\n- the NetworkPolicy limitations list: 5.1-08/09/10 (3F, above the limit of two per template; a conflict group stops them being dealt together);\n- 'The Kubernetes documentation recommends' (3.2-03, 4.4-06, both True): the prompt requires that form for recommendations.\n\nJudgement calls:\n- 2.1-02's 'far more often' holds under default intervals (10 s Lease against a 5 min unchanged .status); the explanation says so.\n- 4.2-02 now cites Go source, as the verifier advised. The docs page hedges on who sets ip_forward. The preflight check in addIPv4Checks (ipv4Forward is defined in checks.go) settles it.\n- 2.5-10 and 2.5-09 both use 'may', which is correct because the docs leave the behaviour implementation-defined. That gives 'may' one True and one False.\n- 2.3-01 is scoped to metrics-server v0.6.0+, because older versions used /stats/summary.\n- 5.1-07: the label name still hints at its value, but the card now tests the namespaceSelector use, as the verifier suggested.\n\nConflict groups:\n- From the scan, removed: allocatable-reservations, node-condition-taints, rbac-escalation-verbs, ingress-controller-required (a member was dropped), and service-ip-range (5.2-02 is no longer about IP ranges).\n- Added: metrics-pipeline-kubelet (2.3-01/02), logging-sidecars-kubectl-logs (2.4-04/08/09), 2.4-05 in kubelet-owns-log-handling, node-agents-host-service-vs-pod (2.1-09 vs 2.5-01), helm-crds-lifecycle (4.4-01/02).\n- wffc-needs-scheduler is kept, renamed binding-mode-scheduling, because the new 1.1-04 explanation mentions scheduling requirements.\n\nCoverage lost through drops: the WaitForFirstConsumer scheduling card (1.1-04), the control-plane-endpoint-at-init card (4.3-09), and one of the two Ingress-controller cards (5.3-08)."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "kubernetes-cka-s1.1-04",
+    "decision": "fixed",
+    "statement": "With volumeBindingMode unset in its StorageClass, a new PVC's volume is bound or provisioned before any Pod uses it.",
+    "answer": true,
+    "explanation": "An unset volumeBindingMode means Immediate: binding and dynamic provisioning happen once the PVC is created. On topology-constrained storage this ignores Pod scheduling needs and can leave Pods unschedulable.",
+    "reason": "Merged both lenses. Fact lens: name the StorageClass and keep the topology-constrained condition. Wording lens: 'bound or provisioned', since a pre-existing PV is bound without provisioning, and 'before any Pod uses it'. v1.35 storage-classes: 'Immediate mode indicates that volume binding and dynamic provisioning occurs once the PersistentVolumeClaim is created'; WaitForFirstConsumer 'will delay the binding and provisioning ... until a Pod using the PersistentVolumeClaim is created'."
+   },
+   {
+    "id": "kubernetes-cka-s1.1-07",
+    "decision": "keep",
+    "statement": "With several default StorageClasses, a PVC omitting storageClassName gets the newest one.",
+    "answer": true,
+    "explanation": "When more than one class carries the is-default-class annotation, claims that name no class use the newest of those default classes.",
+    "reason": "Both lenses keep. Matches change-default-storage-class v1.35: 'most recently created default StorageClass'."
+   },
+   {
+    "id": "kubernetes-cka-s1.2-02",
+    "decision": "keep",
+    "statement": "A PersistentVolumeClaim can bind to a matching PersistentVolume larger than the claim's request.",
+    "answer": true,
+    "explanation": "The binder gives a claim at least what it asked for, possibly a larger PV, and the binding is exclusive, so the extra capacity stays with that one claim.",
+    "reason": "Both lenses keep. PV page v1.35: 'at least what they asked for, but the volume may be in excess ... binds are exclusive'."
+   },
+   {
+    "id": "kubernetes-cka-s1.2-06",
+    "decision": "keep",
+    "statement": "Deleting a PersistentVolume still bound to a PVC leaves it Terminating until that binding ends.",
+    "answer": true,
+    "explanation": "The kubernetes.io/pv-protection finalizer postpones PV removal while the PV is bound to a PVC, so the PV shows Terminating in the meantime.",
+    "reason": "Both lenses keep. PV page v1.35: 'PV removal is postponed until the PV is no longer bound to a PVC', status Terminating with the kubernetes.io/pv-protection finalizer."
+   },
+   {
+    "id": "kubernetes-cka-s1.2-10",
+    "decision": "keep",
+    "statement": "Raising a bound PV's capacity by hand, then its PVC's request to match, leaves the volume at its old size.",
+    "answer": true,
+    "explanation": "Kubernetes sees matching PV and PVC sizes and concludes the volume was already grown by hand, so no resize runs. To expand a bound volume, edit only the PVC.",
+    "reason": "Both lenses keep. PV page v1.35 warning: editing PV capacity and then the matching PVC spec means 'no storage resize happens'."
+   },
+   {
+    "id": "kubernetes-cka-s2.1-02",
+    "decision": "fixed",
+    "statement": "By default, the kubelet renews its node Lease far more often than it rewrites an unchanged Node .status.",
+    "answer": true,
+    "explanation": "Leases are lightweight heartbeats. With default intervals, the kubelet writes .status only on a change or after a much longer interval, which cuts API load in large clusters.",
+    "reason": "Took the fact lens fix: both intervals are configurable (Lease 10 s, unchanged .status 5 min by default), so the unqualified comparison is not always true. The wording lens objection (another qualifier on a True card) is weaker than an accuracy gap. Node-status v1.35 gives both defaults and says Lease updates occur independently."
+   },
+   {
+    "id": "kubernetes-cka-s2.1-09",
+    "decision": "keep",
+    "statement": "In a kubeadm cluster, systemd runs the kubelet as a host service rather than as a static Pod.",
+    "answer": true,
+    "explanation": "The kubeadm package installs a systemd drop-in for the kubelet at /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf, so systemd, not the kubelet's own manifest directory, starts and restarts it.",
+    "reason": "Both lenses keep. It is low value but correct. kubelet-integration v1.35: the 10-kubeadm.conf drop-in 'is used by systemd'."
+   },
+   {
+    "id": "kubernetes-cka-s2.2-01",
+    "decision": "keep",
+    "statement": "The kubelet recreates a control-plane static Pod when an edit to its manifest changes the container image.",
+    "answer": true,
+    "explanation": "Updating a file in /etc/kubernetes/manifests tells the kubelet to restart that component's static Pod with the new specification.",
+    "reason": "Both lenses keep. kubeadm-reconfigure v1.35: 'Updating a file in /etc/kubernetes/manifests will tell the kubelet to restart the static Pod'."
+   },
+   {
+    "id": "kubernetes-cka-s2.2-04",
+    "decision": "fixed",
+    "statement": "While every kube-controller-manager instance is down, a newly created Deployment still gets a ReplicaSet.",
+    "answer": false,
+    "explanation": "The Deployment controller runs inside kube-controller-manager, so the stored Deployment gets no ReplicaSet until an instance of that process runs again.",
+    "reason": "Took the fact lens fix, with 'While' in place of 'With' so the time window is explicit. I checked the v1.35 Controllers page myself: built-in controllers 'run inside the kube-controller-manager', the Deployment controller is one of them, and 'if any of the built-in controllers were to fail, another part of the control plane will take over the work'. So the old wording 'outage' was ambiguous in an HA cluster, and 'still receives' could be read as 'eventually'."
+   },
+   {
+    "id": "kubernetes-cka-s2.3-01",
+    "decision": "fixed",
+    "statement": "Current metrics-server releases collect node and Pod usage from each kubelet's `/metrics/resource` endpoint.",
+    "answer": true,
+    "explanation": "The kubelet serves summarized per-node stats on /metrics/resource, and metrics-server v0.6.0 and later scrape it on every node. Older releases used the /stats/summary endpoint.",
+    "reason": "Took the wording lens fix: the version moves to the explanation so the qualifier no longer signals True. I left out its built-in cAdvisor sentence, because it would give away 2.3-02 and the fact lens did not check it. Checked on resource-metrics-pipeline v1.35: '/metrics/resource in version v0.6.0+ or Summary API endpoint /stats/summary in older versions'."
+   },
+   {
+    "id": "kubernetes-cka-s2.3-02",
+    "decision": "keep",
+    "statement": "The kubelet relies on a separate cAdvisor DaemonSet on each node to collect container resource metrics.",
+    "answer": false,
+    "explanation": "cAdvisor collection code is built into the kubelet, so the resource metrics pipeline needs no separately deployed cAdvisor workload on the nodes.",
+    "reason": "Both lenses keep. resource-metrics-pipeline v1.35: 'cAdvisor: Daemon for collecting ... container metrics included in Kubelet.'"
+   },
+   {
+    "id": "kubernetes-cka-s2.3-04",
+    "decision": "keep",
+    "statement": "metrics-server writes the usage samples it collects to persistent storage, so they survive a restart of its Pod.",
+    "answer": false,
+    "explanation": "The docs describe metrics-server as lightweight, short-term and in-memory. It keeps no history, so long-term usage data needs a full metrics pipeline.",
+    "reason": "Both lenses keep. resource-usage-monitoring v1.35: 'lightweight, short-term, in-memory metrics-server'."
+   },
+   {
+    "id": "kubernetes-cka-s2.4-02",
+    "decision": "keep",
+    "statement": "A `podLogsDir` on a filesystem separate from `/var` falls outside the kubelet's disk usage tracking.",
+    "answer": true,
+    "explanation": "The kubelet supports a custom podLogsDir on the same disk as /var. On a separate filesystem it does not track that usage, so logs there can fill it up unnoticed.",
+    "reason": "Both lenses keep. Logging v1.35: 'if the logs are on a separate filesystem from /var, then the kubelet will not track that filesystem's usage, potentially leading to issues if it fills up'."
+   },
+   {
+    "id": "kubernetes-cka-s2.4-05",
+    "decision": "keep",
+    "statement": "The kubelet rotates log files that a static Pod component writes into a `/var/log` directory shared from the node.",
+    "answer": false,
+    "explanation": "Kubernetes does not manage rotation of logs that components write to a volume shared from the node. The node's OS or the deploy tooling has to rotate them.",
+    "reason": "Both lenses keep. Logging v1.35: 'Kubernetes does not manage that log rotation' for components logging to a volume shared from the parent node."
+   },
+   {
+    "id": "kubernetes-cka-s2.4-08",
+    "decision": "keep",
+    "statement": "A streaming sidecar that copies an app's log file to its own stdout can double the node storage those logs use.",
+    "answer": true,
+    "explanation": "The app's file and the sidecar's stdout copy both sit on the node. For an app that writes a single file, the docs suggest /dev/stdout as its destination.",
+    "reason": "Both lenses keep. Logging v1.35: 'can double how much storage you need on the node ... recommended to set /dev/stdout as the destination'."
+   },
+   {
+    "id": "kubernetes-cka-s2.4-09",
+    "decision": "keep",
+    "statement": "A sidecar running a logging agent such as fluentd makes the logs it ships visible through `kubectl logs`.",
+    "answer": false,
+    "explanation": "An agent sidecar ships logs straight to its logging backend, outside the kubelet's control, so kubectl logs cannot show them. Read them in the backend.",
+    "reason": "Both lenses keep. Logging v1.35: 'you won't be able to access those logs using kubectl logs because they are not controlled by the kubelet'."
+   },
+   {
+    "id": "kubernetes-cka-s2.5-09",
+    "decision": "fixed",
+    "statement": "With an overlay network add-on, a Pod CIDR may safely overlap the subnet that the nodes use.",
+    "answer": false,
+    "explanation": "The kubeadm docs warn, with no exception for any add-on, that the Pod network must not overlap any host network: problems are likely if it does.",
+    "reason": "Statement unchanged. Took the fact lens explanation, which drops 'routing problems' because the page only says problems are likely. create-cluster-kubeadm v1.35: 'Pod network must not overlap with any of the host networks: you are likely to see problems if there is any overlap'."
+   },
+   {
+    "id": "kubernetes-cka-s2.5-10",
+    "decision": "fixed",
+    "statement": "The NetworkPolicy API leaves undefined whether an ipBlock ingress rule sees the client IP or a source-NATed address.",
+    "answer": true,
+    "explanation": "Source NAT may happen before or after NetworkPolicy processing, depending on network plugin, cloud provider and Service implementation, so an ipBlock rule may match a node or load balancer IP.",
+    "reason": "Took the wording lens fix, which removes the hedge 'may see' from a True card. I checked network-policies v1.35 myself: 'it is not defined whether this happens before or after NetworkPolicy processing, and the behavior may be different for different combinations of network plugin, cloud provider, Service implementation' and 'the \"source IP\" ... may be the IP of a LoadBalancer or of the Pod's node'."
+   },
+   {
+    "id": "kubernetes-cka-s3.1-01",
+    "decision": "keep",
+    "statement": "After `kubectl rollout undo` on a DaemonSet, the restored ControllerRevision keeps its original revision number.",
+    "answer": false,
+    "explanation": "DaemonSet revisions only roll forward: rolling back from revision 2 to revision 1 turns the restored ControllerRevision into revision 3.",
+    "reason": "Both lenses keep. rollback-daemon-set v1.35: 'DaemonSet revisions only roll forward ... .revision: 1 will become .revision: 3'."
+   },
+   {
+    "id": "kubernetes-cka-s4.1-09",
+    "decision": "keep",
+    "statement": "kube-apiserver authorizes a resourceNames-limited list only if the request has a matching metadata.name field selector.",
+    "answer": true,
+    "explanation": "When a Role limits list or watch with resourceNames, the client has to send a matching metadata.name field selector, for example kubectl get configmaps --field-selector=metadata.name=my-cm.",
+    "reason": "Both lenses keep. RBAC v1.35: 'clients must include a metadata.name field selector ... in order to be authorized'."
+   },
+   {
+    "id": "kubernetes-cka-s4.2-02",
+    "decision": "keep",
+    "statement": "Before `kubeadm init`, the administrator enables host IPv4 forwarding on a Linux node used for IPv4 Pod networking.",
+    "answer": true,
+    "explanation": "kubeadm init's preflight checks fail unless /proc/sys/net/ipv4/ip_forward is 1, and the Pod network add-on is installed only afterwards, so the administrator sets net.ipv4.ip_forward first.",
+    "reason": "Both lenses keep. The fact lens checked release-1.35 checks_linux.go: addIPv4Checks adds FileContentCheck{Path: ipv4Forward, Content: '1'}, which returns an error and runs in both the init and join checks."
+   },
+   {
+    "id": "kubernetes-cka-s4.2-10",
+    "decision": "keep",
+    "statement": "`kubeadm reset` clears the iptables rules that kube-proxy installs on the node for Service traffic.",
+    "answer": false,
+    "explanation": "kubeadm reset leaves the host's kube-proxy traffic rules in place. An administrator performs any desired rule cleanup separately.",
+    "reason": "Both lenses keep. kubeadm-reset v1.35: 'does not clean any iptables, nftables or IPVS rules applied to the host by kube-proxy'."
+   },
+   {
+    "id": "kubernetes-cka-s4.4-01",
+    "decision": "keep",
+    "statement": "By default, `helm install` applies new CRDs from `crds/` before creating an operator chart's custom resources.",
+    "answer": true,
+    "explanation": "Helm registers definitions from crds/ before submitting chart resources that use those newly defined kinds.",
+    "reason": "Both lenses keep. helm.sh Charts: 'upload the CRDs, pause until the CRDs are made available by the API server, and then ... render the rest of the chart'."
+   },
+   {
+    "id": "kubernetes-cka-s4.4-02",
+    "decision": "keep",
+    "statement": "During a chart upgrade, Helm upgrades the operator's CRDs stored in its `crds/` directory.",
+    "answer": false,
+    "explanation": "Helm leaves existing `crds/` definitions untouched during upgrades; an administrator manages their changes separately.",
+    "reason": "Both lenses keep. helm.sh CRD best practices: 'There is no support at this time for upgrading or deleting CRDs using Helm.'"
+   },
+   {
+    "id": "kubernetes-cka-s4.4-03",
+    "decision": "keep",
+    "statement": "Before `kubectl apply -k` can install an add-on overlay, an administrator installs the standalone kustomize binary.",
+    "answer": false,
+    "explanation": "kubectl has supported kustomization files since v1.14, so kubectl kustomize and kubectl apply -k work without a separate kustomize binary.",
+    "reason": "Both lenses keep. kustomization v1.35: 'Since 1.14, kubectl also supports the management of Kubernetes objects using a kustomization file'."
+   },
+   {
+    "id": "kubernetes-cka-s4.4-10",
+    "decision": "keep",
+    "statement": "An operator's controller normally runs inside the control plane, alongside kube-controller-manager.",
+    "answer": false,
+    "explanation": "The operator pattern page says the controller normally runs outside the control plane like any containerized app, for example as a Deployment in the cluster.",
+    "reason": "Both lenses keep. Operator v1.35: 'The Controller will normally run outside of the control plane ... as a Deployment'."
+   },
+   {
+    "id": "kubernetes-cka-s5.1-07",
+    "decision": "keep",
+    "statement": "Kubernetes sets a `kubernetes.io/metadata.name` label on every namespace, so a namespaceSelector can match it by name.",
+    "answer": true,
+    "explanation": "The control plane sets this immutable label with the namespace name as its value, so a NetworkPolicy can target one namespace without custom labels.",
+    "reason": "Both lenses keep. network-policies v1.35: 'sets an immutable label kubernetes.io/metadata.name on all namespaces'."
+   },
+   {
+    "id": "kubernetes-cka-s5.2-01",
+    "decision": "fixed",
+    "statement": "From Kubernetes v1.33 on, each allocated Service ClusterIP references an IPAddress object in the Kubernetes API.",
+    "answer": true,
+    "explanation": "The allocator, stable since v1.33, replaces the internal allocation map with ServiceCIDR objects for the ranges and IPAddress objects for each IP, so administrators can run kubectl get ipaddresses.",
+    "reason": "Merged both lenses. Fact lens: ServiceCIDR holds the ranges, it does not record allocations, so the statement is narrowed to IPAddress. Wording lens: the explanation adds the mechanism, and the lead-in changes from 'Since' to avoid the True-leaning pattern. I checked virtual-ips v1.35 myself: 'v1.33 [stable] (enabled by default) ... uses IPAddress and ServiceCIDR objects instead of an internal global allocation map. Each cluster IP address associated to a Service then references an IPAddress object', with a 'kubectl get ipaddresses' example."
+   },
+   {
+    "id": "kubernetes-cka-s5.2-02",
+    "decision": "fixed",
+    "statement": "In Kubernetes v1.35, kube-proxy's ipvs proxy mode is deprecated.",
+    "answer": true,
+    "explanation": "The kernel IPVS API fits the Services API poorly. The docs recommend nftables mode, stable since v1.33 and needing kernel 5.13 or later, as the replacement for ipvs.",
+    "reason": "Both lenses want the 'docs mark' framing gone. I used the wording lens lead-in ('In', not 'Since') with the fact lens's plain 'is deprecated'. I checked virtual-ips v1.35 myself: 'IPVS proxy mode FEATURE STATE: Kubernetes v1.35 [deprecated]', nftables 'recommended as a replacement for ipvs', 'requires kernel 5.13 or later'."
+   },
+   {
+    "id": "kubernetes-cka-s5.2-10",
+    "decision": "keep",
+    "statement": "The kubelet applies `ClusterFirstWithHostNet` when a hostNetwork Pod leaves `dnsPolicy` unset.",
+    "answer": false,
+    "explanation": "Leaving dnsPolicy unset gives a Pod ClusterFirst, and a hostNetwork Pod with ClusterFirst falls back to the Default policy, so set ClusterFirstWithHostNet explicitly.",
+    "reason": "Both lenses keep. dns-pod-service v1.35: an unset dnsPolicy means ClusterFirst, and a hostNetwork Pod with ClusterFirst falls back to Default."
+   }
+  ]
+ }
+}

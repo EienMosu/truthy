@@ -1,0 +1,1077 @@
+{
+ "deck": "go-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr1-11",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, current (spec says \"Language version go1.27 (May 26, 2026)\")",
+     "evidence": "The cited spec section https://go.dev/ref/spec#Variable_declarations only says: \"Implementation restriction: A compiler may make it illegal to declare a variable inside a function body if the variable is never used.\" It does not say that the gc compiler enforces this, and that enforcement is the whole point of the card and its explanation. The FAQ https://go.dev/doc/faq#unused_variables_and_imports does say it: \"Go refuses to compile programs with unused variables or imports\". The answer (True) is correct: gc reports \"declared and not used\".",
+     "problem": "The card claims a gc toolchain behaviour, but the source only states the optional restriction the spec allows. A player who opens the link cannot confirm that gc rejects the code.",
+     "suggestedFix": "Keep the statement, the answer (True) and the explanation. Change source to {title: \"Go FAQ: Can I stop these complaints about my unused variable/import?\", url: \"https://go.dev/doc/faq#unused_variables_and_imports\"}. If one URL has to cover both halves, keep the spec link in the explanation's wording (\"the spec permits\") and cite the FAQ as the source."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (6 true, 6 false, balanced). Sources were opened on 2026-10-08. The spec subtitle reads \"Language version go1.27 (May 26, 2026)\" and pkg.go.dev/builtin@go1.27.1 shows version go1.27.1. Evidence for the cards that pass: sr1-01 (builtin: \"byte is an alias for uint8 and is equivalent to uint8 in all ways\"). sr1-02 (spec Zero value: \"\\\"\\\" for strings\"). sr1-03 (spec: \"Short variable declarations may appear only inside functions\"). sr1-04 (Effective Go #redeclaration: same scope, \"the corresponding value in the initialization is assignable to v\", and at least one other new variable; the spec says the same with \"same type\"). sr1-05 (blog/constants: \"The default type for a floating-point constant is float64\"). sr1-07 (builtin iota: \"It is zero-indexed\"; spec Iota: \"starting at zero\"). sr1-08 (FAQ #conversions: \"int and int64 are distinct types even if int is a 64-bit type\"). sr1-09 (spec Integer overflow: signed overflow is \"deterministically defined by the signed integer representation... Overflow does not cause a run-time panic\"). sr1-10 (spec: \"If the divisor is a constant, it must not be zero. If the divisor is zero at run time, a run-time panic occurs\"). sr1-12 (spec Min and max: \"_ = min(s...) // invalid: slice arguments are not permitted\"). One borderline source I did not flag: sr1-06 cites go.dev/blog/constants (2014). Its supporting sentence is about assignment (\"a large or negative constant cannot be assigned to a uint8\"), not a typed const declaration. The precise rule is in https://go.dev/ref/spec#Constants: \"It is an error if the constant value cannot be represented as a value of the respective type.\" Switching to that URL would be a small improvement. I found no duplicates with other sections. sr6-05 (interface comparison of int vs int64) and sr9-09 (range-over-int type) rest on different facts. No r1 card was refutable under Go 1.26 or 1.27."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr2-03",
+     "verdict": "source_problem",
+     "urlStatus": "https://go.dev/blog/strings loads (200), official, but it does not state the result type",
+     "evidence": "Blog: \"indexing a string accesses individual bytes, not characters\" (go.dev/blog/strings). It never says the type is byte. Spec, Index expressions (https://go.dev/ref/spec#Index_expressions, Language version go1.27): \"a[x] is the non-constant byte value at index x and the type of a[x] is byte\".",
+     "problem": "The answer (True) is right, but the card tests the static type of s[i], and the cited blog post only says that indexing gives bytes, not that the type is byte. The spec is where the card's whole claim can be checked.",
+     "suggestedFix": "Keep the statement and explanation and change the URL to https://go.dev/ref/spec#Index_expressions (title: The Go Programming Language Specification, Index expressions)."
+    },
+    {
+     "id": "go-fundamentals-sr2-09",
+     "verdict": "source_problem",
+     "urlStatus": "https://pkg.go.dev/strings@go1.27.1#Compare loads (200), Version go1.27.1, but it does not settle the claim",
+     "evidence": "strings.Compare: \"Compare returns an integer comparing two strings lexicographically.\" That says nothing about bytes or letter case. Spec, Comparison operators (https://go.dev/ref/spec#Comparison_operators): \"String types are comparable and ordered. Two string values are compared lexically byte-wise.\"",
+     "problem": "The answer (False) and the explanation are right, but the cited page never says the comparison is byte-wise, so it cannot rule out case folding. The card also tests the < operator, not strings.Compare.",
+     "suggestedFix": "Change the URL to https://go.dev/ref/spec#Comparison_operators. Optional explanation tweak, still within 240 characters: \"Strings compare lexically byte-wise, so `\\\"Z\\\" < \\\"a\\\"` is true: 'Z' is byte 90 and 'a' is byte 97. No case folding happens; strings.EqualFold handles case-insensitive equality.\""
+    },
+    {
+     "id": "go-fundamentals-sr2-12",
+     "verdict": "weak_card",
+     "urlStatus": "https://pkg.go.dev/strings@go1.27.1#CutLast loads (200), Version go1.27.1, added in go1.27.0, and supports the card",
+     "evidence": "strings.CutLast: \"CutLast slices s around the last instance of sep, returning the text before and after sep. The found result reports whether sep appears in s. If sep does not appear in s, CutLast returns s, \\\"\\\", false.\" go1.27 notes: \"The new CutLast function slices a string around the last occurrence of a separator.\"",
+     "problem": "The answer (True) is right, but the wording is weak. \"returns the input as before\" reads naturally as \"returns the input as it did before\", which makes no sense for a function new in Go 1.27, because `before` is not marked as the result name. The card is also a near-paraphrase of the doc's last sentence and tests a fringe edge case (the same as strings.Cut) instead of what defines CutLast, which is that it cuts at the last occurrence.",
+     "suggestedFix": "True replacement. Statement: \"In Go 1.27, `strings.CutLast(\\\"a/b/c\\\", \\\"/\\\")` returns \\\"a/b\\\" as its before result.\" Explanation: \"CutLast slices s around the last instance of sep, so before is \\\"a/b\\\" and after is \\\"c\\\". When sep is absent, it returns s, \\\"\\\" and false.\" Keep the URL https://pkg.go.dev/strings@go1.27.1#CutLast and appliesTo \"Go 1.27\"."
+    },
+    {
+     "id": "go-fundamentals-sr2-11",
+     "verdict": "weak_card",
+     "urlStatus": "https://go.dev/ref/spec#Conversions_to_and_from_a_string_type loads (200), Language version go1.27, and supports the card",
+     "evidence": "Spec: \"Converting a value of a string type to a slice of runes type yields a slice containing the individual Unicode code points of the string.\" Spec, Numeric types: \"rune alias for int32\". In Go, rune is the term for a code point.",
+     "problem": "The answer (True) is right, but it nearly follows from the name: to a Go developer, \"rune\" means code point, so \"[]rune gives code points\" is close to a definition card. The statement also stays close to the spec sentence. A concrete evaluation tests the same fact without the giveaway.",
+     "suggestedFix": "True replacement. Statement: \"`len([]rune(\\\"héllo\\\"))` evaluates to 5.\" Explanation: \"Converting a string to []rune decodes its UTF-8 into one rune per Unicode code point, so the two-byte é becomes a single element of the slice.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards, from go-fundamentals-b1.json. On 2026-10-08 I opened the spec (subtitle \\\"Language version go1.27 (May 26, 2026)\\\"), go.dev/blog/strings, pkg.go.dev strings, builtin and bytes at go1.27.1, and go.dev/doc/go1.27. Every page returned 200, and every cited anchor exists (String_literals, For_range, Conversions_to_and_from_a_string_type, #len, #Builder, #Compare, #CutLast). Balance is 6 true (01, 03, 05, 10, 11, 12) and 6 false (02, 04, 06, 07, 08, 09). Every suggested replacement keeps its card's answer, so the balance stays the same. No card's answer is wrong. Passed without a flag: 01 (blog: \\\"a string holds arbitrary bytes. It is not required to hold Unicode text, UTF-8 text\\\"), 02 (builtin len: \\\"String: the number of bytes in v\\\"; the é is precomposed U+00E9, so len is 2 as the explanation says), 04 (spec: \\\"backslashes have no special meaning\\\"), 05 (spec: \\\"the index value will be the index of the first byte of successive UTF-8-encoded code points\\\"), 06 (spec: \\\"the second value will be 0xFFFD ... and the next iteration will advance a single byte\\\"), 08 (spec: string(65) // \\\"A\\\"; volatility may_change is justified because the spec says \\\"This form of conversion may eventually be removed from the language\\\"), and 10 (strings.Builder: \\\"The zero value is ready to use\\\"; close to the doc wording but acceptable). Minor, not flagged: card 07's anchor (Conversions) only says the conversion yields \\\"a non-nil slice whose successive elements are the bytes of the string\\\". The independence of writes follows from String types on the same page (\\\"Strings are immutable: once created, it is impossible to change the contents of a string\\\"), so https://go.dev/ref/spec#String_types would be a tighter anchor. I found no duplicates with other sections. r1 covers byte as an alias for uint8 and the string zero value, which are different facts. Nothing outside r2 tests string iteration, len or conversions. I made no edits to any file."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr3-05",
+     "verdict": "source_problem",
+     "urlStatus": "Page loads (200, spec subtitle 'Language version go1.27 (May 26, 2026)') but the fragment #Full_slice_expressions does not exist: the heading is a bare <h4>Full slice expressions</h4> with no id, so the link lands at the top of a very long page.",
+     "evidence": "https://go.dev/ref/spec (section Slice expressions, subheading Full slice expressions): 'Additionally, it controls the resulting slice's capacity by setting it to max - low. Only the first index may be omitted; it defaults to 0.' The answer (True) is correct. Only the link target is broken.",
+     "problem": "The source anchor is dead, so a player who taps the link does not reach the sentence that settles the card. The card itself is correct.",
+     "suggestedFix": "Keep the statement and explanation. Change the URL to https://go.dev/ref/spec#Slice_expressions, which is the nearest existing anchor; the Full slice expressions subsection follows it directly."
+    },
+    {
+     "id": "go-fundamentals-sr3-11",
+     "verdict": "source_problem",
+     "urlStatus": "Loads (200), official Go 1.21 release notes, current.",
+     "evidence": "https://go.dev/doc/go1.21#language: 'The new function clear deletes all elements from a map or zeroes all elements of a slice.' It never says the slice keeps its length. https://pkg.go.dev/builtin@go1.27.1#clear: 'For maps, clear deletes all entries, resulting in an empty map. For slices, clear sets all elements up to the length of the slice to the zero value of the respective element type.' The spec https://go.dev/ref/spec#Clear has the same table, with 'empty map (len(m) == 0)' for maps and the [Go 1.21] marker.",
+     "problem": "The answer (False) is right. But the cited release note only says clear 'zeroes all elements' and does not state the right fact the explanation gives, that the length stays the same. The builtin doc and the spec contrast the map case (len 0) with the slice case (elements zeroed up to the length) and show the version (builtin: 'added in go1.21.0', spec: [Go 1.21]).",
+     "suggestedFix": "Keep the statement and explanation. Change the URL to https://pkg.go.dev/builtin@go1.27.1#clear (or https://go.dev/ref/spec#Clear)."
+    },
+    {
+     "id": "go-fundamentals-sr3-12",
+     "verdict": "weak_card",
+     "urlStatus": "Loads (200), pkg.go.dev slices at go1.27.1, current.",
+     "evidence": "https://pkg.go.dev/slices@go1.27.1#Equal: 'Empty and nil slices are considered equal.' Card: 'slices.Equal considers a nil slice and an empty slice equal.'",
+     "problem": "The answer is right and the source supports it. But the statement is the doc sentence with its parts swapped into active voice, which the prompt's original-wording rule forbids. As a bare prose claim it also gives a guesser a hint, because 'considers ... equal' sounds like the doc's own phrasing.",
+     "suggestedFix": "Replacement (answer True): 'With `var s []int`, the call `slices.Equal(s, []int{})` returns true.' Explanation: 'slices.Equal compares only lengths and elements, so a nil slice and a non-nil empty slice count as equal, even though only the nil one compares equal to nil with ==.' Keep the same URL. The replacement is about 67 characters, which keeps the section's true and false average lengths within 5 characters."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards on 2026-10-08 against the downloaded pages: the spec (subtitle 'Language version go1.27 (May 26, 2026)'), pkg.go.dev builtin and slices (both showing go1.27.1), the go1.21 release notes and the blog posts slices-intro and slices. Every answer holds up against the current spec. Settling text per card:\n- sr3-01: spec 'The length is part of the array's type'.\n- sr3-02: blog 'when you assign or pass around an array value you will make a copy of its contents'.\n- sr3-03: spec Slice expressions example 'they all refer to the same underlying array element'.\n- sr3-04: builtin make 'The size specifies the length ... A second integer argument may be provided to specify a different capacity'.\n- sr3-06: spec 'Otherwise, append re-uses the underlying array'.\n- sr3-07: blog 'It has length zero and can be appended to, with allocation'.\n- sr3-08: spec 'Slice, map, and function types are not comparable'.\n- sr3-09: builtin copy 'the minimum of len(src) and len(dst)'.\n- sr3-10: spec For_range, where iteration value a[i] is assigned to the iteration variable.\n\nThe section balance is 6 true and 6 false. Average statement length is 73.5 for true and 78.5 for false, a gap of exactly 5 characters, right at the limit, so any replacement must keep its length. All statements are under 120 characters and all explanations under 240.\n\nMinor points I did not flag:\n1. sr3-01, sr3-02, sr3-03 and sr3-07 cite 2011/2013 blog posts. The facts have not changed and the pages still state them, but the spec (#Array_types, #Slice_expressions, #Appending_and_copying_slices) is the more current source if the orchestrator wants to standardize.\n2. In sr3-04 the explanation's second sentence starts with lowercase 'capacity', and it would read better naming n and c explicitly.\n3. sr3-11 (clear zeroes slice elements and keeps the length) sits next to sr4-07 (clear removes map entries). The prompt deliberately plans both, and knowing one does not give the other answer, so I did not flag it as a duplicate.\n4. sr3-05 is labelled difficulty 3 but is a direct application of max - low, closer to medium.\n5. Breadth: the section covers neither [...] literals, nil vs empty slice compared to nil, slice-to-array conversion nor slices.Clone nilness. That is acceptable, since there are 12 facts for many sub-topics."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr4-07",
+     "verdict": "duplicate",
+     "urlStatus": "200, go.dev/doc/go1.21#language loads (official, current release notes)",
+     "evidence": "https://go.dev/doc/go1.21#language: \"The new function clear deletes all elements from a map or zeroes all elements of a slice.\" The spec (https://go.dev/ref/spec#Clear) describes the same split: \"clear(m) map[K]T deletes all entries, resulting in an empty map\" versus \"clear(s) []T sets all elements up to the length of s to the zero value of T\". sr3-11 (\"Since Go 1.21, `clear(s)` changes the length of a slice s to zero\", false, slice-clear-length-preserved) already tests the slice side of this one map-versus-slice distinction.",
+     "problem": "The card is the other side of the clear-on-slice versus clear-on-map distinction that sr3-11 tests, which the prompt's rule treats as one fact. The statement also gives itself away: \"clear removes the entries from a map\" can be read from the function's name, so a player who does not know Go would answer True. The answer is correct and the source supports it.",
+     "suggestedFix": "Replace with a true card on an uncovered r4 fact (map element addressability). Statement: \"With `m := map[string]struct{ X int }{}`, the assignment `m[\"a\"].X = 1` fails to compile.\" Explanation: \"Map elements are not addressable, so a field of a struct element cannot be assigned in place. Copy the element, change it and store it back, or use a map of pointers.\" Source: https://go.dev/ref/spec#Assignment_statements (left-hand operands must be addressable or a map index expression). Answer: true."
+    },
+    {
+     "id": "go-fundamentals-sr4-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, go.dev/ref/spec#For_range loads, spec subtitle \"Language version go1.27 (May 26, 2026)\"",
+     "evidence": "https://go.dev/ref/spec#For_range: \"If a map entry that has not yet been reached is removed during iteration, the corresponding iteration value will not be produced. If a map entry is created during iteration, that entry may be produced during the iteration or may be skipped.\"",
+     "problem": "The statement is a close paraphrase of the spec's first sentence: the same structure with \"not yet been reached ... removed ... will not be produced\" swapped for \"unreached ... deleting ... prevents ... being produced\". It is also close to a logical truism, because an entry that is deleted before the loop reaches it obviously cannot be produced. The less obvious half of the rule, entries added during iteration, goes untested. The answer is correct.",
+     "suggestedFix": "Replace with a true card. Statement: \"A range loop over a map may skip an entry that its own loop body adds to that map.\" Explanation: \"The spec says an entry created during map iteration may be produced or skipped, and the choice can vary for each entry and from one iteration to the next.\" Source: https://go.dev/ref/spec#For_range. Answer: true."
+    },
+    {
+     "id": "go-fundamentals-sr4-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, go.dev/blog/maps loads (official blog, 2013, fact unchanged)",
+     "evidence": "https://go.dev/blog/maps: \"The second value (ok) is a bool that is true if the key exists in the map, and false if not.\" Spec https://go.dev/ref/spec#Index_expressions: \"The value of ok is true if the key x is present in the map, and false otherwise.\"",
+     "problem": "This is a definition card. It restates what the comma-ok form is for, and the variable name \"ok\" next to \"contains key k\" makes True the obvious guess. No learner who studied would answer False, and no realistic misconception is tested. The useful distinction, presence versus a stored zero value, is left out.",
+     "suggestedFix": "Replace with a true card on the presence versus zero value distinction. Statement: \"`v, ok := m[k]` sets ok to true when key k is present and its stored value is the zero value.\" Explanation: \"ok reports key presence, not the value: a present key whose element is 0 or \\\"\\\" still yields true, while an absent key yields the zero value and false.\" Source: https://go.dev/ref/spec#Index_expressions. Answer: true."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards. Every source URL loaded with HTTP 200 and its anchor exists (spec #Map_types and #For_range, blog/maps, builtin@go1.27.1, go1.21#language, effective_go#maps, faq#atomic_maps, maps@go1.27.1). The spec subtitle reads \"Language version go1.27 (May 26, 2026)\", and pkg.go.dev shows Version go1.27.1. The section is balanced at 6 true and 6 false, and all three suggested replacements keep their card's original answer (true), so the balance stays.\n\nCards that pass, with the evidence:\n- sr4-01: spec says \"The initial capacity does not bound its size\".\n- sr4-02: spec says \"If the key type is an interface type ... failure will cause a run-time panic\".\n- sr4-03 and sr4-04: blog says \"A nil map behaves like an empty map when reading, but attempts to write to a nil map will cause a runtime panic\". The spec says \"Assigning to an element of a nil map causes a run-time panic\".\n- sr4-06: builtin docs say \"If m is nil or there is no such element, delete is a no-op\".\n- sr4-08: spec and blog both say the order is \"not specified and is not guaranteed to be the same from one iteration to the next\".\n- sr4-10: Effective Go says \"If you pass a map to a function that changes the contents of the map, the changes will be visible in the caller\".\n- sr4-11: the FAQ says \"Map access is unsafe only when updates are occurring ... it is safe for them to access the map concurrently without synchronization\".\n- sr4-12: maps@go1.27.1 shows \"func Keys ... iter.Seq[K]\", added in go1.23.0.\n\nBorderline items I did not flag:\n1. sr4-02 is close to sr6-06 (any([]int{1}) == any([]int{1}) panics). Both rest on the rule that a non-comparable dynamic type in an interface value panics at run time. The prompt deliberately lists both, under r4 and r6, so I left it as a note. If the deck wants strict separation, drop or rework one of the two.\n2. sr4-03 and sr4-04 split one sentence of the blog (nil map read versus write). Knowing one does not give the other, so they are not duplicates under the rule's test, but they sit close together.\n3. sr4-03, sr4-04, sr4-05 and sr4-08 cite the 2013 blog post \"Go maps in action\". It also says the runtime \"randomized map iteration order\", which the prompt forbids as a card claim (sr4-08 does not use it). The facts on these cards are unchanged, but the spec (#Index_expressions, #For_range) would be the better current source.\n4. sr4-01 is a weak-ish false card: few studied learners would think the hint is a hard cap. The prompt names this fact explicitly, so I kept it."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr5-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://go.dev/doc/go1.26#language, official Go 1.26 release notes, current); supports the card",
+     "evidence": "go.dev/doc/go1.26: \"The built-in new function, which creates a new variable, now allows its operand to be an expression, specifying the initial value of the variable.\" Spec https://go.dev/ref/spec#Allocation: \"new(int) and new(123) each return a pointer to a new variable of type int. The value of the first variable is 0, and the value of the second is 123.\"",
+     "problem": "The answer (False) is correct, but the wording gives it away. The statement says \"Since Go 1.26, new(42)\", which tells the player that a feature was added in 1.26 to accept a value. A player who knows nothing about it can work out that a release would not add new(42) just to return zero, so the card fails the 'no wording tells' and strawman rules. The common misconception about this feature is not that new(42) gives zero. It is that new(x) behaves like &x.",
+     "suggestedFix": "Replace with a False card (keeps the section at 6 true / 6 false). Statement: \"Since Go 1.26, `p := new(x)` makes `p` point to the existing variable `x` itself.\" Explanation: \"new(x) allocates a fresh variable of x's type, initialized to a copy of x's value, and returns its address. Writes through p leave x unchanged.\" Misconception: new(x) is shorthand for &x. Source: https://go.dev/ref/spec#Allocation (\"If the argument is an expression x, then new(x) allocates a variable of the type of x initialized to the value of x.\"). For the version, also cite https://go.dev/doc/go1.26#language. appliesTo: Go 1.26 and later."
+    }
+   ],
+   "notes": "I checked all 12 r5 cards against the live spec (\"Language version go1.27 (May 26, 2026)\"), the go1.26 and go1.27 release notes and Effective Go. The split is 6 true and 6 false. Only 06 is flagged; the other 11 passed. Evidence for each passing card:\n- sr5-01: Comparison operators says \"Struct types are comparable if all their field types are comparable.\"\n- sr5-02: Assignment statements says \"When a value is assigned to a variable, only the data that is stored in the variable is replaced.\" Minor point: `b := a` is a short variable declaration, not an assignment statement. https://go.dev/ref/spec#Representation_of_values states the fact more directly: structs are self-contained and \"Each such value contains a complete copy of all its data\". Not flagged.\n- sr5-03: The Selectors example gives \"p.z // (*p).z\".\n- sr5-04: Arithmetic operators says \"+ ... apply to integer, floating-point, and complex types; + also applies to strings\", which leaves out pointers. https://go.dev/doc/faq#no_pointer_arithmetic would be a more explicit source but is not required.\n- sr5-05: Effective Go says \"it's perfectly OK to return the address of a local variable; the storage associated with the variable survives after the function returns.\" The prompt allows Effective Go for this idiom.\n- sr5-07: Struct types says \"The unqualified type name acts as the field name\" and gives the example \"*T2 // field name is T2\".\n- sr5-08 and sr5-09: Selectors says \"x.f denotes the field or method at the shallowest depth ... If there is not exactly one f with shallowest depth, the selector expression is illegal.\" These are two separate facts in the prompt, so they are not duplicates.\n- sr5-10: The Assignability rules have no case that covers Outer and Inner, since they are distinct types with different underlying types.\n- sr5-11 and sr5-12: The Struct literals subsection under #Composite_literals has the [Go 1.27] rule \"Each key must be a valid field selector for a (possibly promoted) field\" and the rule \"A key must not denote a promoted field inside an embedded struct if that struct is also specified by another key\", with the example line3 marked invalid. The go1.27 notes agree: \"A key in a struct literal may now be any valid field selector\". The Struct literals subsection has no anchor of its own, so #Composite_literals is the correct link.\nCross-deck: sr7-01 (a value receiver works on a copy) is close to sr5-02 (struct assignment copies), but the prompt lists both facts in their own sections, so I did not flag it. No other card in the deck repeats an r5 fact."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr6-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (spec subtitle 'Language version go1.27 (May 26, 2026)')",
+     "evidence": "https://go.dev/ref/spec#Embedded_interfaces: \"In other words, the type set of T is the set of all types that implement all the explicitly declared methods of T and also all the methods of E.\" The answer is right, but it follows from what embedding means: the only false alternative (satisfying either A or B is enough) is a strawman nobody who studied would pick. The same section has a fact that is actually worth testing: \"When embedding interfaces, methods with the same names must have identical signatures.\"",
+     "problem": "Truism or definition card. 'Satisfying both embedded interfaces' simply restates what combining two interfaces means, so the card teaches nothing beyond the term.",
+     "suggestedFix": "Replace (answer true): \"An interface that embeds both `io.Reader` and `io.ReadCloser` compiles despite their shared `Read` method.\" (106 chars). Explanation: \"Embedded interfaces may overlap: methods with the same name are merged when their signatures are identical, and differing signatures are a compile error.\" (153 chars). Source: https://go.dev/ref/spec#Embedded_interfaces"
+    },
+    {
+     "id": "go-fundamentals-sr6-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://go.dev/ref/spec#Type_assertions: \"If T is an interface type, x.(T) asserts that the dynamic type of x implements the interface T.\" The answer (false) is right. But the statement contradicts itself: the static type is fixed at compile time, so it cannot be what 'decides success at run time'. A player can reject it from the wording alone, without knowing Go.",
+     "problem": "Strawman with a wording tell. No developer who studied type assertions believes the static type decides a run-time check. The realistic misconception about asserting to another interface is that the compiler rejects it when the static interface lacks the target's methods.",
+     "suggestedFix": "Replace (answer false): \"For an `io.Reader` value `r`, the assertion `r.(io.Writer)` is a compile error because Reader has no Write method.\" (114 chars). Explanation: \"An assertion to an interface type checks at run time whether the dynamic type of r implements io.Writer, so it compiles and succeeds for an *os.File.\" (149 chars). Source: https://go.dev/ref/spec#Type_assertions"
+    },
+    {
+     "id": "go-fundamentals-sr6-07",
+     "verdict": "source_problem",
+     "urlStatus": "spec#Assignability loads and is official, but it states the idiom only indirectly",
+     "evidence": "The spec Assignability section supports the premise only (\"T is an interface type, but not a type parameter, and x implements T.\"). Effective Go (https://go.dev/doc/effective_go#blank_implements) states the whole card: \"var _ json.Marshaler = (*RawMessage)(nil) ... the assignment involving a conversion of a *RawMessage to a Marshaler requires that *RawMessage implements Marshaler, and that property will be checked at compile time.\" The card's explanation says \"the blank identifier makes this a compile-time interface check\". That is misleading: the assignment is what forces the check, and the blank identifier only discards the value.",
+     "problem": "The cited page never describes the compile-time check idiom, and the explanation credits the check to the blank identifier rather than to the assignment. The answer (true) is correct.",
+     "suggestedFix": "Change the URL to https://go.dev/doc/effective_go#blank_implements (this idiom is still stated there and is allowed by the prompt). Change the explanation to: \"Assigning (*T)(nil) to I requires *T to implement I, so the declaration fails to compile if a method is missing; the blank identifier just discards the value.\" (158 chars)"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (in go-fundamentals-b2.json) against the live spec, which reads \"Language version go1.27 (May 26, 2026)\", and against the FAQ nil-error entry. Quotes from the spec that confirm the passing cards:\n- 01: \"A type T implements an interface I if T is not an interface and is an element of the type set of I\".\n- 02: \"the predeclared type any is an alias for the empty interface; it is not a named type\".\n- 04: FAQ: \"if any concrete value has been stored in the interface, the interface will not be nil\".\n- 05: \"Two interface values are equal if they have identical dynamic types and equal dynamic values or if both have value nil\".\n- 06: \"A comparison of two interface values with identical dynamic types causes a run-time panic if that type is not comparable\".\n- 08: \"If the type assertion is false, a run-time panic occurs\".\n- 09: \"For an expression x of interface type, but not a type parameter\".\n- 11: \"In clauses with a case listing exactly one type, the variable has that type; otherwise, the variable has the type of the expression in the TypeSwitchGuard\".\n- 12: \"The \\\"fallthrough\\\" statement is not permitted in a type switch\".\nI found no version dependence. Every card is stable behaviour with appliesTo \"Go 1.27\", and every source URL loads.\n\nThree flags: two weak cards (03 truism, 10 strawman) and one source problem (07). Both replacement cards keep their answers, so the section stays at 6 true and 6 false.\n\nTwo things I did not flag:\n- sr4-02 (a slice as a key in map[any]int panics) is close to sr6-06 (comparing interfaces that hold a non-comparable dynamic type panics). The prompt puts each of these in its own section on purpose, so I left both, but an editor may want to make sure the two explanations do not overlap.\n- r6 has no card on the nil case in a type switch or on the comma-ok form returning the zero value and false. Both are in the section scope. This is a coverage gap, not a defect.\n\nNo Go toolchain was installed, so I could not compile anything. The compile and panic claims in 06, 09 and the sr6-10 replacement rest on the spec text quoted above."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr7-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://go.dev/ref/spec#Method_sets, spec 'Language version go1.27 (May 26, 2026)', anchor present)",
+     "evidence": "Spec, Method sets (https://go.dev/ref/spec#Method_sets): \"The method set of a pointer to a defined type T (where T is neither a pointer nor an interface) is the set of all methods declared with receiver *T or T.\" The card reads \"For a defined struct type T, the method set of *T includes methods declared with receiver T or *T.\"",
+     "problem": "The answer (True) is correct and the source supports it, but the statement repeats the spec sentence with only a few words changed (\"is the set of all\" becomes \"includes\", the receivers are swapped). The prompt bans near-copies of the official page. It also tests the rule in the abstract instead of what it means in code.",
+     "suggestedFix": "Replacement (answer True): \"A `*T` value satisfies `interface{ M() }` when T declares M with the value receiver `(t T)`.\" Explanation: \"The method set of *T holds the methods declared with receiver T as well as those with receiver *T, so a pointer satisfies interfaces that list value-receiver methods.\" Keep the URL https://go.dev/ref/spec#Method_sets."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards on the live Go spec (go.dev/ref/spec shows \"Language version go1.27 (May 26, 2026)\") and on the Go FAQ. All 8 spec anchors and the FAQ anchor load: Method_sets, Calls, Method_declarations, Alias_declarations, Method_values, Method_expressions, Struct_types, Type_definitions and faq#methods_on_values_or_pointers. Go is not installed on this machine, so nothing was compiled. Every answer was checked against the spec text.\n\nThe section is balanced: 6 true and 6 false. Average statement length is 95.5 characters for true cards and 94.7 for false ones. Every statement is within 120 characters and every explanation within 240.\n\nPassing cards and the evidence for each:\n- 01: FAQ: \"valueMethod is called with a copy of the caller's argument ... so changes it makes will be invisible to the caller.\"\n- 03: Calls: \"If x is addressable and &x's method set contains m, x.m() is shorthand for (&x).m().\"\n- 04 and 05: Method declarations: \"A receiver base type cannot be a pointer or interface type and it must be declared in the same package as the method.\"\n- 06: Method declarations: \"For a base type, the non-blank names of methods bound to it must be unique.\"\n- 07: Alias declarations: \"it serves as an alias for the given type.\"\n- 08: Method values: \"The expression x is evaluated and saved during the evaluation of the method value; the saved copy is then used as the receiver in any calls.\"\n- 09: Method expressions: \"the same arguments as M prefixed by an additional argument that is the receiver.\"\n- 10: Struct types: \"If S contains an embedded field *T, the method sets of S and *S both include promoted methods with receiver T or *T.\"\n- 11: Type definitions: \"the method set of an interface type or of elements of a composite type remains unchanged\". U's underlying type is still a struct with the embedded Base, so the promotion rule in Struct types applies to U.\n- 12: Method declarations: \"If the base type is a struct type, the non-blank method and field names must be distinct.\"\n\nNo card in r7 duplicates a card in r5, r6, r8 or r13. r5 covers field promotion and struct literals, r6 covers interfaces and r13 covers generic methods. r7 does not mention generic methods, as the prompt requires.\n\nPoints that are not flags but are worth a look:\n- Cards 08 (a method value binds its receiver) and 09 (a method expression takes the receiver as its first argument) are the two sides of the \"method value versus method expression\" split that the section text names. They test different facets (when the receiver is evaluated versus the function's signature), so I did not flag them. A strict reading of the \"two sides of one distinction\" rule would drop one of them.\n- Card 07 sits close to a definition card (an alias is the same type). It passes because learners mix up `type A = T` with `type A T`.\n- Within r7, \"accepts\" appears only in false statements (05 and 12). Across the whole deck, the \"(the compiler) accepts X\" or \"is valid\" pattern carries at least 9 false statements: r1-12, r5-12, r6-12, r7-05, r7-12, r8-01, r9-02, r13-05/06/07 and r14-04. That breaks the rule that a false-statement template may carry at most two false cards. Reword r7-05 or r7-12, for example as \"declaring ... is legal\" or as a code fragment, when the deck is rebalanced.\n- Coverage gaps against the section text: no card tests that a T stored in an interface lacks the *T methods, that map elements or function results are not addressable, or the FAQ advice on choosing value or pointer receivers. These are not errors."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr8-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://go.dev/ref/spec#Assignment_statements, subtitle 'Language version go1.27 (May 26, 2026)')",
+     "evidence": "https://go.dev/ref/spec#Assignment_statements: \"if f is a function returning two values, x, y = f() assigns the first value to x and the second to y.\" The answer is right, but anyone who has seen a multi-result call knows it. Nobody who studied would answer False, so the card is a truism and teaches nothing.",
+     "problem": "The statement only restates what a multi-value assignment obviously does. A player can answer True from common sense alone.",
+     "suggestedFix": "Keep it True, with URL https://go.dev/ref/spec#Calls. Statement: \"`Join(Split(s, 2))` compiles when Split returns two strings and Join takes two string parameters.\" Explanation: \"When a call's only argument is a multi-valued call, Go passes those results to the parameters in order if their number and types match. Adding any other argument makes it a compile error.\" Spec quote: \"The call of f must contain no parameters other than the call of g\"."
+    },
+    {
+     "id": "go-fundamentals-sr8-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://go.dev/ref/spec#Passing_arguments_to_..._parameters)",
+     "evidence": "https://go.dev/ref/spec#Passing_arguments_to_..._parameters: \"If the final argument is assignable to a slice type []T and is followed by ..., it is passed unchanged as the value for a ...T parameter. In this case no new slice is created.\" The statement only says that s... passes the slice as the variadic argument. That is the definition of the syntax, so the answer can be read from the wording. The non-obvious part (no copy, the underlying array is shared) appears only in the explanation. sr8-04 is also a true variadic card in the same section.",
+     "problem": "Give-away or definition card. It tests the syntax's own meaning instead of what that syntax shares or copies.",
+     "suggestedFix": "Keep it True. Statement: \"After `f(s...)`, an element that f assigns in its variadic parameter is visible through s.\" Explanation: \"With s..., Go passes the slice unchanged as the ...T parameter and creates no new slice, so the parameter shares s's underlying array and element writes show through s.\" Keep the same URL."
+    },
+    {
+     "id": "go-fundamentals-sr8-11",
+     "verdict": "explanation_error",
+     "urlStatus": "loads (https://go.dev/ref/spec#Defer_statements)",
+     "evidence": "https://go.dev/ref/spec#Defer_statements: \"A 'defer' statement invokes a function whose execution is deferred to the moment the surrounding function returns, either because the surrounding function executed a return statement, reached the end of its function body, or because the corresponding goroutine is panicking.\" The current explanation only says what does not happen (\"stay pending ... leaving the loop alone does not invoke them\"). It never says when the calls do run, and the deck rules require a false card to state the right fact.",
+     "problem": "The answer (False) is right, but the explanation leaves out the right fact, which is that deferred calls run when the surrounding function returns or panics.",
+     "suggestedFix": "Keep the statement and the answer (False). New explanation: \"Deferred calls run when the surrounding function returns or panics, not when a loop iteration ends, so a defer in a loop body keeps each iteration's call pending until the function exits.\""
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (6 true: 02, 03, 04, 06, 07, 09; 6 false: 01, 05, 08, 10, 11, 12), so the section is balanced. Every source is a go.dev/ref/spec anchor. The page loads and its subtitle reads \"Language version go1.27 (May 26, 2026)\". Each quote that settles a card was read from the live page.\n\nCards that pass:\n- **01:** \"Slice, map, and function types are not comparable. However, as a special case, a slice, map, or function value may be compared to the predeclared identifier nil.\"\n- **03:** Return statements: \"The 'return' statement returns the values of these variables.\"\n- **04:** \"within f the type of p is equivalent to type []T.\"\n- **05:** \"If the deferred function has any return values, they are discarded when the function completes.\"\n- **06:** Function literals: \"Those variables are then shared between the surrounding function and the function literal.\" This stays true under the Go 1.22 per-iteration loop variables.\n- **08:** \"the function value and parameters to the call are evaluated as usual and saved anew but the actual function is not invoked.\"\n- **09:** \"in the reverse order they were deferred.\"\n- **10:** \"deferred functions are executed after any result parameters are set by that return statement\", plus the spec example where f returns 42.\n- **12:** \"execution panics when the function is invoked, not when the 'defer' statement is executed.\"\n\nI found no duplicates with other sections:\n- sr10-10 (a panic runs deferred calls) and sr10-11 (recover returns to the caller) rest on different facts from sr8-09 and sr8-05.\n- sr1-12 (min with s...) is about the builtin, not about passing a slice to a variadic function.\n\nFor the replacement cards: the sr8-02 replacement adds the multi-valued-call special case of Calls. The sr8-07 replacement turns the syntax card into a sharing card. Both stay True, so the 6/6 balance holds. Both statements are around 85 to 100 characters, close to the section's current lengths."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr9-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://go.dev/ref/spec#For_statements, Language version go1.27 (May 26, 2026))",
+     "evidence": "Spec, For statements with single condition: \"The condition is evaluated before each iteration.\" The answer is correct, but every C-family or Python while loop works this way. Anyone who has written a loop in any language answers True without knowing any Go.",
+     "problem": "This is a truism: it tests generic while-loop behaviour, nothing specific to Go, so it teaches nothing.",
+     "suggestedFix": "Replace (answer TRUE, keeps 6/6): statement \"`slices.All(s)` returns an iter.Seq2 that yields each index together with its element.\" Explanation: \"slices.All yields each index with its element, in order, as an iter.Seq2[int, E]; slices.Values yields the elements alone as an iter.Seq[E].\" factKey slices-all-index-element-pairs, appliesTo \"Go 1.23 and later\", source https://pkg.go.dev/slices@go1.27.1#All (\"All returns an iterator over index-value pairs in the slice in the usual order.\"; signature func All[Slice ~[]E, E any](s Slice) iter.Seq2[int, E])."
+    },
+    {
+     "id": "go-fundamentals-sr9-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://go.dev/ref/spec#Continue_statements)",
+     "evidence": "Spec, Continue statements: \"If there is a label, it must be that of an enclosing \\\"for\\\" statement, and that is the one whose execution advances.\" The statement says Outer labels the outer loop and then asks whether continue Outer advances the inner loop, so the wording gives the answer away.",
+     "problem": "This is a strawman. Nobody who has seen a labeled continue would answer True, because the label names the target in the statement itself.",
+     "suggestedFix": "Replace (answer FALSE, keeps 6/6): statement \"Inside a `switch` within a for loop, a plain `break` exits the enclosing for loop.\" Explanation: \"An unlabeled break ends the innermost for, switch or select statement, here the switch. To leave the loop from inside the switch, label the loop and use break with that label.\" factKey break-innermost-switch-needs-label, source https://go.dev/ref/spec#Break_statements (\"A \\\"break\\\" statement terminates execution of the innermost \\\"for\\\", \\\"switch\\\", or \\\"select\\\" statement within the same function.\"). No other section of the deck tests break."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards against the live spec (subtitle \"Language version go1.27 (May 26, 2026)\"), pkg.go.dev/iter@go1.27.1 and slices@go1.27.1 (header Version go1.27.1), the loopvar-preview blog post and the go1.22 release notes. Ten cards pass.\n- 02: the spec says \"The init statement may be a short variable declaration, but the post statement must not.\"\n- 03: the loopvar blog post supports both \"per-iteration scope\" and the go.mod gating (\"only apply in packages contained in modules that declare go 1.22 or later\"), but it is a 2023 preview written in future tense. If an editor wants a current page, https://go.dev/doc/go1.22 states the change, though it does not mention the go.mod gating.\n- 04: matches the spec (\"declared implicitly before executing the post statement and initialized to the value of the previous iteration's variable\").\n- 05: false is correct. len(p.A) is constant because the type is an array and the expression has no calls or receives, so p.A is not evaluated (Length and capacity section). The spec's own example makes the same point: \"testdata.a is never evaluated\".\n- 06: true. f() is evaluated because it is a function call, but len(*[3]int) is 3 and an index-only range \"does not index into the array\". 05 and 06 sit close together, both on nil array pointers in an index-only range, but they rest on different spec sentences, so I did not flag them as duplicates.\n- 07: the spec now says outright \"For a nil slice, the number of iterations is 0.\"\n- 08 and 09: the spec says \"iteration values 0 through n-1\" and \"If n is of integer type, the iteration values have that same type\", so card 09 (false, i is int64) is correct.\n- 10: the iter docs say \"Yield panics if called after it returns false.\"\n- 12: false is correct. The iter docs say \"Stop ends the iteration. It must be called when the caller is no longer interested in next values\" and say nothing about draining the sequence.\nNo r9 card repeats a fact owned by r2, r3, r4, r8 or r11. I could not run Go code because no toolchain is installed, so every verdict rests on the spec and package docs. The section is balanced 6 true and 6 false, and both replacements keep that balance."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr10-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://pkg.go.dev/errors@go1.27.1#AsType loads with Version go1.27.1 and supports the explanation",
+     "evidence": "pkg.go.dev/errors@go1.27.1: \"func AsType[E error](err error) (E, bool)\" ... \"If it succeeds, it returns the corresponding value of that type and true. Otherwise, it returns the zero value of that type and false.\"",
+     "problem": "Strawman. The (E, bool) signature that every AsType call site shows already gives away that a miss returns false, so nobody who has studied AsType would answer True. The phrase \"by default\" also suggests a panic mode that does not exist, which reads as trick wording rather than a real misconception.",
+     "suggestedFix": "Replace and keep the answer False. Statement: \"Since Go 1.26, `errors.AsType[E]` bypasses an error's custom `As(any) bool` method when it searches the tree.\" Explanation: \"AsType matches an error when err.(E) holds or when the error's As(any) bool method returns true for a non-nil *E target, so custom matching still applies.\" Source stays https://pkg.go.dev/errors@go1.27.1#AsType (\"or if the error has a method As(any) bool such that err.As(target) returns true when target is a non-nil *E\")."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards; 11 pass and only sr10-07 is flagged. Every source URL returned HTTP 200. The pkg.go.dev pages for errors, fmt and runtime show Version go1.27.1, and the spec subtitle reads \"Language version go1.27 (May 26, 2026)\".\n\nEvidence for the cards that pass:\n- sr10-01 (F) and sr10-10 (T): the spec's Handling panics says \"any deferred functions run by F's caller are run, and so on up to any deferred by the top-level function in the executing goroutine. At that point, the program is terminated\".\n- sr10-02 (F): the errors docs say \"Each call to New returns a distinct error value even if the text is identical.\"\n- sr10-03 (F) and sr10-04 (T): fmt.Errorf says \"If there is more than one %w verb, the returned error will implement an Unwrap method returning a []error\" and \"The %w verb is otherwise a synonym for %v\". The go1.27.1 source of fmt.Errorf always builds a wrapErrors value when there are two or more %w verbs.\n- sr10-05 (T): the errors docs say \"Is examines err followed by a depth-first traversal of its children\", and the package overview calls it \"pre-order, depth-first traversal\".\n- sr10-06 (T): the go1.27.1 errors/wrap.go returns false first when err is nil, then runs `panic(\"errors: target cannot be nil\")`. The card uses a non-nil err, so the answer holds, and its explanation correctly says \"with a real error\".\n- sr10-08 (T): the Join docs say \"Join returns nil if every value in errs is nil\", and the source does `return nil`, so the result is a nil error interface.\n- sr10-09 (F): the Unwrap docs say \"Unwrap does not unwrap errors returned by Join.\"\n- sr10-11 (F): the spec says \"G's execution terminates by returning to its caller\". The statement's wording (\"After completed recovery\") is clumsy but not wrong.\n- sr10-12 (T): the runtime docs say \"Starting in Go 1.21, programs that call panic(nil) observe recover returning a *PanicNilError. Programs can change back to the old behavior by setting GODEBUG=panicnil=1.\" The words \"by default\" are therefore accurate under the go 1.27 go.mod context.\n\nDuplicates: I compared these cards with r6-04 (typed nil error), r8-09 and r8-12 (defer order and timing), r11-07 and r12-07, and found none that rests on the same fact.\n\nBalance: the section has 6 True and 6 False cards, and the suggested replacement for sr10-07 keeps it False, so the balance holds.\n\nCoverage gaps, not flagged:\n- No card tests that recover returns nil unless it is called directly by a deferred function.\n- No card tests that errors.Is requires a comparable target, or sentinel errors and runtime.Error.\n\nMinor polish, not flagged:\n- sr10-10's explanation (\"functions affected on that goroutine's stack\") is vague."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr11-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://go.dev/ref/spec#Send_statements (Language version go1.27, May 26, 2026); anchor present",
+     "evidence": "Spec, Send statements (https://go.dev/ref/spec#Send_statements): \"A send on a buffered channel can proceed if there is room in the buffer.\" The answer is correct and the source supports it. The problem is that the statement says a buffer accepts a value when it has room, which is what the word buffer means. A player who knows no Go answers True from the wording alone. The explanation repeats the statement (\"A buffered send needs space in the channel buffer. The channel accepts the value into its available buffer space.\") and adds nothing.",
+     "problem": "Truism or definition card. 'Proceeds when its buffer has room' follows from the meaning of 'buffered', so it teaches nothing that is specific to Go. The useful fact is that the send does not need a receiver, and the card does not test it. The explanation is circular.",
+     "suggestedFix": "Keep answer True. Statement (99 chars): \"With `ch := make(chan int, 1)`, the send `ch <- 1` proceeds while no goroutine is receiving from ch.\" Explanation (about 170 chars): \"A send on a buffered channel can proceed if there is room in the buffer. The value waits there until some goroutine receives it, and a later send blocks once the buffer is full.\" Keep the URL https://go.dev/ref/spec#Send_statements."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards (all in go-fundamentals-b3.json) against the live spec at https://go.dev/ref/spec. The page returns 200, its subtitle is \"Language version go1.27 (May 26, 2026)\", and all nine cited anchors exist.\n\nSentences that settle each card:\n- 01: Go statements: \"The function value and parameters are evaluated as usual in the calling goroutine\".\n- 02: Program execution: \"When that function invocation returns, the program exits. It does not wait for other (non-main) goroutines to complete.\"\n- 03: Send statements: \"A send on an unbuffered channel can proceed if a receiver is ready.\"\n- 05: Receive operator: \"Receiving from a nil channel blocks forever.\"\n- 06: Assignability: \"V and T are channel types with identical element types, V is a bidirectional channel, and at least one of V or T is not a named type.\"\n- 07: Send statements: \"A send on a closed channel proceeds by causing a run-time panic.\"\n- 08: Close: \"It is an error if ch is a receive-only channel.\"\n- 09: For statements: \"the successive values sent on the channel until the channel is closed\". Close adds: \"after any previously sent values have been received, receive operations will return the zero value ... without blocking\".\n- 10: Select statements: \"chosen via a uniform pseudo-random selection\".\n- 11: Select statements: \"Otherwise, if there is a default case, that case is chosen.\"\n- 12: Length and capacity: len on a chan T gives the \"number of elements queued in channel buffer\".\n\nEvery answer holds under Go 1.27. I found no version difference or exception that would let an expert defend the opposite answer. The section has 6 true and 6 false cards, and that stays the same with the suggested fix.\n\nThings I looked at and did not flag:\n- 03 and 04 cover the unbuffered and buffered sides of one distinction. The prompt's r11 section list names both items separately, so I let them stand.\n- 11 is easy and close to definitional, because 'default' suggests a fallback. The section list asks for this fact, so I left it.\n- Wording is clumsy in 03 (\"completes before a matching receive becomes ready\") and 09 (\"after closure and after ch's buffer drains\"), but both are accurate.\n- In 10, \"By default\" hints at a setting that does not exist. This is a minor style issue, not a reason to flag.\n\nNo duplicates with other sections. The closest are sr8-08 (defer argument evaluation, a different statement), sr10-01 (a panic in a goroutine ends the program, which is a different fact from main returning) and sr9-07 (range over a nil slice). No r11 card repeats the nil-channel range case."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr12-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, pinned (https://pkg.go.dev/sync@go1.27.1#WaitGroup.Go)",
+     "evidence": "https://pkg.go.dev/sync@go1.27.1#WaitGroup.Go: \"Go calls f in a new goroutine and adds that task to the WaitGroup. When f returns, the task is removed from the WaitGroup.\" The source supports the card, and the answer is correct.",
+     "problem": "This only restates what the method is for. A WaitGroup tracks tasks until they finish, and a method named Go on a WaitGroup obviously starts one. A player can answer True from the type and method names alone, and nobody who studied would say False. That makes it a definition card and a name giveaway.",
+     "suggestedFix": "Replacement (answer true, keeps the 6 true / 6 false balance): statement \"Since Go 1.25, a task started by `sync.WaitGroup.Go` is allowed to call `Go` on the same WaitGroup.\" Explanation: \"The sync docs let Go run at any time while the WaitGroup is not empty, so a running task can start more tasks. Only a Go call on an empty group must happen before Wait.\" Source: https://pkg.go.dev/sync@go1.27.1#WaitGroup.Go (\"If the WaitGroup is not empty, Go may happen at any time. This means a goroutine started by Go may itself call Go.\")"
+    }
+   ],
+   "notes": "I checked all 12 r12 cards against their pinned source pages, which all returned 200: go.dev/ref/mem, pkg.go.dev/sync@go1.27.1, sync/atomic@go1.27.1 and context@go1.27.1. Only one card is flagged.\n\nCards that passed, with the sentence that settles each:\n- 01 (true): the memory model says \"data-race-free programs execute in a sequentially consistent manner\" and \"can only have outcomes explained by some sequentially consistent interleaving\".\n- 02 (false): the memory model says \"races on multiword data structures can lead to inconsistent values not corresponding to a single write ... interface values, maps, slices, and strings ... such races can in turn lead to arbitrary memory corruption\". Single-write consistency for multiword values is \"encouraged but not required\", so Go does not guarantee it.\n- 03 (false): \"A Mutex must not be copied after first use.\"\n  - Weakest of the passes: an expert could note that, in the gc implementation, a copy of an unlocked Mutex with no waiters behaves like a fresh lock.\n  - It still passes because the documented contract makes the answer False, and the misconception is a realistic one.\n- 04 (true): \"A locked Mutex is not associated with a particular goroutine. It is allowed for one goroutine to lock a Mutex and then arrange for another goroutine to unlock it.\"\n- 05 (false): \"A RWMutex.RLock cannot be upgraded into a RWMutex.Lock\". Also \"If the lock is already locked for reading or writing, Lock blocks\", which supports the explanation that Lock waits for the caller's own read lock to be released.\n- 07 (true): \"If f panics, Do considers it to have returned; future calls of Do return without calling f.\"\n- 08 (false): \"Swap atomically stores new into x and returns the previous value.\"\n- 09 (false): \"Calling the CancelFunc directly cancels the child and its children\". Also \"When a Context is canceled, all Contexts derived from it are also canceled\", so cancellation flows downward only.\n- 10 (true): \"Calling the CancelFunc ... removes the parent's reference to the child, and stops any associated timers. Failing to call the CancelFunc leaks the child\".\n- 11 (false): the WithCancelCause example shows \"cancel(myError); ctx.Err() // returns context.Canceled; context.Cause(ctx) // returns myError\".\n- 12 (true): \"AfterFunc arranges to call f in its own goroutine after ctx is canceled. If ctx is already canceled, AfterFunc calls f immediately in its own goroutine.\"\n\nDeck-level checks:\n- **Balance:** the section has 6 true and 6 false cards. The proposed replacement for card 06 is true, so the balance holds.\n- **Duplicates:** none. No card outside r12 tests mutexes, WaitGroup, Once, atomics, context or the memory model. The r11 plan covers only goroutine start, main exit, channels and select.\n- **Version naming:** WaitGroup.Go is the only versioned card. It names Go 1.25 in the statement, which the prompt allows for this listed change. Its appliesTo reads \"Go 1.25 and later\" rather than the prompt's \"Go 1.25\" style, a minor format difference.\n- **Statement wording:** no statement uses a negation or an unsupported absolute, and no retired API appears.\n\nHousekeeping: I moved some other files in the shared scratchpad while sorting my downloads, then moved them back. Copies of the 4 source pages are left in the scratchpad, and I made no edits to the deck files."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr13-01",
+     "verdict": "source_problem",
+     "urlStatus": "200, official Go blog (March 22, 2022), predates the Go 1.21 inference rewrite",
+     "evidence": "The 2022 blog https://go.dev/blog/intro-generics only says \"In many cases the compiler can infer the type argument for T from the ordinary arguments\", and in its constraint-inference example it hedges about an untyped constant: \"at best it might infer the default type for 2 which is int\". It never states that an untyped constant argument infers its default type. The current spec https://go.dev/ref/spec#Type_inference settles it: an untyped constant argument for a bound type parameter is \"collected separately\", and \"The type argument for Pk is the default type for the determined constant kind.\" The answer (True) is correct.",
+     "problem": "The cited 2022 blog post predates current type inference and does not support the card's key point, that the untyped constant 7 makes T int. The prompt says to check facts from this post against the spec. The explanation's claim that \"the integer literal supplies int\" leaves out the default-type rule, which is the real mechanism.",
+     "suggestedFix": "Keep the statement (True). Change the URL to https://go.dev/ref/spec#Type_inference. New explanation: \"7 is an untyped constant, so inference uses its default type: with no typed argument for T, the spec infers int, the default type of an integer constant.\""
+    },
+    {
+     "id": "go-fundamentals-sr13-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official spec, Language version go1.27 (May 26, 2026)",
+     "evidence": "https://go.dev/ref/spec#Alias_declarations: \"In an alias declaration the given type cannot be a type parameter declared in the same declaration.\" followed by the example \"type A[P any] = P   // illegal: P is a type parameter declared in the declaration of A\". The same section also says \"Generic aliases must be instantiated when they are used.\" The answer (False) is correct.",
+     "problem": "The statement is the spec's own illegal example with A and P renamed to Identity and T, so it is a near-copy of the source. It tests an edge-case restriction that developers rarely meet, not how generic aliases work, which makes it trivia for the section's generic-type-alias fact.",
+     "suggestedFix": "Replacement (False, keeps the 6/6 balance). Statement: \"Since Go 1.24, given `type Set[K comparable] = map[K]bool`, the declaration `var s Set` compiles.\" Explanation: \"A generic alias must be instantiated wherever it is used, like a generic type, so the variable needs a type argument, as in var s Set[string].\" Source: https://go.dev/ref/spec#Alias_declarations"
+    }
+   ],
+   "notes": "I checked all 12 r13 cards (6 true, 6 false). The true statements average 98.8 characters and the false ones 94.5, so the section is within the 5-character rule. Every source URL returned 200. The spec header reads \"Language version go1.27 (May 26, 2026)\" and the cmp page shows go1.27.1 (published Sep 1, 2026).\n\nCards that passed, with the evidence:\n- 02: matches the spec's example row \"any  comparable  // satisfied\" (https://go.dev/ref/spec#Satisfying_a_type_constraint) and the comparable blog.\n- 03: the intro-generics blog says \"~string means the set of all types whose underlying type is string\".\n- 04: the spec's General interfaces section says \"Interfaces that are not basic may only be used as type constraints ... They cannot be the types of values or variables\". The cited 2022 blog says the same thing but hedges with \"For now\"; https://go.dev/ref/spec#General_interfaces would be a stronger URL. Not flagged.\n- 05: cmp.Ordered@go1.27.1 lists only integer, uintptr, float and string terms, with no complex types.\n- 06: the spec says \"the type sets of all non-interface terms must be pairwise disjoint\", and int|int overlaps, so the constraint is illegal. I could not compile it because no Go toolchain is installed here; from memory, the gc type checker reports \"overlapping terms\".\n- 08: the go1.26 notes say \"It is now possible to specify type constraints that refer to the generic type being constrained\". The statement is the notes' Adder example with Add renamed to Merge. That is borderline near-copy, but it is the minimal form of the fact, so I did not flag it.\n- 09: matches the spec Method declarations section (\"If the method declaration specifies type parameters (possibly in addition to type parameters declared by the receiver specification) ... generic method [Go 1.27]\") and the blog's List.Map example.\n- 10: the generic-methods blog says \"Both T.M[int] and I.M have the signature func M(). However, this doesn't mean T implements I. Interface implementation is a property of a (possibly instantiated) type\".\n- 11: the spec says the receiver's \"type arguments must be identifiers denoting the type parameters being declared ... The type parameter names do not need to match\" and \"constraints are implied by the receiver base type definition\".\n- 12: the go1.27 blog says \"Generic functions can now be used without explicit type arguments in composite literals, type conversions, and channel sends\", with the example []IntFormatter{GenericFormatter}.\n\nNo r13 card repeats a fact from another section. I grepped the other sections for generics keywords; r6-09 is about type assertions on type parameters, a different fact.\n\nCoverage gap, not a defect: no card tests interface methods being unable to declare type parameters, explicit instantiation before use, or method expressions such as List[int].Map[int], all of which are in the section list.\n\nWorking note: my first text-conversion command wrote into the shared scratchpad root and may have overwritten some existing scratch .txt files with re-converted copies of their .html files (it also left empty *.html.txt files there). Nothing in the deck or project was edited. Page copies are in a scratch folder"
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "go-fundamentals-sr14-02",
+     "verdict": "ambiguous",
+     "urlStatus": "https://go.dev/doc/faq loads (200), but the URL is the FAQ root with no anchor; the relevant entry is #How_do_I_create_a_multifile_package",
+     "evidence": "FAQ (https://go.dev/doc/faq#How_do_I_create_a_multifile_package): \"Source files can refer to items from different files at will; there is no need for forward declarations or a header file.\" But the spec (https://go.dev/ref/spec#Declarations_and_scope) says \"The scope of the package name of an imported package is the file block of the file containing the import declaration.\" while \"The scope of an identifier denoting a constant, type, variable, or function (but not method) declared at top level (outside any function) is the package block.\"",
+     "problem": "The answer (False) is right for a variable, constant, type or function, but \"package-level identifier named cache\" also covers `import cache \"example.com/cache\"`, a top-level declaration whose name really does have file scope. An expert can defend True on that reading. The source is also the unanchored FAQ root, and the FAQ entry talks about source files in general rather than scope rules.",
+     "suggestedFix": "Keep answer False. Statement: \"A package-level variable named cache has scope limited to the source file that declares it.\" Explanation: \"A variable declared at top level has package-block scope, so every file of the same package can use cache, whatever its case. Only imported package names are scoped to their file.\" URL: https://go.dev/ref/spec#Declarations_and_scope"
+    },
+    {
+     "id": "go-fundamentals-sr14-06",
+     "verdict": "weak_card",
+     "urlStatus": "https://go.dev/ref/mod#go-sum-files loads (200), anchor present, supports the card",
+     "evidence": "https://go.dev/ref/mod#go-sum-files: \"The go.sum file contains cryptographic hashes of the module's direct and indirect dependencies. When the go command downloads a module .mod or .zip file into the module cache, it computes a hash and checks that the hash matches the corresponding hash in the main module's go.sum file.\" Same page: \"go.sum may also contain hashes for module versions that aren't needed anymore (for example, after an upgrade). go mod tidy will add missing hashes and will remove unnecessary hashes from go.sum.\"",
+     "problem": "The answer can be guessed from the name (go.sum, checksum) and from \"integrity checks\", so nobody who has seen a Go module would answer False. It is close to a truism and avoids the real misconception about go.sum (that it is a lock file). The section scope also names go mod tidy, which no r14 card covers.",
+     "suggestedFix": "Keep answer True. Statement: \"`go mod tidy` removes go.sum hashes for module versions that the module no longer needs.\" Explanation: \"go.sum can keep hashes of versions that are no longer needed, for example after an upgrade. go mod tidy adds the missing hashes and removes the unnecessary ones.\" URL: https://go.dev/ref/mod#go-sum-files"
+    },
+    {
+     "id": "go-fundamentals-sr14-01",
+     "verdict": "source_problem",
+     "urlStatus": "https://go.dev/doc/faq loads (200) but is the unanchored FAQ root; the cited entry is #unicode_identifiers",
+     "evidence": "FAQ (#unicode_identifiers): \"Since an exported identifier must begin with an upper-case letter, identifiers created from characters in some languages can, by definition, not be exported.\" The deciding rule is in the spec (https://go.dev/ref/spec#Exported_identifiers): \"the first character of the identifier's name is a Unicode uppercase letter (Unicode character category Lu); and the identifier is declared in the package block or it is a field name or method name.\"",
+     "problem": "The answer is right: É (U+00C9) is in category Lu, and Étage is declared at package level. But the FAQ root URL has no anchor, and the FAQ entry is about scripts that cannot be exported. It does not state the Lu rule that decides whether Étage is exported.",
+     "suggestedFix": "Keep the card. Change the URL to https://go.dev/ref/spec#Exported_identifiers (title \"The Go Programming Language Specification — Exported identifiers\"). Optionally extend the explanation: \"É is in Unicode category Lu, and the spec exports package-level names whose first character is an Lu letter.\""
+    },
+    {
+     "id": "go-fundamentals-sr14-05",
+     "verdict": "source_problem",
+     "urlStatus": "https://go.dev/doc/effective_go loads (200), but the anchor #import_for_side_effect does not exist; the section's id is #blank_import",
+     "evidence": "Effective Go (#blank_import): \"To import the package only for its side effects, rename the package to the blank identifier: import _ \\\"net/http/pprof\\\"\". The spec states the card more directly (https://go.dev/ref/spec#Import_declarations): \"To import a package solely for its side-effects (initialization), use the blank identifier as explicit package name\". The ordering half is in https://go.dev/ref/spec#Program_initialization: \"If a package has imports, the imported packages are initialized before initializing the package itself.\"",
+     "problem": "The answer (True) is right, but the anchor is broken. Effective Go is also a frozen 2009 page that never mentions \"initialization as a dependency\", the exact claim of the statement.",
+     "suggestedFix": "Keep the card. Change the URL to https://go.dev/ref/spec#Import_declarations (title \"The Go Programming Language Specification — Import declarations\"), or at least fix the anchor to https://go.dev/doc/effective_go#blank_import."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards (from go-fundamentals-b4.json) against the pages fetched on 2026-10-08. The spec's subtitle reads \"Language version go1.27 (May 26, 2026)\" and pkg.go.dev/cmd/go shows go1.27.1. The section is balanced: 6 true (01, 05, 06, 07, 09, 11) and 6 false (02, 03, 04, 08, 10, 12). All four suggested fixes keep the original answer.\n\nPassed, with the evidence that settles each:\n- 03: cmd/go#hdr-Internal_packages says code in or below \"internal\" \"is importable only by code that shares the same import path above the internal directory\". The example there is crash/bang, which cannot import foo/internal/baz.\n- 04: spec#Import_declarations says \"It is illegal for a package to import itself, directly or indirectly\".\n- 07: spec#Package_initialization says each step selects \"the variable earliest in declaration order which has no dependencies on uninitialized variables\".\n- 08: the spec says \"Multiple such functions may be declared per package, even within a single source file\". Effective Go says \"(Actually each file can have multiple init functions.)\"\n- 09: the go1.21 notes say \"Sort all packages by import path... Find the first package in the list for which all imports are already initialized\". The spec's Program initialization section matches.\n- 10: gomod-ref#go says \"Before Go 1.21, the directive was advisory only; now it is a mandatory requirement: Go toolchains refuse to use modules declaring newer Go versions.\" The explanation does not claim that a default build simply fails.\n- 11: go1.26#go-command says running go mod init \"using a toolchain of version 1.N.X will create a go.mod file specifying the Go version go 1.(N-1).0\". The go1.27 notes do not change this. The \"Since Go 1.26\" prefix is redundant but harmless.\n- 12: ref/mod#major-version-suffixes says the module \"must have the path example.com/mod/v2 at version v2.0.0\". The gopkg.in and +incompatible cases are excluded by the prompt.\n\nDuplicates: I searched the other sections for go.mod, go.sum, internal, init, export, import and the go directive. The only hits are r9-03 and r9-04 (the go line gating the loop-variable change) and r7-04 (methods on another package's type). None rests on the same fact as an r14 card.\n\nCoverage gap (not a flag): the section scope names package main and func main, the unused import as a compile error, require directives and go mod tidy, but no r14 card tests them. The suggested replacement for card 06 adds go mod tidy.\n\nMinor, not flagged: card 08's misconception text is fine. Card 04 says \"the compiler\", though in practice the go command reports \"import cycle not allowed\"; the answer is unaffected."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "go-fundamentals-sr4-02",
+     "go-fundamentals-sr6-06"
+    ],
+    "why": "Both cards rest on one spec rule: comparing interface values whose dynamic type is not comparable panics at run time. The spec's map section applies that same == rule to interface-typed keys. If you know any([]int{1}) == any([]int{1}) panics, you know a slice key in map[any]int panics, and the reverse also holds. sr6-06 is the stronger card because its false option, 'returns false', is a realistic misconception. sr4-02 states the panic directly.",
+    "dropId": "go-fundamentals-sr4-02"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "alias-same-type",
+    "ids": [
+     "go-fundamentals-sr1-01",
+     "go-fundamentals-sr6-02",
+     "go-fundamentals-sr7-07"
+    ],
+    "why": "sr1-01 explains that an alias 'preserves type identity', and sr7-07 says 'An alias denotes the same type as its target'. Either one gives away sr6-02 (any is not a distinct type) and the other's answer."
+   },
+   {
+    "name": "uncomparable-dynamic-panic",
+    "ids": [
+     "go-fundamentals-sr4-02",
+     "go-fundamentals-sr6-06"
+    ],
+    "why": "The same rule, a non-comparable dynamic value panics, is applied once to map keys and once to ==. If both cards are kept, sr4-02's explanation answers sr6-06."
+   },
+   {
+    "name": "interface-dynamic-type",
+    "ids": [
+     "go-fundamentals-sr6-04",
+     "go-fundamentals-sr6-05"
+    ],
+    "why": "sr6-05's explanation says interface equality checks the dynamic type as well as the value. That directly answers sr6-04: a nil *MyError held in an error is not equal to nil."
+   },
+   {
+    "name": "value-copy-semantics",
+    "ids": [
+     "go-fundamentals-sr3-02",
+     "go-fundamentals-sr5-02",
+     "go-fundamentals-sr7-01",
+     "go-fundamentals-sr3-10"
+    ],
+    "why": "Each card's explanation says that assignment, a receiver or a range value is a copy, so writes leave the original unchanged. The four false or true answers give each other away, and sr5-02, sr7-01 and sr3-10 share the false template 'writing to the copy updates the original'."
+   },
+   {
+    "name": "call-argument-evaluation",
+    "ids": [
+     "go-fundamentals-sr8-08",
+     "go-fundamentals-sr11-01"
+    ],
+    "why": "The spec states one rule for defer and go: the function value and arguments are evaluated and saved when the statement executes. Both explanations say 'evaluates and saves the call's arguments', so each answers the other."
+   },
+   {
+    "name": "defer-runs-at-return",
+    "ids": [
+     "go-fundamentals-sr8-09",
+     "go-fundamentals-sr8-11"
+    ],
+    "why": "sr8-09's statement, 'When a function returns, Go invokes its deferred calls...', gives away that a defer inside a loop does not run at the end of each iteration (sr8-11)."
+   },
+   {
+    "name": "defer-and-results",
+    "ids": [
+     "go-fundamentals-sr8-05",
+     "go-fundamentals-sr8-10"
+    ],
+    "why": "These are a contrast pair about how a deferred call affects results. sr8-10's explanation, that a deferred closure can still assign named results, and sr8-05's, that a deferred call's return values are discarded, together hint at each other's answer."
+   },
+   {
+    "name": "variadic-slice",
+    "ids": [
+     "go-fundamentals-sr8-04",
+     "go-fundamentals-sr8-07"
+    ],
+    "why": "sr8-07's explanation, that the ... suffix passes the slice 'as the variadic parameter's value', tells you the parameter is a []int (sr8-04). sr8-04's explanation in turn makes f(s...) obvious."
+   },
+   {
+    "name": "string-byte-indexing",
+    "ids": [
+     "go-fundamentals-sr2-02",
+     "go-fundamentals-sr2-03",
+     "go-fundamentals-sr2-05"
+    ],
+    "why": "All three explanations come back to strings being indexed by bytes. sr2-02's explanation says len measures bytes, and sr2-03's says the index selects the byte at a byte position. That answers sr2-05 (byte-offset indexes) and the other two."
+   },
+   {
+    "name": "nil-map-read-write",
+    "ids": [
+     "go-fundamentals-sr4-03",
+     "go-fundamentals-sr4-04"
+    ],
+    "why": "These are the read and write sides of one nil-map distinction, a mirrored true and false pair. Dealt together, the contrast gives away the write-panics answer."
+   },
+   {
+    "name": "clear-slice-vs-map",
+    "ids": [
+     "go-fundamentals-sr3-11",
+     "go-fundamentals-sr4-07"
+    ],
+    "why": "This is a mirrored pair on clear. On a map clear removes entries (true), and on a slice the claim that it shrinks the length is false. Either card next to the other exposes the distinction."
+   },
+   {
+    "name": "overflow-constant-vs-runtime",
+    "ids": [
+     "go-fundamentals-sr1-06",
+     "go-fundamentals-sr1-09"
+    ],
+    "why": "This is a mirrored pair on wrapping: run-time overflow wraps (true), while a constant 256 'wrapping' to 0 in a uint8 is false. Each card hints at the other."
+   },
+   {
+    "name": "type-identity-assignability",
+    "ids": [
+     "go-fundamentals-sr1-01",
+     "go-fundamentals-sr1-08",
+     "go-fundamentals-sr3-01"
+    ],
+    "why": "sr1-01 frames assignability as 'because they have the same type'. sr1-08's explanation says 'int and int64 are distinct types', and sr3-01's says the lengths make the types different. Each card's reasoning settles the others."
+   },
+   {
+    "name": "selector-depth",
+    "ids": [
+     "go-fundamentals-sr5-08",
+     "go-fundamentals-sr5-09"
+    ],
+    "why": "These are two sides of the shallowest-depth rule. sr5-08's explanation is about depth precedence, which points straight at the tie case in sr5-09 (illegal, not first-declared)."
+   },
+   {
+    "name": "promoted-literal-keys",
+    "ids": [
+     "go-fundamentals-sr5-11",
+     "go-fundamentals-sr5-12"
+    ],
+    "why": "Both cards are about Go 1.27 promoted-field literal keys. Each statement shows the feature exists, and sr5-12's explanation ('naming an embedded struct and one of its promoted fields') confirms that sr5-11 is valid."
+   },
+   {
+    "name": "slice-shared-array",
+    "ids": [
+     "go-fundamentals-sr3-03",
+     "go-fundamentals-sr3-06"
+    ],
+    "why": "sr3-06's explanation, 'append extends the slice using its existing underlying array', and sr3-03's statement about shared storage between slices hint at each other."
+   },
+   {
+    "name": "nil-only-comparison",
+    "ids": [
+     "go-fundamentals-sr3-08",
+     "go-fundamentals-sr8-01"
+    ],
+    "why": "The same spec pattern applies to both: slices and function values compare only to nil. sr3-08's explanation, 'support comparison with nil, but not ... with another slice', points to sr8-01's answer, and the reverse holds too."
+   },
+   {
+    "name": "loopvar-1-22",
+    "ids": [
+     "go-fundamentals-sr9-03",
+     "go-fundamentals-sr9-04"
+    ],
+    "why": "Both cards test the same Go 1.22 per-iteration change and use the same 'Since Go 1.22 ... go.mod go 1.22 or later ... by default' frame. sr9-04's statement shows that new variables are created per iteration, which gives away sr9-03."
+   },
+   {
+    "name": "index-only-range-nil-pointer",
+    "ids": [
+     "go-fundamentals-sr9-05",
+     "go-fundamentals-sr9-06"
+    ],
+    "why": "Both cards ask whether an index-only range over a nil array pointer touches the array. sr9-06's explanation, 'its nil pointer is safe here', strongly hints that sr9-05's p.A is not evaluated. They come close to being a duplicate for the player."
+   },
+   {
+    "name": "errorf-wrap-verbs",
+    "ids": [
+     "go-fundamentals-sr10-03",
+     "go-fundamentals-sr10-04"
+    ],
+    "why": "sr10-04's statement shows %w as the wrapping verb, which hints that %v does not wrap (sr10-03). sr10-03's explanation names %w as the verb that records a wrapped operand."
+   },
+   {
+    "name": "multi-error-unwrap",
+    "ids": [
+     "go-fundamentals-sr10-04",
+     "go-fundamentals-sr10-08",
+     "go-fundamentals-sr10-09"
+    ],
+    "why": "sr10-09's explanation reveals that a multi-error exposes Unwrap() []error, which answers sr10-04. Its phrase 'A non-nil joined error' hints that Join can return nil (sr10-08)."
+   },
+   {
+    "name": "channel-send-blocking",
+    "ids": [
+     "go-fundamentals-sr11-03",
+     "go-fundamentals-sr11-04"
+    ],
+    "why": "This is the unbuffered versus buffered send distinction, two sides of one split. Each explanation states the other side's condition for a send to proceed."
+   },
+   {
+    "name": "receive-only-channel",
+    "ids": [
+     "go-fundamentals-sr11-06",
+     "go-fundamentals-sr11-08"
+    ],
+    "why": "sr11-06's explanation, that a <-chan int parameter 'narrows the operations permitted', hints that close on a <-chan int parameter fails to compile (sr11-08)."
+   },
+   {
+    "name": "generic-methods",
+    "ids": [
+     "go-fundamentals-sr13-09",
+     "go-fundamentals-sr13-10"
+    ],
+    "why": "sr13-10's statement, 'In Go 1.27, a generic method implements...', assumes that generic methods exist. That gives away sr13-09, which asks whether a method with its own [U any] is valid."
+   },
+   {
+    "name": "method-name-uniqueness",
+    "ids": [
+     "go-fundamentals-sr7-06",
+     "go-fundamentals-sr7-12"
+    ],
+    "why": "sr7-06's explanation says methods on one base type 'need distinct non-blank names'. That strongly hints at sr7-12's answer: a field and a method may not share a name."
+   }
+  ],
+  "tells": "All 168 cards are unique by factKey. Each section has 6 true and 6 false cards. The average statement length is 85.0 for true cards and 85.1 for false ones. Per section the gap stays within 5 characters: r3 is at the limit (true 73.5, false 78.5), with r9 at 4.4 and r13 at 4.3, both with the true cards longer. Length is therefore not a usable tell. The hedge words and requirement words the prompt lists (can, supports, lets, allows, may, requires, must, each, every, automatically, directly, only) are almost absent: can 1T/1F, supports 0T/1F (sr3-08). The usable tells are wording and templates.\n\n(1) 'The compiler accepts ...' is false 4 of 4 times: sr7-12, sr8-01, sr13-06, sr14-04. Other claims that code compiles are also always false: 'compiles' / 'type-checks', 0T/2F (sr6-09, sr11-08). Overall, 'accepts' is 5T/10F. False: sr1-12, sr5-12, sr6-12, sr7-05, sr7-12, sr8-01, sr9-02, sr13-05, sr13-06, sr14-04. True: sr2-10, sr5-01, sr11-06, sr12-04, sr13-03. A player who answers False to any 'X accepts / compiles' card gets about 80% right.\n\n(2) 'makes' is 1T/6F. False: sr3-04, sr4-01, sr5-02, sr5-10, sr8-08, sr12-03. True: sr3-05.\n\n(3) Conditional or concessive framing predicts True. A statement opening with 'If ...' or containing 'if' is 6T/0F: sr1-04, sr5-03, sr7-10, sr9-01, sr9-06, sr11-07. 'even if' / 'despite' is 2T/0F: sr11-07, sr14-07.\n\n(4) Recurring false template 'writing to a copy changes the original'. This exceeds the prompt's two-per-template cap. The cards are sr2-07 ([]byte(s)), sr3-10 (range value), sr5-02 (struct copy) and sr7-01 (value receiver), plus sr8-08 (later assignment changes the deferred argument). Mutation verbs (change, update, replace) are 2T/7F. False: sr2-07, sr3-10, sr3-11, sr5-02, sr7-01, sr8-05, sr8-08. True: sr4-11, sr8-06. The mirror template 'gives an independent or separate copy or array' is 0T/2F: sr3-06, sr4-10.\n\n(5) Recurring false template 'the first one wins / Go picks by order or signature'. Examples: sr5-09 'picks the first declared', sr11-10 'chooses the one appearing first in source order', sr10-09 'returns its first wrapped error', sr7-06 'chooses ... by their parameter signatures'. 'picks/chooses' is 0T/3F, and 'first' is 2T/4F (true: sr9-01, sr10-05; false: sr5-09, sr9-07, sr10-09, sr11-10). This also exceeds the cap.\n\n(6) False template 'the program keeps running', 2 cards: sr10-01 ('continues running after a panic escapes a worker goroutine') and sr11-02 ('keeps the program running until its other goroutines finish'). It is at the cap, and dealt together the pattern is obvious.\n\n(7) Statements that assert a panic with 'raises / triggers a run-time panic' are 4T/1F. True: sr4-02, sr6-08, sr10-06, sr11-07. False: sr9-07. The word 'panic' overall is balanced, 8T/6F.\n\n(8) Mild skews: 'valid' is 4T/2F (true: sr3-05, sr5-11, sr13-08, sr13-09; false: sr13-04, sr13-07). 'In Go 1.27,' is 4T/2F (true: sr2-12, sr5-11, sr13-09, sr13-12; false: sr5-12, sr13-10). 'from' is 7T/3F. 'starts' is 2T/0F (sr1-07, sr11-01). 'gives' is 5T/2F. Difficulty 3 leans false, 16F against 12T. 'Since Go 1.x' is balanced at 10T/9F, and 'by default' at 3T/2F.\n\nSide notes, not tells:\n- sr9-01 ('for ready() skips its body if the first call returns false') is close to a truism.\n- sr13-01, sr13-03 and sr13-04 cite the 2022 intro-generics post, which the prompt calls outdated, instead of the spec.\n- sr9-03 cites the loopvar-preview post.\n- sr14-01 and sr14-02 cite the bare FAQ URL with no anchor.\n- I traced the trickiest true and false claims against my reading of the spec and found no factual errors: sr9-05 and sr9-06 (when range skips evaluating its expression), sr13-07 (an alias whose right side is its own type parameter is illegal), sr12-11 (Err returns Canceled, not the cause) and sr10-05 (errors.Is checks pre-order, depth-first). I did not open the web pages."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "go-fundamentals-sr2-11",
+    "reason": "weak_card: close to a definition card, since rune means code point, and near the spec sentence. Dropping leaves r2 at 10 cards, 4T/6F, which is still within the 4 to 6 limit."
+   },
+   {
+    "id": "go-fundamentals-sr2-12",
+    "reason": "weak_card: \"returns the input as before\" reads ambiguously, the statement paraphrases the doc's last sentence, and it tests a fringe edge case instead of the last-occurrence cut."
+   },
+   {
+    "id": "go-fundamentals-sr3-12",
+    "reason": "weak_card: the statement is the slices.Equal doc sentence turned into active voice, which breaks the original-wording rule. r3 keeps 11 cards, 5T/6F."
+   },
+   {
+    "id": "go-fundamentals-sr4-02",
+    "reason": "Scan duplicate of sr6-06: both rest on one rule, that comparing a non-comparable dynamic type held in an interface panics. sr6-06 is the stronger card. r4 is kept at 10 cards by rewriting sr4-05 and sr4-07."
+   },
+   {
+    "id": "go-fundamentals-sr4-09",
+    "reason": "weak_card: a close paraphrase of the spec sentence and nearly a truism. Its suggested replacement needs the hedge verb \"may\" on a true card, so I rewrote sr4-05 and sr4-07 to restore balance instead."
+   },
+   {
+    "id": "go-fundamentals-sr5-06",
+    "reason": "weak_card: \"Since Go 1.26, new(42)\" gives the answer away, so this is a strawman. Dropping leaves r5 at 11 cards, 6T/5F."
+   },
+   {
+    "id": "go-fundamentals-sr6-03",
+    "reason": "weak_card: a truism. Satisfying both embedded interfaces just restates what embedding means. r6 is left at 10 cards, 5T/5F."
+   },
+   {
+    "id": "go-fundamentals-sr6-10",
+    "reason": "weak_card: a strawman with a wording tell, because a static type cannot decide a run-time check."
+   },
+   {
+    "id": "go-fundamentals-sr7-02",
+    "reason": "weak_card: a near-copy of the spec's Method sets sentence that tests the rule in the abstract. r7 keeps 11 cards, 5T/6F."
+   },
+   {
+    "id": "go-fundamentals-sr8-02",
+    "reason": "weak_card: a truism. A multi-value assignment obviously fills both variables."
+   },
+   {
+    "id": "go-fundamentals-sr8-07",
+    "reason": "weak_card: a definition card about what the s... syntax means. It also formed the variadic-slice conflict pair with sr8-04. r8 is left at 10 cards, 4T/6F, which is within the limit."
+   },
+   {
+    "id": "go-fundamentals-sr9-01",
+    "reason": "weak_card: a truism. Every while-style loop checks its condition first."
+   },
+   {
+    "id": "go-fundamentals-sr9-11",
+    "reason": "weak_card: a strawman. The label in the statement names the target loop. r9 is left at 10 cards, 5T/5F."
+   },
+   {
+    "id": "go-fundamentals-sr10-07",
+    "reason": "weak_card: a strawman. The (E, bool) signature gives away the miss result, and \"by default\" suggests a panic mode that does not exist. r10 keeps 11 cards, 6T/5F."
+   },
+   {
+    "id": "go-fundamentals-sr11-04",
+    "reason": "weak_card: a definition card. A buffered send proceeding when the buffer has room is what \"buffered\" means, and the explanation is circular. r11 keeps 11 cards, 5T/6F."
+   },
+   {
+    "id": "go-fundamentals-sr12-06",
+    "reason": "weak_card: a definition card and a name giveaway, since a WaitGroup method named Go obviously tracks a task. r12 keeps 11 cards, 5T/6F."
+   },
+   {
+    "id": "go-fundamentals-sr13-07",
+    "reason": "weak_card: a near-copy of the spec's own illegal example, renamed, and edge-case trivia. r13 keeps 11 cards, 6T/5F."
+   },
+   {
+    "id": "go-fundamentals-sr14-06",
+    "reason": "weak_card: the answer can be guessed from the names go.sum and checksum, so it is close to a truism. r14 keeps 11 cards, 5T/6F."
+   }
+  ],
+  "source": [
+   {
+    "id": "go-fundamentals-sr1-06",
+    "title": "The Go Programming Language Specification — Constants",
+    "url": "https://go.dev/ref/spec#Constants"
+   },
+   {
+    "id": "go-fundamentals-sr2-03",
+    "title": "The Go Programming Language Specification — Index expressions",
+    "url": "https://go.dev/ref/spec#Index_expressions"
+   },
+   {
+    "id": "go-fundamentals-sr3-05",
+    "title": "The Go Programming Language Specification — Slice expressions",
+    "url": "https://go.dev/ref/spec#Slice_expressions"
+   },
+   {
+    "id": "go-fundamentals-sr3-11",
+    "title": "builtin package documentation — clear",
+    "url": "https://pkg.go.dev/builtin@go1.27.1#clear"
+   },
+   {
+    "id": "go-fundamentals-sr14-01",
+    "title": "The Go Programming Language Specification — Exported identifiers",
+    "url": "https://go.dev/ref/spec#Exported_identifiers"
+   },
+   {
+    "id": "go-fundamentals-sr14-05",
+    "title": "The Go Programming Language Specification — Import declarations",
+    "url": "https://go.dev/ref/spec#Import_declarations"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "go-fundamentals-sr1-11",
+    "reason": "source_problem: the spec only permits the restriction. The FAQ states that Go refuses to compile unused variables. The explanation now names both, and the statement and answer are unchanged.",
+    "statement": "The gc compiler rejects an unused local variable introduced by a var declaration.",
+    "answer": true,
+    "explanation": "The spec lets a compiler reject a local variable that is never used, and the gc toolchain does: the Go FAQ says Go refuses to compile programs with unused variables.",
+    "misconception": "",
+    "sourceTitle": "Go FAQ — Can I stop these complaints about my unused variable/import?",
+    "sourceUrl": "https://go.dev/doc/faq#unused_variables_and_imports"
+   },
+   {
+    "id": "go-fundamentals-sr2-09",
+    "reason": "source_problem: strings.Compare does not say the comparison is byte-wise. The spec's Comparison operators section says \"Two string values are compared lexically byte-wise.\" The explanation is tidied, and the statement and answer are unchanged.",
+    "statement": "The comparison `\"Z\" < \"a\"` uses case-insensitive alphabetic ordering.",
+    "answer": false,
+    "explanation": "The spec compares two strings lexically byte-wise. No case folding takes place, so \"Z\" < \"a\" compares the byte values of 'Z' and 'a'.",
+    "misconception": "String comparison folds letter case before ordering.",
+    "sourceTitle": "The Go Programming Language Specification — Comparison operators",
+    "sourceUrl": "https://go.dev/ref/spec#Comparison_operators"
+   },
+   {
+    "id": "go-fundamentals-sr4-05",
+    "reason": "weak_card (comma-ok definition card). Rewritten instead of dropped because r4 lost four true cards; dropping all of them would leave 8 cards at 2T/6F. The new card tests presence versus a stored zero value. Spec Index expressions: \"The value of ok is true if the key x is present in the map, and false otherwise.\" Suggested factKey: map-lookup-present-zero-value.",
+    "statement": "For a key k stored with value 0, `v, ok := m[k]` sets ok to true.",
+    "answer": true,
+    "explanation": "ok reports whether key k is present in the map, whatever its element holds, so a key stored with 0 gives v == 0 and ok == true. An absent key gives false.",
+    "misconception": "",
+    "sourceTitle": "The Go Programming Language Specification — Index expressions",
+    "sourceUrl": "https://go.dev/ref/spec#Index_expressions"
+   },
+   {
+    "id": "go-fundamentals-sr4-07",
+    "reason": "duplicate of sr3-11 (one clear distinction, slice versus map) and a name giveaway. Rewritten for r4 balance with the verifier's map element addressability card, an uncovered r4 fact. Spec Assignment statements: \"Each left-hand side operand must be addressable, a map index expression, or (for = assignments only) the blank identifier.\" Address operators does not list map indexing as addressable. Suggested factKey: map-element-not-addressable.",
+    "statement": "With `m := map[string]struct{ X int }{}`, the assignment `m[\"a\"].X = 1` fails to compile.",
+    "answer": true,
+    "explanation": "Map elements are not addressable, so a field of a struct element cannot be assigned in place. Store a whole new element with m[\"a\"] = v, or use a map of pointers.",
+    "misconception": "",
+    "sourceTitle": "The Go Programming Language Specification — Assignment statements",
+    "sourceUrl": "https://go.dev/ref/spec#Assignment_statements"
+   },
+   {
+    "id": "go-fundamentals-sr6-07",
+    "reason": "source_problem plus explanation_error: Assignability states only the premise, and the old explanation credited the check to the blank identifier. Effective Go #blank_implements (Interface checks) states the idiom: \"the assignment involving a conversion of a *RawMessage to a Marshaler requires that *RawMessage implements Marshaler, and that property will be checked at compile time.\"",
+    "statement": "For a method interface `I`, `var _ I = (*T)(nil)` checks `*T`'s implementation at compile time.",
+    "answer": true,
+    "explanation": "Assigning (*T)(nil) to I requires *T to implement I, so the declaration fails to compile if a method is missing; the blank identifier just discards the value.",
+    "misconception": "",
+    "sourceTitle": "Effective Go — Interface checks",
+    "sourceUrl": "https://go.dev/doc/effective_go#blank_implements"
+   },
+   {
+    "id": "go-fundamentals-sr8-11",
+    "reason": "explanation_error: the old explanation never stated when deferred calls do run. The new one states the right fact from the spec's Defer statements section. It leaves out \"or panics\" so that it does not give away sr10-10.",
+    "statement": "A `defer` inside a loop runs its scheduled call when that loop iteration ends.",
+    "answer": false,
+    "explanation": "Deferred calls run when the surrounding function returns, not when a loop iteration ends, so a defer in a loop body keeps each iteration's call pending until the function exits.",
+    "misconception": "A loop iteration defines the execution boundary for calls deferred inside it.",
+    "sourceTitle": "The Go Programming Language Specification — Defer statements",
+    "sourceUrl": "https://go.dev/ref/spec#Defer_statements"
+   },
+   {
+    "id": "go-fundamentals-sr13-01",
+    "reason": "source_problem: the 2022 intro-generics post does not state the default-type rule. Spec Type inference: an untyped constant for a bound type parameter is \"collected separately\", and \"The type argument for Pk is the default type for the determined constant kind.\" The explanation now names that mechanism.",
+    "statement": "Given `func id[T any](x T) T`, a call written as `id(7)` instantiates id with the type argument int.",
+    "answer": true,
+    "explanation": "7 is an untyped constant, so inference uses its default type: with no typed argument for T, the spec infers int, the default type of an integer constant.",
+    "misconception": "",
+    "sourceTitle": "The Go Programming Language Specification — Type inference",
+    "sourceUrl": "https://go.dev/ref/spec#Type_inference"
+   },
+   {
+    "id": "go-fundamentals-sr14-02",
+    "reason": "ambiguous: \"package-level identifier\" also covers an imported package name, which has file-block scope. The statement now says \"variable\". The source moves from the unanchored FAQ root to the spec's Declarations and scope, which says top-level variables have package-block scope and imported package names have file-block scope.",
+    "statement": "A package-level variable named cache has scope limited to the source file that declares it.",
+    "answer": false,
+    "explanation": "A variable declared at top level has package-block scope, so every file of the same package can use cache, whatever its case. Imported package names, by contrast, are scoped to the file that imports them.",
+    "misconception": "A lower-case package-level variable is visible only in the file that declares it.",
+    "sourceTitle": "The Go Programming Language Specification — Declarations and scope",
+    "sourceUrl": "https://go.dev/ref/spec#Declarations_and_scope"
+   },
+   {
+    "id": "go-fundamentals-sr7-12",
+    "reason": "tell: \"The compiler accepts ...\" was false in 4 of 4 cards. Reworded with the same fact and answer.",
+    "statement": "A struct type T with a function-valued field M can also have a method M declared on T.",
+    "answer": false,
+    "explanation": "A struct's non-blank, directly declared field names and bound method names must be distinct. A function-valued field receives no exception.",
+    "misconception": "A function-valued field permits a same-named method on its struct type.",
+    "sourceTitle": "The Go Programming Language Specification — Method declarations",
+    "sourceUrl": "https://go.dev/ref/spec#Method_declarations"
+   },
+   {
+    "id": "go-fundamentals-sr8-01",
+    "reason": "tell: \"The compiler accepts ...\" was false in 4 of 4 cards. Reworded with the same fact and answer; \"valid\" was skewed toward true, so this also balances it.",
+    "statement": "`f == g` is valid for two variables f and g that share the same function type.",
+    "answer": false,
+    "explanation": "Go permits a function value to be compared with nil. Comparing two function values with == is a compile-time error.",
+    "misconception": "Function values with matching types support equality comparisons.",
+    "sourceTitle": "The Go Programming Language Specification — Comparison operators",
+    "sourceUrl": "https://go.dev/ref/spec#Comparison_operators"
+   },
+   {
+    "id": "go-fundamentals-sr13-06",
+    "reason": "tell: \"The compiler accepts ...\" was false in 4 of 4 cards. Reworded with the same fact and answer, and with the length kept close to the original.",
+    "statement": "`interface{ int | int }` is a legal type constraint for the type parameter of a generic function.",
+    "answer": false,
+    "explanation": "Non-interface union terms need disjoint type sets. Repeating int makes this constraint illegal.",
+    "misconception": "Union constraints accept repeated non-interface terms.",
+    "sourceTitle": "The Go Programming Language Specification — General interfaces",
+    "sourceUrl": "https://go.dev/ref/spec#General_interfaces"
+   },
+   {
+    "id": "go-fundamentals-sr14-04",
+    "reason": "tell: \"The compiler accepts ...\" was false in 4 of 4 cards. Reworded with the same fact and answer; using the hedge verb \"lets\" on a false card balances hedge verbs.",
+    "statement": "Go lets package a import package b when package b already imports package a.",
+    "answer": false,
+    "explanation": "Go rejects a package importing itself through another package; the resulting import cycle is illegal.",
+    "misconception": "Packages can import one another in a cycle.",
+    "sourceTitle": "The Go Programming Language Specification — Import declarations",
+    "sourceUrl": "https://go.dev/ref/spec#Import_declarations"
+   },
+   {
+    "id": "go-fundamentals-sr5-03",
+    "reason": "tell: a statement opening with \"If\" was true in 6 of 6 cards. Reworded with the same fact and answer.",
+    "statement": "For a pointer `p` to a struct with field `Name`, `p.Name` accesses the same field as `(*p).Name`.",
+    "answer": true,
+    "explanation": "Go follows a struct pointer for a field selector, so p.Name abbreviates (*p).Name.",
+    "misconception": "",
+    "sourceTitle": "The Go Programming Language Specification — Selectors",
+    "sourceUrl": "https://go.dev/ref/spec#Selectors"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "alias-same-type",
+    "ids": [
+     "go-fundamentals-sr1-01",
+     "go-fundamentals-sr6-02",
+     "go-fundamentals-sr7-07"
+    ]
+   },
+   {
+    "name": "interface-dynamic-type",
+    "ids": [
+     "go-fundamentals-sr6-04",
+     "go-fundamentals-sr6-05"
+    ]
+   },
+   {
+    "name": "value-copy-semantics",
+    "ids": [
+     "go-fundamentals-sr3-02",
+     "go-fundamentals-sr5-02",
+     "go-fundamentals-sr7-01",
+     "go-fundamentals-sr3-10"
+    ]
+   },
+   {
+    "name": "call-argument-evaluation",
+    "ids": [
+     "go-fundamentals-sr8-08",
+     "go-fundamentals-sr11-01"
+    ]
+   },
+   {
+    "name": "defer-runs-at-return",
+    "ids": [
+     "go-fundamentals-sr8-09",
+     "go-fundamentals-sr8-11"
+    ]
+   },
+   {
+    "name": "defer-and-results",
+    "ids": [
+     "go-fundamentals-sr8-05",
+     "go-fundamentals-sr8-10"
+    ]
+   },
+   {
+    "name": "string-byte-indexing",
+    "ids": [
+     "go-fundamentals-sr2-02",
+     "go-fundamentals-sr2-03",
+     "go-fundamentals-sr2-05"
+    ]
+   },
+   {
+    "name": "nil-map-read-write",
+    "ids": [
+     "go-fundamentals-sr4-03",
+     "go-fundamentals-sr4-04"
+    ]
+   },
+   {
+    "name": "overflow-constant-vs-runtime",
+    "ids": [
+     "go-fundamentals-sr1-06",
+     "go-fundamentals-sr1-09"
+    ]
+   },
+   {
+    "name": "type-identity-assignability",
+    "ids": [
+     "go-fundamentals-sr1-01",
+     "go-fundamentals-sr1-08",
+     "go-fundamentals-sr3-01"
+    ]
+   },
+   {
+    "name": "selector-depth",
+    "ids": [
+     "go-fundamentals-sr5-08",
+     "go-fundamentals-sr5-09"
+    ]
+   },
+   {
+    "name": "promoted-literal-keys",
+    "ids": [
+     "go-fundamentals-sr5-11",
+     "go-fundamentals-sr5-12"
+    ]
+   },
+   {
+    "name": "slice-shared-array",
+    "ids": [
+     "go-fundamentals-sr3-03",
+     "go-fundamentals-sr3-06"
+    ]
+   },
+   {
+    "name": "nil-only-comparison",
+    "ids": [
+     "go-fundamentals-sr3-08",
+     "go-fundamentals-sr8-01"
+    ]
+   },
+   {
+    "name": "loopvar-1-22",
+    "ids": [
+     "go-fundamentals-sr9-03",
+     "go-fundamentals-sr9-04"
+    ]
+   },
+   {
+    "name": "index-only-range-nil-pointer",
+    "ids": [
+     "go-fundamentals-sr9-05",
+     "go-fundamentals-sr9-06"
+    ]
+   },
+   {
+    "name": "errorf-wrap-verbs",
+    "ids": [
+     "go-fundamentals-sr10-03",
+     "go-fundamentals-sr10-04"
+    ]
+   },
+   {
+    "name": "multi-error-unwrap",
+    "ids": [
+     "go-fundamentals-sr10-04",
+     "go-fundamentals-sr10-08",
+     "go-fundamentals-sr10-09"
+    ]
+   },
+   {
+    "name": "receive-only-channel",
+    "ids": [
+     "go-fundamentals-sr11-06",
+     "go-fundamentals-sr11-08"
+    ]
+   },
+   {
+    "name": "generic-methods",
+    "ids": [
+     "go-fundamentals-sr13-09",
+     "go-fundamentals-sr13-10"
+    ]
+   },
+   {
+    "name": "method-name-uniqueness",
+    "ids": [
+     "go-fundamentals-sr7-06",
+     "go-fundamentals-sr7-12"
+    ]
+   },
+   {
+    "name": "untyped-constant-default-type",
+    "ids": [
+     "go-fundamentals-sr1-05",
+     "go-fundamentals-sr13-01"
+    ]
+   }
+  ],
+  "sectionBalance": "Cards left after edits, with the true/false split and the gap in average statement length (true minus false): r1 12 (6T/6F, +0.5); r2 10 (4T/6F, -8.0); r3 11 (5T/6F, -2.3); r4 10 (4T/6F, +3.8); r5 11 (6T/5F, -4.5); r6 10 (5T/5F, -1.2); r7 11 (5T/6F, about +3); r8 10 (4T/6F, about -7.4); r9 10 (5T/5F, +11.2); r10 11 (6T/5F, +0.3); r11 11 (5T/6F, +1.8); r12 11 (5T/6F, -3.3); r13 11 (6T/5F, about +1.4); r14 11 (5T/6F, about +4.7). The deck has 149 cards, 75 true and 74 false. Every section has at least 10 cards, and no split is worse than 4 to 6 per 10.",
+  "notes": "I checked these on 2026-10-08 against the live pages: the spec (\"Language version go1.27 (May 26, 2026)\"), the FAQ (#unused_variables_and_imports, \"Go refuses to compile programs with unused variables or imports\"), Effective Go (#blank_implements, heading \"Interface checks\") and builtin@go1.27.1 (#clear). Every new anchor exists. #Full_slice_expressions does not exist, so sr3-05 now points to #Slice_expressions.\n\nSentences that settle the rewrites:\n- Index_expressions: \"the type of a[x] is byte\" and \"The value of ok is true if the key x is present in the map\".\n- Comparison_operators: \"compared lexically byte-wise\".\n- Assignment_statements: left-hand operands are \"addressable, a map index expression, or ... the blank identifier\".\n- Declarations_and_scope: the scope of an imported package name is the file block.\n- Exported_identifiers: Unicode category Lu.\n- Import_declarations: \"solely for its side-effects (initialization)\".\n- Type_inference: \"the default type for the determined constant kind\".\n- Constants: \"It is an error if the constant value cannot be represented\". This tightens sr1-06's source; the verifier offered it as optional.\n\nPolicy decisions:\n- r4 had four true cards flagged (sr4-02 from the scan, sr4-05, sr4-07, sr4-09). Dropping all four would leave 8 cards at 2T/6F. So I rewrote two of them with verifier replacements (map element addressability; ok being true for a present key that holds the zero value) and dropped sr4-02 and sr4-09. I did not use sr4-09's replacement because it needs \"may\" on a true card, which is a hedge tell.\n- r2 and r8 each drop to 10 cards at 4T/6F. That is exactly at the 4 to 6 limit, so the drop rule applies and I wrote no replacements.\n\nFive tell rewrites:\n- \"The compiler accepts\" was false in 4 of 4 cards: sr7-12, sr8-01, sr13-06 and sr14-04 are reworded. \"accepts\" is now about 5T/6F.\n- A statement opening with \"If\" was always true: sr5-03 is reworded. sr1-04, sr7-10, sr9-06 and sr11-07 still use if or even if, all of them true, so that tell is reduced but still there.\n\nConflict groups:\n- Removed because members were dropped or rewritten away: uncomparable-dynamic-panic (sr4-02 dropped), variadic-slice (sr8-07 dropped), channel-send-blocking (sr11-04 dropped), clear-slice-vs-map (sr4-07 is no longer about clear).\n- Added: untyped-constant-default-type, sr1-05 with sr13-01, because sr13-01's new explanation cites the default type of an untyped constant.\n- sr8-11's new explanation leaves out \"or panics\" so that it does not give away sr10-10.\n\nOpen issues for the orchestrator:\n1. Drops removed every card for four of the listed version changes: strings.CutLast (Go 1.27, sr2-12), new with an expression (Go 1.26, sr5-06), errors.AsType (Go 1.26, sr10-07) and WaitGroup.Go (Go 1.25, sr12-06). The verifiers gave clean replacements for all four. If coverage of version changes matters more than the drop rule, those replacements are the fix.\n2. The rule that the true and false averages stay within 5 characters is now broken in r2 (-8.0), r8 (about -7.4) and r9 (+11.2), all because of drops. Fixing that needs more rewrites than this pass allows.\n\nHousekeeping: my first download command wrote spec.html, faq.html, eg.html and builtin.html into the shared scratchpad folder scratchpad/ed/. If same-named files were already there, they were overwritten with fresh copies of the same URLs. I made no edits to the deck or prompt files."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "go-fundamentals-sr1-11",
+    "decision": "keep",
+    "statement": "The gc compiler rejects an unused local variable introduced by a var declaration.",
+    "answer": true,
+    "explanation": "The spec lets a compiler reject a local variable that is never used, and the gc toolchain does: the Go FAQ says Go refuses to compile programs with unused variables.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Variable declarations: \"A compiler may make it illegal to declare a variable inside a function body if the variable is never used.\" Also confirmed in the FAQ (#unused_variables_and_imports exists): \"Go refuses to compile programs with unused variables or imports\". The wording follows the prompt's rule that the gc toolchain enforces this and the spec does not forbid it."
+   },
+   {
+    "id": "go-fundamentals-sr2-09",
+    "decision": "fixed",
+    "statement": "The comparison `\"Z\" < \"a\"` uses case-insensitive alphabetic ordering.",
+    "answer": false,
+    "explanation": "The spec compares two strings lexically byte-wise and does no case folding. 'Z' is byte 0x5A and 'a' is 0x61, so \"Z\" < \"a\" is true: every upper-case ASCII letter sorts before every lower-case one.",
+    "reason": "Applied the wording lens fix, which tells the player the actual result. The fact lens independently checked 0x5A < 0x61. Spec, Comparison operators: \"Two string values are compared lexically byte-wise.\" ASCII A-Z is 0x41-0x5A and a-z is 0x61-0x7A, so the generalization holds. The explanation is 196 chars."
+   },
+   {
+    "id": "go-fundamentals-sr4-05",
+    "decision": "keep",
+    "statement": "For a key k stored with value 0, `v, ok := m[k]` sets ok to true.",
+    "answer": true,
+    "explanation": "ok reports whether key k is present in the map, whatever its element holds, so a key stored with 0 gives v == 0 and ok == true. An absent key gives false.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Index expressions: \"The value of ok is true if the key x is present in the map, and false otherwise.\" The card tests presence versus a stored zero value, not the definition of ok."
+   },
+   {
+    "id": "go-fundamentals-sr4-07",
+    "decision": "keep",
+    "statement": "With `m := map[string]struct{ X int }{}`, the assignment `m[\"a\"].X = 1` fails to compile.",
+    "answer": true,
+    "explanation": "Map elements are not addressable, so a field of a struct element cannot be assigned in place. Store a whole new element with m[\"a\"] = v, or use a map of pointers.",
+    "reason": "Both lenses said keep. The fact lens worried that addressability belongs to r7, but the prompt's r4 scope lists this exact fact: \"map elements not addressable so m[k].f = v does not compile for a struct element type\". Spec, Assignment statements: \"Each left-hand side operand must be addressable, a map index expression, or (for = assignments only) the blank identifier.\" The Address operators list does not include map indexing. Losing the clear(m) card is a coverage note only."
+   },
+   {
+    "id": "go-fundamentals-sr6-07",
+    "decision": "keep",
+    "statement": "For a method interface `I`, `var _ I = (*T)(nil)` checks `*T`'s implementation at compile time.",
+    "answer": true,
+    "explanation": "Assigning (*T)(nil) to I requires *T to implement I, so the declaration fails to compile if a method is missing; the blank identifier just discards the value.",
+    "reason": "Both lenses said keep. Confirmed in Effective Go, Interface checks (#blank_implements exists): \"the assignment involving a conversion of a *RawMessage to a Marshaler requires that *RawMessage implements Marshaler, and that property will be checked at compile time.\" The prompt allows citing Effective Go for idioms it still states."
+   },
+   {
+    "id": "go-fundamentals-sr8-11",
+    "decision": "keep",
+    "statement": "A `defer` inside a loop runs its scheduled call when that loop iteration ends.",
+    "answer": false,
+    "explanation": "Deferred calls run when the surrounding function returns, not when a loop iteration ends, so a defer in a loop body keeps each iteration's call pending until the function exits.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Defer statements: execution is \"deferred to the moment the surrounding function returns\". The r8 scope lists \"a defer inside a loop running only when the surrounding function returns\"."
+   },
+   {
+    "id": "go-fundamentals-sr13-01",
+    "decision": "keep",
+    "statement": "Given `func id[T any](x T) T`, a call written as `id(7)` instantiates id with the type argument int.",
+    "answer": true,
+    "explanation": "7 is an untyped constant, so inference uses its default type: with no typed argument for T, the spec infers int, the default type of an integer constant.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Type inference: the pair (cj, Pk) \"is collected separately from the type equations\", and \"The type argument for Pk is the default type for the determined constant kind.\""
+   },
+   {
+    "id": "go-fundamentals-sr14-02",
+    "decision": "keep",
+    "statement": "A package-level variable named cache has scope limited to the source file that declares it.",
+    "answer": false,
+    "explanation": "A variable declared at top level has package-block scope, so every file of the same package can use cache, whatever its case. Imported package names, by contrast, are scoped to the file that imports them.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Declarations and scope: \"The scope of an identifier denoting a constant, type, variable, or function (but not method) declared at top level (outside any function) is the package block.\" Also: \"The scope of the package name of an imported package is the file block of the file containing the import declaration.\" The explanation is 204 chars."
+   },
+   {
+    "id": "go-fundamentals-sr7-12",
+    "decision": "keep",
+    "statement": "A struct type T with a function-valued field M can also have a method M declared on T.",
+    "answer": false,
+    "explanation": "A struct's non-blank, directly declared field names and bound method names must be distinct. A function-valued field receives no exception.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Method declarations: \"If the base type is a struct type, the non-blank method and field names must be distinct.\" Both lenses accept \"directly declared\" as accurate, because a method may shadow a promoted field."
+   },
+   {
+    "id": "go-fundamentals-sr8-01",
+    "decision": "keep",
+    "statement": "`f == g` is valid for two variables f and g that share the same function type.",
+    "answer": false,
+    "explanation": "Go permits a function value to be compared with nil. Comparing two function values with == is a compile-time error.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Comparison operators: \"Slice, map, and function types are not comparable. However, as a special case, a slice, map, or function value may be compared to the predeclared identifier nil.\""
+   },
+   {
+    "id": "go-fundamentals-sr13-06",
+    "decision": "keep",
+    "statement": "`interface{ int | int }` is a legal type constraint for the type parameter of a generic function.",
+    "answer": false,
+    "explanation": "Non-interface union terms need disjoint type sets. Repeating int makes this constraint illegal.",
+    "reason": "Both lenses said keep. Confirmed in the spec, General interfaces: \"the type sets of all non-interface terms must be pairwise disjoint (the pairwise intersection of the type sets must be empty).\""
+   },
+   {
+    "id": "go-fundamentals-sr14-04",
+    "decision": "keep",
+    "statement": "Go lets package a import package b when package b already imports package a.",
+    "answer": false,
+    "explanation": "Go rejects a package importing itself through another package; the resulting import cycle is illegal.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Import declarations: \"It is illegal for a package to import itself, directly or indirectly, ...\" The r14 scope lists import cycles as an error."
+   },
+   {
+    "id": "go-fundamentals-sr5-03",
+    "decision": "keep",
+    "statement": "For a pointer `p` to a struct with field `Name`, `p.Name` accesses the same field as `(*p).Name`.",
+    "answer": true,
+    "explanation": "Go follows a struct pointer for a field selector, so p.Name abbreviates (*p).Name.",
+    "reason": "Both lenses said keep. Confirmed in the spec, Selectors: \"For a value x of type T or *T where T is not a pointer or interface type, x.f denotes the field or method at the shallowest depth in T\". The spec's example annotates \"p.z // (*p).z\". The r5 scope lists automatic dereference in p.f."
+   }
+  ]
+ }
+}

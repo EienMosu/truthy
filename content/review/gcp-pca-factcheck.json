@@ -1,0 +1,1523 @@
+{
+ "deck": "gcp-pca",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s1.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, last reviewed 2024-07-05",
+     "evidence": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide defines RTO as \"the maximum acceptable length of time that your application can be offline\" and RPO as \"the maximum acceptable length of time during which data might be lost\". The page never states that one target fails to imply the other; the answer follows only from these two definitions.",
+     "problem": "This is a definition card, which the prompt bans: anyone who knows that RPO measures data loss and RTO measures downtime gets it right from the terms alone, and nobody who studied would answer True (a strawman). The source also has no sentence that states the fact; the card relies on inference.",
+     "suggestedFix": "Replacement (answer false): \"Google's DR guide describes a cold pattern as one where spare recovery resources are already in place before a disaster.\" Explanation: \"In the cold pattern no spare resources are on hand, so recovery must first obtain them, and service stays down until they arrive.\" Same URL. Planning guide: \"You have no spare tire, so you must call someone to come to you with a new tire... Your trip stops until help arrives.\""
+    },
+    {
+     "id": "gcp-pca-s1.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, dora.dev (a Google Cloud program, footer \"DORA is a program run by Google Cloud\"), dated 2026-01-05",
+     "evidence": "https://dora.dev/guides/dora-metrics/: change fail rate is \"The ratio of deployments that require immediate intervention following a deployment. Likely resulting in a rollback of the changes or a 'hotfix' to quickly remediate any issues.\"",
+     "problem": "The answer is right, but the metric's name gives it away (a release that needs a hotfix is a failed change), and the statement repeats the page's own definition almost word for word (\"immediate intervention ... hotfix\"). As written it tests the meaning of the term, not a design-relevant fact.",
+     "suggestedFix": "Replacement (answer true): \"DORA groups failed deployment recovery time with deployment frequency as a software delivery throughput factor.\" Explanation: \"DORA measures throughput with change lead time, deployment frequency and failed deployment recovery time; change fail rate and deployment rework rate measure instability.\" Volatility may_change (DORA regrouped its metrics recently). Same URL, which lists recovery time under \"three factors to measure software delivery throughput\"."
+    },
+    {
+     "id": "gcp-pca-s1.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instances/apply-machine-type-recommendations-for-instances: \"If you apply a recommendation to resize your instance's machine type, you are charged for the machine type that you choose.\" and \"If your instance has had low CPU utilization most of the time, Compute Engine recommends a machine type with fewer virtual CPUs.\"",
+     "problem": "The statement is a strawman. Rightsizing changes the allocation, and moving to a smaller machine type raises CPU utilization rather than lowering it, so the claim contradicts itself and nobody who studied would answer True. The real lever is that billing follows the machine type, not utilization, and the card does not test that directly.",
+     "suggestedFix": "Replacement (answer false): \"Compute Engine bills a running VM's vCPUs and memory by measured utilization rather than by machine type.\" Explanation: \"Compute Engine charges for the machine type a VM runs, whatever its load, so rightsizing to a type with fewer vCPUs or less memory is what lowers the bill.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s1.1-06",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, but no sentence on capacity",
+     "evidence": "The cited https://docs.cloud.google.com/compute/docs/instances/committed-use-discounts-overview describes flexible CUDs only as spend commitments and has no sentence on reservations or capacity beyond navigation links. https://docs.cloud.google.com/compute/docs/instances/reservations-with-commitments settles it: \"compute flexible commitments don't require or support attached reservations\" and they \"don't come with assured capacity for any eligible resources\"; also \"commitments don't reserve zonal capacity for your committed resources\".",
+     "problem": "The answer (false) and the explanation are correct, but the cited page does not support the card's fact (that flexible CUDs give no capacity assurance and a reservation is needed).",
+     "suggestedFix": "Keep the card and change the source to https://docs.cloud.google.com/compute/docs/instances/reservations-with-commitments (title: \"Combine reservations with committed use discounts\")."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 1.1 (5 true: 02, 04, 08, 09, 10; 5 false: 01, 03, 05, 06, 07). All the replacements I suggest keep each card's answer, so the 5/5 balance holds. Every cited URL loaded (HTTP 200).\n\nEvidence for the cards that pass:\n- 02: the planning guide says \"Typically, the smaller your RTO and RPO values are ..., the more your application will cost to run.\" The prompt names this fact in the 1.1 scope, so I kept the card, although it is close to common sense.\n- 03: the planning guide's warm pattern says \"you must stop your journey to repair the problem\". The cited dr-scenarios-for-applications page also says \"your application will be unavailable until you finish restoring\". The planning guide is the cleaner source. The warm static-site fallback on the cited page is not the application itself serving traffic, so it does not flip the answer.\n- 04: the slo-monitoring page says \"You want an SLO to be tighter than a public commitment.\"\n- 05: the CUD overview says \"You can use a given commitment to cover resources only in the region that was specified by the commitment.\" I found no feature that lets you change a commitment's region.\n- 08: pubsub-basics says \"Each of the subscriber applications gets the same set of published messages from the topic.\"\n- 09: the XMLtoJSON page (applies to Apigee and Apigee hybrid) says \"a JSON API can be exposed for backend services that natively support only XML.\"\n\nOverlap with other sections: none of the 1.1 cards duplicates another card. Related but separate facts: 4.2-03 (machine type recommendations use averages), 4.2-07 and 4.2-08 (spend-based commitment fees and CUD recommendations), the Apigee cards 5.1-02 and 5.1-03, and the SLO cards 6.1-02 and 6.1-03.\n\nSource note: dora.dev is run by Google Cloud, so I accepted it as an official Google property.\n\nThe web search budget ran out during this check. I verified everything by fetching the pages directly."
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s1.2-09",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, last updated 2026-10-07",
+     "evidence": "https://docs.cloud.google.com/backup-disaster-recovery/docs/concepts/backup-vault: \"Once configured, backups are completely immutable—they cannot be manually deleted by you, any other user, or Google until your specified duration has passed.\" The same page says the minimum can be adjusted \"up or down\" before a lock's effective date, and \"Beginning November 1, 2026, Backup and DR will automatically apply a project-level lien to any project containing a backup vault with backups protected by enforced retention.\" https://docs.cloud.google.com/backup-disaster-recovery/docs/concepts/best-practices-cyber-resilience: \"A project lien prevents the project—and your backups—from being deleted unexpectedly.\"",
+     "problem": "The source blocks only manual deletion. The statement just says Project Owners \"can delete\" backups. Google's own lien guidance shows that deleting the vault's project deletes its backups. Before 2026-11-01 no lien is applied automatically, and an Owner holds the permission to remove a lien. So an expert could answer True through project deletion. The explanation says \"manual deletion\", but the statement does not.",
+     "suggestedFix": "Keep false. Statement: \"A Project Owner can manually delete a backup from a Backup and DR backup vault before its enforced retention ends.\" (114) Explanation: \"Enforced retention blocks manual deletion of a vault's backups by any user, including Project Owners, or by Google until it expires. A project lien also guards against deleting the whole project.\" (195) Same URL."
+    },
+    {
+     "id": "gcp-pca-s1.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last reviewed 2026-01-28",
+     "evidence": "https://docs.cloud.google.com/architecture/framework: \"A perspective in the Well-Architected Framework is a cross-pillar view of recommendations for a specific technology, domain, or sector.\"",
+     "problem": "The card is true by definition. The framework defines a perspective as a cross-pillar view, so the statement restates the meaning of the word \"perspective\". It tests no design-relevant behaviour at professional depth, and anyone who knows the term answers it without knowing anything about AI and ML.",
+     "suggestedFix": "Replace with a true card on an unused reliability-pillar principle. Statement: \"The Well-Architected Framework's reliability pillar bases reliability goals on the success ratio of user requests.\" (114) Explanation: \"The reliability pillar says high CPU or crashed tasks are no outage unless users are affected, so it measures reliability with user-facing metrics such as request success ratio.\" (177) URL: https://docs.cloud.google.com/architecture/framework/reliability/define-reliability-based-on-user-experience-goals (quote: \"Focus on metrics like the success ratio of user requests. Don't rely solely on server-centric metrics, like CPU usage\")."
+    },
+    {
+     "id": "gcp-pca-s1.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official",
+     "evidence": "https://docs.cloud.google.com/cdn/docs/overview: \"Cloud CDN works with the global external Application Load Balancer or the classic Application Load Balancer\". https://docs.cloud.google.com/network-tiers/docs/overview: \"Cloud CDN is always Premium Tier.\" / \"You cannot use Standard Tier with Cloud CDN.\"",
+     "problem": "The answer is correct, but the card only identifies a product. CDN behind the global external HTTP(S) load balancer is the textbook setup that every learner answers True, and the prompt gives identification to CDL. It does not test a fact that decides between two designs.",
+     "suggestedFix": "Keep true and test a fact that constrains the design. Statement: \"Cloud CDN caching for a load balancer requires that load balancer to use Premium Tier.\" (86) Explanation: \"Cloud CDN is always Premium Tier and can't be used with Standard Tier, so choosing Standard Tier to lower egress cost for a load balancer rules out Cloud CDN caching.\" (166) URL: https://docs.cloud.google.com/network-tiers/docs/overview. The fact differs from s1.2-07, which tests the Standard Tier egress path."
+    },
+    {
+     "id": "gcp-pca-s1.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instance-groups/regional-migs: \"To be prepared for the extreme case where one zone fails or an entire group of instances stops responding, Google strongly recommends overprovisioning your MIG.\" and \"When you create a regional MIG in a region with at least three zones, Google recommends overprovisioning your group by at least 50%.\" and \"To provision your instances in two zones instead of three, Google recommends doubling the number of instances.\"",
+     "problem": "The card is accurate and supported, but it is close to a truism. Keeping spare capacity so the remaining zones can carry the load after a zone failure is generic HA common sense, and few people who studied would answer False. The fact that actually decides the design is the sizing rule the page gives.",
+     "suggestedFix": "Keep true. Statement: \"Google recommends at least 50% extra instances for a regional MIG that spreads its VMs across three zones.\" (106) Explanation: \"Losing one of three zones removes a third of capacity. Google recommends at least 50% overprovisioning, and doubling for two zones, so the remaining zones carry the full load.\" (175) Same URL. The volatility can stay stable because the figure follows from the arithmetic."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.2 (all in raw/gcp-pca-b1.json). The section is balanced at 5 true and 5 false, and every suggested fix keeps each card's answer. All source URLs load on docs.cloud.google.com.\n\nCards that pass, with the deciding quote:\n\n- **02**: graceful-degradation page: \"Configure your systems to drop excess requests at the frontend layer to protect backend components.\"\n- **03**: deployment-archetypes page: \"If a region outage occurs, you can use the backups in the other region to restore the application to production.\" The answer is right. Note the mild risk that \"regional ... fails over to another region\" is partly guessable from the name.\n- **05**: Cloud SQL HA page: a primary and standby in \"a primary and secondary zone within the configured region\". It is a different fact from s2.2-06 (standby serving reads).\n- **06**: Spanner instance-configurations page: \"In the event that the default leader region fails or is not available, Spanner automatically places your database's leader replicas in the second read-write region\". Dual-region configurations need manual failover, but the statement is limited to multi-region, so it holds.\n- **07**: Network Service Tiers overview: \"Outbound traffic is sent through a peering or transit network in a point of presence (PoP) near the region of the Standard Tier IP address.\"\n- **10**: container contract: \"Data written to the file system doesn't persist when the instance stops.\" Cloud Storage FUSE or NFS volume mounts do not count as the local writable filesystem, so no expert reading reverses it. It is a borderline easy false card, but it is not flagged.\n\nDuplicate check: no other section rests on the same facts. Related but distinct cards are s2.2-06 (Cloud SQL HA standby reads), s2.2-07 (Spanner Enterprise Plus), s2.3-07 (Direct VPC egress) and s6.3-03 (MIG surge quota).\n\nThe WebSearch budget for the session was used up, so I took all evidence directly from the cited pages and their linked pages."
+  },
+  {
+   "section": "1.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s1.3-03",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (load-balancing-overview), official, current; it says passthrough keeps the packet source but says nothing about PROXY protocol",
+     "evidence": "https://docs.cloud.google.com/load-balancing/docs/tcp: \"By default, the target proxy does not preserve the original client IP address and port information. You can preserve this information by enabling the PROXY protocol on the target proxy.\"",
+     "problem": "Google's own page says a proxy Network Load Balancer can preserve the client IP when the PROXY protocol is enabled, and that header travels inside the packets the backend receives. An expert can therefore defend True. The explanation also says preserving the client IP calls for a passthrough design. That is misleading, because the documented option for proxy NLBs is the PROXY protocol. The overview URL never mentions this option.",
+     "suggestedFix": "Keep false. Statement: \"By default, a proxy Network Load Balancer passes the client's source IP and port through to its backends.\" Explanation: \"By default the target proxy drops the client IP and port, so backends see proxy addresses as the source. Enabling the PROXY protocol on the target proxy preserves that client information.\" URL: https://docs.cloud.google.com/load-balancing/docs/tcp"
+    },
+    {
+     "id": "gcp-pca-s1.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/vpc/docs/shared-vpc: \"Shared VPC lets organization administrators delegate administrative responsibilities, such as creating and managing instances, to Service Project Admins while maintaining centralized control over network resources like subnets, routes, and firewalls.\" Same page: \"Each service project can only be attached to a single host project.\"",
+     "problem": "The card restates what Shared VPC is for, and the source page says it almost word for word. The prompt says to assume the player knows each product's purpose, and that 1.3 cards must add a requirement that decides between two candidates. Product identification belongs to CDL/ACE, and anyone who knows the name answers True.",
+     "suggestedFix": "Keep true. Statement: \"Each Shared VPC service project attaches to exactly one host project.\" Explanation: \"One host project serves many service projects, but a service project attaches to a single host. A workload that needs two separate VPC networks adds another path, such as VPC Network Peering.\" URL: https://docs.cloud.google.com/vpc/docs/shared-vpc"
+    },
+    {
+     "id": "gcp-pca-s1.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/filestore/docs/overview: \"Filestore supports multiple concurrent application instances accessing the same file system simultaneously\"; https://docs.cloud.google.com/storage/docs/cloud-storage-fuse/overview: \"Cloud Storage FUSE is not POSIX compliant. For a POSIX file system product in Google Cloud, see Google Cloud Managed Lustre or Filestore.\"",
+     "problem": "The card describes Filestore's purpose (a managed NFS share for many VMs), which can be guessed from the product name. It names no competing option and no requirement that rules one out. The design fact that decides the choice is POSIX compliance and file locking versus Cloud Storage FUSE.",
+     "suggestedFix": "Keep true. Statement: \"For shared files that need POSIX semantics, Google directs teams from Cloud Storage FUSE to Filestore or Managed Lustre.\" Explanation: \"Cloud Storage FUSE lacks POSIX compliance and file locking. Google lists Filestore and Google Cloud Managed Lustre as its POSIX file system products for files shared across VMs.\" URL: https://docs.cloud.google.com/storage/docs/cloud-storage-fuse/overview"
+    }
+   ],
+   "notes": "I opened all 10 source URLs (5 true, 5 false), and every one loaded from docs.cloud.google.com. Verified quotes for the cards that pass:\n- 02: \"can only access the service IP address, rather than having access to an entire peered VPC network\". The wording of its explanation is a little garbled but correct.\n- 04: \"Dataflow uses the same programming model for both batch and stream analytics\".\n- 06: \"Bigtable doesn't support transactions that atomically update more than one row\".\n- 07: \"For Android and Apple platforms, offline persistence is enabled by default\". With Enterprise edition databases this works only with Core operations, which does not affect the statement.\n- 08: \"Cloud Run doesn't support privileged containers\".\n- 09: extended memory \"lets you specify a higher amount of memory than the maximum ratio of memory to vCPUs\", on N4/N4A/N4D/N2/N2D/N1 custom types.\n- 10: \"Cloud Interconnect doesn't encrypt traffic by default\". Its explanation could name MACsec or HA VPN over Cloud Interconnect, but it is not wrong.\n\nI found no duplicates with 1.2, 2.1 or 2.2. The flagged cards' replacements keep their true or false answers, so the section stays at 5 true and 5 false. A replacement for 03 should cite https://docs.cloud.google.com/load-balancing/docs/tcp instead of the overview page."
+  },
+  {
+   "section": "1.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s1.4-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last reviewed 2024-11-20",
+     "evidence": "https://docs.cloud.google.com/architecture/migration-to-gcp-getting-started: \"In a rehost migration, you move workloads from a source environment to a target environment with minor or no modifications or refactoring.\" The page gives splitting a monolith as its re-architect example: \"turn it into several independent microservices\". The answer (False) is correct.",
+     "problem": "Strawman. Nobody who has studied rehost (lift and shift) would think it includes splitting a monolith into microservices, so the card teaches nothing at professional depth.",
+     "suggestedFix": "Replacement (answer False): \"A rehost migration leaves workloads optimized for Google Cloud once they run in the target environment.\" Explanation: \"Rehost moves workloads with minor or no modifications, so Google notes they aren't optimized for the cloud afterwards. Gaining cloud benefits takes replatform or refactor work.\" Same URL. Source sentence: \"after a rehost migration, the workloads that are running in the target environment aren't optimized for the cloud.\""
+    },
+    {
+     "id": "gcp-pca-s1.4-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last reviewed 2024-11-20",
+     "evidence": "https://docs.cloud.google.com/architecture/migration-to-gcp-getting-started: \"A repurchase migration is when you move from a purchased on-premises workload to a cloud-hosted software-as-a-service (SaaS) equivalent.\" The answer (True) is correct.",
+     "problem": "The statement is that source sentence reordered (\"purchased on-premises ... SaaS equivalent ... repurchase\"), which breaks the original-wording rule. It is also a definition card: \"purchased\" next to \"repurchase\" gives the answer away.",
+     "suggestedFix": "Replacement (answer True): \"Google classifies replacing on-premises collaboration software with Google Workspace as a repurchase migration.\" Explanation: \"Repurchase means leaving a purchased on-premises workload for a cloud-hosted SaaS equivalent, rather than moving its code or rewriting it.\" Same URL, which gives the Workspace example."
+    },
+    {
+     "id": "gcp-pca-s1.4-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official",
+     "evidence": "https://docs.cloud.google.com/migration-center/docs/generate-tco-report: \"You choose groups of assets to include in the report, then you choose multiple sets of preferences to compare different migration scenarios.\" and \"expand each group to assign up to four preference sets that you want to compare.\" The answer (True) is correct.",
+     "problem": "Close to a truism. Nobody would expect a TCO comparison to ignore the migration preferences the team chose, so the statement has no plausible False reading. The fact worth testing, that one report compares several preference sets per asset group, appears only in the explanation.",
+     "suggestedFix": "Replacement (answer True): \"A single Migration Center TCO report can compare several migration preference sets for the same asset group.\" Explanation: \"When generating a TCO report, you choose asset groups and then assign multiple preference sets to each group, so one report compares migration scenarios side by side.\" Same URL."
+    }
+   ],
+   "notes": "All 10 source URLs load and are official docs.cloud.google.com pages. The source supports every stated answer, and I found no wrong answer. Section balance is 5 true (01, 03, 06, 08, 09) and 5 false (02, 04, 05, 07, 10). The suggested replacements keep that balance (04 stays False, 03 and 06 stay True).\n\nCards that pass:\n- 01: the page lists PostgreSQL 12 or later, MySQL 5.6 or later and SQL Server 2008R2 SP2 to 2022, with performance data in the collection ZIP and no Preview label. The page was updated 2026-10-06.\n- 02: the page says \\\"Network connections data is collected only with the OS scan method only. The vSphere scan doesn't support network data collection.\\\" It is a strong hard card.\n- 05: \\\"Where possible, avoid creating a zero-downtime requirement for a workload.\\\" (best practices page, reviewed 2025-05-05).\n- 07: the FAQ says \\\"Windows server is not covered under License Mobility because License Mobility only applies to server applications, not the underlying operating system.\\\" Optional improvement: the explanation's \\\"separate eligibility checks for other BYOL rights\\\" is vague. It could say Windows Server BYOL uses Outsourcing Software Management rights on sole-tenant nodes, for licenses that meet the October 1, 2019 cutoff.\n- 08: \\\"You should focus on workloads that have the fewest number of dependencies.\\\" (assess page, reviewed 2024-08-02).\n- 09: the framework (reviewed 2026-01-28) says \\\"enables teams to regularly deliver small changes and get fast feedback on those changes\\\".\n- 10: the Cloud DNS overview says \\\"the new shorter TTL value is applied after the previous TTL value expires in the resolver cache.\\\"\n\nBorderline but not flagged:\n- 08 and 09 lean toward guessable common sense: starting with simple workloads, and small changes with fast feedback. Both are anchored in Google sentences, and the prompt itself suggests design for change for 1.5, so I let them pass. If the reviewer wants stricter cards, these are the next candidates.\n- 10 tests general DNS caching behaviour framed through Cloud DNS. It is in scope as cutover and network planning, and the Cloud DNS page states it.\n\nDuplicates: none found against 1.1 (DORA is in 1.1-10), 1.2 or 5.1 (Migrate to Virtual Machines and Database Migration Service cards are about execution tools, not planning)."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s2.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/firewall/docs/firewall-policies-rule-details), supports the card",
+     "evidence": "Rule details page: goto_next \"Stops evaluating other rules in the firewall policy, and evaluates rules in the next step of the firewall policy and rule evaluation order.\" The fact is correct, but the statement gives its own answer away: the action name goto_next literally says 'go to next', so a player who knows nothing about Cloud NGFW can guess True from the words 'delegates ... to later policy evaluation with goto_next'. That breaks the prompt's 'no name giveaway' and 'no wording tells' rules. The more decisive design fact here is that a matching allow or deny in a hierarchical policy ends all evaluation. https://docs.cloud.google.com/firewall/docs/firewall-policies-rule-eval-order says: Allow: \"the rule allows the traffic, and all rule evaluation stops\"; Goto_next: \"the rule evaluation continues to ... A hierarchical firewall policy associated with a folder ancestor closer to the target resource, if it exists.\"",
+     "problem": "Name giveaway: the meaning of goto_next is readable from the keyword, so the card tests reading, not knowledge. The subject is also slightly off, since a rule in the policy carries the action, not the policy itself.",
+     "suggestedFix": "Replace (keeps answer TRUE, so the section stays 5 true / 5 false; 91 characters, so the true and false average lengths stay within 5 characters): \"A matching allow rule in an organization firewall policy skips a folder policy's deny rules.\" Explanation: \"In hierarchical firewall policies, a matching allow or deny rule stops all rule evaluation. Only goto_next passes the packet on to a folder policy closer to the resource, then to later steps.\" Misconception for the false reading: a lower folder-level deny overrides an organization-level allow. Source: https://docs.cloud.google.com/firewall/docs/firewall-policies-rule-eval-order (Policy and rule evaluation order). Keep factKey hierarchical-firewall-goto-next-delegation, or rename it to hierarchical-firewall-terminal-actions."
+    }
+   ],
+   "notes": "I checked all 10 section 2.1 cards: 5 true (01, 03, 04, 05, 07) and 5 false (02, 06, 08, 09, 10). The false statements average 97.4 characters and the true ones 101.4, which is within the 5-character rule. Every source URL loaded and is official, current docs.cloud.google.com.\n\nEvidence for the cards that pass:\n- 01: the VPN overview says HA VPN supports \"Only dynamic routing (BGP)\", and \"Your peer VPN gateway device must support dynamic Border Gateway Protocol (BGP) routing.\"\n- 02: \"You can configure an HA VPN gateway with only one active interface and one external IP address; however, this configuration does not provide an availability SLA.\" It is correctly marked may_change.\n- 03: the Cloud Router overview says \"Andromeda handles all packet routing and forwarding capabilities, and Cloud Routers manage corresponding BGP sessions.\"\n- 04: the Partner Interconnect overview says the SLA covers \"the connectivity between your VPC network and the service provider's network\"; \"The SLA doesn't include the connectivity between your network and the service provider's network.\"\n- 05: the VPC spokes overview says it \"Supports both include export ranges and exclude export ranges\" for IPv4 and IPv6 subnet routes. No Preview label.\n- 06: the peering page says \"VPC Network Peering does not provide transitive routing ... does not provide connectivity between net-b and net-c.\"\n- 08: the Cloud IDS overview says \"Cloud IDS detects and alerts on threats, but it does not take action to prevent attacks or repair damage.\"\n- 09: the Cloud Armor integration page says \"Users who have the default URL for a serverless application can bypass the load balancer ... This bypasses Cloud Armor security policies.\" It recommends internal-and-gclb ingress or disabling the default URL, which matches the explanation's 'ingress restrictions'.\n- 10: the Cloud NAT overview says \"Cloud NAT supports address translation for established inbound response packets only. It doesn't allow unsolicited inbound connections.\"\n\nFor the 07 replacement I opened the rule evaluation order page (https://docs.cloud.google.com/firewall/docs/firewall-policies-rule-eval-order). It shows hierarchical policies first in both enforcement orders. It also lists a new step, regional system firewall policies, right after hierarchical ones: \"Cloud NGFW always evaluates rules in hierarchical firewall policies and regional system firewall policies before it evaluates any other firewall rules.\" The replacement does not depend on that new step.\n\nMinor points, not flagged:\n- 03's factKey names 'regional', but the statement does not mention regional scope.\n- 01 is an easy card, but it is the core HA VPN fact the prompt's 2.1 scope lists.\n\nNo section 2.1 card says Classic VPN supports dynamic routing, and none duplicates another card in the deck (1.3-10 tests Interconnect encryption, a different fact). I hit the session's web search limit while checking the replacement, but I reached the evaluation-order page through a direct link on the firewall policies overview, so the check is complete."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s2.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last updated 2026-10-07; supports the card",
+     "evidence": "https://docs.cloud.google.com/storage/docs/bucket-lock: \"Once you lock a policy, you cannot remove it or reduce the retention period it has.\" and \"You can increase the retention period of a locked policy.\" The same page: \"The policy retroactively applies to existing objects in the bucket as well as new objects added to the bucket.\"",
+     "problem": "The answer is right, but the word \"locked\" gives it away: a player who knows nothing about Cloud Storage will guess that a locked policy cannot be shortened. The card tests what the name already says, and adds nothing an architect needs to decide a design. It also uses the same false template as gcp-pca-s1.2-09: an administrator getting around retention that has been enforced or locked.",
+     "suggestedFix": "Replacement (answer false). Statement: \"Adding a retention policy to a Cloud Storage bucket leaves the objects already stored in it outside the policy's protection.\" Explanation: \"A bucket retention policy applies retroactively: objects already in the bucket and new ones both stay undeletable and unreplaceable until they reach the retention age.\" Use factKey bucket-retention-policy-retroactive and the same URL."
+    },
+    {
+     "id": "gcp-pca-s2.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official; supports the card",
+     "evidence": "https://docs.cloud.google.com/bigquery/docs/clustered-tables: \"For partitioned tables, clustering is maintained for data within the scope of each partition.\" and \"When you run a query against a clustered table, and the query includes a filter on the clustered columns, BigQuery uses the filter expression and the block metadata to prune the blocks scanned by the query.\" The same page also says: \"When you query a clustered table, you don't receive an accurate query cost estimate before query execution because the number of storage blocks to be scanned is not known before query execution.\"",
+     "problem": "The answer is right, but it follows from what clustering means: clustering exists so that filters on the clustering columns can skip blocks. Anyone who knows the term answers True, so the card works as a definition card. The \"within a partition\" detail does not change that answer.",
+     "suggestedFix": "Replacement (answer true). Statement: \"BigQuery's cost estimate before a query on a clustered table runs can be higher than the bytes the query ends up scanning.\" Explanation: \"BigQuery decides block pruning on clustered tables only at execution time, so the dry-run estimate is an upper bound. Cost controls based on it can overstate the real scan.\" Use factKey bigquery-clustered-dry-run-upper-bound and the same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 2.2 cards (5 true, 5 false), all in raw/gcp-pca-b2.json. Every source URL loaded on 2026-10-08, is an official docs.cloud.google.com page and supports its card. Evidence for the eight cards that pass:\n- s2.2-01, Autoclass: \"When an object's data is read, the object transitions to Standard storage if it's not already stored in Standard storage.\" Reading only metadata does not trigger the move, and the card says \"reads it\", so it holds.\n- s2.2-03, soft delete: \"preserves objects and buckets that get deleted or overwritten\". Restoring \"creates a new, live copy of that object within the same bucket\". The statement says \"can\", which covers buckets with Object Versioning on, where an overwritten object becomes noncurrent first.\n- s2.2-04, Local SSD: \"Local SSD storage is not automatically replicated and all data on the Local SSD may be lost...\"\n- s2.2-05, snapshots: \"For unchanged data, snapshots reference the data in previous snapshots\", and \"a snapshot might occasionally capture a full image of the disk\". The explanation covers that caveat.\n- s2.2-06, Cloud SQL HA: \"The standby instance cannot be used for read queries.\" The only exception the page names is the legacy MySQL HA configuration, which is no longer offered.\n- s2.2-07, Spanner editions: the page lists dual-region and multi-region configurations only under Enterprise Plus. Small wording point: an instance has the configuration, not a database. Not flagged.\n- s2.2-08, Bigtable: multi-cluster routing \"provides eventual consistency\". Read-your-writes is possible only with single-cluster routing, and even row-affinity routing does not guarantee it. Small wording point: \"by default\" in the statement adds nothing. Not flagged.\n- s2.2-09, BigQuery replication: \"The primary replica is writable, and the secondary replica is read-only.\"\n\nNo duplicates within the deck:\n- s1.2-05 tests which region the Cloud SQL HA standby is in, a different fact from s2.2-06.\n- s1.2-06 tests Spanner leader failover, a different fact from s2.2-07.\n- s3.2-07 (Cloud Logging and project deletion) does not overlap with Bucket Lock. Note for the s2.2-02 fix: Bucket Lock does put a lien on the project, so a replacement about project deletion would mirror s3.2-07. That is why the suggested replacement tests retroactive application instead.\n\nBoth suggested replacements keep the section at 5 true and 5 false. No card uses a retired product or an old name."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s2.3-09",
+     "verdict": "explanation_error",
+     "urlStatus": "loads (docs.cloud.google.com, last updated 2026-10-07), but its elevation sentence is stale and contradicted by a newer official page",
+     "evidence": "https://docs.cloud.google.com/vmware-engine/docs/concepts-security: \"The default user has sufficient privileges to perform necessary day-to-day vCenter operations ... but they don't have full administrator access to vCenter. If administrator access is temporarily required, you can elevate your privileges for a limited period of time\". However https://docs.cloud.google.com/vmware-engine/docs/private-clouds/howto-elevate-privilege (updated 2026-10-07): \"Google Cloud VMware Engine is now integrated with the Google Cloud console but the integration does not provide the Elevate privilege feature. To perform these tasks, you can use a solution user account\". Release notes, November 14, 2023: \"Breaking: Elevate privilege option is no longer available. You can sign in using one of the solution users to perform elevated privileges actions.\"",
+     "problem": "The answer (False) holds: the default vCenter user has no full administrator access. The explanation, though, teaches the removed mechanism (\"Administrators temporarily elevate access\"). The word \"permanently\" in the statement also leans on that retired temporary-elevation model.",
+     "suggestedFix": "Keep answer False. Statement: \"VMware Engine gives the default vCenter user full vSphere administrator privileges in a private cloud.\" Explanation: \"The default vCenter user handles day-to-day operations without full administrator access; tasks such as identity source setup use the built-in solution user accounts instead.\" Source: https://docs.cloud.google.com/vmware-engine/docs/private-clouds/howto-elevate-privilege"
+    },
+    {
+     "id": "gcp-pca-s2.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last updated 2026-10-07, supports the card",
+     "evidence": "https://docs.cloud.google.com/run/docs/configuring/vpc-direct-vpc: \"Direct VPC egress allows your Cloud Run service to send traffic to a VPC network without a Serverless VPC Access connector.\"",
+     "problem": "This is a definition and a name giveaway. Direct VPC egress means egress without a connector, so the word \"Direct\" gives the answer. A player who has studied would not answer True, which makes it a strawman.",
+     "suggestedFix": "Keep answer False. Statement: \"Cloud Run Direct VPC egress gives instances IP addresses from a Google-managed range outside your chosen subnet.\" Explanation: \"With Direct VPC egress, Cloud Run allocates ephemeral instance IP addresses from the subnet you attach, so size that subnet for scale-out and avoid firewall rules tied to single IPs.\" Same URL (it says \"Cloud Run allocates IP addresses from your subnet. IP addresses are ephemeral\")."
+    },
+    {
+     "id": "gcp-pca-s2.3-06",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, GA, last updated 2026-10-06, supports the intended fact",
+     "evidence": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/about-autopilot-mode-standard-clusters: \"You can use ComputeClasses to run Google Kubernetes Engine (GKE) Autopilot workloads in your GKE Standard mode clusters\" and \"You control the cluster and can run your own Standard node pools alongside the nodes that GKE manages.\"",
+     "problem": "\"GKE Standard limits Autopilot mode to workloads deployed in separate clusters\" reads awkwardly. \"Autopilot mode\" can also mean the cluster mode of operation, which is set per cluster: a Standard cluster does not become an Autopilot cluster. Under that reading an expert could defend True. The factKey also departs from the b1 plan (gke-autopilot-privileged-workload-restrictions), and the batch notes should say so.",
+     "suggestedFix": "Keep answer False. Statement: \"GKE runs Autopilot-mode workloads for a Standard cluster only in a separate Autopilot cluster.\" If the \"only\" absolute is unwanted, use: \"A GKE Standard cluster needs a separate Autopilot cluster to run workloads on Autopilot-managed nodes.\" Explanation: \"Autopilot ComputeClasses let a Standard cluster run Autopilot-managed node pools for selected workloads alongside node pools the team manages itself, in the same cluster.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s2.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, supports the card",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instances/spot: \"If the termination action is set to STOP or not specified, then Compute Engine stops the VM, transitioning the VM to a TERMINATED state\" and \"If the preempted VM was stopped, it still appears in your project\".",
+     "problem": "The statement already gives the default (\"the default stop termination action\"). All that remains to judge is whether stopping keeps the VM, which follows from the meaning of stop versus delete. A player can answer from the wording alone.",
+     "suggestedFix": "Keep answer True. Statement: \"A Spot VM has no maximum runtime unless you set one, so it keeps running until Compute Engine preempts it.\" Explanation: \"Spot VMs have no minimum or maximum runtime by default; long batch jobs keep running until preemption or until a run duration limit you configure ends them.\" Same URL (\"Spot VMs don't have a minimum or maximum runtime unless you specifically limit the runtime\")."
+    }
+   ],
+   "notes": "All 10 section 2.3 cards (all in raw/gcp-pca-b2.json) were checked against their source pages, fetched on 2026-10-08. All pages load and are current docs.cloud.google.com pages. Answer balance is 5 true and 5 false, and every suggested replacement keeps its card's answer, so the balance holds.\n\nCards that passed:\n- s2.3-01: \\\"The autoscaler picks the signal that results in the largest number of VMs in the MIG\\\".\n- s2.3-02: \\\"Health checks for load balancing ... direct traffic away from them. Health checks for autohealing ... proactively recreate those VMs\\\".\n- s2.3-04: The Default sole-tenant policy \\\"doesn't restrict migration of VMs to within a fixed pool of physical servers\\\".\n- s2.3-05: \\\"If a single zone becomes unavailable, your control plane is not impacted\\\".\n- s2.3-08: \\\"that fleet can include clusters from multiple projects ... known as the fleet's fleet host project\\\".\n- s2.3-10: \\\"The patch compliance backend periodically reads this data, cross references it with the package metadata obtained from the OS distribution\\\".\n\nNo duplicates were found against the rest of the deck. Related but distinct cards: s1.2-04 (regional MIG headroom), s5.1-04 (VMware Engine as a migration target), s2.1-09 (Cloud Armor and the direct Cloud Run URL), s6.3-03 (rolling-update quotas).\n\nThe s2.3-07 replacement stays clear of s2.1-09, because it tests subnet IP allocation rather than ingress.\n\nThe VMware Engine security overview still describes temporary privilege elevation. The how-to page and the November 2023 release note say that feature was removed. Prefer the how-to page as the source for any card on vCenter privileges.\n\nWeb search budget was exhausted, so the cross-checks used WebFetch and curl on official pages only."
+  },
+  {
+   "section": "2.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s2.4-09",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, last updated 2026-10-05, but off-topic for this card",
+     "evidence": "The cited page (https://docs.cloud.google.com/gemini/enterprise/docs/iam-policy-for-apps-and-data-stores) covers only resource-level IAM on apps and data stores. It never mentions source-document ACLs. It even says \"Project-level predefined roles override resource-level policies\", which pushes a reader toward the wrong answer. The fact itself is right and is documented at https://docs.cloud.google.com/gemini/enterprise/docs/configure-identity-provider: \"To enforce data source access control and secure data in Gemini Enterprise, you must configure an identity provider... Google uses your identity provider to identify the end user performing a search and determine if they have access to the documents that are returned as results.\" For Workspace connectors the same page also says: \"Gemini Enterprise never bypasses source system access controls or grants additional permissions.\"",
+     "problem": "The answer (false) is correct, but the source does not support the card. It is about IAM scoping between project and resource levels, and its 'override' sentence concerns IAM rather than source ACLs, so a player who checks the source could be misled.",
+     "suggestedFix": "Keep the statement and answer (false). Replace the URL with https://docs.cloud.google.com/gemini/enterprise/docs/configure-identity-provider. Optionally tighten the explanation to: \"Gemini Enterprise uses your identity provider to check whether the end user can access each document a connector returns; IAM roles on the project grant no extra document access.\" (178 chars)"
+    },
+    {
+     "id": "gcp-pca-s2.4-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, last updated 2026-10-08, supports the card",
+     "evidence": "https://docs.cloud.google.com/ai-hypercomputer/docs/process-overview: \"An orchestrator, such as Slurm or GKE, handles tasks like job queuing, resource allocation, autoscaling (in the case of GKE), and other day-to-day cluster management tasks.\" The same page also says: \"For a managed Slurm experience, you can use Cluster Director. To use Slurm natively, you can use Cluster Toolkit (which offers cluster blueprints that automatically install Slurm on your clusters)\". The Cluster Director overview (https://docs.cloud.google.com/cluster-director/docs/overview, no Preview label) says: \"Cluster Director uses a managed Slurm environment for fault-tolerant and scalable job scheduling.\"",
+     "problem": "This is a near-truism at PCA depth. Any player knows GKE runs containerized GPU workloads across nodes, so nobody who studied would answer False. The hedge 'supports' makes it unfalsifiable, and it does not test the design choice the scope names (GKE vs Slurm through Cluster Director vs Cluster Toolkit blueprints).",
+     "suggestedFix": "Replace with a true card. Statement: \"Cluster Director gives AI Hypercomputer GPU clusters a managed Slurm environment, so teams skip installing Slurm.\" (113 chars). Explanation: \"Cluster Director automates AI Hypercomputer cluster setup with a managed Slurm environment. Cluster Toolkit instead deploys blueprints that install Slurm on clusters you manage.\" (177 chars). Source: https://docs.cloud.google.com/ai-hypercomputer/docs/process-overview"
+    },
+    {
+     "id": "gcp-pca-s2.4-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, last updated 2026-10-07, supports the card",
+     "evidence": "https://docs.cloud.google.com/document-ai/docs/handle-response: \"Document AI can also detect Tables in the page\" (the JSON shows headerRows, bodyRows, cells). The same page says: \"The keys in KVPs are literally what the key text is on the document\" and \"Entity names are configured.\"",
+     "problem": "The answer can be read from the product name. A 'Form Parser' that turns tables on scanned forms into rows and cells is what anyone would guess, so the card teaches product identification (CDL depth) rather than a design-deciding behaviour of a pretrained processor versus a configured extractor.",
+     "suggestedFix": "Replace with a true card from the same page. Statement: \"Document AI Form Parser keys each extracted key-value pair by the key text printed on the document itself.\" (~104 chars). Explanation: \"Form Parser returns key-value pairs whose keys are the literal key text on the document. Extractors that return schema entities use entity names you configure instead.\" (167 chars). Same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 2.4 cards (5 true: 01, 03, 04, 05, 07; 5 false: 02, 06, 08, 09, 10). Every source URL loaded with HTTP 200 on docs.cloud.google.com and was last updated between 2026-10-05 and 2026-10-08. All suggested replacements are true cards replacing true cards, so the 5/5 balance holds.\n\nCards that passed, with the sentence that settles each:\n- 01: Pipelines intro says it runs ML pipelines \"in a serverless manner\" and \"You can batch run ML pipelines defined using the Kubeflow Pipelines or the TensorFlow Extended (TFX) framework\".\n- 02: Same page: \"By default, pipeline tasks run in parallel. You can link the tasks to execute them in series.\"\n- 03: ML Metadata intro: \"Which dataset was used to train a certain model?\" This card is easy and close to a definition of a metadata store, but the prompt's scope names ML Metadata lineage explicitly, so I did not flag it.\n- 04: Model Garden deploy page: \"Open models in Model Garden might be available both as a managed API (MaaS) and as a self-deployable model.\"\n- 06: MIG resize requests page: \"a MIG creates Flex-start VMs for a resize request only when all the requested capacity is available\". In rare partial failures the MIG deletes the VMs it created and retries all at once, which is still consistent with the card.\n- 08: SafeSearch page: \"five categories (adult, spoof, medical, violence, and racy)\". There is no hate category.\n- 10: Gemini Notebook Enterprise overview: \"When a source is uploaded or imported to Gemini Notebook Enterprise, a static copy of the document is created for analysis.\" I found no mention of sync or refresh on the overview, FAQ or sources API pages.\n\nOther checks:\n- **Duplicates:** none. No other card in the deck mentions Model Garden, AI Hypercomputer, Flex-start, Document AI, Vision, Gemini Enterprise, Gemini Notebook, Pipelines or ML Metadata.\n- **Names and launch stages:** no card uses Agent Builder, an old Vertex AI name or the Video Intelligence API. No card tests a feature marked Preview; the Cluster Director pages in my suggested fix carry no Preview label.\n- **Volatility:** every card has may_change, as the prompt requires.\n\nMy web search budget for the session was used up, so I found the better 2.4-09 URL by following links from the official docs and fetching pages directly."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s3.1-01",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/iam/docs/resource-hierarchy-access-control)",
+     "evidence": "Source: \"The effective allow policy for a resource is the union of the allow policy set at that resource and the allow policy inherited from its parent.\" The answer (false) is right, but the fact is already tested in the gcp-ace deck: gcp-ace-s4.1-04 (false) \"A project admin can remove an inherited IAM role by editing the project's allow policy.\" and gcp-ace-s4.1-03 \"An IAM role granted on an organization flows to descendant projects.\" Knowing the ACE answer gives this one; the prompt says never retest an ACE fact at ACE depth. A deny-policy replacement is also taken (gcp-ace-b3: \"An IAM deny policy can block a permission granted by an allow policy.\").",
+     "problem": "Rests on the same fact (a child allow policy cannot subtract inherited grants) as gcp-ace-s4.1-04, at the same depth.",
+     "suggestedFix": "Replace with a false card on the scheduled-for-destruction period, which the 3.1 scope names and no card covers. Statement (111 chars): \"Cloud KMS destroys a key version's material as soon as an administrator schedules that version for destruction.\" Answer: false. Explanation (150 chars): \"A key version waits in the scheduled-for-destruction state, 30 days by default and configurable at key creation, and can be restored during that time.\" volatility may_change. Source: https://docs.cloud.google.com/kms/docs/destroy-restore (\"The default scheduled for destruction duration is 30 days.\" / \"During the scheduled for destruction duration, you can restore a key version to cancel its destruction.\")"
+    },
+    {
+     "id": "gcp-pca-s3.1-07",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/iam/docs/service-account-impersonation)",
+     "evidence": "Source: \"Create short-lived credentials using the Service Account Credentials API, then use those credentials to authenticate an API request.\" The answer (true) is right, but gcp-ace-s4.2-07 (false) \"gcloud impersonation of a service account reads its downloaded private key.\" explains \"gcloud impersonation generates short-lived credentials for the target service account instead of using its downloaded key.\" It is the same fact at ACE depth, and the card adds no design trade-off, such as impersonation versus keys.",
+     "problem": "Retests the ACE fact that impersonation yields short-lived credentials; near-identical knowledge, nothing PCA-specific.",
+     "suggestedFix": "Replace with a true card on context-aware access, which the 3.1 scope names and the section does not cover. Statement (120 chars): \"Identity-Aware Proxy applies Access Context Manager access levels, such as device or source IP conditions, to app users.\" Answer: true. Explanation (133 chars): \"IAP checks access levels attached to its IAM grants, so an IAP-secured app admits only users on trusted devices or approved networks.\" Source: https://docs.cloud.google.com/iap/docs/cloud-iap-context-aware-access-howto (\"To limit access based on IP address or end-user device attributes, create an access level.\")"
+    },
+    {
+     "id": "gcp-pca-s3.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/binary-authorization/docs/overview)",
+     "evidence": "Source: \"An attestation certifies that a specific image has completed a previous stage\" and \"The attestation is a record that contains the registry path and digest of the image, and that has been digitally signed using the signer's private cryptographic key.\" The answer (false) is right, but no one who has studied Binary Authorization would think an admission controller reruns a test suite at deploy time.",
+     "problem": "Strawman: the false reason (an admission check rerunning a test suite) is not a misconception a prepared candidate holds, so the card teaches little.",
+     "suggestedFix": "Replace with a false card on digest binding. Statement (114 chars): \"A Binary Authorization attestation for one image digest also admits a newer image pushed later under the same tag.\" Answer: false. Explanation (151 chars): \"An attestation is signed over the image's registry path and digest, so a newer image under the same tag has a new digest and needs its own attestation.\" Same source URL."
+    }
+   ],
+   "notes": "I opened every source URL; all ten load from docs.cloud.google.com and support their cards. The section has 5 true and 5 false cards. Each proposed replacement keeps its card's original answer (01 false, 07 true, 09 false), so the balance stays 5/5. The replacements also keep hedge words even: 'can' then appears on two true cards (02, 04) and one false card (05).\n\nPassed after checks:\n- 02: the best-practices page says the key-creation constraints \"prevent all users from creating and uploading service account keys, including those with iam.serviceAccountKeys.create permission\".\n- 03: the KMS Admin role covers Cloud KMS resources \"except for access to restricted resource types and cryptographic operations\". The card's 'direct calls' wording correctly sets aside the ViaDelegation permissions.\n- 04: the EKM page says \"You can revoke this access at any time\" and \"If you revoke Google's permissions in your EKM, key management operations attempted in Cloud KMS fail\". This is borderline on name giveaway, but it is a core design fact.\n- 05: the Add a secret version page says \"Secret data is immutable\".\n- 06: the VPC Service Controls overview says it denies \"access from unauthorized networks, even if the data is exposed by misconfigured IAM policies\".\n- 08: the Workload Identity Federation page says \"We recommend that you use Workload Identity Federation to provide access directly to a Google Cloud resource\" and calls impersonation \"an alternative\". Older material said impersonation was required, so the misconception is realistic.\n- 10: Model Armor inspects both prompt and response, and \"You can use Sensitive Data Protection directly within Model Armor\". Only image screening is Pre-GA, and the card does not depend on it.\n\nCross-deck overlaps that do not need a flag:\n- 3.1-10 partly overlaps gcp-cdl-s5.2-04, where Model Armor screens prompts and responses for malicious instructions. The PCA card's own fact is the Sensitive Data Protection integration, so it stands.\n- 3.1-08 is next to gcp-ace-s4.2-11 (direct IAM access in Workload Identity Federation for GKE). That card covers GKE; 3.1-08 covers external workload identity pools, so knowing one does not fully give the other.\n- 3.1-02 and gcp-pca-s3.2-08 both involve organization policy but test different facts: 3.1-02 is that it overrides IAM, 3.2-08 is that it does not apply to existing resources.\n\nThe raw cards are in content/raw/gcp-pca-b3.json."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s3.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/assured-workloads/key-access-justifications/docs/overview)",
+     "evidence": "Source: \"When your key is used for any cryptographic operation, you receive a justification for both service-based access (for supported services) and direct API access.\" The statement \"Key Access Justifications supplies reasons for supported service-based and direct API key use\" is a near-paraphrase of that sentence, and the product name already says it supplies justifications (reasons), so a player who knows nothing answers True. The fact that decides a design is on the same page: \"Key Access Justifications lets you set a policy on Cloud Key Management Service (Cloud KMS) keys to view, approve, and deny key access requests depending on the provided justification code.\" The card's answer (True) is correct.",
+     "problem": "Name giveaway and near-copy of the source sentence. It does not test what KAJ adds in a design, which is the ability to approve or deny key use by justification code, beyond only logging it.",
+     "suggestedFix": "Replace (keeps answer True). Statement: \"Key Access Justifications lets a key policy deny a Cloud KMS key request based on its justification code.\" Explanation: \"Beyond logging why a key is used, Key Access Justifications policies can approve or deny key access per justification code. This policy capability depends on the Assured Workloads control package.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s3.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (cloud.google.com/security/compliance/soc-2)",
+     "evidence": "Source: \"The core Google Cloud and Google Workspace SOC 2 Type II reports are issued quarterly and can be downloaded via the Compliance Reports Manager.\" The card is right (True), but its answer can be read from the tool's name: a player who knows nothing will guess that \"Compliance Reports Manager\" provides compliance reports. The same page states a fact a learner could get wrong: \"Google Cloud only issues SOC 2 Type II reports.\" and \"A SOC 2 Type II report covers the design and operating effectiveness of the service organization's controls over a period of time.\"",
+     "problem": "Name giveaway. It only identifies where reports live (close to CDL product identification), so it teaches little at professional depth.",
+     "suggestedFix": "Replace (keeps answer True). Statement: \"Google Cloud issues its SOC 2 reports as Type II, covering control operating effectiveness over a period.\" Explanation: \"Google Cloud issues only SOC 2 Type II reports, which assess the design and operating effectiveness of controls over a period, not at a point in time. Customers request them through Compliance Reports Manager.\" Same URL."
+    }
+   ],
+   "notes": "I opened all 10 source URLs. Each loaded (HTTP 200), is official and current, and supports its card, including the right fact behind each false card. Quotes that settle the cards that passed: 01 \"When you create an Assured Workloads folder for a specific control package, the controls within the control package define guardrails for all projects and resources within the folder.\" 02 \"Access Transparency logs record the actions that Google personnel take when accessing Customer Data.\" The page also points to Access Approval for approval before access. 03 FPE: \"the output surrogate value is the same length as the input value\", useful \"for backward compatibility with a legacy data system\". The page adds that Google recommends AES-SIV unless length and character set preservation are strict requirements. The explanation leaves this out but is not wrong. 05 \"Admin Activity audit logs and System Event audit logs are always stored in the _Required bucket in the project where the logs were generated.\" 06 \"Except for BigQuery, Data Access audit logs are disabled by default.\" 07 (logging/docs/buckets) \"If you want to prevent the accidental deletion of a project that contains a locked log bucket, then add a lien to the project.\" The page never says what happens when such a project is deleted, but the advice to add a lien implies Logging does not block it, so False holds. It is also a realistic confusion, because Cloud Storage treats locked buckets differently. 08 \"this limitation will apply only to newly-created resources. Resources you created before setting the resource locations constraint will continue to exist and perform their function.\" 09 \"ultimately you are responsible for evaluating your own HIPAA compliance\". No card calls Google Cloud HIPAA certified. Card 09 is close to a strawman but encodes a real misunderstanding of what a BAA does, so I left it. Balance today: 5 True (01, 03, 04, 05, 10) and 5 False (02, 06, 07, 08, 09). Both replacements keep True, so the balance stays. No duplicates across the deck: 2.2-02 (Cloud Storage locked retention policy), 1.2-09 (backup vault), 3.1-10 (Model Armor with SDP) and 6.1-04/05 (sinks, linked datasets) each rest on different facts. No card hinges on an Assured Workloads control package name, a retired product or a Preview feature. A side fact from the KAJ page: it now says KAJ is part of Assured Workloads, and its approve and deny policies need regional, regulatory or sovereign control packages. No 3.2 card contradicts this."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s4.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (Well-Architected Framework reliability pillar, last reviewed 2024-12-30)",
+     "evidence": "https://docs.cloud.google.com/architecture/framework/reliability/perform-testing-for-recovery-from-data-loss : \"A data restoration test must include testing of the entire application stack and all the critical infrastructure services with the restored data.\" and \"To test backups, restore them in a non-production environment.\"",
+     "problem": "The answer (false) is correct and the source supports it, but the card is a strawman. Nobody who has studied would say Google recommends file checks \"in place of\" testing the recovered application, so the phrase \"in place of\" gives the answer away.",
+     "suggestedFix": "Replace (answer false). Statement: \"Google recommends restoring backups into the production environment when testing that they are usable.\" Explanation: \"Google recommends restoring backups in a non-production environment and testing the entire application stack and critical infrastructure services with the restored data.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s4.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (DR planning guide)",
+     "evidence": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide : \"Plan where you want to host your CD environment and artifacts—they need to be available and operational in the event of a disaster.\"",
+     "problem": "The answer (true) is correct, but the statement nearly copies the source sentence and is close to a truism: any player will guess that deployment tooling should keep working in a disaster. It also has no tags.",
+     "suggestedFix": "Replace (answer true). Statement: \"Google recommends granting users the same access in the DR environment that they have in production.\" Explanation: \"The DR planning guide says to give users the same access to the DR environment as in production and to check before a disaster that they can reach it.\" Same URL (quote: \"Make sure that you grant users the same access to the DR environment that they have in the source production environment.\")."
+    },
+    {
+     "id": "gcp-pca-s4.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (reliability pillar, last reviewed 2024-12-30)",
+     "evidence": "https://docs.cloud.google.com/architecture/framework/reliability/conduct-postmortems : \"Effective postmortems focus on processes, tools, and technologies, and don't place blame on individuals or teams.\"",
+     "problem": "The answer (true) is correct, but the statement reuses the source sentence with a few words changed (\"processes, tools, and technologies\"), which the original-wording rule forbids. The blameless idea is also guessable from common sense.",
+     "suggestedFix": "Replace (answer true). Statement: \"Google recommends a postmortem after an on-call engineer intervenes, for example by rolling back a release.\" Explanation: \"Google lists on-call interventions such as a release rollback or traffic rerouting among the triggers for a postmortem, alongside user-visible downtime, data loss of any kind and monitoring failures.\" Same URL (quote: \"Interventions from on-call engineers, such as a release rollback or rerouting of traffic.\")."
+    },
+    {
+     "id": "gcp-pca-s4.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (Cloud Deploy overview)",
+     "evidence": "https://docs.cloud.google.com/deploy/docs/overview : \"To promote a release is to deploy it to the next target in the promotion sequence defined in your pipeline.\" https://docs.cloud.google.com/deploy/docs/terminology : \"A rollout is created per release per target, so in a simple progression across three targets in a delivery pipeline, there would be three rollout resources for the release—one for each target.\"",
+     "problem": "The answer (true) follows from the definitions of \"promote\" and \"delivery pipeline\", so this is a definition card. The actor is also unclear: Cloud Deploy promotes only when a user or an automation asks it to, so the subject \"Cloud Deploy\" can be read as automatic promotion. The explanation (\"keeping that release's delivery coordinated\") is vague.",
+     "suggestedFix": "Replace (answer true). Statement: \"Cloud Deploy creates a separate rollout for each target that a release is deployed to in a delivery pipeline.\" Explanation: \"A rollout is created per release per target. Promoting a release to the next target in the pipeline creates a new rollout for that target, so each target keeps its own rollout history.\" URL: https://docs.cloud.google.com/deploy/docs/terminology"
+    },
+    {
+     "id": "gcp-pca-s4.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, no launch stage banner",
+     "evidence": "https://docs.cloud.google.com/infrastructure-manager/docs/preview-deployment : \"A preview executes the Terraform plan command\" and previews \"show you what resources are planned to be provisioned or deleted\"; the page also has a section titled \"Preview a new deployment\".",
+     "problem": "The answer (true) is correct, but it follows from the meaning of \"preview\" (show changes before you apply them). Anyone who knows terraform plan, or even the plain word, answers True, so it is a definition card.",
+     "suggestedFix": "Replace (answer true). Statement: \"An Infrastructure Manager preview can target a deployment that the team has not created yet.\" Explanation: \"Infrastructure Manager previews run Terraform plan for a new deployment, an update or a deletion, so a team can review planned resources before anything is provisioned.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.1 (gcp-pca-b3.json): 5 true (03, 05, 06, 08, 10) and 5 false (01, 02, 04, 07, 09). Every source URL loaded on official docs.cloud.google.com pages, and none showed a deprecation or launch stage banner (Service Catalog, Infrastructure Manager preview, Secure Source Manager).\n\nCards that pass:\n- 01: the private pools overview says \"Private pools are hosted in a Google-owned service producer network\", and access to the customer's resources goes over VPC peering. I found no Private Service Connect interface option in the Cloud Build release notes; the only private pool networking note is the peeredNetworkIpRange change of 2023-01-18.\n- 02: \"If an artifact matches the criteria in both the delete policy and the keep policy, the artifact is kept.\"\n- 04: approvals belong to each rollout to a target that requires approval. The automation rules do not approve rollouts.\n- 05: Secure Source Manager is \"a regionally deployed, single-tenant managed source code repository\". This card is borderline: \"Teams select ... region to control where it hosts repositories\" leans toward True by wording. I did not flag it because the scope names this exact fact.\n- 07: \"Terraform state files are created and stored in the projects where your users deploy the configuration.\"\n\nDuplicates: I searched all gcp-pca batches and found none. The cards nearest to this section are 5.2-08 (Infrastructure Manager state) and 6.3-05 and 6.3-06 (Cloud Deploy rollback and verification), and each rests on a different fact. The gcp-ace decks have no overlap either; ace s2.4-03 is about Deployment Manager templates, not previews.\n\nThe five replacements keep the section at 5 true and 5 false: the one for 09 stays false, and the ones for 03, 06, 08 and 10 stay true.\n\nLimitation: the web search budget was used up, so I could not search for Cloud Build private pool networking. Instead I checked the Cloud Build release notes and the private pool VPC setup page directly."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s4.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/docs/cuds-multiprice), supports the card",
+     "evidence": "https://docs.cloud.google.com/docs/cuds-multiprice: \"If your eligible usage in a given hour is less than your committed amount, you are still responsible for the full cost of the commitment.\" and \"No rollover: Unused commitment does not carry over to the next hour.\"",
+     "problem": "Answer (false) is correct, but it follows from the meaning of the word \"commitment\": nobody who studied would believe Cloud Billing pauses commitment fees when usage stops. That makes it a definition card and a strawman at difficulty 1. The decision-relevant detail on the same page, hourly application with no rollover, goes untested.",
+     "suggestedFix": "Replace (answer false): \"Unused spend-based commitment in one hour carries over to cover eligible usage above the commitment in a later hour.\" Explanation: \"Spend-based commitments apply hourly: if eligible usage in an hour is below the commitment you still pay the full amount, and the unused part does not roll over.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s4.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (detailed-usage export structure page), supports the card",
+     "evidence": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-tables/detailed-usage: \"The cost data for a specific label only shows usage from the date that the label was applied to a resource.\"",
+     "problem": "The factKey is non-retroactive labels, but the statement only says labels attach to usage after they are applied, which common sense already tells you is True. The teaching point, that earlier usage never picks up the label, appears only in the explanation, so the card reads as a near-truism.",
+     "suggestedFix": "Replace (answer true, keeps balance): \"In Cloud Billing exports, a newly labeled resource shows cost under that label only from the date the label was applied.\" Explanation: \"Labels are not retroactive: the detailed export shows a label's costs only from the date it was applied, so apply labels before the period you need to allocate.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s4.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (operational excellence, continuously improve and innovate; last reviewed 2024-10-31), supports the card",
+     "evidence": "https://docs.cloud.google.com/architecture/framework/operational-excellence/continuously-improve-and-innovate: \"By fostering a culture of experimentation, knowledge sharing, and continuous learning, you can create an environment where teams are empowered to take risks, innovate, and grow.\"",
+     "problem": "This is a truism: \"learning from experiments as part of improvement\" is generic management advice that nobody would answer False, and nothing in it is specific to Google Cloud. It also sits close to 6.1's \"continuously improve and innovate\" principle. The section already has two other soft culture cards (01 is fine, 09 is also weak).",
+     "suggestedFix": "Replace (answer true): \"GKE cost allocation must be enabled on a Standard cluster before the detailed billing export shows namespace costs.\" Explanation: \"For Standard clusters, GKE cost allocation is off by default; once enabled, the detailed Cloud Billing export carries cluster, namespace and workload labels for chargeback.\" URL: https://docs.cloud.google.com/kubernetes-engine/docs/how-to/cost-allocations (\"not enabled by default\"; adds k8s-namespace and workload labels). Set volatility may_change."
+    },
+    {
+     "id": "gcp-pca-s4.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (cost optimization, foster a culture of cost awareness; last reviewed 2024-09-25), supports the card",
+     "evidence": "https://docs.cloud.google.com/architecture/framework/cost-optimization/foster-culture-cost-awareness: \"To ensure that cost reports provide relevant and actionable information without overwhelming recipients with unnecessary detail, the reports must be tailored to the target audiences.\"",
+     "problem": "The card is anchored and correct, but \"tailor reports to the team that receives them\" is common-sense communication advice that anyone would answer True without studying Google Cloud. That is a truism under the prompt's rules. The same page has more concrete, Google-specific recommendations.",
+     "suggestedFix": "Replace (answer true): \"The cost optimization pillar recommends automation such as Terraform to enforce labels on each resource that is created.\" Explanation: \"Google recommends labels to track and classify costs, and automating their application with tools like Terraform so that no resource is created unlabeled.\" Same URL (\"Use automation tools like Terraform to enforce labeling on every resource that is created.\")."
+    },
+    {
+     "id": "gcp-pca-s4.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/docs/cuds-recommender), supports the card",
+     "evidence": "https://docs.cloud.google.com/docs/cuds-recommender: \"Google Cloud analyzes your usage history over the previous 30 days to generate commitment recommendations\" using \"a formula that analyzes historical and recent usage metrics gathered by Cloud Billing, and includes usage covered by existing commitments.\"",
+     "problem": "Answer (false) is correct, but the statement makes it false through an invented feature (\"submitted growth forecasts\"), so a studied player rejects it on sight: a mild strawman. The word \"initial\" also has no counterpart on the page. The real design point is that recommendations look only backward, so the architect has to account for growth.",
+     "suggestedFix": "Replace (answer false): \"Cloud Billing sizes its CUD recommendations from an organization's expected future usage growth.\" Explanation: \"Cloud Billing derives CUD recommendations from recent historical usage, including usage already covered by commitments, so architects must weigh planned growth or decline themselves.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.2 (5 true: 01, 04, 06, 09, 10; 5 false: 02, 03, 05, 07, 08). Every source URL loads, is official and supports its card. I found no wrong answers.\n\nCards that pass:\n- 01 (sole-tenant CapEx): the cost pillar says \"You might be able to classify the cost of some Google Cloud services (like Compute Engine sole-tenant nodes) as capital expenditure.\"\n- 02 (idle VM signals): the page says \"the algorithm considers the CPU and network usage\"; it does not mention memory.\n- 03 (machine type recommendations): the page says \"based on the average utilization of your instances over 60-second intervals, so they don't capture short CPU spikes.\" I could not run a web search for a newer percentile-based method because the session's search budget was used up, so this rests on the current page only.\n- 04 (detailed export): the page says it adds \"resource-level cost data, like a virtual machine or SSD.\"\n- 05 (late usage): the page says late-reported usage \"might roll over to the next month's invoice.\" This one is near the depth limit for billing reconciliation but is defensible.\n\nNo duplicates within the deck: 1.1 has two other CUD cards (regional scope and capacity separation) and one rightsizing card, all on different facts.\n\nAll five flags are weak_card (truism, definition or strawman); each comes with a replacement that keeps the 5 true / 5 false balance. Replacement statements are at most 120 characters and explanations at most 182. The labels replacement for 09 sits on the same topic as card 06 but tests a different fact."
+  },
+  {
+   "section": "5.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s5.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last updated 2026-10-06; supports the card",
+     "evidence": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/best-practices-continuous-integration-delivery-kubernetes: \"Keeping the clusters similar ensures that any testing is done on the same or similar conditions to what's in production.\" and \"Ideally, pre-production clusters are identical to production clusters, but for cost purposes pre-production clusters can be scaled down replicas.\"",
+     "problem": "Truism. Production parity for integration testing is a generic DevOps principle, so a player who knows nothing about GKE answers True. The card tests no Google Cloud-specific design fact. The design trade-off the page actually gives (match the configuration, scale down replicas for cost) is only mentioned in the explanation.",
+     "suggestedFix": "Keep answer true. Statement: \"Google's GKE guidance lets pre-production clusters run fewer replicas than production while keeping their configuration matched.\" Explanation: \"Google wants pre-production clusters to match production so tests run under the same conditions, but lets them use scaled-down replicas to save cost.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 5.1 (all in raw/gcp-pca-b4.json). The section is balanced at 5 true (01, 03, 07, 09, 10) and 5 false (02, 04, 05, 06, 08). Every source URL loaded, is official and is current (last updated 2026-10-06 or 2026-10-07).\n\nEvidence for the cards that pass:\n- 01: the lifecycle page says \"The source VM continues to run during the testing phase, which means data replication also continues.\"\n- 02: the Quota policy page says \"It doesn't matter whether 10,000 messages were counted on the first day or the last day of that month\" and \"Don't use the Quota policy to shield against overall traffic spikes. For that, use the SpikeArrest policy.\"\n- 03: the Apigee hybrid page says \"Customer-managed runtime plane: A set of containerized runtime services that you set up and maintain in your own Kubernetes cluster. All API traffic passes through and is processed within the runtime plane.\" Minor point: the URL is pinned to v1.16 while v1.17 is now listed. The content is the same and v1.16 is still served, so I did not flag it. Changing it to the latest-version page is optional.\n- 04: the Migrate to Virtual Machines docs list the sources as \"vSphere on-premises data center, AWS ..., Azure ..., and Google Cloud VMware Engine to VM instances or Persistent Disk volumes on Google Cloud\". VMware Engine appears only as a source.\n- 05: the DMS PostgreSQL quickstart says \"You must stop all writes to the source database because, by promoting the migration job, the destination Cloud SQL database will become your primary database\" and \"Wait until the replication delay is at zero.\"\n- 06: the Storage Transfer Service data integrity page lists checking that \"The correct version of the files are copied, for files that change at the source\" as a separate post-transfer check, apart from checksum validation.\n- 07: the Transfer Appliance overview says \"If you choose a destination region within the EU, your data never leaves the boundaries of the European Union during any part of the data transfer process\", and that EU appliances ship from and back to Belgium. This one is borderline: it paraphrases the source sentence closely and a novice could guess True. It is not a word-swap copy, so I did not flag it.\n- 08: the Datastream events page says \"Datastream doesn't guarantee ordering\", and the right fact in the explanation (source-specific fields such as lsn and log_position) is on the same page. The statement correctly limits itself to Cloud Storage, since the page says BigQuery merges out-of-order events automatically.\n- 10: the Gemini Cloud Assist overview is still a \"Preview offering ... Pre-GA Offering Terms\". It states the tool can \"Iteratively generate or refine ... Terraform code ... through interactive conversations\" and that you should validate all output. This feature is not marked Preview on its own, and volatility is set to may_change as the rule requires.\n\nRule and deck checks:\n- No duplicates. Across the deck, the only other Apigee card is s1.1-09 (JSON/XML mediation, a different fact). The load and chaos testing cards in 6.3 rest on different facts. 5.1-10 is the deck's only Gemini Cloud Assist card, so the two-card cap holds.\n- No card uses a retired product, and none is about Migrate to Containers.\n\nI reviewed card 05 as a possible strawman or ACE-level procedure step. I kept it: the zero-downtime misconception is realistic, and the write freeze at cutover is a design fact for planning downtime."
+  },
+  {
+   "section": "5.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s5.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/apis/docs/client-libraries-best-practices), supports the card",
+     "evidence": "\"The initial request made by an instance of a session client performs authentication, authorization, and access token generation.\" ... \"For additional calls on the same client instance, the session client reuses the same access token for as long as it is valid (typically one hour).\" (https://docs.cloud.google.com/apis/docs/client-libraries-best-practices)",
+     "problem": "Truism. That reusing a session 'can reduce repeated authentication work' follows from common sense about sessions and caching, and the hedge 'can' makes it nearly impossible to answer False. Nobody who studied would say False, so the card teaches nothing specific. The page's non-obvious consequence is the one worth testing: every client instance has its own credential cache, so creating many quickly can be rate limited.",
+     "suggestedFix": "Replacement (answer True): \"Creating many Cloud Client Library instances in a short period can trigger rate limiting of their requests.\" Explanation: \"Each client instance keeps its own credential cache and authenticates on its first request, so Google recommends reusing one client object for requests made with the same credentials.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s5.2-04",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official (docs.cloud.google.com/bigquery/docs/paging-results), supports the card",
+     "evidence": "\"Cloud Client Libraries handle the low-level details of API pagination and provide an iterator-like experience.\" \"When you iterate through results, the library automatically fetches the next page of data when it's needed.\" (https://docs.cloud.google.com/bigquery/docs/paging-results). Prompt 5.2 scope: \"here test design-level choices (credentials, client libraries, emulators in testing).\"",
+     "problem": "The answer is right, but lazy versus eager page fetching in a BigQuery iterator is a coding detail at developer depth, not an architect's design choice. The misconception is also close to a strawman: few learners believe a library downloads every page before iteration starts. Language-specific helpers such as list() or to_dataframe() do read every page, which further blurs the claim.",
+     "suggestedFix": "Replacement (answer False, on emulators in testing): \"The Spanner emulator enforces IAM permissions, so integration tests against it can validate an application's access grants.\" Explanation: \"The Spanner emulator supports no authentication or IAM, and its performance does not match the production service, so access grants and load still need testing against a real Spanner instance.\" URL: https://docs.cloud.google.com/spanner/docs/emulator (\"The emulator doesn't support TLS/HTTPS, authentication, IAM...\"; \"The emulator's performance and scalability don't compare to the production service.\")"
+    },
+    {
+     "id": "gcp-pca-s5.2-08",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, only partly supports the card",
+     "evidence": "The cited page says only \"Infra Manager also stores a copy of the Terraform state file\" and, separately, \"Revisions are versions of a deployment, so Infra Manager stores this deployment metadata for each revision\" (https://docs.cloud.google.com/infrastructure-manager/docs/deployments-revisions). The per-revision state file and inspecting a revision's state are on another page: \"This page describes how to work with the Terraform state file that is created for each deployment and revision.\", with a config.revisions.getState permission for exporting a revision's state (https://docs.cloud.google.com/infrastructure-manager/docs/state-file).",
+     "problem": "The card depends on a state file existing for each revision, and the explanation says a team can inspect a particular revision's state. The cited page supports neither claim directly. The answer (True) is correct.",
+     "suggestedFix": "Change the source to https://docs.cloud.google.com/infrastructure-manager/docs/state-file (title \"Manage the Terraform state file\"). Optionally tighten the statement to \"Infrastructure Manager stores a Terraform state file for each deployment and for each of its revisions.\" (True)."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 5.2 (content/raw/gcp-pca-b4.json). The original balance is 5 true and 5 false, and the suggested replacements keep it: s5.2-03 stays True, s5.2-04 stays False. The 7 cards that passed, with the evidence that settles each one:\n- s5.2-01 (True): the ADC page says \"Using the credentials from the attached service account is the preferred method for finding credentials in a production environment on Google Cloud.\" It is close to the ACE card gcp-ace-s?-? in gcp-ace-b3 (\"A Compute Engine VM's attached service account supplies credentials to its application\"), but it tests the recommendation, not the mechanism.\n- s5.2-02 (False): the search order is GOOGLE_APPLICATION_CREDENTIALS, then the gcloud ADC file, then the attached service account. The page adds that \"The order ... is not related to the relative merit of each location\", so this card and 01 do not give each other away.\n- s5.2-05 (True): \"Create a Pub/Sub notification is never idempotent, because it creates a new notification ID each time the request succeeds.\"\n- s5.2-06 (False): \"Because the emulator stores data only in memory, it won't persist data across runs.\" The misconception is realistic, because the Datastore emulator does persist data to disk.\n- s5.2-07 (False): Google API Client Libraries \"Provide access to the API's REST interface only; gRPC is not supported.\"\n- s5.2-09 (True): drift correction is the default. Only cnrm.cloud.google.com/reconcile-interval-in-seconds set to 0 turns it off, and mutable but unreadable fields update only when the custom resource changes, so \"readable, mutable\" is accurate. It goes deeper than gcp-ace-s2.4-01 (Config Connector reconciles custom resources).\n- s5.2-10 (False): the Cloud SQL private IP page says \"Cloud Shell uses a Compute Engine virtual machine that's managed by Google Cloud and is outside of your VPC network.\" That page is an acceptable source; https://docs.cloud.google.com/shell/docs/how-cloud-shell-works would be a more direct one.\nOther checks:\n- No card names a retired product.\n- The Bigtable emulator is started with gcloud beta, and the card makes no claim about its launch stage.\n- No factKey duplicates another one in the deck. The nearest neighbours are s4.1-06 (Infrastructure Manager previews, a different fact) and the 3.1 service account cards.\n- I could not fetch any URL on the first try because of a transient classifier error; every page loaded on the retry."
+  },
+  {
+   "section": "6.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s6.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, last reviewed 2026-10-02",
+     "evidence": "https://docs.cloud.google.com/architecture/framework/operational-excellence: the pillar covers \"Operational requirements and best practices for the design and implementation phases\". The source supports the card, but the claim is a truism. No one who studied would answer False to \"address operational requirements during architecture design\", and the explanation only restates the page's framing.",
+     "problem": "Truism or strawman. The statement follows from what an operational excellence pillar is and teaches no specific recommendation.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"The Well-Architected Framework recommends future reservations to assure capacity for critical machine types in advance.\" Explanation: \"The operational excellence pillar's capacity advice uses Compute Engine future reservations to secure critical machine types up to a year ahead, and warns that pinning a workload to one machine type blocks newer hardware.\" Source: https://docs.cloud.google.com/architecture/framework/operational-excellence/operational-readiness-and-performance-using-cloudops (\"Use future reservations to get an assurance of capacity for critical machine types up to a year ahead.\"). Set volatility to may_change because of the one-year horizon."
+    },
+    {
+     "id": "gcp-pca-s6.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official",
+     "evidence": "https://docs.cloud.google.com/logging/docs/routing/overview: \"Log sinks can't retroactively route log entries. That is, a log sink can't route a log entry that was received before the sink was created.\" Also: \"you can retroactively copy log data from a log bucket to Cloud Storage.\"",
+     "problem": "The answer is right, but the statement does not test the fact. A learner who wrongly thinks sinks are retroactive would still answer True, because sinks obviously route entries that arrive after they are created. The real fact, that sinks do not route earlier entries, appears only in the explanation, so the card is a truism.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"To export logs received before a sink existed, Cloud Logging offers a copy from the log bucket to Cloud Storage.\" Explanation: \"Sinks route only entries that arrive after the sink is created. For older entries already stored in a log bucket, Cloud Logging provides a copy operation that writes them to Cloud Storage.\" Keep the same URL."
+    },
+    {
+     "id": "gcp-pca-s6.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official",
+     "evidence": "https://docs.cloud.google.com/profiler/docs/about-profiler: \"Cloud Profiler is a statistical, low-overhead profiler that continuously gathers CPU usage and memory-allocation information from your production applications.\" The same page lists support for \"Applications running outside Google Cloud\" for Go, Java, Node.js and Python.",
+     "problem": "The answer can be read from the product name. Sampling CPU to find expensive code paths is what any profiler does, so this is product identification (CDL depth). It is also close to a paraphrase of the overview's first sentence.",
+     "suggestedFix": "Replace (keeps answer TRUE): \"Cloud Profiler can collect profiles from applications that run outside Google Cloud, such as on premises.\" Explanation: \"Cloud Profiler agents for Go, Java, Node.js and Python also run outside Google Cloud, so hybrid workloads can send low-overhead production CPU and heap profiles to one Google Cloud project for analysis.\" Keep the same URL."
+    }
+   ],
+   "notes": "I opened every source URL; all ten load and are official. Seven cards pass after checking the answer against the source and the rules:\n- 02 (false): the SRE workbook says \\\"we will halt all changes and releases other than P0 issues or security fixes\\\".\n- 03 (true): the fast-burn alert \\\"warns you of a sudden, large change in consumption that, if uncorrected, will exhaust your error budget very soon\\\".\n- 05 (false): \\\"A linked BigQuery dataset is a read-only pointer to your log bucket\\\".\n- 06 (false): Monarch \\\"executes queries and unions results across all Google Cloud regions\\\".\n- 07 (false): \\\"Cloud Trace has no role in a component's sampling decision\\\", and tail sampling goes through the OpenTelemetry Collector Tail Sampling Processor.\n- 09 (true): \\\"The private network and its resources ... can also be in a different Google Cloud project. This project doesn't have to be in the metrics scope\\\", while the Service Directory service must be in the metrics scope.\n- 10 (false): \\\"A condition resets its retest window each time a measurement or forecast doesn't satisfy the condition\\\".\n\nI found no duplicates with other sections. The nearest are 1.1-04 (internal SLO stricter than SLA), 4.1-08 (postmortems), 4.2-10 (learning from experiments) and 3.2-07 (retention-locked bucket); each rests on a different fact. The section stays at 5 true and 5 false, and all three replacements keep TRUE. Hedge words are balanced: \\\"can\\\" appears in 3 true and 1 false statement, and \\\"lets\\\" and \\\"allows\\\" each appear in 1 false statement. Note that 4.2-10 (learning from cloud experiments) is an operational excellence principle sitting in section 4.2, which is outside my section."
+  },
+  {
+   "section": "6.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pca-s6.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (Google SRE Workbook)",
+     "evidence": "https://sre.google/workbook/incident-response/: \"The OL works to respond to the incident by applying operational tools to mitigate or resolve the incident.\" and the IC \"Commands and coordinates the incident response, delegating roles as needed. By default, the IC assumes all roles that have not been delegated yet.\"",
+     "problem": "The fact is correct, but the wording gives the answer away. Once the statement says an Ops Lead has been appointed, anyone can guess that the Ops Lead, not the Incident Commander, does the operations work. The role names alone settle it, so the card is close to a strawman.",
+     "suggestedFix": "Replacement (false, keeps the 5/5 balance): \"In Google's incident response model, the Ops Lead holds every role the Incident Commander has not yet delegated.\" Explanation: \"The SRE Workbook says the Incident Commander assumes all roles not yet delegated, including Ops Lead; delegating them lets the IC focus on coordination and communication.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s6.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://docs.cloud.google.com/compute/docs/instance-groups/rolling-out-updates-to-managed-instance-groups: \"maxSurge only works if you have enough quota or resources to support the additional resources.\" and \"Setting a higher maxSurge value speeds up your update, at the cost of additional instances, which are billed\"",
+     "problem": "Strawman. Nobody who has studied would believe Compute Engine exempts temporary rolling-update VMs from project quotas, so the card teaches nothing. The design trade-off underneath it (surge needs quota; maxUnavailable 0 depends on surge) is worth testing directly.",
+     "suggestedFix": "Replacement (false, keeps balance): \"Setting maxUnavailable to 0 in a MIG rolling update removes the need for spare quota during the update.\" Explanation: \"With maxUnavailable at 0, the MIG creates surge VMs before deleting old ones, and maxSurge only works when the project has quota and capacity for those extra VMs.\" Same URL."
+    },
+    {
+     "id": "gcp-pca-s6.3-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (last updated 2026-10-07)",
+     "evidence": "https://docs.cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration: rollback is done by selecting \"the revision you are rolling back to\" and choosing to \"send all traffic to one revision.\"",
+     "problem": "The fact is right but basic. The \"rather than rebuilding its container image\" contrast gives the answer away. It also breaks the name-the-actor rule: \"Cloud Run rolls back a service\" suggests an automatic rollback, but the team shifts the traffic and Cloud Run has no automatic rollback. It is also the second card in the section on traffic routing between revisions, next to s6.3-04.",
+     "suggestedFix": "Replacement (true, keeps balance): \"Cloud Run revision tags let a team test a new revision at its own URL before routing production traffic to it.\" Explanation: \"A tag gives a revision a dedicated URL while it serves no share of production traffic, so a team can validate a blue/green or canary candidate before migrating traffic.\" Same URL (\"The tag lets you directly test the new revision at a specific URL, without serving traffic.\")."
+    },
+    {
+     "id": "gcp-pca-s6.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (last updated 2026-10-07)",
+     "evidence": "https://docs.cloud.google.com/deploy/docs/roll-back: \"When you roll back a target, Cloud Deploy creates a new rollout resource based on a previous release.\" and \"By default, the rollback uses the last release with a successful rollout to the indicated target, but you can choose a different one\"",
+     "problem": "The statement is a near-copy of the source sentence, reworded and reordered. The rules ask for original wording. The more useful design fact on the same page, which release a rollback uses by default, is left untested.",
+     "suggestedFix": "Replacement (true, keeps balance): \"By default, a Cloud Deploy rollback redeploys the last release that had a successful rollout to that target.\" Explanation: \"Cloud Deploy creates a new rollout from the last release that succeeded on the target unless the team picks another release; it does not rewind the earlier rollout.\" Same URL."
+    }
+   ],
+   "notes": "Checked all 10 cards in section 6.3 (raw file content/raw/gcp-pca-b4.json, ids s6.3-01 to s6.3-10). The section is balanced at 5 true and 5 false. All five source URLs loaded and are official and current (Cloud Deploy, Cloud Run and Spanner pages last updated 2026-10-07; reliability pillar page last reviewed 2024-12-30).\n\nCards that pass:\n- 01: the canary page says \"When you advance the controller rollout to the next stage, the child rollouts are advanced too, by Cloud Deploy.\"\n- 04: \"If you split traffic between multiple revisions or assigned traffic to a previous revision, all subsequent deployments use that traffic split pattern going forward.\" One edge case: `gcloud run services replace` with a YAML that has no traffic block. The statement says \"by default\", so the card still holds.\n- 06: \"If the verification fails, the rollout also fails.\" This one is borderline. It is close to the source wording and easy to guess, but I did not flag it: it is the section's only quality-gate card, and the possible replacements (exit-code semantics, retrying a verify job) are at ACE depth.\n- 08: \"Introduce load testing alongside failure scenarios to replicate real-world usage during outages.\" This is also a fairly close paraphrase. Its factKey (chaos-testing-controlled-failure-injection) does not match its content and should be renamed, for example to failure-testing-with-load.\n- 09: the Cloud Security FAQ says \"you are not required to contact us\", provided you follow the Acceptable Use Policy and Terms of Service and only affect your own projects.\n- 10: the Spanner launch checklist says \"Extend load testing to encompass all interacting services, not just isolated applications.\"\n\nDuplicates: none against 4.1 (postmortem, Cloud Deploy promotion and approval), 5.1 or 6.1.\n\nEffect of the fixes on balance: the replacements for 02 and 05 are true and those for 03 and 07 are false, so the section stays 5/5. After the fixes the section still has three Cloud Deploy cards (01, 05, 06)."
+  }
+ ],
+ "scan": {
+  "cardsRead": 160,
+  "duplicates": [
+   {
+    "ids": [
+     "gcp-pca-s1.4-05",
+     "gcp-pca-s5.1-05"
+    ],
+    "why": "Both rest on the same Google position: accept a planned cutover outage rather than chase zero downtime. 1.4-05 says Google advises against needless zero-downtime requirements. 5.1-05 says Google stops source writes before promoting a DMS job, which is a planned write outage. Knowing either answer gives the other. 1.4-05 is also a self-refuting strawman, because the statement itself says the workloads 'tolerate planned cutover outages'.",
+    "dropId": "gcp-pca-s1.4-05"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "regional-zone-only-failover",
+    "ids": [
+     "gcp-pca-s1.2-03",
+     "gcp-pca-s1.2-05",
+     "gcp-pca-s2.3-05"
+    ],
+    "why": "The explanations of 1.2-03 ('a regional deployment uses zones within one region') and 2.3-05 ('replicas in different zones of one region') hand the player the rule that regional HA stays inside one region. That gives away 1.2-05 (Cloud SQL HA standby in another region, false). 1.2-05's explanation ('different zones of the same region ... protects against a zonal failure') in turn gives away 1.2-03 (automatic failover to another region, false)."
+   },
+   {
+    "name": "cloud-sql-ha-standby",
+    "ids": [
+     "gcp-pca-s1.2-05",
+     "gcp-pca-s2.2-06"
+    ],
+    "why": "Both test the Cloud SQL HA standby. 2.2-06's explanation ('the standby reserves its role for failover') and 1.2-05's explanation (standby placed for zonal failover protection) each describe the standby purely as a failover target, which hints at the other card's answer."
+   },
+   {
+    "name": "migration-cutover-downtime",
+    "ids": [
+     "gcp-pca-s1.4-05",
+     "gcp-pca-s5.1-05"
+    ],
+    "why": "5.1-05's explanation (stop source writes before promotion) shows that Google accepts a planned cutover outage, which gives away 1.4-05 (Google recommends zero downtime, false). The reverse also holds. This is the duplicate pair; keep them apart if both stay."
+   },
+   {
+    "name": "guardrail-beyond-iam",
+    "ids": [
+     "gcp-pca-s3.1-02",
+     "gcp-pca-s3.1-06",
+     "gcp-pca-s2.4-09"
+    ],
+    "why": "3.1-02 (org policy blocks key creation 'even when IAM permits', true) and 3.1-06 (VPC SC restricts 'despite permissive IAM grants', true) form a mirrored pair with the same structure: a second control that overrides IAM. Seeing one primes True for the other. 2.4-09's explanation ('Granting Google Cloud IAM access leaves those source permissions in force') teaches the same lesson, that IAM is not the final word, and so reinforces the pair."
+   },
+   {
+    "name": "non-retroactive-effect",
+    "ids": [
+     "gcp-pca-s3.2-08",
+     "gcp-pca-s4.2-06",
+     "gcp-pca-s6.1-04",
+     "gcp-pca-s1.4-10"
+    ],
+    "why": "All four rest on one principle: a new policy, label, sink or TTL affects only later events. The explanation of each one states that principle: 3.2-08 says the location constraint 'applies to new resource creation'; 6.1-04 says the sink leaves 'earlier stored entries' alone rather than replaying them; 4.2-06 says 'earlier usage retains its earlier attribution'; 1.4-10 says the lower TTL waits for 'the previous cached value'. Any one of them predicts the answers of the others."
+   },
+   {
+    "name": "cloud-deploy-rollout-per-target",
+    "ids": [
+     "gcp-pca-s4.1-03",
+     "gcp-pca-s4.1-04",
+     "gcp-pca-s6.3-05"
+    ],
+    "why": "4.1-03's explanation ('Promoting a release creates a rollout for its destination target') and 4.1-04's explanation ('approvals authorize a rollout to a specific target') teach that every Cloud Deploy action is its own rollout bound to one target. That gives away 6.3-05 (rollback creates a new rollout, true) and lets each of the 4.1 cards answer the other."
+   },
+   {
+    "name": "cloud-run-traffic-allocation",
+    "ids": [
+     "gcp-pca-s6.3-02",
+     "gcp-pca-s6.3-04"
+    ],
+    "why": "6.3-04's explanation ('a team changes the traffic allocation explicitly to return traffic') describes the routing-based rollback that 6.3-02 tests. 6.3-02's explanation ('restores an existing revision by changing traffic allocation') in turn suggests that traffic stays where the team routed it, which hints that 6.3-04 is false."
+   },
+   {
+    "name": "realistic-testing-conditions",
+    "ids": [
+     "gcp-pca-s5.1-09",
+     "gcp-pca-s6.3-08",
+     "gcp-pca-s6.3-10",
+     "gcp-pca-s4.1-09"
+    ],
+    "why": "All four reward one heuristic: Google wants tests under production-like conditions. 6.3-08's statement and explanation ('adds realistic request load to simulated outages ... while users are active') nearly give away 6.3-10 (isolated Spanner load test, false). 5.1-09 (production-like pre-production, true) and 4.1-09's explanation ('testing the application stack ... with restored data') point the same way."
+   },
+   {
+    "name": "bigtable-weak-guarantees",
+    "ids": [
+     "gcp-pca-s1.3-06",
+     "gcp-pca-s2.2-08"
+    ],
+    "why": "2.2-08's explanation (multi-cluster routing 'offers eventual consistency') and 1.3-06's explanation ('atomic transaction boundary is a single row') both describe Bigtable's limited guarantees. Each strongly hints that the other card's stronger-guarantee statement is false."
+   },
+   {
+    "name": "adc-credential-sources",
+    "ids": [
+     "gcp-pca-s5.2-01",
+     "gcp-pca-s5.2-02"
+    ],
+    "why": "Both test Application Default Credentials sources. 5.2-02's explanation ('a file left in the environment can change which identity a deployed workload uses') hints that production should rely on the attached service account (5.2-01, true). 5.2-01's explanation ('obtains credentials from its environment rather than carrying a key file') muddies 5.2-02's precedence question when both cards come up in one round."
+   }
+  ],
+  "tells": "Totals: 160 cards, 80 true and 80 false. Each section is 5 true and 5 false. The average length of true and false statements is within 5 characters in every section (largest gaps: 2.4, where false statements are 4.6 characters longer; 2.1, where true statements are 4.0 longer; 1.2, where false statements are 3.6 longer; overall 101.8 vs 101.0). No statement is over 120 characters, and none contains a banned negation or absolute. The tells are in wording and templates, not length.\n\n1) Who the statement cites. 'The Well-Architected Framework ...': 7 true, 0 false (s1.2-01, s1.2-02, s1.4-09, s4.2-01, s4.2-09, s4.2-10, s6.1-01). Answering True on any framework card scores 100%. 'recommends' overall: 13 true, 4 false. 'Google recommends': 8 true (s1.1-04, s1.2-04, s1.4-08, s4.1-08, s4.1-10, s5.1-09, s5.2-01, s6.3-08) and 4 false (s1.4-05, s4.1-09, s5.1-05, s6.3-10). All 4 false recommendations endorse a weaker or riskier practice: zero downtime for workloads that tolerate outages, file checks instead of stack tests, writes during promotion, an isolated load test. So the rule 'a Google recommendation is true unless it sounds lax' scores 17 out of 17. s1.4-05 and s4.1-09 are strawmen: nobody who studied believes Google recommends less testing, or zero downtime for outage-tolerant workloads.\n\n2) Loophole or relaxation template, false 12 times: s1.4-10 shortens cache entries, s2.2-02 shortens a locked retention policy, s2.4-09 overrides ACLs, s3.1-01 reduces inherited permissions, s3.1-05 replaces a version payload, s3.2-08 suspends existing resources, s3.2-09 transfers compliance evaluation, s4.1-04 carries an approval forward, s4.2-07 pauses commitment fees, s6.3-03 exempts VMs from quotas, s6.3-04 resets the traffic split, s6.1-10 retains elapsed time. Only about 2 true cards have this shape (s3.1-04 EKM revokes access, s2.3-03 retains a Spot VM). The prompt allows at most two false cards per template.\n\n3) Boundary-crossing template ('X extends to another region, network or scope'), false 7 times: s1.1-05, s1.2-03, s1.2-05, s2.1-06, s2.1-09, s4.1-01, s5.2-10. True 3 times: s1.2-06, s2.3-08, s6.1-09.\n\n4) Scope-narrowing verbs 'limits' and 'confines': 0 true, 4 false (s2.3-04, s2.3-06, s3.1-08, s6.1-06). All four use the template 'X limits Y to a single Z'.\n\n5) 'preserves' as the main verb: 0 true, 4 false (s1.2-10, s1.3-03, s5.1-08, s5.2-06). The wider preserve, retain and keep family: 4 true (s2.3-03, s2.3-05, s5.1-07, s5.2-08) and 9 false (s1.1-03, s1.2-10, s1.3-03, s2.2-04, s2.3-09, s4.1-02, s5.1-08, s5.2-06, s6.1-10).\n\n6) 'automatically' is balanced overall (9 true, 8 false), but 'automatically' plus a protective action is a false template 4 times: s1.2-03 fails over, s2.1-08 blocks, s2.2-04 replicates, s3.2-07 blocks deletion. True uses of 'automatically' describe mechanisms instead (s2.3-01, s2.2-01, s3.2-05, s6.3-05, s6.3-06).\n\n7) Hedge verbs are lopsided. 'lets': 4 true (s1.1-08, s1.3-01, s1.3-04, s2.1-05), 8 false (s1.3-02, s1.4-07, s2.1-06, s2.1-10, s2.2-02, s2.3-09, s3.2-02, s6.1-05). 'allows': 0 true, 2 false (s3.1-01, s6.1-02). 'can' is roughly balanced (21 true, 16 false), and 'supports' is balanced (3 and 3), but 'supports X for applications that need Y' is false twice (s1.3-06, s1.3-08) against 1 true (s1.3-05).\n\n8) Small markers. 'while': 7 true (s1.1-09, s1.3-01, s1.3-09, s2.1-03, s3.2-03, s5.1-01, s6.1-03), 3 false (s2.2-06, s5.1-05, s6.1-02). 'even when' or 'despite': 2 true, 0 false (s3.1-02, s3.1-06). 'same': 2 true, 0 false (s1.1-08, s4.1-03). 'also': 0 true, 2 false (s1.1-01, s2.1-09). 'own': 0 true, 2 false (s2.2-09, s6.3-09). 'by default': 4 true, 6 false (false: s1.3-10, s2.2-08, s2.3-04, s2.3-09, s2.4-02, s6.3-04). 'requires': 2 true, 3 false, which is fine.\n\n9) The subject predicts the answer. Statements starting with 'Cloud Run': 1 true, 4 false (s1.2-10, s1.3-08, s2.3-07, s6.3-04). Starting with 'Cloud Deploy': 4 true, 1 false (s4.1-04).\n\n10) Difficulty, if the game ever shows it: difficulty 3 is 8 true and 24 false (75% false); difficulty 1 is 37 true and 27 false.\n\n11) Truism-like cards that a player answers from common sense: s1.1-02 (tighter recovery targets cost more), s1.1-01 (meeting the RPO also meets the RTO), s1.1-07 (lower CPU use cuts the bill of an unchanged VM), s3.2-09 (a BAA transfers compliance evaluation to Google), s6.3-09 (pen testing your own projects requires notification)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "gcp-pca-s1.1-07",
+    "reason": "weak_card (strawman: rightsizing to lower CPU use contradicts itself). Third weak card in 1.1; its replacement (billing by utilization) is also close to a strawman, so this one is dropped and 01 and 10 are rewritten."
+   },
+   {
+    "id": "gcp-pca-s1.2-01",
+    "reason": "weak_card (definition: a perspective is a cross-pillar view). Dropping it also weakens the 'Well-Architected Framework = true' tell; 04 and 08 are rewritten instead."
+   },
+   {
+    "id": "gcp-pca-s1.3-05",
+    "reason": "weak_card (Filestore purpose readable from the product; no competing option). One of two weak cards in 1.3; 01 is rewritten to keep 9 cards."
+   },
+   {
+    "id": "gcp-pca-s1.4-05",
+    "reason": "Scan duplicate of 5.1-05 (accept a planned cutover outage) and a self-refuting strawman; the scan's dropId. 03, 04 and 06 are rewritten to keep 9 cards."
+   },
+   {
+    "id": "gcp-pca-s2.1-07",
+    "reason": "weak_card (goto_next answer readable from the keyword). Only flagged card in 2.1; section keeps 9 cards at 4T/5F."
+   },
+   {
+    "id": "gcp-pca-s2.2-02",
+    "reason": "weak_card (a 'locked' policy that cannot be shortened is a name giveaway) and part of the loophole false template. 10 is rewritten instead."
+   },
+   {
+    "id": "gcp-pca-s2.3-07",
+    "reason": "weak_card (definition: 'Direct' VPC egress means no connector). Dropping also eases the 'Cloud Run subject = false' tell; 03 is rewritten instead."
+   },
+   {
+    "id": "gcp-pca-s2.4-07",
+    "reason": "weak_card (Form Parser output readable from the name, CDL-level identification). 05 is rewritten instead."
+   },
+   {
+    "id": "gcp-pca-s3.1-09",
+    "reason": "weak_card (strawman: an admission controller rerunning a test suite). 01 and 07 are rewritten to keep 9 cards."
+   },
+   {
+    "id": "gcp-pca-s3.2-10",
+    "reason": "weak_card (name giveaway: Compliance Reports Manager provides reports). 04 is rewritten instead."
+   },
+   {
+    "id": "gcp-pca-s4.1-03",
+    "reason": "weak_card (definition of promotion, unclear actor). It is also in the cloud-deploy-rollout-per-target conflict group, and the suggested replacement (one rollout per target) would give away 4.1-04 and 6.3-05. 06, 08, 09 and 10 are rewritten."
+   },
+   {
+    "id": "gcp-pca-s4.2-09",
+    "reason": "weak_card (truism: tailor reports to the audience). The replacement would add another true 'Well-Architected Framework recommends' card and a second labels card next to 4.2-06. 06, 07, 08 and 10 are rewritten."
+   },
+   {
+    "id": "gcp-pca-s5.1-09",
+    "reason": "weak_card (truism: production parity for testing). Only flagged card in 5.1; also leaves the realistic-testing conflict group."
+   },
+   {
+    "id": "gcp-pca-s5.2-03",
+    "reason": "weak_card (truism with hedge: reusing a session reduces auth work). 04 is rewritten to the in-scope emulator-limits fact instead."
+   },
+   {
+    "id": "gcp-pca-s6.1-01",
+    "reason": "weak_card (truism: address operations during design). Its replacement would add another true 'Well-Architected Framework recommends' card. 04 and 08 are rewritten."
+   },
+   {
+    "id": "gcp-pca-s6.3-02",
+    "reason": "weak_card (basic, actor unclear, and in the cloud-run-traffic-allocation conflict pair with 6.3-04). 03, 05 and 07 are rewritten."
+   }
+  ],
+  "source": [
+   {
+    "id": "gcp-pca-s1.1-06",
+    "title": "Combine reservations with committed use discounts",
+    "url": "https://docs.cloud.google.com/compute/docs/instances/reservations-with-commitments"
+   },
+   {
+    "id": "gcp-pca-s2.4-09",
+    "title": "Configure identity provider",
+    "url": "https://docs.cloud.google.com/gemini/enterprise/docs/configure-identity-provider"
+   },
+   {
+    "id": "gcp-pca-s5.2-08",
+    "title": "Manage the Terraform state file",
+    "url": "https://docs.cloud.google.com/infrastructure-manager/docs/state-file"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "gcp-pca-s1.1-01",
+    "reason": "weak_card (definition card); verifier's cold-pattern replacement, confirmed by the planning guide's flat-tire analogy (Cold: no spare tire, trip stops until help arrives)",
+    "statement": "Google's DR guide describes the cold pattern as one with spare recovery resources already in place before a disaster.",
+    "answer": false,
+    "explanation": "In the cold pattern no spare resources are on hand, so recovery must first obtain them, and the service stays down until they arrive.",
+    "misconception": "The cold DR pattern keeps spare recovery resources provisioned before a disaster.",
+    "sourceTitle": "Disaster recovery planning guide",
+    "sourceUrl": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide"
+   },
+   {
+    "id": "gcp-pca-s1.1-10",
+    "reason": "weak_card (metric name gives the answer); verifier's replacement, confirmed on dora.dev: 'DORA uses three factors to measure software delivery throughput: Change lead time, Deployment frequency, Failed deployment recovery time'. Set volatility may_change (DORA regrouped its metrics recently).",
+    "statement": "DORA groups failed deployment recovery time with deployment frequency as a software delivery throughput factor.",
+    "answer": true,
+    "explanation": "DORA measures throughput with change lead time, deployment frequency and failed deployment recovery time; change fail rate and deployment rework rate measure instability.",
+    "misconception": "",
+    "sourceTitle": "DORA's software delivery performance metrics",
+    "sourceUrl": "https://dora.dev/guides/dora-metrics/"
+   },
+   {
+    "id": "gcp-pca-s1.1-06",
+    "reason": "source_problem: the cited CUD overview has no capacity sentence. The new page says compute flexible commitments 'don't require or support attached reservations' and 'don't come with assured capacity'. Statement and answer are unchanged; the explanation is tightened to match the page.",
+    "statement": "Compute flexible committed use discounts can reserve VM capacity for the committed workload.",
+    "answer": false,
+    "explanation": "Compute flexible commitments don't support attached reservations and come with no assured capacity, so a workload that needs assured VM capacity uses a separate reservation.",
+    "misconception": "Purchasing a compute flexible commitment also secures the workload's VM capacity.",
+    "sourceTitle": "Combine reservations with committed use discounts",
+    "sourceUrl": "https://docs.cloud.google.com/compute/docs/instances/reservations-with-commitments"
+   },
+   {
+    "id": "gcp-pca-s1.2-04",
+    "reason": "weak_card (generic HA truism); verifier's sizing-rule replacement, confirmed: 'Google recommends overprovisioning your group by at least 50%' (three or more zones) and 'doubling' for two zones. Set volatility may_change because it uses a number.",
+    "statement": "For a regional MIG spread across three zones, Google recommends overprovisioning the group by at least 50%.",
+    "answer": true,
+    "explanation": "Losing one of three zones removes a third of capacity, so Google recommends at least 50% extra instances, and doubling for two zones, so the remaining zones carry the full load.",
+    "misconception": "",
+    "sourceTitle": "About regional MIGs",
+    "sourceUrl": "https://docs.cloud.google.com/compute/docs/instance-groups/regional-migs"
+   },
+   {
+    "id": "gcp-pca-s1.2-08",
+    "reason": "weak_card (textbook identification); verifier's tier-constraint replacement, confirmed: 'Cloud CDN is always Premium Tier. You cannot use Standard Tier with Cloud CDN.' It also puts 'requires' in a true statement.",
+    "statement": "Enabling Cloud CDN caching on a load balancer requires that load balancer to use Network Service Tiers' Premium Tier.",
+    "answer": true,
+    "explanation": "Cloud CDN is always Premium Tier and can't be used with Standard Tier, so choosing Standard Tier to lower a load balancer's egress cost rules out Cloud CDN caching.",
+    "misconception": "",
+    "sourceTitle": "Network Service Tiers overview",
+    "sourceUrl": "https://docs.cloud.google.com/network-tiers/docs/overview"
+   },
+   {
+    "id": "gcp-pca-s1.2-09",
+    "reason": "ambiguous (project deletion could remove backups); now limited to manual deletion, as the page states: 'backups are completely immutable—they cannot be manually deleted by you, any other user, or Google until your specified duration has passed'. The automatic lien starting 2026-11-01 is left out.",
+    "statement": "A Project Owner can manually delete a backup vault's backups before their enforced retention ends.",
+    "answer": false,
+    "explanation": "Enforced retention makes a vault's backups immutable: no user, including a Project Owner, and not even Google can manually delete them until the retention period has passed.",
+    "misconception": "Project Owner permissions override a backup vault's enforced retention.",
+    "sourceTitle": "Backup vaults for immutable and indelible backups",
+    "sourceUrl": "https://docs.cloud.google.com/backup-disaster-recovery/docs/concepts/backup-vault"
+   },
+   {
+    "id": "gcp-pca-s1.3-01",
+    "reason": "weak_card (restates Shared VPC's purpose); verifier's replacement, confirmed: 'each service project can only be attached to a single host project'. Lengthened to keep 1.3's true and false lengths balanced.",
+    "statement": "Each Shared VPC service project attaches to a single host project, though one host can serve many service projects.",
+    "answer": true,
+    "explanation": "A host project shares subnets with many service projects, but each service project can be attached to only one host project, so it uses that one host's Shared VPC network.",
+    "misconception": "",
+    "sourceTitle": "Shared VPC",
+    "sourceUrl": "https://docs.cloud.google.com/vpc/docs/shared-vpc"
+   },
+   {
+    "id": "gcp-pca-s1.3-03",
+    "reason": "ambiguous (the PROXY protocol lets a proxy NLB preserve the client IP); now about the default, confirmed: 'By default, the target proxy does not preserve the original client IP address and port information. You can preserve this information by enabling the PROXY protocol'",
+    "statement": "By default, an external proxy Network Load Balancer passes client source IPs and ports through to its backends.",
+    "answer": false,
+    "explanation": "By default the target proxy drops the original client IP and port, so backends see the proxy as the source. Enabling the PROXY protocol on the target proxy preserves that client information.",
+    "misconception": "A proxy Network Load Balancer hands each client's source IP to backends with no extra configuration.",
+    "sourceTitle": "External proxy Network Load Balancer overview",
+    "sourceUrl": "https://docs.cloud.google.com/load-balancing/docs/tcp"
+   },
+   {
+    "id": "gcp-pca-s1.4-03",
+    "reason": "weak_card (truism); verifier's replacement, confirmed: 'expand each group to assign up to four preference sets that you want to compare'. The number is left out.",
+    "statement": "One Migration Center TCO report can compare several migration preference sets for one asset group.",
+    "answer": true,
+    "explanation": "When generating a TCO report, a team picks asset groups and assigns each group multiple preference sets, so one report compares migration scenarios side by side.",
+    "misconception": "",
+    "sourceTitle": "Generate TCO reports",
+    "sourceUrl": "https://docs.cloud.google.com/migration-center/docs/generate-tco-report"
+   },
+   {
+    "id": "gcp-pca-s1.4-04",
+    "reason": "weak_card (strawman); verifier's replacement, confirmed: 'after a rehost migration, the workloads that are running in the target environment aren't optimized for the cloud'",
+    "statement": "Rehosted workloads run optimized for the cloud once they reach the Google Cloud target environment.",
+    "answer": false,
+    "explanation": "Rehost moves workloads with minor or no changes, so Google notes they aren't optimized for the cloud afterwards and miss features such as horizontal scalability; replatform or refactor work adds that.",
+    "misconception": "A lift-and-shift migration leaves workloads optimized for the cloud.",
+    "sourceTitle": "Migrate to Google Cloud: Get started",
+    "sourceUrl": "https://docs.cloud.google.com/architecture/migration-to-gcp-getting-started"
+   },
+   {
+    "id": "gcp-pca-s1.4-06",
+    "reason": "weak_card (near-copy definition, 'purchased' gives away 'repurchase'); verifier's replacement, confirmed: 'you can move from on-premises collaboration software and local storage to Google Workspace'",
+    "statement": "Google classifies replacing on-premises collaboration software with Google Workspace as a repurchase migration.",
+    "answer": true,
+    "explanation": "Repurchase means moving from a purchased on-premises workload to a cloud-hosted SaaS equivalent, rather than moving its code or rebuilding it.",
+    "misconception": "",
+    "sourceTitle": "Migrate to Google Cloud: Get started",
+    "sourceUrl": "https://docs.cloud.google.com/architecture/migration-to-gcp-getting-started"
+   },
+   {
+    "id": "gcp-pca-s2.2-10",
+    "reason": "weak_card (definition of clustering); verifier's replacement. The page says 'you don't receive an accurate query cost estimate before query execution' and BigQuery 'attempts to reduce the total bytes at execution'. The page does not use the words 'upper bound', so the statement says 'can exceed'.",
+    "statement": "BigQuery's pre-run cost estimate for a query on a clustered table can exceed the bytes the query finally scans.",
+    "answer": true,
+    "explanation": "BigQuery learns which clustered blocks it can skip only during execution, so the estimate before a run isn't exact and the final cost reflects the blocks scanned. Partitioning gives granular pre-run estimates.",
+    "misconception": "",
+    "sourceTitle": "Introduction to clustered tables",
+    "sourceUrl": "https://docs.cloud.google.com/bigquery/docs/clustered-tables"
+   },
+   {
+    "id": "gcp-pca-s2.3-03",
+    "reason": "weak_card (answer readable from stop versus delete); verifier's in-scope replacement, confirmed: 'Spot VMs don't have a minimum or maximum runtime unless you specifically limit the runtime'. Reworded to avoid negation.",
+    "statement": "A Spot VM keeps running until Compute Engine preempts it unless the team sets a limit on its run duration.",
+    "answer": true,
+    "explanation": "Spot VMs have no minimum or maximum runtime unless you limit it, so a long batch job keeps running until preemption or until a run duration limit the team configured ends it.",
+    "misconception": "",
+    "sourceTitle": "Spot VMs",
+    "sourceUrl": "https://docs.cloud.google.com/compute/docs/instances/spot"
+   },
+   {
+    "id": "gcp-pca-s2.3-06",
+    "reason": "ambiguous ('Autopilot mode' could be read as the cluster mode); now names the managed nodes. Confirmed: 'You control the cluster and can run your own Standard node pools alongside the nodes that GKE manages.'",
+    "statement": "Workloads a GKE Standard cluster puts on Autopilot-managed nodes run in a separate Autopilot cluster.",
+    "answer": false,
+    "explanation": "Autopilot ComputeClasses let a Standard cluster run selected workloads on Autopilot-managed node pools alongside the team's own Standard node pools, in the same cluster.",
+    "misconception": "Autopilot-managed workloads need their own Autopilot cluster when a team also runs Standard node pools.",
+    "sourceTitle": "About Autopilot mode workloads in GKE Standard",
+    "sourceUrl": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/about-autopilot-mode-standard-clusters"
+   },
+   {
+    "id": "gcp-pca-s2.3-09",
+    "reason": "explanation_error (taught the removed Elevate privilege feature). Confirmed on the how-to page: 'the integration does not provide the Elevate privilege feature. To perform these tasks, you can use a solution user account to: Configure identity sources...'. The 'permanently' wording is removed.",
+    "statement": "VMware Engine gives the default vCenter user full administrator access to vCenter in a private cloud.",
+    "answer": false,
+    "explanation": "The default vCenter user has privileges for normal day-to-day operations. Administrative tasks such as configuring identity sources use the solution user accounts that VMware Engine creates.",
+    "misconception": "The default vCenter user holds full vCenter administrator rights.",
+    "sourceTitle": "Elevate VMware Engine privileges",
+    "sourceUrl": "https://docs.cloud.google.com/vmware-engine/docs/private-clouds/howto-elevate-privilege"
+   },
+   {
+    "id": "gcp-pca-s2.4-05",
+    "reason": "weak_card (truism with hedge); verifier's in-scope replacement, confirmed: 'For a managed Slurm experience, you can use Cluster Director. To use Slurm natively, you can use Cluster Toolkit (which offers cluster blueprints that automatically install Slurm...)'. The Cluster Director overview has no Preview label.",
+    "statement": "Cluster Director gives AI Hypercomputer GPU clusters a managed Slurm environment, so teams skip installing Slurm.",
+    "answer": true,
+    "explanation": "For a managed Slurm experience Google points to Cluster Director, while Cluster Toolkit deploys blueprints that install Slurm on clusters the team runs itself.",
+    "misconception": "",
+    "sourceTitle": "Plan and create your AI infrastructure",
+    "sourceUrl": "https://docs.cloud.google.com/ai-hypercomputer/docs/process-overview"
+   },
+   {
+    "id": "gcp-pca-s2.4-09",
+    "reason": "source_problem: the cited IAM page does not cover source ACLs. The new page says 'Google uses your identity provider to identify the end user performing a search and determine if they have access to the documents' and 'never bypasses source system access controls or grants additional permissions'. Statement and answer are unchanged; the explanation is tightened.",
+    "statement": "Gemini Enterprise uses project IAM grants to override source-document ACLs for ACL-enabled connectors.",
+    "answer": false,
+    "explanation": "Gemini Enterprise uses your identity provider to check whether the end user can access each document a connector returns; IAM roles on the project grant no extra document access.",
+    "misconception": "Project IAM roles replace source-document permissions when a third-party connector enforces ACLs.",
+    "sourceTitle": "Configure identity provider",
+    "sourceUrl": "https://docs.cloud.google.com/gemini/enterprise/docs/configure-identity-provider"
+   },
+   {
+    "id": "gcp-pca-s3.1-01",
+    "reason": "duplicate of gcp-ace-s4.1-04; replaced with the verifier's uncovered 3.1 scope fact. Confirmed: 'Cloud KMS doesn't let you destroy key versions immediately', 'The default scheduled for destruction duration is 30 days', restore is possible during that period. Set volatility may_change (30-day figure).",
+    "statement": "Cloud KMS destroys a key version's material as soon as an administrator schedules that version for destruction.",
+    "answer": false,
+    "explanation": "A key version waits in the scheduled-for-destruction state, 30 days by default and configurable at key creation, and can be restored during that time.",
+    "misconception": "Scheduling a key version for destruction destroys its key material immediately.",
+    "sourceTitle": "Destroy and restore key versions",
+    "sourceUrl": "https://docs.cloud.google.com/kms/docs/destroy-restore"
+   },
+   {
+    "id": "gcp-pca-s3.1-07",
+    "reason": "duplicate of gcp-ace-s4.2-07; replaced with the verifier's context-aware access fact. Confirmed: IAP access policies extend with access levels that 'allow access restrictions to resources based on IP address and end-user device attributes'; 'IAP uses the access level name to associate it with a IAP-secured app'; device attributes need a Chrome Enterprise Premium license.",
+    "statement": "Identity-Aware Proxy can apply Access Context Manager access levels, such as device or IP conditions, to app users.",
+    "answer": true,
+    "explanation": "IAP attaches access levels to the IAM grants of an IAP-secured app, so users get in only from approved IP ranges or trusted devices; device attributes need a Chrome Enterprise Premium license.",
+    "misconception": "",
+    "sourceTitle": "Setting up context-aware access with Identity-Aware Proxy",
+    "sourceUrl": "https://docs.cloud.google.com/iap/docs/cloud-iap-context-aware-access-howto"
+   },
+   {
+    "id": "gcp-pca-s3.2-04",
+    "reason": "weak_card (name giveaway, near-copy); verifier's replacement, confirmed: 'set a policy on Cloud KMS keys to view, approve, and deny key access requests depending on the provided justification code', available for select control packages. Set volatility may_change.",
+    "statement": "Key Access Justifications lets a key policy deny a Cloud KMS request by its justification code.",
+    "answer": true,
+    "explanation": "Beyond logging why a key is used, Key Access Justifications policies can approve or deny key access per justification code; this depends on the Assured Workloads control package chosen.",
+    "misconception": "",
+    "sourceTitle": "Overview of Key Access Justifications",
+    "sourceUrl": "https://docs.cloud.google.com/assured-workloads/key-access-justifications/docs/overview"
+   },
+   {
+    "id": "gcp-pca-s4.1-06",
+    "reason": "weak_card (definition of preview); verifier's replacement, reworded to avoid negation. Confirmed: 'Before you create a new deployment or update a deployment, you can preview the deployment' and 'A preview executes the Terraform plan command'.",
+    "statement": "Infrastructure Manager can preview a new deployment before the team creates any of its resources.",
+    "answer": true,
+    "explanation": "An Infrastructure Manager preview runs Terraform plan for a new deployment or an update, so the team reviews the resources planned for provisioning before anything is created.",
+    "misconception": "",
+    "sourceTitle": "Preview a deployment",
+    "sourceUrl": "https://docs.cloud.google.com/infrastructure-manager/docs/preview-deployment"
+   },
+   {
+    "id": "gcp-pca-s4.1-08",
+    "reason": "weak_card (near-copy of the source sentence, common-sense blameless idea); verifier's trigger replacement, confirmed: 'Interventions from on-call engineers, such as a release rollback or rerouting of traffic.' Worded as 'Google lists' rather than 'Google recommends' to ease that tell.",
+    "statement": "Google lists an on-call intervention, such as a release rollback, among the triggers for a postmortem.",
+    "answer": true,
+    "explanation": "Google's postmortem criteria include on-call interventions such as a release rollback or rerouted traffic, alongside user-visible downtime, data loss of any kind and monitoring failures.",
+    "misconception": "",
+    "sourceTitle": "Conduct thorough postmortems",
+    "sourceUrl": "https://docs.cloud.google.com/architecture/framework/reliability/conduct-postmortems"
+   },
+   {
+    "id": "gcp-pca-s4.1-09",
+    "reason": "weak_card (strawman 'in place of'); verifier's replacement, confirmed: 'To test backups, restore them in a non-production environment' and 'a data restoration test must include testing of the entire application stack and all the critical infrastructure services with the restored data'",
+    "statement": "Google recommends restoring backups into the production environment when testing that they are usable.",
+    "answer": false,
+    "explanation": "Google recommends restoring backups in a non-production environment and testing the entire application stack and critical infrastructure services with the restored data.",
+    "misconception": "Restoring backups into production is the recommended way to prove they are usable.",
+    "sourceTitle": "Perform testing for recovery from data loss",
+    "sourceUrl": "https://docs.cloud.google.com/architecture/framework/reliability/perform-testing-for-recovery-from-data-loss"
+   },
+   {
+    "id": "gcp-pca-s4.1-10",
+    "reason": "weak_card (near-copy truism); verifier's replacement, confirmed: 'Make sure that you grant users the same access to the DR environment that they have in the source production environment' and the IaC note on replicating IAM policies. Reworded without 'same', which was a true-only word.",
+    "statement": "Google recommends granting users in the DR environment the access they hold in production.",
+    "answer": true,
+    "explanation": "Users must be able to work in the recovered environment; when production runs on Google Cloud, IaC tools such as Terraform can replicate its IAM policies in the DR environment.",
+    "misconception": "",
+    "sourceTitle": "Disaster recovery planning guide",
+    "sourceUrl": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide"
+   },
+   {
+    "id": "gcp-pca-s4.2-06",
+    "reason": "weak_card (the statement did not test non-retroactivity); verifier's replacement, confirmed: 'The cost data for a specific label only shows usage from the date that the label was applied to a resource.'",
+    "statement": "Cloud Billing exports show a new label's costs only from the date the label was applied to a resource.",
+    "answer": true,
+    "explanation": "Labels aren't retroactive: the export shows a label's costs from the date it was applied, so apply labels before the period you need to allocate.",
+    "misconception": "",
+    "sourceTitle": "Structure of Detailed data export",
+    "sourceUrl": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-tables/detailed-usage"
+   },
+   {
+    "id": "gcp-pca-s4.2-07",
+    "reason": "weak_card (definition of 'commitment'); verifier's replacement, confirmed: 'you are still responsible for the full cost of the commitment. No rollover: Unused commitment does not carry over to the next hour.'",
+    "statement": "Unused spend-based commitment in one hour carries over to cover eligible usage above the commitment in a later hour.",
+    "answer": false,
+    "explanation": "Spend-based commitments apply hourly: when eligible usage in an hour falls below the commitment you still pay the full amount, and the unused part doesn't roll over.",
+    "misconception": "Unused spend-based commitment banks credit for later hours.",
+    "sourceTitle": "Spend-based committed use discounts",
+    "sourceUrl": "https://docs.cloud.google.com/docs/cuds-multiprice"
+   },
+   {
+    "id": "gcp-pca-s4.2-08",
+    "reason": "weak_card (invented 'submitted forecasts' feature); verifier's replacement, confirmed: recommendations use 'a formula that analyzes historical and recent usage metrics gathered by Cloud Billing, and includes usage covered by existing commitments'. Scenario modeling only adjusts the term, coverage and history window, not forecasts.",
+    "statement": "Cloud Billing sizes its CUD recommendations from an organization's expected future usage growth.",
+    "answer": false,
+    "explanation": "CUD recommendations come from historical and recent usage, including usage already covered by commitments, so architects weigh planned growth or decline themselves.",
+    "misconception": "CUD recommendations are sized from forecast business growth.",
+    "sourceTitle": "Get recommendations for committed use discounts (CUDs)",
+    "sourceUrl": "https://docs.cloud.google.com/docs/cuds-recommender"
+   },
+   {
+    "id": "gcp-pca-s4.2-10",
+    "reason": "weak_card (generic management truism, really a 6.1 principle); verifier's replacement. The page (Standard) gives activation steps for new and existing clusters, adds k8s-namespace and workload labels to the detailed export, and says costs show no GKE labels 'when GKE cost allocation is not enabled'. The verifier's quote 'not enabled by default' was not found on the page, so the card rests on the activation requirement. Set volatility may_change.",
+    "statement": "GKE cost allocation must be enabled on a Standard cluster before billing exports show its namespace costs.",
+    "answer": true,
+    "explanation": "Once GKE cost allocation is enabled, the detailed Cloud Billing export to BigQuery carries cluster, namespace and workload labels for chargeback; otherwise those costs carry no GKE labels.",
+    "misconception": "",
+    "sourceTitle": "Get key spending insights for your GKE resource allocation and cluster costs",
+    "sourceUrl": "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/cost-allocations"
+   },
+   {
+    "id": "gcp-pca-s5.2-04",
+    "reason": "out_of_scope (iterator paging is developer depth); verifier's in-scope emulator replacement, confirmed: 'The emulator doesn't support the following: TLS/HTTPS, authentication, Identity and Access Management (IAM), permissions, or roles.'",
+    "statement": "The Spanner emulator enforces IAM permissions on requests that an application's integration tests send to it.",
+    "answer": false,
+    "explanation": "The Spanner emulator supports no authentication, IAM, permissions or roles, so access grants still need testing against a real Spanner instance.",
+    "misconception": "The Spanner emulator reproduces production IAM enforcement for tests.",
+    "sourceTitle": "Emulate Spanner locally",
+    "sourceUrl": "https://docs.cloud.google.com/spanner/docs/emulator"
+   },
+   {
+    "id": "gcp-pca-s5.2-08",
+    "reason": "source_problem: moved to the state-file page ('the Terraform state file that is created for each deployment and revision'). Statement tightened as the verifier suggested; same fact and answer.",
+    "statement": "Infrastructure Manager keeps a Terraform state file per deployment and per revision.",
+    "answer": true,
+    "explanation": "Infrastructure Manager creates a Terraform state file per deployment and per revision; a team can download a state file to inspect or modify it.",
+    "misconception": "",
+    "sourceTitle": "Manage the Terraform state file",
+    "sourceUrl": "https://docs.cloud.google.com/infrastructure-manager/docs/state-file"
+   },
+   {
+    "id": "gcp-pca-s6.1-04",
+    "reason": "weak_card (the statement did not test the fact); verifier's replacement, confirmed: 'Log sinks can't retroactively route log entries' and 'you can retroactively copy log data from a log bucket to Cloud Storage'",
+    "statement": "To export logs received before a sink existed, Cloud Logging offers a copy from the log bucket to Cloud Storage.",
+    "answer": true,
+    "explanation": "Sinks route only entries that arrive after they're created; for entries already stored in a log bucket, Cloud Logging can copy them retroactively to Cloud Storage.",
+    "misconception": "",
+    "sourceTitle": "Route log entries",
+    "sourceUrl": "https://docs.cloud.google.com/logging/docs/routing/overview"
+   },
+   {
+    "id": "gcp-pca-s6.1-08",
+    "reason": "weak_card (product identification); verifier's replacement, confirmed: the supported-environments table marks 'Outside of Google Cloud' Y for Go, Java, Node.js and Python",
+    "statement": "Cloud Profiler can collect profiles from applications that run outside Google Cloud, such as on premises.",
+    "answer": true,
+    "explanation": "Cloud Profiler agents for Go, Java, Node.js and Python also run outside Google Cloud, so hybrid workloads can send low-overhead CPU and heap profiles to a Google Cloud project.",
+    "misconception": "",
+    "sourceTitle": "Cloud Profiler overview",
+    "sourceUrl": "https://docs.cloud.google.com/profiler/docs/about-profiler"
+   },
+   {
+    "id": "gcp-pca-s6.3-03",
+    "reason": "weak_card (strawman quota exemption); verifier's replacement, confirmed: with maxUnavailable 0 and maxSurge above 0 'Compute Engine removes each old machine only after its replacement new machine is created and running', and 'maxSurge only works if you have enough quota or resources'",
+    "statement": "Setting maxUnavailable to 0 in a MIG rolling update removes the need for spare quota during the update.",
+    "answer": false,
+    "explanation": "With maxUnavailable at 0 and maxSurge above 0, the MIG creates each replacement VM before deleting the old one, and maxSurge only works when there is quota and capacity for the extra VMs.",
+    "misconception": "A rolling update with zero unavailable VMs needs no extra quota.",
+    "sourceTitle": "Automatically apply VM configuration updates in a MIG",
+    "sourceUrl": "https://docs.cloud.google.com/compute/docs/instance-groups/rolling-out-updates-to-managed-instance-groups"
+   },
+   {
+    "id": "gcp-pca-s6.3-05",
+    "reason": "weak_card (near-copy of the source sentence); verifier's replacement, confirmed: 'By default, the rollback uses the last release with a successful rollout to the indicated target, but you can choose a different one'",
+    "statement": "By default, a Cloud Deploy rollback redeploys the last release that had a successful rollout to that target.",
+    "answer": true,
+    "explanation": "Cloud Deploy creates a new rollout from the last release that succeeded on the target unless the team picks another release; it does not rewind the earlier rollout.",
+    "misconception": "",
+    "sourceTitle": "Roll back a target",
+    "sourceUrl": "https://docs.cloud.google.com/deploy/docs/roll-back"
+   },
+   {
+    "id": "gcp-pca-s6.3-07",
+    "reason": "weak_card (role names give the answer); verifier's replacement, reworded to avoid negation. Confirmed: 'By default, the IC assumes all roles that have not been delegated yet.'",
+    "statement": "In Google's incident response model, the Ops Lead takes on any incident role that remains undelegated.",
+    "answer": false,
+    "explanation": "The SRE Workbook says the Incident Commander assumes every role not yet delegated, including Ops Lead; delegating them lets the IC focus on coordination and communication.",
+    "misconception": "The Ops Lead absorbs incident roles that nobody has been assigned.",
+    "sourceTitle": "Google SRE Workbook: Incident Response",
+    "sourceUrl": "https://sre.google/workbook/incident-response/"
+   },
+   {
+    "id": "gcp-pca-s1.2-10",
+    "reason": "tell: 'preserves' as the main verb marked false 4 of 4 times, and a 'Cloud Run' subject was 1 true to 4 false. Same fact and answer.",
+    "statement": "An app's session files in a Cloud Run instance's local filesystem carry over to its replacement instance.",
+    "answer": false,
+    "explanation": "Cloud Run loses files in the instance's local writable filesystem when that instance stops. Session data needing persistence belongs in external storage.",
+    "misconception": "Cloud Run carries instance-local session files into replacement instances.",
+    "sourceTitle": "Container runtime contract",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/container-contract"
+   },
+   {
+    "id": "gcp-pca-s5.1-08",
+    "reason": "tell: 'preserves' marked false. Same fact and answer.",
+    "statement": "Datastream delivers change events into Cloud Storage in source commit order.",
+    "answer": false,
+    "explanation": "Datastream delivers change events that can arrive out of order. A Cloud Storage consumer uses source-specific event metadata to reconstruct the source operation order.",
+    "misconception": "Datastream guarantees source commit order in the sequence of delivered change events.",
+    "sourceTitle": "Events and streams",
+    "sourceUrl": "https://docs.cloud.google.com/datastream/docs/events-and-streams"
+   },
+   {
+    "id": "gcp-pca-s5.2-06",
+    "reason": "tell: 'preserves' marked false. Same fact and answer.",
+    "statement": "The Bigtable emulator writes test data to local disk so a later emulator process can reuse it.",
+    "answer": false,
+    "explanation": "The Bigtable emulator keeps its data in memory and loses it across runs. Tests that need an initial dataset populate that dataset for a new emulator run.",
+    "misconception": "The Bigtable emulator persists application data on local disk between processes.",
+    "sourceTitle": "Test using the emulator",
+    "sourceUrl": "https://docs.cloud.google.com/bigtable/docs/emulator"
+   },
+   {
+    "id": "gcp-pca-s6.1-06",
+    "reason": "tell: 'limits/confines ... to a single Z' marked false 4 of 4 times. Same fact and answer.",
+    "statement": "Google Cloud Managed Service for Prometheus answers a PromQL query from a single Google Cloud region's data.",
+    "answer": false,
+    "explanation": "Google Cloud Managed Service for Prometheus evaluates queries against a global datastore and combines results across regions. Teams obtain a unified view rather than querying isolated regional servers.",
+    "misconception": "Managed Prometheus query evaluation is confined to one regional datastore.",
+    "sourceTitle": "Google Cloud Managed Service for Prometheus",
+    "sourceUrl": "https://docs.cloud.google.com/stackdriver/docs/managed-prometheus"
+   },
+   {
+    "id": "gcp-pca-s2.3-04",
+    "reason": "tell: 'confines' marked false. Same fact and answer, shortened for 2.3 length balance.",
+    "statement": "Compute Engine's default sole-tenant maintenance policy live-migrates VMs within a fixed server pool.",
+    "answer": false,
+    "explanation": "Compute Engine's Default sole-tenant maintenance policy lets eligible VMs migrate to new physical servers. Migrate within node group confines migration to a fixed server pool.",
+    "misconception": "The default sole-tenant maintenance policy preserves the fixed physical-server pool needed by some licenses.",
+    "sourceTitle": "Sole-tenancy overview",
+    "sourceUrl": "https://docs.cloud.google.com/compute/docs/nodes/sole-tenant-nodes"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "regional-zone-only-failover",
+    "ids": [
+     "gcp-pca-s1.2-03",
+     "gcp-pca-s1.2-05",
+     "gcp-pca-s2.3-05"
+    ]
+   },
+   {
+    "name": "cloud-sql-ha-standby",
+    "ids": [
+     "gcp-pca-s1.2-05",
+     "gcp-pca-s2.2-06"
+    ]
+   },
+   {
+    "name": "guardrail-beyond-iam",
+    "ids": [
+     "gcp-pca-s3.1-02",
+     "gcp-pca-s3.1-06",
+     "gcp-pca-s2.4-09"
+    ]
+   },
+   {
+    "name": "non-retroactive-effect",
+    "ids": [
+     "gcp-pca-s3.2-08",
+     "gcp-pca-s4.2-06",
+     "gcp-pca-s6.1-04",
+     "gcp-pca-s1.4-10"
+    ]
+   },
+   {
+    "name": "cloud-deploy-rollout-per-target",
+    "ids": [
+     "gcp-pca-s4.1-04",
+     "gcp-pca-s6.3-05"
+    ]
+   },
+   {
+    "name": "realistic-testing-conditions",
+    "ids": [
+     "gcp-pca-s6.3-08",
+     "gcp-pca-s6.3-10"
+    ]
+   },
+   {
+    "name": "bigtable-weak-guarantees",
+    "ids": [
+     "gcp-pca-s1.3-06",
+     "gcp-pca-s2.2-08"
+    ]
+   },
+   {
+    "name": "adc-credential-sources",
+    "ids": [
+     "gcp-pca-s5.2-01",
+     "gcp-pca-s5.2-02"
+    ]
+   },
+   {
+    "name": "dr-pattern-analogy",
+    "ids": [
+     "gcp-pca-s1.1-01",
+     "gcp-pca-s1.1-03"
+    ]
+   },
+   {
+    "name": "emulator-production-gaps",
+    "ids": [
+     "gcp-pca-s5.2-04",
+     "gcp-pca-s5.2-06"
+    ]
+   },
+   {
+    "name": "access-level-conditions",
+    "ids": [
+     "gcp-pca-s3.1-06",
+     "gcp-pca-s3.1-07"
+    ]
+   },
+   {
+    "name": "customer-access-approval",
+    "ids": [
+     "gcp-pca-s3.2-02",
+     "gcp-pca-s3.2-04"
+    ]
+   }
+  ],
+  "sectionBalance": "Every section has 9 cards after the edits (144 in total). The split is 5T/4F in 1.1, 1.4, 2.2, 2.3 and 3.1, and 4T/5F in 1.2, 1.3, 2.1, 2.4, 3.2, 4.1, 4.2, 5.1, 5.2, 6.1 and 6.3. Overall: 70 true and 74 false. Gap between average true and false statement length (true minus false, in characters): 1.1 +0.3, 1.2 +2.6, 1.3 +1.0, 1.4 -0.4, 2.1 +4.3, 2.2 +3.7, 2.3 -1.3, 2.4 +2.3, 3.1 +1.0, 3.2 +3.4, 4.1 -3.3, 4.2 +2.1, 5.1 +4.9, 5.2 +1.5, 6.1 +3.3, 6.3 -0.9. All are within 5.",
+  "notes": "I opened every rewrite and source URL on 2026-10-08 (all HTTP 200) and checked the wording against the page text.\n\n**Why some weak cards are rewritten rather than dropped.** Every section started at 10 cards. Dropping a second card would leave fewer than 9, so each section drops one weak, duplicate or out_of_scope card and rewrites the rest with the verifier's replacement:\n- 1.1: drop 07; rewrite 01 and 10.\n- 1.2: drop 01; rewrite 04 and 08.\n- 1.3: drop 05; rewrite 01.\n- 1.4: drop 05 (the scan duplicate); rewrite 03, 04 and 06.\n- 2.2: drop 02; rewrite 10.\n- 2.3: drop 07; rewrite 03.\n- 2.4: drop 07; rewrite 05.\n- 3.1: drop 09; rewrite 01 and 07.\n- 3.2: drop 10; rewrite 04.\n- 4.1: drop 03; rewrite 06, 08, 09 and 10.\n- 4.2: drop 09; rewrite 06, 07, 08 and 10.\n- 5.2: drop 03; rewrite 04 to the emulator fact.\n- 6.1: drop 01; rewrite 04 and 08.\n- 6.3: drop 02; rewrite 03, 05 and 07.\n\nWhere I had a choice of which card to drop, I picked the one that also removed a scan tell or conflict: the 'Well-Architected Framework' cards 1.2-01, 4.2-09 and 6.1-01, the Cloud Run-subject card 2.3-07, the loophole-template card 2.2-02, and the conflict-group cards 4.1-03 and 6.3-02.\n\n**Fields the schema cannot carry.** Set these on the rewritten cards:\n- Volatility \"may_change\":\n  - 1.1-10 (DORA regrouped its metrics)\n  - 1.2-04 (50% figure)\n  - 3.1-01 (30-day default)\n  - 3.2-04 (depends on the control package)\n  - 4.2-10 (GKE cost allocation)\n  - 2.3-06 and 2.4-05 keep may_change.\n- Suggested new factKeys:\n  - 1.1-01 dr-cold-pattern-no-spare-resources\n  - 1.1-10 dora-recovery-time-throughput\n  - 1.2-04 regional-mig-overprovision-sizing\n  - 1.2-08 cloud-cdn-premium-tier-only\n  - 1.3-01 shared-vpc-single-host-attachment\n  - 1.3-03 proxy-nlb-proxy-protocol-client-ip\n  - 1.4-03 tco-report-multiple-preference-sets\n  - 1.4-04 rehost-not-cloud-optimized\n  - 1.4-06 repurchase-saas-workspace\n  - 2.2-10 bigquery-clustered-estimate-inexact\n  - 2.3-03 spot-no-max-runtime\n  - 2.4-05 cluster-director-managed-slurm\n  - 3.1-01 kms-scheduled-destruction-period\n  - 3.1-07 iap-access-levels\n  - 3.2-04 kaj-deny-by-justification\n  - 4.1-06 infra-manager-preview-new-deployment\n  - 4.1-08 postmortem-trigger-oncall-intervention\n  - 4.1-09 backup-restore-test-nonproduction\n  - 4.1-10 dr-environment-user-access-parity\n  - 4.2-06 billing-labels-not-retroactive\n  - 4.2-07 spend-cud-hourly-no-rollover\n  - 4.2-08 cud-recommendations-historical\n  - 4.2-10 gke-cost-allocation-enable\n  - 5.2-04 spanner-emulator-no-iam\n  - 6.1-04 logging-retroactive-copy\n  - 6.1-08 profiler-outside-google-cloud\n  - 6.3-03 mig-zero-unavailable-needs-surge-quota\n  - 6.3-05 cloud-deploy-rollback-default-release\n  - 6.3-07 incident-commander-holds-undelegated-roles\n  - 6.3-08: rename to failure-testing-with-load, as the 6.3 verifier advised.\n\n**Verification caveats.**\n- 4.2-10: the verifier quoted \"not enabled by default\", but I could not find that sentence on the cost-allocations page. The card rests on the page's activation steps and its note that costs carry no GKE labels when cost allocation is not enabled.\n- 2.2-10: the page says the pre-run estimate is not accurate and that BigQuery reduces the bytes scanned at execution. It does not say \"upper bound\", so the statement says \"can exceed\".\n- 2.3-09: the VMware Engine security overview still describes temporary privilege elevation, which is out of date. The card cites the how-to page that says Elevate privilege is gone and solution users replace it.\n- 1.2-09: I left out the automatic project lien, which only applies from 2026-11-01.\n- 4.1-08: worded \"Google lists\" rather than \"Google recommends\", to ease the 'Google recommends = true' tell.\n\n**Tell rewrites (5).**\n- 1.2-10, 5.1-08 and 5.2-06 no longer use 'preserves' as the main verb (it had marked false 4 of 4 times).\n- 6.1-06 and 2.3-04 no longer use 'limits' or 'confines' (that template had been 0 true / 4 false); only 3.1-08 still uses it.\n\n**Tells that remain after the edits.**\n- The three remaining 'Well-Architected Framework' cards (1.2-02, 1.4-09, 4.2-01) are all true.\n- 'Google recommends' is 7 true to 3 false.\n- The loophole or relaxation false template is still carried by about 9 false cards: 1.4-10, 2.4-09, 3.1-05, 3.2-08, 3.2-09, 4.1-04, 6.1-10, 6.3-04, and arguably 4.2-07.\nThese need new false framework or recommendation cards, or new true cards of the loophole shape, in a later writing pass. I can't fix them by rewording without changing answers."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "gcp-pca-s1.1-01",
+    "decision": "keep",
+    "statement": "Google's DR guide describes the cold pattern as one with spare recovery resources already in place before a disaster.",
+    "answer": false,
+    "explanation": "In the cold pattern no spare resources are on hand, so recovery must first obtain them, and the service stays down until they arrive.",
+    "reason": "Both lenses keep. The fact lens quoted the planning guide's flat-tire analogy for cold (no spare tire)."
+   },
+   {
+    "id": "gcp-pca-s1.1-10",
+    "decision": "keep",
+    "statement": "DORA groups failed deployment recovery time with deployment frequency as a software delivery throughput factor.",
+    "answer": true,
+    "explanation": "DORA measures throughput with change lead time, deployment frequency and failed deployment recovery time; change fail rate and deployment rework rate measure instability.",
+    "reason": "Both lenses keep. The dora.dev throughput and instability lists were confirmed. Volatility is may_change."
+   },
+   {
+    "id": "gcp-pca-s1.1-06",
+    "decision": "keep",
+    "statement": "Compute flexible committed use discounts can reserve VM capacity for the committed workload.",
+    "answer": false,
+    "explanation": "Compute flexible commitments don't support attached reservations and come with no assured capacity, so a workload that needs assured VM capacity uses a separate reservation.",
+    "reason": "Both lenses keep. The reservations-with-commitments page confirms there are no attached reservations and no assured capacity."
+   },
+   {
+    "id": "gcp-pca-s1.2-04",
+    "decision": "keep",
+    "statement": "For a regional MIG spread across three zones, Google recommends overprovisioning the group by at least 50%.",
+    "answer": true,
+    "explanation": "Losing one of three zones removes a third of capacity, so Google recommends at least 50% extra instances, and doubling for two zones, so the remaining zones carry the full load.",
+    "reason": "Both lenses keep. The regional MIGs page recommends at least 50% for three zones and +100% for two. The number is the fact that decides the design, so volatility is may_change."
+   },
+   {
+    "id": "gcp-pca-s1.2-08",
+    "decision": "keep",
+    "statement": "Enabling Cloud CDN caching on a load balancer requires that load balancer to use Network Service Tiers' Premium Tier.",
+    "answer": true,
+    "explanation": "Cloud CDN is always Premium Tier and can't be used with Standard Tier, so choosing Standard Tier to lower a load balancer's egress cost rules out Cloud CDN caching.",
+    "reason": "Both lenses keep. The Network Service Tiers overview says 'Cloud CDN is always Premium Tier' and 'You cannot use Standard Tier with Cloud CDN'."
+   },
+   {
+    "id": "gcp-pca-s1.2-09",
+    "decision": "keep",
+    "statement": "A Project Owner can manually delete a backup vault's backups before their enforced retention ends.",
+    "answer": false,
+    "explanation": "Enforced retention makes a vault's backups immutable: no user, including a Project Owner, and not even Google can manually delete them until the retention period has passed.",
+    "reason": "Both lenses keep. The backup vault page says nobody, Google included, can manually delete backups until the duration has passed. Lowering the minimum before the lock's effective date changes the retention, not deletion."
+   },
+   {
+    "id": "gcp-pca-s1.3-01",
+    "decision": "fixed",
+    "statement": "Each Shared VPC service project in an organization attaches to a single host project at any given time.",
+    "answer": true,
+    "explanation": "A host project can share subnets with many service projects, but each service project can be attached to only one host project, so it uses that one host's Shared VPC network.",
+    "reason": "Wording lens fix: the 'though one host can serve many' clause was a second fact and read as a true-statement tell. The fact lens confirmed 'each service project can only be attached to a single host project'. Same fact and answer, 103 characters."
+   },
+   {
+    "id": "gcp-pca-s1.3-03",
+    "decision": "keep",
+    "statement": "By default, an external proxy Network Load Balancer passes client source IPs and ports through to its backends.",
+    "answer": false,
+    "explanation": "By default the target proxy drops the original client IP and port, so backends see the proxy as the source. Enabling the PROXY protocol on the target proxy preserves that client information.",
+    "reason": "Both lenses keep. The load-balancing/docs/tcp page states the default and the PROXY protocol option."
+   },
+   {
+    "id": "gcp-pca-s1.4-03",
+    "decision": "keep",
+    "statement": "One Migration Center TCO report can compare several migration preference sets for one asset group.",
+    "answer": true,
+    "explanation": "When generating a TCO report, a team picks asset groups and assigns each group multiple preference sets, so one report compares migration scenarios side by side.",
+    "reason": "Both lenses keep. The generate-tco-report page lets a team assign up to four preference sets per group; the card leaves out the number."
+   },
+   {
+    "id": "gcp-pca-s1.4-04",
+    "decision": "fixed",
+    "statement": "Rehosting a workload on Google Cloud gives it horizontal scalability as part of the migration itself.",
+    "answer": false,
+    "explanation": "Rehost moves workloads with minor or no changes, so Google notes they aren't optimized for the cloud afterwards and miss features such as horizontal scalability; replatform or refactor work adds that.",
+    "reason": "Wording lens fix: 'run optimized for the cloud' was close to a definition card. The fix names horizontal scalability, a feature the getting-started page says rehosted workloads lack. Both lenses confirmed it. Same fact and answer."
+   },
+   {
+    "id": "gcp-pca-s1.4-06",
+    "decision": "keep",
+    "statement": "Google classifies replacing on-premises collaboration software with Google Workspace as a repurchase migration.",
+    "answer": true,
+    "explanation": "Repurchase means moving from a purchased on-premises workload to a cloud-hosted SaaS equivalent, rather than moving its code or rebuilding it.",
+    "reason": "Both lenses keep. The getting-started page gives this Google Workspace example under repurchase."
+   },
+   {
+    "id": "gcp-pca-s2.2-10",
+    "decision": "keep",
+    "statement": "BigQuery's pre-run cost estimate for a query on a clustered table can exceed the bytes the query finally scans.",
+    "answer": true,
+    "explanation": "BigQuery learns which clustered blocks it can skip only during execution, so the estimate before a run isn't exact and the final cost reflects the blocks scanned. Partitioning gives granular pre-run estimates.",
+    "reason": "Both lenses keep. The clustered-tables page says BigQuery reduces bytes at execution, the final cost comes from the blocks scanned, and partitioning gives granular pre-run estimates."
+   },
+   {
+    "id": "gcp-pca-s2.3-03",
+    "decision": "drop",
+    "statement": "A Spot VM keeps running until Compute Engine preempts it unless the team sets a limit on its run duration.",
+    "answer": true,
+    "explanation": "Spot VMs have no minimum or maximum runtime unless you limit it, so a long batch job keeps running until preemption or until a run duration limit the team configured ends it.",
+    "reason": "Wording lens drop holds. I checked content/raw/gcp-ace-b1.json: gcp-ace-s2.1-03 ('Spot VMs can run for a maximum of 24 hours', false; 'Spot VMs have no fixed maximum runtime unless you configure one') already tests this fact, and the prompt forbids retesting an ACE fact. The lens suggested a replacement for a separate pass: Spot VMs in a MIG are repeatedly recreated after preemption."
+   },
+   {
+    "id": "gcp-pca-s2.3-06",
+    "decision": "fixed",
+    "statement": "A team running GKE Standard creates a separate Autopilot cluster to put some workloads on Autopilot-managed nodes.",
+    "answer": false,
+    "explanation": "Autopilot ComputeClasses let a Standard cluster run selected workloads on Autopilot-managed node pools alongside the team's own Standard node pools, in the same cluster.",
+    "reason": "Wording lens fix: the old wording ('Workloads a GKE Standard cluster puts on...') gave away that the workloads stay in the cluster. The fact lens confirmed same-cluster Autopilot-managed node pools on the page, which has no Preview label."
+   },
+   {
+    "id": "gcp-pca-s2.3-09",
+    "decision": "fixed",
+    "statement": "VMware Engine gives the default vCenter user full administrator access to vCenter in a private cloud.",
+    "answer": false,
+    "explanation": "VMware Engine retains full administrative access to a private cloud; its default user, CloudOwner (at) gve.local, gets Cloud-Owner-Role privileges, enough to deploy and manage VMs.",
+    "reason": "Fact lens fix, checked: the Elevate page never names a default user. The permission model page (docs.cloud.google.com/vmware-engine/docs/concepts-permission-model, updated 2026-10-07) says VMware Engine 'retains full administrative access' and that CloudOwner (at) gve.local gets Cloud-Owner-Role with 'sufficient administrator privileges' to deploy and manage VMs. Change the source to that page, titled 'Private cloud vSphere permission model'. That page's outdated elevation line is left out."
+   },
+   {
+    "id": "gcp-pca-s2.4-05",
+    "decision": "keep",
+    "statement": "Cluster Director gives AI Hypercomputer GPU clusters a managed Slurm environment, so teams skip installing Slurm.",
+    "answer": true,
+    "explanation": "For a managed Slurm experience Google points to Cluster Director, while Cluster Toolkit deploys blueprints that install Slurm on clusters the team runs itself.",
+    "reason": "Both lenses keep. The process-overview page points to Cluster Director for managed Slurm and to Cluster Toolkit for native Slurm, with no Preview label."
+   },
+   {
+    "id": "gcp-pca-s2.4-09",
+    "decision": "keep",
+    "statement": "Gemini Enterprise uses project IAM grants to override source-document ACLs for ACL-enabled connectors.",
+    "answer": false,
+    "explanation": "Gemini Enterprise uses your identity provider to check whether the end user can access each document a connector returns; IAM roles on the project grant no extra document access.",
+    "reason": "Both lenses keep. The configure-identity-provider page says Gemini Enterprise 'never bypasses source system access controls or grants additional permissions'."
+   },
+   {
+    "id": "gcp-pca-s3.1-01",
+    "decision": "fixed",
+    "statement": "When an administrator destroys a Cloud KMS key version, Cloud KMS erases its key material right away.",
+    "answer": false,
+    "explanation": "Destroying a key version puts it in the scheduled-for-destruction state, 30 days by default and configurable at key creation, and it can be restored during that time.",
+    "reason": "Wording lens fix: in the old statement 'schedules for destruction' gave away the delay. I checked kms/docs/destroy-restore: 'Key material isn't immediately destroyed', the default is 30 days, a custom duration is set at key creation, and the version can be restored. Volatility stays may_change."
+   },
+   {
+    "id": "gcp-pca-s3.1-07",
+    "decision": "keep",
+    "statement": "Identity-Aware Proxy can apply Access Context Manager access levels, such as device or IP conditions, to app users.",
+    "answer": true,
+    "explanation": "IAP attaches access levels to the IAM grants of an IAP-secured app, so users get in only from approved IP ranges or trusted devices; device attributes need a Chrome Enterprise Premium license.",
+    "reason": "Both lenses keep. The context-aware access how-to confirms IP and device access levels and the Chrome Enterprise Premium license."
+   },
+   {
+    "id": "gcp-pca-s3.2-04",
+    "decision": "keep",
+    "statement": "Key Access Justifications lets a key policy deny a Cloud KMS request by its justification code.",
+    "answer": true,
+    "explanation": "Beyond logging why a key is used, Key Access Justifications policies can approve or deny key access per justification code; this depends on the Assured Workloads control package chosen.",
+    "reason": "Both lenses keep. The KAJ overview confirms approve or deny by justification code for select control packages."
+   },
+   {
+    "id": "gcp-pca-s4.1-06",
+    "decision": "fixed",
+    "statement": "Infrastructure Manager previews cover first-time deployments as well as updates to existing deployments.",
+    "answer": true,
+    "explanation": "An Infrastructure Manager preview runs Terraform plan for a new deployment or an update, so the team reviews the resources planned for provisioning before anything is created.",
+    "reason": "Wording lens fix: the old statement was close to a definition of 'preview'. The fix tests that previews also cover new deployments, which the fact lens confirmed: 'Before you create a new deployment or update a deployment, you can preview the deployment'."
+   },
+   {
+    "id": "gcp-pca-s4.1-08",
+    "decision": "keep",
+    "statement": "Google lists an on-call intervention, such as a release rollback, among the triggers for a postmortem.",
+    "answer": true,
+    "explanation": "Google's postmortem criteria include on-call interventions such as a release rollback or rerouted traffic, alongside user-visible downtime, data loss of any kind and monitoring failures.",
+    "reason": "Both lenses keep. The conduct-postmortems page lists on-call interventions such as a release rollback; 'user-visible downtime' is acceptable shorthand for 'beyond a certain threshold'."
+   },
+   {
+    "id": "gcp-pca-s4.1-09",
+    "decision": "fixed",
+    "statement": "Google recommends restoring backups into production, where real dependencies run, when testing that they are usable.",
+    "answer": false,
+    "explanation": "Google recommends restoring backups in a non-production environment and testing the entire application stack and critical infrastructure services with the restored data.",
+    "reason": "Wording lens fix: it removes the strawman by giving the plausible reason someone might restore into production. The fact lens confirmed 'To test backups, restore them in a non-production environment'. Same fact and answer, 116 characters."
+   },
+   {
+    "id": "gcp-pca-s4.1-10",
+    "decision": "keep",
+    "statement": "Google recommends granting users in the DR environment the access they hold in production.",
+    "answer": true,
+    "explanation": "Users must be able to work in the recovered environment; when production runs on Google Cloud, IaC tools such as Terraform can replicate its IAM policies in the DR environment.",
+    "reason": "Both lenses keep. The DR planning guide says to grant users the same access in DR as in production and mentions replicating IAM policies with Terraform."
+   },
+   {
+    "id": "gcp-pca-s4.2-06",
+    "decision": "keep",
+    "statement": "Cloud Billing exports show a new label's costs only from the date the label was applied to a resource.",
+    "answer": true,
+    "explanation": "Labels aren't retroactive: the export shows a label's costs from the date it was applied, so apply labels before the period you need to allocate.",
+    "reason": "Both lenses keep. The detailed export page's labels note supports it, and 'only' matches the source."
+   },
+   {
+    "id": "gcp-pca-s4.2-07",
+    "decision": "fixed",
+    "statement": "Unused commitment from one hour of a standard spend-based CUD carries over to cover usage in a later hour.",
+    "answer": false,
+    "explanation": "Standard spend-based CUDs apply hourly: if eligible usage in an hour falls below the commitment you still pay the full amount, and the unused part doesn't roll over. Flexible Savings Plans use a monthly window.",
+    "reason": "Fact lens fix holds. I checked cuds-multiprice: FSPs are 'a type of spend-based commitment' with a monthly entitlement window, while standard spend-based CUDs are hourly and 'Unused commitment does not carry over to the next hour'. The statement is now limited to standard spend-based CUDs."
+   },
+   {
+    "id": "gcp-pca-s4.2-08",
+    "decision": "keep",
+    "statement": "Cloud Billing sizes its CUD recommendations from an organization's expected future usage growth.",
+    "answer": false,
+    "explanation": "CUD recommendations come from historical and recent usage, including usage already covered by commitments, so architects weigh planned growth or decline themselves.",
+    "reason": "Both lenses keep. The cuds-recommender page says recommendations use historical and recent usage metrics."
+   },
+   {
+    "id": "gcp-pca-s4.2-10",
+    "decision": "keep",
+    "statement": "GKE cost allocation must be enabled on a Standard cluster before billing exports show its namespace costs.",
+    "answer": true,
+    "explanation": "Once GKE cost allocation is enabled, the detailed Cloud Billing export to BigQuery carries cluster, namespace and workload labels for chargeback; otherwise those costs carry no GKE labels.",
+    "reason": "Both lenses keep. The cost-allocations page says the export includes GKE labels from the date it is enabled, with no backfill, and only in the detailed export."
+   },
+   {
+    "id": "gcp-pca-s5.2-04",
+    "decision": "keep",
+    "statement": "The Spanner emulator enforces IAM permissions on requests that an application's integration tests send to it.",
+    "answer": false,
+    "explanation": "The Spanner emulator supports no authentication, IAM, permissions or roles, so access grants still need testing against a real Spanner instance.",
+    "reason": "Both lenses keep. The Spanner emulator page lists no authentication, IAM, permissions or roles. With s5.2-06 it is the second and last allowed emulator false card."
+   },
+   {
+    "id": "gcp-pca-s5.2-08",
+    "decision": "keep",
+    "statement": "Infrastructure Manager keeps a Terraform state file per deployment and per revision.",
+    "answer": true,
+    "explanation": "Infrastructure Manager creates a Terraform state file per deployment and per revision; a team can download a state file to inspect or modify it.",
+    "reason": "Both lenses keep. The state-file page confirms a Terraform state file for each deployment and revision."
+   },
+   {
+    "id": "gcp-pca-s6.1-04",
+    "decision": "keep",
+    "statement": "To export logs received before a sink existed, Cloud Logging offers a copy from the log bucket to Cloud Storage.",
+    "answer": true,
+    "explanation": "Sinks route only entries that arrive after they're created; for entries already stored in a log bucket, Cloud Logging can copy them retroactively to Cloud Storage.",
+    "reason": "Both lenses keep. The routing overview says sinks can't route retroactively but log data can be copied retroactively to Cloud Storage."
+   },
+   {
+    "id": "gcp-pca-s6.1-08",
+    "decision": "fixed",
+    "statement": "Cloud Profiler can collect profiles from applications that run outside Google Cloud, such as on premises.",
+    "answer": true,
+    "explanation": "Cloud Profiler agents for Go, Java, Node.js and Python also run outside Google Cloud, so hybrid workloads can send low-overhead profiles to a Google Cloud project; profile types vary by language.",
+    "reason": "Fact lens fix, checked on about-profiler: 'Outside of Google Cloud' is Y for all four languages, but CPU time and Heap are not marked for every language, so 'CPU and heap profiles' is replaced by 'profile types vary by language'. The statement is unchanged."
+   },
+   {
+    "id": "gcp-pca-s6.3-03",
+    "decision": "keep",
+    "statement": "Setting maxUnavailable to 0 in a MIG rolling update removes the need for spare quota during the update.",
+    "answer": false,
+    "explanation": "With maxUnavailable at 0 and maxSurge above 0, the MIG creates each replacement VM before deleting the old one, and maxSurge only works when there is quota and capacity for the extra VMs.",
+    "reason": "Both lenses keep. The rolling-updates page confirms surge-before-delete and that maxSurge needs quota. The edge case of both values at 0 forces maxUnavailable to 1, so the answer holds."
+   },
+   {
+    "id": "gcp-pca-s6.3-05",
+    "decision": "keep",
+    "statement": "By default, a Cloud Deploy rollback redeploys the last release that had a successful rollout to that target.",
+    "answer": true,
+    "explanation": "Cloud Deploy creates a new rollout from the last release that succeeded on the target unless the team picks another release; it does not rewind the earlier rollout.",
+    "reason": "Both lenses keep. The Cloud Deploy roll-back page confirms the default and the new rollout resource."
+   },
+   {
+    "id": "gcp-pca-s6.3-07",
+    "decision": "keep",
+    "statement": "In Google's incident response model, the Ops Lead takes on any incident role that remains undelegated.",
+    "answer": false,
+    "explanation": "The SRE Workbook says the Incident Commander assumes every role not yet delegated, including Ops Lead; delegating them lets the IC focus on coordination and communication.",
+    "reason": "Both lenses keep. The SRE Workbook says 'By default, the IC assumes all roles that have not been delegated yet.'"
+   },
+   {
+    "id": "gcp-pca-s1.2-10",
+    "decision": "keep",
+    "statement": "An app's session files in a Cloud Run instance's local filesystem carry over to its replacement instance.",
+    "answer": false,
+    "explanation": "Cloud Run loses files in the instance's local writable filesystem when that instance stops. Session data needing persistence belongs in external storage.",
+    "reason": "Both lenses keep. The container contract says written files don't persist when the instance stops."
+   },
+   {
+    "id": "gcp-pca-s5.1-08",
+    "decision": "keep",
+    "statement": "Datastream delivers change events into Cloud Storage in source commit order.",
+    "answer": false,
+    "explanation": "Datastream delivers change events that can arrive out of order. A Cloud Storage consumer uses source-specific event metadata to reconstruct the source operation order.",
+    "reason": "Both lenses keep. The events-and-streams page says 'Datastream doesn't guarantee ordering' and that ordering is inferred per source."
+   },
+   {
+    "id": "gcp-pca-s5.2-06",
+    "decision": "keep",
+    "statement": "The Bigtable emulator writes test data to local disk so a later emulator process can reuse it.",
+    "answer": false,
+    "explanation": "The Bigtable emulator keeps its data in memory and loses it across runs. Tests that need an initial dataset populate that dataset for a new emulator run.",
+    "reason": "Both lenses keep. The Bigtable emulator page says it stores data only in memory and won't persist it across runs."
+   },
+   {
+    "id": "gcp-pca-s6.1-06",
+    "decision": "keep",
+    "statement": "Google Cloud Managed Service for Prometheus answers a PromQL query from a single Google Cloud region's data.",
+    "answer": false,
+    "explanation": "Google Cloud Managed Service for Prometheus evaluates queries against a global datastore and combines results across regions. Teams obtain a unified view rather than querying isolated regional servers.",
+    "reason": "Both lenses keep. The managed-prometheus page says Monarch unions query results across all Google Cloud regions."
+   },
+   {
+    "id": "gcp-pca-s2.3-04",
+    "decision": "keep",
+    "statement": "Compute Engine's default sole-tenant maintenance policy live-migrates VMs within a fixed server pool.",
+    "answer": false,
+    "explanation": "Compute Engine's Default sole-tenant maintenance policy lets eligible VMs migrate to new physical servers. Migrate within node group confines migration to a fixed server pool.",
+    "reason": "Both lenses keep. The sole-tenant page contrasts the Default policy with Migrate within node group."
+   }
+  ]
+ }
+}

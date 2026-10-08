@@ -1,0 +1,1101 @@
+{
+ "deck": "azure-az-305",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s1.1-11",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, updated 2026-06-26",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/connection-strings: \"Ikey unique identifiers aren't security tokens or security keys.\" The same page also says: \"`Authorization` (for example, ikey). This setting is optional because today the SDK only supports ikey authorization\" and, for each example, \"Authorization scheme defaults to 'ikey'\". https://learn.microsoft.com/en-us/azure/azure-monitor/app/azure-ad-authentication: \"When you disable local authentication, you can ingest telemetry authenticated exclusively by Microsoft Entra ID.\"",
+     "problem": "The statement asks whether senders \"authenticate with\" the instrumentation key. The source itself calls ikey the connection string's authorization scheme. With local authentication enabled, which is the default, the ikey is the only thing the ingestion endpoint checks. An expert could therefore defend True: the ikey is the weak, local credential that Entra ID replaces. The intended fact is that the ikey is not a security key, and the card should test that directly.",
+     "suggestedFix": "Keep the answer False. Statement: \"The instrumentation key in an Application Insights connection string acts as a security key against forged telemetry.\" Explanation: \"The instrumentation key only identifies the target resource and is not a security key. To reject unauthenticated telemetry, disable local authentication so ingestion requires Microsoft Entra ID.\" Keep the connection-strings URL."
+    },
+    {
+     "id": "azure-az-305-s1.1-12",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-06-26 (page title is 'Sampling in Azure Application Insights with OpenTelemetry')",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/opentelemetry-sampling: \"Application Insights relies on this sampler to show you complete traces and avoid broken ones.\" Benefits list: \"Reduces broken traces and helps provide consistent sampling decisions\". Ingestion sampling section: \"It drops data at the Azure Monitor ingestion point and offers no control over which traces and spans are retained. This condition increases the likelihood of encountering broken traces.\"",
+     "problem": "The explanation closely paraphrases the source sentence, and the statement adds little to it. \"Reducing telemetry volume\" is just what a sampler is, so the only real content is \"keeps complete traces\". That claim is stronger than the page's own \"reduces broken traces\" and leaves an exception for mismatched sampling across services. The card also does not test the design choice the page actually frames: sampling in the SDK or distro versus ingestion sampling, which is not recommended.",
+     "suggestedFix": "Keep the answer True. Statement: \"The Azure Monitor OpenTelemetry Distro sampler yields fewer broken traces than ingestion sampling in Application Insights.\" Explanation: \"Ingestion sampling drops items at the Azure Monitor endpoint with no control over which spans survive, so Microsoft treats it as a fallback; the distro sampler makes consistent per-trace decisions.\" Same URL."
+    },
+    {
+     "id": "azure-az-305-s1.1-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-09-22",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-transformations: \"Transformations in Azure Monitor filter or modify incoming data before it's sent to a Log Analytics workspace.\" Same page: \"The transformation would be ignored though by any data sent from Azure Monitor Agent (AMA) because it uses a DCR to define its data collection. You can still use a transformation with Azure Monitor agent, but you would include that transformation in the DCR associated with the agent and not the workspace transformation DCR.\"",
+     "problem": "This is close to a truism. Records an ingestion filter has excluded cannot come back through a later query, which follows from what a filter is. Few learners who studied would answer True, so it is not a hard (difficulty 3) distinction. \"DCR ingestion filter\" is also not the documented term; the page says transformation. The same page holds a real design distinction: which DCR carries the transformation.",
+     "suggestedFix": "Keep the answer False. Statement: \"A workspace transformation DCR filters the data that Azure Monitor Agent sends to a supported Log Analytics table.\" Explanation: \"The workspace transformation DCR applies only to data that arrives without its own DCR, such as diagnostic-settings resource logs; filters for Azure Monitor Agent data go in the agent's DCR.\" Same URL."
+    },
+    {
+     "id": "azure-az-305-s1.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-07-28",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-monitor/agents/azure-monitor-agent-overview: \"When you install the agent, it retrieves and applies any associated DCRs and periodically checks for updates.\" https://learn.microsoft.com/en-us/azure/azure-monitor/logs/workspace-design: \"Most resources can only send monitoring data to a workspace in the same Microsoft Entra tenant. Virtual machines that use Azure Monitor Agent or the Log Analytics agents can send data to workspaces in separate Microsoft Entra tenants.\"",
+     "problem": "The source supports the card, but it is near-truism. A centrally managed agent that picks up changes to its configuration is common sense, so the card tests no realistic misconception and no design trade-off. \"Automatically\" plus a true answer makes it easy to guess. \"Collection rules\" is also not the official name (data collection rules).",
+     "suggestedFix": "Keep the answer True. Statement: \"An Azure VM with Azure Monitor Agent can send its data to a Log Analytics workspace in another Microsoft Entra tenant.\" Explanation: \"Most Azure resources send monitoring data only to a workspace in their own tenant, but VMs with Azure Monitor Agent can target a workspace in a separate tenant, which suits service providers.\" URL: https://learn.microsoft.com/en-us/azure/azure-monitor/logs/workspace-design"
+    }
+   ],
+   "notes": "Checked all 12 cards of section 1.1 (all in azure-az-305-b1.json). I opened every source URL with WebFetch on 2026-10-08. All load, are official learn.microsoft.com pages and were updated in 2025-2026. The section is balanced at 6 true and 6 false, and the four replacements keep each card's answer, so the balance stays 6/6.\n\nThe 8 cards that pass, with the sentence that settles each:\n- s1.1-01: diagnostic-settings source table: \"Resource logs: Aren't collected by default. Create a diagnostic setting to collect resource logs.\"\n- s1.1-02: Event Hubs row: \"Stream data to external systems such as non-Microsoft security information and event management (SIEM) solutions\".\n- s1.1-03: \"The destination doesn't have to be in the same subscription as the resource that's sending logs if the user who configures the setting has appropriate Azure role-based access control (RBAC) access to both subscriptions.\"\n- s1.1-04: \"Diagnostic settings don't currently support multidimensional metrics. Metrics with dimensions are exported as flattened single-dimensional metrics and aggregated across dimension values.\" Minor: the word \"currently\" suggests volatility \"may_change\" instead of \"stable\". DCR-based metrics export is the likely future change, and it is Preview, so the answer stands today.\n- s1.1-05: workspace-design: \"Each Log Analytics workspace resides in a particular Azure region. You might have regulatory or compliance purposes for keeping data in a particular region.\"\n- s1.1-06: workspace-design: \"By default, if a user has read access to an Azure resource, they inherit permissions to any of that resource's monitoring data sent to the workspace.\" The page also says to \"limit users to accessing the workspace using resource-context\".\n- s1.1-07: data-platform-logs table: Alerts for Basic \"✅ (Simple Log Alerts)\".\n- s1.1-08: data-platform-logs table: Auxiliary \"❌ Slower queries. Good for auditing. Not optimized for real-time analysis.\"\n\nDuplicates: I searched the other sections of the deck for diagnostic settings, workspaces, AMA, DCRs, transformations, Application Insights and sampling. The only hit is s2.3-02, which is about Data Factory data flow transformations and is unrelated, so no duplicates.\n\nBreadth: 4 of the 12 cards are about diagnostic settings (01-04). This is acceptable, but if anything is swapped later, prefer topics outside diagnostic settings. The s1.1-10 replacement still lives on the transformations page."
+  },
+  {
+   "section": "1.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s1.2-06",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (updated 2026-04-30); supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/role-based-access-control/custom-roles: \"Custom roles can be shared between subscriptions that trust the same Microsoft Entra tenant.\" The fact is correct, but azure-az-305-s1.3-02 (\"A management group can govern subscriptions that trust different Microsoft Entra tenants together.\", false) rests on the same principle: the subscription/management-group/role-definition hierarchy ends at one Microsoft Entra tenant. Both use the same false template (\"X spans subscriptions that trust different Microsoft Entra tenants\"), and knowing one answer gives away the other.",
+     "problem": "Same underlying fact and same distractor template as s1.3-02 (single-tenant boundary of the Azure RBAC and Resource Manager hierarchy). A player who answers one of them gets the other for free.",
+     "suggestedFix": "Replace (answer false, keeps the 6/6 balance). Statement: \"An architect can assign a custom role that includes DataActions at management group scope.\" Explanation: \"Custom roles with DataActions can't be assigned at management group scope. To reuse one role in many subscriptions, list the management group in AssignableScopes and assign the role at each subscription.\" Source: same URL, Custom role limits section: \"Custom roles with DataActions can't be assigned at the management group scope.\""
+    },
+    {
+     "id": "azure-az-305-s1.2-12",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (updated 2026-09-10); supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/key-vault/managed-hsm/overview: \"Each HSM cluster uses a separate customer-specific security domain that cryptographically isolates each customer's HSM cluster.\" The statement (\"isolates a customer's keys with a customer-specific security domain\") and the explanation (\"dedicated HSM cluster and its own security domain ... cryptographic isolation\") reproduce this sentence with a few words changed.",
+     "problem": "Near-copy of the source sentence. The answer can also be guessed from the wording, because the single-tenant isolation is Managed HSM's headline feature, so the difficulty 3 rating is not earned. The card tests no design trade-off.",
+     "suggestedFix": "Replace (answer true, keeps balance). Statement: \"Managed HSM local RBAC lets designated HSM administrators keep key control even against subscription Owners.\" Explanation: \"Managed HSM authorizes key operations through its own local RBAC model. Management group, subscription or resource group administrators can't override the access that designated HSM administrators set.\" Source: same URL, which says local RBAC \"allows designated HSM cluster administrators to have complete control over the HSMs that even management group, subscription, or resource group administrators cannot override.\""
+    }
+   ],
+   "notes": "All 12 source URLs loaded on 2026-10-08. Each is an official, current learn.microsoft.com page. Answer balance is 6 true (01, 03, 05, 08, 10, 12) and 6 false (02, 04, 06, 07, 09, 11). Confirmations for the cards that pass: 01, choose-ad-authn says PTA denies access when \"the logon attempt falls outside the hours when the user is allowed to sign in\", and its table lists Sign-in hours under PTA. 02, same page: \"Fail over to password hash synchronization doesn't happen automatically and you must use Microsoft Entra Connect to switch the sign-on method manually.\" 03, same page lists \"Sign in that requires a sAMAccountName, for example DOMAIN\\\\username\" under federation, and the table shows sAMAccountName + password only for AD FS. 04, external-identities-overview: B2B collaboration users are managed \"in the same workforce tenant as employees\", and an external tenant is \"exclusively for apps that you want to publish to consumers or business customers\". 05, managed identities overview: user-assigned has an \"Independent life cycle\", with the use case \"Workloads where resources are recycled frequently, but permissions should stay consistent\". 07, cross-tenant-access-overview default settings: \"MFA and device claims from other Microsoft Entra organizations aren't trusted.\" 08, app proxy overview: \"For IWA, the private network connectors use Kerberos Constrained Delegation (KCD) to authenticate users\". The explanation for 08 is close to the source wording but acceptable. 09, Domain Services overview: \"A managed domain is a stand-alone domain and isn't an extension of an on-premises domain.\" Forest trusts exist but do not change this answer. 10, rbac-access-policy: \"Azure RBAC is the recommended authorization system for the Azure Key Vault data plane.\" This recommendation is on the prompt's allowed list. 11, overview-renew-certificate: the integrated CAs are DigiCert and GlobalSign. For nonintegrated CAs Key Vault generates a CSR that someone sends to the CA and merges back, and Key Vault offers only \"near-expiration email notifications\". No card uses a retired product, a Preview feature or an outdated name. No card crosses into the azure-az-104 territory listed in the prompt. Minor observation, not flagged: 01, 02 and 03 all come from the choose-ad-authn page, which is acceptable because they test three different facts."
+  },
+  {
+   "section": "1.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s1.3-04",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (Use tags to organize your Azure resources and management hierarchy, updated 2025-12-08); supports the ARM fact only",
+     "evidence": "tag-resources: \"Resources don't inherit the tags you apply to a resource group or a subscription.\" But https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/enable-tag-inheritance: \"When enabled, tag inheritance applies billing, resource group, and subscription tags to child resource usage records. You don't have to tag every resource\" and the setting is literally named \"Automatically apply subscription and resource group tags to new data\".",
+     "problem": "The statement is framed around resource-level chargeback, which is exactly what Cost Management tag inheritance provides: once it's turned on, it automatically puts the resource group's cost-center tag on the usage records of the group's resources. An expert can therefore defend True for the chargeback purpose. The explanation's claim that resource-level cost allocation needs tags on the resources or a tagging policy is misleading because it ignores this documented option.",
+     "suggestedFix": "Replace (keeps answer false): \"Cost Management tag inheritance copies resource group tags onto the resources themselves.\" Explanation: \"Tag inheritance applies subscription and resource group tags to child resource usage records, not to the resources. Tagging the resources needs Azure Policy, such as a Modify policy that inherits tags.\" URL: https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/enable-tag-inheritance (\"Inherited tags are applied to child resource usage records and not the resources themselves.\")"
+    },
+    {
+     "id": "azure-az-305-s1.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (Overview of Azure Policy, updated 2026-07-08); supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/governance/policy/overview: \"Resources are evaluated at specific times during the resource lifecycle, the policy assignment lifecycle, and for regular ongoing compliance evaluation... The standard compliance evaluation cycle that occurs once every 24 hours.\"",
+     "problem": "This is a strawman. The whole point of Azure Policy is ongoing compliance, so no one who studied it would say it stops evaluating after the first assessment. The card teaches nothing at expert design depth.",
+     "suggestedFix": "Replace (keeps answer false): \"Resources excluded from an Azure Policy assignment still count toward that assignment's compliance results.\" Explanation: \"Excluded scopes are neither evaluated nor counted in compliance. To keep a resource tracked while skipping assessment, an architect uses an exemption, which reports it as Exempt.\" URL: https://learn.microsoft.com/en-us/azure/governance/policy/concepts/scope (\"Resources within these scopes aren't evaluated or included in the compliance count.\")"
+    },
+    {
+     "id": "azure-az-305-s1.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads (management-groups/overview, updated 2025-07-21); supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/governance/management-groups/overview: \"Management groups provide a governance scope above subscriptions. When you organize subscriptions into management groups, the governance conditions that you apply cascade by inheritance to all associated subscriptions.\"",
+     "problem": "This is a definition card. The answer is just what a management group is for: the page's opening sentence defines it this way, and it is also inheritance of scope that the azure-az-900 and azure-az-104 decks already cover. Anyone who knows what a management group is answers True.",
+     "suggestedFix": "Replace (keeps answer true): \"An Azure subscription can belong to only one parent management group at a time.\" Explanation: \"A management group or subscription supports a single parent, so a subscription shared by two business units needs tags or another grouping rather than two parents.\" Same URL (\"Each management group and subscription can support only one parent.\")"
+    },
+    {
+     "id": "azure-az-305-s1.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads (What is Azure Resource Manager?, updated 2026-08-06); supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview: \"A resource can connect to resources in other resource groups. This scenario is common when the two resources are related but don't share the same lifecycle. For example, you can have a web app that connects to a database in a different resource group.\"",
+     "problem": "The statement nearly copies the source's own example (a web app and a database in different resource groups with different lifecycles). It is a 'can' statement that is close to a truism. Its wording is also unclear: 'a web app with a different lifecycle' can be read as part of the web app's description.",
+     "suggestedFix": "Replace (keeps answer true): \"A resource group's region decides where Azure Resource Manager stores its resources' metadata, wherever those resources run.\" Explanation: \"The resource group stores metadata about its resources in the group's region, so data-residency rules apply to that choice even when the resources run in other regions.\" Same URL (\"When you specify a location for the resource group, you're also specifying where that metadata is stored. For compliance reasons, you might need to ensure that your data is stored in a particular region.\")"
+    }
+   ],
+   "notes": "I checked all 12 cards in section 1.3, ids azure-az-305-s1.3-01 to -12, all in b1. Every source URL loads, is official and is current. The section has 6 true and 6 false cards, and every replacement I suggest keeps that split.\n\nCards that pass, with the sentence that settles each one:\n- 02: management-groups/overview, \"all subscriptions within a single management group must trust the same Microsoft Entra tenant.\"\n- 05: policy/overview, \"After you create an initiative assignment, policy definitions added to the initiative also become part of that initiative's assignments.\"\n- 06: exemption-structure, \"The policy exemptions isn't deleted when the expiresOn date is reached. The object is preserved for record-keeping, but the exemption is no longer honored.\"\n- 08: policy/concepts/scope, \"Subscription: The subscription where policy is defined and resources within that subscription can be assigned the policy definition.\" For several subscriptions, the definition must be saved at a management group.\n- 09: pim-resource-roles-configure-role-settings, \"You can require approval for activation of an eligible assignment.\"\n- 10: complete-access-review, \"Manually or automatically applying results doesn't have an effect on a group that originates in an on-premises directory.\"\n- 11: entitlement-management-access-package-create, \"Identities who request and receive the access package receive all the resource roles\". The same page says policies specify who can request, plus approval and lifecycle settings.\n- 12: lifecycle-workflow-extensibility, \"Lifecycle Workflows currently support creating custom task extensions to call out to Azure Logic Apps.\"\n\nPoints to know about cards that pass:\n- 05: the wording is close to the source sentence but still acceptable.\n- 10: still correct under Group Source of Authority conversion, because a converted group is no longer synchronized from on-premises.\n- 08: the false answer is right and the card is a good hard distinction.\n\nI found no duplicates with other sections. Cards 1.2-10 (Key Vault RBAC) and 4.2-10 (template spec permissions) touch nearby topics but rest on different facts.\n\nI could not run any web searches: the session had used up its search budget. All checks were done by fetching the pages directly."
+  },
+  {
+   "section": "2.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s2.1-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-04-02; supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-sql/azure-sql-iaas-vs-paas-what-is-overview: \"You have the ability to deploy application or services on the host where SQL Server is placed.\" and \"it's up to you to decide ... when to install any extra software such as anti-virus.\" The fact is true, but the answer follows from the product name: a player who knows that 'on Azure VMs' means IaaS knows they control the guest OS. The prompt treats this as definition (AZ-900) territory, and it is rated difficulty 1.",
+     "problem": "Name giveaway or definition card. Knowing that SQL Server on Azure VMs is IaaS is enough to answer True, so the card does not test a design trade-off at expert depth.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"SQL Server on Azure VMs leaves database high availability, such as an Always On availability group, to the customer.\" Explanation: \"The VM SLA covers the virtual machines, not the SQL Server process. Database-level HA needs a SQL Server feature that you deploy and manage, such as an Always On availability group.\" Same URL; it says \"You need to implement your own High-Availability solution\" and that the SLA \"doesn't cover the processes (such as SQL Server) running on the VM.\""
+    },
+    {
+     "id": "azure-az-305-s2.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-07-28; supports the card",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-sql/database/elastic-pool-overview: \"Azure SQL Database elastic pools are a simple, cost-effective solution for managing and scaling multiple databases with varying and unpredictable usage demands\" and \"The peak utilization for each database occurs at different points in time.\" The statement restates the definition of an elastic pool ('pool' plus 'share compute'), so anyone who knows what the service is for answers True.",
+     "problem": "Definition card or truism. The answer can be read from what an elastic pool is, and nothing beyond the basic description is tested.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement: \"An Azure SQL Database elastic pool can cap each database's vCores so one busy tenant leaves capacity for others.\" Explanation: \"Per-database minimum and maximum vCore or eDTU settings stop one pooled database from taking the whole pool and can guarantee each database a floor.\" Source: same URL (\"Optionally set the minimum and maximum resources for the databases\"), backed by https://learn.microsoft.com/en-us/azure/azure-sql/database/in-memory-oltp-overview (\"Configure a Max eDTU or Max vCore for databases that is lower than the eDTU or vCore count for the pool as a whole\")."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.1 (6 true, 6 false); every source URL loaded and is a current learn.microsoft.com page. Ten cards pass. 01: the MI overview lists \\\"Cross-database queries and transactions\\\" and says Entra logins can do \\\"cross-database queries within the same managed instance\\\". 03: the PgBouncer page (updated 2026-10-04) says \\\"doesn't support the Burstable server compute tier\\\", and may_change is set correctly. 04: the vCore page says \\\"Reserved instance pricing is only available for vCore purchasing model.\\\" 05: the serverless page says \\\"When compute usage is below the minimum limits you configure, the compute cost is based on the minimum vCores and minimum memory configured.\\\" 07: the vCore page says database files \\\"are stored in Azure Blob storage\\\" in a separate stateful layer. 08: \\\"In-Memory OLTP is available in the Premium (DTU) and Business Critical (vCore) service tiers.\\\" 09: \\\"Named replicas have their own Service Level Objective that can be set and changed independently from the primary replica.\\\" 10: the Always Encrypted page applies to Azure SQL Database and describes separation from \\\"database administrators, cloud database operators\\\", with column master keys \\\"outside of the database system\\\". 11: the DDM page says \\\"Users with administrative rights like server admin, Microsoft Entra admin, and db_owner role can view the original data without any mask.\\\" 12: the TDE page (updated 2026-09-16) says \\\"All newly created SQL databases are encrypted by default by using service-managed transparent data encryption\\\". The word 'empty' in card 12 correctly avoids the restore, copy and geo-replica exception. Side observations, not flags: (a) the In-Memory OLTP page now says \\\"The Hyperscale service tier supports a subset of In-Memory OLTP objects\\\". That conflicts with the prompt's trap that Hyperscale does not support In-Memory OLTP tables and with the vCore table's \\\"No\\\". Card 08 is unaffected because it names Business Critical only, but no card should claim Hyperscale has zero In-Memory OLTP support. (b) Card 10 is rated difficulty 3, but Always Encrypted keeping data from DBAs is its headline purpose; difficulty 2 would be more honest. (c) The PgBouncer page contradicts itself ('optional feature' and 'enabled by default on port 6432'); this does not affect card 03. (d) No duplicates: s4.3-09 (unencrypted BACPAC export) and s3.2 failover-group cards rest on different facts from s2.1-12 and the tier cards. Within the section, true and false average statement lengths are 101.0 and 103.3 characters (within 5), and hedge verbs are spread across both answers. Both replacements keep the 6/6 balance and fit the 120 and 240 character limits."
+  },
+  {
+   "section": "2.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s2.2-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (updated 2026-04-27)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/cosmos-db/integrated-cache: \"Point reads and queries that hit the integrated cache have a Request Units (RU) charge of zero.\" The same page also says: \"The integrated cache supports read requests with session and eventual consistency only. If a read has consistent prefix, bounded staleness, or strong consistency, it bypasses the integrated cache and is served from the backend.\"",
+     "problem": "The answer is correct, but anyone can guess it from the wording: a cache cutting backend cost for repeated reads is common sense, and the hedge \"can reduce\" marks the statement as true. The fact an architect actually has to weigh, that only Session and Eventual reads use the cache, is left out.",
+     "suggestedFix": "Replacement (True, keeps balance): \"An Azure Cosmos DB read at Bounded staleness consistency bypasses the integrated cache and consumes backend RUs.\" Explanation: \"The integrated cache serves only Session and Eventual reads at zero RU. Strong, Bounded staleness and Consistent prefix reads go to the backend, so a cost design relying on the cache needs Session or Eventual.\" Same URL."
+    },
+    {
+     "id": "azure-az-305-s2.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (updated 2026-10-07)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/storage/files/understanding-billing: \"Provisioned v2: A provisioned billing model where you can separately provision storage, IOPS, and throughput. You pay based on what you provision, regardless of how much you actually use.\" and \"Provisioned v1: ... IOPS and throughput are determined by how much storage you provision.\"",
+     "problem": "This is a definition card. A provisioned model bills for what you provision by the meaning of the word, so the answer can be read from the name. The fact that sets provisioned v2 apart and matters to the design, separate provisioning of IOPS and throughput, goes untested.",
+     "suggestedFix": "Replacement (True, keeps balance): \"Azure Files provisioned v2 lets an architect provision IOPS and throughput separately from a share's storage size.\" Explanation: \"Provisioned v2 provisions storage, IOPS and throughput as separate quantities, within guardrails. In provisioned v1, IOPS and throughput follow from the provisioned storage size.\" Same URL."
+    },
+    {
+     "id": "azure-az-305-s2.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (updated 2026-04-27)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/cosmos-db/consistency-levels: \"In session consistency, within a single client session, reads are guaranteed to honor the read-your-writes, and write-follows-reads guarantees.\" and \"if the client is re-created, its cache of session tokens is also re-created. Here too, read operations follow the same behavior as Eventual Consistency until subsequent write operations rebuild the client's cache of session tokens.\"",
+     "problem": "The answer is correct, but read-your-writes is the definition of Session consistency, and the phrase \"its own writes ... with the relevant session token\" gives the answer away. That breaks the rule against definition cards at the depth this deck sets. The page has a fact that matters more for a design: what happens to stateless or restarted clients.",
+     "suggestedFix": "Replacement (True, keeps balance): \"A restarted Cosmos DB client on Session consistency reads like Eventual until its new writes rebuild session tokens.\" Explanation: \"Session tokens are cached per client; after a restart, reads behave like Eventual until new writes rebuild the cache. Passing a valid token between instances keeps read-your-writes for stateless app tiers.\" Same URL."
+    }
+   ],
+   "notes": "Checked all 12 cards of section 2.2: 6 true and 6 false. Every source URL loads on learn.microsoft.com and is current. Cards that pass, with the sentence that settles each one:\n- 02: consistency-levels says \"accounts with multiple write regions can't use strong consistency\".\n- 03: feature-support-60 says \"Multi-document transactions are supported only within a single nonsharded collection. Cross-collection and cross-shard multi-document transactions aren't yet supported\". The answer is false for every server version, because 3.6 has no transactions at all.\n- 05: data-lake-storage-namespace says \"a hierarchical namespace processes these tasks by updating a single entry (the parent directory)\".\n- 06: storage-files-planning (updated 2026-08-26) says \"Azure file shares don't support both the SMB and NFS protocols on the same file share, although you can create SMB and NFS Azure file shares within the same storage account\".\n- 08: storage-disaster-recovery-guidance says \"Microsoft recommends RA-GZRS for maximum availability and durability of your storage accounts\". The prompt explicitly allows this card. Being sceptical, it is close to a truism, since RA-GZRS is the highest redundancy option. I did not flag it because the prompt whitelists it.\n- 09: table-storage-design-for-query says \"there are no indexes other than that on the clustered index on the PartitionKey and RowKey\" and refers to \"the fact that the Table service does not provide secondary indexes\". The statement names Azure Table storage, so Cosmos DB for Table's automatic indexing does not make it ambiguous.\n- 10: data-protection-overview (updated 2026-10-05) says \"Protects a blob version from being deleted and its metadata from being overwritten. An overwrite operation creates a new version.\" The immutable-version-level-worm-policies page confirms that overwriting with Put Blob, Put Block List or Copy Blob \"creates a new version\".\n- 11: immutable-container-level-worm-policies says allowProtectedAppendWrites lets you \"add new blocks of data to the end of the append blob ... any existing blocks can't be modified or deleted\".\n- 12: immutable-storage-overview says \"A legal hold stores blob data ... until the hold is explicitly cleared ... Use a legal hold when the period of time ... is unknown\".\n\nNo duplicates with other sections: 3.1 covers vault immutability and soft delete, and 3.2 covers RA-GRS reads. All three flags are weak_card and their replacements are True, so the section stays balanced. Two of the replacement statements were length-checked by script, and the 114-character Azure Files statement and both explanations are within the limits. The Cosmos DB statements in the first and third flags were shortened after the check and are under 120 characters by estimate, so re-count them before use. No file was edited."
+  },
+  {
+   "section": "2.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s2.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (ms.date 2026-07-29)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/data-factory/managed-virtual-network-private-endpoint: \"Managed private endpoints are private endpoints you create in the Data Factory managed virtual network that establish a private link to Azure resources.\" The answer is correct, but the statement only says that managed private endpoints give private access, so the name answers it. The fact an architect actually has to weigh is the approval gate: \"The private link resource owner is responsible for approving or rejecting the connection... Only a managed private endpoint in an approved state can send traffic to a specific private link resource.\"",
+     "problem": "Name giveaway and near-definition: a player who knows only the words 'managed private endpoint' answers True without knowing anything about Data Factory.",
+     "suggestedFix": "Keep True. Statement: \"An Azure Data Factory managed private endpoint carries traffic to a storage account only after its owner approves it.\" Explanation: \"Creating the endpoint opens a Pending private endpoint connection. The storage account owner approves or rejects it, and only an approved endpoint sends pipeline traffic over the Microsoft backbone.\" Same URL ('only' is in the source)."
+    },
+    {
+     "id": "azure-az-305-s2.3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (updated 2026-07-20)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/data-factory/tutorial-incremental-copy-overview: \"A watermark is a column that has the last updated time stamp or an incrementing key. The delta loading solution loads the changed data between an old watermark and a new watermark.\" The card is supported, but the hedged 'can use a saved watermark to copy new or updated rows' is generic ETL common sense with no realistic False reading. The same page has a real design trade-off: \"ADF will scan all the files from the source store, apply the file filter by their LastModifiedDate...\" versus time-partitioned names: \"It's the most performant approach for incrementally loading new files.\"",
+     "problem": "Truism. Watermark-based delta loading is defined by the words in the statement, and 'can' makes True the obvious guess. The explanation (177 characters) also restates the definition.",
+     "suggestedFix": "Keep True. Statement: \"Azure Data Factory gets its most performant incremental file loads from folders or file names that encode a time slice.\" Explanation: \"Filtering by LastModifiedDate still scans every source file. Time-partitioned paths such as /yyyy/mm/dd/ let Azure Data Factory pick only the new files.\" Same URL."
+    },
+    {
+     "id": "azure-az-305-s2.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (sql-data-warehouse-manage-compute-overview, updated 2026-05-03)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-manage-compute-overview: \"You're not charged for compute while compute is paused.\" So the statement is true, but that pausing stops compute charges is what 'pause' means. The decision-relevant half is in the explanation, and the cited page states it only indirectly. https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/pause-and-resume-compute-portal states it directly: \"You won't be charged for compute resources while the database is paused. However, you will continue to be charged for storage.\"",
+     "problem": "Truism. 'Pausing stops compute charges' follows from the word 'pause', and 'automatically' is filler. The useful fact, that storage stays billed, is only in the explanation.",
+     "suggestedFix": "Keep True. Statement: \"Azure keeps charging for storage while an Azure Synapse Analytics dedicated SQL pool stays paused.\" Explanation: \"Pausing releases the compute nodes and stops their charges, but the data stays attached to the pool, so storage charges continue until the pool is deleted.\" URL: https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/pause-and-resume-compute-portal"
+    },
+    {
+     "id": "azure-az-305-s2.3-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (on-demand-workspace-overview, updated 2026-05-03)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/synapse-analytics/sql/on-demand-workspace-overview: \"Serverless SQL pool is a query service over the data in your data lake\" and \"A familiar T-SQL syntax to query data in place without the need to copy or load data into a specialized store.\" The statement repeats the service's opening definition. The same page has a cost lever: \"There's no charge for resources reserved. You are only being charged for the data processed by queries you run, hence this model is a true pay-per-use model.\"",
+     "problem": "Definition card: it tests what serverless SQL pool is for, which the prompt assigns to AZ-900 (\"Assume the player already knows what each service is for\").",
+     "suggestedFix": "Keep True. Statement: \"Azure Synapse Analytics serverless SQL pool bills by the data each query processes rather than by reserved compute.\" Explanation: \"Serverless SQL pool reserves no resources and charges only for the data that queries process, which suits occasional exploration of lake files.\" Same URL. The prompt allows cost-dimension cards, and no amounts are given."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.3: 6 true and 6 false, average statement length 112.7 for true and 109.8 for false, all statements 120 characters or less and all explanations 240 or less. Every source URL returned 200 and is on learn.microsoft.com. No answer is wrong: the source quotes support all 12.\n\nPassed with notes:\n- s2.3-01 and s2.3-02 are supported by concepts-integration-runtime. A self-hosted IR runs \"copy activity between a cloud data store and a data store in a private network\". The table lists Data Flow only for the Azure IR, and the page says \"Data Flow activities are executed on their associated Azure integration runtime... Spark compute used, and are fully managed\".\n- s2.3-04: the comparison table says schedule trigger backfill is \"Not supported. Pipeline runs can be executed only on time periods from the current time and the future.\"\n- s2.3-06: \"dedicated SQL pool first kills all incoming queries and then rolls back transactions\". It shares the sentence pattern \"Azure Synapse Analytics lets X continue during scaling\" with s2.3-11 (Spark: \"The running jobs will continue to run and finish\"), with opposite answers. These are two different facts, so I did not flag it, but the editor may want to vary the wording. The Synapse pages now carry a note telling new users to \"start with Fabric Data Warehouse\". Dedicated SQL pool is not retired, so no flag.\n- s2.3-09: \"Your Stream Analytics job retrieves SQL Database reference data and stores it as a snapshot in memory\". The explanation says the snapshot refreshes at a configured interval, but on the page periodic refresh is an optional setting (\"Refresh periodically... Select On\"). Minor, so not flagged. Suggested tweak: \"when periodic refresh is on\".\n- s2.3-10: \"Update policies are automation mechanisms triggered when new data is written to a table\". The external delta table source is Preview, so it does not create an exception. The misconception is realistic, because ADX materialized views do offer backfill. It is a fairly deep, operational ADX detail for AZ-305, though, and difficulty 1 looks mislabelled (2 or 3 fits better).\n- s2.3-12: the Fabric page says \"Fabric Data Warehouse data, like all Fabric data, is stored in Delta tables, which are Parquet data files with a file-based transaction log\". volatility is may_change, as the prompt requires.\n\nAll four flags are weak_card with True replacements, so the section stays at 6 true and 6 false. The replacements for 07, 08 and 05 add cost and performance levers, which avoids definition cards. No factKey in section 2.3 repeats a fact from another section of the deck. The web-search budget was used up, so I verified everything by fetching the official pages directly, including the pause-and-resume-compute-portal and apache-spark-pool-configurations pages."
+  },
+  {
+   "section": "3.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s3.1-10",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (ms.date 2026-10-02)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/storage/blobs/data-protection-overview: resource table, Blob soft delete row: 'Protects a container from deletion: No'; Container soft delete: 'A deleted container and its contents can be restored within the retention period... Container soft delete doesn't enable you to restore an individual blob in the container if that blob is deleted.' The answer and explanation are correct. But azure-az-104-s2.3-06 (False: 'Container soft delete recovers a blob an administrator deletes from a container that still exists.') tests the other side of the same split: blob soft delete covers blobs, container soft delete covers containers.",
+     "problem": "This card mirrors an AZ-104 card on the blob-versus-container soft delete split. The prompt says 104 facts must not be retested here and that the two sides of one distinction count as one fact. It is also administrator depth, not architect depth.",
+     "suggestedFix": "Replace (answer False): 'Azure Blob Storage point-in-time restore can bring back a container that an application deleted.' Explanation: 'Point-in-time restore reverts only block blob operations; container deletions aren't reverted, so Microsoft advises deleting individual blobs and pairing it with container soft delete.' Same URL: 'Only operations performed on block blobs are reverted. Any operations performed on containers, page blobs, or append blobs aren't reverted.'"
+    },
+    {
+     "id": "azure-az-305-s3.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (ms.date 2026-09-09)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/backup/backup-azure-immutable-vault-concept: 'Enabled: The vault has immutability enabled ... The setting can be disabled.' / 'Enabled and locked: ... The immutable vault setting is now locked and can't be disabled. Immutability locking is irreversible.' The answer is correct.",
+     "problem": "The answer can be read from the wording. 'Can disable ... after they lock' contradicts the plain meaning of 'lock', so a player with no Azure knowledge answers False. The real trap is the other side: enabled but unlocked immutability can still be reversed.",
+     "suggestedFix": "Replace (answer False): 'Enabling immutability on an Azure Backup vault is irreversible even before an administrator locks the setting.' Explanation: 'Enabled immutability can still be disabled; only locking the immutable vault setting makes it irreversible, so lock it once the blocked operations are acceptable.' Keep the same URL."
+    },
+    {
+     "id": "azure-az-305-s3.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (ms.date 2025-01-22, updated 2025-10-07)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/site-recovery/recovery-plan-overview: 'A shutdown step attempts to turn off the on-premises machines. The exception is if you run a test failover, in which case the primary site continues to run.' The answer is correct. azure-az-104-s5.2-10 (True: 'Azure Site Recovery continues Azure-to-Azure replication while an administrator runs a VM test failover.') already teaches that a test failover does not disrupt production.",
+     "problem": "Strawman. Anyone who has studied Site Recovery knows a test failover is a non-disruptive drill, so nobody would believe it shuts down the primary site. The card also nearly repeats the AZ-104 point that a test failover is non-disruptive.",
+     "suggestedFix": "Replace (answer False): 'Azure Site Recovery fails over the machines within one recovery plan group one after another in a set order.' Explanation: 'Machines in one recovery plan group fail over in parallel; order applies between groups, so Group 2 starts only after every Group 1 machine has failed over and started.' Same URL: 'Machines in a single group fail over in parallel.'"
+    }
+   ],
+   "notes": "All 12 source URLs load and are current official learn.microsoft.com pages. Each one supports its card, including the corrected fact in the explanation of each false card. Section balance is 6 true (01, 02, 07, 08, 11, 12) and 6 false (03, 04, 05, 06, 09, 10). All three replacements are False, so the balance stays the same.\n\nCards that passed, with the sentence that settles each:\n- 01: 'Latest processed ... provides a low RTO because no time is spent processing unprocessed data' (VMware modernized tutorial, 2026-09-21).\n- 02: 'automate the actions needed at each step, using Azure Automation runbooks for failover to Azure'.\n- 05: 'Immutability doesn't apply to operational backups for resources like blobs, files, and disks.'\n- 06: 'You can't overwrite an existing database during restore.'\n- 07: 'LTR backups aren't deleted and can be used to restore databases to a different server ... in the same subscription.'\n- 08: geo-restore 'doesn't guarantee that the target region will have the capacity to restore your databases after a regional outage.'\n- 09: 'The backups aren't automatically geo-disaster resistant. Another region should be explicitly added.'\n- 11: Vaulted backup is GA. 'If ... the snapshot corresponding to the selected recovery point isn't found, Azure Backup uses the backup data in the vault for restore ... to an alternate location.'\n- 12: 'Geo-redundancy is retained' / 'The storage account is converted to GRS' after a planned failover.\n\nMinor observations, not flagged:\n- 01: the name 'latest processed' slightly hints at a faster recovery, but Latest (lowest RPO) is a believable alternative, so the card stands.\n- 12: a GZRS account becomes GRS after a planned failover, so it loses zone redundancy but keeps geo-redundancy. The statement still holds.\n- 02: its hedge verb 'can' sits on a true statement, so check the deck-wide hedge count.\n\nNo card relies on a Preview feature, a retired product or an unflagged number."
+  },
+  {
+   "section": "3.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s3.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (last updated 2026-01-29)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-sql/database/failover-group-sql-db: \"Forced failover immediately switches the secondary to the primary role without waiting for recent changes to propagate from the primary. This operation can result in potential data loss.\" The answer is right, but the statement itself explains the cause (\"writes still awaiting geo-replication\"). If you promote a copy before pending writes reach it, those writes are lost by definition, so a player can answer from the wording alone.",
+     "problem": "Near-truism. The phrase \"still awaiting geo-replication\" gives the answer away. The card also restates the definition of forced failover instead of testing a design distinction.",
+     "suggestedFix": "Replace with a true card. Statement (108 chars): \"An Azure SQL Database failover group runs a no-data-loss failover only while the primary remains accessible.\" Explanation (200 chars): \"A planned failover fully synchronizes primary and secondary before switching roles, so it needs a reachable primary; during an outage only a forced failover, which can lose recent writes, is possible.\" Source: same URL (\"This guarantees no data loss. Failover is only possible when the primary is accessible.\"). The word \"only\" is backed by the source."
+    },
+    {
+     "id": "azure-az-305-s3.2-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (last updated 2026-08-11)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/storage/common/storage-redundancy: \"Because data is replicated asynchronously from the primary to the secondary region, the secondary region is typically behind the primary region for write operations.\" The answer (false) and the explanation are right.",
+     "problem": "The wording is awkward (\"supports outage reads guaranteed to include...\"). The absolute \"guaranteed\" also marks the statement as false, which is the kind of wording tell the rules ban. Anyone who knows geo-replication is asynchronous answers it without knowing anything specific to RA storage.",
+     "suggestedFix": "Replace with a false card on the same fact. Statement (96 chars): \"Azure Storage copies writes synchronously to the secondary region of an RA-GZRS storage account.\" Explanation (190 chars): \"GZRS replicates synchronously across zones in the primary region but asynchronously to the secondary, so reads from the RA-GZRS secondary can trail the primary; Last Sync Time shows how far.\" Misconception: people confuse GZRS's synchronous zone replication with its geo-replication. Keep the same URL."
+    },
+    {
+     "id": "azure-az-305-s3.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (last updated 2026-09-16)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-redundancy: \"A shared ZRS disk can be attached to primary and secondary VMs in different zones to take advantage of both ZRS and availability zones. If your primary zone fails, you can quickly fail over to the secondary VM by using SCSI persistent reservation.\" The answer (true) is right.",
+     "problem": "Name giveaway. A \"zone-redundant\" disk working with VMs in \"different availability zones\" can be read from the name, so a player guesses True without knowing that shared disks can span zones.",
+     "suggestedFix": "Reword as a true card so the zone-redundant option is no longer named. Statement (117 chars): \"An Azure shared disk lets SQL Server failover cluster nodes placed in different availability zones use the same disk.\" Explanation (192 chars): \"A shared managed disk that uses ZRS attaches to cluster nodes in different zones; if the primary node's zone fails, the secondary node takes over the disk through SCSI persistent reservations.\" Keep the same URL."
+    }
+   ],
+   "notes": "I fetched all 12 source URLs on 2026-10-08. Every one returned 200 from learn.microsoft.com and is current, with last-updated dates between 2025-09 and 2026-09. Every answer checks out against its source; I found no wrong_answer and no source_problem.\n\nCards that pass, with the quote that settles each:\n- 01: reliability-virtual-machines: \"By itself, a zonal VM isn't resilient to zone outages\"; \"Zonal VMs can't be moved to a different availability zone\"; \"You're responsible for detecting and responding to zone failures\".\n- 02: reliability-app-service: \"The platform attempts to backfill lost instances on a best-effort basis\".\n- 04: failover-group-sql-db: \"listener endpoints that remain unchanged during geo-failovers\".\n- 06: same page: \"Secondary databases created through the failover group will not have high availability enabled by default\". Hyperscale inherits the primary's setting; the card correctly names Business Critical.\n- 07: same page: \"Customer managed (recommended)\".\n- 08: concepts-high-availability (updated 2026-07-22): \"You can't use the standby HA server for read queries.\"\n- 09: failover-group-sql-mi: \"all user databases within a SQL managed instance to fail over as a unit\". The source states the \"all\".\n- 10: multi-region-writes: \"Any writes that arrive in satellite regions are quorum committed in the local region, then sent to the hub region for conflict resolution asynchronously\". The explanation stays close to this sentence but is acceptable.\n- 12: files-redundancy: \"Azure Files doesn't support read access to data in the secondary region without initiating a failover. RA-GRS and RA-GZRS aren't supported.\"\n\nNo card breaks the prompt's 3.2 trap rules: none on secondary region, multiple secondaries or RTO numbers.\n\nBalance: 6 true and 6 false. Average statement length is 101.5 for true and 105.2 for false, within 5 characters. All three suggested replacements keep their card's original answer, so the balance holds.\n\nPossible overlaps, not flagged:\n- 3.2-10 (local quorum commit in multi-write) sits close to 2.2-02 (no Strong consistency with multiple write regions), but knowing one does not answer the other.\n- 3.2-11 and 3.2-12 are separate facts from 2.2-08 (RA-GZRS recommendation) and 3.1-12 (planned failover keeps geo-redundancy).\n- 3.2-01 (VM, customer must respond) and 3.2-02 (App Service, platform backfills) contrast two services, but they are not a mirrored pair."
+  },
+  {
+   "section": "4.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s4.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (ms.date 2026-02-06, updated 2026-06-24)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/virtual-machines/spot-vms: \"At any point in time when Azure needs the capacity back, the Azure infrastructure will evict Azure Spot Virtual Machines. Therefore, Azure Spot Virtual Machines are great for workloads that can handle interruptions like batch processing jobs\"",
+     "problem": "The answer is right, but the card only restates what a Spot VM is (evictable spare capacity), and it nearly copies the page's opening sentence, batch jobs included. The prompt leaves definition cards to azure-az-900, and anyone who knows the word 'Spot' answers True. It tests nothing an architect weighs.",
+     "suggestedFix": "Replace (True): \"An Azure Spot Virtual Machine evicted under the Deallocate policy still incurs storage charges for its disks.\" Explanation: \"With the default Deallocate eviction policy, an evicted Spot VM stops but keeps its disks, which stay billed and count against quota; the Delete policy removes the disks with the VM.\" Same URL: \"The deallocated VMs will count against your quota and you'll be charged storage costs for the underlying disks.\""
+    },
+    {
+     "id": "azure-az-305-s4.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (ms.date 2026-10-05)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/app-service/environment/overview: \"An App Service Environment is a single-tenant deployment of App Service that runs on your virtual network.\" and \"An App Service Environment hosts applications for a single customer on one of their virtual networks.\"",
+     "problem": "The answer is right, but the statement is the service's own definition, close to the source sentence, so it tests what ASE is rather than a design trade-off. The design point the page actually makes is that ASE apps need no per-app virtual network integration and that network controls sit outside the app configuration.",
+     "suggestedFix": "Replace (True): \"Apps in an App Service Environment reach resources in its virtual network without per-app virtual network integration.\" Explanation: \"An App Service Environment already runs in a subnet of the customer virtual network, so network controls sit outside each app configuration, unlike multitenant App Service.\" Same URL: \"For an App Service Environment, apps don't require extra configuration to join a virtual network.\" and \"network access controls for the hosted apps exist outside the application configuration.\""
+    },
+    {
+     "id": "azure-az-305-s4.1-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (ms.date 2026-09-16)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/batch/batch-technical-overview, decision table: \"You already have scheduler-specific job scripts, queues, policies, or integrations that must remain in place. | Azure CycleCloud | ... CycleCloud preserves the scheduler operating model.\"",
+     "problem": "The fact is correct and supported ('Prefer Azure CycleCloud' counts as Microsoft's recommendation). But the statement nearly copies the source row ('scheduler-specific ... scripts ... policies ... retain' against 'must remain in place'), which the original-wording rule forbids. It also names no alternative, so the Batch versus CycleCloud distinction the prompt asks for is left implicit, and 'Microsoft recommends X when <requirement>' reads as True from its form alone.",
+     "suggestedFix": "Reword (True): \"Microsoft recommends Azure CycleCloud over Azure Batch for an HPC team keeping its existing Slurm job scripts on Azure.\" Explanation: \"Azure CycleCloud provisions Azure infrastructure for the scheduler the team already runs; moving those workflows to Azure Batch means translating them into Batch pools, jobs and tasks.\" Keep the same URL."
+    }
+   ],
+   "notes": "All 12 section 4.1 cards were checked against their source pages, opened on 2026-10-08. All load, are official and current. The section balance is right: 6 true (01, 04, 06, 08, 09, 11) and 6 false (02, 03, 05, 07, 10, 12), and the three replacements keep their True answers. The hedge words \"can\", \"lets\" and \"supports\" are split evenly between true and false cards. I found no wrong answers and no duplicates; no other section's cards cover Spot, Dedicated Host, ACI, Container Apps, CNI, ASE, Functions plans or Batch. The two AKS-related cards (03, 04) stay within the deck's cap of two.\n\nEvidence for the cards that pass:\n- 02: the dedicated-hosts overview (updated 2026-09-25) says \"Dedicated hosts are deployed in the same data centers and share the same network and underlying storage infrastructure as other, non-isolated hosts.\"\n- 03: compare-options says \"Azure Container Apps doesn't provide direct access to the underlying Kubernetes APIs.\"\n- 04: concepts-network-cni-overview (2026-07-10) says \"Conserves IP address space for virtual networks (VNets) by using logically separate Classless Inter-Domain Routing (CIDR) ranges for pods.\"\n- 05: compute-decision-tree (2026-02-18) says \"Container Instances doesn't provide full container orchestration\". I also checked ACI NGroups, a feature with rolling upgrades, load balancing and multiple container groups that an expert might cite against this card. Its page still requires the preview API 2024-09-01-preview and the NGroupsPreview feature registration, so it is Preview and does not overturn the card today. If NGroups reaches general availability, revisit card 05.\n- 07: functions-premium-plan (2026-07-14) says \"Every premium plan always has at least one active (billed) instance.\" The wording \"releasing its idle plan's remaining instances\" is clumsy but not ambiguous.\n- 08: flex-consumption-plan (2026-09-15) says \"they can connect to other Azure services secured inside a virtual network.\"\n- 09: the functions-scale table lists Premium with Linux container support, and the Premium plan page lists \"Support for Linux container deployments\".\n- 10: functions-scale (2026-09-16) says \"Regardless of the function app timeout setting, 230 seconds is the maximum amount of time that an HTTP triggered function can take to respond to a request\". The footnote covers every plan in the table, including Flex Consumption and Container Apps.\n- 12: the Batch overview says \"There's no extra charge to use Batch. You pay only for the underlying resources consumed\".\n\nMy web search quota for the session was used up partway through. Every check here was done by opening the official pages directly, so no verdict depends on a search."
+  },
+  {
+   "section": "4.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s4.2-10",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (ms.date 2026-06-26)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs says, under 'Why use template specs?': \"Users only need read access to the template spec to deploy its template, so you can share the template without allowing others to modify it.\" Under 'Deploy template spec' it says: \"After you create the template spec, users with the template spec reader role can deploy it. In addition, you also need the permissions for deploying an ARM template.\"",
+     "problem": "The cited page itself says read access is all a user needs to deploy a template spec's template. A player who studied that page can defend True for 'read permission allows a release team to deploy'. The intended fact (you also need deployment rights on the target scope) is only stated further down. The statement also never says the team has no other rights. Without that, the card reads as a trick on RBAC wording, not as a design fact.",
+     "suggestedFix": "Keep the fact and the false answer, and close the gap. Statement (false): \"Read access to a template spec, with no rights on the target resource group, lets a team deploy the spec's resources.\" Explanation: \"Template spec read access lets a team use the spec, but the deployment also needs deployment permissions at the target scope, such as write access for the resources the template creates.\" Keep the same URL."
+    }
+   ],
+   "notes": "All 12 section 4.2 cards checked (6 true, 6 false; the balance holds). I opened every source URL. All load, are official learn.microsoft.com pages and are current (ms.date from 2025-09 to 2026-08). Verification of the cards that pass:\n01 message-sessions page: \"To achieve FIFO processing when processing messages from Service Bus queues or subscriptions, use sessions.\" The queue comparison page adds: \"The guaranteed FIFO pattern in Service Bus queues requires the use of messaging sessions.\"\n02 event-hubs-features page: \"Partition: Ordered sequence of events within an event hub.\" It also says: \"If you need absolute order preservation across all events ... you might not be able to take advantage of many partitions.\"\n03 event-filtering page: \"filter the subject begins with /blobServices/default/containers/testcontainer to get all events for that container but not other containers in the storage account.\"\n04 compare page: \"Automatic dead lettering: Storage queues No\". It also says: \"the application examines the DequeueCount ... moves the message to an application-defined 'dead letter' queue.\" Azure Functions queue triggers do move messages to a poison queue, but that is the Functions binding, not Storage queues, so the false answer stands.\n05 multi-region page: \"APPLIES TO: Premium\". It also says: \"The instance's management plane and developer portal remain hosted only in the primary region.\" The features table (2026-06-05) still shows multi-region deployment only in Premium, not Premium v2. The volatility note fits.\n06 self-hosted-gateway-overview: \"Running self-hosted gateways continue to function by using an in-memory copy of the configuration.\" It also says the gateway \"is unable to receive configuration updates, report its status, or upload telemetry\". The explanation is accurate.\n07 Azure Managed Redis how-to-persistence: \"If a catastrophic event occurs that disables both the primary and replica, the cache is reconstructed automatically using the most recent snapshot.\" Persistence is GA for Memory Optimized, Balanced and Compute Optimized. It is Preview only on Flash Optimized and needs high availability. The statement holds for the GA tiers.\n08 concept-key-value: \"Labels are used to differentiate key-values with the same key ... A common use of labels is to specify multiple environments for the same key.\"\n09 use-key-vault-references-dotnet-core: \"The value that App Configuration stores isn't a Key Vault value or credential. Instead, it's a URI.\" It also says: \"Your application is responsible for authenticating properly to both App Configuration and Key Vault.\"\n11 deployment-stacks page: \"A detached resource (or unmanaged resource) refers to a resource that the deployment stack doesn't track or manage but still exists within Azure.\" Minor nit: the explanation says an architect \"selects detachment\", while the page says detach is the default. Not wrong.\n12 deployment-modes page: \"A common misunderstanding is to think properties that aren't specified in the template are left unchanged ... Properties that aren't included in the template are reset to the default values.\" The child-resource caveats on that page (subnets, site config) do not reverse the statement.\nI found no duplicates with other sections. The nearest card is s1.1-02 (Event Hubs as the SIEM route for diagnostic settings), which tests a different fact. No card uses Azure Cache for Redis, a retired product, a Preview feature or an exactly-once claim. Soft observations, not flagged: s4.2-03 and s4.2-08 are easy, near-feature-definition cards, but they are within scope. In s4.2-11, \"relinquish management\" is a slightly unusual paraphrase of detach."
+  },
+  {
+   "section": "4.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s4.3-08",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, updated 2026-02-20",
+     "evidence": "https://learn.microsoft.com/en-us/azure/dms/dms-overview has the comparison row \"Assessment | No | Assess compatibility of the source.\" The same page also says: \"The service uses the same underlying technology as the Azure Arc readiness assessment to provide recommendations to guide you through the required changes before a migration.\"",
+     "problem": "The page argues against itself. An expert could quote the second sentence to say that DMS does give pre-migration compatibility guidance, so answering True is defensible. The explanation's line \"Architects use a separate assessment capability\" names no tool.",
+     "suggestedFix": "Replace and keep it false. Statement: \"Azure Database Migration Service in the Azure portal migrates SQL Server logins together with the databases.\" (108 chars). Explanation: \"The portal version of Azure Database Migration Service migrates schemas and data but not logins, so the migration plan recreates logins and their permissions on the target separately.\" (183 chars). Source: same dms-overview URL, rows \"Migrate logins | No\" and \"Migrate schemas | Yes\"."
+    },
+    {
+     "id": "azure-az-305-s4.3-12",
+     "verdict": "explanation_error",
+     "urlStatus": "loads, official, updated 2026-06-17",
+     "evidence": "The source https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-blobs-copy says: \"If the source blobs have index tags, and you want to retain those tags, you need to reapply them to the destination blobs.\" The AzCopy copy reference (learn.microsoft.com/.../storage-ref-azcopy-copy now redirects to https://github.com/Azure/azure-storage-azcopy/wiki/azcopy_copy, edited 2026-08-12) says: \"--s2s-preserve-blob-tags ... False by default. Preserve blob tags during service to service transfer from one blob storage to another.\"",
+     "problem": "The answer (False) is right because tags are not kept by default. The explanation teaches that the only way to keep them is to reapply them on the destination, but AzCopy has an opt-in option that preserves blob index tags during a service-to-service copy. The card also hangs on one CLI option's default, which is the flag-level trivia the prompt excludes, and difficulty 1 is too low for it.",
+     "suggestedFix": "Preferred: drop it and use a design-level false card. Statement: \"An architect deploys one Azure Storage Mover resource per region that hosts on-premises source file shares.\" (107 chars). Explanation: \"One Storage Mover resource can manage migrations of shares located anywhere in the world; migration agents deployed near each source share send data directly to Azure targets.\" (175 chars). Source: https://learn.microsoft.com/en-us/azure/storage-mover/service-overview (\"You need only deploy one Storage Mover instance in your subscription to handle migrations from multiple source shares, even if they're located in different parts of the world.\"). Minimum fix: change the explanation to \"Blob index tags are left behind by default in an AzCopy copy between accounts; an opt-in preserve-blob-tags option copies them, or the tags are reapplied on the destination.\" (173 chars)."
+    },
+    {
+     "id": "azure-az-305-s4.3-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-08-03",
+     "evidence": "https://learn.microsoft.com/en-us/azure/databox/data-box-overview: \"Data Box is ideally suited to transfer data sizes larger than 40 TBs in scenarios with no to limited network connectivity.\" The same page also says: \"Data Box can be used to export data from Azure in several scenarios ... Migrate back to on-premises or to another cloud service provider.\"",
+     "problem": "This is a definition card. Moving bulk data offline when bandwidth is limited is what Data Box is, which the prompt assigns to azure-az-900, and no learner who studied would answer False. It also partly overlaps card 10's Data Box seeding context.",
+     "suggestedFix": "Replace and keep it true. Statement: \"Azure Data Box can export data from an Azure storage account when a workload moves back on-premises or to another cloud.\" (120 chars). Explanation: \"Data Box supports export orders as well as imports: Microsoft copies data from the storage account to the device and ships it, which suits disaster recovery or leaving Azure.\" (174 chars). Same source URL."
+    },
+    {
+     "id": "azure-az-305-s4.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-10-01",
+     "evidence": "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/: \"The Ready phase of the Cloud Adoption Framework helps you design your Azure landing zone to meet your organization's requirements.\" The overview table reads \"3. Ready | How will we build our Azure landing zone?\"",
+     "problem": "The statement repeats the page's opening sentence with a few words changed, and the phase name \"Ready\" nearly gives the answer away. It tests a label, not a design decision.",
+     "suggestedFix": "Replace and keep it true. Statement: \"In the Cloud Adoption Framework, one workload landing zone holds a workload's dev, test and production environments.\" (about 113 chars). Explanation: \"Each workload gets a single workload landing zone, which holds all its environments such as development, test and production, each in one or more subscriptions under the platform guardrails.\" (190 chars). Same URL: \"Each workload has a single workload landing zone. A workload landing zone contains all the environments required to support that workload, such as development, test, and production.\""
+    },
+    {
+     "id": "azure-az-305-s4.3-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, updated 2026-09-24",
+     "evidence": "https://learn.microsoft.com/en-us/azure/migrate/migrate-services-overview?view=migrate: \"The Azure Migrate and Modernize tool uses provider agents installed on a Hyper-V host for the migration.\" The cited https://learn.microsoft.com/en-us/azure/migrate/hyper-v-migration-architecture?view=migrate says: \"You install a software agent only on Hyper-V hosts or cluster nodes. Nothing needs to be installed on Hyper-V VMs.\"",
+     "problem": "The answer is correct, but the statement is a near-copy of the overview sentence (\"uses provider agents installed on a Hyper-V host for the migration\") with a word or two changed, which breaks the original-wording rule.",
+     "suggestedFix": "Reword and keep it true. Statement: \"Agentless Hyper-V migration with Azure Migrate places its replication software on each Hyper-V host or cluster node.\" (about 114 chars). Explanation: \"The Azure Site Recovery provider and Recovery Services agent run on Hyper-V hosts or cluster nodes and replicate VM disks to Azure, so nothing is installed inside the guest VMs.\" (177 chars). Keep the hyper-v-migration-architecture URL."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 4.3 in azure-az-305-b3.json: 6 true (01, 03, 04, 06, 10, 11) and 6 false (02, 05, 07, 08, 09, 12). All replacements keep each card's original answer, so the 6/6 balance holds. No duplicates: the only other TDE card in the deck, s2.1-12, tests the TDE default, not BACPAC export.\n\nCards that pass:\n- 02 (Secure is not deferred until after Adopt). The Secure overview says \\\"Security spans strategy, planning, readiness, adoption, governance, and operations\\\". Small risk: the CAF overview diagram alt text says \\\"Operational phases run in parallel during operations\\\" and numbers Secure 6, after Adopt (4). The Secure page settles it, so I did not flag it.\n- 03 (cost estimates). The cited page is only served under the migrate-classic moniker: ?view=migrate redirects to the docs landing page. It still loads and states \\\"an Azure VM assessment in Azure Migrate calculates compute and storage costs for after migration\\\". A sturdier current URL is https://learn.microsoft.com/en-us/azure/migrate/migrate-services-overview?view=migrate (\\\"Azure cost estimation: Estimate costs for running on-premises servers in Azure\\\").\n- 04 (Collector). It is GA, with no Preview label, and the overview says it \\\"supports discovery in air-gapped or restricted networks\\\". Its wording is close to the overview sentence but rewritten enough to pass.\n- 05 (VMware agentless). The overview says \\\"the Azure Migrate and Modernize tool uses the same appliance that's used for discovery and assessment\\\", and server-migrate-overview says it \\\"doesn't require installing agents inside guest operating systems\\\".\n- 07 (DMS in the portal). The dms-overview table lists only \\\"Azure SQL Database - Offline migration | Yes\\\", and the SQL Database migration guide points DMS users to the offline tutorial and to transactional replication for minimal downtime.\n- 09 (BACPAC). The TDE page says \\\"When you export a TDE-protected database to a BACPAC file, the exported content of the database isn't encrypted.\\\"\n- 10 (Storage Mover catch-up). The Storage Mover overview says \\\"For the initial bulk migration, you can use Azure Data Box and combine it with Azure Storage Mover for online catch-up.\\\"\n\nLimit: this session had already used its web search budget, so I verified by fetching official pages directly and ran no open web search. I found no Preview label, retirement or newer change for any tested fact. The AzCopy option evidence comes from the official AzCopy GitHub wiki, which is where Microsoft's learn.microsoft.com reference page now redirects."
+  },
+  {
+   "section": "4.4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "azure-az-305-s4.4-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, official, current (ms.date 2026-08-11)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-overview: \"Private endpoints provide a privately accessible IP address for the Azure service, but don't necessarily restrict public network access to it.\" The word 'necessarily' admits exceptions, and one exists: https://learn.microsoft.com/en-us/azure/static-web-apps/private-endpoint: \"If your app has a private endpoint enabled, the server responds with a 403 status code if the request comes from a public IP address.\"",
+     "problem": "The statement makes a generic claim about every target service. For Azure Static Web Apps, adding a private endpoint does block public access, so an expert could defend True for at least one service. The source page itself hedges with \"don't necessarily\".",
+     "suggestedFix": "Keep the answer False and scope the card to one service whose page settles it. Statement (108 chars): \"Adding a private endpoint to an Azure App Service app automatically blocks the app's public inbound traffic.\" Explanation (141 chars): \"Private endpoints and public access can coexist on an App Service app. To isolate the app, the architect also disables public network access.\" URL: https://learn.microsoft.com/en-us/azure/app-service/overview-private-endpoint (\"Private endpoints and public access can coexist on an app.\" / \"be sure to disable public network access\")."
+    },
+    {
+     "id": "azure-az-305-s4.4-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official, current (ms.date 2026-08-28)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/frontdoor/front-door-overview: \"Accelerate and deliver your applications and content globally at scale to your users wherever they are.\"",
+     "problem": "This is a definition card: it states what Azure Front Door is for, which the prompt assigns to azure-az-900 ('Assume the player already knows what each service is for'). No player who studied would answer False. It tests no tier, scope or requirement distinction.",
+     "suggestedFix": "Replace with a true tier-distinction card. Statement (113 chars): \"Azure Front Door Premium can reach an App Service origin over Private Link, so the origin needs no public access.\" Explanation (197 chars): \"Front Door Premium creates a private endpoint to the origin from a Front Door managed network, and the origin owner approves it. Private Link origins are a Premium capability, not part of Standard.\" URL: https://learn.microsoft.com/en-us/azure/frontdoor/private-link (\"Applies to: Front Door Premium\"; \"Private Link removes the need for your origin to be accessed publicly.\")."
+    },
+    {
+     "id": "azure-az-305-s4.4-04",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, official, current (ms.date 2026-07-07), but it does not support the whole card",
+     "evidence": "The cited overview only says \"Global load balancing integration: Distribute traffic across multiple Azure regions for global applications.\" The global endpoint and the transport-layer pass-through are stated on https://learn.microsoft.com/en-us/azure/load-balancer/cross-region-overview: \"When you expose the global endpoint of a global load balancer to customers, you can add or remove regional deployments behind the global endpoint without interruption.\" and \"Global load balancer is a Layer 4 pass-through network load balancer.\"",
+     "problem": "The answer (True) is correct. But the cited page does not state that a single global endpoint fronts the regional load balancers, which is the core of both the statement and the explanation. The global-tier page is the correct source. Its only UDP caveat is that 'UDP traffic on port 3 isn't supported', which does not change the answer.",
+     "suggestedFix": "Keep the card and change the URL to https://learn.microsoft.com/en-us/azure/load-balancer/cross-region-overview (title 'Global load balancer - Azure Load Balancer')."
+    },
+    {
+     "id": "azure-az-305-s4.4-06",
+     "verdict": "explanation_error",
+     "urlStatus": "200 OK, official, current (updated 2026-09-21)",
+     "evidence": "https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-about: \"Virtual WAN allows transit connectivity between VPN and ExpressRoute... There is also an implicit assumption that the Branch-to-branch flag is enabled and BGP is supported in VPN and ExpressRoute connections.\" The types table also lists Basic as \"Site-to-site VPN only\".",
+     "problem": "The answer (True) is correct, but the explanation's condition 'when transit routing is enabled' names a setting that does not exist. The real prerequisites are the Branch-to-branch setting and BGP on both connection types. A learner looking for a 'transit routing' switch would be misled.",
+     "suggestedFix": "Keep the statement. Explanation (196 chars): \"A Standard virtual WAN hub router lets VPN-connected sites and users reach ExpressRoute-connected sites when the Branch-to-branch setting is on and BGP is used; Basic offers site-to-site VPN only.\""
+    }
+   ],
+   "notes": "I opened every source URL on 2026-10-08. All load, all are on learn.microsoft.com, and all are current. The section is balanced at 6 true and 6 false. Every statement is at most 114 characters and every explanation at most 181. No 4.4 fact repeats a fact from another section. I grepped all 144 cards for network topics, and the only nearby card is 2.3-03 (Data Factory managed private endpoints), which tests a different fact.\n\nThe Application Gateway TCP/TLS proxy page (ms.date 2025-11-26) shows no Preview label, so cards 03 and 11 meet the prompt's condition.\n\nCards that pass, with the sentence that settles each:\n- 02: \"Clients connect to the selected endpoint directly. Traffic Manager isn't a proxy or a gateway.\"\n- 03: the page calls Application Gateway a \"Layer-4 terminating proxy\" and says \"a separate connection is initiated with a backend server\".\n- 05: \"You can enable ExpressRoute Premium to extend connectivity across geopolitical boundaries.\"\n- 08: \"Endpoints can't be used for traffic from your on-premises services to Azure services.\"\n- 09: \"TLS inspection: Decrypts outbound traffic, processes it, then re-encrypts and sends it to the destination.\"\n- 10: \"Private resources can reach external sources outside the virtual network by using SNAT for static public IP addresses or prefixes\" and \"You can configure destination firewall rules based on this predictable IP list\". A UDR that sends 0.0.0.0/0 to an NVA does override NAT gateway, but the statement still holds for a subnet the gateway serves.\n- 11: \"A WAF v2 SKU gateway allows the creation of TLS or TCP listeners... However, it does not inspect traffic on TLS and TCP listeners for exploits and vulnerabilities.\"\n- 12: the reliability page says \"DDoS IP Protection: Deploy a public IP address. DDoS IP Protection is enabled only on that IP address.\" The prompt names https://learn.microsoft.com/en-us/azure/ddos-protection/ddos-protection-sku-comparison, which would be a slightly better source, but the cited page is enough.\n\nMinor points I did not flag:\n- 08: the explanation is correct but vague (\"need a different access design\"). A sharper version (192 chars): \"Service endpoints extend only a virtual network subnet's identity. To admit on-premises clients, the service's IP firewall must allow their public NAT addresses, or a private endpoint is used.\" The source states the NAT-address rule.\n- 10: it is close to a definition of NAT gateway. It stays because it pairs a requirement (partners allowlist fixed egress IPs) with an option, which is the pattern the prompt asks for.\n- 03 and 11 both come from the same TCP/TLS proxy page, so two of the 12 cards sit on one fairly new feature. That is acceptable, but it narrows the section's breadth.\n- The two replacements I suggest (01 on Front Door Premium Private Link origins, 07 scoped to App Service) rest on different facts from each other and from cards 08 and 11. \"Automatically\" stays in one true card (10) and one false card (07)."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "azure-az-305-s1.2-06",
+     "azure-az-305-s1.3-02"
+    ],
+    "why": "Both cards rest on one fact: a subscription trusts exactly one Microsoft Entra tenant, so no Resource Manager construct (custom role assignable scopes, management group hierarchy) can group subscriptions from different tenants. Both are false, and both use the same wording ('subscriptions that trust different Microsoft Entra tenants'), so knowing one answer gives you the other. Drop s1.2-06: role definition scope sits close to the RBAC mechanics that the azure-az-104 deck owns, while s1.3-02 is the governance design fact that belongs to section 1.3.",
+    "dropId": "azure-az-305-s1.2-06"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "cross-tenant-boundary",
+    "ids": [
+     "azure-az-305-s1.2-06",
+     "azure-az-305-s1.3-02"
+    ],
+    "why": "Same false template and same underlying fact. Whichever card is answered first gives away the other (only needed if the duplicate is kept)."
+   },
+   {
+    "name": "cosmos-multi-region-writes",
+    "ids": [
+     "azure-az-305-s2.2-02",
+     "azure-az-305-s3.2-10"
+    ],
+    "why": "s3.2-10 (true) and its explanation say that writes in a multi-write account commit on a local quorum and reach the hub asynchronously. That directly implies Strong consistency is impossible there, which is the answer to s2.2-02 (false)."
+   },
+   {
+    "name": "zone-failure-replacement",
+    "ids": [
+     "azure-az-305-s3.2-01",
+     "azure-az-305-s3.2-02",
+     "azure-az-305-s3.2-03"
+    ],
+    "why": "s3.2-01 ('Azure automatically recreates a zonal VM in a healthy zone', false) and s3.2-02 ('App Service automatically attempts to replace lost instances after a zone fails', true) are a mirrored pair: same template, opposite answers. The s3.2-03 explanation (a surviving node in another zone takes over the shared disk) also hints that a zonal VM is not moved automatically."
+   },
+   {
+    "name": "synapse-scaling-interruption",
+    "ids": [
+     "azure-az-305-s2.3-06",
+     "azure-az-305-s2.3-11"
+    ],
+    "why": "Mirrored true/false pair on one template, 'Azure Synapse Analytics lets X continue/finish during scaling'. Dedicated SQL pool queries are cancelled (false); Spark jobs finish during scale-in (true). Seen together, they invite a guess by contrast."
+   },
+   {
+    "name": "self-hosted-integration-runtime",
+    "ids": [
+     "azure-az-305-s2.3-01",
+     "azure-az-305-s2.3-02"
+    ],
+    "why": "Both start with 'A self-hosted integration runtime lets Azure Data Factory ...'. The s2.3-01 explanation frames the SHIR as the component that moves data, and the s2.3-02 explanation says mapping data flows run on Azure IR Spark clusters. Each one hints at the other's answer."
+   },
+   {
+    "name": "data-box-seeding",
+    "ids": [
+     "azure-az-305-s4.3-10",
+     "azure-az-305-s4.3-11"
+    ],
+    "why": "The s4.3-10 statement ('after Azure Data Box seeds the migration target') presupposes that Data Box does bulk offline seeding, which gives away s4.3-11 (true)."
+   },
+   {
+    "name": "app-gateway-listeners",
+    "ids": [
+     "azure-az-305-s4.4-03",
+     "azure-az-305-s4.4-11"
+    ],
+    "why": "s4.4-11 introduces Application Gateway's 'TLS proxy listeners', and its explanation says those listeners proxy and terminate TLS. That hints that the 'TLS listener' in s4.4-03 does not pass the session through unchanged. Both are false Application Gateway listener cards."
+   },
+   {
+    "name": "container-orchestration-boundary",
+    "ids": [
+     "azure-az-305-s4.1-03",
+     "azure-az-305-s4.1-05"
+    ],
+    "why": "Same false template: a lighter container service (Container Apps, Container Instances) wrongly given AKS-level control. The s4.1-03 explanation ('points to AKS') teaches the pattern that answers s4.1-05."
+   },
+   {
+    "name": "dms-portal-scope",
+    "ids": [
+     "azure-az-305-s4.3-07",
+     "azure-az-305-s4.3-08"
+    ],
+    "why": "Both are false 'Azure Database Migration Service in the portal supports X' cards drawn from the same comparison table. Seeing one limitation makes the second claimed capability look suspicious."
+   },
+   {
+    "name": "resource-log-routing",
+    "ids": [
+     "azure-az-305-s1.1-01",
+     "azure-az-305-s1.1-02"
+    ],
+    "why": "The s1.1-02 statement says diagnostic settings are what route resource logs. That strongly hints that resource logs are not collected automatically (s1.1-01, false)."
+   },
+   {
+    "name": "storage-geo-secondary-reads",
+    "ids": [
+     "azure-az-305-s3.2-11",
+     "azure-az-305-s3.2-12"
+    ],
+    "why": "Both are false 'serve reads from the secondary region' cards about geo-redundant storage. The s3.2-12 explanation (no secondary read endpoint for file shares, access only after failover) and the s3.2-11 explanation (asynchronous, lagging secondary) frame each other."
+   },
+   {
+    "name": "sql-restore-new-database",
+    "ids": [
+     "azure-az-305-s3.1-06",
+     "azure-az-305-s3.1-07",
+     "azure-az-305-s3.1-08"
+    ],
+    "why": "The s3.1-08 explanation ('geo-restore provisions a database') and the s3.1-07 explanation ('restore them to another server') show that SQL restores create a new database. That gives away s3.1-06 (point-in-time restore rewinding the original database, false)."
+   },
+   {
+    "name": "billing-floor-template",
+    "ids": [
+     "azure-az-305-s2.1-05",
+     "azure-az-305-s4.1-07"
+    ],
+    "why": "Same false trick in two sections: a service 'can bill / end charges below its configured minimum' (serverless minimum vCores, Functions Premium minimum instance). One explanation teaches the trick for the other."
+   },
+   {
+    "name": "blob-immutability-writes",
+    "ids": [
+     "azure-az-305-s2.2-10",
+     "azure-az-305-s2.2-11"
+    ],
+    "why": "s2.2-11 (true) shows that an immutable blob still accepts new appended data. That hints that immutability protects existing data without blocking new writes, which is the answer to s2.2-10 (new version allowed, false)."
+   },
+   {
+    "name": "ordering-guarantees",
+    "ids": [
+     "azure-az-305-s4.2-01",
+     "azure-az-305-s4.2-02"
+    ],
+    "why": "Both are 'guarantee ordering' cards. s4.2-01 (Service Bus FIFO needs sessions, true) teaches that ordering is scoped to a group, which hints that Event Hubs has no global order across partitions (s4.2-02, false)."
+   },
+   {
+    "name": "preserve-on-copy-template",
+    "ids": [
+     "azure-az-305-s1.1-04",
+     "azure-az-305-s4.2-12",
+     "azure-az-305-s4.3-09",
+     "azure-az-305-s4.3-12"
+    ],
+    "why": "Four false cards share one template, 'X preserves/retains Y when exporting, copying or redeploying' (metric dimensions, omitted ARM properties, TDE in a BACPAC, blob index tags). Two in the same round reveal the pattern."
+   },
+   {
+    "name": "built-in-feature-template",
+    "ids": [
+     "azure-az-305-s1.2-11",
+     "azure-az-305-s2.1-03",
+     "azure-az-305-s4.2-04",
+     "azure-az-305-s4.3-08"
+    ],
+    "why": "All four 'built-in X' statements are false (automatic renewal, PgBouncer on Burstable, dead-letter queue, compatibility assessment). Dealt together, they teach 'built-in means false'."
+   }
+  ],
+  "tells": "Length gives nothing away. Overall mean statement length is 105.2 for true and 104.4 for false; the largest within-section gap is 3.8 chars (1.1 and 3.2). Explanation length is 152 vs 155. Hedge and coverage words are mostly balanced: 'can' 20T/20F, 'automatically' 8T/10F, 'supports' 7T/9F, 'by default' 1T/1F, 'directly' 3T/2F. Remaining exploitable patterns:\n\n(1) 'built-in'/'native' capability claims predict FALSE in 6 of 7: F = s1.2-11, s2.1-03, s2.2-09, s2.3-12, s4.2-04, s4.3-08; T = only s2.1-01. 'built-in' alone is 4/4 false.\n\n(2) Overclaim intensifiers predict FALSE. Full, exclusive, global, guarantee(d), unchanged, uninterrupted, simultaneously, afresh, 'the same ... as', 'also protects other' appear in 10 false statements (s1.1-08, s2.2-06, s2.3-06, s2.3-09, s3.2-11, s4.1-02, s4.1-05, s4.2-02, s4.4-03, s4.4-12) and only 3 true ones (s1.1-12 'complete', s4.2-01 'guarantee', s4.4-04 'global').\n\n(3) Recurring false template 'X preserves/retains Y when exporting/copying/redeploying' carries 4 false cards and no true one: s1.1-04, s4.2-12, s4.3-09, s4.3-12. This exceeds the 2-per-template cap. The true 'retain/keep/reuse' cards (s1.1-12, s1.2-03, s1.2-05, s3.1-12, s3.2-04, s4.1-11, s4.2-11) use a different shape.\n\n(4) More templates at the 2-false cap, all with no true counterpart:\n- cross-tenant 'subscriptions that trust different Microsoft Entra tenants': s1.2-06, s1.3-02 (also the duplicate)\n- 'can bill/end charges below its minimum': s2.1-05, s4.1-07\n- lighter container service given AKS control: s4.1-03, s4.1-05\n- 'Azure Database Migration Service in the portal supports ...': s4.3-07, s4.3-08\n- 'reads from the geo secondary': s3.2-11, s3.2-12\n\n(5) Mirrored same-template pairs with opposite answers:\n- s3.2-01 F / s3.2-02 T ('automatically replaces after a zone fails')\n- s2.3-06 F / s2.3-11 T ('Synapse lets work continue during scaling')\n\n(6) Mild structural skews:\n- Conditional 'when ...' clause: 14F vs 8T. F: s1.1-01, s1.1-04, s2.2-06, s2.2-10, s2.2-12, s2.3-04, s2.3-10, s3.1-03, s3.2-01, s4.2-06, s4.2-12, s4.3-05, s4.3-12, s4.4-02.\n- 'after': 7T vs 3F.\n- Generic 'A/An <thing>' opening: 14F vs 8T.\n- 'Microsoft recommends': 3T (s1.2-10, s2.2-08, s4.1-11) vs 1F (s3.2-07), so 'recommends = true' wins 75%.\n\n(7) Answerable by common sense without subject knowledge (truism or definition cards, all TRUE): s1.3-01, s1.3-03, s2.1-02 (VM = OS access), s2.1-06, s2.3-07 (pausing stops compute charges), s2.3-08, s4.1-01 (Spot VMs can be evicted), s4.1-06, s4.3-11 (Data Box for low bandwidth), s4.4-01.\nImplausible strawman or name-giveaway FALSE cards: s1.3-07 (Policy stops evaluating after first scan), s3.1-03 (test failover shuts down production), s2.1-10 ('Always Encrypted' gives DBAs plaintext), s4.1-02 (Dedicated Host gives exclusive datacenter network).\n\n(8) Metadata, if shown to the player: difficulty 3 is 19F vs 5T (hard = false 79%), and volatility may_change is 10F vs 4T.\n\nExplanations stay on their own facts; the only cross-card leaks are listed in conflictGroups (s3.2-10 to s2.2-02, s3.1-07/s3.1-08 to s3.1-06, s4.1-03 to s4.1-05, s4.4-11 to s4.4-03, s4.3-10 to s4.3-11). Card facts were not re-verified against live documentation in this pass; the analysis covers duplicates, conflicts and tells only."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "azure-az-305-s1.1-09",
+    "reason": "weak_card: near-truism (agent picks up updated DCRs), true answer guessable from 'automatically'. Section stays at 9 cards (4T/5F) after drops, so no replacement needed."
+   },
+   {
+    "id": "azure-az-305-s1.1-10",
+    "reason": "weak_card: follows from what a filter is ('excluded records cannot be recovered'), and 'DCR ingestion filter' is not the documented term. Dropping leaves 1.1 at 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s1.1-12",
+    "reason": "weak_card: restates the source sentence and overstates it ('keeps complete traces' vs the page's 'reduces broken traces'). Section stays at 9, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s1.2-06",
+    "reason": "duplicate of s1.3-02 (verifier and scan agree): same single-tenant boundary fact and the same false template ('subscriptions that trust different Microsoft Entra tenants'). The RBAC role-definition side is also near azure-az-104 territory. 1.2 keeps 10 cards, 5T/5F."
+   },
+   {
+    "id": "azure-az-305-s1.2-12",
+    "reason": "weak_card: near-copy of the Managed HSM overview sentence, and the answer is the product's headline feature. 1.2 keeps 10 cards, 5T/5F."
+   },
+   {
+    "id": "azure-az-305-s1.3-01",
+    "reason": "weak_card: definition card (management group inheritance is what a management group is), overlaps azure-az-900/104 inheritance. 1.3 keeps 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s1.3-03",
+    "reason": "weak_card: near-copy of the source's own web app and database example, a 'can' truism. 1.3 keeps 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s1.3-07",
+    "reason": "weak_card: strawman (nobody who studied Azure Policy thinks evaluation stops after the first scan). 1.3 keeps 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s2.1-02",
+    "reason": "weak_card: name giveaway (SQL Server on Azure VMs is IaaS, so OS access follows). 2.1 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s2.1-06",
+    "reason": "weak_card: definition of an elastic pool. 2.1 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s2.2-01",
+    "reason": "weak_card: read-your-writes is the definition of Session consistency and the statement gives it away. Dropped with s2.2-07; s2.2-04 is rewritten instead so 2.2 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s2.2-07",
+    "reason": "weak_card: 'provisioned model bills what you provision' is a definition. Dropped with s2.2-01; s2.2-04 is rewritten so 2.2 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s2.3-05",
+    "reason": "weak_card: watermark delta loading is generic ETL common sense with a hedged true statement. Dropped with s2.3-07; s2.3-03 and s2.3-08 are rewritten so 2.3 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s2.3-07",
+    "reason": "weak_card: 'pausing stops compute charges' is what pause means, and it adds a third Synapse dedicated SQL pool card next to the s2.3-06/s2.3-11 pair. 2.3 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s3.1-04",
+    "reason": "weak_card: 'disable after they lock' contradicts the plain meaning of lock, so the answer is readable from the words. Dropped; s3.1-03 is rewritten so 3.1 keeps 10 cards, 6T/4F."
+   },
+   {
+    "id": "azure-az-305-s3.1-10",
+    "reason": "duplicate: mirrors azure-az-104-s2.3-06 on the blob versus container soft delete split, and it is administrator depth. 3.1 keeps 10 cards, 6T/4F."
+   },
+   {
+    "id": "azure-az-305-s3.2-03",
+    "reason": "weak_card: name giveaway (a zone-redundant disk working across zones), and its explanation hinted at s3.2-01. 3.2 keeps 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s3.2-05",
+    "reason": "weak_card: the statement explains its own answer ('writes still awaiting geo-replication' are lost). 3.2 keeps 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s3.2-11",
+    "reason": "weak_card: the absolute 'guaranteed' marks it false and the wording is awkward; it also formed the storage-geo-secondary-reads template pair with s3.2-12. 3.2 keeps 9 cards, 4T/5F."
+   },
+   {
+    "id": "azure-az-305-s4.1-06",
+    "reason": "weak_card: restates the App Service Environment definition. Dropped with s4.1-11; s4.1-01 is rewritten so 4.1 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s4.1-11",
+    "reason": "weak_card: near-copy of the Batch decision-table row, and its 'Microsoft recommends X when <requirement>' form reads as true. Dropped (Batch still covered by s4.1-12); 4.1 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s4.3-06",
+    "reason": "weak_card: near-copy of the Azure Migrate overview sentence about provider agents on Hyper-V hosts. Dropped; s4.3-01 is rewritten so 4.3 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s4.3-11",
+    "reason": "weak_card: definition of Data Box (bulk offline transfer when bandwidth is limited), and s4.3-10 gave it away (data-box-seeding group). 4.3 keeps 10 cards, 4T/6F."
+   },
+   {
+    "id": "azure-az-305-s4.4-01",
+    "reason": "weak_card: definition of Azure Front Door (global acceleration). 4.4 keeps 11 cards, 5T/6F."
+   }
+  ],
+  "source": [
+   {
+    "id": "azure-az-305-s4.4-04",
+    "title": "Global load balancer - Azure Load Balancer",
+    "url": "https://learn.microsoft.com/en-us/azure/load-balancer/cross-region-overview"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "azure-az-305-s1.1-11",
+    "reason": "ambiguous: the page calls ikey the connection string's authorization scheme, so 'authenticate with' was defensible as True. Now tests directly that the ikey is not a security key (page: \"Ikey unique identifiers aren't security tokens or security keys\"; disabling local authentication enforces Microsoft Entra ID).",
+    "statement": "The instrumentation key in an Application Insights connection string acts as a security key against forged telemetry.",
+    "answer": false,
+    "explanation": "The instrumentation key only identifies the Application Insights resource and isn't a security key. To reject unauthenticated telemetry, disable local authentication and require Microsoft Entra ID.",
+    "misconception": "The instrumentation key in a connection string protects ingestion like a secret key.",
+    "sourceTitle": "Connection strings in Application Insights - Azure Monitor",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/connection-strings"
+   },
+   {
+    "id": "azure-az-305-s1.3-04",
+    "reason": "ambiguous: Cost Management tag inheritance does put resource group tags on resources' usage records for chargeback, so the old statement was defensible as True. New card tests the precise fact (page note: \"Inherited tags are applied to child resource usage records and not the resources themselves\").",
+    "statement": "Cost Management tag inheritance copies resource group tags onto the resources in the group.",
+    "answer": false,
+    "explanation": "Tag inheritance applies subscription and resource group tags to child resource usage records, not to the resources themselves, so costs can be grouped without tagging every resource.",
+    "misconception": "Enabling tag inheritance writes the parent tags onto each resource.",
+    "sourceTitle": "Group and allocate costs using tag inheritance - Microsoft Cost Management",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/enable-tag-inheritance"
+   },
+   {
+    "id": "azure-az-305-s2.2-04",
+    "reason": "weak_card kept as a rewrite: dropping all three weak 2.2 true cards would leave 3T/6F. Verifier's replacement confirmed (page: \"The integrated cache supports read requests with session and eventual consistency only. If a read has consistent prefix, bounded staleness, or strong consistency, it bypasses the integrated cache and is served from the backend\"; bypassing requests \"are served from the backend and cost RUs\").",
+    "statement": "An Azure Cosmos DB read with Bounded staleness consistency skips the integrated cache and costs backend RUs.",
+    "answer": true,
+    "explanation": "The integrated cache serves only Session and Eventual reads, at zero RU on a hit. Strong, Bounded staleness and Consistent prefix reads are served from the backend and use RUs.",
+    "misconception": "",
+    "sourceTitle": "Integrated Cache - Azure Cosmos DB",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/cosmos-db/integrated-cache"
+   },
+   {
+    "id": "azure-az-305-s2.3-03",
+    "reason": "weak_card kept as a rewrite: dropping all four weak 2.3 true cards would leave 8 cards at 2T/6F. Now tests the approval gate (page: a new managed private endpoint is \"Pending\", \"The private link resource owner is responsible for approving or rejecting the connection\", \"Only a managed private endpoint in an approved state can send traffic\"). 'only' is in the source.",
+    "statement": "An Azure Data Factory managed private endpoint carries traffic to a storage account only after its owner approves it.",
+    "answer": true,
+    "explanation": "Creating a managed private endpoint opens a Pending private endpoint connection. The resource owner approves or rejects it, and only an approved endpoint can send traffic to that resource.",
+    "misconception": "",
+    "sourceTitle": "Managed virtual network and managed private endpoints - Azure Data Factory",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/data-factory/managed-virtual-network-private-endpoint"
+   },
+   {
+    "id": "azure-az-305-s2.3-08",
+    "reason": "weak_card kept as a rewrite (second of two needed for 2.3 balance). Replaces the definition with a cost dimension (page: \"There's no charge for resources reserved. You are only being charged for the data processed by queries you run\"). No amounts.",
+    "statement": "Azure Synapse Analytics serverless SQL pool bills by the data each query processes rather than by reserved compute.",
+    "answer": true,
+    "explanation": "Serverless SQL pool reserves no resources and charges only for the data that queries process, which suits occasional exploration of data lake files.",
+    "misconception": "",
+    "sourceTitle": "Serverless SQL pool - Azure Synapse Analytics",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/synapse-analytics/sql/on-demand-workspace-overview"
+   },
+   {
+    "id": "azure-az-305-s3.1-03",
+    "reason": "weak_card kept as a rewrite: dropping all three weak 3.1 false cards would leave 6T/3F. Verifier's replacement confirmed (page: \"Machines in a single group fail over in parallel\" and \"Group 2 machines start their failover only after all the machines in Group 1 have failed over and started\").",
+    "statement": "Azure Site Recovery fails over the machines inside one recovery plan group one at a time.",
+    "answer": false,
+    "explanation": "Machines in one recovery plan group fail over in parallel. Order applies between groups: Group 2 machines start failing over only after every Group 1 machine has failed over and started.",
+    "misconception": "Machines within a recovery plan group fail over sequentially.",
+    "sourceTitle": "About recovery plans in Azure Site Recovery",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/site-recovery/recovery-plan-overview"
+   },
+   {
+    "id": "azure-az-305-s4.1-01",
+    "reason": "weak_card kept as a rewrite: dropping all three weak 4.1 true cards would leave 3T/6F. Verifier's replacement confirmed (page: Deallocate is the default policy; \"The deallocated VMs will count against your quota and you'll be charged storage costs for the underlying disks\"; Delete removes the disks).",
+    "statement": "An Azure Spot Virtual Machine evicted under the Deallocate policy keeps incurring storage charges for its disks.",
+    "answer": true,
+    "explanation": "Deallocate, the default eviction policy, stops the VM but keeps its disks, which stay billed while the VM counts against quota. The Delete policy removes the disks together with the VM.",
+    "misconception": "",
+    "sourceTitle": "About Azure Spot Virtual Machines - Azure Virtual Machines",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/virtual-machines/spot-vms"
+   },
+   {
+    "id": "azure-az-305-s4.2-10",
+    "reason": "ambiguous: the page says \"Users only need read access to the template spec to deploy its template\", so the old wording was defensible as True. 'is enough ... to deploy its resources into a resource group' now targets the documented extra requirement (\"In addition, you also need the permissions for deploying an ARM template\"). The verifier's 'with no rights' wording was not used because it is a negation.",
+    "statement": "Read access to a template spec is enough for a release team to deploy its resources into a resource group.",
+    "answer": false,
+    "explanation": "Read access lets a team use a template spec without changing it, but the deployment also needs the permissions for deploying an ARM template at the target scope.",
+    "misconception": "Template spec read access also grants the right to deploy the resources it describes.",
+    "sourceTitle": "Create & deploy template specs - Azure Resource Manager",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-specs"
+   },
+   {
+    "id": "azure-az-305-s4.3-01",
+    "reason": "weak_card kept as a rewrite: dropping all three weak 4.3 true cards would leave 3T/6F. Verifier's replacement confirmed (page: \"Each workload has a single workload landing zone. A workload landing zone contains all the environments required to support that workload, such as development, test, and production. Each environment consists of one or more Azure subscriptions\").",
+    "statement": "One Cloud Adoption Framework workload landing zone holds a workload's development, test and production environments.",
+    "answer": true,
+    "explanation": "Each workload gets a single workload landing zone with all its environments, each made of one or more subscriptions that inherit the platform landing zone's guardrails.",
+    "misconception": "",
+    "sourceTitle": "What is an Azure landing zone? - Cloud Adoption Framework",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/landing-zone/"
+   },
+   {
+    "id": "azure-az-305-s4.3-08",
+    "reason": "ambiguous: the DMS page lists 'Assessment | No' but also says the service gives readiness recommendations, so True was defensible. Replaced with an unambiguous row of the same table (\"Migrate logins | No\", \"Migrate schemas | Yes\").",
+    "statement": "Azure Database Migration Service in the Azure portal migrates SQL Server logins along with the databases.",
+    "answer": false,
+    "explanation": "The Azure portal version of Azure Database Migration Service migrates schemas and data but not logins, so the migration plan moves logins to the target separately.",
+    "misconception": "Azure Database Migration Service carries logins over with the databases it migrates.",
+    "sourceTitle": "What Is Azure Database Migration Service?",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/dms/dms-overview"
+   },
+   {
+    "id": "azure-az-305-s4.3-12",
+    "reason": "explanation_error: the old explanation said reapplying is the only way to keep blob index tags, but AzCopy has an opt-in preserve option; the card also hinged on a CLI option default (excluded flag-level trivia) and was the fourth card on the preserve-on-copy false template. Rewritten on the verifier's preferred design fact (page: \"You need only deploy one Storage Mover instance in your subscription to handle migrations from multiple source shares, even if they're located in different parts of the world\").",
+    "statement": "Migrating file shares from sites on three continents takes one Azure Storage Mover resource per continent.",
+    "answer": false,
+    "explanation": "One Storage Mover resource can manage migrations from source shares anywhere in the world; a migration agent deployed near each source share sends data directly to the Azure targets.",
+    "misconception": "Azure Storage Mover needs a separate resource for each geography that hosts source shares.",
+    "sourceTitle": "Introduction to Azure Storage Mover",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/storage-mover/service-overview"
+   },
+   {
+    "id": "azure-az-305-s4.4-07",
+    "reason": "ambiguous: as a generic claim it fails for Azure Static Web Apps, where a private endpoint does block public requests. Scoped to App Service, whose page settles it (\"Private endpoints and public access can coexist on an app\"; \"be sure to disable public network access\"). 'automatically' removed from the false statement (tell).",
+    "statement": "Adding a private endpoint to an Azure App Service app blocks the app's public inbound traffic.",
+    "answer": false,
+    "explanation": "Private endpoints and public access can coexist on an App Service app. To isolate the app, the architect also disables public network access.",
+    "misconception": "A private endpoint on an App Service app closes its public endpoint.",
+    "sourceTitle": "Use Private Endpoints for Apps - Azure App Service",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/app-service/overview-private-endpoint"
+   },
+   {
+    "id": "azure-az-305-s4.4-06",
+    "reason": "explanation_error: 'transit routing' is not a setting. Statement kept; explanation now names the documented prerequisites (page: \"implicit assumption that the Branch-to-branch flag is enabled and BGP is supported in VPN and ExpressRoute connections\"; Basic is \"Site-to-site VPN only\").",
+    "statement": "Azure Virtual WAN supports VPN-to-ExpressRoute branch transit through its Standard hubs.",
+    "answer": true,
+    "explanation": "A Standard virtual WAN hub router lets VPN-connected sites and users reach ExpressRoute-connected sites when the Branch-to-branch setting is on and BGP is used; Basic offers site-to-site VPN only.",
+    "misconception": "",
+    "sourceTitle": "Azure Virtual WAN Overview",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wan-about"
+   },
+   {
+    "id": "azure-az-305-s4.2-04",
+    "reason": "tell: removes both 'automatically' and 'built-in' from a false statement ('built-in/native' was 6 of 7 false). Fact and answer unchanged.",
+    "statement": "The Azure Storage queues service moves a message that keeps failing into a dead-letter queue.",
+    "answer": false,
+    "explanation": "A consumer of Azure Storage queues checks a message's DequeueCount and implements its own policy for moving poison messages to a dead-letter queue.",
+    "misconception": "Azure Storage queues provide automatic poison-message isolation.",
+    "sourceTitle": "Storage queues and Service Bus queues compared and contrasted",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/service-bus-messaging/service-bus-azure-and-service-bus-queues-compared-contrasted"
+   },
+   {
+    "id": "azure-az-305-s2.1-03",
+    "reason": "tell: removes 'built-in' from a false statement. Fact (no PgBouncer on Burstable) and answer unchanged.",
+    "statement": "Azure Database for PostgreSQL flexible server offers its PgBouncer connection pooler on the Burstable compute tier.",
+    "answer": false,
+    "explanation": "Built-in PgBouncer is available in the General Purpose and Memory Optimized compute tiers. A Burstable design needs a different connection-pooling solution.",
+    "misconception": "Built-in connection pooling is available across the flexible server compute tiers.",
+    "sourceTitle": "PgBouncer in Azure Database for PostgreSQL flexible server",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/postgresql/connectivity/concepts-pgbouncer"
+   },
+   {
+    "id": "azure-az-305-s2.2-09",
+    "reason": "tell: removes 'native' from a false statement. Fact (no secondary indexes in Table storage) and answer unchanged.",
+    "statement": "Azure Table storage lets an architect define secondary indexes on non-key entity properties.",
+    "answer": false,
+    "explanation": "Azure Table storage indexes the partition and row keys. For other frequent lookup paths, the application maintains alternate entities or its own index entities.",
+    "misconception": "Azure Table storage offers native secondary indexes on arbitrary entity properties.",
+    "sourceTitle": "Design Azure Table storage for queries",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/storage/tables/table-storage-design-for-query"
+   },
+   {
+    "id": "azure-az-305-s2.3-06",
+    "reason": "tell: removes the overclaim 'uninterrupted' and breaks the mirrored 'Azure Synapse Analytics lets X continue' template shared with s2.3-11. Fact (queries are cancelled during scaling) and answer unchanged.",
+    "statement": "In-flight dedicated SQL pool queries keep running while Azure Synapse Analytics scales the pool's compute.",
+    "answer": false,
+    "explanation": "Azure Synapse Analytics cancels dedicated SQL pool queries when scaling is requested and rolls back open transactions before changing compute resources.",
+    "misconception": "Dedicated SQL pool compute scaling preserves query execution.",
+    "sourceTitle": "Manage compute in a dedicated SQL pool",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-manage-compute-overview"
+   },
+   {
+    "id": "azure-az-305-s1.2-11",
+    "reason": "tell: removes 'built-in automatic' from a false statement. Fact (Key Vault doesn't renew nonintegrated-CA certificates; it only notifies) and answer unchanged.",
+    "statement": "Azure Key Vault renews a certificate from a nonintegrated certificate authority as the certificate nears expiry.",
+    "answer": false,
+    "explanation": "Certificates from a nonintegrated certificate authority need an external signing and merge process for renewal. Azure Key Vault provides expiration notifications for them.",
+    "misconception": "Importing a certificate gives Key Vault built-in renewal integration with its issuing authority.",
+    "sourceTitle": "Renew your Azure Key Vault certificates",
+    "sourceUrl": "https://learn.microsoft.com/en-us/azure/key-vault/certificates/overview-renew-certificate"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "cosmos-multi-region-writes",
+    "ids": [
+     "azure-az-305-s2.2-02",
+     "azure-az-305-s3.2-10"
+    ]
+   },
+   {
+    "name": "zone-failure-replacement",
+    "ids": [
+     "azure-az-305-s3.2-01",
+     "azure-az-305-s3.2-02"
+    ]
+   },
+   {
+    "name": "synapse-scaling-interruption",
+    "ids": [
+     "azure-az-305-s2.3-06",
+     "azure-az-305-s2.3-11"
+    ]
+   },
+   {
+    "name": "self-hosted-integration-runtime",
+    "ids": [
+     "azure-az-305-s2.3-01",
+     "azure-az-305-s2.3-02"
+    ]
+   },
+   {
+    "name": "app-gateway-listeners",
+    "ids": [
+     "azure-az-305-s4.4-03",
+     "azure-az-305-s4.4-11"
+    ]
+   },
+   {
+    "name": "container-orchestration-boundary",
+    "ids": [
+     "azure-az-305-s4.1-03",
+     "azure-az-305-s4.1-05"
+    ]
+   },
+   {
+    "name": "dms-portal-scope",
+    "ids": [
+     "azure-az-305-s4.3-07",
+     "azure-az-305-s4.3-08"
+    ]
+   },
+   {
+    "name": "resource-log-routing",
+    "ids": [
+     "azure-az-305-s1.1-01",
+     "azure-az-305-s1.1-02"
+    ]
+   },
+   {
+    "name": "sql-restore-new-database",
+    "ids": [
+     "azure-az-305-s3.1-06",
+     "azure-az-305-s3.1-07",
+     "azure-az-305-s3.1-08"
+    ]
+   },
+   {
+    "name": "billing-floor-template",
+    "ids": [
+     "azure-az-305-s2.1-05",
+     "azure-az-305-s4.1-07",
+     "azure-az-305-s4.1-01"
+    ]
+   },
+   {
+    "name": "blob-immutability-writes",
+    "ids": [
+     "azure-az-305-s2.2-10",
+     "azure-az-305-s2.2-11"
+    ]
+   },
+   {
+    "name": "ordering-guarantees",
+    "ids": [
+     "azure-az-305-s4.2-01",
+     "azure-az-305-s4.2-02"
+    ]
+   },
+   {
+    "name": "preserve-on-copy-template",
+    "ids": [
+     "azure-az-305-s1.1-04",
+     "azure-az-305-s4.2-12",
+     "azure-az-305-s4.3-09"
+    ]
+   },
+   {
+    "name": "missing-feature-template",
+    "ids": [
+     "azure-az-305-s1.2-11",
+     "azure-az-305-s2.1-03",
+     "azure-az-305-s4.2-04"
+    ]
+   },
+   {
+    "name": "storage-mover-design",
+    "ids": [
+     "azure-az-305-s4.3-10",
+     "azure-az-305-s4.3-12"
+    ]
+   }
+  ],
+  "sectionBalance": "After edits, 120 cards (54 true, 66 false). 1.1: 9 (4T/5F). 1.2: 10 (5T/5F). 1.3: 9 (4T/5F). 2.1: 10 (4T/6F). 2.2: 10 (4T/6F). 2.3: 10 (4T/6F). 3.1: 10 (6T/4F). 3.2: 9 (4T/5F). 4.1: 10 (4T/6F). 4.2: 12 (6T/6F). 4.3: 10 (4T/6F). 4.4: 11 (5T/6F). Every section has at least 9 cards, and no split is worse than 4:6 per 10.",
+  "notes": "On 2026-10-08 I opened every page behind a rewrite or a source change. Pages checked: connection-strings, enable-tag-inheritance, Cosmos DB integrated-cache, ADF managed-virtual-network-private-endpoint, Synapse on-demand-workspace-overview, ASR recovery-plan-overview, spot-vms, template-specs, CAF ready/landing-zone, dms-overview, storage-mover service-overview, App Service overview-private-endpoint, load-balancer cross-region-overview and virtual-wan-about. The 5 tell rewrites reuse sources the verifiers already confirmed and keep each card's fact and answer.\n\nMain decisions:\n(1) Weak cards are dropped by default. Five sections would have fallen below 4:6 (or below 9 cards) if all their weak cards went, so in those sections I rewrote the minimum number of cards using the verifier's replacement: 2.2-04, 2.3-03 and 2.3-08, 3.1-03, 4.1-01, 4.3-01. In 4.3 I chose the landing zone replacement over Data Box export, so 4.3-11 is dropped and the data-box-seeding conflict group goes away.\n(2) 4.2-10 is rewritten, not dropped. The template-specs page still says \"Users only need read access to the template spec to deploy its template\". The new wording (\"is enough ... to deploy its resources into a resource group\") targets the documented extra need for ARM deployment permissions. I did not use the verifier's \"with no rights\" because it is a negation. If you want zero risk, drop it instead: 4.2 would then be 11 cards, 6T/5F.\n(3) 4.3-12 (explanation_error) is rewritten onto the verifier's preferred Storage Mover single-instance fact, not the AzCopy minimum fix. The AzCopy card hinged on a CLI option default, which the prompt excludes. It was also the fourth false card on the preserve-on-copy template.\n(4) 4.4-07 drops 'automatically' from the verifier's suggested statement, because 'automatically' on a false card is a tell.\n(5) 4.4-04 changes only its source, to the Global load balancer page.\n\nTells: the strongest pattern was 'built-in/native' meaning false (6 of 7 cards). The 4.3-08 rewrite plus the tell rewrites of 4.2-04, 2.1-03, 2.2-09 and 1.2-11 bring it down to 1 false (2.3-12) against 1 true (2.1-01). The 2.3-06 tell rewrite removes 'uninterrupted' and breaks the mirrored 'Synapse lets X continue' template.\n\nRemaining known issues:\n- The preserve-on-copy false template still has 3 cards (1.1-04, 4.2-12, 4.3-09), one over the 2-per-template cap. They are kept in one conflict group. If you want strict compliance, a later pass should rephrase or replace one of them.\n- 'Microsoft recommends' still leans true: 1.2-10 and 2.2-08 are true, 3.2-07 is false.\n- Verifier side notes that I did not edit: 1.1-04 volatility could be may_change. 2.3-09's explanation could say \"when periodic refresh is on\". 2.3-10 difficulty looks mislabelled. 2.1-10 difficulty is probably 2. No card should claim Hyperscale has zero In-Memory OLTP support (the page now says Hyperscale supports a subset).\n- The deck files are unchanged: this was a read-only pass, with no git and no subagents."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "azure-az-305-s1.1-11",
+    "decision": "keep",
+    "statement": "The instrumentation key in an Application Insights connection string acts as a security key against forged telemetry.",
+    "answer": false,
+    "explanation": "The instrumentation key only identifies the Application Insights resource and isn't a security key. To reject unauthenticated telemetry, disable local authentication and require Microsoft Entra ID.",
+    "reason": "Both lenses keep it. The connection-strings page says \"Ikey unique identifiers aren't security tokens or security keys\" and that disabling local authentication enforces Microsoft Entra ID."
+   },
+   {
+    "id": "azure-az-305-s1.3-04",
+    "decision": "keep",
+    "statement": "Cost Management tag inheritance copies resource group tags onto the resources in the group.",
+    "answer": false,
+    "explanation": "Tag inheritance applies subscription and resource group tags to child resource usage records, not to the resources themselves, so costs can be grouped without tagging every resource.",
+    "reason": "Both lenses keep it. The enable-tag-inheritance note says \"Inherited tags are applied to child resource usage records and not the resources themselves.\""
+   },
+   {
+    "id": "azure-az-305-s2.2-04",
+    "decision": "keep",
+    "statement": "An Azure Cosmos DB read with Bounded staleness consistency skips the integrated cache and costs backend RUs.",
+    "answer": true,
+    "explanation": "The integrated cache serves only Session and Eventual reads, at zero RU on a hit. Strong, Bounded staleness and Consistent prefix reads are served from the backend and use RUs.",
+    "reason": "Both lenses keep it. The integrated-cache page says it supports session and eventual reads only, the other levels bypass it and are served from the backend, and cache hits cost zero RU."
+   },
+   {
+    "id": "azure-az-305-s2.3-03",
+    "decision": "fixed",
+    "statement": "A managed private endpoint in Azure Data Factory reaches a storage account only after the account's owner approves it.",
+    "answer": true,
+    "explanation": "Creating a managed private endpoint opens a Pending private endpoint connection. The storage account owner approves or rejects it, and only an approved endpoint can send traffic.",
+    "reason": "Both lenses fixed the same problem: 'its owner' could mean the data factory side. The wording lens's statement is 125 characters, over the limit, so I used the fact lens's 118-character version. Checked on the ADF page (updated 2026-08-05): the connection starts as \"Pending\", \"The private link resource owner is responsible for approving or rejecting the connection\", and \"Only a managed private endpoint in an approved state can send traffic\"."
+   },
+   {
+    "id": "azure-az-305-s2.3-08",
+    "decision": "fixed",
+    "statement": "Azure Synapse Analytics serverless SQL pool bills each query by the data it processes rather than by its run time.",
+    "answer": true,
+    "explanation": "Serverless SQL pool reserves no resources and charges only for the data that queries process, which suits occasional exploration of data lake files.",
+    "reason": "Used the wording lens's statement, which sets 'data processed' against run time, a realistic alternative, instead of 'reserved compute', which follows from the word 'serverless'. I kept the editor's explanation and did not use the lens's new 'long but light query' claim, because the page does not state it and no lens checked it. Page: \"There's no charge for resources reserved. You are only being charged for the data processed by queries you run\". The exploration scenario is listed on the same page."
+   },
+   {
+    "id": "azure-az-305-s3.1-03",
+    "decision": "keep",
+    "statement": "Azure Site Recovery fails over the machines inside one recovery plan group one at a time.",
+    "answer": false,
+    "explanation": "Machines in one recovery plan group fail over in parallel. Order applies between groups: Group 2 machines start failing over only after every Group 1 machine has failed over and started.",
+    "reason": "Both lenses keep it. The recovery-plan-overview page says \"Machines in a single group fail over in parallel\" and that Group 2 starts only after all Group 1 machines have failed over and started."
+   },
+   {
+    "id": "azure-az-305-s4.1-01",
+    "decision": "keep",
+    "statement": "An Azure Spot Virtual Machine evicted under the Deallocate policy keeps incurring storage charges for its disks.",
+    "answer": true,
+    "explanation": "Deallocate, the default eviction policy, stops the VM but keeps its disks, which stay billed while the VM counts against quota. The Delete policy removes the disks together with the VM.",
+    "reason": "Both lenses keep it. The spot-vms page gives Deallocate as the default, says deallocated VMs count against quota and are charged for their disks, and says Delete removes the disks."
+   },
+   {
+    "id": "azure-az-305-s4.2-10",
+    "decision": "fixed",
+    "statement": "Read access to a template spec grants a release team the rights to create the spec's resources in a resource group.",
+    "answer": false,
+    "explanation": "Read access lets a team use a template spec without being able to change it. Creating its resources also needs the permissions for deploying an ARM template at the target scope.",
+    "reason": "Both lenses agree that 'is enough to deploy' can still be read as True, because the page says \"Users only need read access to the template spec to deploy its template\". I took the wording lens's framing, which asks what the permission grants (rights to create resources). That avoids the fact lens's extra 'read-only rights on a resource group' clause, which comes close to a strawman. The statement is 115 characters. The explanation stays on the cited page: \"users with the template spec reader role can deploy it. In addition, you also need the permissions for deploying an ARM template.\" deploy-cli confirms this needs write access on the resources plus Microsoft.Resources/deployments rights."
+   },
+   {
+    "id": "azure-az-305-s4.3-01",
+    "decision": "keep",
+    "statement": "One Cloud Adoption Framework workload landing zone holds a workload's development, test and production environments.",
+    "answer": true,
+    "explanation": "Each workload gets a single workload landing zone with all its environments, each made of one or more subscriptions that inherit the platform landing zone's guardrails.",
+    "reason": "Both lenses keep it, citing the CAF landing zone page (updated 2026-10-01): \"Each workload has a single workload landing zone ... such as development, test, and production.\" The fact lens suggests setting volatility to may_change because the page was rewritten recently."
+   },
+   {
+    "id": "azure-az-305-s4.3-08",
+    "decision": "keep",
+    "statement": "Azure Database Migration Service in the Azure portal migrates SQL Server logins along with the databases.",
+    "answer": false,
+    "explanation": "The Azure portal version of Azure Database Migration Service migrates schemas and data but not logins, so the migration plan moves logins to the target separately.",
+    "reason": "Both lenses keep it. The dms-overview table shows \"Migrate logins | No\" and \"Migrate schemas | Yes\" for the portal version. Housekeeping: the old volatilityNote about assessment should become one about the login-migration row."
+   },
+   {
+    "id": "azure-az-305-s4.3-12",
+    "decision": "fixed",
+    "statement": "Migrating file shares from sites on three continents takes one Azure Storage Mover resource per continent.",
+    "answer": false,
+    "explanation": "One Azure Storage Mover resource can manage migrations from source shares anywhere in the world; for agent-based migrations, an agent near each source share sends data directly to Azure.",
+    "reason": "Kept the statement and took the fact lens's explanation fix. The page now also covers agentless workloads (\"For agentless workloads, no migration agent VM is required\"), so the agent clause is limited to agent-based migrations. The page also says \"You need only deploy one Storage Mover instance ... even if they're located in different parts of the world.\" Housekeeping: the stored volatilityNote still describes AzCopy from the old card."
+   },
+   {
+    "id": "azure-az-305-s4.4-07",
+    "decision": "fixed",
+    "statement": "Azure App Service evaluates an app's access restriction rules for traffic that arrives through a private endpoint.",
+    "answer": false,
+    "explanation": "App Service sends traffic from a private endpoint straight to the app without evaluating access restriction rules; network security groups restrict traffic to private endpoints.",
+    "reason": "The fact lens's objection holds. overview-access-restrictions says that when publicNetworkAccess is null, \"the default behavior is to enable access unless a private endpoint exists which changes the behavior to disable access\". So by default, adding a private endpoint does block public traffic, and the rewrite's False answer could be defended as True. I used the fact lens's replacement. It is supported by \"Access restrictions don't apply to traffic entering through a private endpoint\" and \"Restrictions to private endpoints are configured using network security groups\" on that page, and by overview-private-endpoint (2026-09-17). Change the source to https://learn.microsoft.com/en-us/azure/app-service/overview-access-restrictions (title 'App Service Access restrictions - Azure App Service'). New misconception: access restriction rules filter every inbound path to an App Service app, including private endpoints."
+   },
+   {
+    "id": "azure-az-305-s4.4-06",
+    "decision": "keep",
+    "statement": "Azure Virtual WAN supports VPN-to-ExpressRoute branch transit through its Standard hubs.",
+    "answer": true,
+    "explanation": "A Standard virtual WAN hub router lets VPN-connected sites and users reach ExpressRoute-connected sites when the Branch-to-branch setting is on and BGP is used; Basic offers site-to-site VPN only.",
+    "reason": "Both lenses keep it. virtual-wan-about documents VPN-ExpressRoute transit, assuming the Branch-to-branch flag is on and BGP is used, and lists Basic as \"Site-to-site VPN only\"."
+   },
+   {
+    "id": "azure-az-305-s4.2-04",
+    "decision": "keep",
+    "statement": "The Azure Storage queues service moves a message that keeps failing into a dead-letter queue.",
+    "answer": false,
+    "explanation": "A consumer of Azure Storage queues checks a message's DequeueCount and implements its own policy for moving poison messages to a dead-letter queue.",
+    "reason": "Both lenses keep it. The comparison page lists automatic dead lettering as No for Storage queues and says the application checks DequeueCount and moves the message to an application-defined dead-letter queue."
+   },
+   {
+    "id": "azure-az-305-s2.1-03",
+    "decision": "keep",
+    "statement": "Azure Database for PostgreSQL flexible server offers its PgBouncer connection pooler on the Burstable compute tier.",
+    "answer": false,
+    "explanation": "Built-in PgBouncer is available in the General Purpose and Memory Optimized compute tiers. A Burstable design needs a different connection-pooling solution.",
+    "reason": "Both lenses keep it. concepts-pgbouncer (updated 2026-10-04) says it \"currently doesn't support the Burstable server compute tier\". Keep volatility at may_change."
+   },
+   {
+    "id": "azure-az-305-s2.2-09",
+    "decision": "keep",
+    "statement": "Azure Table storage lets an architect define secondary indexes on non-key entity properties.",
+    "answer": false,
+    "explanation": "Azure Table storage indexes the partition and row keys. For other frequent lookup paths, the application maintains alternate entities or its own index entities.",
+    "reason": "Both lenses keep it. table-storage-design-for-query says there are \"no indexes other than that on the clustered index on the PartitionKey and RowKey\", and that the index-entity patterns are maintained by the application."
+   },
+   {
+    "id": "azure-az-305-s2.3-06",
+    "decision": "keep",
+    "statement": "In-flight dedicated SQL pool queries keep running while Azure Synapse Analytics scales the pool's compute.",
+    "answer": false,
+    "explanation": "Azure Synapse Analytics cancels dedicated SQL pool queries when scaling is requested and rolls back open transactions before changing compute resources.",
+    "reason": "Both lenses keep it. The manage-compute page says a scale operation \"first kills all incoming queries and then rolls back transactions\"."
+   },
+   {
+    "id": "azure-az-305-s1.2-11",
+    "decision": "keep",
+    "statement": "Azure Key Vault renews a certificate from a nonintegrated certificate authority as the certificate nears expiry.",
+    "answer": false,
+    "explanation": "Certificates from a nonintegrated certificate authority need an external signing and merge process for renewal. Azure Key Vault provides expiration notifications for them.",
+    "reason": "Both lenses keep it. overview-renew-certificate says end-to-end renewal covers only the integrated CAs, nonintegrated CAs get near-expiration notifications, and renewal goes through a CSR that is signed outside Key Vault and then merged."
+   }
+  ]
+ }
+}

@@ -1,0 +1,788 @@
+{
+ "deck": "java-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 r1 cards (sr1-01 to sr1-12) and flagged none. I opened every source URL with curl. Each one returns HTTP 200 on a Java SE 25 page, and every cited anchor exists: jls-4.12.5, 4.2.1, 4.2.2, 4.2.3, 5.1.7, 5.1.8, 15.12.2, 15.17.2, 15.26.2, Integer.html#equals(java.lang.Object), Integer.html#<init>(int) and ArrayList.html#remove(java.lang.Object). The section has 6 true and 6 false cards. False statements average 78.3 characters and true ones 74.7, inside the 5-character limit. No statement is over 120 characters and no explanation is over 240. A keyword scan found no other section of the deck testing the same facts.\n\nQuotes that settle each card:\n- 01: JLS 4.12.5, \"A local variable declared by a statement ... must be explicitly given a value before it is used ... verified using the rules for definite assignment\".\n- 02: JLS 4.2.2, \"The integer operators do not indicate overflow or underflow in any way\". The wrap-around in the explanation is stated in JLS 15.18.2: \"the result is the low-order bits of the mathematical sum\".\n- 03: JLS 15.17.2, \"Integer division rounds toward 0.\"\n- 04: JLS 4.2.1, \"char, whose values are 16-bit unsigned integers representing UTF-16 code units\".\n- 05: JLS 15.26.2, \"E1 op= E2 is equivalent to E1 = (T) ((E1) op (E2))\".\n- 06: JLS 4.2.3, \"== returns false if either operand is NaN\".\n- 07: JLS 5.1.8, \"If r is null, unboxing conversion throws a NullPointerException\".\n- 08: JLS 5.1.7, \"...an integer in the range -128 to 127 inclusive, then let a and b be the results of any two boxing conversions of p. It is always the case that a == b.\"\n- 09: Integer.equals, \"true if and only if the argument is not null and is an Integer object that contains the same int value\".\n- 10: JLS 15.12.2, \"The first phase performs overload resolution without permitting boxing or unboxing conversion\". Widening int to long is allowed in that phase, so f(long) wins.\n- 11: ArrayList.remove(Object), \"Removes the first occurrence of the specified element from this list\".\n- 12: the Java SE 25 Integer page shows `@Deprecated(since=\"9\") public Integer(int value)` with no forRemoval. For comparison, the Java SE 24 page shows `@Deprecated(since=\"9\", forRemoval=true)` and the Java SE 26 page shows `@Deprecated(since=\"9\")`, so \"Java 25 and later\" is correct as of today.\n\nMinor points, none worth a flag:\n- **sr1-11 source:** the ArrayList page supports the removal behaviour but does not say why an Integer argument binds to remove(Object) and not remove(int). That rule is JLS 15.12.2.2 phase 1. The page does list both signatures. If a stricter source is wanted, the explanation could also cite jls-15.html#jls-15.12.2.2.\n- **sr1-10 and sr1-11 overlap:** both rest on phase 1 excluding boxing and unboxing. sr1-10 tests widening before boxing; sr1-11 tests reference widening before unboxing. The prompt's r1 scope lists the two topics separately, so I treated them as distinct facts.\n- **sr1-04 wording:** close to the JLS 4.2.1 wording, but the fact is a one-line definition with little room for rewording. An alternative if wanted: \"`char c = (char) -1;` stores 65535 in c\" (true).\n- **sr1-09 wording:** \"accepts the Long as an equal numeric value\" is a little awkward. \"...returns true\" would be plainer, with the same answer."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr2-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, JLS SE 25 ch. 4 loads (title 'Chapter 4. Types, Values, and Variables'); anchor #jls-4.12.4 present",
+     "evidence": "JLS 25 §4.12.4 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.12.4) only defines the term: \"A constant variable is a final variable of primitive type or type String that is initialized with a constant expression (§15.29).\" It never says that such a variable can be used in a constant expression, and that is exactly what the statement tests. That rule is in JLS 25 §15.29 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.29), whose list of allowed parts of a constant expression includes: \"Simple names (§6.5.6.1) that refer to constant variables (§4.12.4).\" The card's answer (true) and its explanation are correct.",
+     "problem": "The cited section supports only half the card: the definition of a constant variable. The point the card actually tests is that a final local String can be used in String constant expressions, and the cited page does not state it.",
+     "suggestedFix": "Keep the statement, the answer (true) and the explanation. Change source.url to https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.29 with the title \"JLS 25 §15.29: Constant Expressions\". That section names constant variables as allowed parts and links back to §4.12.4 for the definition."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards. The section is balanced at 6 true and 6 false, with average statement lengths of 80.5 (true) and 84.8 (false). Every statement is 120 characters or fewer and every explanation 240 or fewer. Every source URL returned HTTP 200 with the expected Java SE 25 title: the String and StringBuilder API pages ('Java SE 25 & JDK 25'), JLS SE 25 chapters 3, 4, 14 and 15, and the 'Programmer's Guide to Text Blocks'. No JDK 26 home page came back in place of a requested page.\n\nEach card was checked against the spec text. Java was not installed locally, so nothing was run.\n- 01: the String class doc says \"Strings are constant; their values cannot be changed after they are created\", and replace(char,char) says \"a String object is returned\".\n- 02: JLS 3.10.5 says \"Strings concatenated from constant expressions (§15.29) are computed at compile time and then treated as if they were literals\". + binds tighter than ==, so the fragment parses as intended.\n- 03: JLS 15.18.1 says \"The String object is newly created (§12.5) unless the expression is a constant expression\".\n- 05: String.equals is \"true if and only if the argument is not null and is a String object that represents the same sequence of characters\".\n- 06: JLS 14.11.1.2 says \"equality is defined in terms of the equals method of class String\".\n- 07: the StringBuilder API Note says it \"does not override equals\".\n- 08: trim defines space as \"any character whose codepoint is less than or equal to 'U+0020'\", and its API Note points to strip for Unicode white space. U+2003 survives trim.\n- 09: JLS 3.10.6 says the opening delimiter \"starts with three double quote characters, continues with zero or more space, tab, and form feed characters, and concludes with a line terminator\".\n- 10: the text blocks guide says \"Trailing white space on each line in a text block is also considered incidental and is stripped away by the Java compiler\".\n- 11: JLS 3.10.6 says \"An ASCII CR character followed by an ASCII LF character is translated to an ASCII LF character\".\n- 12: JLS 3.10.7 says the line continuation escape \"is interpreted by replacing it with nothing\".\n\nI found no version dependency (text blocks and the \\<line-terminator> escape predate Java 21), no preview contamination and no wrong answers.\n\nWatch item, not flagged: cards 02, 03 and 04 all test compile-time versus run-time String concatenation identity. 02 and 03 are the two sides of the single JLS 15.18.1 sentence \"newly created unless the expression is a constant expression\", and 03's explanation leans on 04's final/non-final split. The prompt lists these as separate r2 items, and knowing one answer does not strictly give another, so I did not flag them as duplicates. A reviewer who applies the \"two sides of one distinction\" rule strictly could merge 02 and 03.\n\nMinor tell, not flagged: the word \"unescaped\" in 10 is needed for accuracy but slightly hints at an exception. Card 07 (\"distinct StringBuilder objects ... equals returns false\") uses the same sentence pattern as r3 card sr3-10 (arrays). Both are true and rest on different facts, so that is acceptable."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr3-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, Object (Java SE 25 & JDK 25), official and current",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Object.html#equals(java.lang.Object): \"It is transitive: for any non-null reference values x, y, and z, if x.equals(y) returns true and y.equals(z) returns true, then x.equals(z) should return true.\"",
+     "problem": "The answer is right, but the card is a truism. Transitivity is what the everyday word 'equal' already means, so nobody would answer False and the card teaches nothing specific to Java. The wording 'the contract makes a equal to c' also misstates the contract. The contract only says an implementation 'should' return true, and real classes can break it. The statement also leaves out the non-null condition. Section r3 lists 'x.equals(null) being false' as a topic, and no card covers it.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"Under the equals contract, `x.equals(null)` should return `false` for any non-null reference `x`.\" Explanation: \"The Object.equals contract asks for false when the argument is null, not a NullPointerException, so a well-behaved equals checks for null or uses instanceof first.\" Source: the same Object.equals URL (\"For any non-null reference value x, x.equals(null) should return false.\")."
+    },
+    {
+     "id": "java-fundamentals-sr3-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, Value-based Classes (Java SE 25 & JDK 25), official and current",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/doc-files/ValueBased.html: \"Synchronization on instances of value-based classes is strongly discouraged, because the programmer cannot guarantee exclusive ownership of the associated monitor.\" https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Boolean.html: \"This is a value-based class; programmers should treat instances that are equal as interchangeable and should not use instances for synchronization\"",
+     "problem": "The answer is right, but the false statement is a strawman. No reader would think the official guidance 'recommends' using equal instances as interchangeable locks, so the word 'recommends' gives the answer away. The real mistake developers make is locking on a shared wrapper constant and assuming they own that lock alone. The tag 'Java SE' is also not an API name.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"Synchronizing on `Boolean.TRUE` gives a class's code exclusive ownership of that object's monitor.\" Explanation: \"Boolean is value-based and Boolean.TRUE is shared by all code, so other code can lock the same monitor. The docs strongly discourage synchronizing on value-based instances.\" Source: the ValueBased.html URL. Tags: Boolean."
+    },
+    {
+     "id": "java-fundamentals-sr3-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, Objects (Java SE 25 & JDK 25), official and current",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Objects.html#equals(java.lang.Object,java.lang.Object): \"Returns true if the arguments are equal to each other and false otherwise. Consequently, if both arguments are null, true is returned.\"",
+     "problem": "The answer and the source are right, but the filler clause 'while safely handling the null arguments' tells the player the call does not throw. That removes one of the two realistic mistakes (an NPE, or false as with SQL NULL), and it puts approving wording on a true statement. The explanation (50 characters) also only repeats the statement.",
+     "suggestedFix": "Keep TRUE. Statement: \"Calling `Objects.equals(a, b)` with both arguments null returns `true`.\" Explanation: \"Objects.equals returns true when both arguments are null and only calls a.equals(b) when a is non-null, so it never throws NullPointerException on null input.\" With the other two replacements, the true and false average lengths stay within 5 characters (about 84 vs 85)."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (6 true, 6 false; average statement length 85.2 true vs 88.2 false). All six source pages return HTTP 200 and are the version-pinned Java SE 25 pages (titles 'Object/Objects/Map/Comparable/Value-based Classes (Java SE 25 & JDK 25)' and JLS SE 25 chapter 10). I found no wrong answers.\n\nCards that pass, with the sentence that settles each:\n- sr3-01: Object.equals \"returns true if and only if x and y refer to the same object\".\n- sr3-02: \"symmetric: ... x.equals(y) should return true if and only if y.equals(x) returns true\".\n- sr3-04: \"consistent ... provided no information used in equals comparisons on the objects is modified\".\n- sr3-05 and sr3-06: the hashCode contract, \"It is not required that if two objects are unequal ... must produce distinct integer results\".\n- sr3-07: Map, \"The behavior of a map is not specified if the value of an object is changed in a manner that affects equals comparisons while the object is a key\".\n- sr3-09: Objects.hash, \"Warning: When a single object reference is supplied, the returned value does not equal the hash code of that object reference\". Objects.hash(h) is 31+h, so it never equals h.\n- sr3-10: JLS 10.7 says arrays inherit every Object member except clone, so equals is Object's identity equals. The source settles this only by inference from the Object.equals page, which is acceptable.\n- sr3-11: Comparable names BigDecimal 4.0 and 4.00, and says a second add to a sorted set without an explicit comparator returns false.\n\nBorderline cards, not flagged:\n- sr3-02 (symmetry) is close to a common-sense truism, like sr3-03.\n- sr3-04 is weak as a false card, because few readers would believe equals may alternate while the state stays fixed.\n\nCoverage gaps against the section brief: no card on overriding equals without hashCode breaking HashSet or HashMap lookups, on compareTo, or on Arrays.equals. An Arrays.equals card would be the other side of sr3-10's distinction, so do not add one.\n\nOverlap with other sections:\n- sr2-07 (StringBuilder equals is identity) relies on the same inheritance of Object.equals as sr3-01 and sr3-10. It is allowed, because the prompt assigns StringBuilder to r2.\n- sr5-12 (record with an array component) is kept in r5, as the prompt requires.\n- I found no duplicate factKeys elsewhere in the deck for the replacement facts (x.equals(null), synchronizing on Boolean.TRUE)."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr4-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, JLS SE 25 jls-6.html#jls-6.6.1 loads, anchor present, supports the card",
+     "evidence": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.6.1: \"Otherwise, if the member or constructor is declared with package access, then access is permitted only when the access occurs from within the package in which the class, interface, type parameter, or reference type is declared.\"",
+     "problem": "The answer can be read from the term itself: a 'package-private' field being accessible from the same package is the definition of the word, so the card is a name giveaway or definition card that teaches nothing to a daily Java developer. 'package-private' is also not the JLS term, which is 'package access'.",
+     "suggestedFix": "Replacement (answer true, keeps 6 true and 6 false): statement \"A protected field is accessible from a class in the same package that is not a subclass of its declaring class.\" Explanation: \"Protected access includes package access: code anywhere in the declaring class's package may use a protected member, and subclasses in other packages get extra access under JLS 6.6.2.\" Same URL jls-6.html#jls-6.6.1, which says protected access is permitted when \"Access to the member or constructor occurs from within the package containing the class in which the protected member or constructor is declared.\""
+    },
+    {
+     "id": "java-fundamentals-sr4-02",
+     "verdict": "ambiguous",
+     "urlStatus": "200, JLS SE 25 jls-8.html#jls-8.4.8.2 loads, anchor present, supports hiding",
+     "evidence": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8.2: \"If a class C declares or inherits a static method m, then m is said to hide any method m' ...\"; but https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8.1: \"An instance method mC declared in or inherited by class C, overrides from C another method mA ... It is a compile-time error if the overridden method, mA, is a static method.\"",
+     "problem": "The statement says 'A subclass declaration' without saying it is a static method. If the subclass declares an instance method with the same signature, the JLS itself calls that overriding the static method (and makes it a compile-time error), so an expert could argue the literal wording. The intended fact (a static method in the subclass hides, does not override) is right but the actor is unnamed.",
+     "suggestedFix": "Replacement (answer false): statement \"A subclass static method with the same signature as a superclass static method overrides it.\" Explanation: \"The subclass's static method hides the superclass method; a call through a superclass-typed expression still runs the superclass version, because static calls are bound at compile time.\" Keep URL jls-8.html#jls-8.4.8.2."
+    },
+    {
+     "id": "java-fundamentals-sr4-08",
+     "verdict": "source_problem",
+     "urlStatus": "200, JLS SE 25 jls-8.html#jls-8.1.3 loads, anchor present, but its sentence is hedged",
+     "evidence": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.1.3: \"An instance i of a direct inner class C of a class or interface O may be associated with an instance of O, known as the immediately enclosing instance of i.\" The settling rule is in https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.9.2: \"If C is an inner member class, then: ... The immediately enclosing instance of i is the n'th lexically enclosing instance of this.\" and \"If the class instance creation expression is qualified, then the immediately enclosing instance of i is the object that is the value of the Primary expression\".",
+     "problem": "The answer (true) is right, but the cited section says only that an inner class instance 'may be associated' with an enclosing instance (the 'may' covers local and anonymous classes in a static context), so the page does not settle the card for inner member classes. JLS 15.9.2 does: every inner member class instance gets an immediately enclosing instance at creation.",
+     "suggestedFix": "Change the URL to https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.9.2 (title \"JLS 25 §15.9.2: Determining Enclosing Instances\"); statement and explanation can stay."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards: 6 true (01, 03, 05, 08, 10, 11) and 6 false (02, 04, 06, 07, 09, 12). I downloaded and read every source page. JLS SE 25 chapters 4, 6, 8, 9, 12 and 15 all returned HTTP 200, every cited anchor exists, and the Java 25 guide page flexible-constructor-bodies.html returned 200 with the title \"Flexible Constructor Bodies\" (not the JDK 26 home page fallback).\n\nCards that pass, with the sentence that settles each one:\n- 03: JLS 15.12.4.4 says \"The lookup procedure starts from class R, the actual run-time class of the target object.\"\n- 04: JLS 12.5 lists the superclass constructor invocation as step 5, then \"Execute the instance initializers and instance variable initializers for this class\" as step 6. Java 25 prologues allow field assignments, not initializers, before super(...), so the card is still false in 25.\n- 05: JLS 15.11.1 says \"only the type of the Primary expression, not the class of the actual object referred to at run time, is used in determining which field to use.\" The wording (\"its runtime class hides\") is clumsy but correct.\n- 06: JLS 9.6.4.4 lists three conditions for @Override, else a compile-time error. f(String) neither overrides f(Object) nor is override-equivalent to a public Object method.\n- 07: JLS 4.12.4 says \"the components of the array may be changed by operations on the array, but the variable will always refer to the same array.\"\n- 09: JLS 8.8.9 says \"The default constructor has the same access modifier as the class, unless the class lacks an access modifier, in which case the default constructor has package access.\"\n- 10: JLS 8.8.7 says a body with no explicit constructor invocation \"implicitly begins with a superclass constructor invocation \\\"super();\\\"\".\n- 11: The guide says \"you can initialize fields of the current instance with the assignment operator before the super(...) invocation\", with a `final int x;` example. The explanation's condition \"that have no initializer\" is stated only in JLS 6.5.6.1 (\"the declaration of the named variable lacks an initializer\"), not on the guide page. jls-6.html#jls-6.5.6.1 would be the more complete source, but the card is right as written.\n- 12: JLS 8.4.1 says \"the values of the actual argument expressions initialize newly created parameter variables.\"\n\nNone of the r4 facts duplicates a card in another section. The nearest are sr5-01 (interface static method inheritance), sr5-06 (enum constructor access) and sr11-11 (throws in an override), and each rests on a different fact. One gap I did not flag: the r4 scope names \"the overload is chosen from compile-time types\", but no r4 card tests it; card 03 covers only the runtime override side."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr5-02",
+     "verdict": "ambiguous",
+     "urlStatus": "200, dev.java 'Overriding and Hiding Methods' (last update 2021-09-14, rule unchanged in JLS SE 25)",
+     "evidence": "dev.java (https://dev.java/learn/language/oop/inheritance/overriding/): \"Instance methods are preferred over interface default methods.\" and \"If two or more independently defined default methods conflict ... the Java compiler produces a compiler error.\" JLS SE 25 8.4.8 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8): a default m is inherited only if \"No concrete method inherited by C from its direct superclass type has a signature that is a subsignature of the signature of m\". JLS 8.4.8.4: \"It is a compile-time error if a class C inherits a default method whose signature is override-equivalent with another method inherited by C\".",
+     "problem": "The answer (true) is right for the intended 'class wins' rule, but the statement never says where the method comes from. An inherited default method is itself 'an inherited public instance method with a body', and when it comes from a second, unrelated interface it does not win: the class gets a compile-time error (8.4.8.4). Only the explanation narrows it to a superclass method, so an expert could defend False as worded.",
+     "suggestedFix": "Keep answer true. Statement: \"A concrete public method that a class inherits from its superclass wins over a matching interface default method.\" (99 chars). Explanation: \"When a superclass already supplies a concrete method with the same signature, the class does not inherit the interface default, so the superclass method is the one that runs.\" Prefer citing JLS 25 8.4.8: https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8"
+    }
+   ],
+   "notes": "All 12 r5 cards were checked: 6 true (02, 05, 07, 08, 09, 10) and 6 false (01, 03, 04, 06, 11, 12). Average statement length is 81.0 for true and 76.5 for false, which is within the 5-character limit. Every source URL returned 200 with the right title (JLS SE 25 ch. 8/9 anchors jls-8.9, 8.9.2, 8.9.3, 8.10.4.2, 9.3, 9.4.1.2 exist; Record (Java SE 25 & JDK 25); Java 25 'Record Classes' guide; dev.java overriding page). The sentences that settle the cards that pass:\n- 01: JLS 8.4.8 \"A class does not inherit private or static methods from its superinterface types\"; dev.java \"Static methods in interfaces are never inherited.\"\n- 03: JLS 8.4.8.4 compile-time error for an inherited default that is override-equivalent with another inherited method; dev.java \"You must explicitly override the supertype methods.\"\n- 04: JLS 9.4.1.2 \"It is a compile-time error if a default method is override-equivalent with a non-private method of the class Object\".\n- 05: JLS 9.3 \"Every field declaration in the body of an interface declaration is implicitly public, static, and final.\"\n- 06: JLS 8.9.2 \"It is a compile-time error if a constructor declaration in an enum declaration is public or protected\".\n- 07: JLS 8.9 \"An enum class E is implicitly sealed if its declaration contains at least one enum constant that has a class body.\"\n- 08: JLS 8.9.3 values() \"returns an array containing the enum constants of E, in the same order as they appear in the body of the declaration of E\".\n- 09: the records guide gives each component \"A public accessor method with the same name and type of the component\".\n- 10: JLS 8.10.4.2 \"After the last statement, if any, in the body of the compact constructor has completed normally, all component fields of the record class are implicitly initialized to the values of the corresponding formal parameters.\"\n- 11: the Record API says the implicit canonical constructor \"initializes the component fields from the corresponding constructor arguments\" and names explicit constructors as the way to \"perform defensive copies on mutable components\".\n- 12: Record.equals compares reference components with Objects.equals(this.c, r.c). Because arrays inherit Object.equals, that is a reference comparison.\nMinor observations, not flagged:\n- 12 needs one inference step from its source: the Record page says Objects.equals, not 'by reference'. It is close to sr3-10 (array a.equals(b) is false), but the prompt explicitly assigns record array-component equality to r5, and the card also needs the record-equals rule, so it is not a duplicate.\n- 01's explanation wording \"a class implementation inherits none of them\" is awkward but correct.\n- 01, 02 and 03 cite a dev.java page last updated in 2021. JLS SE 25 8.4.8 and 8.4.8.4 confirm all three, so the source is acceptable, but the JLS anchors would be stronger citations.\n- Section coverage leaves out X.super.m(), EnumMap/EnumSet, records as implicitly final and extending Record, and nested records as implicitly static. This is acceptable for 12 cards.\n- No card depends on a preview feature or a version difference."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr6-07",
+     "verdict": "weak_card",
+     "urlStatus": "OK (JLS SE 25 jls-15.html#jls-15.28.2 loads, HTTP 200; supports the card)",
+     "evidence": "The answer can be read straight from the statement: `switch (x) { default -> { yield 7; } }` \"evaluates to 7\". A player who does not know Java will answer True just by matching `yield 7` with 7, so the card does not test a misconception anyone holds. The fact itself is correct. The Java 25 guide (https://docs.oracle.com/en/java/javase/25/language/switch-expressions-statements.html) says \"Specify the value that the arrow case produces with the yield statement\", and also says \"You can use colon cases in switch expressions ... They take one argument, which is the value that the colon case produces in a switch expression.\" That second, less obvious use of yield is not tested anywhere in the deck.",
+     "problem": "The answer is in the wording (yield 7, so it evaluates to 7). It is a giveaway card with no realistic false belief behind it.",
+     "suggestedFix": "Replacement (answer TRUE, keeps the 6/6 balance). Statement: \"A switch expression with colon labels such as `case 1:` produces its value with a `yield` statement.\" Explanation: \"Switch expressions accept colon cases as well as arrow cases. A colon case gives the expression its value with yield, and a group that omits it lets control fall through to the next group.\" Source: https://docs.oracle.com/en/java/javase/25/language/switch-expressions-statements.html"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards, which are all in java-fundamentals-b2.json. The split is 6 true (01, 03, 04, 05, 07, 10) and 6 false (02, 06, 08, 09, 11, 12). Every source URL returned HTTP 200 with the expected title: Sealed Classes, Pattern Matching with instanceof, Record Patterns, Switch Expressions and Statements, Pattern Matching with switch, Unnamed Variables and Patterns, and JLS SE 25 chapters 14 and 15. None of them fell back to the JDK 26 docs home page.\n\nWhat settles each passing card:\n- **01:** the guide says permitted subclasses \"must have exactly one of the following modifiers ... final ... sealed ... non-sealed\".\n- **02:** the guide says \"or in the same package (if the sealed class is in the unnamed module\". The card's answer of false is correct.\n- **03:** the guide says \"you can define permitted subclasses in the same file as the sealed class. If you do so, then you can omit the permits clause\". One minor wording point: the statement says \"a sealed class may infer\". Strictly it is the compiler that infers, but no reading flips the answer.\n- **04:** the guide's bigEnoughRect example shows `if (!(s instanceof Rectangle r)) { return false; } // You can use r here.`\n- **05:** the guide's Nested Record Patterns section and its Box(Box(var s)) example support it.\n- **06:** the guide says an arrow case \"does not fall through; it does not run any other code in the switch\".\n- **08:** the guide's CharSequence/String example says \"this case label is dominated by a preceding case label\".\n- **09:** JLS 14.11.2 defines an enhanced switch by selector type or case pattern/null, and says \"switch statements that are not enhanced switch statements are not required to be exhaustive\". Its own enum E example has no case for C.\n- **10:** JLS 14.11.1.1 says \"T names an abstract sealed class or sealed interface C and for every permitted direct subclass or subinterface D of C ...\".\n- **11:** the guide says \"If a selector expression evaluates to null and the switch block does not have null case label, then a NullPointerException is thrown\". JLS 14.11.3 says the same: if no label applies and the selector is null, NullPointerException is thrown. This holds for non-enhanced String switches too.\n- **12:** the guide says unnamed variables \"can be initialized but not used\", and JLS 6.1 says an entity declared with the keyword _ \"cannot be referred to by name\".\n\nDuplicates: I found none against the other sections. The closest are sr2-06 (a String switch uses equals) and sr5-07 (an enum is implicitly sealed), and both rest on different facts. Nothing in r6 uses a preview feature, primitive patterns or MatchException. The only version-dependent card, 12, names \"Since Java 22\" and has appliesTo \"Java 22 and later\", which is correct.\n\nCaveat: no JDK is installed on this machine, so I could not compile the code snippets. I judged them against JLS 25 and the Java 25 guide only."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr7-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, JLS SE 25 §15.9 (official, current)",
+     "evidence": "JLS SE 25 §15.9.1 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.9.1): \"if <> is present, then C will have its type arguments inferred\". The answer is right, but the statement only restates what the diamond is for. `List<String> xs = new ArrayList<>()` inferring String is the definition of `<>` and the most common Java line there is, so no one who has studied would answer False. That makes it a truism or definition card under the prompt's rules.",
+     "problem": "Truism or definition card: the answer follows from what the diamond operator is, so it teaches a working developer nothing.",
+     "suggestedFix": "Replace it with a TRUE card (keeps the 6/6 balance). Statement: \"The diamond `<>` compiles with an anonymous class body, as in `new Comparator<>() { ... }`.\" Explanation: \"The compiler infers the anonymous class's supertype arguments from the target type, so `Comparator<String> c = new Comparator<>() {...}` implements Comparator<String>.\" Source: https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.9.3 (\"If C is an anonymous class, let D be the superclass or superinterface of C named by the class instance creation expression\", under \"If the class instance creation expression uses <>\")."
+    },
+    {
+     "id": "java-fundamentals-sr7-10",
+     "verdict": "source_problem",
+     "urlStatus": "200, JLS SE 25 §6.5.5.1 (official, current)",
+     "evidence": "JLS SE 25 §6.5.5.1 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.5.5.1): \"The type name does not occur in a static context (§8.1.3)... For example, the type name must not appear in the body of a static method declared by C\". JLS §8.1.3 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.1.3) defines a static context only for a \"construct (statement, local variable declaration statement, local class declaration, local interface declaration, or expression)\". A return type in the method header is none of those. javac does reject `static T make()` (\"non-static type variable T cannot be referenced from a static context\"), so the answer False holds in practice. But the cited text and its example cover the method body, not the return type.",
+     "problem": "The answer (False) is right in javac, but the cited JLS sentence, read literally, settles only uses of T in a static method body. The card tests the return type, which neither the source nor §8.1.3's definition of static context covers.",
+     "suggestedFix": "Keep it FALSE and test the case the source states. Statement: \"Inside a static method of `class Box<T>`, a local variable can be declared with the type `T`.\" Explanation: \"A class's type parameter may not appear in a static context such as a static method body, because no instance supplies its type argument there; the compiler reports an error.\" Keep the URL https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.5.5.1."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards. The section has 6 true cards (02, 04, 05, 09, 11, 12) and 6 false (01, 03, 06, 07, 08, 10). The 10 that pass, with the sentence that settles each:\n- 01: JLS 4.5 says \"Seq<int> is illegal, as primitive types cannot be type arguments\", and 4.5.1 says \"Type arguments may be either reference types or wildcards.\"\n- 04: JLS 10.5 says that if the value assigned \"is not assignment-compatible (§5.2) with the component type, an ArrayStoreException is thrown\". 1.5 boxes to Double, and assigning it to a Number[] variable compiles.\n- 05: JLS 5.1.9 says \"Use of an unchecked conversion causes a compile-time unchecked warning unless all type arguments Ti are unbounded wildcards\". By default javac shows only a summary Note, but the JLS calls it a warning.\n- 06: JLS 15.9.1 says the identifier \"must denote a class that is accessible, non-abstract, and not an enum class\". dev.java restrictions says \"You cannot create an instance of a type parameter.\"\n- 07: JLS 15.10.1 says it is a \"compile-time error if the ClassOrInterfaceType does not denote a reifiable type\".\n- 08: dev.java restrictions says \"A class cannot have two overloaded methods that will have the same signature after type erasure.\" JLS 8.4.8.3 confirms: \"A class cannot have two member methods with the same name and type erasure.\"\n- 09: dev.java type-erasure says \"Type erasure ensures that no new classes are created for parameterized types\". JLS 8.1.2 is stronger and should be the source: \"All of these parameterized types share the same class at run time\" (https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.1.2).\n- 11 and 12: JLS 5.1.10 says that for `? extends` the capture variable's \"lower bound is the null type\", and for `? super Bi` the \"lower bound is Bi\". dev.java wildcards says it more plainly: \"You can add null.\"\n\nOptional source upgrades, not flagged:\n- 08: the dev.java restrictions page is a port of the JDK 8 tutorial. It still says instanceof with a parameterized type is a compile-time error and uses `new Character`. The card is unaffected, but the JLS 8.4.8.3 URL (https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8.3) is cleaner.\n- 03: JLS 4.10.2 supports invariance only by inference (direct supertypes are \"C<S1,...,Sn>, where Si contains Ti\"). dev.java wildcards states it outright: \"Although Integer is a subtype of Number, List<Integer> is not a subtype of List<Number>\". Either is acceptable.\n\nCoverage gap: no r7 card tests bounded type parameters, multiple bounds (`<T extends A & B>`), the unbounded wildcard, or reading from `? extends` / `? super` lists, all of which the section names. If any card is replaced, those topics are the best targets.\n\nOverlap: no other section of the deck touches generics facts, so there are no duplicates.\n\nLimit: there was no local JDK, so I could not compile anything. The compile behaviour was checked against the JLS SE 25 text and known javac diagnostics."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr8-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, title 'SequencedCollection (Java SE 25 & JDK 25)', anchor #reversed() present",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/SequencedCollection.html#reversed() : \"Returns a reverse-ordered view of this collection. ... If the collection implementation permits modifications to this view, the modifications \"write through\" to the underlying collection.\" The answer is right, but the statement itself says 'modifiable reversed() view'. A view that you can modify updates its backing collection by definition, so the card's point (reversed() returns a view, not a copy) is already given away by its own wording.",
+     "problem": "The answer can be read from the words 'modifiable' and 'view' (definition card or give-away). Someone who does not know whether reversed() copies or wraps the collection can still answer True.",
+     "suggestedFix": "Replace (answer stays true, so the section stays 6 true and 6 false). Statement: \"On an ArrayList `list`, `list.reversed().addFirst(\\\"x\\\")` makes \\\"x\\\" the last element of `list`.\" Explanation: \"List.reversed() returns a reverse-ordered view, not a copy. Changes made through it write through, so adding first in the reversed view adds last in the original list.\" URL: https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/List.html#reversed()"
+    },
+    {
+     "id": "java-fundamentals-sr8-01",
+     "verdict": "source_problem",
+     "urlStatus": "200, title 'Map (Java SE 25 & JDK 25)'",
+     "evidence": "The cited Map page has no sentence saying that Map does not extend Collection. It only shows the declaration 'public interface Map<K, V>' with no 'All Superinterfaces' line, and says \"This interface takes the place of the Dictionary class\". The Java SE 25 Collections Framework Overview states it outright: \"The other collection interfaces are based on java.util.Map and are not true collections. However, these interfaces contain collection-view operations, which enable them to be manipulated as collections.\" (https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/doc-files/coll-overview.html)",
+     "problem": "The answer (false) and the explanation are correct, but a player can only infer them from the cited page by noticing that a superinterface list is missing. No quotable sentence there settles the card.",
+     "suggestedFix": "Keep the statement and explanation. Change source to {title: \"Collections Framework Overview — Java SE 25\", url: \"https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/doc-files/coll-overview.html\"}."
+    }
+   ],
+   "notes": "All 12 r8 cards are in content/raw/java-fundamentals-b2.json. Each cited URL returned HTTP 200 with a 'Java SE 25 & JDK 25' title, and every cited anchor exists (put(K,V), addFirst(E) on TreeSet and LinkedHashSet, of(E,E) on List and Set, unmodifiableList(java.util.List), asList(T...), reversed()). The section is balanced at 6 true (02, 04, 05, 07, 08, 10) and 6 false (01, 03, 06, 09, 11, 12). The quotes that settle the cards that pass: HashMap \\\"permits null values and the null key\\\" (02). HashSet \\\"makes no guarantees as to the iteration order of the set; in particular, it does not guarantee that the order will remain constant over time\\\" (03). LinkedHashMap access-order goes \\\"from least-recently accessed to most-recently\\\", and \\\"Invoking the put, putIfAbsent, get ... results in an access to the corresponding entry\\\" (04). TreeSet.addFirst \\\"Throws UnsupportedOperationException. The encounter order induced by this set's comparison method determines the position of elements, so explicit positioning is not supported\\\" (06). LinkedHashSet.addFirst \\\"If this set already contains the element, it is relocated if necessary so that it is first in encounter order\\\" (07). List.of(E,E) \\\"Throws: NullPointerException - if an element is null\\\" (08). Set.of(E,E) \\\"Throws: IllegalArgumentException - if the elements are duplicates\\\" (09). Collections.unmodifiableList \\\"Query operations on the returned list \\\\\\\"read through\\\\\\\" to the specified list\\\" (10). Arrays.asList \\\"implements the optional Collection methods, except those that would change the size of the returned list. Those methods leave the list unchanged and throw UnsupportedOperationException\\\" (11). ArrayList \\\"Fail-fast iterators throw ConcurrentModificationException on a best-effort basis\\\" (12). Nothing in sequenced collections (JEP 431, Java 21) or in these APIs changed in Java 26 or 27, so no card needs a version in its statement. A deck-wide check found no duplicates: sr3-11 (BigDecimal in a TreeSet), sr9-07 (Comparator.reversed) and sr10-06 (Stream.toList) each rest on a different fact. Minor, not flagged: sr8-03's phrase 'its specified iteration order' assumes an order exists, but the card is still clearly false. sr8-02 cites the put(K,V) anchor, while the null-key sentence is in the class description on the same page."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr9-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official Java SE 25 API page, supports the fact",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/function/UnaryOperator.html: \"public interface UnaryOperator<T> extends Function<T,T> Represents an operation on a single operand that produces a result of the same type as its operand.\" The answer (false) is correct, but the statement gives itself away: UnaryOperator<String> has a single type argument, so nobody who studied would expect an Integer result. That makes it a strawman with the answer readable from the type in the statement.",
+     "problem": "Strawman or giveaway. The written type UnaryOperator<String> has no slot for an Integer result, so a learner who has studied would not answer True. The card teaches almost nothing about how UnaryOperator relates to Function.",
+     "suggestedFix": "Replacement, answer false (keeps r9 at 6 true / 6 false). Statement: \"A `Function<String, String>` reference can be assigned to a `UnaryOperator<String>` variable without a cast.\" (108 chars). Explanation: \"UnaryOperator<T> extends Function<T, T>, so every UnaryOperator<String> is a Function<String, String>, but not the reverse: that assignment is a compile-time error. Pass f::apply instead.\" (187 chars). Keep the same URL."
+    },
+    {
+     "id": "java-fundamentals-sr9-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official Java SE 25 guide page (title 'Local Variable Type Inference'), supports the fact",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/language/local-variable-type-inference.html: \"var list = new ArrayList<String>(); // infers ArrayList<String>\". The card is \"In `var values = new ArrayList<String>();`, values has the static type ArrayList<String>.\", which is the guide's own example with the variable renamed.",
+     "problem": "Near-copy of the source. It is the guide's example with only the variable name changed, which breaks the rule against reproducing a sentence of the official page with a word or two changed. It is also close to a giveaway, because the type is printed in the initializer. The intended fact, that the variable stays statically typed, is not really tested.",
+     "suggestedFix": "Replacement, answer true (keeps the balance). Statement: \"After `var n = 1;` in a method, the later statement `n = \"one\";` is a compile-time error.\" (89 chars). Explanation: \"var infers int from the initializer at compile time and n keeps that static type, so assigning a String later fails to compile. var does not make a local variable dynamically typed.\" (181 chars). Source: JLS 25 §14.4.1, https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.4.1, or keep the guide URL."
+    }
+   ],
+   "notes": "All 12 r9 cards (6 true, 6 false) checked. All 8 distinct source URLs return 200, and every JLS anchor (jls-9.8, 14.4, 14.4.1, 15.27.2, 15.27.3) exists on the SE 25 pages. Cards that pass, with the sentence that settles each:\n- 01: JLS 9.8, \"The definition of functional interface excludes methods in an interface that are also public methods in Object.\"\n- 02: JLS 15.27, \"It is a compile-time error if a lambda expression occurs in a program in someplace other than an assignment context (§5.2), an invocation context (§5.3), or a casting context (§5.5).\"\n- 04: JLS 15.27.2, \"Any local variable, formal parameter, or exception parameter used but not declared in a lambda expression must either be final or effectively final\".\n- 05: JLS 15.27.2, \"Unlike code appearing in anonymous class declarations, the meaning of names and the this and super keywords appearing in a lambda body ... are the same as in the surrounding context\".\n- 07: Comparator.reversed(), \"Returns a comparator that imposes the reverse ordering of this comparator\", so the age comparison runs descending.\n- 09: JLS 14.4.1, \"It is a compile-time error if T is the null type.\" The JLS example also has \"var g = null; // Illegal: null type\".\n- 10 and 11: the Java 25 LVTI guide shows \"(var a, var b) -> a + b\" with the \"same effect as not using var at all\", and \"try (var input = new FileInputStream(...))\".\n- 12: JLS 14.4, \"It is a compile-time error if the LocalVariableType is var and any of the following are true: More than one VariableDeclarator is listed.\"\n\nMinor points, not flagged:\n- 06: dev.java (https://dev.java/learn/language/fp/lambdas/method-references/) loads and is current (it uses IO::println). It shows the fact only through the example toLength = s -> s.length() == String::length, not as a stated rule. The normative sentence is in JLS 15.13.3: \"If the compile-time declaration is an instance method, then the target reference is the first formal parameter of the invocation method.\" Consider switching to https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.13.3.\n- 09: the source title \"§14.4.1 The Type of a Local Variable\" is wrong. In SE 25 the section is \"14.4.1. Local Variable Declarators and Types\". The URL and anchor are correct.\n\nNo duplicates: the only other lambda-related card is r11-12 (checked exceptions in Function lambdas), which rests on a different fact. No preview features, no version dependence, and the statement and explanation lengths are within limits."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr10-07",
+     "verdict": "weak_card",
+     "urlStatus": "OK: https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Stream.html loads, title 'Stream (Java SE 25 & JDK 25)'",
+     "evidence": "Stream.html: generate 'Returns an infinite sequential unordered stream where each element is generated by the provided Supplier'; limit 'Returns a stream consisting of the elements of this stream, truncated to be no longer than maxSize in length. This is a short-circuiting stateful intermediate operation.' The answer is correct, but the code shows the answer: `limit(3)` plainly makes the stream three elements long, so anyone who reads the call will answer True. Nobody who studied would say a three-element stream fails to finish, so the card is a give-away (strawman false side). It does not test the real short-circuiting misconception, which is whether an infinite source plus a filter can still finish.",
+     "problem": "The answer can be read straight from the code: limit(3) obviously bounds the stream. The card does not test short-circuiting in a way a learner could get wrong.",
+     "suggestedFix": "Keep answer True. Statement: \"`Stream.iterate(1, i -> i + 1).filter(i -> i % 7 == 0).findFirst()` returns Optional[7] from an infinite source.\" Explanation: \"findFirst is a short-circuiting terminal operation: the pipeline pulls elements from the infinite iterate source only until 7 passes the predicate, then stops.\" Source: https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Stream.html#findFirst() (it says 'This is a short-circuiting terminal operation'; the package page defines short-circuiting terminal operations as able to terminate in finite time on infinite input)."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards. The section is balanced 6 true (01, 04, 06, 07, 09, 11) and 6 false (02, 03, 05, 08, 10, 12). Average statement length is 92.7 for true and 94.0 for false. Every statement is 120 characters or less and every explanation is 240 or less. I found no fact that repeats another section: a deck-wide search for Optional, Stream, toList, orElse, peek, gather, forEach, flatMap and toMap outside r10 returned nothing.\n\nAll six source URLs loaded with HTTP 200. Their titles are 'java.util.stream (Java SE 25 & JDK 25)', 'Stream (Java SE 25 & JDK 25)', 'Collectors (Java SE 25 & JDK 25)', 'Gatherers (Java SE 25 & JDK 25)', 'Optional (Java SE 25 & JDK 25)' and JLS SE 25 Chapter 15. The anchor jls-15.12.4.2 exists on the JLS page.\n\nQuotes that settle the cards that pass:\n- 01: package-summary says \"Traversal of the pipeline source does not begin until the terminal operation of the pipeline is executed.\"\n- 02: Stream says \"A stream should be operated on (invoking an intermediate or terminal stream operation) only once... A stream implementation may throw IllegalStateException if it detects that the stream is being reused.\"\n- 03: package-summary says \"With the exception of terminal operations forEach and forEachOrdered, side-effects of behavioral parameters may not always be executed... (For a specific example see the API note documented on the count operation.)\" The Stream#count API note is a more direct source: \"no source elements will be traversed and no intermediate operations will be evaluated\". Swapping to it is optional.\n- 04: flatMap is documented as \"replacing each element of this stream with the contents of a mapped stream\". Stream.of(Stream.of(\"a\",\"b\")) resolves to of(T) in phase 1 before varargs, so the result has exactly two Strings.\n- 05: Collectors.toMap says \"If the mapped keys contain duplicates (according to Object.equals(Object)), an IllegalStateException is thrown when the collection operation is performed.\"\n- 06: Stream.toList says \"The returned List is unmodifiable; calls to any mutator method will always cause UnsupportedOperationException to be thrown.\"\n- 08: Stream.forEach says \"For parallel stream pipelines, this operation does not guarantee to respect the encounter order of the stream\". The cited package page also says \"some terminal operations may ignore encounter order, such as forEach()\".\n- 09: Gatherers.windowSliding says \"each subsequent window includes all elements of the previous window except for the least recent\". The page's example with window size 2 gives [[1, 2], [2, 3], ...]. The statement names Java 24, as the version-pinning rule requires.\n- 10: Optional.of says \"Throws: NullPointerException - if value is null\".\n- 11: JLS 15.12.4.2 says \"The argument expressions (possibly rewritten as described above) are now evaluated to yield argument values... evaluated in order, from left to right\". This happens before the method body runs, so orElse's argument always runs.\n- 12: the Optional API note says \"Optional is primarily intended for use as a method return type where there is a clear need to represent \\\"no result,\\\"\".\n\nI found no version-dependent reading that flips any answer in Java 25, 26 or 27. Card 12 is close to a strawman but tests the docs' wording as the prompt allows, so I did not flag it."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr11-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, JLS SE 25 jls-11.html#jls-11.2.3 (anchor present)",
+     "evidence": "JLS 25 §11.2 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-11.html#jls-11.2): 'The Java programming language requires that a program contains handlers for checked exceptions ... This compile-time checking for the presence of exception handlers ...'. §11.2.3: 'It is a compile-time error if a method or constructor body can throw some exception class E when E is a checked exception class and E is not a subclass of some class declared in the throws clause'. The answer is correct, but it follows from the term 'checked exception' itself. Nobody who has studied would answer False, so the card is a definition card and a strawman under the prompt's rules. It also leaves out the half of the trap the prompt names ('checked by the compiler only ... the JVM does not'). Minor point: the explanation's 'appears in its throws clause' is loose, because a superclass in the throws clause also satisfies the rule.",
+     "problem": "Definition card: the answer can be read from 'checked'. It tests the obvious half of the catch-or-declare fact instead of the compiler-only point the prompt asks for.",
+     "suggestedFix": "Replace (answer stays true). Statement: 'The JVM lets a method throw a checked exception missing from its throws clause.' (79 chars). Explanation: 'The JVM Specification says throws-clause rules are enforced only at compile time, so separately compiled or generated code can throw an undeclared checked exception.' (165 chars). URL: https://docs.oracle.com/javase/specs/jvms/se25/html/jvms-4.html#jvms-4.7.5 ('These requirements are not enforced in the Java Virtual Machine; they are enforced only at compile time.')."
+    },
+    {
+     "id": "java-fundamentals-sr11-10",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, Throwable (Java SE 25 & JDK 25) addSuppressed anchor",
+     "evidence": "Throwable.addSuppressed (https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Throwable.html#addSuppressed(java.lang.Throwable)): 'In the try-with-resources statement, when there are two such exceptions, the exception originating from the try block is propagated and the exception from the finally block is added to the list of exceptions suppressed by the exception from the try block.' and 'The suppression behavior is enabled unless disabled via a constructor.' The fact is correct and the source supports it. The problem is the wording. The hedges 'With suppression enabled' and 'distinct' cover rare edge cases (the enableSuppression constructor flag, self-suppression). Only a true statement would need them, so they act as a wording tell. 'Records ... on a pending try-block exception' is also hard to parse. The explanation repeats the hedge.",
+     "problem": "The true answer is signalled by its defensive qualifiers, and the statement is hard to read. The core fact (the try-block exception wins and the close() exception is suppressed) is buried.",
+     "suggestedFix": "Replace (answer stays true). Statement: 'When the try block and close() both throw, try-with-resources propagates the try-block exception.' (97 chars). Explanation: 'The try-block exception propagates, and the exception from close() is added to it as a suppressed exception that getSuppressed() returns.' (137 chars). Keep the same Throwable.addSuppressed URL, or use https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.20.3.1."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards: 6 true (01, 04, 05, 06, 07, 10) and 6 false (02, 03, 08, 09, 11, 12). The balance holds, and both suggested replacements keep the answer true. Every source URL returned HTTP 200, and every JLS anchor exists in the SE 25 pages (jls-11.2.3, jls-14.20.2, jls-14.20.3, jls-8.4.8.3). Passing cards and the evidence for each: 02, RuntimeException page: 'RuntimeException and its subclasses are unchecked exceptions'. 03, JLS 11.2.3: 'compile-time error if a catch clause can catch an exception class E1 and a preceding catch clause ... can catch E1 or a superclass of E1'. JLS 14.22 also defines catch-block reachability, so 'reachable' is accurate wording. 04, dev.java: 'If a catch block handles more than one exception type, then the catch parameter is implicitly final'. 05, JLS 14.20.2: 'If the finally block completes abruptly for reason S, then the try statement completes abruptly for reason S (and the throw of value V is discarded and forgotten)'. 06, the AutoCloseable page declares 'void close() throws Exception'. 07, dev.java: 'close() methods of resources are called in the opposite order of their creation'. JLS 14.20.3 agrees. 08, dev.java: 'any catch or finally block is run after the close() method of the resources declared have been called'. 09, JLS 14.20.3: 'A resource is closed only if it initialized to a non-null value.' 11, JLS 8.4.8.3: 'For every checked exception type listed in the throws clause of m2, that same exception class or one of its supertypes must occur in the erasure of the throws clause of m1'. Its phrasing 'An override replaces...' is awkward but cannot be defended as True. 12, JLS 11.2.3: a lambda body's checked exceptions are checked against 'the throws clause of the function type targeted by the lambda expression'. No r11 card duplicates a card in another section. The nearby cards are r9-11 (var in try-with-resources), r12-03 and r12-10 (InterruptedException, ExecutionException) and r6-11 (null switch), and each rests on a different fact. The section does not cover exception chaining with a cause, finally after return or break, or an effectively final variable as a resource. That is acceptable with 12 cards. I made no edits. Downloaded pages are in a scratch folder"
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr12-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, JLS SE 25 ch. 17 (Threads and Locks), anchor jls-17.1 present and current",
+     "evidence": "JLS 25 §17.1 (https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html#jls-17.1): \"A thread t may lock a particular monitor multiple times; each unlock reverses the effect of one lock operation.\" The answer (True) is correct, but the wording \"nested `synchronized (lock)` blocks ... acquire its monitor\" can be answered True by anyone who knows only that synchronized locks the object's monitor. The point being tested, reentrancy (the inner block does not self-deadlock), never appears in the statement, so the card does not separate people who know the fact from people who don't. The `Object lock = new Object();` preamble is filler.",
+     "problem": "The answer can be read from the wording: \"synchronized acquires the monitor\" is true by definition, so the card does not test whether intrinsic locks are reentrant.",
+     "suggestedFix": "Replace and keep it True. Statement (100 chars): \"A thread already holding lock's monitor proceeds straight into a nested `synchronized (lock)` block.\" Explanation: \"Intrinsic locks are reentrant: JLS 17.1 lets a thread lock the same monitor multiple times, and each unlock reverses one lock, so the monitor is freed only after the outer block exits.\" Keep URL https://docs.oracle.com/javase/specs/jls/se25/html/jls-17.html#jls-17.1"
+    }
+   ],
+   "notes": "I checked all 12 r12 cards (6 true, 6 false). True and false statements average the same length, 90.3 characters. I downloaded every source URL and confirmed it returns HTTP 200 with a Java SE 25 title. Quotes that settle each card:\n- 01: Thread#run says \"If this thread is a platform thread created with a Runnable task then invoking this method will invoke the task's run method.\" new Thread(task) always creates a platform thread. Passes.\n- 02: join() says \"Waits for this thread to terminate ... behaves in exactly the same way as the invocation join(0)\", and join(0) waits forever. The words \"started Thread\" avoid the case where join returns at once for an unstarted thread. Passes.\n- 03 and 06: sleep(long) says \"The thread does not lose ownership of any monitors.\" and \"The interrupted status of the current thread is cleared when this exception is thrown.\" Both cards pass.\n- 04: JLS 8.4.3.6 says \"For a class (static) method, the monitor associated with the Class object for the method's class is used. For an instance method, the monitor associated with this ... is used.\" Passes.\n- 07: JLS 17.2.1 says \"If n is zero (i.e., thread t does not already possess the lock for target m), then an IllegalMonitorStateException is thrown.\" Passes.\n- 08 passes, but its source is weak. JLS 17.4.3 only says it in general terms: \"Sequential consistency and/or freedom from data races still allows errors arising from groups of operations that need to be perceived atomically and are not.\" Volatile accesses are not data races, so the sentence does cover count++. No Java SE 25 page (JLS 8.3.1.4, the atomic package summary, the Concurrency guide) says count++ on a volatile field is non-atomic in so many words. I left the source as it is: 17.4.3 is the closest page.\n- 09: JLS 17.4.5 says \"A call to start() on a thread happens-before any actions in the started thread.\" Program order and transitivity complete the claim. Passes.\n- 10: Future#get lists \"ExecutionException - if the computation threw an exception\". The explanation's point about the cause comes from the ExecutionException page (\"can be inspected using the Throwable.getCause() method\"), not from the Future page. This is minor and I did not flag it.\n- 11: ExecutorService says \"An ExecutorService can be shut down, which will cause it to reject new tasks.\" Passes.\n- 12: close() says \"This method waits until all tasks have completed execution and the executor has terminated. If interrupted while waiting ... It then continues to wait until all actively executing tasks have completed.\" Passes.\n\nEdge case, not flagged: ForkJoinPool's Java 25 Javadoc exempts the common pool. close() reads \"Unless this is the commonPool(), initiates an orderly shutdown ... and waits until ... the executor has terminated\", and the common pool ignores shutdown() too. An expert could raise this against 11 and 12, but both cards test the ExecutorService interface contract, so I judged them sound.\n\nDuplicates: I compared r12 against every concurrency-related card in the deck (r3-12 on value-based monitors, r8-12 on ConcurrentModificationException, r13-01 to r13-09). None rests on the same fact.\n\nScope and version: all cards fall within r12 at the depth the prompt sets, carry no version claims and use no retired APIs (no stop, suspend or resume)."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "java-fundamentals-sr13-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, Executors (Java SE 25 & JDK 25)",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/Executors.html: \"Creates an Executor that starts a new virtual Thread for each task. The number of threads created by the Executor is unbounded.\" The fact is correct, but the method name newVirtualThreadPerTaskExecutor already says \"thread per task\", so a player can read the True answer from the API name.",
+     "problem": "Name giveaway: \"fresh Thread objects for successive tasks\" restates \"ThreadPerTask\" from the method name, which breaks the rule against answers readable from the name.",
+     "suggestedFix": "Replacement (true): \"The Javadoc of Executors.newVirtualThreadPerTaskExecutor() says the number of threads it creates is unbounded.\" Explanation: \"The executor starts a new virtual thread for each task and sets no cap on how many it creates, so code that must limit concurrency to a resource needs its own limit, such as a Semaphore.\" Same URL."
+    },
+    {
+     "id": "java-fundamentals-sr13-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, ScopedValue (Java SE 25 & JDK 25)",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/ScopedValue.Carrier.html: \"call(ScopedValue.CallableOp<? extends R, X> op) throws X: Calls a value-returning operation with each scoped value in this mapping bound to its value in the current thread.\" The code compiles and returns 7, so the answer is right.",
+     "problem": "Close to a truism. Calling a value-returning lambda through a method named call returns its value, so any Java developer can answer from the wording (Callable.call). The binding plays no part, because the key from newInstance() cannot be read anywhere. The card teaches nothing specific to scoped values.",
+     "suggestedFix": "Replacement (true): \"In Java 25, ScopedValue.Carrier.call lets its operation throw a checked exception that call propagates to the caller.\" Explanation: \"Carrier.call takes a ScopedValue.CallableOp<R, X> and is declared throws X, so a checked exception from the operation reaches the caller, whereas run takes a plain Runnable.\" URL: https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/ScopedValue.Carrier.html"
+    },
+    {
+     "id": "java-fundamentals-sr13-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, ScopedValue (Java SE 25 & JDK 25)",
+     "evidence": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/ScopedValue.html: \"The method may invoke another method, which in turn may invoke another. The unfolding execution of the methods define a dynamic scope. Code in these methods with access to the ScopedValue object may read its value.\" The answer (false) is right.",
+     "problem": "The wording is contorted and invented: \"same-thread helpers\", \"accessible carrier keys\", \"see ... as unbound\". \"Carrier\" also collides with the carrier threads that the rest of the section uses. A player is more likely to fail on parsing than on the fact (lexical versus dynamic scope).",
+     "suggestedFix": "Replacement (false): \"In Java 25, a ScopedValue bound with where(K, v).run(op) reads as unbound in methods that op calls on the same thread.\" Explanation: \"The binding covers the whole dynamic scope of run: methods op calls directly or indirectly on that thread can read it with get(), and it reverts once run returns.\" Same URL."
+    },
+    {
+     "id": "java-fundamentals-sr13-05",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, ThreadLocal (Java SE 25 & JDK 25)",
+     "evidence": "The ThreadLocal page only says set \"Sets the current thread's copy of this thread-local variable\" and never mentions virtual threads. The tested fact is stated on https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html: \"Virtual threads support thread-local variables just as platform threads do.\" The Thread page adds: \"The currentThread() method ... will always return the Thread object for the virtual thread.\"",
+     "problem": "The answer (true) is right, but the cited page cannot settle the virtual-thread part of the card, or rule out the carrier-thread misconception the card targets.",
+     "suggestedFix": "Cite https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html (title \"Virtual Threads\"), which states that virtual threads support thread-local variables just as platform threads do. Keep the statement and explanation."
+    }
+   ],
+   "notes": "All 12 r13 cards were checked against the Java SE 25 pages, fetched on 2026-10-08. Every page returned HTTP 200 with the right title: Executors, Thread, ThreadLocal, ScopedValue and ScopedValue.Carrier (Java SE 25 & JDK 25), the \\\"Virtual Threads\\\" guide, JEP 491 (Closed / Delivered, Release 24) and JEP 506 (Closed / Delivered, Release 25). The section is balanced at 6 true (01, 05, 06, 07, 10, 12) and 6 false (02, 03, 04, 08, 09, 11), and every suggested replacement keeps the original answer.\n\nCards that pass, with the quote that settles each:\n- 02: Thread page, \\\"Virtual threads are daemon threads and so do not prevent the shutdown sequence from beginning.\\\"\n- 03: guide, \\\"Virtual threads are not faster threads; they do not run code any faster than platform threads. They exist to provide scale (higher throughput), not speed (lower latency).\\\"\n- 04: guide, \\\"virtual threads aren't scarce and therefore should never be pooled!\\\"\n- 06: JEP 491, \\\"arranging for virtual threads that block in such constructs to release their underlying platform threads\\\". The guide no longer mentions synchronized as a cause of pinning, so citing the JEP is right.\n- 07: guide, \\\"A virtual thread is pinned when it runs a native method or a foreign function.\\\"\n- 09: ScopedValue get(), \\\"Throws: NoSuchElementException - if the scoped value is not bound\\\".\n- 10: ScopedValue, \\\"When the method completes, the value of the ScopedValue reverts to its previous value.\\\"\n- 11: JEP 506, \\\"There is no set method that lets faraway code change the scoped value at any time\\\" and \\\"The body of bar cannot change the binding seen by that method itself\\\".\n\nNo wrong answers were found. No card in another section overlaps r13 (only sr4-03 mentions \\\"virtual\\\", and that is about virtual method dispatch). The Java 24 and Java 25 cards name their version and set appliesTo correctly. Card 12's original code was checked and does compile (T inferred as String, X as RuntimeException) and returns 7, so the flag is about card quality only."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 r14 cards (sr14-01 to sr14-12, all in java-fundamentals-b4.json). Six are true and six are false, so the section is balanced. Every source URL loaded with HTTP 200. I checked each page title, so none of the guide URLs is the JDK 26 home page fallback, and each cited JLS anchor exists. No card is flagged.\n\nEvidence for each card:\n- sr14-01 (true): JLS 8.1.8 says the class \"is a member of an unnamed package (§7.4.2) and has package access.\"\n- sr14-02 (false): JLS 8.1.8 says \"It is not possible for a compact compilation unit to contain declarations of instance initializers (§8.6), static initializers (§8.7), or constructors (§8.8). It has an implicitly declared default constructor.\"\n- sr14-03 (true): JLS 7.3 says \"Every compact compilation unit implicitly imports all the public top level classes and interfaces of the packages exported by the module java.base, as if the declaration import module java.base; appeared at the beginning\".\n- sr14-04 (false): JLS 12.1.4 says \"If there is a candidate main method with a single formal parameter, then this method is invoked ... Otherwise, if there is a candidate main method with no formal parameters\".\n- sr14-05 (true): JEP 512 says \"The class must have a non-private constructor with no parameters. The launcher invokes that constructor and then invokes the chosen main method\".\n- sr14-06 (false): the Java 25 compact source files guide says \"the static methods of the IO class aren't implicitly imported. To invoke these methods, you must name the class, for example, IO.println(...), unless you explicitly import them.\"\n- sr14-07 (true): JLS 7.5.5 says \"A single-module-import declaration can be used in any source file. It is not required for the source file to be part of a module.\"\n- sr14-08 (false): the module import guide says \"both interface java.util.List in java.util and class java.awt.List in java.awt match\" and \"To resolve these ambiguities, use single-type-import declarations\". JLS Example 7.5.5-3 says the same.\n- sr14-09 (true): JEP 458 (Closed / Delivered, Release 22) says \"Because code in this class refers to the class Helper, the launcher finds the Helper.java file in the filesystem and compiles its class in memory.\"\n- sr14-10 (false): the Java 25 Preview Features guide says \"you must explicitly enable them in the compiler and the runtime system\" and shows \"java --enable-preview MyApp\". JLS 1.5.1 says \"at both compile time and run time\".\n- sr14-11 (false): the Java SE 25 Preview List names \"505: Structured Concurrency (Fifth Preview)\" and \"java.util.concurrent.StructuredTaskScope PREVIEW\". The card uses volatility may_change and appliesTo Java 25, as the prompt requires.\n- sr14-12 (true): the Oracle Support Roadmap says \"Java SE 8, 11, 17, 21, and 25 are LTS releases.\" The card names Oracle, cites the roadmap and uses may_change, as the rules require.\n\nNothing in r14 duplicates another section. I searched the whole deck for compact, preview, LTS, launcher, IO and import module, and only r14 cards match.\n\nThree wording points that do not change any answer:\n- sr14-04 says \"when both are launchable\". JEP 512 defines a launchable main method as one \"that can be chosen and invoked under this protocol\". By that definition main() is not launchable when main(String[]) exists, so the premise contradicts itself. JLS 12.1.4's term \"candidate main methods\" would be more exact.\n- sr14-09 says \"when Helper.class is absent\". The condition is harmless but unnecessary: JEP 458 says that when a class exists in both the source tree and the class path, \"the class in the source tree is preferred\". The condition could be dropped.\n- sr14-02 says \"defines extra constructors\", which is awkward wording, but the answer is still clearly false."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [],
+  "conflictGroups": [
+   {
+    "name": "string-constant-concat-identity",
+    "ids": [
+     "java-fundamentals-sr2-02",
+     "java-fundamentals-sr2-03",
+     "java-fundamentals-sr2-04"
+    ],
+    "why": "sr2-02 says == holds 'because the concatenation is a constant expression' and sr2-04 says a final local p is usable in constant expressions. Together they give away sr2-03 (non-final p + \"ue\" is run-time concatenation, so == is false). sr2-03's explanation in turn hints that sr2-02 is true."
+   },
+   {
+    "name": "string-equals-content",
+    "ids": [
+     "java-fundamentals-sr2-05",
+     "java-fundamentals-sr2-06"
+    ],
+    "why": "The sr2-06 explanation says a String switch compares 'using String.equals, so matching text selects that case', and its statement shows new String(\"go\") matching \"go\". That gives away sr2-05 (String.equals compares content, not identity)."
+   },
+   {
+    "name": "inherited-identity-equals",
+    "ids": [
+     "java-fundamentals-sr2-07",
+     "java-fundamentals-sr3-10",
+     "java-fundamentals-sr3-01"
+    ],
+    "why": "sr2-07 and sr3-10 share one template ('distinct X ... equals returns false'), and both are true. Their explanations say equals 'checks builder identity' and 'checks its reference identity', which answers sr3-01 (inherited Object.equals does not compare fields)."
+   },
+   {
+    "name": "array-reference-equality",
+    "ids": [
+     "java-fundamentals-sr3-10",
+     "java-fundamentals-sr5-12"
+    ],
+    "why": "The sr5-12 explanation says the record compares its array component 'by reference', which gives away sr3-10 (a.equals(b) on distinct arrays is false). The sr3-10 explanation likewise gives away sr5-12."
+   },
+   {
+    "name": "hashcode-contract-sides",
+    "ids": [
+     "java-fundamentals-sr3-05",
+     "java-fundamentals-sr3-06"
+    ],
+    "why": "These are the two directions of the hashCode contract as a mirrored true/false pair: equal objects give equal hashes (true), and unequal objects are required to give distinct hashes (false). Seeing both in one round lets a player play one off the other."
+   },
+   {
+    "name": "hiding-vs-dynamic-dispatch",
+    "ids": [
+     "java-fundamentals-sr4-02",
+     "java-fundamentals-sr4-03",
+     "java-fundamentals-sr4-05"
+    ],
+    "why": "The sr4-02 explanation (static methods are hidden, not overridden) and the sr4-03 explanation (override chosen from the receiver's runtime class) set up the contrast that sr4-05 tests. The sr4-05 explanation ('field lookup uses the compile-time type') in turn hints at sr4-02 and sr4-03."
+   },
+   {
+    "name": "array-vs-generic-variance",
+    "ids": [
+     "java-fundamentals-sr7-03",
+     "java-fundamentals-sr7-04"
+    ],
+    "why": "These are the two sides of one distinction (covariant arrays, invariant generics). The sr7-04 statement shows Number[] xs = new Integer[1] compiling, and the sr7-03 explanation says element subtyping 'does not transfer' to parameterized types. Each answers the other by contrast."
+   },
+   {
+    "name": "type-erasure-runtime-class",
+    "ids": [
+     "java-fundamentals-sr7-07",
+     "java-fundamentals-sr7-08",
+     "java-fundamentals-sr7-09"
+    ],
+    "why": "The sr7-08 explanation ('both erase to m(List)') gives away sr7-09 (one run-time class for every parameterization). The sr7-09 explanation ('type arguments do not produce separate run-time classes') gives away sr7-08. The sr7-07 explanation about run-time checking hints at both."
+   },
+   {
+    "name": "sequenced-set-addfirst",
+    "ids": [
+     "java-fundamentals-sr8-06",
+     "java-fundamentals-sr8-07"
+    ],
+    "why": "A mirrored pair in one template: 'X.addFirst puts/inserts ... first in the set's encounter order'. It is false for TreeSet and true for LinkedHashSet, so dealing both lets a player guess one from the other."
+   },
+   {
+    "name": "lambda-target-typing",
+    "ids": [
+     "java-fundamentals-sr9-02",
+     "java-fundamentals-sr9-10"
+    ],
+    "why": "The sr9-10 explanation says a lambda parameter 'gets its type from the target functional interface', which answers sr9-02 (a lambda does not infer its interface from its body). The sr9-02 explanation in turn supports sr9-10."
+   },
+   {
+    "name": "virtual-thread-reuse",
+    "ids": [
+     "java-fundamentals-sr13-01",
+     "java-fundamentals-sr13-04"
+    ],
+    "why": "The sr13-01 explanation says the executor gives each task a new virtual thread 'rather than reusing a thread', which hints that the guide does not recommend pooling (sr13-04). The sr13-04 explanation ('low creation cost removes the reason to reuse them') hints at sr13-01."
+   },
+   {
+    "name": "virtual-thread-pinning",
+    "ids": [
+     "java-fundamentals-sr13-06",
+     "java-fundamentals-sr13-07"
+    ],
+    "why": "The sr13-07 explanation calls native-method execution 'a remaining cause of carrier pinning'. That implies an earlier cause was removed, which gives away sr13-06 (since Java 24, synchronized no longer pins)."
+   },
+   {
+    "name": "scoped-value-binding-semantics",
+    "ids": [
+     "java-fundamentals-sr13-08",
+     "java-fundamentals-sr13-10",
+     "java-fundamentals-sr13-11"
+    ],
+    "why": "sr13-10 shows rebinding done through a nested scope, and its explanation ('the inner value shadows the outer value') points to sr13-11 being false (no in-place replacement). The sr13-10 explanation also says get observes bindings during the operation, which undercuts sr13-08. The sr13-11 explanation ('binding is immutable during its dynamic scope') in turn supports sr13-10."
+   },
+   {
+    "name": "compact-file-automatic-imports",
+    "ids": [
+     "java-fundamentals-sr14-03",
+     "java-fundamentals-sr14-06"
+    ],
+    "why": "sr14-03 names the compact file's automatic import as the java.base module import, which brings in types. Its explanation ('exported public top-level types') hints that static methods such as IO.println are not imported unqualified (sr14-06)."
+   },
+   {
+    "name": "java-base-module-import",
+    "ids": [
+     "java-fundamentals-sr14-03",
+     "java-fundamentals-sr14-07"
+    ],
+    "why": "A compact source file is in the unnamed module and automatically imports module java.base (sr14-03). That implies sr14-07 (import module java.base works in unnamed-module code). Both are true and rest on overlapping knowledge."
+   }
+  ],
+  "tells": "Overall balance is clean. There are 84 true and 84 false cards (6/6 in every section), and the average statement lengths of true and false cards stay within 5 characters in every section (largest gap: r5, 81.0 true vs 76.5 false). Hedge and requirement words are balanced: can 3T/3F, may 2T/2F, requires 2T/2F, 'In Java 25' 7T/9F. The exploitable tells:\n\n(1) Permission verbs mark false. 'accepts', 'fits', 'inherits', 'overrides' and 'can compile' appear in 0 true and 9 false statements: sr1-09, sr3-01, sr4-02, sr4-06, sr5-01, sr5-04, sr5-06, sr7-03, sr8-01.\n\n(2) Compiler-as-actor and rejection wording mark true. 'compiler' appears in 6 true and 0 false statements (sr2-09, sr2-11, sr4-10, sr9-04, sr11-01, sr11-04). 'rejects' appears in 3 true and 0 false (sr10-06, sr11-04, sr12-11).\n\n(3) 'Java <verb>' with Java as the actor leans false: 1 true (sr7-02) vs 4 false (sr7-07, sr7-08, sr11-02, sr11-03).\n\n(4) A self-justifying 'because' clause marks true: 3 true, 0 false (sr1-03, sr1-05, sr2-02).\n\n(5) 'same' marks false: 2 true (sr4-01, sr6-03) vs 8 false (sr2-03, sr3-09, sr4-02, sr6-08, sr11-03, sr12-04, sr12-10, sr13-08).\n\n(6) Documentation-attribution cards lean false: 5 true (sr3-02, sr3-03, sr3-05, sr10-06, sr14-12) vs 8 false (sr3-04, sr3-06, sr3-07, sr3-12, sr8-12, sr10-03, sr10-12, sr13-04). Every card about what a guide or note recommends or names as the intended use is false: 'recommends' in sr3-12 and sr13-04 (0T/2F), plus sr10-12. 'promises' and 'guarantees' appear in 1 true and 2 false (sr10-06 true; sr8-12, sr10-03 false).\n\n(7) 'preserves' and 'keeps' lean false: 1 true (sr3-11) vs 4 false (sr2-10, sr10-05, sr10-08, sr13-02).\n\n(8) 'evaluates to' and 'compiles' lean true: 7 true (sr1-03, sr1-05, sr1-08, sr6-07, sr7-11, sr7-12, sr14-09) vs 2 false (sr1-06, sr7-06), plus sr4-06 'can compile' false.\n\n(9) Recurring false templates:\n- An API silently succeeds where it actually throws. 6 cards, all false: sr8-06 (TreeSet.addFirst inserts), sr8-09 (Set.of merges duplicates), sr8-11 (Arrays.asList add appends), sr10-05 (toMap keeps the last value), sr10-10 (Optional.of(null) returns empty), sr13-09 (ScopedValue.get returns null).\n- 'Duplicates handled silently' is a sub-case of that: sr8-09 and sr10-05.\n- 'Fits a parameter declared as': sr7-03 and sr8-01, both false.\n- 'Mutates or replaces in place': sr2-01 and sr13-11, both false.\n\n(10) Same-template twins where both cards are true: sr2-07 and sr3-10 ('distinct X ..., equals returns false'), and sr7-11 and sr7-12 ('For a List<? ... > xs, xs.add(...) compiles').\n\n(11) 'Since Java 2x' leans true: 3 true (sr10-09, sr13-06, sr14-09) vs 1 false (sr6-12).\n\n(12) The r3 'The equals/hashCode/Map contract ...' frame is 3 true / 3 false. It is balanced, but six cards share one frame inside one section.\n\nThere are no strict duplicates: every pair that looks close tests a different clause or class. The same-fact risks are handled as conflict groups instead."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "java-fundamentals-sr3-03",
+    "reason": "weak_card: transitivity is a common-sense truism; dropping leaves r3 at 9 cards (4T/5F)."
+   },
+   {
+    "id": "java-fundamentals-sr3-08",
+    "reason": "weak_card: 'safely handling the null arguments' gives away the no-throw half and the explanation only repeats the statement. r3 stays at 9 cards (4T/5F), so it is dropped, not rewritten."
+   },
+   {
+    "id": "java-fundamentals-sr3-12",
+    "reason": "weak_card: strawman. No one believes the guidance 'recommends' value-based instances as locks, so 'recommends' gives the answer away."
+   },
+   {
+    "id": "java-fundamentals-sr4-01",
+    "reason": "weak_card: the answer comes from the term 'package-private' itself, which makes it a definition card. r4 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "java-fundamentals-sr6-07",
+    "reason": "weak_card: giveaway. 'yield 7' evaluating to 7 can be read straight from the code. r6 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "java-fundamentals-sr7-02",
+    "reason": "weak_card: diamond inferring String in the most common Java line is a definition card. r7 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "java-fundamentals-sr8-05",
+    "reason": "weak_card: 'modifiable reversed() view' gives away write-through by definition. r8 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "java-fundamentals-sr9-03",
+    "reason": "weak_card: strawman. UnaryOperator<String> has no slot for an Integer result."
+   },
+   {
+    "id": "java-fundamentals-sr9-08",
+    "reason": "weak_card: near-copy of the LVTI guide example with the type printed in the initializer. r9 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "java-fundamentals-sr10-07",
+    "reason": "weak_card: limit(3) visibly bounds the stream, so the answer is readable from the code. r10 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "java-fundamentals-sr11-01",
+    "reason": "weak_card: definition card. The compiler checking checked exceptions follows from the word 'checked'."
+   },
+   {
+    "id": "java-fundamentals-sr11-10",
+    "reason": "weak_card: the defensive qualifiers ('With suppression enabled', 'distinct') mark the card as true and it is hard to parse. r11 keeps 10 cards at 4T/6F, the edge of the allowed split."
+   },
+   {
+    "id": "java-fundamentals-sr12-05",
+    "reason": "weak_card: 'synchronized acquires the monitor' is true by definition and the card never tests reentrancy. r12 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "java-fundamentals-sr13-01",
+    "reason": "weak_card: name giveaway. 'fresh Thread objects for successive tasks' restates newVirtualThreadPerTaskExecutor."
+   },
+   {
+    "id": "java-fundamentals-sr13-08",
+    "reason": "weak_card: invented, contorted wording ('same-thread helpers', 'accessible carrier keys'), and 'carrier' collides with carrier threads."
+   },
+   {
+    "id": "java-fundamentals-sr13-12",
+    "reason": "weak_card: truism. A value-returning lambda passed to call returns its value, and the binding plays no part. r13 keeps 9 cards (4T/5F)."
+   }
+  ],
+  "source": [
+   {
+    "id": "java-fundamentals-sr2-04",
+    "title": "JLS 25 §15.29: Constant Expressions",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.29"
+   },
+   {
+    "id": "java-fundamentals-sr4-08",
+    "title": "JLS 25 §15.9.2: Determining Enclosing Instances",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.9.2"
+   },
+   {
+    "id": "java-fundamentals-sr8-01",
+    "title": "Collections Framework Overview (Java SE 25 & JDK 25)",
+    "url": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/doc-files/coll-overview.html"
+   },
+   {
+    "id": "java-fundamentals-sr13-05",
+    "title": "Virtual Threads (Java SE 25 Core Libraries)",
+    "url": "https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html"
+   },
+   {
+    "id": "java-fundamentals-sr9-09",
+    "title": "JLS 25 §14.4.1: Local Variable Declarators and Types",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-14.html#jls-14.4.1"
+   },
+   {
+    "id": "java-fundamentals-sr7-08",
+    "title": "JLS 25 §8.4.8.3: Requirements in Overriding and Hiding",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8.3"
+   },
+   {
+    "id": "java-fundamentals-sr7-09",
+    "title": "JLS 25 §8.1.2: Generic Classes and Type Parameters",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.1.2"
+   },
+   {
+    "id": "java-fundamentals-sr9-06",
+    "title": "JLS 25 §15.13.3: Run-Time Evaluation of Method References",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-15.html#jls-15.13.3"
+   },
+   {
+    "id": "java-fundamentals-sr5-01",
+    "title": "JLS 25 §8.4.8: Inheritance, Overriding, and Hiding",
+    "url": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "java-fundamentals-sr4-02",
+    "reason": "ambiguous: 'A subclass declaration' does not say the subclass method is static, and the JLS calls an instance method with that signature overriding (a compile-time error). The rewrite names both methods as static.",
+    "statement": "A subclass static method with the same signature as a superclass static method overrides it.",
+    "answer": false,
+    "explanation": "The subclass method hides the superclass one: a call through a superclass-typed reference still runs the superclass's static method, because the compile-time type picks a class method.",
+    "misconception": "Static methods participate in overriding like instance methods.",
+    "sourceTitle": "JLS 25 §8.4.8.2: Hiding (by Class Methods)",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8.2"
+   },
+   {
+    "id": "java-fundamentals-sr5-02",
+    "reason": "ambiguous: 'an inherited public instance method with a body' also covers a default inherited from a second interface, which causes a compile-time error rather than winning. The rewrite names the superclass as the origin. Confirmed by JLS 8.4.8: a default is not inherited when 'No concrete method inherited by C from its direct superclass type has a signature that is a subsignature'.",
+    "statement": "A public concrete instance method inherited from a class's superclass wins over a matching interface default.",
+    "answer": true,
+    "explanation": "A class does not inherit an interface default when a concrete method inherited from its superclass already has a matching signature, so the superclass method is the one that runs.",
+    "misconception": "",
+    "sourceTitle": "JLS 25 §8.4.8: Inheritance, Overriding, and Hiding",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.8"
+   },
+   {
+    "id": "java-fundamentals-sr7-10",
+    "reason": "source_problem: no Java SE 25 page supports the return-type case. JLS 6.5.5.1 forbids a type parameter in a static context, and JLS 8.1.3 defines static context only for statements, declarations and expressions, not method headers; JLS 8.1.2 only points back to 6.5.5.1. The rewrite tests the case 6.5.5.1 states ('must not appear in the body of a static method declared by C'), keeping the answer false.",
+    "statement": "Inside a static method of `class Box<T>`, a local variable can be declared with the type `T`.",
+    "answer": false,
+    "explanation": "A class's type parameter may not be named in a static context such as a static method body, where no current instance exists, so a local variable of type T there is a compile-time error.",
+    "misconception": "Static methods of a generic class have access to the class's type parameter.",
+    "sourceTitle": "JLS 25 §6.5.5.1: Simple Type Names",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-6.html#jls-6.5.5.1"
+   },
+   {
+    "id": "java-fundamentals-sr1-09",
+    "reason": "tell: permission verbs ('accepts', 'fits', 'can compile', 'inherits', 'overrides') appear only in false statements, 0T/9F. Rewording as 'returns true' keeps the fact and answer (false).",
+    "statement": "`Integer.valueOf(1).equals(Long.valueOf(1))` returns `true`.",
+    "answer": false,
+    "explanation": "Integer.equals requires its argument to be an Integer holding the same int value. A Long argument yields false.",
+    "misconception": "Numeric wrappers compare equal across wrapper types.",
+    "sourceTitle": "Integer.equals (Java SE 25 & JDK 25)",
+    "sourceUrl": "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/lang/Integer.html#equals(java.lang.Object)"
+   },
+   {
+    "id": "java-fundamentals-sr4-06",
+    "reason": "tell: removes 'can compile' (permission-verb tell for false) and uses 'compiles', which leaned true 7T/2F. Same fact and answer (false).",
+    "statement": "`class A{void f(Object x){}} class B extends A{@Override void f(String x){}}` compiles.",
+    "answer": false,
+    "explanation": "The subclass's f(String) overloads f(Object), so @Override makes this declaration a compile-time error.",
+    "misconception": "@Override accepts an overload with a different parameter type.",
+    "sourceTitle": "JLS 25 §9.6.4.4: @Override",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-9.html#jls-9.6.4.4"
+   },
+   {
+    "id": "java-fundamentals-sr5-04",
+    "reason": "tell: removes 'accepts' (false-only permission verb) and balances 'compiles' toward false. Same fact and answer (false); JLS 9.4.1.2 confirmed.",
+    "statement": "An interface declaring `default String toString() { return \"x\"; }` compiles.",
+    "answer": false,
+    "explanation": "An interface's default toString implementation produces a compile-time error because it matches a non-private Object method.",
+    "misconception": "An interface default can provide an implementation of Object.toString.",
+    "sourceTitle": "JLS 25 §9.4.1.2: Requirements in Overriding",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-9.html#jls-9.4.1.2"
+   },
+   {
+    "id": "java-fundamentals-sr5-06",
+    "reason": "tell: removes 'accepts' (false-only permission verb); the hedge 'may' was balanced 2T/2F. Same fact and answer (false); JLS 8.9.2 confirmed.",
+    "statement": "An enum class may declare its constructor with the `protected` access modifier.",
+    "answer": false,
+    "explanation": "Java rejects protected enum constructors at compile time. Enum constructors use private access, explicitly or implicitly.",
+    "misconception": "Enum constructors support protected access like ordinary class constructors.",
+    "sourceTitle": "JLS 25 §8.9.2: Enum Body Declarations",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.9.2"
+   },
+   {
+    "id": "java-fundamentals-sr7-03",
+    "reason": "tell: removes the 'fits a parameter declared as' template, which carries two false cards (sr7-03, sr8-01) and the permission-verb tell. Same fact (generic invariance) and answer (false).",
+    "statement": "A `List<Integer>` value is assignable to a variable of type `List<Number>`.",
+    "answer": false,
+    "explanation": "Java rejects assigning a List<Integer> to a List<Number> variable. A subtype relationship between element classes does not transfer to these parameterized types.",
+    "misconception": "Generic containers inherit the subtype relationships of their element types.",
+    "sourceTitle": "JLS 25 §4.10.2: Subtyping among Class and Interface Types",
+    "sourceUrl": "https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.10.2"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "string-constant-concat-identity",
+    "ids": [
+     "java-fundamentals-sr2-02",
+     "java-fundamentals-sr2-03",
+     "java-fundamentals-sr2-04"
+    ]
+   },
+   {
+    "name": "string-equals-content",
+    "ids": [
+     "java-fundamentals-sr2-05",
+     "java-fundamentals-sr2-06"
+    ]
+   },
+   {
+    "name": "inherited-identity-equals",
+    "ids": [
+     "java-fundamentals-sr2-07",
+     "java-fundamentals-sr3-10",
+     "java-fundamentals-sr3-01"
+    ]
+   },
+   {
+    "name": "array-reference-equality",
+    "ids": [
+     "java-fundamentals-sr3-10",
+     "java-fundamentals-sr5-12"
+    ]
+   },
+   {
+    "name": "hashcode-contract-sides",
+    "ids": [
+     "java-fundamentals-sr3-05",
+     "java-fundamentals-sr3-06"
+    ]
+   },
+   {
+    "name": "hiding-vs-dynamic-dispatch",
+    "ids": [
+     "java-fundamentals-sr4-02",
+     "java-fundamentals-sr4-03",
+     "java-fundamentals-sr4-05"
+    ]
+   },
+   {
+    "name": "array-vs-generic-variance",
+    "ids": [
+     "java-fundamentals-sr7-03",
+     "java-fundamentals-sr7-04"
+    ]
+   },
+   {
+    "name": "type-erasure-runtime-class",
+    "ids": [
+     "java-fundamentals-sr7-07",
+     "java-fundamentals-sr7-08",
+     "java-fundamentals-sr7-09"
+    ]
+   },
+   {
+    "name": "sequenced-set-addfirst",
+    "ids": [
+     "java-fundamentals-sr8-06",
+     "java-fundamentals-sr8-07"
+    ]
+   },
+   {
+    "name": "lambda-target-typing",
+    "ids": [
+     "java-fundamentals-sr9-02",
+     "java-fundamentals-sr9-10"
+    ]
+   },
+   {
+    "name": "virtual-thread-pinning",
+    "ids": [
+     "java-fundamentals-sr13-06",
+     "java-fundamentals-sr13-07"
+    ]
+   },
+   {
+    "name": "scoped-value-binding-semantics",
+    "ids": [
+     "java-fundamentals-sr13-10",
+     "java-fundamentals-sr13-11"
+    ]
+   },
+   {
+    "name": "compact-file-automatic-imports",
+    "ids": [
+     "java-fundamentals-sr14-03",
+     "java-fundamentals-sr14-06"
+    ]
+   },
+   {
+    "name": "java-base-module-import",
+    "ids": [
+     "java-fundamentals-sr14-03",
+     "java-fundamentals-sr14-07"
+    ]
+   }
+  ],
+  "sectionBalance": "Figures are after all edits; avg is the mean statement length in characters, true vs false. r1: 12 cards, 6T/6F (avg 74.7 vs 73.7). r2: 12, 6T/6F (80.5 vs 84.8). r3: 9, 4T/5F (86.0 vs 85.4). r4: 11, 5T/6F (89.0 vs 88.8). r5: 12, 6T/6F (about 83.3 vs 82.8). r6: 11, 5T/6F (95.2 vs 93.3). r7: 11, 5T/6F (75.6 vs 79.8). r8: 11, 5T/6F (81.8 vs 80.8). r9: 10, 5T/5F (93.0 vs 88.6). r10: 11, 5T/6F (93.4 vs 94.0). r11: 10, 4T/6F (81.2 vs 84.0). r12: 11, 5T/6F (87.2 vs 90.3). r13: 9, 4T/5F (92.5 vs 93.8). r14: 12, 6T/6F (96.2 vs 97.5). Total: 152 cards, 71 true and 81 false. Every section has at least 9 cards, a split no worse than 4 to 6 per 10, and true and false length averages within 5 characters.",
+  "notes": "I checked every new source and every rewrite against the Java SE 25 pages, downloaded with curl and title-checked: JLS 25 chapters 6, 8, 9, 14 and 15, the Collections Framework Overview (Java SE 25 & JDK 25) and the Virtual Threads guide.\n\nSources confirmed:\n- JLS 15.29 lists \"Simple names (§6.5.6.1) that refer to constant variables (§4.12.4)\".\n- JLS 15.9.2 gives every inner member class instance an immediately enclosing instance (\"the n'th lexically enclosing instance of this\", or the qualifying Primary).\n- coll-overview says Map-based interfaces \"are not true collections\".\n- The virtual threads guide says \"Virtual threads support thread-local variables just as platform threads do\".\n- JLS 8.1.2 says \"All of these parameterized types share the same class at run time\".\n- JLS 8.4.8.3 makes same-erasure, non-subsignature member methods a compile-time error.\n- JLS 15.13.3 says \"the target reference is the first formal parameter of the invocation method\".\n- JLS 8.4.8 says \"A class does not inherit private or static methods from its superinterface types\".\n- The sr9-09 source title was wrong; the SE 25 title of 14.4.1 is \"Local Variable Declarators and Types\".\n- The source swaps for sr7-08, sr7-09, sr9-06 and sr5-01 are optional upgrades the verifiers suggested, from dev.java (sr7-08 cites a JDK 8 tutorial port) to the normative JLS 25 text.\n\nsr7-10 was reported as a source_problem, but I rewrote it rather than only swapping the URL. JLS 25 has no text that covers a type parameter in a static method's return type: 6.5.5.1 bans static contexts, 8.1.3 defines a static context only for statements, declarations and expressions, and 8.1.2 just points to 6.5.5.1. Per the prompt's rule (drop or replace what cannot be verified), the rewrite tests the local-variable-in-static-body case that 6.5.5.1 states.\n\nWeak cards were dropped, not replaced. Every affected section stayed at 9 or more cards with a split of 4 to 6 per 10. r3 and r13 are at 9 cards and r11 is at 4T/6F, all at the limit.\n\n13 of the 16 drops were true cards, so the deck is now 71 true and 81 false (47% true). A later generation pass could restore the true side with the verifiers' suggested replacements:\n- sr3-03: x.equals(null) should return false.\n- sr11-01: JVMS 4.7.5, the JVM does not enforce throws clauses.\n- sr11-10: the try-block exception propagates and the close() exception is suppressed.\n- sr12-05: reentrant monitor.\n- sr13-01: the executor's thread count is unbounded.\n\nThose replacements would also fill coverage gaps the verifiers named: x.equals(null), compiler-only exception checking, suppressed exceptions and intrinsic-lock reentrancy. I did not add them as rewrites because the editing rules call for dropping when the section thresholds hold.\n\nTell rewrites (5): sr1-09, sr4-06, sr5-04, sr5-06 and sr7-03.\n- Each one removes the strongest tell, permission verbs (accepts, fits, can compile) that appeared only in false statements, 0T/9F.\n- sr4-06 and sr5-04 also move 'compiles', which leaned true, toward balance.\n- sr7-03 also breaks the 'fits a parameter declared as' false template it shared with sr8-01.\n- The rewritten sr4-02 keeps 'overrides' because it is the verifier's text for the hiding misconception.\n- Remaining permission-verb tells: sr3-01, sr5-01, sr4-02 and sr8-01, all false.\n\nConflict groups: I dropped the virtual-thread-reuse group (sr13-01 was dropped, leaving sr13-04 alone) and removed sr13-08 from scoped-value-binding-semantics. The rewrites created no new give-aways; the sr4-02 rewrite's mention of compile-time binding stays covered by the hiding-vs-dynamic-dispatch group."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "java-fundamentals-sr4-02",
+    "decision": "keep",
+    "statement": "A subclass static method with the same signature as a superclass static method overrides it.",
+    "answer": false,
+    "explanation": "The subclass method hides the superclass one: a call through a superclass-typed reference still runs the superclass's static method, because the compile-time type picks a class method.",
+    "reason": "Both lenses keep. JLS 25 §8.4.8.2 confirmed: 'If a class C declares or inherits a static method m, then m is said to hide any method m'...'. Example 8.4.8.2-1: Super s = new Sub(); s.greeting() 'uses the type of s, namely Super, to figure out, at compile time, which class method to invoke'."
+   },
+   {
+    "id": "java-fundamentals-sr5-02",
+    "decision": "keep",
+    "statement": "A public concrete instance method inherited from a class's superclass wins over a matching interface default.",
+    "answer": true,
+    "explanation": "A class does not inherit an interface default when a concrete method inherited from its superclass already has a matching signature, so the superclass method is the one that runs.",
+    "reason": "Both lenses keep. JLS 25 §8.4.8 confirmed: a default m is inherited only if 'No concrete method inherited by C from its direct superclass type has a signature that is a subsignature of the signature of m as a member of D'. §8.4.8.1 lets an inherited public mC override mA, so naming the method public avoids the access error."
+   },
+   {
+    "id": "java-fundamentals-sr7-10",
+    "decision": "fixed",
+    "statement": "Inside a static method of `class Box<T>`, a local variable can be declared with the class's type parameter `T`.",
+    "answer": false,
+    "explanation": "A class's type parameter may not be named in a static context such as a static method body, where no current instance exists, so a local variable of type T there is a compile-time error.",
+    "reason": "Both lenses gave the same fix. 'the type `T`' could mean the static method's own type parameter (`static <T> void m(){ T x; }` compiles), so the statement now names the class's type parameter. JLS 25 §6.5.5.1 confirmed: 'The type name does not occur in a static context (§8.1.3)... the type name must not appear in the body of a static method declared by C'. Statement is about 107 characters."
+   },
+   {
+    "id": "java-fundamentals-sr1-09",
+    "decision": "keep",
+    "statement": "`Integer.valueOf(1).equals(Long.valueOf(1))` returns `true`.",
+    "answer": false,
+    "explanation": "Integer.equals requires its argument to be an Integer holding the same int value. A Long argument yields false.",
+    "reason": "Both lenses keep. Integer Javadoc (Java SE 25) confirmed: 'The result is true if and only if the argument is not null and is an Integer object that contains the same int value as this object.'"
+   },
+   {
+    "id": "java-fundamentals-sr4-06",
+    "decision": "keep",
+    "statement": "`class A{void f(Object x){}} class B extends A{@Override void f(String x){}}` compiles.",
+    "answer": false,
+    "explanation": "The subclass's f(String) overloads f(Object), so @Override makes this declaration a compile-time error.",
+    "reason": "Both lenses keep. JLS 25 §9.6.4.4 confirmed: when a method is annotated with @Override, one of three conditions must hold 'or a compile-time error occurs'. f(String) does not override f(Object), it is not override-equivalent to an Object method, and B is not a record."
+   },
+   {
+    "id": "java-fundamentals-sr5-04",
+    "decision": "keep",
+    "statement": "An interface declaring `default String toString() { return \"x\"; }` compiles.",
+    "answer": false,
+    "explanation": "An interface's default toString implementation produces a compile-time error because it matches a non-private Object method.",
+    "reason": "Both lenses keep. JLS 25 §9.4.1.2 confirmed: 'It is a compile-time error if a default method is override-equivalent (§8.4.2) with a non-private method of the class Object'."
+   },
+   {
+    "id": "java-fundamentals-sr5-06",
+    "decision": "keep",
+    "statement": "An enum class may declare its constructor with the `protected` access modifier.",
+    "answer": false,
+    "explanation": "Java rejects protected enum constructors at compile time. Enum constructors use private access, explicitly or implicitly.",
+    "reason": "Both lenses keep. JLS 25 §8.9.2 confirmed: 'It is a compile-time error if a constructor declaration in an enum declaration is public or protected' and 'a constructor declaration with no access modifiers is private'."
+   },
+   {
+    "id": "java-fundamentals-sr7-03",
+    "decision": "keep",
+    "statement": "A `List<Integer>` value is assignable to a variable of type `List<Number>`.",
+    "answer": false,
+    "explanation": "Java rejects assigning a List<Integer> to a List<Number> variable. A subtype relationship between element classes does not transfer to these parameterized types.",
+    "reason": "Both lenses keep. JLS 25 §4.10.2 confirmed: the direct supertypes of C<T1,...,Tn> include 'C<S1,...,Sn>, where Si contains Ti (§4.5.1)'. A non-wildcard type argument contains only itself, so List<Number> is not a supertype of List<Integer>."
+   }
+  ]
+ }
+}

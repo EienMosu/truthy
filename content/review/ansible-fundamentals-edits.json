@@ -1,0 +1,251 @@
+{
+ "drop": {
+  "ansible-fundamentals-sr1-07": "weak_card: copies the ssh_connection doc sentence with a few words swapped, and the hedge 'can' marks it as true. r1 keeps 10 cards (4T/6F) without it, and it was the deck's only pipelining card, which the rules allow but do not require.",
+  "ansible-fundamentals-sr1-09": "weak_card: the answer can be read from the flag letter (-a = args), and no realistic misconception points to False. r1 still has 10 cards (4T/6F).",
+  "ansible-fundamentals-sr2-01": "weak_card: name giveaway, since the key `children` reads as nested groups by its meaning. r2 keeps 11 cards (5T/6F).",
+  "ansible-fundamentals-sr3-01": "weak_card: near-truism (an already started service satisfies 'started'), and the explanation only restates the statement. r3 keeps 11 cards (5T/6F).",
+  "ansible-fundamentals-sr4-01": "weak_card: truism, because plays running in the order they are listed is common sense. r4 keeps 10 cards (5T/5F).",
+  "ansible-fundamentals-sr4-03": "weak_card: strawman and name giveaway, since no one expects --syntax-check to run tasks. r4 keeps 10 cards (5T/5F).",
+  "ansible-fundamentals-sr6-02": "weak_card: near-strawman, and the cited setup page does not state the fact. r6 keeps 11 cards (6T/5F).",
+  "ansible-fundamentals-sr7-07": "weak_card: definition card, because an option named recursive merging nested dicts is answerable from the name. r7 keeps 11 cards (5T/6F).",
+  "ansible-fundamentals-sr8-03": "duplicate (scan and r9 verifier): the implicit 'and' of a condition list is the same fact as sr9-09, and the scan chose to drop sr8-03 (generic, difficulty 1). sr9-09 stays and is no longer a duplicate.",
+  "ansible-fundamentals-sr8-10": "weak_card: it only restates what until/retries mean. Its factKey fact (retries without until) is never tested. r8 keeps 9 cards (4T/5F).",
+  "ansible-fundamentals-sr8-11": "duplicate: the other side of the one any-versus-all aggregation sentence that sr8-12 tests. sr8-12 is the trap the prompt names. r8 keeps 9 cards (4T/5F).",
+  "ansible-fundamentals-sr10-01": "weak_card: circular statement and explanation that only test the literal default of tasks_from. r10 keeps 10 cards (4T/6F).",
+  "ansible-fundamentals-sr10-04": "weak_card: name giveaway, since pre_tasks running before roles follows from the keyword. r10 keeps 10 cards (4T/6F).",
+  "ansible-fundamentals-sr11-01": "weak_card: the FQCN in the statement already names the builtin collection, so the answer follows from what 'fully qualified' means. r11 keeps 11 cards (5T/6F).",
+  "ansible-fundamentals-sr12-02": "weak_card: truism, because whole-file ciphertext hides variable names by definition. Dropped rather than rewritten: r12 needed only one of its weak true cards rewritten (sr12-10) to stay at 10 cards (4T/6F).",
+  "ansible-fundamentals-sr12-06": "weak_card: near-truism, since a vault edit command re-encrypting on close is expected. Dropped. sr12-10 was rewritten instead to keep r12's balance.",
+  "ansible-fundamentals-sr13-04": "weak_card: name giveaway, since become_flags passing flags is a definition. Dropped. sr13-12 was rewritten to keep r13 at 10 cards (4T/6F).",
+  "ansible-fundamentals-sr13-07": "weak_card: truism, since delegate_to: helper running on helper is the meaning of the keyword. Dropped. sr13-12 was rewritten instead to keep the balance."
+ },
+ "source": {
+  "ansible-fundamentals-sr1-05": {
+   "title": "Ansible Configuration Settings: INTERPRETER_PYTHON",
+   "url": "https://docs.ansible.com/projects/ansible/14/reference_appendices/config.html#interpreter-python"
+  }
+ },
+ "rewrite": {
+  "ansible-fundamentals-sr1-06": {
+   "reason": "source_problem: basic_concepts.html does not support retrieving or running playbooks locally. The glossary (allowed by the prompt's ansible-pull scope rule) does: \"ansible-pull works by checking configuration orders out of Git on a crontab and then managing the machine locally\". The statement now names the concrete mechanism (Git checkout, run on itself). The glossary does not mention the local connection plugin claim, because the ansible-pull CLI page lists -c default=ssh. (final: keep)",
+   "statement": "With `ansible-pull`, each managed node checks out playbooks from Git and runs them on itself.",
+   "answer": true,
+   "explanation": "Pull mode reverses Ansible's default push model: a crontab on the node runs ansible-pull, which fetches the configuration and manages that machine locally.",
+   "misconception": "",
+   "source": {
+    "title": "Glossary",
+    "url": "https://docs.ansible.com/projects/ansible/14/reference_appendices/glossary.html"
+   }
+  },
+  "ansible-fundamentals-sr7-11": {
+   "reason": "ambiguous: a bare {{ packages }} was already returned as a list before 2.19, so the old card taught false history. The replacement tests the real 2.19 change, the end of the final literal-evaluation pass. Confirmed in porting_guide_core_2.19.html: \"The filter silently converts the list input to a string. Due to some string results previously parsing as lists, this mistake often went undetected\", \"The result of this template becomes a string\", \"entirely eliminating the final literal evaluation pass\", plus the map('replace', ...) fix. (final: keep)",
+   "statement": "Since ansible-core 2.19, `{{ ['web1', 'web2'] | replace('web', 'db') }}` returns a string instead of a list.",
+   "answer": true,
+   "explanation": "replace works on strings, so it turns the list into text, and 2.19 removed the final literal-evaluation pass that used to parse such text back into a list. Use map('replace', ...) to keep a list.",
+   "misconception": "",
+   "source": {
+    "title": "Ansible-core 2.19 Porting Guide",
+    "url": "https://docs.ansible.com/projects/ansible/14/porting_guides/porting_guide_core_2.19.html"
+   }
+  },
+  "ansible-fundamentals-sr12-11": {
+   "reason": "wrong_answer: in ansible-core 2.21.5, passwords are tried in command-line order, not matching-label first as the docs say, so the old card taught documented behaviour the runtime does not follow. Replaced with the verifier's confirmable fact. vault_managing_passwords.html: \"Even with the DEFAULT_VAULT_ID_MATCH setting enabled, Ansible does not enforce using the same password every time you use a particular vault ID label.\" (final: fixed)",
+   "statement": "With DEFAULT_VAULT_ID_MATCH set, Ansible rejects a password that differs from one already used with the same vault ID.",
+   "answer": false,
+   "explanation": "Ansible does not tie a vault ID label to one password, even with DEFAULT_VAULT_ID_MATCH enabled, so two files can carry the same label with different passwords.",
+   "misconception": "With DEFAULT_VAULT_ID_MATCH enabled, Ansible binds each vault ID label to a single password.",
+   "source": {
+    "title": "Managing vault passwords",
+    "url": "https://docs.ansible.com/projects/ansible/14/vault_guide/vault_managing_passwords.html"
+   }
+  },
+  "ansible-fundamentals-sr12-10": {
+   "reason": "weak_card (name giveaway: 'prompt'). Rewritten rather than dropped: dropping sr12-02, sr12-06 and sr12-10 would leave r12 at 9 cards with 3T/6F. Confirmed in vault_using_encrypted_content.html: \"passing multiple --vault-id options to specify the vault IDs ... and sources for the passwords (prompt, file, script)\" and the example `--vault-id dev@dev-password --vault-id prod@prompt`. The new wording uses 'makes' on a true card, which reduces the 'makes = false' tell. (final: keep)",
+   "statement": "Passing several `--vault-id` options makes one ansible-playbook run read content encrypted with different passwords.",
+   "answer": true,
+   "explanation": "Give one --vault-id label@source per password, for example dev@dev-password plus prod@prompt, and a single run can decrypt vaulted files and values made with each of them.",
+   "misconception": "",
+   "source": {
+    "title": "Using encrypted variables and files",
+    "url": "https://docs.ansible.com/projects/ansible/14/vault_guide/vault_using_encrypted_content.html"
+   }
+  },
+  "ansible-fundamentals-sr13-12": {
+   "reason": "weak_card (concurrency truism with a 'can' hedge on a true card). Rewritten rather than dropped: dropping sr13-04, sr13-07 and sr13-12 would leave r13 at 9 cards with 3T/6F. The new card tests the remedy, a scope item. Confirmed on playbooks_delegation.html: \"Delegating a task does not change this and does not handle concurrency issues (multiple forks writing to the same file)\", with remedies run_once looping over ansible_play_hosts_all, serial: 1, or throttle: 1 on the task. (final: keep)",
+   "statement": "`throttle: 1` on a delegated task that edits one shared file makes Ansible apply the edits one host at a time.",
+   "answer": true,
+   "explanation": "Delegated tasks still run in parallel forks, so several play hosts can write one delegated file at once and overwrite each other. throttle: 1, serial: 1 or a run_once loop serializes the writes.",
+   "misconception": "",
+   "source": {
+    "title": "Controlling where tasks run: delegation and local actions",
+    "url": "https://docs.ansible.com/projects/ansible/14/playbook_guide/playbooks_delegation.html"
+   }
+  },
+  "ansible-fundamentals-sr13-10": {
+   "reason": "explanation_error: 'keeps the target's own variable context' implied that module arguments are templated with the delegated-to host's variables. The prompt rules that claim out, and it is wrong for module arguments. The statement and answer are unchanged. Page: \"The host to which a task is delegated does not inherit variables from the host that is delegating the task.\" (final: keep)",
+   "statement": "A delegated host inherits the variables of the play host that delegates the task.",
+   "answer": false,
+   "explanation": "Delegation copies none of the delegating host's host or group variables onto the delegated-to host, which keeps its own inventory variables.",
+   "misconception": "The delegated-to host inherits the delegating play host's variables.",
+   "source": {
+    "title": "Controlling where tasks run: delegation and local actions",
+    "url": "https://docs.ansible.com/projects/ansible/14/playbook_guide/playbooks_delegation.html"
+   }
+  },
+  "ansible-fundamentals-sr2-09": {
+   "reason": "tell: this card used the precedence-reversal false template (6 uses against a limit of 2), and 'favors' appeared only in false cards. The surface form is now a concrete outcome. The fact and the False answer are unchanged. intro_inventory.html: \"If you pass -i staging -i production, Ansible runs the playbook with myvar = 2.\" (final: keep)",
+   "statement": "With `-i first.yml -i second.yml`, a variable set for one group in both files takes the `first.yml` value.",
+   "answer": false,
+   "explanation": "When two -i sources set the same group's variable, the source given later on the command line wins, so the value here comes from second.yml.",
+   "misconception": "The first inventory source takes priority over later sources.",
+   "source": {
+    "title": "How to build your inventory",
+    "url": "https://docs.ansible.com/projects/ansible/14/inventory_guide/intro_inventory.html"
+   }
+  },
+  "ansible-fundamentals-sr10-03": {
+   "reason": "tell: the precedence-reversal template and the false-only word 'favors' are removed. The fact (playbook-adjacent roles/ is searched before roles_path) and the False answer are unchanged. playbooks_reuse_roles.html search order: collections, then \"a directory called roles/, relative to the playbook file\", then \"the configured roles_path\", then the playbook directory. (final: keep)",
+   "statement": "With a role `web` in both `roles/` beside the playbook and `roles_path`, Ansible loads the `roles_path` copy.",
+   "answer": false,
+   "explanation": "The playbook's adjacent roles/ directory takes priority over roles_path.",
+   "misconception": "roles_path outranks the playbook-adjacent roles directory.",
+   "source": {
+    "title": "Roles",
+    "url": "https://docs.ansible.com/projects/ansible/14/playbook_guide/playbooks_reuse_roles.html"
+   }
+  },
+  "ansible-fundamentals-sr5-05": {
+   "reason": "tell: this was a precedence-reversal template card with awkward wording, now reworded as the verifier suggested. The fact (set_fact outranks play vars) and the False answer are unchanged. playbooks_variables.html lists play vars below 'Registered vars and set_facts'. (final: keep)",
+   "statement": "After `ansible.builtin.set_fact` sets `release: new`, later tasks read the play `vars` value `release: old`.",
+   "answer": false,
+   "explanation": "A regular `ansible.builtin.set_fact` host variable outranks play `vars`, so later tasks read `new`.",
+   "misconception": "Play variables keep priority over variables set during execution.",
+   "source": {
+    "title": "Using variables",
+    "url": "https://docs.ansible.com/projects/ansible/14/playbook_guide/playbooks_variables.html"
+   }
+  },
+  "ansible-fundamentals-sr4-02": {
+   "reason": "tell: the last remaining 'X takes priority over Y' false template card (63 characters) is reworded. This also closes r4's true/false length gap, which the drops had widened to 6.8 characters. The fact (the task keyword beats the play keyword) and the False answer are unchanged. general_precedence.html: the more specific wins, from play (most general) to tasks (most specific). (final: keep)",
+   "statement": "When a play and one of its tasks both set `remote_user`, Ansible uses the play's value for that task.",
+   "answer": false,
+   "explanation": "A task's remote_user overrides the play's value; the more specific keyword wins.",
+   "misconception": "Play-level keywords override values set on tasks.",
+   "source": {
+    "title": "Controlling how Ansible behaves: precedence rules",
+    "url": "https://docs.ansible.com/projects/ansible/14/reference_appendices/general_precedence.html"
+   }
+  },
+  "ansible-fundamentals-sr3-06": {
+   "reason": "tell: the 'automatically does the convenient thing' false template appeared 4 times against a limit of 2. This rewrite removes 'automatically' with a concrete example. The fact (package does not translate names) and the False answer are unchanged. package_module.html: \"this module will not 'translate' them per distribution. For example libyaml-dev, libyaml-devel.\" (final: keep)",
+   "statement": "`ansible.builtin.package` converts the name `libyaml-dev` to `libyaml-devel` when it runs on a Red Hat host.",
+   "answer": false,
+   "explanation": "package delegates to the host's package manager module; the playbook supplies distribution-appropriate names.",
+   "misconception": "The generic package module translates distribution-specific package names.",
+   "source": {
+    "title": "ansible.builtin.package module",
+    "url": "https://docs.ansible.com/projects/ansible/14/collections/ansible/builtin/package_module.html"
+   }
+  }
+ },
+ "conflictGroups": {
+  "module-execution-location": [
+   "ansible-fundamentals-sr1-02",
+   "ansible-fundamentals-sr1-04",
+   "ansible-fundamentals-sr7-01"
+  ],
+  "remote-user-precedence": [
+   "ansible-fundamentals-sr1-10",
+   "ansible-fundamentals-sr4-02",
+   "ansible-fundamentals-sr5-06",
+   "ansible-fundamentals-sr5-11"
+  ],
+  "command-no-shell": [
+   "ansible-fundamentals-sr3-02",
+   "ansible-fundamentals-sr3-03"
+  ],
+  "command-creates": [
+   "ansible-fundamentals-sr3-04",
+   "ansible-fundamentals-sr3-08"
+  ],
+  "handler-notify-changed": [
+   "ansible-fundamentals-sr4-05",
+   "ansible-fundamentals-sr4-08"
+  ],
+  "per-task-when-evaluation": [
+   "ansible-fundamentals-sr8-05",
+   "ansible-fundamentals-sr9-01",
+   "ansible-fundamentals-sr10-11"
+  ],
+  "facts-dictionary-prefix": [
+   "ansible-fundamentals-sr6-04",
+   "ansible-fundamentals-sr6-05",
+   "ansible-fundamentals-sr6-07",
+   "ansible-fundamentals-sr6-08"
+  ],
+  "fact-cache-run-scope": [
+   "ansible-fundamentals-sr6-03",
+   "ansible-fundamentals-sr6-10"
+  ],
+  "failed-host-removal": [
+   "ansible-fundamentals-sr6-12",
+   "ansible-fundamentals-sr9-05",
+   "ansible-fundamentals-sr9-07"
+  ],
+  "unreachable-not-failure": [
+   "ansible-fundamentals-sr9-06",
+   "ansible-fundamentals-sr9-08"
+  ],
+  "undefined-variable-defaults": [
+   "ansible-fundamentals-sr7-04",
+   "ansible-fundamentals-sr7-05",
+   "ansible-fundamentals-sr8-06"
+  ],
+  "jinja-native-2-19": [
+   "ansible-fundamentals-sr7-11",
+   "ansible-fundamentals-sr7-12"
+  ],
+  "loop-over-task-group": [
+   "ansible-fundamentals-sr9-02",
+   "ansible-fundamentals-sr10-10"
+  ],
+  "role-collection-search": [
+   "ansible-fundamentals-sr11-03",
+   "ansible-fundamentals-sr11-04"
+  ],
+  "role-var-scope": [
+   "ansible-fundamentals-sr4-10",
+   "ansible-fundamentals-sr10-07",
+   "ansible-fundamentals-sr10-08"
+  ],
+  "vault-id-label-matching": [
+   "ansible-fundamentals-sr12-09",
+   "ansible-fundamentals-sr12-11"
+  ],
+  "delegated-host-context": [
+   "ansible-fundamentals-sr13-08",
+   "ansible-fundamentals-sr13-10"
+  ],
+  "serial-batch-scope": [
+   "ansible-fundamentals-sr9-12",
+   "ansible-fundamentals-sr14-07"
+  ],
+  "include-tags-dynamic": [
+   "ansible-fundamentals-sr14-09",
+   "ansible-fundamentals-sr14-12"
+  ],
+  "group-priority-merge": [
+   "ansible-fundamentals-sr2-07",
+   "ansible-fundamentals-sr2-08"
+  ],
+  "become-user-separate": [
+   "ansible-fundamentals-sr13-01",
+   "ansible-fundamentals-sr13-02",
+   "ansible-fundamentals-sr13-03"
+  ],
+  "throttle-limits-parallelism": [
+   "ansible-fundamentals-sr13-12",
+   "ansible-fundamentals-sr14-05"
+  ]
+ }
+}

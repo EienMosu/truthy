@@ -1,0 +1,520 @@
+{
+ "drop": {
+  "gcp-pca-s1.1-07": "weak_card (strawman: rightsizing to lower CPU use contradicts itself). Third weak card in 1.1; its replacement (billing by utilization) is also close to a strawman, so this one is dropped and 01 and 10 are rewritten.",
+  "gcp-pca-s1.2-01": "weak_card (definition: a perspective is a cross-pillar view). Dropping it also weakens the 'Well-Architected Framework = true' tell; 04 and 08 are rewritten instead.",
+  "gcp-pca-s1.3-05": "weak_card (Filestore purpose readable from the product; no competing option). One of two weak cards in 1.3; 01 is rewritten to keep 9 cards.",
+  "gcp-pca-s1.4-05": "Scan duplicate of 5.1-05 (accept a planned cutover outage) and a self-refuting strawman; the scan's dropId. 03, 04 and 06 are rewritten to keep 9 cards.",
+  "gcp-pca-s2.1-07": "weak_card (goto_next answer readable from the keyword). Only flagged card in 2.1; section keeps 9 cards at 4T/5F.",
+  "gcp-pca-s2.2-02": "weak_card (a 'locked' policy that cannot be shortened is a name giveaway) and part of the loophole false template. 10 is rewritten instead.",
+  "gcp-pca-s2.3-07": "weak_card (definition: 'Direct' VPC egress means no connector). Dropping also eases the 'Cloud Run subject = false' tell; 03 is rewritten instead.",
+  "gcp-pca-s2.4-07": "weak_card (Form Parser output readable from the name, CDL-level identification). 05 is rewritten instead.",
+  "gcp-pca-s3.1-09": "weak_card (strawman: an admission controller rerunning a test suite). 01 and 07 are rewritten to keep 9 cards.",
+  "gcp-pca-s3.2-10": "weak_card (name giveaway: Compliance Reports Manager provides reports). 04 is rewritten instead.",
+  "gcp-pca-s4.1-03": "weak_card (definition of promotion, unclear actor). It is also in the cloud-deploy-rollout-per-target conflict group, and the suggested replacement (one rollout per target) would give away 4.1-04 and 6.3-05. 06, 08, 09 and 10 are rewritten.",
+  "gcp-pca-s4.2-09": "weak_card (truism: tailor reports to the audience). The replacement would add another true 'Well-Architected Framework recommends' card and a second labels card next to 4.2-06. 06, 07, 08 and 10 are rewritten.",
+  "gcp-pca-s5.1-09": "weak_card (truism: production parity for testing). Only flagged card in 5.1; also leaves the realistic-testing conflict group.",
+  "gcp-pca-s5.2-03": "weak_card (truism with hedge: reusing a session reduces auth work). 04 is rewritten to the in-scope emulator-limits fact instead.",
+  "gcp-pca-s6.1-01": "weak_card (truism: address operations during design). Its replacement would add another true 'Well-Architected Framework recommends' card. 04 and 08 are rewritten.",
+  "gcp-pca-s6.3-02": "weak_card (basic, actor unclear, and in the cloud-run-traffic-allocation conflict pair with 6.3-04). 03, 05 and 07 are rewritten.",
+  "gcp-pca-s2.3-03": "weak_card (answer readable from stop versus delete); verifier's in-scope replacement, confirmed: 'Spot VMs don't have a minimum or maximum runtime unless you specifically limit the runtime'. Reworded to avoid negation. (final: drop: Wording lens drop holds. I checked content/raw/gcp-ace-b1.json: gcp-ace-s2.1-03 ('Spot VMs can run for a maximum of 24 hours', false; 'Spot VMs have no fixed maximum runtime unless you configure one') already tests this fact, and the prompt forbids retesting an ACE fact. The lens suggested a replacement for a separate pass: Spot VMs in a MIG are repeatedly recreated after preemption.)"
+ },
+ "source": {
+  "gcp-pca-s1.1-06": {
+   "title": "Combine reservations with committed use discounts",
+   "url": "https://docs.cloud.google.com/compute/docs/instances/reservations-with-commitments"
+  },
+  "gcp-pca-s2.4-09": {
+   "title": "Configure identity provider",
+   "url": "https://docs.cloud.google.com/gemini/enterprise/docs/configure-identity-provider"
+  },
+  "gcp-pca-s5.2-08": {
+   "title": "Manage the Terraform state file",
+   "url": "https://docs.cloud.google.com/infrastructure-manager/docs/state-file"
+  }
+ },
+ "rewrite": {
+  "gcp-pca-s1.1-01": {
+   "reason": "weak_card (definition card); verifier's cold-pattern replacement, confirmed by the planning guide's flat-tire analogy (Cold: no spare tire, trip stops until help arrives) (final: keep)",
+   "statement": "Google's DR guide describes the cold pattern as one with spare recovery resources already in place before a disaster.",
+   "answer": false,
+   "explanation": "In the cold pattern no spare resources are on hand, so recovery must first obtain them, and the service stays down until they arrive.",
+   "misconception": "The cold DR pattern keeps spare recovery resources provisioned before a disaster.",
+   "source": {
+    "title": "Disaster recovery planning guide",
+    "url": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide"
+   }
+  },
+  "gcp-pca-s1.1-10": {
+   "reason": "weak_card (metric name gives the answer); verifier's replacement, confirmed on dora.dev: 'DORA uses three factors to measure software delivery throughput: Change lead time, Deployment frequency, Failed deployment recovery time'. Set volatility may_change (DORA regrouped its metrics recently). (final: keep)",
+   "statement": "DORA groups failed deployment recovery time with deployment frequency as a software delivery throughput factor.",
+   "answer": true,
+   "explanation": "DORA measures throughput with change lead time, deployment frequency and failed deployment recovery time; change fail rate and deployment rework rate measure instability.",
+   "misconception": "",
+   "source": {
+    "title": "DORA's software delivery performance metrics",
+    "url": "https://dora.dev/guides/dora-metrics/"
+   }
+  },
+  "gcp-pca-s1.1-06": {
+   "reason": "source_problem: the cited CUD overview has no capacity sentence. The new page says compute flexible commitments 'don't require or support attached reservations' and 'don't come with assured capacity'. Statement and answer are unchanged; the explanation is tightened to match the page. (final: keep)",
+   "statement": "Compute flexible committed use discounts can reserve VM capacity for the committed workload.",
+   "answer": false,
+   "explanation": "Compute flexible commitments don't support attached reservations and come with no assured capacity, so a workload that needs assured VM capacity uses a separate reservation.",
+   "misconception": "Purchasing a compute flexible commitment also secures the workload's VM capacity.",
+   "source": {
+    "title": "Combine reservations with committed use discounts",
+    "url": "https://docs.cloud.google.com/compute/docs/instances/reservations-with-commitments"
+   }
+  },
+  "gcp-pca-s1.2-04": {
+   "reason": "weak_card (generic HA truism); verifier's sizing-rule replacement, confirmed: 'Google recommends overprovisioning your group by at least 50%' (three or more zones) and 'doubling' for two zones. Set volatility may_change because it uses a number. (final: keep)",
+   "statement": "For a regional MIG spread across three zones, Google recommends overprovisioning the group by at least 50%.",
+   "answer": true,
+   "explanation": "Losing one of three zones removes a third of capacity, so Google recommends at least 50% extra instances, and doubling for two zones, so the remaining zones carry the full load.",
+   "misconception": "",
+   "source": {
+    "title": "About regional MIGs",
+    "url": "https://docs.cloud.google.com/compute/docs/instance-groups/regional-migs"
+   }
+  },
+  "gcp-pca-s1.2-08": {
+   "reason": "weak_card (textbook identification); verifier's tier-constraint replacement, confirmed: 'Cloud CDN is always Premium Tier. You cannot use Standard Tier with Cloud CDN.' It also puts 'requires' in a true statement. (final: keep)",
+   "statement": "Enabling Cloud CDN caching on a load balancer requires that load balancer to use Network Service Tiers' Premium Tier.",
+   "answer": true,
+   "explanation": "Cloud CDN is always Premium Tier and can't be used with Standard Tier, so choosing Standard Tier to lower a load balancer's egress cost rules out Cloud CDN caching.",
+   "misconception": "",
+   "source": {
+    "title": "Network Service Tiers overview",
+    "url": "https://docs.cloud.google.com/network-tiers/docs/overview"
+   }
+  },
+  "gcp-pca-s1.2-09": {
+   "reason": "ambiguous (project deletion could remove backups); now limited to manual deletion, as the page states: 'backups are completely immutable—they cannot be manually deleted by you, any other user, or Google until your specified duration has passed'. The automatic lien starting 2026-11-01 is left out. (final: keep)",
+   "statement": "A Project Owner can manually delete a backup vault's backups before their enforced retention ends.",
+   "answer": false,
+   "explanation": "Enforced retention makes a vault's backups immutable: no user, including a Project Owner, and not even Google can manually delete them until the retention period has passed.",
+   "misconception": "Project Owner permissions override a backup vault's enforced retention.",
+   "source": {
+    "title": "Backup vaults for immutable and indelible backups",
+    "url": "https://docs.cloud.google.com/backup-disaster-recovery/docs/concepts/backup-vault"
+   }
+  },
+  "gcp-pca-s1.3-01": {
+   "reason": "weak_card (restates Shared VPC's purpose); verifier's replacement, confirmed: 'each service project can only be attached to a single host project'. Lengthened to keep 1.3's true and false lengths balanced. (final: fixed)",
+   "statement": "Each Shared VPC service project in an organization attaches to a single host project at any given time.",
+   "answer": true,
+   "explanation": "A host project can share subnets with many service projects, but each service project can be attached to only one host project, so it uses that one host's Shared VPC network.",
+   "misconception": "",
+   "source": {
+    "title": "Shared VPC",
+    "url": "https://docs.cloud.google.com/vpc/docs/shared-vpc"
+   }
+  },
+  "gcp-pca-s1.3-03": {
+   "reason": "ambiguous (the PROXY protocol lets a proxy NLB preserve the client IP); now about the default, confirmed: 'By default, the target proxy does not preserve the original client IP address and port information. You can preserve this information by enabling the PROXY protocol' (final: keep)",
+   "statement": "By default, an external proxy Network Load Balancer passes client source IPs and ports through to its backends.",
+   "answer": false,
+   "explanation": "By default the target proxy drops the original client IP and port, so backends see the proxy as the source. Enabling the PROXY protocol on the target proxy preserves that client information.",
+   "misconception": "A proxy Network Load Balancer hands each client's source IP to backends with no extra configuration.",
+   "source": {
+    "title": "External proxy Network Load Balancer overview",
+    "url": "https://docs.cloud.google.com/load-balancing/docs/tcp"
+   }
+  },
+  "gcp-pca-s1.4-03": {
+   "reason": "weak_card (truism); verifier's replacement, confirmed: 'expand each group to assign up to four preference sets that you want to compare'. The number is left out. (final: keep)",
+   "statement": "One Migration Center TCO report can compare several migration preference sets for one asset group.",
+   "answer": true,
+   "explanation": "When generating a TCO report, a team picks asset groups and assigns each group multiple preference sets, so one report compares migration scenarios side by side.",
+   "misconception": "",
+   "source": {
+    "title": "Generate TCO reports",
+    "url": "https://docs.cloud.google.com/migration-center/docs/generate-tco-report"
+   }
+  },
+  "gcp-pca-s1.4-04": {
+   "reason": "weak_card (strawman); verifier's replacement, confirmed: 'after a rehost migration, the workloads that are running in the target environment aren't optimized for the cloud' (final: fixed)",
+   "statement": "Rehosting a workload on Google Cloud gives it horizontal scalability as part of the migration itself.",
+   "answer": false,
+   "explanation": "Rehost moves workloads with minor or no changes, so Google notes they aren't optimized for the cloud afterwards and miss features such as horizontal scalability; replatform or refactor work adds that.",
+   "misconception": "A lift-and-shift migration leaves workloads optimized for the cloud.",
+   "source": {
+    "title": "Migrate to Google Cloud: Get started",
+    "url": "https://docs.cloud.google.com/architecture/migration-to-gcp-getting-started"
+   }
+  },
+  "gcp-pca-s1.4-06": {
+   "reason": "weak_card (near-copy definition, 'purchased' gives away 'repurchase'); verifier's replacement, confirmed: 'you can move from on-premises collaboration software and local storage to Google Workspace' (final: keep)",
+   "statement": "Google classifies replacing on-premises collaboration software with Google Workspace as a repurchase migration.",
+   "answer": true,
+   "explanation": "Repurchase means moving from a purchased on-premises workload to a cloud-hosted SaaS equivalent, rather than moving its code or rebuilding it.",
+   "misconception": "",
+   "source": {
+    "title": "Migrate to Google Cloud: Get started",
+    "url": "https://docs.cloud.google.com/architecture/migration-to-gcp-getting-started"
+   }
+  },
+  "gcp-pca-s2.2-10": {
+   "reason": "weak_card (definition of clustering); verifier's replacement. The page says 'you don't receive an accurate query cost estimate before query execution' and BigQuery 'attempts to reduce the total bytes at execution'. The page does not use the words 'upper bound', so the statement says 'can exceed'. (final: keep)",
+   "statement": "BigQuery's pre-run cost estimate for a query on a clustered table can exceed the bytes the query finally scans.",
+   "answer": true,
+   "explanation": "BigQuery learns which clustered blocks it can skip only during execution, so the estimate before a run isn't exact and the final cost reflects the blocks scanned. Partitioning gives granular pre-run estimates.",
+   "misconception": "",
+   "source": {
+    "title": "Introduction to clustered tables",
+    "url": "https://docs.cloud.google.com/bigquery/docs/clustered-tables"
+   }
+  },
+  "gcp-pca-s2.3-06": {
+   "reason": "ambiguous ('Autopilot mode' could be read as the cluster mode); now names the managed nodes. Confirmed: 'You control the cluster and can run your own Standard node pools alongside the nodes that GKE manages.' (final: fixed)",
+   "statement": "A team running GKE Standard creates a separate Autopilot cluster to put some workloads on Autopilot-managed nodes.",
+   "answer": false,
+   "explanation": "Autopilot ComputeClasses let a Standard cluster run selected workloads on Autopilot-managed node pools alongside the team's own Standard node pools, in the same cluster.",
+   "misconception": "Autopilot-managed workloads need their own Autopilot cluster when a team also runs Standard node pools.",
+   "source": {
+    "title": "About Autopilot mode workloads in GKE Standard",
+    "url": "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/about-autopilot-mode-standard-clusters"
+   }
+  },
+  "gcp-pca-s2.3-09": {
+   "reason": "explanation_error (taught the removed Elevate privilege feature). Confirmed on the how-to page: 'the integration does not provide the Elevate privilege feature. To perform these tasks, you can use a solution user account to: Configure identity sources...'. The 'permanently' wording is removed. (final: fixed)",
+   "statement": "VMware Engine gives the default vCenter user full administrator access to vCenter in a private cloud.",
+   "answer": false,
+   "explanation": "VMware Engine keeps full administrative access to a private cloud; its default vCenter user, CloudOwner, gets Cloud-Owner-Role privileges, enough to deploy and manage VMs.",
+   "misconception": "The default vCenter user holds full vCenter administrator rights.",
+   "source": {
+    "title": "Elevate VMware Engine privileges",
+    "url": "https://docs.cloud.google.com/vmware-engine/docs/private-clouds/howto-elevate-privilege"
+   }
+  },
+  "gcp-pca-s2.4-05": {
+   "reason": "weak_card (truism with hedge); verifier's in-scope replacement, confirmed: 'For a managed Slurm experience, you can use Cluster Director. To use Slurm natively, you can use Cluster Toolkit (which offers cluster blueprints that automatically install Slurm...)'. The Cluster Director overview has no Preview label. (final: keep)",
+   "statement": "Cluster Director gives AI Hypercomputer GPU clusters a managed Slurm environment, so teams skip installing Slurm.",
+   "answer": true,
+   "explanation": "For a managed Slurm experience Google points to Cluster Director, while Cluster Toolkit deploys blueprints that install Slurm on clusters the team runs itself.",
+   "misconception": "",
+   "source": {
+    "title": "Plan and create your AI infrastructure",
+    "url": "https://docs.cloud.google.com/ai-hypercomputer/docs/process-overview"
+   }
+  },
+  "gcp-pca-s2.4-09": {
+   "reason": "source_problem: the cited IAM page does not cover source ACLs. The new page says 'Google uses your identity provider to identify the end user performing a search and determine if they have access to the documents' and 'never bypasses source system access controls or grants additional permissions'. Statement and answer are unchanged; the explanation is tightened. (final: keep)",
+   "statement": "Gemini Enterprise uses project IAM grants to override source-document ACLs for ACL-enabled connectors.",
+   "answer": false,
+   "explanation": "Gemini Enterprise uses your identity provider to check whether the end user can access each document a connector returns; IAM roles on the project grant no extra document access.",
+   "misconception": "Project IAM roles replace source-document permissions when a third-party connector enforces ACLs.",
+   "source": {
+    "title": "Configure identity provider",
+    "url": "https://docs.cloud.google.com/gemini/enterprise/docs/configure-identity-provider"
+   }
+  },
+  "gcp-pca-s3.1-01": {
+   "reason": "duplicate of gcp-ace-s4.1-04; replaced with the verifier's uncovered 3.1 scope fact. Confirmed: 'Cloud KMS doesn't let you destroy key versions immediately', 'The default scheduled for destruction duration is 30 days', restore is possible during that period. Set volatility may_change (30-day figure). (final: fixed)",
+   "statement": "When an administrator destroys a Cloud KMS key version, Cloud KMS erases its key material right away.",
+   "answer": false,
+   "explanation": "Destroying a key version puts it in the scheduled-for-destruction state, 30 days by default and configurable at key creation, and it can be restored during that time.",
+   "misconception": "Scheduling a key version for destruction destroys its key material immediately.",
+   "source": {
+    "title": "Destroy and restore key versions",
+    "url": "https://docs.cloud.google.com/kms/docs/destroy-restore"
+   }
+  },
+  "gcp-pca-s3.1-07": {
+   "reason": "duplicate of gcp-ace-s4.2-07; replaced with the verifier's context-aware access fact. Confirmed: IAP access policies extend with access levels that 'allow access restrictions to resources based on IP address and end-user device attributes'; 'IAP uses the access level name to associate it with a IAP-secured app'; device attributes need a Chrome Enterprise Premium license. (final: keep)",
+   "statement": "Identity-Aware Proxy can apply Access Context Manager access levels, such as device or IP conditions, to app users.",
+   "answer": true,
+   "explanation": "IAP attaches access levels to the IAM grants of an IAP-secured app, so users get in only from approved IP ranges or trusted devices; device attributes need a Chrome Enterprise Premium license.",
+   "misconception": "",
+   "source": {
+    "title": "Setting up context-aware access with Identity-Aware Proxy",
+    "url": "https://docs.cloud.google.com/iap/docs/cloud-iap-context-aware-access-howto"
+   }
+  },
+  "gcp-pca-s3.2-04": {
+   "reason": "weak_card (name giveaway, near-copy); verifier's replacement, confirmed: 'set a policy on Cloud KMS keys to view, approve, and deny key access requests depending on the provided justification code', available for select control packages. Set volatility may_change. (final: keep)",
+   "statement": "Key Access Justifications lets a key policy deny a Cloud KMS request by its justification code.",
+   "answer": true,
+   "explanation": "Beyond logging why a key is used, Key Access Justifications policies can approve or deny key access per justification code; this depends on the Assured Workloads control package chosen.",
+   "misconception": "",
+   "source": {
+    "title": "Overview of Key Access Justifications",
+    "url": "https://docs.cloud.google.com/assured-workloads/key-access-justifications/docs/overview"
+   }
+  },
+  "gcp-pca-s4.1-06": {
+   "reason": "weak_card (definition of preview); verifier's replacement, reworded to avoid negation. Confirmed: 'Before you create a new deployment or update a deployment, you can preview the deployment' and 'A preview executes the Terraform plan command'. (final: fixed)",
+   "statement": "Infrastructure Manager previews cover first-time deployments as well as updates to existing deployments.",
+   "answer": true,
+   "explanation": "An Infrastructure Manager preview runs Terraform plan for a new deployment or an update, so the team reviews the resources planned for provisioning before anything is created.",
+   "misconception": "",
+   "source": {
+    "title": "Preview a deployment",
+    "url": "https://docs.cloud.google.com/infrastructure-manager/docs/preview-deployment"
+   }
+  },
+  "gcp-pca-s4.1-08": {
+   "reason": "weak_card (near-copy of the source sentence, common-sense blameless idea); verifier's trigger replacement, confirmed: 'Interventions from on-call engineers, such as a release rollback or rerouting of traffic.' Worded as 'Google lists' rather than 'Google recommends' to ease that tell. (final: keep)",
+   "statement": "Google lists an on-call intervention, such as a release rollback, among the triggers for a postmortem.",
+   "answer": true,
+   "explanation": "Google's postmortem criteria include on-call interventions such as a release rollback or rerouted traffic, alongside user-visible downtime, data loss of any kind and monitoring failures.",
+   "misconception": "",
+   "source": {
+    "title": "Conduct thorough postmortems",
+    "url": "https://docs.cloud.google.com/architecture/framework/reliability/conduct-postmortems"
+   }
+  },
+  "gcp-pca-s4.1-09": {
+   "reason": "weak_card (strawman 'in place of'); verifier's replacement, confirmed: 'To test backups, restore them in a non-production environment' and 'a data restoration test must include testing of the entire application stack and all the critical infrastructure services with the restored data' (final: fixed)",
+   "statement": "Google recommends restoring backups into production, where real dependencies run, when testing that they are usable.",
+   "answer": false,
+   "explanation": "Google recommends restoring backups in a non-production environment and testing the entire application stack and critical infrastructure services with the restored data.",
+   "misconception": "Restoring backups into production is the recommended way to prove they are usable.",
+   "source": {
+    "title": "Perform testing for recovery from data loss",
+    "url": "https://docs.cloud.google.com/architecture/framework/reliability/perform-testing-for-recovery-from-data-loss"
+   }
+  },
+  "gcp-pca-s4.1-10": {
+   "reason": "weak_card (near-copy truism); verifier's replacement, confirmed: 'Make sure that you grant users the same access to the DR environment that they have in the source production environment' and the IaC note on replicating IAM policies. Reworded without 'same', which was a true-only word. (final: keep)",
+   "statement": "Google recommends granting users in the DR environment the access they hold in production.",
+   "answer": true,
+   "explanation": "Users must be able to work in the recovered environment; when production runs on Google Cloud, IaC tools such as Terraform can replicate its IAM policies in the DR environment.",
+   "misconception": "",
+   "source": {
+    "title": "Disaster recovery planning guide",
+    "url": "https://docs.cloud.google.com/architecture/dr-scenarios-planning-guide"
+   }
+  },
+  "gcp-pca-s4.2-06": {
+   "reason": "weak_card (the statement did not test non-retroactivity); verifier's replacement, confirmed: 'The cost data for a specific label only shows usage from the date that the label was applied to a resource.' (final: keep)",
+   "statement": "Cloud Billing exports show a new label's costs only from the date the label was applied to a resource.",
+   "answer": true,
+   "explanation": "Labels aren't retroactive: the export shows a label's costs from the date it was applied, so apply labels before the period you need to allocate.",
+   "misconception": "",
+   "source": {
+    "title": "Structure of Detailed data export",
+    "url": "https://docs.cloud.google.com/billing/docs/how-to/export-data-bigquery-tables/detailed-usage"
+   }
+  },
+  "gcp-pca-s4.2-07": {
+   "reason": "weak_card (definition of 'commitment'); verifier's replacement, confirmed: 'you are still responsible for the full cost of the commitment. No rollover: Unused commitment does not carry over to the next hour.' (final: fixed)",
+   "statement": "Unused commitment from one hour of a standard spend-based CUD carries over to cover usage in a later hour.",
+   "answer": false,
+   "explanation": "Standard spend-based CUDs apply hourly: if eligible usage in an hour falls below the commitment you still pay the full amount, and the unused part doesn't roll over. Flexible Savings Plans use a monthly window.",
+   "misconception": "Unused spend-based commitment banks credit for later hours.",
+   "source": {
+    "title": "Spend-based committed use discounts",
+    "url": "https://docs.cloud.google.com/docs/cuds-multiprice"
+   }
+  },
+  "gcp-pca-s4.2-08": {
+   "reason": "weak_card (invented 'submitted forecasts' feature); verifier's replacement, confirmed: recommendations use 'a formula that analyzes historical and recent usage metrics gathered by Cloud Billing, and includes usage covered by existing commitments'. Scenario modeling only adjusts the term, coverage and history window, not forecasts. (final: keep)",
+   "statement": "Cloud Billing sizes its CUD recommendations from an organization's expected future usage growth.",
+   "answer": false,
+   "explanation": "CUD recommendations come from historical and recent usage, including usage already covered by commitments, so architects weigh planned growth or decline themselves.",
+   "misconception": "CUD recommendations are sized from forecast business growth.",
+   "source": {
+    "title": "Get recommendations for committed use discounts (CUDs)",
+    "url": "https://docs.cloud.google.com/docs/cuds-recommender"
+   }
+  },
+  "gcp-pca-s4.2-10": {
+   "reason": "weak_card (generic management truism, really a 6.1 principle); verifier's replacement. The page (Standard) gives activation steps for new and existing clusters, adds k8s-namespace and workload labels to the detailed export, and says costs show no GKE labels 'when GKE cost allocation is not enabled'. The verifier's quote 'not enabled by default' was not found on the page, so the card rests on the activation requirement. Set volatility may_change. (final: keep)",
+   "statement": "GKE cost allocation must be enabled on a Standard cluster before billing exports show its namespace costs.",
+   "answer": true,
+   "explanation": "Once GKE cost allocation is enabled, the detailed Cloud Billing export to BigQuery carries cluster, namespace and workload labels for chargeback; otherwise those costs carry no GKE labels.",
+   "misconception": "",
+   "source": {
+    "title": "Get key spending insights for your GKE resource allocation and cluster costs",
+    "url": "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/cost-allocations"
+   }
+  },
+  "gcp-pca-s5.2-04": {
+   "reason": "out_of_scope (iterator paging is developer depth); verifier's in-scope emulator replacement, confirmed: 'The emulator doesn't support the following: TLS/HTTPS, authentication, Identity and Access Management (IAM), permissions, or roles.' (final: keep)",
+   "statement": "The Spanner emulator enforces IAM permissions on requests that an application's integration tests send to it.",
+   "answer": false,
+   "explanation": "The Spanner emulator supports no authentication, IAM, permissions or roles, so access grants still need testing against a real Spanner instance.",
+   "misconception": "The Spanner emulator reproduces production IAM enforcement for tests.",
+   "source": {
+    "title": "Emulate Spanner locally",
+    "url": "https://docs.cloud.google.com/spanner/docs/emulator"
+   }
+  },
+  "gcp-pca-s5.2-08": {
+   "reason": "source_problem: moved to the state-file page ('the Terraform state file that is created for each deployment and revision'). Statement tightened as the verifier suggested; same fact and answer. (final: keep)",
+   "statement": "Infrastructure Manager keeps a Terraform state file per deployment and per revision.",
+   "answer": true,
+   "explanation": "Infrastructure Manager creates a Terraform state file per deployment and per revision; a team can download a state file to inspect or modify it.",
+   "misconception": "",
+   "source": {
+    "title": "Manage the Terraform state file",
+    "url": "https://docs.cloud.google.com/infrastructure-manager/docs/state-file"
+   }
+  },
+  "gcp-pca-s6.1-04": {
+   "reason": "weak_card (the statement did not test the fact); verifier's replacement, confirmed: 'Log sinks can't retroactively route log entries' and 'you can retroactively copy log data from a log bucket to Cloud Storage' (final: keep)",
+   "statement": "To export logs received before a sink existed, Cloud Logging offers a copy from the log bucket to Cloud Storage.",
+   "answer": true,
+   "explanation": "Sinks route only entries that arrive after they're created; for entries already stored in a log bucket, Cloud Logging can copy them retroactively to Cloud Storage.",
+   "misconception": "",
+   "source": {
+    "title": "Route log entries",
+    "url": "https://docs.cloud.google.com/logging/docs/routing/overview"
+   }
+  },
+  "gcp-pca-s6.1-08": {
+   "reason": "weak_card (product identification); verifier's replacement, confirmed: the supported-environments table marks 'Outside of Google Cloud' Y for Go, Java, Node.js and Python (final: fixed)",
+   "statement": "Cloud Profiler can collect profiles from applications that run outside Google Cloud, such as on premises.",
+   "answer": true,
+   "explanation": "Cloud Profiler agents for Go, Java, Node.js and Python also run outside Google Cloud, so hybrid workloads can send low-overhead profiles to a Google Cloud project; profile types vary by language.",
+   "misconception": "",
+   "source": {
+    "title": "Cloud Profiler overview",
+    "url": "https://docs.cloud.google.com/profiler/docs/about-profiler"
+   }
+  },
+  "gcp-pca-s6.3-03": {
+   "reason": "weak_card (strawman quota exemption); verifier's replacement, confirmed: with maxUnavailable 0 and maxSurge above 0 'Compute Engine removes each old machine only after its replacement new machine is created and running', and 'maxSurge only works if you have enough quota or resources' (final: keep)",
+   "statement": "Setting maxUnavailable to 0 in a MIG rolling update removes the need for spare quota during the update.",
+   "answer": false,
+   "explanation": "With maxUnavailable at 0 and maxSurge above 0, the MIG creates each replacement VM before deleting the old one, and maxSurge only works when there is quota and capacity for the extra VMs.",
+   "misconception": "A rolling update with zero unavailable VMs needs no extra quota.",
+   "source": {
+    "title": "Automatically apply VM configuration updates in a MIG",
+    "url": "https://docs.cloud.google.com/compute/docs/instance-groups/rolling-out-updates-to-managed-instance-groups"
+   }
+  },
+  "gcp-pca-s6.3-05": {
+   "reason": "weak_card (near-copy of the source sentence); verifier's replacement, confirmed: 'By default, the rollback uses the last release with a successful rollout to the indicated target, but you can choose a different one' (final: keep)",
+   "statement": "By default, a Cloud Deploy rollback redeploys the last release that had a successful rollout to that target.",
+   "answer": true,
+   "explanation": "Cloud Deploy creates a new rollout from the last release that succeeded on the target unless the team picks another release; it does not rewind the earlier rollout.",
+   "misconception": "",
+   "source": {
+    "title": "Roll back a target",
+    "url": "https://docs.cloud.google.com/deploy/docs/roll-back"
+   }
+  },
+  "gcp-pca-s6.3-07": {
+   "reason": "weak_card (role names give the answer); verifier's replacement, reworded to avoid negation. Confirmed: 'By default, the IC assumes all roles that have not been delegated yet.' (final: keep)",
+   "statement": "In Google's incident response model, the Ops Lead takes on any incident role that remains undelegated.",
+   "answer": false,
+   "explanation": "The SRE Workbook says the Incident Commander assumes every role not yet delegated, including Ops Lead; delegating them lets the IC focus on coordination and communication.",
+   "misconception": "The Ops Lead absorbs incident roles that nobody has been assigned.",
+   "source": {
+    "title": "Google SRE Workbook: Incident Response",
+    "url": "https://sre.google/workbook/incident-response/"
+   }
+  },
+  "gcp-pca-s1.2-10": {
+   "reason": "tell: 'preserves' as the main verb marked false 4 of 4 times, and a 'Cloud Run' subject was 1 true to 4 false. Same fact and answer. (final: keep)",
+   "statement": "An app's session files in a Cloud Run instance's local filesystem carry over to its replacement instance.",
+   "answer": false,
+   "explanation": "Cloud Run loses files in the instance's local writable filesystem when that instance stops. Session data needing persistence belongs in external storage.",
+   "misconception": "Cloud Run carries instance-local session files into replacement instances.",
+   "source": {
+    "title": "Container runtime contract",
+    "url": "https://docs.cloud.google.com/run/docs/container-contract"
+   }
+  },
+  "gcp-pca-s5.1-08": {
+   "reason": "tell: 'preserves' marked false. Same fact and answer. (final: keep)",
+   "statement": "Datastream delivers change events into Cloud Storage in source commit order.",
+   "answer": false,
+   "explanation": "Datastream delivers change events that can arrive out of order. A Cloud Storage consumer uses source-specific event metadata to reconstruct the source operation order.",
+   "misconception": "Datastream guarantees source commit order in the sequence of delivered change events.",
+   "source": {
+    "title": "Events and streams",
+    "url": "https://docs.cloud.google.com/datastream/docs/events-and-streams"
+   }
+  },
+  "gcp-pca-s5.2-06": {
+   "reason": "tell: 'preserves' marked false. Same fact and answer. (final: keep)",
+   "statement": "The Bigtable emulator writes test data to local disk so a later emulator process can reuse it.",
+   "answer": false,
+   "explanation": "The Bigtable emulator keeps its data in memory and loses it across runs. Tests that need an initial dataset populate that dataset for a new emulator run.",
+   "misconception": "The Bigtable emulator persists application data on local disk between processes.",
+   "source": {
+    "title": "Test using the emulator",
+    "url": "https://docs.cloud.google.com/bigtable/docs/emulator"
+   }
+  },
+  "gcp-pca-s6.1-06": {
+   "reason": "tell: 'limits/confines ... to a single Z' marked false 4 of 4 times. Same fact and answer. (final: keep)",
+   "statement": "Google Cloud Managed Service for Prometheus answers a PromQL query from a single Google Cloud region's data.",
+   "answer": false,
+   "explanation": "Google Cloud Managed Service for Prometheus evaluates queries against a global datastore and combines results across regions. Teams obtain a unified view rather than querying isolated regional servers.",
+   "misconception": "Managed Prometheus query evaluation is confined to one regional datastore.",
+   "source": {
+    "title": "Google Cloud Managed Service for Prometheus",
+    "url": "https://docs.cloud.google.com/stackdriver/docs/managed-prometheus"
+   }
+  },
+  "gcp-pca-s2.3-04": {
+   "reason": "tell: 'confines' marked false. Same fact and answer, shortened for 2.3 length balance. (final: keep)",
+   "statement": "Compute Engine's default sole-tenant maintenance policy live-migrates VMs within a fixed server pool.",
+   "answer": false,
+   "explanation": "Compute Engine's Default sole-tenant maintenance policy lets eligible VMs migrate to new physical servers. Migrate within node group confines migration to a fixed server pool.",
+   "misconception": "The default sole-tenant maintenance policy preserves the fixed physical-server pool needed by some licenses.",
+   "source": {
+    "title": "Sole-tenancy overview",
+    "url": "https://docs.cloud.google.com/compute/docs/nodes/sole-tenant-nodes"
+   }
+  }
+ },
+ "conflictGroups": {
+  "regional-zone-only-failover": [
+   "gcp-pca-s1.2-03",
+   "gcp-pca-s1.2-05",
+   "gcp-pca-s2.3-05"
+  ],
+  "cloud-sql-ha-standby": [
+   "gcp-pca-s1.2-05",
+   "gcp-pca-s2.2-06"
+  ],
+  "guardrail-beyond-iam": [
+   "gcp-pca-s3.1-02",
+   "gcp-pca-s3.1-06",
+   "gcp-pca-s2.4-09"
+  ],
+  "non-retroactive-effect": [
+   "gcp-pca-s3.2-08",
+   "gcp-pca-s4.2-06",
+   "gcp-pca-s6.1-04",
+   "gcp-pca-s1.4-10"
+  ],
+  "cloud-deploy-rollout-per-target": [
+   "gcp-pca-s4.1-04",
+   "gcp-pca-s6.3-05"
+  ],
+  "realistic-testing-conditions": [
+   "gcp-pca-s6.3-08",
+   "gcp-pca-s6.3-10"
+  ],
+  "bigtable-weak-guarantees": [
+   "gcp-pca-s1.3-06",
+   "gcp-pca-s2.2-08"
+  ],
+  "adc-credential-sources": [
+   "gcp-pca-s5.2-01",
+   "gcp-pca-s5.2-02"
+  ],
+  "dr-pattern-analogy": [
+   "gcp-pca-s1.1-01",
+   "gcp-pca-s1.1-03"
+  ],
+  "emulator-production-gaps": [
+   "gcp-pca-s5.2-04",
+   "gcp-pca-s5.2-06"
+  ],
+  "access-level-conditions": [
+   "gcp-pca-s3.1-06",
+   "gcp-pca-s3.1-07"
+  ],
+  "customer-access-approval": [
+   "gcp-pca-s3.2-02",
+   "gcp-pca-s3.2-04"
+  ]
+ }
+}
