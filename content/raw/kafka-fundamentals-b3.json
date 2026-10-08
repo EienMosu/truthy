@@ -1,0 +1,1049 @@
+{
+  "deck": "kafka-fundamentals",
+  "block": "b3",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced commit-sync-versus-async-waiting with synchronous-commit-wait-timeout to avoid an API-name giveaway. Replaced sync-commit-flushes-prior-async-commits with asynchronous-commit-callback-thread because the javadoc's sequencing wording differs between commit methods.",
+  "cards": [
+    {
+      "id": "kafka-fundamentals-sr9-01",
+      "section": "r9",
+      "statement": "Kafka brokers push newly appended records to KafkaConsumer as they arrive.",
+      "answer": false,
+      "explanation": "KafkaConsumer retrieves records by requesting them from brokers.",
+      "misconception": "Brokers initiate delivery when new records arrive.",
+      "factKey": "consumer-pull-fetching",
+      "topic": "Consumer fetching",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-02",
+      "section": "r9",
+      "statement": "max.poll.records limits how many records KafkaConsumer fetches in a single broker request.",
+      "answer": false,
+      "explanation": "max.poll.records caps poll() results; fetched records remain cached.",
+      "misconception": "The poll limit also limits each broker fetch.",
+      "factKey": "poll-record-limit-fetch-independence",
+      "topic": "Consumer fetching",
+      "tags": [
+        "KafkaConsumer",
+        "max.poll.records"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-03",
+      "section": "r9",
+      "statement": "KafkaConsumer.wakeup() is safe to call from another thread during a blocked consumer operation.",
+      "answer": true,
+      "explanation": "wakeup() is the exception to KafkaConsumer's thread-safety restriction.",
+      "misconception": "",
+      "factKey": "consumer-thread-safety",
+      "topic": "Consumer threading",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-04",
+      "section": "r9",
+      "statement": "Kafka assigns a subscribed partition to one consumer within a consumer group.",
+      "answer": true,
+      "explanation": "Kafka divides consumption using partition ownership.",
+      "misconception": "",
+      "factKey": "group-exclusive-partition-assignment",
+      "topic": "Consumer groups",
+      "tags": [
+        "Apache Kafka"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-05",
+      "section": "r9",
+      "statement": "Consumers with different group.id values share the same consumption position for a partition.",
+      "answer": false,
+      "explanation": "Different consumer groups track their consumption independently.",
+      "misconception": "Different groups share a common reading position.",
+      "factKey": "independent-consumer-groups",
+      "topic": "Consumer groups",
+      "tags": [
+        "group.id"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Distribution",
+        "url": "https://kafka.apache.org/43/implementation/distribution/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-06",
+      "section": "r9",
+      "statement": "KafkaConsumer.assign() can enlist the group coordinator to distribute its selected partitions.",
+      "answer": false,
+      "explanation": "Manually assigned consumers act independently.",
+      "misconception": "Manual assignment uses the group's partition coordination.",
+      "factKey": "manual-assignment-group-coordination",
+      "topic": "Consumer assignment",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-07",
+      "section": "r9",
+      "statement": "KafkaConsumer.position() returns its most recently committed offset during active consumption.",
+      "answer": false,
+      "explanation": "position() identifies the next record; recovery uses committed offsets.",
+      "misconception": "The current position is the durable restart position.",
+      "factKey": "consumer-position-versus-commit",
+      "topic": "Consumer offsets",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-08",
+      "section": "r9",
+      "statement": "Kafka stores consumer group offset commits in its __consumer_offsets topic.",
+      "answer": true,
+      "explanation": "The group coordinator appends offset commits to this internal topic.",
+      "misconception": "",
+      "factKey": "committed-offsets-internal-topic",
+      "topic": "Consumer offsets",
+      "tags": [
+        "Apache Kafka"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Distribution",
+        "url": "https://kafka.apache.org/43/implementation/distribution/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-09",
+      "section": "r9",
+      "statement": "With auto.offset.reset=latest, a consumer risks skipping records sent before discovery of a new partition.",
+      "answer": true,
+      "explanation": "With auto.offset.reset=latest, the consumer starts at a new partition's end, skipping earlier records.",
+      "misconception": "",
+      "factKey": "latest-reset-new-partition-loss",
+      "topic": "Offset reset",
+      "tags": [
+        "auto.offset.reset"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-10",
+      "section": "r9",
+      "statement": "A call to KafkaConsumer.seek() with an earlier retained offset rewinds an assigned partition.",
+      "answer": true,
+      "explanation": "KafkaConsumer.seek() changes an assigned partition's next read position.",
+      "misconception": "",
+      "factKey": "consumer-seek-replay",
+      "topic": "Consumer offsets",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-11",
+      "section": "r9",
+      "statement": "Kafka preserves an empty group's committed offsets until the topic's record retention expires.",
+      "answer": false,
+      "explanation": "An empty group's offsets expire according to offsets.retention.minutes.",
+      "misconception": "Topic data retention determines committed-offset retention.",
+      "factKey": "empty-group-offset-expiration",
+      "topic": "Offset retention",
+      "tags": [
+        "offsets.retention.minutes"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Broker Configs",
+        "url": "https://kafka.apache.org/43/configuration/broker-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr9-12",
+      "section": "r9",
+      "statement": "Since Kafka 4.2, consumers in a share group acknowledge the delivery of individual records.",
+      "answer": true,
+      "explanation": "Share groups track delivery completion at record granularity.",
+      "misconception": "",
+      "factKey": "share-group-record-acknowledgements",
+      "topic": "Share groups",
+      "tags": [
+        "Apache Kafka"
+      ],
+      "appliesTo": "Kafka 4.2 and later",
+      "difficulty": 2,
+      "volatility": "may_change",
+      "volatilityNote": "Share-group behavior continues to evolve across releases.",
+      "source": {
+        "title": "Kafka 4.3 Upgrading",
+        "url": "https://kafka.apache.org/43/getting-started/upgrade/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-01",
+      "section": "r10",
+      "statement": "A successful KafkaProducer send confirms that a subscribing application's processing has completed.",
+      "answer": false,
+      "explanation": "A producer acknowledgement concerns publication, not consumer processing.",
+      "misconception": "Producer success confirms downstream application processing.",
+      "factKey": "publish-consume-guarantees-independent",
+      "topic": "Delivery guarantees",
+      "tags": [
+        "KafkaProducer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Introduction",
+        "url": "https://kafka.apache.org/43/getting-started/introduction/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-02",
+      "section": "r10",
+      "statement": "KafkaConsumer commits offsets periodically under its default configuration.",
+      "answer": true,
+      "explanation": "enable.auto.commit defaults to true.",
+      "misconception": "",
+      "factKey": "auto-commit-default-periodic",
+      "topic": "Offset commits",
+      "tags": [
+        "KafkaConsumer",
+        "enable.auto.commit"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-03",
+      "section": "r10",
+      "statement": "With auto commit, processing the full poll result before the next poll or close gives at-least-once delivery.",
+      "answer": true,
+      "explanation": "Auto commit can advance past unfinished work at the next poll or close.",
+      "misconception": "",
+      "factKey": "auto-commit-processing-boundary",
+      "topic": "Offset commits",
+      "tags": [
+        "KafkaConsumer",
+        "enable.auto.commit"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-04",
+      "section": "r10",
+      "statement": "KafkaConsumer can use max.poll.interval.ms to configure its commitSync() broker response timeout.",
+      "answer": false,
+      "explanation": "The no-argument commitSync() bounds its wait using default.api.timeout.ms.",
+      "misconception": "The poll interval sets the synchronous commit timeout.",
+      "factKey": "synchronous-commit-wait-timeout",
+      "topic": "Offset commits",
+      "tags": [
+        "KafkaConsumer",
+        "default.api.timeout.ms",
+        "max.poll.interval.ms"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-05",
+      "section": "r10",
+      "statement": "With enable.auto.commit=false, processing before commit prevents replay after a crash.",
+      "answer": false,
+      "explanation": "A crash between processing and commit can cause the work to run again.",
+      "misconception": "Processing before committing prevents repeated processing.",
+      "factKey": "process-before-commit-replay-risk",
+      "topic": "Delivery guarantees",
+      "tags": [
+        "KafkaConsumer",
+        "enable.auto.commit"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-06",
+      "section": "r10",
+      "statement": "A consumer can overwrite output by record primary key to make duplicate processing harmless.",
+      "answer": true,
+      "explanation": "Repeated identical keyed overwrites preserve the stored output value.",
+      "misconception": "",
+      "factKey": "primary-key-idempotent-output",
+      "topic": "Delivery guarantees",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-07",
+      "section": "r10",
+      "statement": "With enable.auto.commit=false, a consumer can store output and offsets atomically in an external store.",
+      "answer": true,
+      "explanation": "Atomically saving output with offsets ties a consumer's progress to its stored results.",
+      "misconception": "",
+      "factKey": "output-offset-atomic-storage",
+      "topic": "Delivery guarantees",
+      "tags": [
+        "KafkaConsumer",
+        "enable.auto.commit"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-08",
+      "section": "r10",
+      "statement": "KafkaConsumer can return gaps in offsets on a transactional topic under either isolation level.",
+      "answer": true,
+      "explanation": "Transaction markers occupy offsets but KafkaConsumer filters them from application records.",
+      "misconception": "",
+      "factKey": "transaction-marker-offset-gaps",
+      "topic": "Consumer offsets",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-09",
+      "section": "r10",
+      "statement": "Kafka's default delivery guarantee gives an application exactly one processing attempt per record.",
+      "answer": false,
+      "explanation": "Kafka defaults to at-least-once delivery.",
+      "misconception": "Kafka guarantees exactly-once processing by default.",
+      "factKey": "default-at-least-once-delivery",
+      "topic": "Delivery guarantees",
+      "tags": [
+        "Apache Kafka"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-10",
+      "section": "r10",
+      "statement": "KafkaConsumer can invoke a later commitAsync() callback before an earlier call's callback.",
+      "answer": false,
+      "explanation": "KafkaConsumer invokes commit callbacks in the order of their commit calls.",
+      "misconception": "Asynchronous commit callbacks can overtake earlier callbacks.",
+      "factKey": "asynchronous-commit-callback-order",
+      "topic": "Offset commits",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaConsumer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-11",
+      "section": "r10",
+      "statement": "KafkaConsumer runs OffsetCommitCallback on a dedicated thread separate from the poll loop.",
+      "answer": false,
+      "explanation": "KafkaConsumer may execute the callback in a thread calling poll().",
+      "misconception": "Asynchronous commit callbacks run on a dedicated callback thread.",
+      "factKey": "asynchronous-commit-callback-thread",
+      "topic": "Offset commits",
+      "tags": [
+        "KafkaConsumer",
+        "OffsetCommitCallback"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "OffsetCommitCallback (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/OffsetCommitCallback.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr10-12",
+      "section": "r10",
+      "statement": "KafkaConsumer.commitSync() can fail if a rebalance transfers partitions before the commit completes.",
+      "answer": true,
+      "explanation": "The broker may reject a stale owner's commit with CommitFailedException.",
+      "misconception": "",
+      "factKey": "commit-failed-rebalance-membership",
+      "topic": "Offset commits",
+      "tags": [
+        "KafkaConsumer",
+        "CommitFailedException"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "CommitFailedException (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/CommitFailedException.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-01",
+      "section": "r11",
+      "statement": "A consumer joining a subscribed group can cause Kafka to redistribute its partitions.",
+      "answer": true,
+      "explanation": "Group membership changes trigger Kafka's rebalance process.",
+      "misconception": "",
+      "factKey": "rebalance-membership-change",
+      "topic": "Group rebalancing",
+      "tags": [
+        "KafkaConsumer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ConsumerRebalanceListener (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-02",
+      "section": "r11",
+      "statement": "A static member's exceeded max.poll.interval.ms lets Kafka reassign partitions before its session expires.",
+      "answer": false,
+      "explanation": "Kafka waits for the static member's session timeout before reassignment.",
+      "misconception": "Static and dynamic members lose their partitions at the same poll deadline.",
+      "factKey": "static-poll-timeout-reassignment",
+      "topic": "Static membership",
+      "tags": [
+        "max.poll.interval.ms",
+        "group.instance.id"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-03",
+      "section": "r11",
+      "statement": "KafkaConsumer selects CooperativeStickyAssignor ahead of RangeAssignor in its default assignor list.",
+      "answer": false,
+      "explanation": "RangeAssignor precedes CooperativeStickyAssignor in the default preference list.",
+      "misconception": "The default assignor list already prefers cooperative assignment.",
+      "factKey": "classic-default-assignor-order",
+      "topic": "Partition assignment",
+      "tags": [
+        "KafkaConsumer",
+        "CooperativeStickyAssignor",
+        "RangeAssignor"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-04",
+      "section": "r11",
+      "statement": "RangeAssignor distributes partitions independently for subscribed topics.",
+      "answer": true,
+      "explanation": "RangeAssignor balances each topic's partitions among its subscribers.",
+      "misconception": "",
+      "factKey": "range-assignor-per-topic",
+      "topic": "Partition assignment",
+      "tags": [
+        "RangeAssignor"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "RangeAssignor (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/RangeAssignor.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-05",
+      "section": "r11",
+      "statement": "With CooperativeStickyAssignor, consumers keep ownership of their unmoved partitions throughout a rebalance.",
+      "answer": true,
+      "explanation": "Consumers retain unchanged assignments while handing off partitions that move.",
+      "misconception": "",
+      "factKey": "cooperative-sticky-rebalancing",
+      "topic": "Partition assignment",
+      "tags": [
+        "CooperativeStickyAssignor"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "CooperativeStickyAssignor (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-06",
+      "section": "r11",
+      "statement": "With group.protocol=classic, the consumer sets its failure-detection timeout through session.timeout.ms.",
+      "answer": true,
+      "explanation": "The classic protocol uses the client's session.timeout.ms for failure detection.",
+      "misconception": "",
+      "factKey": "classic-client-session-timeout",
+      "topic": "Group timeouts",
+      "tags": [
+        "group.protocol",
+        "session.timeout.ms"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-07",
+      "section": "r11",
+      "statement": "Consumers sharing group.instance.id can remain active together in one group.",
+      "answer": false,
+      "explanation": "Kafka fences duplicate static identities.",
+      "misconception": "Several active consumers can share the same static identity in a group.",
+      "factKey": "static-instance-duplicate-fencing",
+      "topic": "Static membership",
+      "tags": [
+        "group.instance.id"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-08",
+      "section": "r11",
+      "statement": "ConsumerRebalanceListener exposes a callback for committing offsets before partition reassignment.",
+      "answer": true,
+      "explanation": "An application can save offsets in onPartitionsRevoked() during a graceful handoff.",
+      "misconception": "",
+      "factKey": "rebalance-listener-offset-handoff",
+      "topic": "Group rebalancing",
+      "tags": [
+        "ConsumerRebalanceListener"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "ConsumerRebalanceListener (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/ConsumerRebalanceListener.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-09",
+      "section": "r11",
+      "statement": "KafkaConsumer selects group.protocol=consumer when the group.protocol setting is left unset.",
+      "answer": false,
+      "explanation": "KafkaConsumer defaults to the classic group protocol in Kafka 4.3.",
+      "misconception": "Server availability of the consumer protocol makes it the client default.",
+      "factKey": "consumer-protocol-client-default",
+      "topic": "Consumer group protocol",
+      "tags": [
+        "KafkaConsumer",
+        "group.protocol"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "The documented protocol timeline changes the KafkaConsumer default in a future release.",
+      "source": {
+        "title": "Kafka 4.3 Consumer Rebalance Protocol",
+        "url": "https://kafka.apache.org/43/operations/consumer-rebalance-protocol/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-10",
+      "section": "r11",
+      "statement": "Since Kafka 4.0, group.protocol=consumer uses the client's partition.assignment.strategy for assignment.",
+      "answer": false,
+      "explanation": "The broker assigns partitions; partition.assignment.strategy is unsupported.",
+      "misconception": "The consumer protocol retains the classic protocol's client-side assignor setting.",
+      "factKey": "consumer-protocol-server-assignment",
+      "topic": "Consumer group protocol",
+      "tags": [
+        "group.protocol",
+        "partition.assignment.strategy"
+      ],
+      "appliesTo": "Kafka 4.0 and later",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer Rebalance Protocol",
+        "url": "https://kafka.apache.org/43/operations/consumer-rebalance-protocol/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-11",
+      "section": "r11",
+      "statement": "Since Kafka 4.0, with group.protocol=consumer, the broker controls the consumer heartbeat interval.",
+      "answer": true,
+      "explanation": "For group.protocol=consumer, the broker sets group.consumer.heartbeat.interval.ms.",
+      "misconception": "",
+      "factKey": "consumer-protocol-heartbeat-owner",
+      "topic": "Consumer group protocol",
+      "tags": [
+        "group.protocol",
+        "group.consumer.heartbeat.interval.ms"
+      ],
+      "appliesTo": "Kafka 4.0 and later",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer Rebalance Protocol",
+        "url": "https://kafka.apache.org/43/operations/consumer-rebalance-protocol/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr11-12",
+      "section": "r11",
+      "statement": "Since Kafka 4.0, KafkaConsumer evaluates SubscriptionPattern locally with group.protocol=consumer.",
+      "answer": false,
+      "explanation": "The broker evaluates SubscriptionPattern expressions using the RE2J format.",
+      "misconception": "SubscriptionPattern matching runs in the consumer application.",
+      "factKey": "consumer-protocol-server-regex",
+      "topic": "Consumer group protocol",
+      "tags": [
+        "KafkaConsumer",
+        "SubscriptionPattern",
+        "group.protocol"
+      ],
+      "appliesTo": "Kafka 4.0 and later",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer Rebalance Protocol",
+        "url": "https://kafka.apache.org/43/operations/consumer-rebalance-protocol/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-01",
+      "section": "r12",
+      "statement": "KafkaProducer enables idempotence automatically when an application configures transactional.id.",
+      "answer": true,
+      "explanation": "transactional.id implies enable.idempotence=true.",
+      "misconception": "",
+      "factKey": "transaction-id-implies-idempotence",
+      "topic": "Transactional producer",
+      "tags": [
+        "KafkaProducer",
+        "transactional.id",
+        "enable.idempotence"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Producer Configs",
+        "url": "https://kafka.apache.org/43/configuration/producer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-02",
+      "section": "r12",
+      "statement": "With transactional.id set, KafkaProducer can atomically commit records across several topics.",
+      "answer": true,
+      "explanation": "One transaction spans its output partitions and topics.",
+      "misconception": "",
+      "factKey": "transaction-multipartition-atomicity",
+      "topic": "Transaction atomicity",
+      "tags": [
+        "KafkaProducer",
+        "transactional.id"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaProducer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-03",
+      "section": "r12",
+      "statement": "KafkaProducer.sendOffsetsToTransaction() commits the supplied offsets as soon as the method returns.",
+      "answer": false,
+      "explanation": "Offsets sent through sendOffsetsToTransaction() commit when their transaction commits.",
+      "misconception": "Returning from sendOffsetsToTransaction() completes the offset commit.",
+      "factKey": "transaction-offset-atomicity",
+      "topic": "Transaction atomicity",
+      "tags": [
+        "KafkaProducer",
+        "sendOffsetsToTransaction"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaProducer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-04",
+      "section": "r12",
+      "statement": "KafkaConsumer begins and commits transactions in a consume-process-produce application.",
+      "answer": false,
+      "explanation": "KafkaProducer owns the transaction API.",
+      "misconception": "The consumer manages the transaction for a consume-process-produce loop.",
+      "factKey": "transactional-producer-actor",
+      "topic": "Transactional producer",
+      "tags": [
+        "KafkaConsumer",
+        "KafkaProducer"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-05",
+      "section": "r12",
+      "statement": "KafkaConsumer returns records from aborted transactions with its default isolation.level setting.",
+      "answer": true,
+      "explanation": "read_uncommitted includes aborted transactional records.",
+      "misconception": "",
+      "factKey": "default-isolation-aborted-records",
+      "topic": "Transaction isolation",
+      "tags": [
+        "KafkaConsumer",
+        "isolation.level"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-06",
+      "section": "r12",
+      "statement": "With isolation.level=read_committed, KafkaConsumer can read past open transactions to the high watermark.",
+      "answer": false,
+      "explanation": "read_committed consumers stop at the last stable offset while a transaction remains open.",
+      "misconception": "A read_committed consumer follows the high watermark through open transactions.",
+      "factKey": "read-committed-last-stable-offset",
+      "topic": "Transaction isolation",
+      "tags": [
+        "KafkaConsumer",
+        "isolation.level"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Consumer and Share Consumer Configs",
+        "url": "https://kafka.apache.org/43/configuration/consumer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-07",
+      "section": "r12",
+      "statement": "The Kafka docs recommend enable.auto.commit=true for transactional consume-process-produce applications.",
+      "answer": false,
+      "explanation": "Use enable.auto.commit=false for transactional offset updates.",
+      "misconception": "Automatic offset commits fit transactional consume-process-produce processing.",
+      "factKey": "exactly-once-auto-commit-setting",
+      "topic": "Transactional processing",
+      "tags": [
+        "KafkaConsumer",
+        "enable.auto.commit"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaProducer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-08",
+      "section": "r12",
+      "statement": "Exactly-once output to an external system depends on that system's cooperation with the application.",
+      "answer": true,
+      "explanation": "Kafka transactions alone do not coordinate external writes.",
+      "misconception": "",
+      "factKey": "external-system-transaction-cooperation",
+      "topic": "Transactional processing",
+      "tags": [
+        "Apache Kafka"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-09",
+      "section": "r12",
+      "statement": "With the same transactional.id, initTransactions() aborts a failed producer's transaction left open before commit.",
+      "answer": true,
+      "explanation": "KafkaProducer resolves a previous transaction for the same transactional.id during initialization. It waits if commit has already started.",
+      "misconception": "",
+      "factKey": "transaction-restart-inflight-abort",
+      "topic": "Transaction recovery",
+      "tags": [
+        "KafkaProducer",
+        "transactional.id",
+        "initTransactions"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "KafkaProducer (kafka 4.3.1 API)",
+        "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-10",
+      "section": "r12",
+      "statement": "Kafka caps a transaction.timeout.ms above transaction.max.timeout.ms at the broker's configured maximum.",
+      "answer": false,
+      "explanation": "Kafka rejects a requested transaction timeout above the broker maximum.",
+      "misconception": "Kafka silently clamps an excessive transaction timeout.",
+      "factKey": "transaction-timeout-broker-bound",
+      "topic": "Transaction timeout",
+      "tags": [
+        "transaction.timeout.ms",
+        "transaction.max.timeout.ms"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Producer Configs",
+        "url": "https://kafka.apache.org/43/configuration/producer-configs/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-11",
+      "section": "r12",
+      "statement": "Since Kafka 4.0, Kafka advances a transactional producer's epoch for successive transactions.",
+      "answer": true,
+      "explanation": "New epochs keep late writes out of subsequent transactions.",
+      "misconception": "",
+      "factKey": "transaction-epoch-per-transaction",
+      "topic": "Transaction recovery",
+      "tags": [
+        "KafkaProducer"
+      ],
+      "appliesTo": "Kafka 4.0 and later",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Upgrading",
+        "url": "https://kafka.apache.org/43/getting-started/upgrade/"
+      }
+    },
+    {
+      "id": "kafka-fundamentals-sr12-12",
+      "section": "r12",
+      "statement": "KafkaProducer.abortTransaction() can automatically rewind KafkaConsumer to the aborted transaction's input records.",
+      "answer": false,
+      "explanation": "After a transaction abort, the application resets consumer position explicitly.",
+      "misconception": "Aborting a producer transaction also restores the consumer's current position.",
+      "factKey": "abort-consumer-position-reset",
+      "topic": "Transaction recovery",
+      "tags": [
+        "KafkaProducer",
+        "KafkaConsumer",
+        "abortTransaction"
+      ],
+      "appliesTo": "Kafka 4.3",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Kafka 4.3 Design",
+        "url": "https://kafka.apache.org/43/design/design/"
+      }
+    }
+  ]
+}
