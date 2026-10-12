@@ -1,0 +1,1058 @@
+{
+  "deck": "aws-scs-c03",
+  "block": "b4",
+  "generatedOn": "2026-10-08",
+  "sourceCheck": "",
+  "plan": [],
+  "notes": "Replaced logs-unmask-permission with logs-account-group-policy-union and cloudformation-hook-warn-enforcement with lambda-hook-cloud-control-stack-filter-exemption to avoid answers revealed by names. Replaced declarative-policy-service-linked-role-enforcement with declarative-policy-new-api-baseline-maintenance to avoid retesting the service-linked-role distinction.",
+  "cards": [
+    {
+      "id": "aws-scs-c03-s5.3-01",
+      "section": "5.3",
+      "statement": "AWS recommends matching AWSCURRENT and AWSPENDING database hosts before Secrets Manager rotation updates.",
+      "answer": true,
+      "explanation": "A Secrets Manager rotation function acts as a privileged deputy. Checking that the current and pending credentials target the same database prevents an attacker from redirecting its credential update.",
+      "misconception": "",
+      "factKey": "secrets-rotation-target-validation",
+      "topic": "Secret rotation safeguards",
+      "tags": [
+        "AWS Secrets Manager",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Lambda rotation functions",
+        "url": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotate-secrets_lambda-functions.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-02",
+      "section": "5.3",
+      "statement": "AWS Secrets Manager requires a separate rotation schedule for a secret's replica in another AWS Region.",
+      "answer": false,
+      "explanation": "Secrets Manager rotates the primary secret and propagates the new value to its associated replicas. Engineers manage the rotation schedule on the primary secret.",
+      "misconception": "Engineers configure and maintain independent rotation schedules for associated replica secrets.",
+      "factKey": "secrets-replica-primary-rotation",
+      "topic": "Regional secret rotation",
+      "tags": [
+        "AWS Secrets Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Replicate AWS Secrets Manager secrets across Regions",
+        "url": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/replicate-secrets.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-03",
+      "section": "5.3",
+      "statement": "Engineers can rotate a symmetric encryption KMS key with imported EXTERNAL material on demand.",
+      "answer": true,
+      "explanation": "AWS KMS supports on-demand rotation of imported symmetric encryption key material. Engineers import the replacement material for rotation of the existing key.",
+      "misconception": "",
+      "factKey": "kms-imported-on-demand-rotation",
+      "topic": "Imported key rotation",
+      "tags": [
+        "AWS KMS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Rotate AWS KMS keys",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-04",
+      "section": "5.3",
+      "statement": "Engineers import matching material separately into each related symmetric multi-Region KMS key with EXTERNAL origin.",
+      "answer": true,
+      "explanation": "AWS KMS synchronizes the identifiers of imported multi-Region key material across related keys. Engineers supply matching key material to the primary and its replicas through separate imports.",
+      "misconception": "",
+      "factKey": "kms-imported-multiregion-separate-imports",
+      "topic": "Regional key material",
+      "tags": [
+        "AWS KMS"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-Region keys in AWS KMS",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/multi-region-keys-overview.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-05",
+      "section": "5.3",
+      "statement": "AWS KMS key rotation makes a previously exposed data key unusable for decrypting its protected data.",
+      "answer": false,
+      "explanation": "KMS key rotation changes wrapping key material while existing data keys remain unchanged. A compromised data key still threatens the data encrypted with it.",
+      "misconception": "Rotating a KMS key invalidates a compromised data key that it previously protected.",
+      "factKey": "kms-rotation-compromised-data-key",
+      "topic": "Key compromise effects",
+      "tags": [
+        "AWS KMS"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Rotate AWS KMS keys",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-06",
+      "section": "5.3",
+      "statement": "An IAM Allow alone can authorize a same-account IAM user to decrypt with a KMS key whose policy omits IAM delegation.",
+      "answer": false,
+      "explanation": "An IAM Allow takes effect for a same-account KMS key when the key policy enables IAM delegation. A direct key-policy grant is a separate authorization path.",
+      "misconception": "An identity-based Allow provides KMS access independently of the key policy's delegation to IAM.",
+      "factKey": "kms-key-policy-iam-delegation",
+      "topic": "KMS authorization controls",
+      "tags": [
+        "AWS KMS",
+        "AWS Identity and Access Management"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Key policies in AWS KMS",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-07",
+      "section": "5.3",
+      "statement": "A multi-Region primary key policy automatically grants its same-account IAM user access to a related replica.",
+      "answer": false,
+      "explanation": "A KMS key policy authorizes access to its own Regional key. Granting a user access in the primary key's policy leaves the replica's authorization independent.",
+      "misconception": "Related multi-Region keys synchronize authorization policies along with shared cryptographic properties.",
+      "factKey": "kms-multiregion-independent-key-policies",
+      "topic": "Regional key authorization",
+      "tags": [
+        "AWS KMS"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Key policies in AWS KMS",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-08",
+      "section": "5.3",
+      "statement": "Authorized engineers can update a KMS key's policy while its external key store is disconnected.",
+      "answer": true,
+      "explanation": "A disconnected external key store makes its KMS keys Unavailable, while management operations such as PutKeyPolicy remain usable. Engineers can adjust authorization during a cryptographic outage.",
+      "misconception": "",
+      "factKey": "kms-external-store-disconnection",
+      "topic": "External key availability",
+      "tags": [
+        "AWS KMS",
+        "PutKeyPolicy"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Key states of AWS KMS keys",
+        "url": "https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-09",
+      "section": "5.3",
+      "statement": "CloudWatch Logs reserves data protection policy masking for log groups in the Standard class.",
+      "answer": false,
+      "explanation": "CloudWatch Logs masks sensitive data in both Standard and Infrequent Access log groups. Selecting Infrequent Access still permits data protection policy masking.",
+      "misconception": "Data protection policy masking is restricted to Standard log groups.",
+      "factKey": "logs-masking-log-class-support",
+      "topic": "Sensitive log masking",
+      "tags": [
+        "Amazon CloudWatch Logs"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Log-class feature availability can expand as AWS updates CloudWatch Logs.",
+      "source": {
+        "title": "Help protect sensitive log data with masking",
+        "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/mask-sensitive-log-data.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-10",
+      "section": "5.3",
+      "statement": "CloudWatch Logs automatically merges managed identifiers when account and log-group data protection policies overlap.",
+      "answer": true,
+      "explanation": "CloudWatch Logs masks managed data identifiers listed in either applicable account-level or log-group policy. The log-group policy adds coverage to the account policy.",
+      "misconception": "",
+      "factKey": "logs-account-group-policy-union",
+      "topic": "Sensitive log masking",
+      "tags": [
+        "Amazon CloudWatch Logs"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Help protect sensitive log data with masking",
+        "url": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/mask-sensitive-log-data.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-11",
+      "section": "5.3",
+      "statement": "AWS Private CA accepts authorized revocation requests for unexpired certificates issued by a disabled CA.",
+      "answer": true,
+      "explanation": "Disabling a CA in AWS Private CA stops issuance while preserving revocation for its unexpired certificates. Engineers can retire the issuer while continuing to revoke outstanding certificates.",
+      "misconception": "",
+      "factKey": "private-ca-disabled-revocation",
+      "topic": "Certificate lifecycle controls",
+      "tags": [
+        "AWS Private Certificate Authority"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Manage the private CA lifecycle",
+        "url": "https://docs.aws.amazon.com/privateca/latest/userguide/ca-lifecycle.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s5.3-12",
+      "section": "5.3",
+      "statement": "An Application Load Balancer can attach an ACM-imported certificate ARN from another AWS Region.",
+      "answer": false,
+      "explanation": "An Application Load Balancer uses an ACM certificate in its own Region. Reusing imported certificate material in another Region needs a separate ACM import there.",
+      "misconception": "An imported ACM certificate ARN is reusable by load balancers in other Regions.",
+      "factKey": "acm-cross-region-elb-certificate",
+      "topic": "Regional certificate deployment",
+      "tags": [
+        "Application Load Balancer",
+        "AWS Certificate Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Import certificates into AWS Certificate Manager",
+        "url": "https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-01",
+      "section": "6.1",
+      "statement": "An SCP's Allow statement grants its listed permissions to IAM users in attached member accounts.",
+      "answer": false,
+      "explanation": "SCPs set the maximum permissions available in member accounts. An IAM user still needs an identity-based or resource-based policy that grants the requested access.",
+      "misconception": "An SCP Allow statement supplies usable permissions directly to member-account IAM users.",
+      "factKey": "scp-grant-permissions",
+      "topic": "Organization guardrails",
+      "tags": [
+        "AWS Organizations",
+        "Service control policies"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service control policies (SCPs)",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-02",
+      "section": "6.1",
+      "statement": "SCPs continue to constrain IAM users when their member account becomes a delegated administrator.",
+      "answer": true,
+      "explanation": "Designating a member account as a delegated administrator preserves its SCP restrictions. That designation does not make it an organization management account.",
+      "misconception": "",
+      "factKey": "scp-delegated-administrator-member",
+      "topic": "Delegated administration",
+      "tags": [
+        "AWS Organizations",
+        "Service control policies"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service control policies (SCPs)",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-03",
+      "section": "6.1",
+      "statement": "Attaching a permissive SCP to a child OU restores IAM user actions that a parent OU's SCP blocks.",
+      "answer": false,
+      "explanation": "A parent's SCP Deny remains effective in descendant member accounts. A permissive SCP attached lower in the organization hierarchy cannot remove that inherited restriction.",
+      "misconception": "A child OU's permissive SCP overrides restrictions inherited from a parent OU.",
+      "factKey": "scp-parent-deny-child-allow",
+      "topic": "Policy inheritance",
+      "tags": [
+        "AWS Organizations",
+        "Service control policies"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "SCP evaluation",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_evaluation.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-04",
+      "section": "6.1",
+      "statement": "An AWS service can use a member account's service-linked role to perform actions denied by that account's SCP.",
+      "answer": true,
+      "explanation": "Actions performed through service-linked roles are exempt from SCP restrictions. This preserves the permissions AWS services need to operate on the account's behalf.",
+      "misconception": "",
+      "factKey": "scp-service-linked-role-exemption",
+      "topic": "Organization guardrails",
+      "tags": [
+        "AWS Organizations",
+        "Service control policies"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Service control policies (SCPs)",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-05",
+      "section": "6.1",
+      "statement": "An RCP can deny GetObject to an IAM user outside the organization for an S3 object in a member account.",
+      "answer": true,
+      "explanation": "RCPs apply to supported resources in member accounts even when external principals access them. An applicable RCP can constrain an external IAM user's access to an Amazon S3 object.",
+      "misconception": "",
+      "factKey": "rcp-external-s3-principal",
+      "topic": "Resource guardrails",
+      "tags": [
+        "AWS Organizations",
+        "Resource control policies",
+        "Amazon S3",
+        "GetObject"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource control policies (RCPs)",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-06",
+      "section": "6.1",
+      "statement": "An RCP can block a member-account IAM user's Decrypt request for an AWS managed KMS key.",
+      "answer": false,
+      "explanation": "AWS managed KMS keys are exempt from RCP enforcement. An RCP attached to their member account therefore does not restrict Decrypt access to those keys.",
+      "misconception": "An RCP's KMS restrictions apply to AWS managed keys as well as customer managed keys.",
+      "factKey": "rcp-aws-managed-kms-exemption",
+      "topic": "Resource guardrails",
+      "tags": [
+        "AWS Organizations",
+        "Resource control policies",
+        "AWS Key Management Service",
+        "Decrypt"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Resource control policies (RCPs)",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-07",
+      "section": "6.1",
+      "statement": "An AWS Control Tower proactive control can reject an EC2 instance created by a direct RunInstances call.",
+      "answer": false,
+      "explanation": "AWS Control Tower proactive controls evaluate resources provisioned through AWS CloudFormation hooks. Direct RunInstances calls bypass that provisioning path.",
+      "misconception": "Control Tower proactive controls intercept direct service API calls as well as CloudFormation resource provisioning.",
+      "factKey": "controltower-proactive-direct-api-coverage",
+      "topic": "Control coverage",
+      "tags": [
+        "AWS Control Tower",
+        "AWS CloudFormation",
+        "Amazon EC2",
+        "RunInstances"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Control behavior and guidance",
+        "url": "https://docs.aws.amazon.com/controltower/latest/controlreference/control-behavior.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-08",
+      "section": "6.1",
+      "statement": "Centralized root credentials management lets authorized administrators remove member-account root credentials.",
+      "answer": true,
+      "explanation": "With centralized root credentials management enabled, authorized management-account or IAM delegated administrators can delete a member account's root password and access keys.",
+      "misconception": "",
+      "factKey": "centralized-root-credential-removal",
+      "topic": "Root credential governance",
+      "tags": [
+        "AWS Identity and Access Management",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Centralize root access for member accounts",
+        "url": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-enable-root-access.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-09",
+      "section": "6.1",
+      "statement": "An organization management account's root user can directly call AssumeRoot for a privileged member-account session.",
+      "answer": false,
+      "explanation": "AssumeRoot accepts authorized IAM user or role credentials from the management or IAM delegated-administrator account. Root user credentials are ineligible callers.",
+      "misconception": "The organization management account's root user is an eligible AssumeRoot caller.",
+      "factKey": "assumeroot-root-caller",
+      "topic": "Privileged root sessions",
+      "tags": [
+        "AWS Security Token Service",
+        "AssumeRoot",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AssumeRoot",
+        "url": "https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoot.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-10",
+      "section": "6.1",
+      "statement": "AssumeRoot requires TaskPolicyArn to restrict a member account's privileged session to the selected task.",
+      "answer": true,
+      "explanation": "TaskPolicyArn selects an AWS managed root-task policy for the privileged session. The credentials permit that policy's selected actions rather than unrestricted root access.",
+      "misconception": "",
+      "factKey": "assumeroot-task-scoped-session",
+      "topic": "Privileged root sessions",
+      "tags": [
+        "AWS Security Token Service",
+        "AssumeRoot",
+        "TaskPolicyArn"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AssumeRoot",
+        "url": "https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoot.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-11",
+      "section": "6.1",
+      "statement": "An AI services opt-out policy causes a covered AWS service to delete content needed for normal service functions.",
+      "answer": false,
+      "explanation": "Opting out deletes historical content stored for service improvement. Content that the covered service needs to provide its normal functions remains.",
+      "misconception": "An AI services opt-out policy deletes content needed to operate the covered service.",
+      "factKey": "ai-opt-out-operational-content",
+      "topic": "AI content governance",
+      "tags": [
+        "AWS Organizations",
+        "AI services opt-out policies"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AI services opt-out policies",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.1-12",
+      "section": "6.1",
+      "statement": "An EC2 declarative policy keeps its VPC Block Public Access baseline enforced as EC2 adds new APIs.",
+      "answer": true,
+      "explanation": "EC2 policies enforce a service configuration, so newly introduced APIs remain subject to the selected VPC Block Public Access baseline.",
+      "misconception": "",
+      "factKey": "declarative-policy-new-api-baseline-maintenance",
+      "topic": "Declarative enforcement",
+      "tags": [
+        "AWS Organizations",
+        "Amazon EC2",
+        "Amazon VPC",
+        "VPC Block Public Access"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "EC2 policies",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ec2.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-01",
+      "section": "6.2",
+      "statement": "With trusted access enabled, CloudFormation automatically creates target execution roles for service-managed StackSets.",
+      "answer": true,
+      "explanation": "For service-managed StackSets, CloudFormation creates the target-account IAM roles used for deployment. Trusted access with AWS Organizations enables this cross-account role management.",
+      "misconception": "",
+      "factKey": "stacksets-service-managed-execution-roles",
+      "topic": "Cross-account deployment",
+      "tags": [
+        "AWS CloudFormation",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create CloudFormation StackSets with service-managed permissions",
+        "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-associate-stackset-with-org.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-02",
+      "section": "6.2",
+      "statement": "CloudFormation StackSets automatically propagates accounts' security parameter overrides to new OU accounts' stacks.",
+      "answer": false,
+      "explanation": "During automatic deployment to new OU accounts, StackSets uses default parameter values. Existing account overrides for security settings do not transfer, so a strengthened setting can be absent from the new stack.",
+      "misconception": "Parameter overrides applied to existing OU accounts become the automatic deployment values for future OU accounts.",
+      "factKey": "stacksets-new-account-parameter-defaults",
+      "topic": "Cross-account deployment",
+      "tags": [
+        "AWS CloudFormation"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Enable or disable automatic deployments for StackSets in AWS Organizations",
+        "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-manage-auto-deployment.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-03",
+      "section": "6.2",
+      "statement": "AWS Organizations can register a StackSets delegated administrator with deployment privileges restricted to one OU.",
+      "answer": false,
+      "explanation": "A delegated administrator for service-managed StackSets has deployment authority across the organization. The management account cannot restrict that registration to specific OUs.",
+      "misconception": "Registering a StackSets delegated administrator supports an OU-specific deployment boundary.",
+      "factKey": "stacksets-delegated-admin-ou-scope",
+      "topic": "Cross-account deployment",
+      "tags": [
+        "AWS CloudFormation",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Create CloudFormation StackSets with service-managed permissions",
+        "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-associate-stackset-with-org.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-04",
+      "section": "6.2",
+      "statement": "CloudFormation Guard can validate change-set replacement actions against an organization's preservation rules.",
+      "answer": true,
+      "explanation": "Guard evaluates change-set data as well as templates. A preservation rule can flag resource replacement before engineers execute a change that affects retained security evidence.",
+      "misconception": "",
+      "factKey": "guard-security-rule-validation",
+      "topic": "Deployment security checks",
+      "tags": [
+        "AWS CloudFormation Guard"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "What is AWS CloudFormation Guard?",
+        "url": "https://docs.aws.amazon.com/cfn-guard/latest/ug/what-is-guard.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-05",
+      "section": "6.2",
+      "statement": "CloudFormation honors a Lambda Hook's stack-role exclusions when evaluating a Cloud Control API create request.",
+      "answer": false,
+      "explanation": "For Cloud Control API operations, a Lambda Hook ignores stack-name and stack-role filters. Those filters scope CloudFormation stack invocations rather than direct Cloud Control operations.",
+      "misconception": "A Lambda Hook's stack-role exclusions also exempt matching Cloud Control API provisioning requests.",
+      "factKey": "lambda-hook-cloud-control-stack-filter-exemption",
+      "topic": "Deployment security checks",
+      "tags": [
+        "AWS CloudFormation",
+        "AWS Cloud Control API",
+        "AWS Lambda"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Activate a Lambda Hook in your account",
+        "url": "https://docs.aws.amazon.com/cloudformation-cli/latest/hooks-userguide/lambda-hooks-activate-hooks.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-06",
+      "section": "6.2",
+      "statement": "AWS Firewall Manager automatically evaluates new organization resources against its existing policies' scopes.",
+      "answer": true,
+      "explanation": "Firewall Manager continues managing policy scope after creation. As new resources appear, it assesses their scope membership and applies the policy according to its configured settings.",
+      "misconception": "",
+      "factKey": "firewall-manager-new-resource-policy",
+      "topic": "Central security policies",
+      "tags": [
+        "AWS Firewall Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using the AWS Firewall Manager policy scope",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/policy-scope.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-07",
+      "section": "6.2",
+      "statement": "AWS Firewall Manager uses an empty string for a policy-scope tag value that an administrator leaves blank.",
+      "answer": true,
+      "explanation": "Firewall Manager stores an omitted policy-scope tag value as \"\". Matching requires the resource tag's value to equal that empty string, so a blank value does not match arbitrary values.",
+      "misconception": "",
+      "factKey": "firewall-manager-tag-scope",
+      "topic": "Resource tag enforcement",
+      "tags": [
+        "AWS Firewall Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Using the AWS Firewall Manager policy scope",
+        "url": "https://docs.aws.amazon.com/waf/latest/developerguide/policy-scope.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-08",
+      "section": "6.2",
+      "statement": "An AWS Organizations tag policy can flag an untagged resource as noncompliant with its tag requirements.",
+      "answer": false,
+      "explanation": "AWS Organizations tag policies evaluate tags present on resources. Untagged resources fall outside tag-policy compliance evaluation, so this control alone does not enforce tag presence.",
+      "misconception": "Organizations tag-policy compliance evaluates missing mandatory tags on completely untagged resources.",
+      "factKey": "tag-policy-untagged-resource-coverage",
+      "topic": "Resource tag enforcement",
+      "tags": [
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Tag policies",
+        "url": "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-09",
+      "section": "6.2",
+      "statement": "AWS Service Catalog can use a launch role's EC2 permissions for users who lack direct EC2 creation permission.",
+      "answer": true,
+      "explanation": "A launch constraint makes Service Catalog assume the designated role for product provisioning. The user needs Service Catalog permissions, while the role supplies underlying service permissions.",
+      "misconception": "",
+      "factKey": "service-catalog-launch-role-permissions",
+      "topic": "Controlled product provisioning",
+      "tags": [
+        "AWS Service Catalog",
+        "Amazon EC2"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "AWS Service Catalog Launch Constraints",
+        "url": "https://docs.aws.amazon.com/servicecatalog/latest/adminguide/constraints-launch.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-10",
+      "section": "6.2",
+      "statement": "AWS Service Catalog uses a shared product's owner-account launch role ARN to deploy in the recipient's account.",
+      "answer": false,
+      "explanation": "For a shared Service Catalog product constrained by a specific role ARN, the account owning that launch role provisions the resources. The recipient user's account does not determine their location.",
+      "misconception": "A recipient's account hosts provisioned resources even when a shared product uses an owner-account launch role ARN.",
+      "factKey": "service-catalog-shared-role-account",
+      "topic": "Controlled product provisioning",
+      "tags": [
+        "AWS Service Catalog"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Sharing and Importing Portfolios",
+        "url": "https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_sharing.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-11",
+      "section": "6.2",
+      "statement": "AWS RAM administrators use separate shares to give two resources of one type different managed permissions.",
+      "answer": true,
+      "explanation": "Within one AWS RAM resource share, a resource type uses one managed permission. Separate shares let administrators assign different action sets to resources of the same type.",
+      "misconception": "",
+      "factKey": "ram-managed-permission-scope",
+      "topic": "Cross-account resource sharing",
+      "tags": [
+        "AWS Resource Access Manager"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Terms and concepts for AWS RAM",
+        "url": "https://docs.aws.amazon.com/ram/latest/userguide/getting-started-terms-and-concepts.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.2-12",
+      "section": "6.2",
+      "statement": "With organization sharing enabled, AWS RAM requires member accounts to accept invitations for shared resource access.",
+      "answer": false,
+      "explanation": "AWS RAM skips invitations for same-organization sharing when integration with AWS Organizations is enabled. Account administrators still grant IAM permissions for the shared resources.",
+      "misconception": "Organization integration retains the invitation-acceptance step for accounts inside the organization.",
+      "factKey": "ram-intraorganization-invitation",
+      "topic": "Cross-account resource sharing",
+      "tags": [
+        "AWS Resource Access Manager",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Terms and concepts for AWS RAM",
+        "url": "https://docs.aws.amazon.com/ram/latest/userguide/getting-started-terms-and-concepts.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-01",
+      "section": "6.3",
+      "statement": "An AWS Config aggregator's source authorization grants data access while resource changes need separate permissions.",
+      "answer": true,
+      "explanation": "AWS Config aggregation authorizations expose copied configuration and compliance data. Engineers need a separate access path to change resources in a source account.",
+      "misconception": "",
+      "factKey": "config-aggregator-readonly",
+      "topic": "Compliance aggregation",
+      "tags": [
+        "AWS Config"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Multi-Account Multi-Region Data Aggregation for AWS Config",
+        "url": "https://docs.aws.amazon.com/config/latest/developerguide/aggregate-data.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-02",
+      "section": "6.3",
+      "statement": "AWS Config automatically blocks a proposed resource when its proactive evaluation returns NON_COMPLIANT.",
+      "answer": false,
+      "explanation": "AWS Config proactive evaluation reports whether proposed resource properties meet its rules. Engineers enforce deployment decisions through a separate gate.",
+      "misconception": "A NON_COMPLIANT result from AWS Config proactive evaluation automatically prevents deployment.",
+      "factKey": "config-proactive-evaluation-enforcement",
+      "topic": "Proactive compliance",
+      "tags": [
+        "AWS Config"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Turning on Proactive Evaluation for AWS Config Rules",
+        "url": "https://docs.aws.amazon.com/config/latest/developerguide/evaluate-config_turn-on-proactive-rules.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-03",
+      "section": "6.3",
+      "statement": "AWS Config automatic remediation can target a currently compliant resource using a stale compliance snapshot.",
+      "answer": true,
+      "explanation": "AWS Config automatic remediation uses a periodically captured compliance snapshot. A resource fixed after that snapshot can still enter remediation, so the runbook needs a current-state check.",
+      "misconception": "",
+      "factKey": "config-remediation-stale-snapshot",
+      "topic": "Compliance remediation",
+      "tags": [
+        "AWS Config"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Setting Up Auto Remediation for AWS Config",
+        "url": "https://docs.aws.amazon.com/config/latest/developerguide/setup-autoremediation.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-04",
+      "section": "6.3",
+      "statement": "AWS Config's iam-policy-no-statements-with-admin-access rule counts a restrictive SCP toward policy compliance.",
+      "answer": false,
+      "explanation": "The iam-policy-no-statements-with-admin-access rule flags customer managed policies with Allow for Action \"*\" and Resource \"*\". An SCP that limits actual access does not change this resource-level assessment.",
+      "misconception": "A restrictive SCP makes an otherwise flagged customer managed administrator policy compliant with this AWS Config rule.",
+      "factKey": "config-rule-organization-policy-context",
+      "topic": "Policy compliance scope",
+      "tags": [
+        "AWS Config",
+        "iam-policy-no-statements-with-admin-access",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 3,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "iam-policy-no-statements-with-admin-access",
+        "url": "https://docs.aws.amazon.com/config/latest/developerguide/iam-policy-no-statements-with-admin-access.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-05",
+      "section": "6.3",
+      "statement": "The management account can exclude selected member accounts from an AWS Config organization conformance pack.",
+      "answer": true,
+      "explanation": "AWS Config organization conformance packs support an ExcludedAccounts list. The management account can use it to omit approved member accounts when deploying the pack.",
+      "misconception": "",
+      "factKey": "config-conformance-pack-account-exclusions",
+      "topic": "Organization compliance deployment",
+      "tags": [
+        "AWS Config",
+        "PutOrganizationConformancePack"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "PutOrganizationConformancePack",
+        "url": "https://docs.aws.amazon.com/config/latest/APIReference/API_PutOrganizationConformancePack.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-06",
+      "section": "6.3",
+      "statement": "An engineer can attach remediation directly to a service-linked AWS Config rule using PutRemediationConfigurations.",
+      "answer": false,
+      "explanation": "PutRemediationConfigurations does not attach remediation to service-linked AWS Config rules. Service ownership limits this direct configuration path, even if the caller has the API permission.",
+      "misconception": "PutRemediationConfigurations attaches remediation to service-linked rules in the same way as customer-managed rules.",
+      "factKey": "config-service-linked-rule-remediation",
+      "topic": "Compliance remediation",
+      "tags": [
+        "AWS Config",
+        "PutRemediationConfigurations"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "PutRemediationConfigurations",
+        "url": "https://docs.aws.amazon.com/config/latest/APIReference/API_PutRemediationConfigurations.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-07",
+      "section": "6.3",
+      "statement": "With AWS Security Hub disabled, AWS Security Hub CSPM requires AWS Config key recording for accurate KMS.5 findings.",
+      "answer": true,
+      "explanation": "Standalone AWS Security Hub CSPM needs AWS Config to record AWS KMS keys for its KMS.5 resource checks. Missing recording produces warning findings rather than an evaluation of the key configuration.",
+      "misconception": "",
+      "factKey": "security-hub-cspm-config-recording",
+      "topic": "Control evidence coverage",
+      "tags": [
+        "AWS Security Hub CSPM",
+        "AWS Security Hub",
+        "AWS Config",
+        "AWS Key Management Service"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "may_change",
+      "volatilityNote": "Security Hub and CSPM integration has changed how configuration recorders are created and managed.",
+      "source": {
+        "title": "Enabling and configuring AWS Config for Security Hub CSPM",
+        "url": "https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-setup-prereqs.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-08",
+      "section": "6.3",
+      "statement": "AWS Security Hub CSPM automatically marks failed findings PASSED after their control is disabled across standards.",
+      "answer": false,
+      "explanation": "Disabling a Security Hub CSPM control across standards stops its checks and archives associated findings. Archival does not record successful remediation of the failed resources.",
+      "misconception": "Disabling a control changes its existing failed findings into evidence of compliance.",
+      "factKey": "security-hub-cspm-disabled-control-archival",
+      "topic": "Control finding lifecycle",
+      "tags": [
+        "AWS Security Hub CSPM"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Generating and updating control findings",
+        "url": "https://docs.aws.amazon.com/securityhub/latest/userguide/controls-findings-create-update.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-09",
+      "section": "6.3",
+      "statement": "With consolidated findings enabled, AWS Security Hub CSPM keeps each evaluated control's resource finding separate.",
+      "answer": true,
+      "explanation": "Consolidation combines the same control's findings across standards. It does not combine different controls merely because they evaluate the same AWS resource.",
+      "misconception": "",
+      "factKey": "security-hub-cspm-consolidated-control-findings",
+      "topic": "Control finding granularity",
+      "tags": [
+        "AWS Security Hub CSPM"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Generating and updating control findings",
+        "url": "https://docs.aws.amazon.com/securityhub/latest/userguide/controls-findings-create-update.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-10",
+      "section": "6.3",
+      "statement": "AWS Artifact's AWS reports can attest that a customer's own security controls meet their compliance requirements.",
+      "answer": false,
+      "explanation": "AWS compliance reports in AWS Artifact attest to AWS infrastructure, services and AWS-operated controls. Customers obtain separate evidence for their own workload controls.",
+      "misconception": "AWS compliance reports available in AWS Artifact attest to the customer's own workload controls.",
+      "factKey": "artifact-customer-resource-certification",
+      "topic": "Audit evidence scope",
+      "tags": [
+        "AWS Artifact"
+      ],
+      "appliesTo": "",
+      "difficulty": 1,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "What is AWS Artifact?",
+        "url": "https://docs.aws.amazon.com/artifact/latest/ug/what-is-aws-artifact.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-11",
+      "section": "6.3",
+      "statement": "AWS Artifact automatically extends an active organization agreement to accounts that later join that organization.",
+      "answer": true,
+      "explanation": "An active AWS Artifact organization agreement covers later member accounts automatically. Organization-wide acceptance supplies their coverage under that agreement.",
+      "misconception": "",
+      "factKey": "artifact-organization-agreement-new-accounts",
+      "topic": "Organization agreement coverage",
+      "tags": [
+        "AWS Artifact",
+        "AWS Organizations"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Managing agreements in AWS Artifact",
+        "url": "https://docs.aws.amazon.com/artifact/latest/ug/managing-agreements.html"
+      }
+    },
+    {
+      "id": "aws-scs-c03-s6.3-12",
+      "section": "6.3",
+      "statement": "AWS Well-Architected Tool applies revised workload answers to previously saved milestones during risk reporting.",
+      "answer": false,
+      "explanation": "An AWS Well-Architected Tool milestone report preserves answers and risks from the time the milestone was saved. Later workload edits leave that historical review evidence unchanged.",
+      "misconception": "A saved milestone report recalculates its historical risks using later workload answers.",
+      "factKey": "well-architected-milestone-snapshot",
+      "topic": "Review evidence history",
+      "tags": [
+        "AWS Well-Architected Tool"
+      ],
+      "appliesTo": "",
+      "difficulty": 2,
+      "volatility": "stable",
+      "volatilityNote": "",
+      "source": {
+        "title": "Generating a milestone report",
+        "url": "https://docs.aws.amazon.com/wellarchitected/latest/userguide/milestone-report.html"
+      }
+    }
+  ]
+}
