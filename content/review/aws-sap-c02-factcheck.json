@@ -1,0 +1,1268 @@
+{
+ "deck": "aws-sap-c02",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s1.1-08",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, current (https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/profiles.html)",
+     "evidence": "The profiles.html page states the precedence rule only for private hosted zones and Resolver rules: \"When a DNS query matches both the Resolver rule for a private hosted zone that is directly associated with the VPC and a Resolver rule for a private hosted zone that is associated to the Profile, the local DNS settings take precedence.\" The same page lists DNS Firewall rule groups among the resources a Profile shares. Per https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/profile-associate-dns-firewall.html, Profile rule groups get a priority from 100 to 9900 and \"The rule groups are evaluated starting with the lowest numeric priority setting and going up.\"",
+     "problem": "For private hosted zones and Resolver rules, the answer (False) is right. But the statement says \"a VPC's local DNS settings\" in general, and a Profile also carries DNS Firewall rule groups. Those are ordered by priority, not by local-wins precedence. So an expert could argue that a Profile's DNS Firewall rule group with a lower priority number can block a domain that the VPC's own configuration covers, which is the Profile overriding local settings for the same name. The card should name the resource type the documented rule covers.",
+     "suggestedFix": "Replacement (answer False). Statement: \"When a VPC's own private hosted zone and its Route 53 Profile's zone share a domain name, the Profile's zone answers.\" Explanation: \"When a query matches a private hosted zone associated directly with the VPC and one associated through its Route 53 Profile, the VPC's local setting wins; otherwise the most specific domain name wins.\" Keep the URL profiles.html and keep volatility may_change."
+    }
+   ],
+   "notes": "I checked all 10 section 1.1 cards (5 true, 5 false, balance intact). I fetched each source URL with curl (all returned HTTP 200) and checked the claims against the current pages. I had already used up the web search quota, so the extra checks went through direct fetches of official pages. Only card 08 is flagged; the other nine pass.\n\nWhat settles each passing card:\n- 01: It is correct, but how-transit-gateways-work.html has no sentence that says it outright. Support is indirect: \"Each route table can be associated with zero to many attachments and can forward packets to other attachments\", plus the isolated-router and shared-services examples, where the associated table decides reachability. Acceptable, but the weakest source support in the section. No more explicit sentence exists on tgw-route-tables.html or associate-tgw-route-table.html either.\n- 02: \"This ensures that bidirectional traffic is routed symmetrically—it's routed through the same Availability Zone in the VPC attachment for the life of the flow\" and \"You must connect exactly one transit gateway to the appliance VPC to guarantee flow stickiness.\"\n- 03: cloudwan-peerings.html: \"Peering connections between Cloud WAN and transit gateways support dynamic routing with automatic exchange of routes using BGP\" and \"A transit gateway connection to Cloud WAN only supports dynamically propagated routes.\"\n- 04: privatelink-share-your-services.html: \"With cross-Region access, AWS PrivateLink manages failover between Availability Zones. It does not manage failover across Regions.\"\n- 05: direct-connect-gateways-intro.html shows Account A, owner of the transit gateway, sending the association proposal and Account Z, owner of the Direct Connect gateway, accepting it.\n- 06: MACsec.html: \"MACsec provides point-to-point security on Ethernet links; therefore it does not provide end-to-end encryption across multiple sequential Ethernet or other network segments.\" The explanation avoids claiming the traffic is unencrypted beyond that link, which keeps it consistent with the page's physical-layer encryption note.\n- 07: resolver.html: \"Rules are applied directly to your VPC and can be shared across multiple accounts.\"\n- 09: vpc-share-limitations.html: \"Participants cannot work with route tables (for example, create, delete, or associate route tables) in a shared VPC subnet. Participants can describe route tables in a shared VPC subnet.\"\n- 10: how-reachability-analyzer-works.html: \"building a model of the network configuration ... It does not send packets\" and \"The source and destination resources can belong to different AWS accounts in the same organization.\"\n\nMinor observation on 05 and 07: they are rated easy and lean on \"can\", but true and false cards in this section use hedge verbs about equally (01, 04 and 09 are false and also use \"uses\" or \"can\"), so I do not see a wording tell. Within the section I found no duplicates, mirrored pairs or retired products."
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s1.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_third-party.html)",
+     "evidence": "Page: \"You should assign a unique external ID to each customer and instruct them to add the external ID to their role's trust policy.\" and \"What is crucial is that it must be generated by Example Corp and ***not*** their customers to ensure each external ID is unique.\" The answer is correct, but the statement already says the ID is \"customer-specific\", so it follows from the wording that it tells customers apart. It is close to a definition and the answer can be read from the words. Also, one customer's trust policy does not tell the provider's customers apart. The provider's AssumeRole call carries the ID, and each customer's policy checks only its own.",
+     "problem": "Answer can be read from the wording (\"customer-specific\" ... \"distinguish customers\"), so the card is close to a definition at professional depth. It also misdescribes the mechanism: a single trust policy does not tell customers apart.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"For third-party roles, the shared provider generates the external ID that each customer's role trust policy checks.\" Explanation \"The provider generates a unique external ID per customer, and each customer checks it in the role trust policy. It is not a secret; its job is to prevent the confused deputy problem.\" Same URL."
+    },
+    {
+     "id": "aws-sap-c02-s1.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html)",
+     "evidence": "Page: \"A delegated GuardDuty administrator account is Regional. ... The delegated GuardDuty administrator accounts and their member accounts must be added through AWS Organizations in each desired Region where you have GuardDuty enabled. If the organization management account designates a delegated GuardDuty administrator account in only US East (N. Virginia), then delegated GuardDuty administrator account will only manage member accounts added to the organization in that Region.\" Also: \"It is required that you use the same account as delegated GuardDuty administrator account in all other Regions.\"",
+     "problem": "The answer is right, but the statement is vague and the hedge \"can ... separately\" is easy to say True to without knowing the design fact: designating the administrator in one Region does not cover other Regions. The section also leans on hedge verbs in true cards (can/lets in 4 true vs 2 false), and this card adds to that.",
+     "suggestedFix": "Replace (keeps answer TRUE): statement \"A GuardDuty delegated administrator designated in one Region manages member accounts in that Region alone.\" Explanation \"GuardDuty administration is Regional: the management account designates the delegated administrator and adds members in each Region, and the same account must be used in every Region.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 1.2 (b1). The balance is 5 true (02, 03, 04, 06, 09) and 5 false (01, 05, 07, 08, 10). Every source URL loaded and is official and current. Cards that passed, with the sentence that settles each:\n01: identity-center-instances.html table, account instance: \"Multi-account permissions: No\" and \"AWS access portal ... to your AWS accounts: No\".\n02: account-access-manager.html: \"assign your existing IAM roles to the users and groups ...\". Scope row: \"Multiple accounts (AWS organization)\". It needs an organization instance. may_change is set correctly. I could not check by web search whether it is GA because the search budget was used up. The page itself shows no preview note.\n04: key-policy-modifying-external-accounts.html: \"Neither the key policy nor the IAM policy alone is sufficient\". \"Policy-based\" correctly leaves out the grants alternative.\n05: multi-region-keys-auth.html: \"AWS KMS does not copy or synchronize key policies among related multi-Region keys.\"\n07: creating-trail-organization.html: \"users in member accounts do not have sufficient permissions to ... change what types of events are logged\".\n08: import-certificate.html: \"All certificates in ACM are regional resources ... you must import the certificate into each Region\". An exported certificate re-imported elsewhere still gets a different ARN, so the answer holds.\n09: security-hub-region-aggregation.html, which describes the new unified Security Hub (CreateAggregatorV2): \"each member account inherits the cross-Region aggregation settings of the administrator\". may_change is set.\n10: use-cases-across-regions.html: \"Manage multi-account permission sets and their assignments ... Primary Region only\".\nI found no duplicates with other sections. s2.3-06 (AWS managed KMS key cross-account) and s3.2-09 (organization trail data events default) are neighbouring topics but test different facts. A minor style point: the hedge verbs \"can\" and \"lets\" show up in 4 true and 2 false statements. The 06 replacement drops one \"can\" from a true card."
+  },
+  {
+   "section": "1.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s1.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official and current (docs.aws.amazon.com/drs/latest/userguide/what-is-drs.html); it supports the card",
+     "evidence": "what-is-drs.html: \"During normal operation, maintain readiness by monitoring replication and periodically performing non-disruptive recovery and failback drills.\" The answer is right. The statement is a strawman: no DR service pauses production for a drill, and \"non-disruptive drills\" is the headline feature on the service's landing page, so anyone who studied answers False. The section's own scope names the DRS fact worth testing. DR whitepaper (https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html): \"Elastic Disaster Recovery uses the Pilot Light strategy, maintaining a copy of data and 'switched-off' resources in an Amazon Virtual Private Cloud (Amazon VPC) used as a staging area.\" The same idea is on what-is-drs.html: \"The staging area design reduces costs by using affordable storage and minimal compute resources to maintain ongoing replication.\" No other card in the deck tests the DRS pilot light fact; a grep for pilot, warm and DRS across all four batches found none outside 1.3.",
+     "problem": "Strawman. Nobody who has studied would answer True, so the card teaches nothing at professional depth. It also spends the section's DRS slot on a minor point when the scope names a better fact: DRS follows the pilot light strategy.",
+     "suggestedFix": "Replace (answer stays False). Statement (109 chars): \"AWS Elastic Disaster Recovery keeps full-size recovery instances running in the target Region between drills.\" Explanation (187 chars): \"Elastic Disaster Recovery follows the pilot light strategy: it replicates into a low-cost staging area subnet and launches full-capacity recovery instances only for a drill or a recovery.\" Misconception: DRS keeps a running warm standby. Source: the DR whitepaper URL above, which also backs the staging-area wording on what-is-drs.html. factKey: drs-pilot-light-staging-area."
+    }
+   ],
+   "notes": "I checked all 10 section 1.3 cards (5 True, 5 False; average statement length 98.8 for both answers). I downloaded every source URL with curl (all returned 200, all on docs.aws.amazon.com and current) and matched the text myself, without relying on summaries. Nine cards pass; only 1.3-04 is flagged.\n\nQuotes that settle the passing cards:\n- 01, True. DR whitepaper: \"pilot light cannot process requests without additional action taken first, whereas warm standby can handle traffic (at reduced capacity levels) immediately.\"\n- 02, False. DR whitepaper: \"data corruption may need to rely on backups, which usually results in a non-zero recovery point\". Also: \"Continuous data replication ... may not protect you against data corruption or destruction unless your strategy also includes versioning of stored data or options for point-in-time recovery.\"\n- 03, True. DR whitepaper: \"For maximum resiliency, you should use only data plane operations as part of your failover operation. This is because the data planes typically have higher availability design goals than the control planes.\"\n- 05, True. what-is-drs: \"launch recovery instances on AWS within minutes, using the most up-to-date server state or a previous point in time.\"\n- 06, True. create-cross-account-backup: \"AWS Backup re-encrypts your copy using the encryption key of your destination vault.\"\n- 07, False. point-in-time-recovery: \"You can't create copies of Amazon RDS continuous backups because AWS Backup for Amazon RDS does not allow copying transaction logs. Instead, AWS Backup creates a snapshot and copies it\".\n- 08, True. logicallyairgappedvault: \"Is automatically set with a vault lock in compliance mode\".\n- 09, False. logicallyairgappedvault: \"The vault cannot be shared with an entire organization or with organizational units (OUs) — only individual account IDs are supported as share principals.\"\n- 10, False. cross-region-backup: \"AWS Backup does not support cross-Region copies for storage in cold tiers.\" The copy page goes further: \"backups in cold storage or archive tiers cannot be copied\", which covers cross-account copies too.\n\nMinor points below the flag threshold:\n- 06: encryption.html documents an exception: \"Copies of unencrypted Amazon Aurora, Amazon DocumentDB, and Amazon Neptune clusters are also unencrypted.\" The cited page states the rule without that caveat, so the card holds. An optional tightening would be \"re-encrypts an encrypted cross-account backup copy\".\n- 07: Amazon RDS has its own cross-Region automated backup replication, which does keep PITR. The statement names AWS Backup, so the answer stands, but naming the RDS feature in the explanation would make the card more useful.\n- 09: the explanation's first sentence is ungrammatical (\"AWS Backup logically air-gapped vault shares name individual account IDs\"). A suggested rewrite: \"AWS Backup shares a logically air-gapped vault only with individual account IDs, in the same or another organization.\"\n- Breadth: six of the ten cards are about AWS Backup and three are DR strategy cards. The scope items scale-up versus scale-out and automatic recovery from failure have no card. That is worth fixing in a later round, but no single card is wrong because of it.\n\nDuplicate check: no other section rests on the same facts. The closest card is 3.4-03 (DynamoDB point-in-time restore into a new table), which tests a different fact from 02 and 07."
+  },
+  {
+   "section": "1.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s1.4-10",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ri-turn-off.html)",
+     "evidence": "ri-turn-off.html: \"If a Savings Plans owner account leaves the organization, Savings Plans no longer apply to the consolidated bill\". The plan itself stays with the owner account, so if that account joins another organization, the plan discounts that new organization's consolidated bill. The statement says \"an organization's bill\" rather than \"the organization it left\", so an expert could answer True.",
+     "problem": "The indefinite article makes the false answer defensible: the departed owner account's Savings Plan can still discount a bill, either its own or the bill of an organization it joins. The intended fact is only about the organization the account left, and the statement does not say so.",
+     "suggestedFix": "Answer stays false. Statement (106 chars): \"A Savings Plan keeps discounting its former organization's consolidated bill after its owner account leaves.\" Explanation (163 chars): \"When a Savings Plan's owner account leaves an organization, the plan no longer applies to that organization's consolidated bill. The commitment stays with the owner.\" Keep the URL."
+    },
+    {
+     "id": "aws-sap-c02-s1.4-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html); supports the card",
+     "evidence": "what-is-data-exports.html: \"Cost and Usage Report 2.0 (CUR 2.0) is the new and recommended way to receive your detailed AWS cost and usage data.\" The fact is correct, but the statement sets \"legacy CUR\" against \"CUR 2.0\".",
+     "problem": "Name giveaway and strawman: a player who has never heard of CUR still answers False, because nobody expects AWS to recommend something called \"legacy\" over its \"2.0\" successor. The card teaches nothing, and the explanation only repeats the recommendation.",
+     "suggestedFix": "Replace with a false card about a CUR 2.0 design fact. Statement (97 chars): \"CUR 2.0 in AWS Data Exports adds a new column to its schema for each resource tag key in the bill.\" Explanation (166 chars): \"CUR 2.0 keeps a fixed schema and stores resource tags as key-value pairs in one nested resource_tags column. Legacy CUR adds a column per tag, so its schema varies.\" URL: https://docs.aws.amazon.com/cur/latest/userguide/dataexports-migrate.html (\"Consistent schema: CUR 2.0 contains a fixed set of columns, whereas the columns included for CUR can vary monthly depending on your usage of AWS services, cost categories, and resource tags.\"). factKey: cur2-fixed-schema-nested-tags, volatility may_change."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 1.4 (s1.4-01 to s1.4-10) against their source pages and the current AWS docs on 2026-10-13. Five are true and five false. Four are 1.5 cost cards (07 to 10), within the limit of five. Every source URL loads and is official.\n\nCards that pass, with the evidence that settles each:\n- 01 (false): orgs_manage_policies_scps.html says \"SCPs do not grant permissions to the IAM users and IAM roles in your organization. No permissions are granted by an SCP.\" This is close to SAA depth, but the prompt names it as a deliberate trap, so I let it pass.\n- 02 (true): orgs_manage_policies_rcps.html says \"RCPs impact the effective permissions of principals trying to access resources in a member account with an applicable RCP, regardless of whether the principals belong to the same organizations or not.\"\n- 03 (true): the policy-type table in orgs_manage_policies.html marks Declarative, Backup and Tag policies \"Affects management account: Yes\" and SCP and RCP \"No\". The explanation's claim that the category includes tag and backup policies matches the page.\n- 04 (true): how-controls-work.html says \"Proactive controls are implemented with CloudFormation hooks\" and \"If the resources are out of compliance, they are not provisioned.\"\n- 05 (false): key-changes-lz-v4.html says \"AWS Control Tower will stop sending drift notifications to the SNS topic for all customers on landing zone 4.0 and later, and will start sending drift notifications to EventBridge in the management account instead.\" Landing zone 4.0 is still the highest version (baseline table tops out at 4.0).\n- 06 (true): getting-started-sharing.html says \"any principals in the organization that you share with are automatically granted access to the resource shares without the use of invitations\", and that accounts added to the OU later get access automatically.\n- 07 (true): cost-alloc-tags.html says \"You must activate both types of tags separately before they can appear in Cost Explorer or on a cost allocation report\". activate-built-in-tags.html says \"Management account owners can activate the AWS-generated tags\".\n- 08 (false): budgets-controls.html says \"From the management account, you can apply an SCP to another account. However, you can't target Amazon EC2 or Amazon RDS instances in another account.\"\n\nDuplicate check against the other 150 cards found no shared fact. Shared VPC (1.1-09), the air-gapped vault RAM share (1.3-09), the organization trail (1.2-07) and the Savings Plans cards in 2.5 all test different facts.\n\nTwo observations outside this section, not flagged:\n1. Three cards test Savings Plans (1.4-10, 2.5-07, 2.5-08). They are different facts, and Savings Plans types are explicitly in 2.6 scope, so this is acceptable.\n2. 3.4-08 (CloudWatch billing alarm versus forecast) should be checked to confirm its explanation does not reuse AWS Budgets, which 1.4-08 already covers under the \"one card per cost tool\" rule."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s2.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-associate-stackset-with-org.html: \"Under Automatic deployment, choose whether to automatically deploy to accounts that are added to the target organization or OUs in the future.\" The same page also says: \"CloudFormation doesn't deploy stacks to the management account, even if that account is part of your organization or belongs to an organizational unit (OU).\"",
+     "problem": "The answer is right, but the feature name gives it away. The statement opens with \"With automatic deployment enabled\" and then says StackSets deploys to new accounts automatically, so a player who has never used StackSets answers True from the wording alone. It also uses the hedge \"can\".",
+     "suggestedFix": "Replace with a true card. Statement (117 chars): \"A StackSet with service-managed permissions skips the management account, even when that account sits in a target OU.\" Explanation (176 chars): \"CloudFormation never creates service-managed StackSet instances in the management account, so that account needs its own stack or a self-managed StackSet for the same baseline.\" Keep the same URL. factKey: stacksets-service-managed-skips-management-account."
+    },
+    {
+     "id": "aws-sap-c02-s2.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/codedeploy/latest/userguide/welcome.html: \"switching back to the most recent version of an application is faster and more reliable. That's because traffic can be routed back to the original instances as long as they have not been terminated.\" The same page says: \"If you use an EC2/On-Premises compute platform, be aware that blue/green deployments work with Amazon EC2 instances only.\" and \"On-premises instances are not supported for the blue/green deployment type.\"",
+     "problem": "This is a truism or definition card. If you keep the old fleet, you can send traffic back to it: that is simply what blue/green means, and an SAA-level learner gets it right without knowing anything about CodeDeploy. The statement also restates the source sentence almost word for word.",
+     "suggestedFix": "Replace with a true card on a hybrid design constraint. Statement (about 115 chars): \"AWS CodeDeploy runs blue/green deployments on Amazon EC2 instances only; on-premises servers get in-place deployments.\" Explanation (173 chars): \"On the EC2/On-Premises platform, CodeDeploy blue/green needs EC2 instances or an Auto Scaling group; on-premises instances are unsupported, so hybrid fleets deploy in place.\" Keep the same URL; the page states the \"only\". factKey: codedeploy-blue-green-ec2-only."
+    },
+    {
+     "id": "aws-sap-c02-s2.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/systems-manager/latest/userguide/state-manager-about.html: \"After you create the association, State Manager reapplies the configuration according to the schedule that you defined in the association.\" and \"State Manager also attempts to run the association in the following situations: ... A managed node comes online after missing a scheduled association run.\"",
+     "problem": "The product name gives the answer away. \"State Manager ... reapplies desired settings\" can be guessed from the name, and \"automatically ... on a schedule\" makes it more obvious still. The card teaches nothing beyond what the name says, which is below the professional depth the prompt sets.",
+     "suggestedFix": "Replace with a true card. Statement (118 chars): \"A State Manager association reruns on a managed node that comes back online after missing a scheduled association run.\" Explanation (180 chars): \"Besides its schedule, State Manager runs an association when a node first comes online or returns after a missed run, so a server that was off is brought back to the defined state.\" Keep the same URL. factKey: state-manager-missed-run-reapply."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 2.1 (5 true, 5 false); every source URL loads on docs.aws.amazon.com and is current. All 10 answers are correct and every explanation matches its source. Supporting quotes for the 7 cards that pass:\n- 02: \"Change sets don't guarantee that CloudFormation will successfully update a stack... Failures that occur because of runtime conditions (such as custom resource logic...) might still occur during execution.\"\n- 03: \"When detecting drift on a stack, CloudFormation does not detect drift on any nested stacks that belong to that stack.\"\n- 04: The stack policy page shows denying Update:Replace or Update:* on a database's logical ID.\n- 05: \"UpdateReplacePolicy differs from the DeletionPolicy attribute in that it only applies to resources replaced during stack updates. Use DeletionPolicy for resources deleted when a stack is deleted, or when the resource definition itself is deleted from the template.\"\n- 07: \"In an immutable update, a second Auto Scaling group is launched in your environment and the new version serves traffic alongside the old version until the new instances pass health checks.\" \"Beanstalk Standard\" is the current product variant; the page also has Beanstalk Cluster on EKS. The statement writes \"AWS Elastic Beanstalk Standard\", while the page writes \"Beanstalk Standard\", which is acceptable.\n- 08: \"if you remove a product from the shared portfolio, that product is also removed from the imported portfolio... the product becomes unavailable for future launches.\"\n- 10: \"you must have one artifact bucket per Region where you plan to execute an action\" and \"You must create the artifact bucket and encryption key in the same AWS Region as the cross-region action.\"\n\nThree cards are flagged as weak_card: 01 (the feature name gives the answer away), 06 (truism about blue/green) and 09 (the State Manager name gives the answer away). Each replacement is a true card on the same page, so the section stays at 5 true and 5 false. The true-statement average length stays about 114 characters against 112 for the false ones.\n\nI checked the rest of the deck for duplicates. 3.1-08 (Beanstalk Rolling capacity) and 3.1-09 (CodeDeploy rollback does not undo script side effects) are related to 07 and 06 but rest on different facts, so neither is a duplicate. No other section tests StackSets, Service Catalog, drift, change sets, stack policies or cross-Region CodePipeline.\n\nMinor point, not flagged: card 02 depends on CloudFormation's pre-deployment validation, a recent feature, and is correctly marked may_change."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s2.2-04",
+     "verdict": "out_of_scope",
+     "urlStatus": "200, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-batch-replication-batch.html: \"S3 Batch Replication differs from live replication, which continuously and automatically replicates new objects across Amazon S3 buckets. Instead, S3 Batch Replication occurs on demand on existing objects.\" The answer (false) is correct, but this is the SAA fact taught as \"pure exam material\" (\"After enabling replication, only new objects are replicated. Use S3 Batch Replication...\"). The aws-saa-c03 deck already has an almost identical card: aws-saa-c03-s1.3-07 \"Configuring Amazon S3 live replication automatically backfills existing objects in the source bucket.\" (false). The prompt says never to retest an SAA fact at SAA depth, and adding \"cross-Region recovery bucket\" adds no professional dimension. Enabling replication on existing data stores also falls under the 3.4 scope rather than 2.2.",
+     "problem": "Retests an associate-level fact at associate depth, and it is nearly a copy of aws-saa-c03-s1.3-07.",
+     "suggestedFix": "Replace (answer false). Statement: \"Amazon S3 replication applies a source bucket's lifecycle expirations to its cross-Region recovery bucket.\" Explanation: \"S3 does not replicate actions performed by lifecycle configuration or changes to bucket-level settings. To expire objects in the recovery bucket as well, configure the same lifecycle rules on the destination bucket.\" Source: https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-what-is-isnot-replicated.html (\"Actions performed by lifecycle configuration. For example, if lifecycle configuration is enabled only on your source bucket, Amazon S3 creates delete markers for expired objects but doesn't replicate those markers.\")"
+    },
+    {
+     "id": "aws-sap-c02-s2.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; supports both halves",
+     "evidence": "https://docs.aws.amazon.com/r53recovery/latest/dg/region-switch.html: \"Cross-account support for application resources that you include in your application recovery. You can also share Region switch plans across accounts.\" and \"Automatic failover or switchover, by triggering plan execution based on Amazon CloudWatch alarms. Or, you can choose to execute a Region switch plan manually.\" The answer (true) is correct. But the statement joins two separate facts, automatic alarm-triggered execution and cross-account resources. The explanation spends a sentence on each, while the factKey names only cross-account orchestration. A learner who knows the cross-account support but thinks execution is manual-only would answer False. \"Execute cross-Region recovery plans\" also restates what Region switch is.",
+     "problem": "Breaks the one-fact rule: the statement tests the automatic trigger and the cross-account support together, and part of it is close to a definition.",
+     "suggestedFix": "Replace (answer true). Statement: \"ARC Region switch can include application resources from separate AWS accounts in one Regional recovery plan.\" Explanation: \"Region switch supports application resources in multiple accounts and can share plans across accounts, so a central team can orchestrate one Regional recovery for a multi-account application.\" Keep the same URL. Consider setting volatility to may_change, because Region switch is a 2025 feature whose capabilities are still growing."
+    }
+   ],
+   "notes": "Checked all 10 cards in section 2.2 (5 true: 01, 05, 07, 08, 10; 5 false: 02, 03, 04, 06, 09). Both suggested replacements keep their card's answer, so the balance stays 5/5. Every source URL loaded and is current official documentation. Passing cards, with the sentence that settles each one: 01, aurora-global-database-disaster-recovery: \"Because this feature synchronizes secondary DB clusters with the primary before making any other changes, RPO is 0 (no data loss)\". 02, globaltables-MultiAccount: \"Global tables configured for Multi-Region strong consistency (MRSC) do not support the multi-account model\". 03, globaltables-CoreConcepts: MREC transactions \"are only atomic within the Region where the operation was invoked. Transactional writes are not replicated as a unit across Regions\". 05, replication-time-control: \"When you enable S3 RTC, S3 Replication metrics are also enabled on your replication rule\" (the metrics include maximum replication time to the destination Region). 06, Redis-Global-Datastores-Getting-Started: \"ElastiCache doesn't support autofailover from one AWS Region to another. When needed, you can promote a secondary cluster manually.\" 07, routing-control.safety-rules: with an assertion rule, \"ARC enforces that the criteria ... is met, or else the routing control states aren't changed\", for example to keep at least one routing control On. 09, high_availability_origin_failover: \"CloudFront routes all incoming requests to the primary origin, even when a previous request failed over to the secondary origin\". The statement's qualifier \\\"default origin priority\\\" correctly excludes the MediaPackage v2 media quality score option. 10, cross-region-scenario: the action \\\"prevents replication into and out of the experiment Region but does not affect replication between other Regions\\\". No duplicates inside the SAP deck. 2.4-08 (ElastiCache in-Region Multi-AZ promotion) and 3.1-06/07 (FIS stop conditions and target selection) rest on different facts from 2.2-06 and 2.2-10. Minor observations, not flagged: card 10 says \\\"pauses\\\" where \\\"can pause\\\" would read better; card 01 relies on the switchover precondition of matching engine versions, which does not change its RPO-0 answer."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s2.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html)",
+     "evidence": "Source: \"No rules from the referenced security group are added to the security group that references it.\" The answer (false) is right, but the misconception that referencing a group copies its rules is close to a strawman: few learners who studied at associate level would answer True. 'In a peer account' is decoration and adds no cross-account behaviour, so the card tests an SAA-level fact at SAA depth. The cross-account fact a designer actually needs is on https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-security-groups.html: \"You can't reference the security group of a peer VPC that's in a different Region.\" No other card in the deck tests this fact (I checked 1.1 and 2.2).",
+     "problem": "Strawman, associate-depth card. The peer-account framing does not make it a professional-level fact.",
+     "suggestedFix": "Replace (answer false): \"A security group rule can reference a security group in a peered VPC that is in another Region.\" (95 chars). Explanation: \"Security group references across a VPC peering connection work only when both VPCs are in the same Region. For an inter-Region peer, rules must use CIDR blocks or prefix lists.\" (176 chars). URL: https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-security-groups.html"
+    },
+    {
+     "id": "aws-sap-c02-s2.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-policies.html)",
+     "evidence": "Source: \"you can select the AWS managed or custom baseline you want to use for each operating system (OS) type in a single list.\" The CreatePatchBaseline API reference confirms that a baseline has one OS (\"OperatingSystem Defines the operating system the patch baseline applies to.\"), so the answer (false) is right. But there is no such thing as \"an organization's patch baseline\": a baseline belongs to an account and Region, and the organization construct is the patch policy. The fact that a baseline is per-OS is operating-level (SOA) detail and near a strawman. The same source page states the design-level fact: \"if you use AWS Organizations, you can set up one patch policy that applies to all your managed nodes in all AWS Regions in all your AWS accounts\", while maintenance windows, State Manager associations and Patch now are \"limited to targeting managed nodes in a single AWS account-AWS Region pair.\"",
+     "problem": "The statement names a construct that does not exist (an organization patch baseline) and tests SOA-depth baseline configuration rather than a design-level fact.",
+     "suggestedFix": "Replace (answer false): \"An organization-wide Patch Manager patch policy needs its own setup in each AWS Region it targets.\" (98 chars). Explanation: \"With AWS Organizations, one Quick Setup patch policy can target managed nodes in all chosen accounts and Regions. Maintenance windows and State Manager associations cover one account-Region pair.\" (195 chars). Keep URL: https://docs.aws.amazon.com/systems-manager/latest/userguide/patch-manager-policies.html"
+    }
+   ],
+   "notes": "I checked all 10 section 2.3 cards. All ten source URLs returned 200 and are current official AWS docs. The answers are correct on all ten cards. The section has 5 true and 5 false cards. The two flags are quality flags, not wrong answers.\n\nPassed, with the evidence for each:\n- 01: the boundaries page says permissions granted directly to an IAM role session ARN by a same-account resource policy \"are not limited by an implicit deny in an identity-based policy, a permissions boundary, or session policy\".\n- 02: the PassRole page says \"You can only use the PassRole permission to pass an IAM role to a service that shares the same AWS account\".\n- 04: the Firewall Manager page says \"if you include an OU, when you add an account to the OU ... Firewall Manager automatically applies the policy to the new account\".\n- 05: the Shield page says \"Proactive engagement is available only for Shield Advanced resource protections that have an associated Amazon Route 53 health check\".\n- 06: the KMS concepts page says \"You cannot share resources encrypted under an AWS managed key with other accounts\". This card is related to s1.2-04 (cross-account decryption needs an Allow in the key policy and in IAM) but does not rest on the same fact.\n- 07: the S3 page covers bucket policies restricted to a VPC endpoint.\n- 08: the Secrets Manager page says \"Secrets Manager rotates the secret in the primary Region, and the new secret value propagates to all of the associated replica secrets\".\n- 09: the NLB listener page says a TLS listener offloads decryption, and for targets to decrypt \"you can create a TCP listener ... passes encrypted traffic through to the targets\". The page also confirms that both TCP and TLS target groups exist for TLS listeners.\n\nMinor, not flagged:\n- 01 has awkward wording (\"requires an Allow for a resource policy grant directly to...\").\n- 09's explanation could mention a TLS target group (re-encryption) as the other option.\n\nAfter both replacements, the average statement length is 100.6 characters for true cards and 100.8 for false cards. Web search budget was exhausted during the run, so all verification used direct fetches of the official pages."
+  },
+  {
+   "section": "2.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s2.4-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/r53recovery/latest/dg/arc-zonal-autoshift.html)",
+     "evidence": "https://docs.aws.amazon.com/r53recovery/latest/dg/arc-zonal-autoshift.html: \"AWS starts an autoshift when internal telemetry indicates that there is an Availability Zone impairment that could potentially impact customers.\" and \"Be aware that ARC does not inspect the health of individual resources... In some cases, traffic might be shifted away for resources that are not experiencing impact.\"",
+     "problem": "The answer is right and the source supports it, but the card fails the name-giveaway rule. A player who knows nothing about ARC reads \"autoshift\" plus \"automatically starts shifts\" and answers True. What an architect actually needs to know, that AWS acts on its own AZ telemetry and not on the application's own health, is never tested.",
+     "suggestedFix": "Keep it True and test the non-obvious consequence. Statement (119 chars): \"ARC zonal autoshift can shift an application's traffic out of an Availability Zone where its own resources are healthy.\" Explanation (176 chars): \"AWS starts an autoshift from its own telemetry of an Availability Zone impairment. ARC does not inspect individual resource health, so the other zones need pre-scaled capacity.\" Same URL."
+    },
+    {
+     "id": "aws-sap-c02-s2.4-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html)",
+     "evidence": "https://docs.aws.amazon.com/sns/latest/dg/sns-sqs-as-subscriber.html: \"It decouples sending and receiving components—without requiring each component to be available at the same time.\" and \"The messages also persist in an Amazon SQS queue for other applications to process later.\"",
+     "problem": "The answer is right, but the card is close to a definition. The fanout pattern means one queue per consumer, so independent consumer backlogs follow from the term itself. This is SAA-level single-account knowledge with no professional dimension, which the prompt's SAA-overlap rule forbids. No studied learner would answer False.",
+     "suggestedFix": "Keep it True and add the cross-account dimension. Statement (113 chars): \"Amazon SNS delivers to another account's SQS queue as soon as the queue owner's account creates the subscription.\" Explanation (165 chars): \"A subscription created by the queue owner needs no confirmation, once the topic policy lets that account subscribe and the queue policy lets the topic send messages.\" URL: https://docs.aws.amazon.com/sns/latest/dg/sns-send-message-to-sqs-cross-account.html (\"When the queue owner creates a subscription, the subscription doesn't require confirmation.\")"
+    },
+    {
+     "id": "aws-sap-c02-s2.4-08",
+     "verdict": "explanation_error",
+     "urlStatus": "loads, official, current (docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html)",
+     "evidence": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html: \"When choosing the replica to promote to primary, ElastiCache chooses the replica with the least replication lag. In other words, it chooses the replica that is most current. Doing so helps minimize the amount of lost data.\"",
+     "problem": "The statement and answer (True) are correct. The explanation gives the wrong reason for the choice: it says picking the least-lag replica \"reduces the write interruption\". The page says AWS picks the most current replica to minimize data lost to asynchronous replication. Writes resume after promotion whichever replica is chosen.",
+     "suggestedFix": "Keep the statement and answer (True). Replace the explanation (166 chars): \"ElastiCache promotes the most current replica, which minimizes data lost to asynchronous replication. Writes resume in seconds through the unchanged primary endpoint.\""
+    }
+   ],
+   "notes": "I checked all 10 section 2.4 cards (all in raw/aws-sap-c02-b2.json). Five are True (01, 03, 05, 07, 08) and five False (02, 04, 06, 09, 10). Average statement length is 114.6 for True and 109.8 for False, within the 5-character limit. The two suggested replacements keep the True/False balance and the true average at 114.6. Every source URL loads, is official and current, and supports its card.\n\nCards that pass, with the sentence that settles each:\n- 02, lifecycle-hooks.html: \\\"ready to accept traffic before they are registered to the load balancer at the end of the lifecycle hook\\\".\n- 03, as-using-sqs-queue.html: backlog per instance with a target of acceptable latency divided by average processing time. The page also says the metric is a custom metric or metric math; the card does not need that detail.\n- 04, sns-dead-letter-queues.html: \\\"The Amazon SNS subscription and Amazon SQS queue must be under the same AWS account and Region.\\\"\n- 06, concepts-error-handling.html: \\\"When a state reports an error, Step Functions defaults to failing the entire state machine execution.\\\" I looked for an automatic default retrier in the Workflow Studio and connect-lambda pages and found none. The best-practices page only recommends adding a Retry for Lambda service exceptions.\n- 07, same page: \\\"When a state has both Retry and Catch fields, Step Functions uses any appropriate retriers first. If the retry policy fails to resolve the error, Step Functions applies the matching catcher transition.\\\"\n- 09, capacity-reservation-sharing.html: \\\"Instances launched into the shared capacity by consumers count towards the Capacity Reservation owner's On-Demand Instance limit.\\\"\n- 10, routing-policy-ipbased.html: \\\"You cannot use IP-based routing policy for records in a private hosted zone.\\\" routing-policy.html also lists IP-based as the only non-simple policy without private hosted zone support, while geolocation, latency, geoproximity, weighted and multivalue are now allowed there. The card is correct today.\n\nDuplicate check against the rest of the deck found no overlaps:\n- 08 is in-Region Multi-AZ promotion; 2.2-06 is global datastore cross-Region failover.\n- 09 is shared Capacity Reservation quota; 2.5-09 is zonal RI capacity scope.\n- 06 and 07 rest on different facts: no default retry versus the order of retry and catch.\n\nSmaller observations, not flagged:\n- The card 06 misconception (\\\"automatically gives new workflow tasks a retry policy\\\") is broader than the statement. Some console flows add retriers to generated definitions, though I found no official page saying so. The runtime default is what the card tests, and that is correct.\n- Card 08 names Redis OSS only. Valkey 9 durability-enabled clusters fail over differently, but the statement scopes itself to Redis OSS, so it is fine.\n\nI could not run web searches because the session's search limit was used up. All verification was done by fetching the official pages directly."
+  },
+  {
+   "section": "2.5",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s2.5-06",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://docs.aws.amazon.com/fsx/latest/LustreGuide/importing-files-dra.html: \"FSx for Lustre automatically copies the content of a file from your data repository and loads it into the file system when your application first accesses the file in the file system.\" The answer is correct. But reviewed/aws-saa-c03.json already has aws-saa-c03-s3.1-07 (True): \"An Amazon FSx for Lustre file system linked to Amazon S3 can load file contents on first access.\" That is the same fact at the same depth.",
+     "problem": "This retests an SAA fact at SAA depth, almost word for word. The prompt says: \"Never retest an SAA fact at SAA depth.\" The card adds no cross-account, multi-Region, hybrid or RTO/RPO dimension.",
+     "suggestedFix": "Replace (keeps True). Statement: \"Amazon MemoryDB stores data durably in a Multi-AZ transactional log, so a design can use it as the primary database.\" (116 chars). Explanation: \"MemoryDB serves reads from memory and persists writes to a Multi-AZ transactional log, so one service can replace a separate cache in front of a durable database.\" (162). Source: https://docs.aws.amazon.com/memorydb/latest/devguide/what-is-memorydb.html (\"MemoryDB can be used as a high-performance primary database ... eliminating the need to separately manage both a cache and durable database\"). factKey memorydb-durable-primary-database."
+    },
+    {
+     "id": "aws-sap-c02-s2.5-07",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://docs.aws.amazon.com/savingsplans/latest/userguide/plan-types.html: Compute Savings Plans \"automatically apply to your EC2 instance usage, regardless of ... Region ... shift your usage from EU (Ireland) to EU (London)\". The answer is correct. But the SAA deck already tests both sides of this split: aws-saa-c03-s4.2-02 (False) \"An EC2 Instance Savings Plan can follow a workload to the same instance family in another AWS Region.\" and aws-saa-c03-s4.2-01 (Compute Savings Plan coverage).",
+     "problem": "Region flexibility of Compute Savings Plans versus EC2 Instance Savings Plans is one fact that SAA (and CLF) owns. The rule \"the two sides of one distinction are one fact\" means this card retests SAA at SAA depth. The section also spends two of its four 2.6 slots on Savings Plans flexibility cards built from the same template (07, 08).",
+     "suggestedFix": "Replace (keeps True). Statement: \"Amazon DynamoDB adaptive capacity can place a single heavily read item alone on a partition to reduce throttling.\" (113). Explanation: \"Adaptive capacity rebalances partitions so hot items stop sharing one. A single item still has one partition's maximum throughput, so a hotter key needs caching or key sharding.\" (177). Source: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html (\"adaptive capacity might rebalance your data so that a partition contains only that single, frequently accessed item\"). factKey dynamodb-adaptive-capacity-item-isolation."
+    },
+    {
+     "id": "aws-sap-c02-s2.5-04",
+     "verdict": "out_of_scope",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html: \"When you make updates to the primary DB instance, Amazon RDS copies them asynchronously to the read replica.\" The answer (False) is correct. But reviewed/aws-saa-c03.json aws-saa-c03-s3.3-01 (True) already says: \"An Amazon RDS read replica can return older data than its source because replication is asynchronous.\"",
+     "problem": "Asynchronous read replica replication is SAA-owned (\"RDS Multi-AZ versus read replicas\") and the SAA deck already has it. Adding \"cross-Region\" adds no design dimension, because the fact is the same. \"Immediately\" across Regions also makes the false answer easy to guess (close to a strawman).",
+     "suggestedFix": "Replace (keeps False). Statement: \"Amazon RDS for MySQL adds read replicas automatically when read traffic on its source DB instance grows.\" (104). Explanation: \"RDS does not autoscale DB instance read replicas: an architect creates and deletes them, so a design with spiky read demand needs its own scaling logic or a different engine.\" (174). Same URL (\"RDS doesn't support autoscaling of read replicas, which is the automatic add or removing of read replicas as read demand changes.\"). factKey rds-read-replica-no-autoscaling. Do not also add a true Aurora Auto Scaling card: it is the other side of this fact."
+    },
+    {
+     "id": "aws-sap-c02-s2.5-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateway-pricing.html: \"When you provision a NAT gateway, you are charged for each hour that your NAT gateway is available and each gigabyte of data that it processes.\" The answer (False) is correct.",
+     "problem": "The word \"retained\" gives the answer away: anyone who knows a NAT gateway bills hourly answers False, and nobody who studied would answer True (strawman). It is also the other side of SAA aws-saa-c03-s4.4-01 (\"Routing same-Region Amazon S3 traffic through a gateway endpoint avoids NAT gateway data-processing charges\"). It reuses the false template of aws-sap-c02-s3.4-10 (a retained resource keeps charging after its traffic or fleet goes away), which already sits at the two-card cap.",
+     "suggestedFix": "Replace (keeps False; still a 2.6 storage tiering card). Statement: \"Amazon S3 Intelligent-Tiering charges a retrieval fee when an accessed object moves back to its Frequent Access tier.\" (117). Explanation: \"S3 Intelligent-Tiering has no retrieval fees; it charges a monthly monitoring and automation fee per object, which suits data with unknown or changing access patterns.\" (167). Source: https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html (\"There are no retrieval fees for S3 Intelligent-Tiering.\"). factKey s3-intelligent-tiering-no-retrieval-fee."
+    },
+    {
+     "id": "aws-sap-c02-s2.5-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current, supports the card",
+     "evidence": "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/understanding-the-cache-key.html: \"One way to improve your cache hit ratio is to include only the minimum necessary values in the cache key.\" and \"if you include a value in the cache key that doesn't affect the response that your origin returns, you might end up caching duplicate objects.\" The answer (False) is correct.",
+     "problem": "This is a near-truism and a strawman. The statement says the responses are \"identical\", and adding a key dimension cannot raise hits on identical content, so cache arithmetic alone gives the answer. Cache-key minimization is also SAA/DVA ground (aws-saa-c03-s3.4-12 tests cache key versus forwarded headers; DVA has cache-key cards).",
+     "suggestedFix": "Replace (keeps False). Statement: \"AWS recommends enabling CloudFront Origin Shield in the AWS Region closest to most of the application's viewers.\" (112). Explanation: \"AWS recommends the Region with the lowest latency to the origin, which is the origin's own Region where Origin Shield is offered, so every regional edge cache funnels misses through one layer.\" (192). Source: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/origin-shield.html (\"You should choose the AWS Region that has the lowest latency to your origin.\"). factKey cloudfront-origin-shield-region-placement. This is distinct from SAA s3.4-02 (request collapsing)."
+    }
+   ],
+   "notes": "I checked all 10 section 2.5 cards (5 True, 5 False) against their sources and the current AWS docs, and compared them with the rest of the SAP deck and with the reviewed SAA, CLF and DVA decks. Cards 01, 03, 05, 08 and 09 pass:\n- 01: the DAX page says \\\"DAX passes strongly consistent read requests to DynamoDB ... it does not cache the results\\\".\n- 03: the ElastiCache page says \\\"If the load on your cluster is write-heavy, you can benefit from the additional write endpoints of a ... (cluster mode enabled) cluster with multiple shards\\\".\n- 05: the EFS page says General Purpose \\\"has the lowest per-operation latency\\\" and \\\"we recommend using General Purpose performance mode for all file systems\\\". Max I/O is now labelled previous generation, but the card only uses it on the false side.\n- 08: plan-types names \\\"move a workload from RDS to DynamoDB while maintaining your discounted rates\\\". This closely paraphrases the page's own example, which is a minor originality concern. Coverage is limited to the latest provisioned instance generations; \\\"eligible usage\\\" covers that.\n- 09: apply_ri says \\\"Zonal Reserved Instances reserve capacity only for the owning account and cannot be shared with other AWS accounts\\\". This differs from SAA s4.2-03, which only says a zonal RI reserves capacity.\n\nEvery source URL loaded and supports its card. No answer is wrong. All 5 flags are about depth or form.\n\nThe 5 replacements keep the balance at 5 True and 5 False, and the 2.6 cards drop from four to three (08, 09 and the new 10). I checked each replacement fact against the SAA, CLF, DVA and SAP decks, and none is tested there. The overlap check found that this batch tends to reuse SAA facts. The section-2.5 writer did not check the SAA deck, so the other b3 sections (3.1-3.3) deserve the same cross-deck check."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s3.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-action-approve.html)",
+     "evidence": "\"Note: This action doesn't support multi-account and Region automations.\" (automation-action-approve.html). The answer is correct and supported, but the card rests on one runbook action name (aws:approve) and an exception listed in a note.",
+     "problem": "The card is trivia. It tests an exception on a single runbook action name, which is close to the prompt's ban on API parameter names, and the deck's other 3.1 cards already cover approval and orchestration at strategy level. The fact does not decide a remediation design at professional depth. The 'directly' qualifier also adds a wording hedge to a false statement.",
+     "suggestedFix": "Replace with a FALSE card from the same multi-account Automation page. Statement: \"Target accounts in a multi-account Automation run can execute a custom runbook kept private to the central account.\" (108 chars, answer false). Explanation: \"For a multi-account and multi-Region Automation run, a custom runbook must be shared with all target accounts before the central account can run it there.\" (155 chars). Source: https://docs.aws.amazon.com/systems-manager/latest/userguide/running-automations-multiple-accounts-regions.html (\"If you choose a custom runbook, the runbook must be shared with all of the target accounts.\")"
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.1 (5 true, 5 false) against their source pages, opened 2026-10-13. Nine pass. The supporting evidence for each:\n- 01: \"monitor and troubleshoot applications that span multiple accounts within a Region\"; \"Each account can have one sink per Region.\"\n- 02: \"replicate log data from multiple accounts and AWS Regions into a centralized account within your organization\"; \"only processes new log data\".\n- 03: the EventBridge example \"When an Amazon CloudWatch alarm reports that a managed node has failed a status check ... run the AWSSupport-ExecuteEC2Rescue Automation runbook\".\n- 04: \"You must create this role in every account that you want to target\".\n- 06: \"If a stop condition is triggered during an experiment, AWS FIS stops the experiment.\"\n- 07: \"AWS FIS identifies all targets at the start of the experiment ... uses the target resources that it selects for the entire experiment.\"\n- 08: \"Rolling - ... Each batch is taken out of service during the deployment phase, reducing your environment's capacity\". \"Beanstalk Standard\" is the current name (using-features.deploy-existing-version.html distinguishes Beanstalk Standard from Beanstalk Cluster). Naming Standard correctly excludes Cluster, where max-unavailable 0 keeps full capacity.\n- 09: \"CodeDeploy will not try to revert or otherwise reconcile any actions taken by any scripts in previous deployments\".\n- 10: \"reduce alarm noise by taking actions only at an aggregated level\" and \"if you set up a composite alarm in a CloudWatch cross-account observability monitoring account, the underlying alarms can watch metrics in different source accounts\".\n\nObservations that are not flags:\n(a) Cards 01 and 02 sit close together: one says the observability sink is Regional (false that it spans Regions), the other says Logs centralization crosses Regions. They are different features, so this is not a strict duplicate. A player who sees both may still answer one from the other; consider keeping them apart in play order. Card 02's statement partly gives itself away (\"centralization ... into a central account\"); its real test is \"several Regions\".\n(b) Cards 01 and 02 are marked stable, but Logs centralization is a 2025 feature and AWS could add cross-Region support to OAM links. \"may_change\" with that note would be safer.\n(c) Card 08 (Beanstalk Rolling reduces capacity) is close to associate or DVA depth. I did not flag it because the prompt's 3.1 scope names rolling deployments explicitly. If you replace it, a capacity-requirement scenario or Beanstalk Cluster's max-unavailable would add professional depth. It does not duplicate s2.1-07 (immutable second Auto Scaling group).\n(d) No card uses a retired product, and none depends on a version difference. All statements are 120 characters or fewer, and all explanations are 240 or fewer.\n\nThe web search quota for this session ran out, so I did every check by fetching the official AWS pages directly."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s3.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "ok (https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html loads, official, current)",
+     "evidence": "object-lock.html: \"In governance mode, users can't overwrite or delete an object version or alter its lock settings unless they have special permissions\" and \"To override or remove governance-mode retention settings, you must have the s3:BypassGovernanceRetention permission and must explicitly include x-amz-bypass-governance-retention:true\". The answer (True) is correct, but governance versus compliance mode (governance can be bypassed by privileged users) is the textbook associate-level Object Lock fact. 'Archived evidence' adds no cross-account, organization, multi-Region or existing-environment dimension, so it retests an SAA fact at SAA depth, which the prompt forbids.",
+     "problem": "The answer is correct, but the card retests the basic governance-mode bypass at associate depth and adds nothing an architect improving an existing environment would need.",
+     "suggestedFix": "Replacement (answer True): statement \"Setting a default Object Lock retention on an existing S3 bucket leaves the object versions already stored there unlocked.\" Explanation: \"A bucket's default retention is applied when an object version is placed in the bucket, so earlier versions stay unprotected until retention is set on each of them individually.\" Source: https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-configure.html (\"New objects uploaded without explicit retention settings receive this default mode\") plus object-lock.html (\"When you place an object in the bucket, Amazon S3 calculates a Retain Until Date for the object version\"). factKey: s3-object-lock-default-retention-new-versions-only."
+    },
+    {
+     "id": "aws-sap-c02-s3.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "ok (https://docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html loads, official, current)",
+     "evidence": "scanning-ecr.html: \"For continuous scanning, Amazon Inspector initiates new vulnerability scans of container images ... Whenever Amazon Inspector adds a new common vulnerabilities and exposures (CVE) item to its database, and that CVE is relevant to that container image (continuous scanning only).\" The answer (True) is correct, but 'continuous scanning automatically rescans' follows from the term 'continuous', which the prompt treats as a definition card. The fact an architect actually needs is on https://docs.aws.amazon.com/inspector/latest/user/scanning_resources_configure_duration_setting_ecr.html: \"If an image hasn't been pushed or last used on a running container within the configured push and last in use dates, Amazon Inspector stops monitoring it ... sets the image scan status code to inactive and reason code to expired.\"",
+     "problem": "The answer can be read from the phrase 'continuous scanning', so the card teaches little. The re-scan duration limit that creates coverage gaps in an existing fleet goes untested.",
+     "suggestedFix": "Replacement (answer True): statement \"Amazon Inspector stops rescanning an ECR image once its push and last-in-use dates fall outside the re-scan duration.\" Explanation: \"Continuous ECR scanning monitors an image only while its push, last-in-use or last pull date is within the configured re-scan duration; after that Inspector marks it inactive and closes its findings.\" Source: https://docs.aws.amazon.com/inspector/latest/user/scanning_resources_configure_duration_setting_ecr.html. factKey: inspector-ecr-rescan-duration-expiry."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.2 (in aws-sap-c02-b3.json): 5 true (02, 03, 04, 06, 10) and 5 false (01, 05, 07, 08, 09). Both suggested replacements keep True, so the balance holds. Every source URL loaded, is official and current, and supports its card.\n\nCards that passed, with the sentence that settles each:\n- 01 (False): setup-autoremediation says \"auto remediation can be initiated even for compliant resources, since the bootstrap processor uses a database that can have stale evaluation results based on the last known compliance data snapshot\".\n- 02 (True): conformance-pack-organization-apis says \"ensuring that the underlying AWS Config rules and remediation actions are not modifiable by your organization's member accounts\".\n- 03 (True): rotation-strategy says \"After rotation, both user and user_clone credentials are valid\".\n- 04 (True): access-analyzer-create-unused says \"For unused access analysis, findings for the analyzer do not change based on Region. Creating an analyzer in each Region where you have resources is not required.\"\n- 05 (False): access_policies_last-accessed says \"The service last accessed data includes all attempts to access an AWS API, not just the successful attempts ... Refer to your CloudTrail logs as the authoritative source\".\n- 07 (False): accounts-mgmt-ao-integrate says \"Turning on this setting doesn't affect existing accounts in your organization.\"\n- 08 (False): the Detective FAQ says \"Yes, you can use Amazon Detective if you do not have Amazon GuardDuty activated in the account.\" The current Detective prerequisites page lists only IAM permissions and a CLI version, with no GuardDuty requirement. Small wording nit: \"GuardDuty membership\" would read more clearly as \"an enabled GuardDuty detector\"; not flagged.\n- 09 (False): logging-data-events says \"By default, trails and event data stores do not log data events\" and lists DeleteObject as an S3 data event.\n\nDeck-wide checks:\n- No duplicates with other sections. The nearest cards are b1 \"organization trail event selection\" (1.2), b1 \"air-gapped vault compliance mode\" and b2 \"Secrets Manager replica propagation\"; each tests a different fact.\n- Template check: the Macie card 07 (\"new-account setting also covers existing accounts\") and b2 \"S3 live replication backfills pre-existing objects\" use the same false template. Two is the allowed maximum, so no third card in the deck may use it.\n- No retired products and no Emerging Topics content. Every card is in the 3.2 scope.\n\nTool notes: the WebSearch budget ran out during the run, so I verified with WebFetch on official AWS pages only. Bash worked only for grep-based duplicate checks."
+  },
+  {
+   "section": "3.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s3.3-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official EC2 User Guide, current",
+     "evidence": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-strategies.html: \"A cluster placement group is a logical grouping of instances within a single Availability Zone.\" and \"A cluster placement group can't span multiple Availability Zones.\"",
+     "problem": "The answer (False) is right and the source supports it, but the card restates the definition of a cluster placement group, an associate-level (SAA) fact tested at SAA depth. Pairing an HPC latency group with a multi-AZ requirement is close to a strawman: anyone who studied placement groups answers False at once. This breaks the definition-card and SAA-overlap rules.",
+     "suggestedFix": "Replace with a False card. Statement: \"Launching several instance types into one EC2 cluster placement group improves the odds that the launch finds capacity.\" (119 chars). Explanation: \"AWS allows mixed instance types in a cluster placement group but warns this lowers the chance of getting the needed capacity; it recommends one instance type launched in a single request.\" (187 chars). Same URL. It quotes the source: \"You can launch multiple instance types into a cluster placement group. However, this reduces the likelihood that the required capacity will be available.\""
+    },
+    {
+     "id": "aws-sap-c02-s3.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official EC2 Auto Scaling User Guide, current",
+     "evidence": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-mixed-instances-groups-instance-weighting.html: \"By default, all instance types have equal weight regardless of size... With weights, however, you assign a number value that specifies how many units to associate with each instance type... these weights translate into the number of units that each instance counts toward your desired capacity.\"",
+     "problem": "The answer (False) is right, but the wording gives it away. The statement says instances count \"equally\" in a fleet with \"unequal instance weights\", which contradicts itself, so a player can answer from the words alone without knowing Auto Scaling. That makes it close to a truism.",
+     "suggestedFix": "Replace with a False card. Statement: \"With instance weights, an Auto Scaling group keeps its current capacity at or below the desired capacity in units.\" (114 chars). Explanation: \"Current capacity can exceed desired capacity when a launched instance carries more units than remain to be filled, so AWS advises a desired capacity two to three times the largest weight.\" (187 chars). Same URL. It quotes the source: \"Current capacity can exceed the desired capacity if instances launched that exceed the remaining desired capacity units.\""
+    },
+    {
+     "id": "aws-sap-c02-s3.3-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official AWS Prescriptive Guidance, current; the EC2 User Guide metric list also confirms there is no memory metric in AWS/EC2",
+     "evidence": "https://docs.aws.amazon.com/prescriptive-guidance/latest/implementing-logging-monitoring-cloudwatch/system-level-cloud-watch-configuration.html: \"Memory and disk space utilization aren't included in standard metrics provided by Amazon EC2. To include these metrics, you must install and configure the CloudWatch agent on your EC2 instances.\" The AWS/EC2 instance metrics table at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html lists no memory metric.",
+     "problem": "The answer (False) is right and the source supports it. But \"EC2 has no built-in memory metric, use the CloudWatch agent\" is a standard associate-level fact (SAA, and SOA owns CloudWatch agent setup). The rightsizing context does not add a professional dimension, so the card retests an SAA fact at SAA depth, against the deck's overlap rule.",
+     "suggestedFix": "Replace with a False card on an instance-level bottleneck metric. Statement: \"An EC2 metric flags IOPS beyond the instance's EBS limit; raising the volume's provisioned IOPS removes that bottleneck.\" (about 115 chars). Explanation: \"The metric reports that the application tried to exceed the instance's own maximum EBS IOPS. Removing that limit needs an instance type with higher EBS performance, not a faster volume.\" (185 chars). URL: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html (InstanceEBSIOPSExceededCheck: \"Reports whether an application attempted to drive IOPS that exceeds the maximum EBS IOPS limits for the instance within the last minute\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.3 (5 true, 5 false); every source URL loaded and is an official, current docs.aws.amazon.com page. All 3 flags are False cards with False replacements, so the 5/5 balance holds. Passing cards and the quotes that settle them:\n- s3.3-01 (True): share-placement-group.html says \"You can use VPC peering to connect instances owned by separate AWS accounts and get the full latency benefits offered by shared cluster placement groups.\"\n- s3.3-03 (True): placement-strategies.html says \"Amazon EC2 ensures that each partition within a placement group has its own set of racks... No two partitions within a placement group share the same racks.\" The page also covers topology-aware use: HDFS, HBase and Cassandra use partition information for replication. Borderline SAA depth, kept because of the topology-aware angle.\n- s3.3-05 (True): the GA how-it-works page supports the edge-to-AWS-network path and regional endpoints. It mentions UDP only indirectly (UDP fragments are forwarded to the endpoint; a 30-second UDP idle timeout), so the GA overview page (what-is-global-accelerator.html, which says TCP or UDP) would be a stronger source. Also a fairly basic SAA-level fact, but the section scope names GA versus CloudFront.\n- s3.3-06 (False): edge-functions-choosing.html table says \"Network access: No\" for CloudFront Functions. The same page lists \"Request authorization\" as a CloudFront Functions use case, which makes the misconception realistic.\n- s3.3-07 (True): the trigger-events page says \"The function executes only when CloudFront forwards a request to your origin. When the requested object is in the CloudFront cache, the function doesn't execute.\" Mild name-giveaway risk (\"origin-request\"), still acceptable.\n- s3.3-09 (True): USER_DatabaseInsights.html says \"visualize the DB Load on your fleet of databases and filter the load by waits, SQL statements, hosts, or users.\"\n- s3.3-10 (False): allocation-strategies.html says capacity-optimized launches \"into the most available pools by looking at real-time capacity data\", and \"To give certain instance types a higher chance of launching first, use capacity-optimized-prioritized\"; that strategy \"honors the instance type priorities on a best-effort basis but optimizes for capacity first.\"\nI found no duplicates or mirrored facts against the other 15 sections' plans or cards (searched for placement, Global Accelerator, Lambda@Edge, CloudFront Functions, memory, Spot, Insights, weights, EBS and allocation strategy). None of the replacements overlaps the 2.5 zonal-ri-capacity-reservation card or the 3.4 Compute Optimizer card. WebSearch was out of budget (200/200), so recency checks used direct fetches of the current EC2 metric list and the Compute Optimizer pages; nothing showed a new built-in EC2 memory metric."
+  },
+  {
+   "section": "3.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s3.4-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/health-checks-overview.html: \"By default, Amazon EC2 Auto Scaling ignores the results of the Elastic Load Balancing health checks. After you turn on these health checks for your Auto Scaling group, when Elastic Load Balancing reports a registered instance as Unhealthy, Amazon EC2 Auto Scaling marks the instance Unhealthy on its next periodic health check and replaces it.\" The answer is correct, but this is a core SAA fact retested at SAA depth: single group, single account, no requirement. The wording (\"can replace unhealthy ... instances with ... checks enabled\") also gives away True.",
+     "problem": "SAA-depth retest with an answer readable from the wording. The prompt says never retest an SAA fact at SAA depth, and the card adds no professional angle.",
+     "suggestedFix": "Replacement (True, stays true): \"Amazon EC2 Auto Scaling can slow replacements when Elastic Load Balancing health checks report its whole group unhealthy.\" Explanation: \"If ELB reports every instance unhealthy while the load balancer is InService, Auto Scaling might mark fewer instances unhealthy at a time, giving teams time to fix the fault before the whole group is terminated.\" Same URL, Considerations note under 'How Amazon EC2 Auto Scaling minimizes downtime'."
+    },
+    {
+     "id": "aws-sap-c02-s3.4-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports Regional VPC quota but does not state the non-propagation of increases explicitly",
+     "evidence": "https://docs.aws.amazon.com/servicequotas/latest/userguide/intro.html: \"The number of virtual private clouds (VPCs) per Region is an example of a Region-based quota.\" The answer (False) is right. But the reviewed aws-saa-c03 deck already has \"A disaster recovery Region can need higher service quotas before a standby scales to production capacity.\" (True). That card teaches the same fact, that quotas and their increases are per Region.",
+     "problem": "Retests an SAA fact (Regional quotas) at the same multi-Region depth. Knowing the SAA card gives this answer.",
+     "suggestedFix": "Replacement (False, stays false): \"Updating a Service Quotas request template requests its new quota values for existing accounts in the organization.\" Explanation: \"A quota request template applies to accounts created in the organization after it is associated. Updating it changes requests for new accounts only, so existing accounts need their own increase requests.\" URL: https://docs.aws.amazon.com/servicequotas/latest/userguide/organization-templates.html (\"Updating a request template doesn't update quota values for existing accounts.\")"
+    },
+    {
+     "id": "aws-sap-c02-s3.4-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/cost-management/latest/userguide/ce-resource-daily.html: \"Use resource-level data to identify your cost drivers.\" and \"In Cost Explorer, you can enable resource-level data for your chosen AWS services at daily granularity for the past 14 days.\" The statement \"With resource-level data enabled, AWS Cost Explorer can identify the resources driving ... costs\" follows from its own wording.",
+     "problem": "Answer readable from the wording: resource-level data identifies resources. Close to a definition card that teaches nothing.",
+     "suggestedFix": "Replacement (True, stays true, volatility may_change because of the 14-day window): \"AWS Cost Explorer keeps resource-level cost data at daily granularity for the past 14 days.\" Explanation: \"Resource-level daily data is enabled per service and covers 14 days. For longer per-resource history, teams query CUR 2.0 data from AWS Data Exports, for example with Amazon Athena.\" Same URL."
+    },
+    {
+     "id": "aws-sap-c02-s3.4-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-detaching-volume.html: \"After you detach a volume, you are still charged for volume storage as long as the storage amount exceeds the limit of the AWS Free Tier. You must delete a volume to avoid incurring further charges.\" The reviewed aws-saa-c03 deck already has \"Detaching an Amazon EBS volume can pause its storage charges until it is attached again.\" (False). That is the same fact.",
+     "problem": "Same fact as an existing SAA card, and close to a strawman at professional level: few people who studied believe retained volumes stop billing.",
+     "suggestedFix": "Replacement (False, stays false): \"Deleting an older incremental Amazon EBS snapshot removes block data that the volume's newer snapshots still reference.\" Explanation: \"EBS removes only data referenced exclusively by the deleted snapshot; referenced blocks move to later snapshots, so deleting old snapshots may cut storage costs less than expected.\" URL: https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html (\"When you delete a snapshot, only the data that is referenced exclusively by that snapshot is removed.\" / \"Deleting a snapshot might not reduce your organization's data storage costs.\")"
+    }
+   ],
+   "notes": "I checked all 10 cards in section 3.4 (5 true, 5 false), and every source URL loaded on docs.aws.amazon.com. I flagged 4, all as weak_card, and none has a wrong answer. Each replacement keeps its card's answer, so the section stays at 5 true and 5 false, and every statement and explanation is within 120 and 240 characters.\n\nCards that pass, with the evidence:\n- 02 (False): the RDS Proxy page says \\\"Only connections that are in the middle of a transaction or SQL statement are canceled.\\\"\n- 03 (True): the PITR page says \\\"The point-in-time recovery process restores to a new table.\\\"\n- 05 (True): the warm pools page says \\\"If you want to return instances to the warm pool instead, you can specify an instance reuse policy.\\\" It is borderline for the deck's 3.4 scope, since warm pools are mainly about scale-out latency, but the guide's \\\"elastic features\\\" skill covers it. I did not flag it.\n- 06 (False): the EC2 recovery page says \\\"with CloudWatch action based recovery, data on instance store volumes will also be lost.\\\" CloudWatch action based recovery supports instance store volumes on selected instance types, so the premise holds.\n- 07 (True): the performance risk section supports it. Its factKey 'compute-optimizer-idle-rightsizing' does not match the content (performance risk, not idle resources); rename it, for example to 'compute-optimizer-performance-risk'.\n- 08 (False): the CloudWatch billing alarm page says \\\"It triggers only when the current billing exceeds the threshold. It doesn't use projections based on your usage so far in the month.\\\"\n\nOverlaps checked:\n- Within this deck: no duplicates. The cost tools in this section (Compute Optimizer, Cost Explorer, CloudWatch billing alarm) each appear only once in the deck.\n- Against the reviewed decks: card 02 sits next to SAA's RDS Proxy idle-connection card but tests a different fact. Cards 04 and 10 retest SAA cards, which is why I flagged them. The snapshot replacement for 10 differs from SAA's 'snapshots are incremental' card and from CLF's 'deleting a volume deletes its snapshots' card.\n\nHedge words in this section are balanced: 'can' or 'supports' appears 3 times in true statements and 3 times in false ones."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s4.1-10",
+     "verdict": "explanation_error",
+     "urlStatus": "loads (200), official, current; supports the prerequisite only indirectly",
+     "evidence": "https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html: \"AD Connector is a directory gateway with which you can redirect directory requests to your on-premises Microsoft Active Directory without caching any information in the cloud.\" The cited getting-started page only says \"The VPC must be connected to your existing network through a virtual private network (VPN) connection or Direct Connect\" and \"Directory Service does not replicate any of your directory data.\"",
+     "problem": "False is the right answer, but the wording misleads. The statement and the explanation both say \"new users\", which suggests that users who signed in before still authenticate from a cache during an outage. AD Connector caches nothing, so no user authenticates. \"Migrated applications\" is also loose: AD Connector serves AWS applications (WorkSpaces, console access through IAM roles, seamless domain join), not LDAP binds from arbitrary migrated apps. The cited page does not state the no-cache fact.",
+     "suggestedFix": "Replace (answer stays false). Statement (109 chars): \"AD Connector caches directory data in AWS so WorkSpaces users can sign in while the on-premises link is down.\" Explanation (191 chars): \"AD Connector is a directory gateway that redirects requests to on-premises Active Directory without caching any information in the cloud, so sign-ins depend on the VPN or Direct Connect path.\" URL: https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html"
+    },
+    {
+     "id": "aws-sap-c02-s4.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current; supports the card through its bidirectional section",
+     "evidence": "https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Task.CDC.html: \"Then create two tasks: one task for source A to move data to target B, and another task for source B to move data to target A. Also, make sure that each task is configured with loopback prevention.\" Same page: \"DMS bidirectional replication doesn't include conflict detection or resolution.\"",
+     "problem": "Strawman. Nobody who has studied DMS believes a replication task flips its own direction after cutover, yet the card is rated difficulty 3. The answer is correct, but the card teaches nothing that a realistic misconception would test. The same page holds a real professional-level trap for a rollback path: bidirectional DMS has no conflict resolution.",
+     "suggestedFix": "Replace (answer stays false). Statement (103 chars): \"AWS DMS bidirectional replication resolves conflicting updates made to the same rows on both databases.\" Explanation (185 chars): \"DMS bidirectional replication runs two tasks with loopback prevention but has no conflict detection or resolution, so a fallback design keeps each data element written on one side only.\" Keep URL https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Task.CDC.html"
+    },
+    {
+     "id": "aws-sap-c02-s4.1-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/dms/latest/userguide/CHAP_SchemaConversion.html: \"DMS Schema Conversion converts your database schema, not your data. To migrate your data, use the data migration features of AWS DMS.\" Same page: \"If you don't have a target database yet, you can use a virtual target and add a real one before you apply your code.\"",
+     "problem": "Name giveaway. A player can read the answer from the product name, because \"Schema Conversion\" does not suggest copying rows, and the card is rated difficulty 1. The fact is right and the prompt names it as a trap, but at professional level the card adds nothing beyond the name.",
+     "suggestedFix": "Replace (answer stays false; set volatility may_change because virtual mode is newer). Statement (107 chars): \"DMS Schema Conversion requires an existing target database before a migration project can convert a schema.\" Explanation (192 chars): \"A DMS Schema Conversion migration project can use a virtual target, so a team can assess and convert a schema before provisioning the target database and add the real one before applying code.\" Keep URL."
+    },
+    {
+     "id": "aws-sap-c02-s4.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/prescriptive-guidance/latest/application-portfolio-assessment-guide/wave-planning.html: \"A hard dependency is a relationship between two or more assets ... that is dependent on location ... Moving only one of these systems to the cloud would cause functionality or performance problems\". Same page: \"Filter the dependency information (or communication data) and exclude shared services, such as Active Directory, backup, and monitoring traffic. Technical shared services tend to glue the entire scope.\"",
+     "problem": "Near-truism. The guide defines a hard dependency as one that depends on location, so moving both sides together follows from the definition and from common sense. Almost any player answers True. The same page has a non-obvious wave-planning fact that an architect actually uses.",
+     "suggestedFix": "Replace (answer stays true). Statement (118 chars): \"AWS wave planning excludes shared services such as Active Directory and backup traffic when forming dependency groups.\" Explanation (191 chars): \"Shared services such as Active Directory, backup and monitoring connect to almost everything and would glue the portfolio into one group, so AWS excludes them when deriving dependency groups.\" Keep URL."
+    }
+   ],
+   "notes": "Checked all 10 section 4.1 cards (5 true, 5 false), and every source URL loaded on 2026-10-13. Cards 01, 02, 03, 05, 06 and 09 pass. 01: the migration-strategies page says \\\"you can use this strategy to transfer an Amazon RDS DB instance to another VPC or AWS account\\\". 02: \\\"you might replatform a Microsoft SQL Server database to Amazon RDS for SQL Server\\\". 03: \\\"we recommend rehosting, relocating, or replatforming the application and then modernizing the application after the migration is complete\\\". 05: Migration Hub availability page: \\\"When you are ready to start new migration projects, you can begin using AWS Transform directly\\\". 06: the card cites what-is-mgn.html, which loads with the same content as the prompt's what-is-application-migration-service.html: \\\"MGN performs continuous block-level replication of your source servers\\\". 09: the DTT page says \\\"upload your data to your AWS Cloud services with your own devices\\\". The same page also says DTT is \\\"available only to AWS Enterprise Support customers at this time\\\"; the card does not depend on that. Duplicates: no other section of the deck reuses a 4.1 fact. The overlap with 4.4-09 (Transform containerization) and 4.3-10 (Aurora binlog replication) is topical only. All four replacements keep their card's answer, so the section stays 5 true and 5 false. Every replacement statement is 120 characters or fewer and every explanation 240 or fewer, and none uses a negation word. Minor style point, not flagged: cards 02 and 03 both make the statement false by naming refactoring, though they test different facts. Read-only review: no files were edited."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s4.3-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/storagegateway/latest/vgw/WhatIsStorageGateway.html)",
+     "evidence": "\"Stored volumes – If you need low-latency access to your entire dataset, first configure your on-premises gateway to store all your data locally. Then asynchronously back up point-in-time snapshots of this data to Amazon S3.\" The fact is correct and the answer (false) is right.",
+     "problem": "Wording tell. The requirement clause ('For local low-latency access to a full dataset') contradicts the claim ('keep the primary copy in Amazon S3'), so a player who doesn't know the topic can still guess False from the sentence alone. The statement also borrows the source's framing ('low-latency access to your entire dataset') almost word for word.",
+     "suggestedFix": "Replacement (answer false, 120 chars): \"Volume Gateway stored volumes keep the primary dataset in Amazon S3 and cache only frequently accessed data on premises.\" Explanation (153 chars): \"Stored volumes keep the full dataset on premises and asynchronously back up point-in-time snapshots to Amazon S3. Cached volumes keep primary data in S3.\" Keep the same URL."
+    },
+    {
+     "id": "aws-sap-c02-s4.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-custom.html); supports the card",
+     "evidence": "\"To deliver a managed service experience, Amazon RDS doesn't let you access the underlying host.\" and \"RDS Custom supports only the Oracle Database and Microsoft SQL Server DB engines.\" (same page)",
+     "problem": "The answer (false) is right, but 'RDS gives no OS or host access' is an associate-level (SAA/CLF) fact retested at SAA depth with only a thin migration framing. Hardly anyone who studied would answer True, so it is close to a strawman, and the wording ('can preserve a workload's requirement for administrators...') is awkward. The professional-level distinction on this same page is which engines RDS Custom covers.",
+     "suggestedFix": "Replacement (answer false, 109 chars): \"Amazon RDS Custom can host a migrated MySQL database whose administrators must install agents on the host OS.\" Explanation (185 chars): \"RDS Custom supports only the Microsoft SQL Server and Oracle engines, and RDS Custom for Oracle is in sunset. A MySQL database that needs host OS access runs self-managed on Amazon EC2.\" Same URL. Set volatility to may_change (RDS Custom for Oracle reaches end of support on March 31, 2027)."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 4.3 (5 true, 5 false). Every source URL loaded on 2026-10-13, is official, and supports its card. Proposed replacements keep the 5/5 balance (both flagged cards stay false).\n\nCards that passed:\n- 01: Fargate page: \"No privileged containers or access - Features such as privileged containers or access are currently unavailable on Fargate.\" The page says \"currently\", so volatility could be may_change, but this is not worth a flag.\n- 02: ECS Anywhere page: \"Service load balancing isn't supported.\" and \"the lack of Elastic Load Balancing support\". The statement correctly says \"through ECS service integration\", which rules out the manual workaround of ALB IP targets.\n- 03: EKS Anywhere FAQ: \"you are responsible for managing the Kubernetes clusters that run entirely on your infrastructure\". It passes but is close to a name giveaway. A stronger true alternative from the same FAQ: EKS Anywhere \"can run ... disconnected from an AWS Region, including in air-gapped environments\" (contrast: EKS Hybrid Nodes, where AWS manages the control plane).\n- 04: ECR page: \"Registry replication doesn't perform any delete actions or archive actions.\"\n- 05: FSx ONTAP page: \"FSx for ONTAP also supports multi-protocol access (concurrent NFS and SMB access) to the same volume.\"\n- 06: FSx Windows page: \"you can join an FSx for Windows File Server file system to your Active Directory domain at creation.\"\n- 07: EFS page: \"ensure that the NFS client and EFS mount target are in the same Availability Zone ID. This requirement applies because AZ names can differ from one account to another.\" It is at the edge of 4.3 scope (more networking than storage choice), but acceptable.\n- 10: Aurora page: \"You can replicate with an Amazon RDS MySQL DB instance, a MySQL database external to Amazon RDS, or another Aurora MySQL DB cluster.\"\n\nLifecycle and duplicates: none of the services these cards use (Fargate, ECS Anywhere, EKS Anywhere, ECR, FSx ONTAP, FSx Windows, EFS, Volume Gateway, RDS, Aurora MySQL) is retired, and Windows support for ECS Anywhere is deprecated but no card uses it. No duplicate facts with 2.5-05/06 (EFS performance mode, FSx Lustre S3 lazy load), 3.2-06 (Inspector ECR rescans) or the 4.1/4.4 cards."
+  },
+  {
+   "section": "4.4",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "aws-sap-c02-s4.4-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy-planning.html: \"AWS Lambda functions can also be good candidates for using a proxy. These functions make frequent short database connections that benefit from connection pooling offered by RDS Proxy.\" The answer is right, but connection pooling is what RDS Proxy is for. Anyone who has studied it answers False, and RDS Proxy for Lambda is a standard associate-level (SAA) fact. That breaks the strawman rule and the SAA-overlap rule. It is also the section's only difficulty 1 false card.",
+     "problem": "Strawman at SAA depth: the false statement contradicts the one thing everyone knows about RDS Proxy, so it teaches nothing at professional level.",
+     "suggestedFix": "Keep the answer False and test pinning, which decides whether the proxy actually helps a modernized Lambda app. Statement (104 chars): \"RDS Proxy keeps multiplexing a Lambda client's transactions after that client creates a temporary table.\" Explanation (213 chars): \"Creating a temporary table pins the session to one database connection until the session ends, so other clients cannot reuse it. Moving shared session setup into the proxy initialization query avoids some pinning.\" Source: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy-pinning.html (\"When a connection is pinned, each later transaction uses the same underlying database connection until the session ends. Other client connections also can't reuse that database connection\"; temporary tables pin on MySQL, PostgreSQL and SQL Server). This fact is separate from 3.4-02 (failover replay)."
+    },
+    {
+     "id": "aws-sap-c02-s4.4-03",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current; supports the literal fact",
+     "evidence": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-archive.html: \"Archive events can only be replayed to the source event bus.\" The same page says a replay can be limited to \"specific rules on the event bus to which EventBridge should replay the selected events\". A source-bus rule whose target is an event bus in another account therefore delivers the replayed events to that bus.",
+     "problem": "The statement does not say \"directly\" or \"as the replay destination\". An expert could answer True, because replaying to the source bus through a rule that forwards to the cross-account bus does get the archive to the replacement bus. The word \"directly\" appears only in the misconception, not in the statement.",
+     "suggestedFix": "Keep the answer False and name the destination. Statement (113 chars): \"An Amazon EventBridge replay can name an event bus other than its archive's source bus as the replay destination.\" Explanation (179 chars): \"A replay always sends archived events to the archive's source event bus. To reach a bus in another account, the replay can target source-bus rules that forward events to that bus.\" Keep the same URL."
+    },
+    {
+     "id": "aws-sap-c02-s4.4-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/amazon-mq/latest/migration-guide/concept-chapter-about.html: \"Amazon MQ for ActiveMQ brokers are compatible with popular APIs and protocols, such as Java Message Service (JMS), allowing you to migrate applications with minimal code changes.\" The answer is right, but the card only says what Amazon MQ is for (CLF/SAA territory). The prompt says to assume the player knows what each service is for. Difficulty 1, no professional dimension.",
+     "problem": "Definition-level card: \"Amazon MQ keeps JMS\" is the canonical associate-level fact, and the modernization framing adds no requirement or trade-off.",
+     "suggestedFix": "Keep the answer True and test a migration-deciding capability from the same page. Statement (109 chars): \"Amazon MQ for ActiveMQ supports XA distributed transactions for JMS applications leaving a commercial broker.\" Explanation (223 chars): \"Amazon MQ for ActiveMQ brokers support distributed (XA) transactions for JMS applications that leave IBM MQ or TIBCO EMS. Such an application can keep its transaction semantics on a managed broker with minimal code changes.\" Same URL (\"Amazon MQ supports standard JMS features including ... JMS transactions, and distributed (XA) transactions.\"; \"Amazon MQ for ActiveMQ simplifies the migration of commercial brokers, such as IBM MQ and TIBCO Enterprise Management Service (EMS)\")."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.4 (5 True, 5 False). All 10 source URLs load and are official, current AWS documentation. 3 cards are flagged: 4.4-05 (weak_card), 4.4-03 (ambiguous) and 4.4-02 (weak_card). Each suggested replacement keeps the card's answer, so the section stays 5 True and 5 False.\n\nPassed, with the sentence that settles each:\n- 4.4-01: the choosing-workflow-type page says \"Asynchronous Express Workflows: At-least-once workflow execution\". Synchronous Express is at-most-once, so it is not exactly-once either.\n- 4.4-04: the transactional outbox page says \"When the flight table is updated, the outbox table is also updated in the same transaction\", and the example uses Amazon RDS and SQS. The right fact in the explanation is supported.\n- 4.4-06: the auto-pause page says auto-pause is \"represented by a minimum capacity of 0 ACUs\" and \"When you connect to a paused Aurora serverless instance, it automatically resumes\". The word \"eligible\" covers the documented exclusions (RDS Proxy, global database, mixed provisioned writer, replication, zero-ETL). The page now writes \"Aurora serverless\" without \"v2\"; the card follows the prompt's naming.\n- 4.4-07: the ECS Express Mode page says \"All resources are created in your AWS account with full visibility and accessibility\".\n- 4.4-08: the Service Connect page says \"Existing tasks can't resolve and connect to the new endpoint\" and \"You must redeploy existing services before the applications can resolve new endpoints\".\n- 4.4-09: the transform-containers page says AWS Transform can \"containerize source code ... generate Docker images, publish to Amazon ECR, and deploy to Amazon ECS or Amazon EKS\". It is not marked preview, and the card is correctly may_change.\n- 4.4-10: the Neptune intro says \"If you use the W3C standard Resource Description Framework (RDF) model, you can access your graph using the standard SPARQL query language\". This card is close to \"what the service is\", but a learner who believes Neptune is Gremlin-only would get it wrong, so it passes.\n\nNo duplicates. I compared against 3.4-02 (RDS Proxy failover replay) and the other SQS, Lambda and Transform cards in the deck, and the facts are distinct. 4.4-02 and 4.4-10 share an \"X preserves the existing interface\" pattern; both are True, so the template rule (which counts false statements) is not broken. No retired products appear in this section, and every product name is current."
+  }
+ ],
+ "scan": {
+  "cardsRead": 160,
+  "duplicates": [],
+  "conflictGroups": [
+   {
+    "name": "org-policy-ceiling",
+    "ids": [
+     "aws-sap-c02-s1.4-01",
+     "aws-sap-c02-s1.4-02"
+    ],
+    "why": "s1.4-02 calls an RCP a 'cap' on access, which tells the player that Organizations authorization policies set ceilings. That gives away s1.4-01 (an SCP Allow grants permission: False)."
+   },
+   {
+    "name": "ram-ou-sharing",
+    "ids": [
+     "aws-sap-c02-s1.4-06",
+     "aws-sap-c02-s1.3-09"
+    ],
+    "why": "s1.4-06 (True) teaches that AWS RAM shares with OUs and grants access automatically. A player then answers s1.3-09 (RAM shares an air-gapped vault with an OU) True, but it is False. The two cards pull against each other."
+   },
+   {
+    "name": "kms-cross-account",
+    "ids": [
+     "aws-sap-c02-s1.2-04",
+     "aws-sap-c02-s2.3-06"
+    ],
+    "why": "The explanation of s2.3-06 says to use a customer managed key for direct cross-account decryption, which confirms that s1.2-04's policy-based cross-account decrypt works. s1.2-04 being True also invites a wrong True on s2.3-06."
+   },
+   {
+    "name": "cfn-database-replacement-protection",
+    "ids": [
+     "aws-sap-c02-s2.1-04",
+     "aws-sap-c02-s2.1-05"
+    ],
+    "why": "Both cards ask what protects a database when a stack update replaces it. The explanation of s2.1-05 names the mechanism (UpdateReplacePolicy), which biases the answer to the stack policy card s2.1-04."
+   },
+   {
+    "name": "elasticache-promotion-scope",
+    "ids": [
+     "aws-sap-c02-s2.4-08",
+     "aws-sap-c02-s2.2-06"
+    ],
+    "why": "These are the two sides of one split: in-Region Multi-AZ promotes automatically (True), while a cross-Region global datastore needs an explicit failover (False). The automatic-promotion wording mirrors across the pair."
+   },
+   {
+    "name": "stepfunctions-retry-catch",
+    "ids": [
+     "aws-sap-c02-s2.4-06",
+     "aws-sap-c02-s2.4-07"
+    ],
+    "why": "s2.4-07 opens with 'After retries fail', which presumes retries exist and pushes s2.4-06 (default retry policy: False) toward True. The explanation of s2.4-06 also covers the explicit Retry and Catch design that s2.4-07 tests."
+   },
+   {
+    "name": "ec2-capacity-sharing",
+    "ids": [
+     "aws-sap-c02-s2.4-09",
+     "aws-sap-c02-s2.5-09"
+    ],
+    "why": "Both cards are about sharing EC2 capacity reservations across accounts. The explanation of s2.4-09 states that shared Capacity Reservations exist, which steers s2.5-09 (zonal RI capacity for other accounts: False) toward True."
+   },
+   {
+    "name": "cloudwatch-central-multi-region",
+    "ids": [
+     "aws-sap-c02-s3.1-01",
+     "aws-sap-c02-s3.1-02"
+    ],
+    "why": "This is a mirrored true and false pair: 'CloudWatch X brings telemetry from several accounts and Regions to one central place' is False for cross-account observability (s3.1-01) and True for Logs centralization (s3.1-02). The explanation of s3.1-01 states that the scope is one Region."
+   },
+   {
+    "name": "backup-cross-region-copy-template",
+    "ids": [
+     "aws-sap-c02-s1.3-07",
+     "aws-sap-c02-s1.3-10"
+    ],
+    "why": "Both cards use the same 'AWS Backup copies X across Regions' template and both are False, in the same section. After seeing one, a player can answer the other."
+   },
+   {
+    "name": "savings-plan-follows-move",
+    "ids": [
+     "aws-sap-c02-s2.5-07",
+     "aws-sap-c02-s2.5-08",
+     "aws-sap-c02-s1.4-10"
+    ],
+    "why": "s2.5-07 and s2.5-08 both say 'a Savings Plan still applies after the workload moves' and both are True. s1.4-10, a Savings Plan still applying after its owner leaves, is the same shape but False. The pattern reveals answers when these cards share a round."
+   },
+   {
+    "name": "retained-resource-charges",
+    "ids": [
+     "aws-sap-c02-s2.5-10",
+     "aws-sap-c02-s3.4-10"
+    ],
+    "why": "Both use the template 'an action ends charges for a retained resource' and both are False. This repeats one distractor."
+   },
+   {
+    "name": "managed-host-access",
+    "ids": [
+     "aws-sap-c02-s4.3-01",
+     "aws-sap-c02-s4.3-09",
+     "aws-sap-c02-s3.3-06"
+    ],
+    "why": "All three use the template 'a managed or edge runtime can meet a host-level or network-access requirement' and all are False. Two of them (s4.3-01, s4.3-09) are in the same section and both contain 'host-level'."
+   },
+   {
+    "name": "new-account-ou-coverage",
+    "ids": [
+     "aws-sap-c02-s1.4-06",
+     "aws-sap-c02-s2.1-01",
+     "aws-sap-c02-s2.3-04",
+     "aws-sap-c02-s3.2-07"
+    ],
+    "why": "Three True cards say a service automatically covers accounts joining an OU or organization. The explanation of s3.2-07 says an enrollment setting affects only accounts that join later, which confirms the others. In one round, the repeated pattern answers the set."
+   },
+   {
+    "name": "beanstalk-deployment-capacity",
+    "ids": [
+     "aws-sap-c02-s2.1-07",
+     "aws-sap-c02-s3.1-08"
+    ],
+    "why": "Both cards turn on whether an Elastic Beanstalk deployment policy keeps serving capacity. Immutable keeps the original fleet running (True), Rolling keeps full capacity (False). This is a two-sided split of one distinction."
+   }
+  ],
+  "tells": "All ids below drop the 'aws-sap-c02-' prefix. Statement lengths are balanced: overall True 109.6 vs False 108.6 characters, and every section is within 5. The tells are in the wording and in recurring templates.\n\nWORDS THAT PREDICT TRUE:\n(1) 'enabled' appears in 8 True and 0 False: s1.2-06, s1.4-06, s2.1-01, s2.4-01, s2.5-03, s3.4-01, s3.4-05, s3.4-09.\n(2) A sentence opening with 'With ...' is 6 True and 0 False: s1.1-02, s2.1-01, s2.4-01, s2.4-08, s3.4-05, s3.4-09. A stated precondition reliably signals True.\n(3) 'join/added/new accounts' is 3 True and 0 False: s2.1-01, s2.3-04, s4.3-06.\n(4) The hedge 'lets' is 6 True and 2 False. True: s1.2-03, s2.1-06, s2.4-05, s4.1-09, s4.4-02, s4.4-06. False: s1.2-10, s4.1-10.\n(5) 'keeps' is 4 True and 2 False.\n\nWORDS THAT PREDICT FALSE:\n(1) 'supports' is 0 True and 4 False: s2.2-02, s2.3-06, s2.4-10, s3.4-08.\n(2) 'retain(ed)' is 0 True and 4 False: s2.1-05, s2.1-08, s2.5-10, s3.4-10.\n(3) 'different' is 0 True and 3 False: s1.1-04, s1.2-08, s2.4-04.\n(4) 'directly' is 1 True (s4.3-06) and 3 False (s2.3-01, s3.1-01, s3.1-05).\n(5) 'by default' is 0 True and 2 False: s1.4-05, s3.2-09.\n(6) 'owned by' is 0 True and 2 False: s1.4-08, s2.4-04.\n(7) 'unchanged' is 0 True and 2 False: s4.1-02, s4.3-01.\n(8) 'host-level' is 0 True and 2 False: s4.3-01, s4.3-09.\n(9) Absolutes 'full/entire/immediately/guarantee' are 0 True and 4 False: s2.5-04, s3.1-08, s4.3-08, s4.4-01.\n(10) 'requirement/to meet' is 1 True and 3 False: s1.3-10, s3.3-02, s4.3-09.\n(11) 'legacy' appears only in s1.4-09, a strawman: no player who studied would believe AWS recommends legacy CUR over CUR 2.0.\n\nThe word 'automatically' is balanced (17 True, 16 False), and so is 'can' (35 True, 36 False).\n\nRECURRING FALSE TEMPLATES (the prompt caps each template at 2):\n(a) Scope overreach, 'X extends to another account, Region or OU' while X is really account- or Region-bound: about 12 False cards. s1.1-04, s1.2-08, s1.2-10, s1.3-09, s1.3-10, s2.2-02, s2.3-06, s2.4-04, s2.5-09, s3.1-01, s3.1-05, s3.4-04, s4.4-03. Many True cross-account cards offset it, but the template is used about 6 times over the cap.\n(b) 'X automatically performs the follow-on step that really needs explicit action': 12 False cards. s1.2-05, s2.1-03, s2.2-04, s2.2-06, s2.3-03, s2.4-02, s2.4-06, s3.1-09, s3.2-01, s3.4-04, s4.1-07, s4.3-04, s4.4-08.\n(c) Reversed AWS recommendation ('AWS recommends' the opposite of the documented advice): 3 False cards, s1.4-09, s2.5-05, s4.1-03, against 2 True, s1.3-03, s4.1-05. This is over the cap.\n(d) 'Managed service can meet a host or network access need': s4.3-01, s4.3-09, s3.3-06.\n(e) 'A retained resource stops being charged': s2.5-10, s3.4-10.\n(f) 'AWS Backup copies X across Regions': s1.3-07, s1.3-10.\n\nSELF-CONTRADICTING FALSE STATEMENTS (the requirement in the sentence refutes the option, so a non-expert can answer):\n- s3.3-04: 'counts each instance equally' in a fleet with 'unequal instance weights'.\n- s4.3-08: 'local low-latency access to a full dataset' while the primary copy is in S3.\n- s2.5-02: adding tenant headers to the cache key 'improves cache hits' for identical responses.\n- s3.3-02: a cluster placement group in multiple AZs.\n- s4.4-04: one RDS transaction atomically commits an SQS publish.\n- s2.5-04: an asynchronous replica 'immediately' shows writes.\n\nRECURRING TRUE TEMPLATE:\n'A plan or service keeps applying after a move or after accounts join': s2.5-07, s2.5-08, s1.4-06, s2.1-01, s2.3-04."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "aws-sap-c02-s1.2-03",
+    "reason": "weak_card: definition card; 'customer-specific' already gives the answer. 1.2 had two weak True cards, so this one is dropped and 1.2-06 is rewritten to keep 9 cards."
+   },
+   {
+    "id": "aws-sap-c02-s1.3-04",
+    "reason": "weak_card: strawman (no studied learner thinks DRS drills pause production). Dropping leaves 9 cards, 5T/4F."
+   },
+   {
+    "id": "aws-sap-c02-s1.4-09",
+    "reason": "weak_card: name giveaway ('legacy' versus '2.0'), and it is one of three reversed-recommendation false cards. Dropping leaves 9 cards, 5T/4F."
+   },
+   {
+    "id": "aws-sap-c02-s2.1-06",
+    "reason": "weak_card: blue/green truism. The verifier's replacement is a compound 'X only; Y gets Z' sentence, so this card is dropped and 2.1-01 and 2.1-09 are rewritten."
+   },
+   {
+    "id": "aws-sap-c02-s2.2-04",
+    "reason": "out_of_scope: near copy of aws-saa-c03-s1.3-07 (live replication does not backfill) and it carries the scan's 'automatic follow-on step' false template. 2.2-08 is rewritten to keep 9 cards."
+   },
+   {
+    "id": "aws-sap-c02-s2.3-10",
+    "reason": "weak_card: names a construct that does not exist (an organization patch baseline) at SOA depth. The verifier's replacement uses 'its own setup in each Region', a requirement-template false. 2.3-03 is rewritten instead."
+   },
+   {
+    "id": "aws-sap-c02-s2.4-05",
+    "reason": "weak_card: SNS fanout independent backlogs is a definition-level SAA fact. 2.4-01 is rewritten to keep 9 cards."
+   },
+   {
+    "id": "aws-sap-c02-s2.5-02",
+    "reason": "weak_card: cache-key truism. The verifier's Origin Shield replacement ('AWS recommends' the opposite of the docs) would put the reversed-recommendation false template over its cap of 2 (2.5-05 and 4.1-03 remain), so this card is dropped and the other four 2.5 flags are rewritten."
+   },
+   {
+    "id": "aws-sap-c02-s3.1-05",
+    "reason": "weak_card: trivia on one runbook action's exception note. Dropping leaves 9 cards, 5T/4F."
+   },
+   {
+    "id": "aws-sap-c02-s3.2-10",
+    "reason": "weak_card: retests aws-saa-c03-s1.3-04 (governance-mode bypass) at SAA depth. 3.2-06 is rewritten to keep 9 cards."
+   },
+   {
+    "id": "aws-sap-c02-s3.3-08",
+    "reason": "weak_card: SAA/SOA-depth memory-metric fact. The verifier's replacement is a two-clause compound statement, so this card is dropped and 3.3-02 and 3.3-04 are rewritten."
+   },
+   {
+    "id": "aws-sap-c02-s3.4-09",
+    "reason": "weak_card: answer readable from the wording. The verifier's replacement rests on a 14-day retention number, which the prompt's number rule discourages. 3.4-01, 3.4-04 and 3.4-10 are rewritten instead."
+   },
+   {
+    "id": "aws-sap-c02-s4.1-08",
+    "reason": "weak_card: name giveaway at difficulty 1. The verifier's replacement uses 'requires' in a false card and rests on a newer virtual-target feature. 4.1-04 and 4.1-07 are rewritten instead."
+   },
+   {
+    "id": "aws-sap-c02-s4.3-09",
+    "reason": "weak_card: SAA-depth 'RDS gives no host access'. It is also the third member of the managed-host-access false template. The verifier's replacement leans on RDS Custom for Oracle, which is in sunset. 4.3-08 is rewritten instead."
+   },
+   {
+    "id": "aws-sap-c02-s4.4-05",
+    "reason": "weak_card: SAA-depth strawman. The verifier's pinning replacement duplicates aws-dva-c02-s4.3-11 (RDS Proxy pins on CREATE TEMPORARY TABLE). 4.4-02 is rewritten instead."
+   }
+  ],
+  "source": [],
+  "rewrite": [
+   {
+    "id": "aws-sap-c02-s1.1-08",
+    "reason": "ambiguous",
+    "statement": "For the same domain name, a private hosted zone associated through a Route 53 Profile overrides the VPC's own zone.",
+    "answer": false,
+    "explanation": "When a query matches a private hosted zone associated directly with the VPC and one associated through its Route 53 Profile, the VPC's local setting wins; otherwise the most specific domain name wins.",
+    "misconception": "A Route 53 Profile's private hosted zone takes precedence over a zone associated directly with the VPC for the same domain.",
+    "sourceTitle": "What are Amazon Route 53 Profiles?",
+    "sourceUrl": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/profiles.html"
+   },
+   {
+    "id": "aws-sap-c02-s1.2-06",
+    "reason": "weak_card (dropping both 1.2 flags would leave 8 cards)",
+    "statement": "A GuardDuty delegated administrator designated in one Region manages that Region's member accounts alone.",
+    "answer": true,
+    "explanation": "GuardDuty administration is Regional: the delegated administrator and its members are added in each Region where GuardDuty is enabled, and the same account must be the administrator in every Region.",
+    "misconception": "",
+    "sourceTitle": "Managing GuardDuty accounts with AWS Organizations",
+    "sourceUrl": "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_organizations.html"
+   },
+   {
+    "id": "aws-sap-c02-s1.3-09",
+    "reason": "explanation_error (verifier's minor note: the explanation was ungrammatical); statement and answer unchanged",
+    "statement": "AWS RAM can share an AWS Backup logically air-gapped vault with an organizational unit.",
+    "answer": false,
+    "explanation": "AWS Backup shares a logically air-gapped vault through AWS RAM with individual account IDs, in the same or another organization; OUs and whole organizations are not accepted as share principals.",
+    "misconception": "Logically air-gapped vaults accept organizational units as share principals.",
+    "sourceTitle": "Logically air-gapped vault",
+    "sourceUrl": "https://docs.aws.amazon.com/aws-backup/latest/devguide/logicallyairgappedvault.html"
+   },
+   {
+    "id": "aws-sap-c02-s1.4-10",
+    "reason": "ambiguous",
+    "statement": "A Savings Plan keeps discounting its former organization's consolidated bill after its owner account leaves.",
+    "answer": false,
+    "explanation": "If a Savings Plan's owner account leaves an organization, the plan no longer applies to that organization's consolidated bill, so the remaining accounts lose its discount.",
+    "misconception": "An organization keeps a departed owner account's Savings Plans discounts.",
+    "sourceTitle": "Reserved Instances and Savings Plans discount sharing",
+    "sourceUrl": "https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/ri-turn-off.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.1-01",
+    "reason": "weak_card (three 2.1 flags; only one can be dropped)",
+    "statement": "A StackSet with service-managed permissions skips the management account, even when that account sits in a target OU.",
+    "answer": true,
+    "explanation": "CloudFormation doesn't deploy service-managed StackSet instances to the management account, even when it belongs to a targeted OU, so that account needs its own stack for the same baseline.",
+    "misconception": "",
+    "sourceTitle": "Create CloudFormation StackSets with service-managed permissions",
+    "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/stacksets-orgs-associate-stackset-with-org.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.1-09",
+    "reason": "weak_card (three 2.1 flags; only one can be dropped)",
+    "statement": "By default, a State Manager association reruns on a managed node that comes back online after missing a scheduled run.",
+    "answer": true,
+    "explanation": "Besides its schedule, State Manager runs an association when a node first comes online or returns after a missed run, unless the association is set to apply only at its next cron interval.",
+    "misconception": "",
+    "sourceTitle": "Understanding how State Manager works",
+    "sourceUrl": "https://docs.aws.amazon.com/systems-manager/latest/userguide/state-manager-about.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.2-08",
+    "reason": "weak_card (2.2-04 is dropped, so dropping this too would leave 8 cards); now one fact",
+    "statement": "ARC Region switch can include application resources from separate AWS accounts in one recovery plan.",
+    "answer": true,
+    "explanation": "Region switch supports application resources in multiple accounts and can share plans across accounts, so one team can orchestrate a Regional recovery for a multi-account application.",
+    "misconception": "",
+    "sourceTitle": "Region switch in ARC",
+    "sourceUrl": "https://docs.aws.amazon.com/r53recovery/latest/dg/region-switch.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.3-03",
+    "reason": "weak_card (2.3-10 is dropped, so dropping this too would leave 8 cards)",
+    "statement": "A security group rule can reference a security group in a peered VPC that is in another Region.",
+    "answer": false,
+    "explanation": "Security group references across a VPC peering connection work only when both VPCs are in the same Region, in the same or another account. For an inter-Region peer, rules use the peer VPC's CIDR block.",
+    "misconception": "Security group references work across an inter-Region VPC peering connection.",
+    "sourceTitle": "Update your security groups to reference peer security groups",
+    "sourceUrl": "https://docs.aws.amazon.com/vpc/latest/peering/vpc-peering-security-groups.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.4-01",
+    "reason": "weak_card (2.4-05 is dropped, so dropping this too would leave 8 cards)",
+    "statement": "ARC zonal autoshift can move an application's traffic out of an Availability Zone where its resources are healthy.",
+    "answer": true,
+    "explanation": "AWS starts an autoshift from its own telemetry of an Availability Zone impairment and does not inspect individual resource health, so AWS recommends pre-scaling capacity in the other zones.",
+    "misconception": "",
+    "sourceTitle": "Zonal autoshift in ARC",
+    "sourceUrl": "https://docs.aws.amazon.com/r53recovery/latest/dg/arc-zonal-autoshift.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.4-08",
+    "reason": "explanation_error; also tell (a 'With ...' opening marks True): statement reworded with the same fact and answer",
+    "statement": "When a Multi-AZ Redis OSS primary fails, Amazon ElastiCache promotes the replica with the least replication lag.",
+    "answer": true,
+    "explanation": "ElastiCache promotes the most current replica, which minimizes data lost to asynchronous replication. Writes resume within seconds through the unchanged primary endpoint.",
+    "misconception": "",
+    "sourceTitle": "Minimizing downtime in ElastiCache by using Multi-AZ with Valkey and Redis OSS",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/AutoFailover.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.4-10",
+    "reason": "tell ('supports' appears 0T/4F); same fact and answer",
+    "statement": "Amazon Route 53 IP-based routing can steer hybrid clients by address range for records in a private hosted zone.",
+    "answer": false,
+    "explanation": "Route 53 IP-based routing applies to public hosted zones. An architect chooses a different routing approach for records in a private hosted zone.",
+    "misconception": "IP-based routing policies work in private hosted zones for hybrid client networks.",
+    "sourceTitle": "IP-based routing",
+    "sourceUrl": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-ipbased.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.5-03",
+    "reason": "tell ('enabled' appears 8T/0F); same fact and answer",
+    "statement": "An ElastiCache for Redis OSS cluster with multiple shards spreads write-heavy traffic across several primaries.",
+    "answer": true,
+    "explanation": "Cluster mode enabled distributes Redis OSS data across shards, with a primary accepting writes for its shard. Additional write endpoints help a design scale a write-heavy cache.",
+    "misconception": "",
+    "sourceTitle": "Replication: Valkey and Redis OSS Cluster Mode Disabled vs. Enabled",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Replication.Redis-RedisCluster.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.5-04",
+    "reason": "out_of_scope (five 2.5 flags; only one can be dropped). The old card repeated aws-saa-c03-s3.3-01",
+    "statement": "Amazon RDS for MySQL adds read replicas to a DB instance automatically when the instance's read traffic grows.",
+    "answer": false,
+    "explanation": "RDS doesn't autoscale read replicas: an architect creates and deletes them, so a design with spiky read demand needs its own scaling logic.",
+    "misconception": "RDS read replicas scale out automatically with read demand.",
+    "sourceTitle": "Working with DB instance read replicas",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.5-06",
+    "reason": "out_of_scope (five 2.5 flags; only one can be dropped). The old card repeated aws-saa-c03-s3.1-07",
+    "statement": "Amazon MemoryDB can replace a cache plus a separate durable database as a microservice's primary data store.",
+    "answer": true,
+    "explanation": "MemoryDB serves data from memory and stores it durably across Availability Zones in a Multi-AZ transactional log, so one service can act as a high-performance primary database.",
+    "misconception": "",
+    "sourceTitle": "What is MemoryDB",
+    "sourceUrl": "https://docs.aws.amazon.com/memorydb/latest/devguide/what-is-memorydb.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.5-07",
+    "reason": "out_of_scope (five 2.5 flags; only one can be dropped). The old card repeated aws-saa-c03-s4.2-01/02",
+    "statement": "DynamoDB adaptive capacity can isolate a single heavily accessed item on its own partition to reduce throttling.",
+    "answer": true,
+    "explanation": "Adaptive capacity rebalances partitions so frequently accessed items stop sharing one. An isolated item still gets at most one partition's maximum throughput.",
+    "misconception": "",
+    "sourceTitle": "DynamoDB burst and adaptive capacity",
+    "sourceUrl": "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html"
+   },
+   {
+    "id": "aws-sap-c02-s2.5-10",
+    "reason": "weak_card (five 2.5 flags; only one can be dropped). Statement narrowed from the verifier's text so that every word is backed by storage-class-intro.html",
+    "statement": "S3 Intelligent-Tiering charges a retrieval fee when an application reads an object from its Infrequent Access tier.",
+    "answer": false,
+    "explanation": "S3 Intelligent-Tiering has no retrieval fees; it charges a small monthly monitoring and automation fee per object, which suits data with unknown or changing access patterns.",
+    "misconception": "Intelligent-Tiering bills retrievals from its infrequent tiers like S3 Standard-IA.",
+    "sourceTitle": "Understanding and managing Amazon S3 storage classes",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.2-06",
+    "reason": "weak_card (3.2-10 is dropped, so dropping this too would leave 8 cards)",
+    "statement": "Amazon Inspector stops rescanning an ECR image once its push and last-in-use dates fall outside the re-scan duration.",
+    "answer": true,
+    "explanation": "Inspector keeps rescanning an ECR image while its push date or its last-in-use (or last pull) date is within the configured duration; after that it marks the image inactive and closes its findings.",
+    "misconception": "",
+    "sourceTitle": "Configuring the Amazon ECR re-scan duration",
+    "sourceUrl": "https://docs.aws.amazon.com/inspector/latest/user/scanning_resources_configure_duration_setting_ecr.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.3-02",
+    "reason": "weak_card (three 3.3 flags; only one can be dropped)",
+    "statement": "Launching several instance types into one EC2 cluster placement group improves the odds that the launch finds capacity.",
+    "answer": false,
+    "explanation": "AWS allows mixed instance types in a cluster placement group but says this reduces the chance that the required capacity is available; it recommends one instance type launched in a single request.",
+    "misconception": "Mixing instance types widens the capacity available to a cluster placement group launch.",
+    "sourceTitle": "Placement strategies for your placement groups",
+    "sourceUrl": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/placement-strategies.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.3-04",
+    "reason": "weak_card (three 3.3 flags; only one can be dropped). The old statement contradicted itself",
+    "statement": "With instance weights, an Auto Scaling group keeps its current capacity at or below the desired capacity in units.",
+    "answer": false,
+    "explanation": "Current capacity can exceed desired capacity when a launched instance carries more units than remain to be filled, so AWS advises a desired capacity two to three times the largest weight.",
+    "misconception": "A weighted Auto Scaling group never overshoots its desired capacity units.",
+    "sourceTitle": "Configure an Auto Scaling group to use instance weights",
+    "sourceUrl": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-mixed-instances-groups-instance-weighting.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.4-01",
+    "reason": "weak_card (four 3.4 flags; only one can be dropped). Reworded from the verifier's text to the page's 'throttle' wording",
+    "statement": "When Elastic Load Balancing reports every instance unhealthy, Amazon EC2 Auto Scaling can throttle their replacement.",
+    "answer": true,
+    "explanation": "If ELB health checks report all instances unhealthy while the load balancer is InService, Auto Scaling might mark fewer of them unhealthy at a time, leaving time to fix the fault before the whole group is replaced.",
+    "misconception": "",
+    "sourceTitle": "About the health checks for your Auto Scaling group",
+    "sourceUrl": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/health-checks-overview.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.4-04",
+    "reason": "weak_card (four 3.4 flags; only one can be dropped). The old card repeated SAA s2.2-09 (Regional quotas)",
+    "statement": "Updating a Service Quotas request template requests its new quota values for existing accounts in the organization.",
+    "answer": false,
+    "explanation": "A quota request template requests its values for accounts created in the organization after association. Updating it leaves existing accounts' quotas unchanged, so they need their own increase requests.",
+    "misconception": "Request template updates apply to existing member accounts.",
+    "sourceTitle": "Using Service Quotas request templates",
+    "sourceUrl": "https://docs.aws.amazon.com/servicequotas/latest/userguide/organization-templates.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.4-05",
+    "reason": "tell (a 'With ... enabled' opening marks True); same fact and answer",
+    "statement": "An instance reuse policy makes Amazon EC2 Auto Scaling return scaled-in instances to the group's warm pool.",
+    "answer": true,
+    "explanation": "An instance reuse policy sends scaled-in instances back to the warm pool. A workload with lengthy initialization reuses prepared instances when demand grows again.",
+    "misconception": "",
+    "sourceTitle": "Decrease latency for applications with long boot times using warm pools",
+    "sourceUrl": "https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-warm-pools.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.4-08",
+    "reason": "tell ('supports' appears 0T/4F); same fact and answer",
+    "statement": "A CloudWatch billing alarm compares projected month-end charges with its threshold to prompt cost intervention.",
+    "answer": false,
+    "explanation": "CloudWatch billing alarms compare current estimated charges with the threshold. Their billing metric reflects accrued costs rather than a projection of the month's final bill.",
+    "misconception": "A CloudWatch billing alarm evaluates a month-end cost forecast instead of charges accrued so far.",
+    "sourceTitle": "Create a billing alarm to monitor your estimated AWS charges",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html"
+   },
+   {
+    "id": "aws-sap-c02-s3.4-10",
+    "reason": "weak_card (four 3.4 flags; only one can be dropped). The old card repeated an SAA EBS detach card",
+    "statement": "Deleting an older incremental Amazon EBS snapshot removes block data that the volume's newer snapshots still reference.",
+    "answer": false,
+    "explanation": "EBS removes only data referenced exclusively by the deleted snapshot and keeps blocks that later snapshots use, so deleting old snapshots might not reduce storage costs.",
+    "misconception": "Deleting an older snapshot frees all of the blocks it stored.",
+    "sourceTitle": "Delete an Amazon EBS snapshot",
+    "sourceUrl": "https://docs.aws.amazon.com/ebs/latest/userguide/ebs-deleting-snapshot.html"
+   },
+   {
+    "id": "aws-sap-c02-s4.1-04",
+    "reason": "weak_card (three 4.1 weak flags plus one explanation_error; only one can be dropped). Avoids 'AWS recommends' to keep that template balanced",
+    "statement": "AWS wave planning guidance filters shared services such as Active Directory out of dependency data before grouping.",
+    "answer": true,
+    "explanation": "Shared services such as Active Directory, backup and monitoring connect to almost everything and would glue the portfolio into one group, so the guidance excludes them when deriving dependency groups.",
+    "misconception": "",
+    "sourceTitle": "Wave planning",
+    "sourceUrl": "https://docs.aws.amazon.com/prescriptive-guidance/latest/application-portfolio-assessment-guide/wave-planning.html"
+   },
+   {
+    "id": "aws-sap-c02-s4.1-07",
+    "reason": "weak_card (only one 4.1 card can be dropped). The old card was a strawman",
+    "statement": "AWS DMS bidirectional replication resolves conflicting updates made to the same rows on both databases.",
+    "answer": false,
+    "explanation": "DMS bidirectional replication runs two tasks with loopback prevention but has no conflict detection or resolution, so a fallback design keeps each data element written on one side only.",
+    "misconception": "Bidirectional DMS replication works as a multi-master solution with conflict resolution.",
+    "sourceTitle": "Creating tasks for ongoing replication using AWS DMS",
+    "sourceUrl": "https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Task.CDC.html"
+   },
+   {
+    "id": "aws-sap-c02-s4.1-10",
+    "reason": "explanation_error (the 'new users' wording implied a cache; the source now states no caching)",
+    "statement": "AD Connector caches directory data in AWS so Amazon WorkSpaces users can sign in while the on-premises link is down.",
+    "answer": false,
+    "explanation": "AD Connector is a directory gateway that redirects requests to on-premises Active Directory without caching any information in the cloud, so sign-ins depend on connectivity to that directory.",
+    "misconception": "AD Connector keeps a cached directory copy in AWS that covers connectivity outages.",
+    "sourceTitle": "AD Connector",
+    "sourceUrl": "https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html"
+   },
+   {
+    "id": "aws-sap-c02-s4.3-08",
+    "reason": "weak_card (4.3-09 is dropped, so dropping this too would leave 8 cards). The old card contradicted itself",
+    "statement": "Volume Gateway stored volumes keep the primary data in Amazon S3 and hold a local copy of frequently accessed subsets.",
+    "answer": false,
+    "explanation": "Stored volumes keep the full dataset on premises and asynchronously back up point-in-time snapshots to Amazon S3; cached volumes are the option that keeps primary data in S3.",
+    "misconception": "Stored volumes use Amazon S3 as primary storage with a local cache.",
+    "sourceTitle": "What is Volume Gateway?",
+    "sourceUrl": "https://docs.aws.amazon.com/storagegateway/latest/vgw/WhatIsStorageGateway.html"
+   },
+   {
+    "id": "aws-sap-c02-s4.4-02",
+    "reason": "weak_card (4.4-05 is dropped, so dropping this too would leave 8 cards)",
+    "statement": "Amazon MQ for ActiveMQ supports XA distributed transactions for JMS applications leaving a commercial broker.",
+    "answer": true,
+    "explanation": "Amazon MQ supports standard JMS features, including JMS and distributed (XA) transactions, so an application leaving IBM MQ or TIBCO EMS can keep its transaction semantics with minimal code changes.",
+    "misconception": "",
+    "sourceTitle": "What is the Amazon MQ migration guide?",
+    "sourceUrl": "https://docs.aws.amazon.com/amazon-mq/latest/migration-guide/concept-chapter-about.html"
+   },
+   {
+    "id": "aws-sap-c02-s4.4-03",
+    "reason": "ambiguous",
+    "statement": "An Amazon EventBridge replay can name an event bus other than its archive's source bus as the replay destination.",
+    "answer": false,
+    "explanation": "Archived events can be replayed only to the archive's source event bus. A replay can be limited to chosen rules on that bus, whose targets then receive the events.",
+    "misconception": "A replay can deliver archived events to any event bus, including one in another account.",
+    "sourceTitle": "Archiving and replaying events in Amazon EventBridge",
+    "sourceUrl": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-archive.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "org-policy-ceiling",
+    "ids": [
+     "aws-sap-c02-s1.4-01",
+     "aws-sap-c02-s1.4-02"
+    ]
+   },
+   {
+    "name": "ram-ou-sharing",
+    "ids": [
+     "aws-sap-c02-s1.4-06",
+     "aws-sap-c02-s1.3-09"
+    ]
+   },
+   {
+    "name": "kms-cross-account",
+    "ids": [
+     "aws-sap-c02-s1.2-04",
+     "aws-sap-c02-s2.3-06"
+    ]
+   },
+   {
+    "name": "cfn-database-replacement-protection",
+    "ids": [
+     "aws-sap-c02-s2.1-04",
+     "aws-sap-c02-s2.1-05"
+    ]
+   },
+   {
+    "name": "elasticache-promotion-scope",
+    "ids": [
+     "aws-sap-c02-s2.4-08",
+     "aws-sap-c02-s2.2-06"
+    ]
+   },
+   {
+    "name": "stepfunctions-retry-catch",
+    "ids": [
+     "aws-sap-c02-s2.4-06",
+     "aws-sap-c02-s2.4-07"
+    ]
+   },
+   {
+    "name": "ec2-capacity-sharing",
+    "ids": [
+     "aws-sap-c02-s2.4-09",
+     "aws-sap-c02-s2.5-09"
+    ]
+   },
+   {
+    "name": "cloudwatch-central-multi-region",
+    "ids": [
+     "aws-sap-c02-s3.1-01",
+     "aws-sap-c02-s3.1-02"
+    ]
+   },
+   {
+    "name": "backup-cross-region-copy-template",
+    "ids": [
+     "aws-sap-c02-s1.3-07",
+     "aws-sap-c02-s1.3-10"
+    ]
+   },
+   {
+    "name": "savings-plan-follows-move",
+    "ids": [
+     "aws-sap-c02-s2.5-08",
+     "aws-sap-c02-s1.4-10"
+    ]
+   },
+   {
+    "name": "managed-host-access",
+    "ids": [
+     "aws-sap-c02-s4.3-01",
+     "aws-sap-c02-s3.3-06"
+    ]
+   },
+   {
+    "name": "new-account-ou-coverage",
+    "ids": [
+     "aws-sap-c02-s1.4-06",
+     "aws-sap-c02-s2.3-04",
+     "aws-sap-c02-s3.2-07",
+     "aws-sap-c02-s3.4-04"
+    ]
+   },
+   {
+    "name": "beanstalk-deployment-capacity",
+    "ids": [
+     "aws-sap-c02-s2.1-07",
+     "aws-sap-c02-s3.1-08"
+    ]
+   }
+  ],
+  "sectionBalance": "After 15 drops and 30 rewrites, 145 cards remain: 75 True and 70 False. 1.1: 10 cards, 5T/5F. 1.2: 9, 4T/5F. 1.3: 9, 5T/4F. 1.4: 9, 5T/4F. 2.1: 9, 4T/5F. 2.2: 9, 5T/4F. 2.3: 9, 5T/4F. 2.4: 9, 4T/5F. 2.5: 9, 5T/4F. 3.1: 9, 5T/4F. 3.2: 9, 4T/5F. 3.3: 9, 5T/4F. 3.4: 9, 4T/5F. 4.1: 9, 5T/4F. 4.3: 9, 5T/4F. 4.4: 9, 5T/4F. In every section the True and False average statement lengths are within 5 characters of each other (largest gap: 1.2 at 107.2 vs 102.4). Every rewrite has a statement of 120 characters or fewer and an explanation of 240 or fewer. Cost-card caps hold: 2.6 has 3 cards (2.5-08, 2.5-09, 2.5-10 new) and 3.5 has 3 (3.4-07, 3.4-08, 3.4-10 new).",
+  "notes": "Method: I opened every page cited in a rewrite on 2026-10-13 with WebFetch and matched each word against it: profiles.html, guardduty_organizations, ri-turn-off, stacksets-orgs-associate-stackset-with-org, state-manager-about, region-switch, vpc-peering-security-groups, arc-zonal-autoshift, ElastiCache AutoFailover, USER_ReadRepl, what-is-memorydb, burst-adaptive-capacity, storage-class-intro, Inspector ECR re-scan duration, placement-strategies, instance weighting, organization-templates, ebs-deleting-snapshot, health-checks-overview, wave-planning, CHAP_Task.CDC, directory_ad_connector, WhatIsStorageGateway, eb-archive and the Amazon MQ migration guide. The 1.3-09 explanation fix relies on the verifier's quote from logicallyairgappedvault.html; I did not reopen that page.\n\nOverlap check: I checked replacements against the reviewed SAA, DVA and CLF decks. Two of the verifiers' replacements were rejected. The 4.4-05 RDS Proxy pinning card duplicates aws-dva-c02-s4.3-11. The 2.5-02 Origin Shield card ('AWS recommends' the opposite of the docs) would push the reversed-recommendation false template past its cap of 2.\n\nDeviations from the verifiers' text, all for accuracy or length: 2.5-10 now tests 'reads from the Infrequent Access tier', because storage-class-intro does not describe objects moving back to Frequent Access. 2.1-09 adds 'By default' because the 'apply only at next cron interval' option disables the rerun. 3.4-01 uses the page's 'throttle' wording. 2.3-03 drops 'prefix lists', which the source page does not mention. 4.4-03 replaces the cross-account forwarding sentence with the page's 'limit to rules' sentence. 1.4-10 drops the claim that the commitment stays with the owner, which the page does not state. 2.1-01 drops 'self-managed StackSet'.\n\nTells: five statements were reworded with the same fact and answer: 2.4-08 (combined with its explanation fix), 2.4-10, 2.5-03, 3.4-05, 3.4-08. Combined with the drops and rewrites, deck-wide counts move as follows:\n- 'enabled' in True cards: from 8 to 2 (1.4-06 and 3.4-01? no: 1.4-06 only, plus the 2.5-03 explanation, which is not a statement).\n- True cards opening with 'With': from 6 to 1 (1.1-02). False card 3.3-04 now opens with 'With'.\n- 'supports': from 0T/4F to 1T/2F.\n- 'by default': 1 True (2.1-09) against 1 False (3.2-09).\n- 'retained' false template: gone.\n- Scope-overreach false template: still about 10 cards after the drops. I left it, because each card tests a different service's scope.\n\nField changes to apply alongside the rewrites (the rewrite schema has no factKey or volatility field):\n- New factKeys: 1.2-06 guardduty-delegated-admin-regional-scope, 2.1-01 stacksets-service-managed-skips-management-account, 2.1-09 state-manager-missed-run-reapply, 2.2-08 arc-region-switch-cross-account-resources (keep volatility may_change; the verifier also suggested may_change because Region switch is new), 2.3-03 sg-reference-peering-same-region, 2.4-01 arc-autoshift-ignores-resource-health, 2.5-04 rds-read-replica-no-autoscaling, 2.5-06 memorydb-durable-primary-database, 2.5-07 dynamodb-adaptive-capacity-item-isolation, 2.5-10 s3-intelligent-tiering-no-retrieval-fee, 3.2-06 inspector-ecr-rescan-duration-expiry, 3.3-02 cluster-placement-mixed-types-capacity, 3.4-01 asg-elb-mass-unhealthy-throttling, 3.4-04 quota-request-template-new-accounts-only, 3.4-10 ebs-snapshot-deletion-referenced-blocks, 4.1-04 wave-planning-exclude-shared-services, 4.1-07 dms-bidirectional-no-conflict-resolution, 4.1-10 ad-connector-no-cache, 4.3-08 volume-gateway-stored-primary-location (unchanged), 4.4-02 amazon-mq-xa-transactions, 4.4-03 eventbridge-replay-source-bus-only.\n- Volatility: 1.1-08 stays may_change. All other new cards are stable.\n- Verifier suggestions not applied: rename the 3.4-07 factKey to compute-optimizer-performance-risk, and consider may_change for 3.1-01 and 3.1-02.\n\nRemaining weak spots, not changed:\n- 3.1-01 and 3.1-02 are still a mirrored pair. They stay in a conflict group so they never share a round.\n- 3.3-05 could use a source that mentions UDP explicitly. what-is-global-accelerator.html does not, so I proposed no source change.\n- After drops, 1.3 has no Elastic Disaster Recovery pilot-light card; worth adding in a later content round."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "aws-sap-c02-s1.1-08",
+    "decision": "fixed",
+    "statement": "For the same domain, a Route 53 Profile's private hosted zone overrides one associated directly with the VPC.",
+    "answer": false,
+    "explanation": "When a query matches a private hosted zone associated directly with the VPC and one associated through its Route 53 Profile, the VPC's local setting wins; otherwise the most specific domain name wins.",
+    "reason": "Wording lens fix applied: 'the VPC's own zone' could be read as an Availability Zone. Fact confirmed on profiles.html today: the local DNS settings take precedence and the example.com/example.com row evaluates to Local VPC. 109 chars."
+   },
+   {
+    "id": "aws-sap-c02-s1.2-06",
+    "decision": "fixed",
+    "statement": "A GuardDuty delegated administrator designated in one Region manages member accounts only in that Region.",
+    "answer": true,
+    "explanation": "GuardDuty administration is Regional: the delegated administrator and its members are added in each Region where GuardDuty is enabled, and the same account must be the administrator in every Region.",
+    "reason": "Both lenses flagged 'manages ... alone' as ambiguous and proposed 'only'; merged into the shorter fact-lens text (105 chars). guardduty_organizations.html confirmed today: 'will only manage member accounts added to the organization in that Region' (so the absolute is sourced), plus 'use the same account ... in all other Regions'."
+   },
+   {
+    "id": "aws-sap-c02-s1.3-09",
+    "decision": "keep",
+    "statement": "AWS RAM can share an AWS Backup logically air-gapped vault with an organizational unit.",
+    "answer": false,
+    "explanation": "AWS Backup shares a logically air-gapped vault through AWS RAM with individual account IDs, in the same or another organization; OUs and whole organizations are not accepted as share principals.",
+    "reason": "Both lenses keep it. The fact lens quoted logicallyairgappedvault.html directly, and the prompt's continuity trap says the same."
+   },
+   {
+    "id": "aws-sap-c02-s1.4-10",
+    "decision": "keep",
+    "statement": "A Savings Plan keeps discounting its former organization's consolidated bill after its owner account leaves.",
+    "answer": false,
+    "explanation": "If a Savings Plan's owner account leaves an organization, the plan no longer applies to that organization's consolidated bill, so the remaining accounts lose its discount.",
+    "reason": "Both lenses keep it. ri-turn-off.html says this directly, and the prompt's cost trap says the same."
+   },
+   {
+    "id": "aws-sap-c02-s2.1-01",
+    "decision": "keep",
+    "statement": "A StackSet with service-managed permissions skips the management account, even when that account sits in a target OU.",
+    "answer": true,
+    "explanation": "CloudFormation doesn't deploy service-managed StackSet instances to the management account, even when it belongs to a targeted OU, so that account needs its own stack for the same baseline.",
+    "reason": "Both lenses keep it. The fact lens quoted the Considerations sentence from the StackSets page."
+   },
+   {
+    "id": "aws-sap-c02-s2.1-09",
+    "decision": "keep",
+    "statement": "By default, a State Manager association reruns on a managed node that comes back online after missing a scheduled run.",
+    "answer": true,
+    "explanation": "Besides its schedule, State Manager runs an association when a node first comes online or returns after a missed run, unless the association is set to apply only at its next cron interval.",
+    "reason": "Both lenses keep it. The narrow Automation-runbook exception the fact lens noted does not change the general rule."
+   },
+   {
+    "id": "aws-sap-c02-s2.2-08",
+    "decision": "keep",
+    "statement": "ARC Region switch can include application resources from separate AWS accounts in one recovery plan.",
+    "answer": true,
+    "explanation": "Region switch supports application resources in multiple accounts and can share plans across accounts, so one team can orchestrate a Regional recovery for a multi-account application.",
+    "reason": "Both lenses keep it, and region-switch.html supports cross-account resources. Keep volatility may_change."
+   },
+   {
+    "id": "aws-sap-c02-s2.3-03",
+    "decision": "keep",
+    "statement": "A security group rule can reference a security group in a peered VPC that is in another Region.",
+    "answer": false,
+    "explanation": "Security group references across a VPC peering connection work only when both VPCs are in the same Region, in the same or another account. For an inter-Region peer, rules use the peer VPC's CIDR block.",
+    "reason": "Both lenses keep it. vpc-peering-security-groups.html supports every clause."
+   },
+   {
+    "id": "aws-sap-c02-s2.4-01",
+    "decision": "keep",
+    "statement": "ARC zonal autoshift can move an application's traffic out of an Availability Zone where its resources are healthy.",
+    "answer": true,
+    "explanation": "AWS starts an autoshift from its own telemetry of an Availability Zone impairment and does not inspect individual resource health, so AWS recommends pre-scaling capacity in the other zones.",
+    "reason": "Both lenses keep it. The page says ARC does not inspect individual resource health and recommends pre-scaling."
+   },
+   {
+    "id": "aws-sap-c02-s2.4-08",
+    "decision": "keep",
+    "statement": "When a Multi-AZ Redis OSS primary fails, Amazon ElastiCache promotes the replica with the least replication lag.",
+    "answer": true,
+    "explanation": "ElastiCache promotes the most current replica, which minimizes data lost to asynchronous replication. Writes resume within seconds through the unchanged primary endpoint.",
+    "reason": "Both lenses keep it. AutoFailover.html quotes match, and the Valkey 9.0 durability exception does not apply to Redis OSS."
+   },
+   {
+    "id": "aws-sap-c02-s2.4-10",
+    "decision": "keep",
+    "statement": "Amazon Route 53 IP-based routing can steer hybrid clients by address range for records in a private hosted zone.",
+    "answer": false,
+    "explanation": "Route 53 IP-based routing applies to public hosted zones. An architect chooses a different routing approach for records in a private hosted zone.",
+    "reason": "Both lenses keep it. The page says IP-based routing can't be used for records in a private hosted zone, and the tell is removed."
+   },
+   {
+    "id": "aws-sap-c02-s2.5-03",
+    "decision": "keep",
+    "statement": "An ElastiCache for Redis OSS cluster with multiple shards spreads write-heavy traffic across several primaries.",
+    "answer": true,
+    "explanation": "Cluster mode enabled distributes Redis OSS data across shards, with a primary accepting writes for its shard. Additional write endpoints help a design scale a write-heavy cache.",
+    "reason": "Both lenses keep it. The wording lens's minor guessability note is not a reason to drop the card."
+   },
+   {
+    "id": "aws-sap-c02-s2.5-04",
+    "decision": "keep",
+    "statement": "Amazon RDS for MySQL adds read replicas to a DB instance automatically when the instance's read traffic grows.",
+    "answer": false,
+    "explanation": "RDS doesn't autoscale read replicas: an architect creates and deletes them, so a design with spiky read demand needs its own scaling logic.",
+    "reason": "Both lenses keep it. USER_ReadRepl.html says twice that RDS doesn't support read replica autoscaling."
+   },
+   {
+    "id": "aws-sap-c02-s2.5-06",
+    "decision": "keep",
+    "statement": "Amazon MemoryDB can replace a cache plus a separate durable database as a microservice's primary data store.",
+    "answer": true,
+    "explanation": "MemoryDB serves data from memory and stores it durably across Availability Zones in a Multi-AZ transactional log, so one service can act as a high-performance primary database.",
+    "reason": "Both lenses keep it. what-is-memorydb.html says this almost word for word."
+   },
+   {
+    "id": "aws-sap-c02-s2.5-07",
+    "decision": "keep",
+    "statement": "DynamoDB adaptive capacity can isolate a single heavily accessed item on its own partition to reduce throttling.",
+    "answer": true,
+    "explanation": "Adaptive capacity rebalances partitions so frequently accessed items stop sharing one. An isolated item still gets at most one partition's maximum throughput.",
+    "reason": "Both lenses keep it. 'can' matches the page's 'might', and the partition maximum is on the page."
+   },
+   {
+    "id": "aws-sap-c02-s2.5-10",
+    "decision": "keep",
+    "statement": "S3 Intelligent-Tiering charges a retrieval fee when an application reads an object from its Infrequent Access tier.",
+    "answer": false,
+    "explanation": "S3 Intelligent-Tiering has no retrieval fees; it charges a small monthly monitoring and automation fee per object, which suits data with unknown or changing access patterns.",
+    "reason": "Both lenses keep it. storage-class-intro.html says there are no retrieval fees for Intelligent-Tiering."
+   },
+   {
+    "id": "aws-sap-c02-s3.2-06",
+    "decision": "fixed",
+    "statement": "By default, Amazon Inspector stops rescanning an ECR image not pushed or used within the configured re-scan durations.",
+    "answer": true,
+    "explanation": "Inspector rescans an ECR image while its push date or, in the default mode, its last-in-use date is within the configured durations; after that it marks the image inactive and closes its findings.",
+    "reason": "Fact lens fix applied: the page offers a Last pull date mode in which a recently pulled image keeps being rescanned, so the claim holds only in the default Last in use date mode. The lens's statement was 129 chars, so I shortened it to 118 using the page's own wording ('hasn't been pushed or last used ... within the configured push and last in use dates'). Confirmed on the page today: Last in use date is the default mode, and expired images are set to inactive with their findings scheduled to close. Explanation is 196 chars."
+   },
+   {
+    "id": "aws-sap-c02-s3.3-02",
+    "decision": "keep",
+    "statement": "Launching several instance types into one EC2 cluster placement group improves the odds that the launch finds capacity.",
+    "answer": false,
+    "explanation": "AWS allows mixed instance types in a cluster placement group but says this reduces the chance that the required capacity is available; it recommends one instance type launched in a single request.",
+    "reason": "Both lenses keep it. placement-strategies.html states both the lower chance of capacity and the recommendation."
+   },
+   {
+    "id": "aws-sap-c02-s3.3-04",
+    "decision": "keep",
+    "statement": "With instance weights, an Auto Scaling group keeps its current capacity at or below the desired capacity in units.",
+    "answer": false,
+    "explanation": "Current capacity can exceed desired capacity when a launched instance carries more units than remain to be filled, so AWS advises a desired capacity two to three times the largest weight.",
+    "reason": "Both lenses keep it. The page states the overshoot and the two-to-three-times advice, and the causal 'so' is a reasonable inference."
+   },
+   {
+    "id": "aws-sap-c02-s3.4-01",
+    "decision": "keep",
+    "statement": "When Elastic Load Balancing reports every instance unhealthy, Amazon EC2 Auto Scaling can throttle their replacement.",
+    "answer": true,
+    "explanation": "If ELB health checks report all instances unhealthy while the load balancer is InService, Auto Scaling might mark fewer of them unhealthy at a time, leaving time to fix the fault before the whole group is replaced.",
+    "reason": "Both lenses keep it. health-checks-overview.html uses the 'throttle' wording. Explanation is 214 chars."
+   },
+   {
+    "id": "aws-sap-c02-s3.4-04",
+    "decision": "keep",
+    "statement": "Updating a Service Quotas request template requests its new quota values for existing accounts in the organization.",
+    "answer": false,
+    "explanation": "A quota request template requests its values for accounts created in the organization after association. Updating it leaves existing accounts' quotas unchanged, so they need their own increase requests.",
+    "reason": "Both lenses keep it. organization-templates.html states this directly."
+   },
+   {
+    "id": "aws-sap-c02-s3.4-05",
+    "decision": "keep",
+    "statement": "An instance reuse policy makes Amazon EC2 Auto Scaling return scaled-in instances to the group's warm pool.",
+    "answer": true,
+    "explanation": "An instance reuse policy sends scaled-in instances back to the warm pool. A workload with lengthy initialization reuses prepared instances when demand grows again.",
+    "reason": "Both lenses keep it. The warm pools page confirms that instances are terminated by default and that a reuse policy returns them to the pool."
+   },
+   {
+    "id": "aws-sap-c02-s3.4-08",
+    "decision": "keep",
+    "statement": "A CloudWatch billing alarm compares projected month-end charges with its threshold to prompt cost intervention.",
+    "answer": false,
+    "explanation": "CloudWatch billing alarms compare current estimated charges with the threshold. Their billing metric reflects accrued costs rather than a projection of the month's final bill.",
+    "reason": "Both lenses keep it. The page says the alarm doesn't use projections."
+   },
+   {
+    "id": "aws-sap-c02-s3.4-10",
+    "decision": "keep",
+    "statement": "Deleting an older incremental Amazon EBS snapshot removes block data that the volume's newer snapshots still reference.",
+    "answer": false,
+    "explanation": "EBS removes only data referenced exclusively by the deleted snapshot and keeps blocks that later snapshots use, so deleting old snapshots might not reduce storage costs.",
+    "reason": "Both lenses keep it. ebs-deleting-snapshot.html supports every clause, and the SOA deck card is close but not a duplicate within this deck."
+   },
+   {
+    "id": "aws-sap-c02-s4.1-04",
+    "decision": "keep",
+    "statement": "AWS wave planning guidance filters shared services such as Active Directory out of dependency data before grouping.",
+    "answer": true,
+    "explanation": "Shared services such as Active Directory, backup and monitoring connect to almost everything and would glue the portfolio into one group, so the guidance excludes them when deriving dependency groups.",
+    "reason": "Both lenses keep it. The wave-planning page says to filter out shared services such as Active Directory."
+   },
+   {
+    "id": "aws-sap-c02-s4.1-07",
+    "decision": "keep",
+    "statement": "AWS DMS bidirectional replication resolves conflicting updates made to the same rows on both databases.",
+    "answer": false,
+    "explanation": "DMS bidirectional replication runs two tasks with loopback prevention but has no conflict detection or resolution, so a fallback design keeps each data element written on one side only.",
+    "reason": "Both lenses keep it. CHAP_Task.CDC.html says bidirectional replication doesn't include conflict detection or resolution."
+   },
+   {
+    "id": "aws-sap-c02-s4.1-10",
+    "decision": "keep",
+    "statement": "AD Connector caches directory data in AWS so Amazon WorkSpaces users can sign in while the on-premises link is down.",
+    "answer": false,
+    "explanation": "AD Connector is a directory gateway that redirects requests to on-premises Active Directory without caching any information in the cloud, so sign-ins depend on connectivity to that directory.",
+    "reason": "Both lenses keep it. The page's opening sentence says AD Connector works 'without caching any information in the cloud'."
+   },
+   {
+    "id": "aws-sap-c02-s4.3-08",
+    "decision": "keep",
+    "statement": "Volume Gateway stored volumes keep the primary data in Amazon S3 and hold a local copy of frequently accessed subsets.",
+    "answer": false,
+    "explanation": "Stored volumes keep the full dataset on premises and asynchronously back up point-in-time snapshots to Amazon S3; cached volumes are the option that keeps primary data in S3.",
+    "reason": "Both lenses keep it. WhatIsStorageGateway.html defines cached and stored volumes exactly this way."
+   },
+   {
+    "id": "aws-sap-c02-s4.4-02",
+    "decision": "keep",
+    "statement": "Amazon MQ for ActiveMQ supports XA distributed transactions for JMS applications leaving a commercial broker.",
+    "answer": true,
+    "explanation": "Amazon MQ supports standard JMS features, including JMS and distributed (XA) transactions, so an application leaving IBM MQ or TIBCO EMS can keep its transaction semantics with minimal code changes.",
+    "reason": "Both lenses keep it. The migration guide lists XA transactions and the commercial-broker migration context."
+   },
+   {
+    "id": "aws-sap-c02-s4.4-03",
+    "decision": "keep",
+    "statement": "An Amazon EventBridge replay can name an event bus other than its archive's source bus as the replay destination.",
+    "answer": false,
+    "explanation": "Archived events can be replayed only to the archive's source event bus. A replay can be limited to chosen rules on that bus, whose targets then receive the events.",
+    "reason": "Both lenses keep it. eb-archive.html says archived events can only be replayed to the source event bus."
+   }
+  ]
+ }
+}

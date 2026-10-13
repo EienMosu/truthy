@@ -1,0 +1,844 @@
+{
+ "deck": "angular-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/components loads, footer 'Built by Angular at v22.2.2'",
+     "evidence": "https://angular.dev/guide/components: \"To use a component, directive, or pipe, you must add it to the imports array in the @Component decorator\". The fact is right, but the statement says that the imports array exposes its imported pipes. Anyone can answer True from the words alone, so the card tests nothing a learner could get wrong.",
+     "problem": "The answer can be read from the wording: 'imports array' and 'imported pipes' make the statement circular. The misconception worth testing is that built-in pipes work in a standalone component's template without being imported, and the card never reaches it.",
+     "suggestedFix": "Replacement (answer true). Statement: \"A standalone component's template can use the date pipe only after the component lists DatePipe in its imports.\" Explanation: \"Every component, directive and pipe a standalone template uses must be in the component's imports array, Angular's built-in pipes such as DatePipe included.\" Keep URL https://angular.dev/guide/components."
+    },
+    {
+     "id": "angular-fundamentals-sr1-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/components/content-projection loads, v22.2.2",
+     "evidence": "https://angular.dev/guide/components/content-projection: \"Angular supports projecting multiple different elements into different <ng-content> placeholders based on CSS selector... by using the select attribute\" and \"If you include one or more <ng-content> placeholders with a select attribute and one <ng-content> placeholder without a select attribute, the latter captures all elements that did not match a select attribute\". The card is true, but 'select' plus 'matching children' already gives the answer away.",
+     "problem": "The answer comes from the name: an attribute called select that sends matching children to a slot is almost a definition. No learner who studied would answer False, so the card teaches nothing. The same page has a fact that is not obvious: how a catch-all slot works.",
+     "suggestedFix": "Replacement (answer true). Statement: \"When a template also has select slots, a plain ng-content receives the children that match none of their selectors.\" Explanation: \"An ng-content without select catches every child that matches no select slot. If a component has no such catch-all, unmatched children are not rendered.\" Keep URL https://angular.dev/guide/components/content-projection."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards. Every source page loaded from angular.dev (footer 'Built by Angular at v22.2.2'), and no deprecated or experimental API is used as current. The section is balanced at 6 true and 6 false, and both replacements are true, so the balance holds.\n\nTen cards pass, each settled by a quoted sentence on its source page:\n- sr1-01: 'Both templateUrl and styleUrl are relative to the directory in which the component resides.'\n- sr1-03: 'By default, Angular components are standalone'; 'In Angular versions before 19.0.0, the standalone option defaults to false.'\n- sr1-04: 'Angular creates an instance of the component for every matching HTML element it encounters.'\n- sr1-05: 'The contents of a component's template are rendered inside its host element.'\n- sr1-06: 'Always prefer using the host property over @HostBinding and @HostListener. These decorators exist exclusively for backwards compatibility.'\n- sr1-08: fallback content shows 'if that component doesn't have any matching child content'.\n- sr1-09: 'Angular always instantiates and creates DOM nodes for content rendered to a <ng-content> placeholder, even if that <ng-content> placeholder is hidden.'\n- sr1-10: 'By default, Angular uses emulated encapsulation'. The explanation's attribute mechanism matches the page.\n- sr1-11: 'global styles defined outside of a component may still affect elements inside a component with emulated encapsulation.'\n- sr1-12: the style guide says 'Prefer protected access for any members that are meant to be read from the component's template.'\n\nMinor observations, not flagged:\n- sr1-06 says 'host metadata' where the docs say 'host property'. It is understandable, but 'host property' would match the official wording.\n- sr1-03 is false because of the default value, not the version number, so it complies with the version rule.\n\nProcess note: my first text-conversion loop ran on every *.html file in the shared scratchpad, not only mine. It may have overwritten same-named .txt files that other workflow agents had made from their own .html downloads. My own files are now in scratchpad/ngr1. No project files were touched."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr2-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/templates/binding, current (footer: Built by Angular at v22.2.2)",
+     "evidence": "https://angular.dev/guide/templates/binding: \"All expression values are converted to a string. Objects and arrays are converted using the value's toString method.\" The card is correct, but anything rendered as page text has to end up as a string, so a player who has never used Angular answers True by common sense. It is close to a truism and teaches nothing specific to Angular.",
+     "problem": "The answer is correct, but the statement is nearly a truism: text interpolation has to produce text. The Angular-specific part, that objects and arrays go through toString, is not tested.",
+     "suggestedFix": "Replacement (true, keeps the balance): \"Interpolating a plain object, as in `{{ user }}`, renders the text [object Object].\" Explanation: \"Angular converts every interpolated value to a string, and objects and arrays go through their toString method, so a plain object shows [object Object].\" Same URL."
+    },
+    {
+     "id": "angular-fundamentals-sr2-08",
+     "verdict": "duplicate",
+     "urlStatus": "200, angular.dev/guide/templates/pipes, current",
+     "evidence": "https://angular.dev/guide/templates/pipes: \"mutations to object properties or array items are not detected unless the entire object or array reference is replaced with a different instance.\" Card angular-fundamentals-sr9-06 (false): \"Changing a field of an object input by itself automatically triggers a check of an OnPush child.\" Its explanation: \"An in-place edit preserves the input reference and does not itself trigger an OnPush check.\" Both are false for the same reason: an in-place mutation keeps the reference, so Angular sees no change.",
+     "problem": "The card is correct and well sourced, but it uses the same distractor as sr9-06 (an in-place mutation is wrongly said to trigger a recheck) with a different X. The prompt forbids this: \"If one card is false because ..., no other card may use that same trick with a different X\". A player who knows one answer gets the other.",
+     "suggestedFix": "Replace it with the pure-by-default fact (false, keeps the balance): \"Angular treats a custom @Pipe that omits the pure option as an impure pipe by default.\" Explanation: \"Pipes are pure by default: Angular reruns one only when a primitive input or an object reference changes. Setting pure: false makes a pipe impure.\" URL: https://angular.dev/guide/templates/pipes. Another false option: \"An event listener statement can apply a pipe, as in `(click)=\\\"save(name | trim)\\\"`.\" (https://angular.dev/guide/templates/expression-syntax: \"Statements do not support pipes\")."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards: 6 true and 6 false. Every source URL returned 200 on angular.dev, and the footers read v22.2.2. The cards that passed:\n\n- **sr2-02:** \"If the value of an attribute binding is null, Angular removes the attribute by calling removeAttribute.\"\n- **sr2-03:** The style guide says \"Prefer class and style bindings over using the NgClass and NgStyle directives\". This is one of only two false \"recommends/prefers\" cards in the deck, with sr3-04, so it stays within the template limit.\n- **sr2-04:** \"In every template event listener, Angular provides a variable named $event\".\n- **sr2-05:** \"[()]. It combines the syntax from property binding, [], and the syntax from event binding, ()\". A minor wording point: the subject \"Angular writes\" names the wrong actor, since the developer writes the binding.\n- **sr2-06:** \"If you declare the variable on a Angular component, the variable refers to the component instance.\"\n- **sr2-07:** \"Angular automatically keeps the variable's value up-to-date with the given expression, similar to bindings\". The card rewords this in its own way.\n- **sr2-09:** \"The pipe operator has higher precedence than the conditional (ternary) operator\", and the guide shows the parse `isAdmin ? 'Access granted' : ('Access denied' | uppercase)`.\n- **sr2-10:** \"No other JavaScript globals are supported. Common JavaScript globals include Number, Boolean, NaN, Infinity, parseInt\".\n- **sr2-11:** \"Arrow functions must have an expression body\", and the Declarations table lists \"Arrow functions with block bodies\" as unsupported. appliesTo is v21.2 and later, as the prompt requires.\n- **sr2-12:** \"Since Angular 22, the optional chaining operator behavior in angular expressions is alligned with the standard Javascript's behavior\". The $safeNavigationMigration wrapper only keeps the old null result in migrated expressions, so the statement still holds.\n\nNone of the passing cards has a version or exception problem I could find. If sr2-08 is replaced as suggested, also check that the pure-pipe fact does not overlap with any r9 card."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (angular.dev footer: Built by Angular at v22.2.2)",
+     "evidence": "https://angular.dev/guide/templates/control-flow: \"The content of the @empty block displays when there are no items.\" The fact is correct, but anyone can read the answer from the block's name: a block called @empty that shows when the collection is empty. The prompt bans name giveaways (\"the answer must not be readable from the product name alone\") and truisms.",
+     "problem": "The card is a name giveaway. A player who has never used Angular would answer True from the word \"empty\", so it teaches nothing about @for.",
+     "suggestedFix": "Replace with a TRUE card (keeps the section at 6 true and 6 false, and true statements stay within 5 characters of false ones on average). Statement (83 chars): \"A let alias such as `let i = $index` lets a nested @for read the outer row's index.\" Explanation (~185 chars): \"$index, $first, $count and the other contextual variables always exist under their own names. A let segment aliases them, so an inner @for can still read the outer block's values.\" factKey: for-contextual-variable-let-alias. Source: https://angular.dev/guide/templates/control-flow (\"The aliasing is useful when nesting @for blocks, letting you read variables from the outer @for block from an inner @for block.\")"
+    }
+   ],
+   "notes": "I fetched all 5 source URLs (curl, HTTP 200, footer \"Built by Angular at v22.2.2+sha-23b3a65\"). Each one supports its card. Evidence that settles each passing card:\n- 01: /api/core/@if, \"supports referencing of expression results\". The guide says it more clearly: \"saving the result of the conditional expression into a variable for reuse inside of the block\". Consider switching the URL to the guide.\n- 02: /api/core/@for, \"Collections can be any JavaScript iterable, but there are performance advantages of using a regular Array\".\n- 03: /api/core/@for, \"the track expression is required for the @for loops\".\n- 04: /api/core/@for, \"For dynamic collections experiencing additions, deletions, or reordering, opt for a unique property of each item\".\n- 05: /guide/templates/control-flow, \"If a tracked property changes but the object reference remains the same, Angular updates the view's bindings (including component inputs) rather than destroying and recreating the entire element\". This matches the reconcile algorithm, which matches on Object.is identity before comparing keys.\n- 06: /api/core/@for, \"Track expressions can only reference $index, the item, and properties and methods of the component class\".\n- 08: both pages say \"@for block does not support flow-modifying statements like JavaScript's continue or break\".\n- 09: /api/core/@switch, \"compared to the case expression using the === operator\".\n- 10: /api/core/@switch, \"multiple conditions for a single block by having consecutive @case(...) statements\".\n- 11: /api/core/@switch, \"It will not work if the switch condition is a function call or a signal (for example, @switch (state()))\".\n- 12: /api/common/NgIf, \"deprecated since v20.0\" and \"Use the @if block instead. Intent to remove in a future major release\".\n\nSection balance is 6 true and 6 false. Average statement length is 75.8 (true) vs 72.2 (false), and the difficulty mix is 5 easy, 5 medium, 2 hard. No card repeats a fact from another section; the only other card that touches control flow is sr1-09 (ng-content inside @if), which tests a different fact.\n\nMinor observations, not flagged:\n- Card 10's answer depends on the version: consecutive @case blocks do not work in v20, which is still in LTS. The statement does not name a version. It carries the version only in appliesTo (\"Angular v21.1 and later\"), which is what the prompt asks for.\n- Card 05's phrasing \"its tracked key changes on the same object\" is a little awkward but unambiguous.\n- Card 01 is easy and close to a giveaway because of the word \"as\". It passes because a realistic misconception exists: that the alias holds a boolean."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr4-10",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, https://angular.dev/api/core/@defer (official, footer 'Built by Angular at v22.2.2')",
+     "evidence": "API page: \"Prefetch Configures prefetching of the defer block used in the @defer parameters, but does not affect rendering. Rendering is handled by the standard on and when conditions.\" Guide https://angular.dev/guide/templates/defer: \"you can optionally specify a prefetch trigger\". Prefetching only happens when the developer adds a prefetch trigger. Without one, the code is fetched by the main trigger and there is no separate prefetch.",
+     "problem": "The statement 'Angular prefetches @defer dependencies separately from the trigger that renders the block' reads as an unconditional claim. An expert could answer False: by default Angular does no prefetching at all, and the code is fetched when the main trigger fires. Read the other way, the card says little more than what the word 'prefetch' means. It never names the prefetch keyword that the fact depends on.",
+     "suggestedFix": "Replacement (answer stays True): statement \"In `@defer (on interaction; prefetch on idle)`, Angular fetches the block's code when idle but renders it on interaction.\" Explanation: \"A prefetch trigger only loads the block's JavaScript ahead of time. The main on or when trigger still decides when the deferred content replaces the placeholder.\" Keep the URL https://angular.dev/api/core/@defer (the guide's prefetch section also shows this exact example)."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards against https://angular.dev/guide/templates/defer and https://angular.dev/api/core/@defer. Both load with HTTP 200 and the docs footer reads v22.2.2. The section is balanced at 6 true (02, 03, 05, 07, 10, 12) and 6 false (01, 04, 06, 08, 09, 11), and the replacement for 10 keeps it there. 11 of the 12 cards pass, and the guide quotes support them:\n- 01: \"only standalone components, directives and pipes can be deferred. NgModule-based dependencies are not deferred and are included in the eagerly loaded bundle.\" The word 'directly' correctly avoids the transitive-dependency exception.\n- 02: \"referenced within ViewChild queries, the dependencies will be eagerly loaded\".\n- 03: \"Its dependencies are eagerly loaded (similar to @placeholder)\".\n- 04: \"after - the amount of time to wait after loading begins before showing the loading template\".\n- 05: \"minimum amount of time that this placeholder should be shown after the placeholder content initially renders\".\n- 06: \"By default, a @defer block is triggered when the browser state becomes idle\".\n- 07 and 08: \"By default, the @defer watches for the placeholder entering the viewport. Placeholders used this way must have a single root element\", and the same rule applies to interaction. The compiler rejects a trigger with no reference when the placeholder does not have exactly one root.\n- 09: \"This is a one-time operation\".\n- 11: \"When Hot Module Replacement (HMR) is active, all @defer block chunks are fetched eagerly, overriding any configured triggers\".\n- 12: \"Importing through a barrel file (index.ts) is a common culprit ... your component ends up in the main bundle regardless of @defer\". The hedge 'can' fits, because the outcome depends on whether the barrel is also imported eagerly elsewhere.\n\nTwo minor points, not flagged:\n(a) Card 08's statement takes for granted that the placeholder is the implicit trigger target. That gives a light hint toward card 07 (placeholder as the default viewport target). The prompt lists both facts, so I did not flag it, but you could rewrite 07 to test the explicit `on viewport(ref)` template-reference alternative.\n(b) Several explanations are very short and do not give a reason. For example, 03 says \"@loading content belongs to the eager bundle\" and 12 says \"Barrel exports may defeat @defer chunk splitting\". They are correct but teach little. For 12, consider adding the guide's reason: bundlers treat the barrel as one module and keep all its exports together.\n\nThere is no overlap with r13 (hydrate triggers, cards 10 and 11) or r14 (DeferBlockBehavior.Manual, card 12). None of the r4 cards relies on developer-preview, experimental or retired features."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr5-11",
+     "verdict": "ambiguous",
+     "urlStatus": "https://angular.dev/api/core/CreateEffectOptions loads (200, docs footer v22.2.2), official and current; CreateEffectOptions is labelled 'stable since v20.0'.",
+     "evidence": "The API page says: \"manualCleanup ... If this is false (the default) the effect will automatically register itself to be cleaned up with the current DestroyRef.\" The /guide/signals/effect page adds: \"You can combine this with the manualCleanup option when creating an effect to disable automatic cleanup.\" The v22 source does something different for the deck's assumed context, component (view) effects. In https://github.com/angular/angular/blob/main/packages/core/src/render3/reactivity/effect.ts (lines 159-171): `let destroyRef = options?.manualCleanup !== true ? injector.get(DestroyRef) : null;` and then, for a view effect, `if (destroyRef instanceof NodeInjectorDestroyRef && destroyRef._lView === viewContext.view) { // ... it will be automatically destroyed without the need for an explicit DestroyRef registration. destroyRef = null; }`. In packages/core/src/render3/node_manipulation.ts, cleanUpView runs `const effects = lView[EFFECTS]; ... for (const effect of effects) { effect.destroy(); }`.",
+     "problem": "For an effect created in a component or directive, Angular never registers it with DestroyRef, whatever manualCleanup says, and it destroys the effect with the view even when manualCleanup is true. An expert could therefore argue that manualCleanup does not decide DestroyRef registration in the usual case. The explanation's line \"The caller manages disposal using the returned EffectRef\" is also misleading for component effects, which Angular still destroys. The statement also stays very close to the API doc sentence, and the option name hints at the answer.",
+     "suggestedFix": "Replace with a card on the view-effect versus root-effect lifetime, which the effect guide states plainly. Answer stays true. Statement (107 chars): \"An effect created in a root service stays active after a component that injected the service is destroyed.\" Explanation (160 chars): \"Effects created outside the component tree are root effects: Angular destroys them with the application, or when code calls destroy() on the returned EffectRef.\" Source: https://angular.dev/guide/signals/effect (\"A 'Root effect' is destroyed when the application is destroyed.\")"
+    }
+   ],
+   "notes": "I checked all 12 r5 cards. The source pages load (HTTP 200) on angular.dev, docs footer \"Built by Angular at v22.2.2\". Status labels: WritableSignal stable since v17.0, effect, linkedSignal and CreateEffectOptions stable since v20.0. The section balance is 6 true and 6 false. If sr5-11 is replaced with the true card suggested above, the balance stays the same.\n\nCards that passed, with the line that settles each:\n- sr5-01: WritableSignal API, update: \"Update the value of the signal based on its current value\".\n- sr5-02: asReadonly: \"The readonly signals do not have any built-in mechanism that would prevent deep-mutation of their value\".\n- sr5-03: /guide/signals: \"doubleCount's derivation function does not run to calculate its value until the first time you read doubleCount\".\n- sr5-04: \"Only the signals actually read during the derivation are tracked\".\n- sr5-05: \"By default, signals use referential equality (Object.is() comparison)\".\n- sr5-06: \"The reactive context is only active for synchronous code. Any signal reads that occur after an asynchronous boundary will not be tracked\".\n- sr5-07: linked-signal guide: \"previous.value is the previous value of the linkedSignal\". The API signature confirms that only the source/computation form receives previous.\n- sr5-08: linked-signal guide: \"you may want the set and update operations of a linkedSignal to write back to the source of truth ... by passing a set function in the options\". The angular/angular CHANGELOG 22.1.0 lists \"add custom set option to linkedSignal\", which confirms the v22.1 pin. The guide page itself does not name the version.\n- sr5-09: effect guide: \"Effects should be the last API you reach for. Always prefer computed() for derived values and linkedSignal()...\" and \"Avoid using effects for propagation of state changes\".\n- sr5-10: \"register a callback that is invoked before the next run of the effect begins, or when the effect is destroyed\".\n- sr5-12: rxjs-interop: \"Like the async pipe, toSignal subscribes to the Observable immediately\".\n\nMinor points, not flagged:\n1. sr5-05: the explanation (\"The default equality check determines whether Angular treats a signal value as changed\") is correct but teaches nothing on its own and never names Object.is. A better version: \"Signals use referential Object.is equality by default, so setting the same object reference does not notify dependents; pass equal for a custom comparison.\"\n2. Wording tells within r5: the hedge \"can\" appears only in a true card (07), and \"automatically\" only in a false card (02). Rebalance these across the deck.\n3. sr5-01 is easy and close to what the update() signature already tells you, but it is specific to the Angular API and acceptable as a difficulty 1 card."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr6-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (footer: Built by Angular at v22.2.2)",
+     "evidence": "https://angular.dev/guide/http/http-resource: \"TIP: Avoid using httpResource for mutations like POST or PUT. Instead, prefer directly using the underlying HttpClient APIs.\"",
+     "problem": "The statement leaves out httpResource, so it only says that Angular's docs recommend Angular's own HTTP client for POST requests. Anyone would answer True without knowing anything about resources. The fact being tested (use HttpClient rather than httpResource for mutations) is not actually in the statement.",
+     "suggestedFix": "Keep the answer True. Statement: \"For POST or PUT mutations, Angular's documentation prefers HttpClient APIs over httpResource.\" Explanation: \"The httpResource guide advises against using httpResource for mutations such as POST or PUT and recommends calling the underlying HttpClient APIs directly.\" Same URL."
+    },
+    {
+     "id": "angular-fundamentals-sr6-08",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, current; RxResourceOptions labelled \"interface stable since v22.0\"",
+     "evidence": "The cited page https://angular.dev/api/core/rxjs-interop/RxResourceOptions opens with \"Like ResourceOptions but uses an RxJS-based loader.\" and lists only a stream property. The rxResource API page also says \"uses an RxJS based loader\". The text that settles it is in https://angular.dev/ecosystem/rxjs-interop: \"Instead of accepting a loader function, rxResource accepts a stream function that returns an RxJS Observable.\"",
+     "problem": "The answer (False) is right: RxResourceOptions has no loader property, only stream, and v19's loader option was renamed. But the cited page's own summary calls the function an \"RxJS-based loader\", so a player who checks the source can read it as support for True. The section brief also says \"rxResource with an Observable loader\". The card relies on the option name, so it needs the guide sentence that contrasts loader with stream.",
+     "suggestedFix": "Change the URL to https://angular.dev/ecosystem/rxjs-interop and keep the card (answer False). Optional clearer explanation: \"rxResource takes a stream function that returns an Observable instead of resource's loader option, and otherwise behaves like resource.\""
+    },
+    {
+     "id": "angular-fundamentals-sr6-11",
+     "verdict": "explanation_error",
+     "urlStatus": "200, official, current",
+     "evidence": "https://angular.dev/guide/http/http-resource: \"By default, httpResource returns and parses the response as JSON. However, you can specify an alternate return type with additional functions on httpResource: httpResource.text ... httpResource.blob ... httpResource.arrayBuffer\"",
+     "problem": "The answer (True) is right, but the explanation says that \"calling httpResource with a URL computation\" is what selects JSON. JSON is the default for both the URL form and the request-object form; what changes it is the .text, .blob and .arrayBuffer variants. The explanation names the wrong cause and leaves out the variants. \"Default factory\" in the statement is also unclear wording.",
+     "suggestedFix": "Keep the answer True. Statement: \"httpResource parses the response body as JSON unless a variant such as httpResource.text is used.\" Explanation: \"By default httpResource parses JSON. httpResource.text, httpResource.blob and httpResource.arrayBuffer give a string, a Blob or an ArrayBuffer in value() instead.\""
+    },
+    {
+     "id": "angular-fundamentals-sr6-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current",
+     "evidence": "https://angular.dev/guide/signals/resource: \"The resource calls the loader every time the params computation produces a new value, passing that value to the loader.\"",
+     "problem": "The statement \"A resource reruns its loader when its params computation produces a new value\" copies this guide sentence with a few words changed, which breaks the original-wording rule. It also only restates the basic idea of a resource. The answer (True) is correct.",
+     "suggestedFix": "Keep the answer True and use a different fact from the section. Statement: \"Calling reload() runs a resource's loader again while its params value stays unchanged.\" Explanation: \"reload() triggers the loader programmatically for the same params, and the resource reports the reloading status while that load runs.\" URL: https://angular.dev/guide/signals/resource (\"You can programmatically trigger a resource's loader by calling the reload method.\")"
+    },
+    {
+     "id": "angular-fundamentals-sr6-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current",
+     "evidence": "https://angular.dev/guide/signals/resource: \"A resource aborts an outstanding loading operation if the params computation changes while the resource is loading.\"",
+     "problem": "The statement \"A resource aborts an outstanding load when its params change during that load\" is this guide sentence with a few words swapped (near-copy). The fact is correct and worth testing (answer True); only the wording needs to change.",
+     "suggestedFix": "Keep the answer True and reword. Statement: \"Changing a resource's params mid-load fires the abortSignal Angular passed to the running loader.\" Explanation: \"Angular aborts the outstanding load when params change. A loader that passes abortSignal to fetch or similar APIs cancels the obsolete request.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (6 true, 6 false; the balance is right) against angular.dev, whose docs footer reads \\\"Built by Angular at v22.2.2\\\". All source URLs returned 200. resource, rxResource, RxResourceOptions, ResourceRef, BaseResourceOptions and ResourceStreamingLoader are all labelled \\\"stable since v22.0\\\".\n\nThese cards passed:\n- sr6-02: guide says \\\"If the params computation returns undefined, the loader function does not run and the resource status becomes 'idle'.\\\"\n- sr6-04: the ResourceStatus page says that during reloading \\\"value() will continue to return the previously fetched value\\\".\n- sr6-05: guide says hasValue \\\"protects against reading a throwing value when the resource is in error state\\\".\n- sr6-06: guide says the 'local' status means the value \\\"has been set locally via .set() or .update()\\\".\n- sr6-07: the ResourceStreamingLoader signature returns \\\"Signal<ResourceStreamItem<T>> | PromiseLike<Signal<ResourceStreamItem<T>>> | undefined\\\", which matches the explanation.\n- sr6-09: guide says httpResource \\\"makes HTTP requests through the Angular HTTP stack, including interceptors\\\".\n- sr6-10: BaseResourceOptions says defaultValue is \\\"returned from the resource when a server value is unavailable, such as when the resource is still loading\\\".\n\nTwo docs conflicts to watch:\n- The ResourceStatus API page still says \\\"error - value() will be undefined\\\" (and \\\"loading ... value() will be undefined\\\" without mentioning defaultValue). This contradicts the resource and httpResource guides, which say value() throws in the error state. sr6-05 cites the guide, which is correct. Do not cite the ResourceStatus page for any error-state card.\n- The rxResource and RxResourceOptions API pages call the stream function an \\\"RxJS-based loader\\\". That is why sr6-08 should cite /ecosystem/rxjs-interop.\n\nOverlap check: no duplicates with other sections. Replacements were chosen to avoid the httpResource-eager versus HttpClient-cold split, because sr12-03 already covers the HttpClient side.\n\nProcess note: my first text-conversion command ran in the shared scratchpad root (a scratch folder). It wrote .txt conversions of other agents' .html files there, and any existing .txt file with the same base name may have been overwritten. Project files were not touched. My own working files are in scratchpad/r6ang."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr7-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/components/inputs, docs build v22.2.2, official and current",
+     "evidence": "https://angular.dev/guide/components/inputs, Implicit change events: \"// This automatically creates an output named \"checkedChange\". ... checked = model(false);\" and \"The output's name is the model input's name suffixed with \"Change\".\" The fact is correct, but the statement copies the docs' own example: the same `checked = model(false)` field and the same code comment (\"automatically creates an output named checkedChange\") reworded as a sentence. The rules say \"do not reproduce a sentence of the official page with a word or two changed\". A player who knows the ngModel/ngModelChange convention can also read the answer from the name checkedChange.",
+     "problem": "Near-copy of the source's code example and comment, and the answer is partly readable from the familiar xChange naming convention. Answer (true) and explanation are correct.",
+     "suggestedFix": "Keep it true and test when the implicit output fires instead of how it is named. Statement (99 chars): \"Angular emits a model input's Change output when the component writes to it with set() or update().\" Explanation (203 chars): \"Writing to a model() signal with set() or update() fires its implicit output, named after the input with a Change suffix (checked becomes checkedChange), which keeps the parent's two-way binding in sync.\" Answer: true. Source unchanged (\"Angular emits this change event whenever you write a new value into the model input by calling its set or update methods.\")."
+    },
+    {
+     "id": "angular-fundamentals-sr7-10",
+     "verdict": "explanation_error",
+     "urlStatus": "200, angular.dev/api/core/OutputRef, official and current",
+     "evidence": "https://angular.dev/api/core/OutputRef, subscribe(): \"Registers a callback that is invoked whenever the output emits a new value of type T. Angular will automatically clean up the subscription when the directive/component of the output is destroyed.\" The guide https://angular.dev/guide/components/outputs adds: \"Alternatively, you can manually unsubscribe from an event. The subscribe function returns an OutputRefSubscription with an unsubscribe method.\"",
+     "problem": "The answer (true) is correct and the source supports it. The explanation (\"An output subscription's automatic cleanup follows destruction of the output's owning component.\") only repeats the statement. The rules require a true card's explanation to add the reason or context. Strictly it is not wrong, just empty.",
+     "suggestedFix": "Keep the statement and the answer (true). Replace the explanation (190 chars): \"Angular cleans this up when the component or directive that owns the output is destroyed; to stop listening earlier, call unsubscribe() on the OutputRefSubscription that subscribe() returns.\""
+    }
+   ],
+   "notes": "I checked all 12 r7 cards (6 true, 6 false; difficulty 5/5/2). I fetched every source page with curl and they all return 200 on the current docs (footer \"Built by Angular at v22.2.2\"): /guide/components/inputs, /guide/components/outputs, /guide/components/queries and /api/core/OutputRef. I also opened /api/core/model, /api/core/ModelOptions, /api/core/viewChild and /api/core/booleanAttribute as independent checks. Cards that pass, with the deciding text:\n- 01: \"Produces an InputSignal<number | undefined> because `value` may not be set.\"\n- 02: \"Angular reports an error at build-time.\" The statement says \"template-binding\", so required inputs left unset on a dynamically created component, which fail at runtime, do not make it arguable.\n- 03: \"the type of the transform function's parameter determines the types of values that can be set to the input in a template\".\n- 04: \"Angular's booleanAttribute treats the literal string \\\"false\\\" as the boolean false\". The misconception is realistic because the docs say it otherwise imitates HTML boolean attribute presence.\n- 05: \"By default, contentChildren queries find only direct children of the component\".\n- 07: \"Notice that the binding passes the volume signal instance, not the value of the signal.\"\n- 08: \"Model inputs do not support input transforms.\" ModelOptions has only alias and debugName.\n- 09: \"Angular custom events do not bubble up the DOM.\"\n- 11: \"If a required query does not find a matching result, Angular reports an error\" together with \"hidden by a control flow statement like @if\". Independently, the required query signal throws a RuntimeError (\"Child query result is required but no value is available\") when read with no result. The only edge case is a read before the next change detection updates the query, which an expert would not use to defend False.\n- 12: \"Queries never pierce through component boundaries. View queries can only retrieve results from the component's template.\"\nNo duplicates with other sections. sr2-05 tests the [( )] syntax, sr4-02 tests ViewChild references defeating @defer, and the r11 form-model cards are separate facts. Average statement length is 85.2 (true) and 86.7 (false), within 5. Minor points, not flagged: card 04 uses \"automatically\" and card 07 uses \"can accept\", which matter only for the deck-wide word balance; card 02's wording \"template-binding error\" is a little clumsy but clear. Section coverage leaves out alias, numberAttribute NaN, the property-initializer rule, plain-property two-way binding and @Input/@Output support. That is acceptable for 12 cards."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [],
+   "notes": "All 12 r8 cards pass, so none are flagged. I opened every source URL. Each one loads, is current (footer says \"Built by Angular at v22.2.2\") and supports its card. The section has 6 true cards (01, 02, 04, 05, 06, 12) and 6 false (03, 07, 08, 09, 10, 11). Average statement length is 87.8 characters for true cards and 90.3 for false. No statement is over 120 characters and no explanation is over 240. No other section has a card that rests on the same fact.\n\nEvidence for each card:\n- 01, field initializer (/guide/di/dependency-injection-context): \"In field initializers of such classes.\"\n- 02, root singleton (/guide/di/creating-and-using-services): \"Implicit root singleton provider: Yes\" for @Service.\n- 03, constructor injection: \"Constructor-based dependency injection. @Service only supports the inject() function.\"\n- 04, autoProvided: false: \"If you want to provide it manually, for example, to scope it to a specific route or component, set autoProvided: false\".\n- 05, token factory (/api/core/InjectionToken): \"As mentioned above, 'root' is the default value for providedIn.\"\n- 06, useExisting (/guide/di/defining-dependency-providers): \"useExisting creates an alias for a provider that was already defined. Both tokens return the same instance\".\n- 07, component providers (/guide/di/hierarchical-dependency-injection): \"When the component instance is destroyed, so is that service instance.\" The same page also says each VillainsList instance \"will have its own instance of VillainsService\".\n- 08, resolution order: \"If Angular doesn't find the provider in any ElementInjector hierarchies, it goes back to the element where the request originated and looks in the EnvironmentInjector hierarchy.\"\n- 09, optional (/api/core/InjectOptions): \"return null if the requested token is not found.\"\n- 10, self: \"Components and directives on the same element share an injector.\"\n- 11, viewProviders: \"Providers in viewProviders are only visible inside the component's own view — content projected into the component via <ng-content> cannot see them.\"\n- 12, injectAsync (/api/core/injectAsync, \"stable since v22.0\"): \"To enable lazy loading, the injected service must be auto-provided.\"\n\nStatus labels: the @Service API page has no label, which means stable.\n\nSmall points, none worth a flag:\n- Card 07: /guide/di/defining-dependency-providers says it more directly (\"Creates new instance of `DataStore` rather than using the root-provided instance\"). Switching the URL is optional.\n- Card 04: the explanation says \"scoped to that component\", which slightly hints at card 07's answer. This wording comes from the source page itself.\n- Card 10: there is a narrow exception. A component's viewProviders are visible to the component itself, but not to other directives on the same host element. An expert would still answer False to the card as written. Its factKey says \"self\", but the card really tests that directives on one element share an injector.\n- Cards 06, 07 and 11: the tags are generic (\"Angular\", \"Component\"). This is cosmetic."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr9-09",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (https://angular.dev/guide/components/lifecycle, docs build v22.2.2)",
+     "evidence": "https://angular.dev/guide/components/lifecycle: \"While you can access the initialized state of [view queries], attempting to change any state in this method results in an [ExpressionChangedAfterItHasBeenCheckedError]\". The page supports the plain-field case. The statement does not say what kind of state the binding reads, though. Since v17, Angular re-refreshes a view whose template signal was written during change detection (it loops while views are dirty and has an infinite-loop guard). So when the 'checked binding' reads a signal, which is typical in a v22 app, an expert could argue the dev check passes. I could not confirm this from an angular.dev page in this run because the web search budget was used up, so treat it as plausible rather than certain. The wording 'Angular's dev check passes after a checked binding changes' is also hard to parse.",
+     "problem": "The false answer depends on the binding reading a plain class field rather than a signal, and the statement does not say which. The phrasing is also convoluted for a 120-character card.",
+     "suggestedFix": "Keep it false. Statement (110 chars): \"With Eager detection, a plain bound field set synchronously in ngAfterViewInit passes Angular's dev-mode recheck.\" Explanation: \"In development mode Angular rechecks bindings after each pass; changing a plain, non-signal field bound in the template inside ngAfterViewInit raises ExpressionChangedAfterItHasBeenCheckedError.\""
+    },
+    {
+     "id": "angular-fundamentals-sr9-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://angular.dev/guide/zoneless)",
+     "evidence": "https://angular.dev/guide/zoneless lists \"ChangeDetectorRef.markForCheck (called automatically by AsyncPipe)\" among the notifications Angular uses to decide when to run change detection, and says \"Zoneless is the default in Angular v21+\". The answer is correct and the source supports it.",
+     "problem": "The statement 'In a zoneless application, markForCheck waits for a ZoneJS event' contradicts itself: a zoneless application has no ZoneJS events. A player can answer False from the wording alone without knowing that markForCheck schedules change detection. The real misconception (markForCheck only flags the view and something else must trigger the run) is lost.",
+     "suggestedFix": "Keep it false. Statement (101 chars): \"In a zoneless application, a view flagged with markForCheck() stays stale until a later user event occurs.\" Explanation: \"In a zoneless application, ChangeDetectorRef.markForCheck() is itself a notification that schedules change detection, which is why AsyncPipe calls it.\""
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (6 true: 01, 04, 05, 07, 10, 12; 6 false: 02, 03, 06, 08, 09, 11) against their source pages and found 2 problems: card 09 is ambiguous and card 02 is a weak card. Both replacements stay false, so the 6/6 balance holds.\n\nPages I opened and what they say (docs footer: v22.2.2):\n- /guide/zoneless: \"Zoneless is the default in Angular v21+\". It lists the notifications that schedule change detection (markForCheck, ComponentRef.setInput, template signals, listeners). The NgZone observables \"will never emit\" and isStable \"will always be true\". PendingTasks: \"Serialization will wait for the first moment that all pending tasks have been removed\".\n- /api/core/PendingTasks: stable since v20.0. run() \"blocks the application's stability until the function completes\".\n- /best-practices/skipping-subtrees: \"OnPush is the default change detection strategy in Angular (since v22)\". Inputs are compared with Object.is, and mutating an object while keeping its reference does not trigger a check.\n- /guide/signals: a signal read in an OnPush template marks the component for check.\n- /guide/components/lifecycle:\n  - \"During initialization, the first ngOnChanges runs before ngOnInit\".\n  - Changing state in ngAfterViewInit raises ExpressionChangedAfterItHasBeenCheckedError.\n  - Render callbacks do not run during SSR or prerendering.\n  - Phases run in the order earlyRead, write, mixedReadWrite, read.\n- /api/core/DestroyRef: callbacks run when the injecting component or directive is destroyed.\n- /api/core/afterNextRender: stable since v20.0. \"Callbacks run on browser platforms only\". The phase order is earlyRead, write, mixedReadWrite, read.\n\nSo the other 10 cards pass. Every source URL loads, is official and current, and supports both the statement and the explanation.\n\nMinor points I did not flag:\n- Card 01 says \"applications\" use zoneless by default. The docs wording supports it, but projects upgraded with ng update may keep an explicit provideZoneChangeDetection. \"New applications\" would be stricter.\n- Card 10 stays close to the DestroyRef API sentence but is acceptable as an easy card.\n\nDuplicates: none across the deck. I compared these cards with the r5 effect and DestroyRef cards, sr11-07 (zoneless reactive forms), sr14-02 and sr14-10 (zoneless TestBed), and the r13 SSR cards.\n\nLimit: I used no web search for this section because the budget was already used up. The signal re-refresh behaviour behind the card 09 flag is from my knowledge of Angular since v17, not quoted from a page, so verify it before rewriting."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr10-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/routing/define-routes (docs footer: Built by Angular at v22.2.2)",
+     "evidence": "define-routes example: \"providers: [ provideRouter (routes), ...]\". The card is correct, but the answer can be read from the API name and from the wording \"accepts a Routes array to configure routing providers\". Anyone who has seen an Angular app.config.ts, or who just reads the words, answers True, and the card teaches nothing about how the router behaves.",
+     "problem": "Give-away true card: the answer follows from the name provideRouter plus Routes. It also leaves the section's redirectTo item untested.",
+     "suggestedFix": "Replace (answer stays TRUE). Statement: \"A route's redirectTo accepts a function that can compute the redirect target as a string or UrlTree.\" Explanation: \"Besides a fixed path string, redirectTo takes a function that receives part of the route snapshot and returns the target as a string or UrlTree, or as a Promise or Observable of one.\" Source: https://angular.dev/guide/routing/redirecting-routes (\"The redirectTo property can also accept a function ... It typically returns a string or URLTree, but it can also return an observable or promise.\")"
+    },
+    {
+     "id": "angular-fundamentals-sr10-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/routing/define-routes",
+     "evidence": "define-routes: \"You can associate a title with each route. Angular automatically updates the page title when a route activates.\" and \"By default, Angular uses the DefaultTitleStrategy.\" The statement claims the route title fills a component input called title, but the assumed context has no withComponentInputBinding. Even with it, Route.title is stored under an internal symbol key and is never bound to an input. No developer who has studied routing would hold this belief, and the explanation (it updates the document title) does not answer the misconception the statement sets up.",
+     "problem": "Strawman false statement. It tests an invented input-binding behaviour, so the real fact (the title updates the document title by default) is only taught indirectly.",
+     "suggestedFix": "Replace (answer stays FALSE). Statement: \"Angular's router updates the page title from a route's title only after you provide a custom TitleStrategy.\" Explanation: \"By default the router applies a route's title through DefaultTitleStrategy when the route activates. You need a custom TitleStrategy only to change how titles are composed, for example to add an app suffix.\" Misconception: Route titles need a custom TitleStrategy to take effect. Source unchanged: https://angular.dev/guide/routing/define-routes"
+    }
+   ],
+   "notes": "All 12 r10 cards were checked against angular.dev pages fetched on 2026-10-13 (footer: Built by Angular at v22.2.2). Balance is 6 true (01, 04, 05, 07, 11, 12) and 6 false (02, 03, 06, 08, 09, 10), and both suggested replacements keep their card's answer, so the balance does not change.\n\nCards that passed, with the evidence that settles them:\n- 02: define-routes says \"Angular uses a first-match wins strategy.\"\n- 04: loading-strategies says \"The Router executes loadComponent and loadChildren within the injection context of the current route, allowing you to call inject inside these loader functions to access providers declared on that route.\"\n- 05: loading-strategies says \"In general, eager loading is recommended for primary landing page(s).\"\n- 06: route-guards return-type table says \"Router uses the first emitted value and then unsubscribes.\"\n- 07: route-guards says \"when it returns false, Angular tries other matching routes instead of completely blocking navigation.\"\n- 08: data-resolvers says a resolver \"runs before a route activates.\"\n- 09: data-resolvers says \"Resolvers execute sequentially from parent to child.\" This is backed by angular/angular PR #59860 (20.0.0): \"resolvers on one level block execution of those below\". The 17.0.5 fix #52934 (\"Resolvers in different parts of the route tree should be able to execute together\") applies to sibling branches, not to parent and child, so it does not contradict the card.\n- 10 and 11: the withComponentInputBinding API page says \"resolvers have the highest precedence\" and \"when an input does not have an item in the route data with a matching key, this input is set to undefined.\" These are two separate facts.\n- 12: the ExtraOptions page says \"By default ('always'), a route inherits all parameters from its parent routes\" and calls 'emptyOnly' \"the legacy behavior\". The \"Since Angular v22\" part is confirmed only by the angular/angular CHANGELOG 22.0.0 entry (\"The default value of paramsInheritanceStrategy has been changed from 'emptyOnly' to 'always'\"), not by the cited page. This is not flagged, because the prompt prescribes ExtraOptions and the page's \"legacy\" wording implies the change. Citing https://github.com/angular/angular/blob/main/CHANGELOG.md would cover the version but not the explanation's clause about parents with a component.\n\nSide observation, no card affected: the route-guards guide now says guards in one array start concurrently and the first non-true result in array order wins. No r10 card contradicts this.\n\nPages are saved as text in the scratchpad (guide_routing_*.txt, api_router_*.txt, ng-changelog.md)."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr11-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads (angular.dev/guide/forms/signals/overview, docs built at v22.2.2); supports the card only loosely ('Automatically syncs the form data model with bound form fields'), and the page still says 'Signal Forms require: Angular v21 or higher'",
+     "evidence": "https://angular.dev/api/forms/signals/FormField (stable since v22.0): 'Binds a form FieldTree to a UI control that edits it' and it 'Two-way binds the field state's value with the UI control's value'. The answer is correct, but the statement just describes what a directive called formField bound to a model field does. A player who does not know Signal Forms can read 'True' from the name and the wording, so it fails the name-giveaway and definition-card rules. The same page has a behaviour fact that is not as obvious: 'Relays relevant events on the control to the field state (e.g. marks touched on blur)'.",
+     "problem": "Give-away: the answer can be read from the directive name and the phrase 'keeps ... synchronized with its ... model field'. It teaches nothing beyond the name, and the overview URL is the weaker source for it.",
+     "suggestedFix": "Replacement (answer: true, so the section stays 6 true / 6 false). Statement: \"In Angular v22, [formField] marks its Signal Forms field as touched when the bound native input loses focus.\" Explanation: \"FormField relays control events to the field state: a blur marks the field touched, so errors that appear only after a touch show up once the user leaves the input.\" Source: https://angular.dev/api/forms/signals/FormField. This does not overlap sr11-11, which tests only the validation gate of submit(), not touched marking."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards (all in angular-fundamentals-b3.json) against the live angular.dev pages, whose footer reads 'Built by Angular at v22.2.2'. The section is balanced at 6 true (01, 04, 05, 08, 09, 11) and 6 false (02, 03, 06, 07, 10, 12). Every source URL loads, is official and supports its card.\n\nEvidence for the cards that pass:\n- 01: the /guide/forms table says 'Explicit, created in component class'. The card is easy and close to the table's wording, but acceptable as a difficulty-1 card.\n- 02: /guide/forms says 'The ngOnChanges() method queues an async task to set the value for the internal FormControl instance'.\n- 03: the FormControl API example reads `const dog = new FormControl('spot'); dog.reset(); // dog.value is null`.\n- 04: the FormGroup API says 'Disabled controls ... are not included in the aggregate value of their ancestor controls'. The word 'enabled' correctly avoids the case of a fully disabled group.\n- 05: the typed forms guide says FormRecord is 'designed for that case' where 'the keys are not known ahead of time', and all its controls share one type.\n- 06: the typed forms guide says typing applies 'only to reactive forms (not template-driven forms)'.\n- 07: /guide/zoneless says reactive forms updates 'do not automatically schedule component change detection'.\n- 08: the form() API is 'stable since v22.0' and says 'the resulting field structure will match the shape of the model'.\n- 10: the validation guide says 'your validation rules run entirely in Angular', and required() mirrors its constraint TO the native attribute. FormField binds the required attribute from field state, not the other way round, so the card stays false.\n- 11: the form-submission guide says 'If any validation rules have failed, submission stops and the action function does not run'. FormSubmitOptions gives ignoreValidators default 'pending' ('pending validators do not block submission'), which confirms the explanation.\n- 12: the models guide says 'Class instances, Map, and Set are not supported in the structural layer' and that Map and Set 'produce empty field trees'.\n\nNo version traps: every Signal Forms card names v22 and none treats Signal Forms as stable in v21. No r11 fact is repeated in another section; the r9 zoneless cards do not mention forms.\n\nOnly flag is sr11-09, a give-away. The replacement (touched on blur) is taken from the FormField API page."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr12-05",
+     "verdict": "weak_card",
+     "urlStatus": "https://angular.dev/guide/http/making-requests loads (docs build v22.2.x) and supports the fact",
+     "evidence": "https://angular.dev/guide/http/making-requests: \"To access the entire response, set the `observe` option to `'response'`\"; default: HttpClient \"returns an `Observable` of the data returned by the server (the response body).\" The fact is correct, but the statement gives the answer away from its own wording: an option whose value is 'response' 'makes HttpClient emit the response object'. A player who knows nothing about HttpClient would answer True from the words alone.",
+     "problem": "Name/wording giveaway. The option value 'response' tells you the answer (emits the response object), so the card teaches almost nothing.",
+     "suggestedFix": "Replacement (answer true, keeps the 6/6 balance): \"By default, an HttpClient request Observable emits the parsed body rather than an HttpResponse object.\" (102 chars). Explanation: \"HttpClient assumes JSON and emits only the body. Set observe: 'response' to receive the HttpResponse with status and headers, or observe: 'events' for the raw event stream.\" (172 chars). Same URL."
+    },
+    {
+     "id": "angular-fundamentals-sr12-09",
+     "verdict": "weak_card",
+     "urlStatus": "https://angular.dev/api/common/http/HttpHandlerFn loads and supports the fact",
+     "evidence": "https://angular.dev/api/common/http/HttpHandlerFn: \"Represents the next interceptor in an interceptor chain, or the real backend if there are no further interceptors.\" The statement's own condition (\"When later interceptors remain\") plus the function name next() point to the answer, so it is a strawman: nobody who has seen an interceptor chain would say next(req) skips the interceptors that come after it.",
+     "problem": "Strawman with a wording tell. The 'When later interceptors remain' clause and the name 'next' make False readable from the sentence, and the misconception (next() skips downstream interceptors) is not one a learner realistically holds.",
+     "suggestedFix": "Replacement (answer false, keeps the 6/6 balance): \"In `withInterceptors([a, b])`, interceptor b processes an outgoing request before interceptor a.\" (96 chars). Explanation: \"Functional interceptors are chained in the order they are listed, so a handles the request first and forwards it to b by calling next().\" (136 chars). Source: https://angular.dev/guide/http/interceptors (\"The interceptors you configure are chained together in the order that you've listed them in the providers.\"). This tests list order, not the recommendation in sr12-08."
+    }
+   ],
+   "notes": "I checked all 12 r12 cards (in raw/angular-fundamentals-b3.json) against live angular.dev pages, whose footer reads \"Built by Angular at v22.2.2\". Every source URL loads and is official. Two cards are flagged as weak_card; the other ten pass. With the two replacements the section stays at 6 true and 6 false, and both groups average about 92 characters.\n\nEvidence for the passing cards:\n- sr12-01: the setup guide says \"HttpClient is available for injection by default in Angular v21 and later.\" The angular/angular CHANGELOG calls it the \"root-provided HttpClient\", which backs the root-injector wording.\n- sr12-02: \"By default, HttpClient uses the fetch API to make requests.\"\n- sr12-03 and sr12-04: the making-requests guide calls the Observables \"blueprints\". It says the request is \"actually dispatched\" only on subscribe, and \"Subscribing to the same Observable multiple times will trigger multiple backend requests. Each subscription is independent.\"\n- sr12-06: the HttpParams API page says \"This class is immutable; all mutation operations return a new instance.\"\n- sr12-07: the withXsrfConfiguration API page shows the cookieName and headerName parameters.\n- sr12-08: the setup guide says \"Functional interceptors (through withInterceptors) have more predictable ordering and we recommend them over DI-based interceptors.\"\n- sr12-10: the interceptors guide speaks of \"information in a request that's not sent to the backend, but is specifically meant for interceptors.\"\n- sr12-11: the API page says \"once the request has passed through the current injector's interceptors, it will be delegated to the parent injector's HttpClient chain\". The page labels it \"stable since v19.0\".\n- sr12-12: the making-requests guide says \"The default fetch backend of HttpClient does not support upload progress events and throws an error if you set reportUploadProgress. If your app needs upload progress events, configure HttpClient with withXhr().\"\n\nPoints I looked at but did not flag:\n- sr12-03 and sr12-04 both come from the cold-Observable model. A learner who fully understands cold Observables could infer one answer from the other. The prompt lists both facts in its r12 scope, so I left them as two cards.\n- sr12-07 is close to a name giveaway, since withXsrfConfiguration configures XSRF settings. The specific detail (cookie and header names) is enough to keep it. Its explanation says \"application's\" token names where \"server's\" would be more precise.\n\nNone of the r12 cards repeats a fact from another section. sr6-09 and sr6-12 are about httpResource and sr5-12 is about toSignal subscription timing, so they test different facts. Statement and explanation lengths are within the limits. No r12 card uses a deprecated API as a current option: withFetch, JSONP and reportProgress are not tested."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr13-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/hydration loads (docs footer: Built by Angular at v22.2.2)",
+     "evidence": "https://angular.dev/guide/hydration: \"Hydration is the process that restores the server-side rendered application on the client. This includes things like reusing the server rendered DOM structures\". The statement says what the word hydration means, so anyone who knows the term answers True without knowing anything specific to Angular. The answer is correct and the source supports it.",
+     "problem": "This is a definition card: the answer follows from what the word 'hydration' means. It tests the meaning of a term, not Angular behaviour. ngSkipHydration, which the section lists, has no card yet.",
+     "suggestedFix": "Replacement (True, keeps the 6/6 balance): \"With SSR, Angular destroys and re-renders a component marked with ngSkipHydration on the client.\" Explanation: \"ngSkipHydration makes a component behave as if hydration were off: Angular discards its server-rendered DOM and renders it and its children again in the browser.\" Source: https://angular.dev/guide/hydration (\"the component will behave as if hydration is not enabled, meaning it will destroy and re-render itself\")."
+    },
+    {
+     "id": "angular-fundamentals-sr13-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, angular.dev/guide/ssr loads",
+     "evidence": "https://angular.dev/guide/ssr: \"Because getPrerenderParams exclusively applies to RenderMode.Prerender, this function always runs at build-time.\" The answer is correct and supported. But the guide and card 01 both treat prerendering as build-time rendering, so the name getPrerenderParams already gives away 'during the build'.",
+     "problem": "The name gives the answer away: a player who only knows that prerender means build-time rendering can answer True without knowing the API. The section's real point, what happens to parameter values that were not prerendered, is not tested.",
+     "suggestedFix": "Replacement (True, keeps the balance): \"By default, Angular server-renders requests to a Prerender route path whose params getPrerenderParams did not return.\" Explanation: \"A RenderMode.Prerender route falls back to server-side rendering for paths that were not prerendered unless its fallback is set to Client or None.\" Source: https://angular.dev/guide/ssr (\"Server: Falls back to server-side rendering. This is the default behavior if no fallback property is specified.\")."
+    }
+   ],
+   "notes": "I checked all 12 r13 cards: 6 are true (01, 02, 06, 09, 11, 12) and 6 false (03, 04, 05, 07, 08, 10), so the section is balanced. Every source URL loaded with HTTP 200 on angular.dev, and the docs footer read v22.2.2. The ten cards I did not flag passed. The quotes that settle them:\n- 01: guide/ssr, \"By default, Angular prerenders your entire application\".\n- 03: guide/ssr, \"Applications cannot make use of browser-specific global objects like window\".\n- 04: guide/ssr, \"providers configured with useValue will keep their value across multiple requests\".\n- 05: api/core/REQUEST, \"This token may be null ... When performing static site generation (SSG)\".\n- 07: guide/hydration, \"Your application must have the same generated DOM structure on both the server and the client\".\n- 09: provideClientHydration lists \"Incremental hydration\" among its default features; guide/incremental-hydration says \"Incremental hydration is enabled by default when you use provideClientHydration()\". The angular/angular CHANGELOG 22.0.0 entry is \"make incremental hydration default behavior\".\n- 10: guide/incremental-hydration, \"hydrate triggers only apply to that initial load. Any subsequent client side render will still use the regular trigger\".\n- 11: guide/incremental-hydration, \"Using hydrate never prevents hydration of the entire nested subtree of a given @defer block\".\n- 12: best-practices/security, \"Requests with unrecognized hostnames will result in a 400 Bad Request\". The angular-cli CHANGELOG 22.0.0 confirms this as a breaking change; before it, such requests fell back to client-side rendering.\n\nMinor point, not flagged, on card 08: its answer (False) and its source (HttpTransferCacheOptions: \"includeRequestsWithCredentials ... By default, these requests are excluded from caching\") are right. Its version label is too narrow, though. The angular/angular CHANGELOG shows \"exclude withCredentials requests from transfer cache\" was already fixed in 21.2.15, 20.3.22 and 19.2.23, before 22.0.0 shipped. v22.1 only added Fetch API credential modes and the includeRequestsWithCredentials opt-in. Consider rewording to \"Since Angular v22, with SSR the transfer cache stores GET requests sent with withCredentials: true by default.\" (False, 110 chars) and setting appliesTo to \"Angular v22\".\n\nNo duplicates with other sections. r9-11 covers afterNextRender on the server, a different fact from card 03 (window), and r14-05 only mentions prerendering in its explanation. The section never covers i18n with withI18nSupport, event replay or CommonEngine; the ngSkipHydration replacement above fills one of those gaps."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "angular-fundamentals-sr14-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://angular.dev/reference/configs/workspace-config, docs footer 'Built by Angular at v22.2.2')",
+     "evidence": "The page only says: \"At the top-level of angular.json, a few properties configure the workspace and a projects section contains the remaining per-project configuration options.\" and \"Contains a subsection for each application or library in the workspace, with project-specific configuration options.\" Nothing on the page discusses one project's options spreading to its siblings, because no developer expects that.",
+     "problem": "The card is a strawman. Nobody who has opened angular.json would believe that editing one project's build options changes a sibling project's options, so the false answer teaches almost nothing. The page does have a real defaults fact a learner could get wrong: which build configuration ng build uses by default.",
+     "suggestedFix": "Replace and keep the answer False. Statement: \"In a new Angular CLI application, ng build uses the development configuration by default.\" (89 chars). Explanation: \"Angular CLI ships production and development build configurations, and ng build uses production by default, applying bundling, minification and dead-code removal.\" (162 chars). Keep the URL https://angular.dev/reference/configs/workspace-config, which says: \"Angular CLI comes with two build configurations: production and development. By default, the ng build command uses the production configuration, which applies several build optimizations\". factKey suggestion: ng-build-default-production-configuration (no other card in the deck tests it)."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards against live angular.dev pages (footer 'Built by Angular at v22.2.2') and the raw angular-cli CHANGELOG.md. The section is balanced at 6 true and 6 false, and the averages are 97.8 characters for true statements and 94.2 for false, so within 5 characters. The only r14-type match in other sections is sr1-01 (styleUrl), which is a different fact, so there are no duplicates. I flagged only card 01. Evidence for the cards that pass:\n- 02: /guide/zoneless says to \"avoid using fixture.detectChanges() when possible\", and its example uses await fixture.whenStable().\n- 03: /tools/cli/schematics says an update schematic enables \"the ng update command to automatically resolve any such changes in the project being updated\". The page's example is old (Angular 7 packages) but still supports the card. https://angular.dev/cli/update (the migrate-only and create-commits \"for updates and migrations\" options) is a sharper alternative source if wanted.\n- 04: /tools/cli/build-system-migration says \"New applications will use this new build system by default via the application builder.\"\n- 05: the same page says \"The application builder covers an entire application, such as the client-side bundle, as well as optionally building a server for server-side rendering and performing build-time prerendering\".\n- 06: the same page says \"The usage of Vite in the Angular CLI is currently within a development server capacity only\" and \"The underlying bundler (esbuild)\".\n- 07: CLI changelog 22.0.0 Deprecations says \"Webpack builders in build-angular are deprecated. Use @angular/build builders instead.\" The browser builder alone was deprecated earlier, but the statement is about the webpack builders as a set, which matches 22.0.0.\n- 08: CLI changelog 21.0.0 lists \"configure Vitest for new projects and allow runner choice\", and https://angular.dev/cli/new lists test-runner with \"Allowed Values karma, vitest Default vitest\". The explanation's phrase \"accepts the default runner choice\" fits that default. /guide/testing (\"the default testing setup for new Angular CLI projects, which uses Vitest\") would give a clearer angular.dev quote.\n- 09: /guide/testing says \"Vitest runs your unit tests in a Node.js environment. To simulate the browser's DOM, Vitest uses a library called jsdom.\"\n- 10: /guide/zoneless says \"TestBed uses zoneless change detection by default, even when zone.js is loaded via the polyfills.\"\n- 11: /guide/testing/components-scenarios says \"The TestBed.createComponent does not trigger change detection synchronously\".\n- 12: /guide/templates/defer configures DeferBlockBehavior.Manual, gets the fixture with getDeferBlocks(), then calls render(DeferBlockState.Loading).\nNo card uses a developer-preview or experimental API or a retired product name."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [],
+  "conflictGroups": [
+   {
+    "name": "two-way-binding-syntax",
+    "ids": [
+     "angular-fundamentals-sr2-05",
+     "angular-fundamentals-sr7-07"
+    ],
+    "why": "sr7-07's explanation shows [(value)]=\"volume\", which answers sr2-05 (parentheses inside square brackets) outright."
+   },
+   {
+    "name": "reference-vs-in-place-mutation",
+    "ids": [
+     "angular-fundamentals-sr2-08",
+     "angular-fundamentals-sr9-06"
+    ],
+    "why": "Both are false because Angular compares references and misses in-place mutation (array for a pure pipe, object input for OnPush). Seeing either explanation gives away the other."
+   },
+   {
+    "name": "object-is-comparison",
+    "ids": [
+     "angular-fundamentals-sr5-05",
+     "angular-fundamentals-sr9-06"
+    ],
+    "why": "sr9-06's explanation says Angular compares values with Object.is, which strongly hints at sr5-05 (signals default to Object.is equality)."
+   },
+   {
+    "name": "defer-placeholder-implicit-target",
+    "ids": [
+     "angular-fundamentals-sr4-07",
+     "angular-fundamentals-sr4-08"
+    ],
+    "why": "sr4-08's statement and explanation assume the placeholder is the implicit trigger target, which gives away sr4-07 (on viewport watches the placeholder by default)."
+   },
+   {
+    "name": "resource-params-reload",
+    "ids": [
+     "angular-fundamentals-sr6-01",
+     "angular-fundamentals-sr6-03"
+    ],
+    "why": "sr6-03 (true: aborts the outstanding load when params change) assumes that a params change starts a new load, which is sr6-01's answer."
+   },
+   {
+    "name": "resource-stream-option",
+    "ids": [
+     "angular-fundamentals-sr6-07",
+     "angular-fundamentals-sr6-08"
+    ],
+    "why": "sr6-07's statement names stream as resource's multi-value option, and sr6-08's explanation says rxResource takes stream, not loader. Each hints the other's answer."
+   },
+   {
+    "name": "service-auto-provision",
+    "ids": [
+     "angular-fundamentals-sr8-02",
+     "angular-fundamentals-sr8-04",
+     "angular-fundamentals-sr8-12"
+    ],
+    "why": "sr8-04's autoProvided: false option implies @Service is provided automatically at root (sr8-02), and the 'auto-provided' idea also hints at sr8-12."
+   },
+   {
+    "name": "component-scoped-provider-instance",
+    "ids": [
+     "angular-fundamentals-sr8-04",
+     "angular-fundamentals-sr8-07"
+    ],
+    "why": "sr8-04's explanation says listing the service in a component's providers scopes it to that component, which gives away sr8-07 (a separate instance, no root reuse)."
+   },
+   {
+    "name": "zoneless-notifications",
+    "ids": [
+     "angular-fundamentals-sr9-01",
+     "angular-fundamentals-sr9-02",
+     "angular-fundamentals-sr11-07"
+    ],
+    "why": "sr9-01's explanation (checks scheduled from framework notifications, not ZoneJS) and sr11-07's explanation (needs a separate change-detection notification) give away sr9-02 (markForCheck schedules change detection itself)."
+   },
+   {
+    "name": "change-detection-default-eager",
+    "ids": [
+     "angular-fundamentals-sr9-05",
+     "angular-fundamentals-sr9-09"
+    ],
+    "why": "sr9-09 opens with 'With Eager in Angular v22', which tells the player that Eager is an opt-in strategy in v22. That hints at sr9-05 (OnPush is the default)."
+   },
+   {
+    "name": "ssr-browser-only-code",
+    "ids": [
+     "angular-fundamentals-sr9-11",
+     "angular-fundamentals-sr13-03"
+    ],
+    "why": "sr9-11's explanation (afterNextRender is skipped during server rendering and only runs in the browser) strongly hints that browser globals such as window are missing on the server (sr13-03)."
+   },
+   {
+    "name": "prerender-at-build-time",
+    "ids": [
+     "angular-fundamentals-sr13-02",
+     "angular-fundamentals-sr13-05",
+     "angular-fundamentals-sr9-11"
+    ],
+    "why": "The explanations of sr13-05 ('build-time render') and sr9-11 ('build-time prerendering') state that prerendering happens during the build, which hints at sr13-02 (getPrerenderParams runs at build time)."
+   },
+   {
+    "name": "hydration-dom-reuse-match",
+    "ids": [
+     "angular-fundamentals-sr13-06",
+     "angular-fundamentals-sr13-07"
+    ],
+    "why": "sr13-06 says hydration reuses the existing server DOM instead of rebuilding it, which strongly implies that server and client DOM must match (sr13-07 is false)."
+   },
+   {
+    "name": "hydrate-trigger-initial-load",
+    "ids": [
+     "angular-fundamentals-sr13-10",
+     "angular-fundamentals-sr13-11"
+    ],
+    "why": "sr13-11's statement and explanation tie hydrate triggers to 'initial load', which gives away sr13-10 (later client navigation uses the regular triggers)."
+   },
+   {
+    "name": "httpclient-cold-observable",
+    "ids": [
+     "angular-fundamentals-sr12-03",
+     "angular-fundamentals-sr12-04"
+    ],
+    "why": "sr12-03's explanation (the request is sent on subscribe) and sr12-04's explanation (one request per subscription) each give away the other card's answer."
+   },
+   {
+    "name": "interceptor-chain-order",
+    "ids": [
+     "angular-fundamentals-sr12-09",
+     "angular-fundamentals-sr12-11"
+    ],
+    "why": "sr12-11's explanation describes requests passing through the child's interceptors and then into the parent's chain, which hints that next() forwards to the next interceptor (sr12-09 is false)."
+   },
+   {
+    "name": "route-matching-sequence",
+    "ids": [
+     "angular-fundamentals-sr10-02",
+     "angular-fundamentals-sr10-07"
+    ],
+    "why": "sr10-07's explanation (matching continues with other candidates after canMatch returns false) hints at sequential first-match evaluation, which is sr10-02's answer."
+   },
+   {
+    "name": "vitest-default",
+    "ids": [
+     "angular-fundamentals-sr14-08",
+     "angular-fundamentals-sr14-09"
+    ],
+    "why": "sr14-09's statement says 'Angular's default Vitest setup', which gives away sr14-08 (Vitest is the default runner)."
+   },
+   {
+    "name": "testbed-zoneless-cd",
+    "ids": [
+     "angular-fundamentals-sr14-02",
+     "angular-fundamentals-sr14-10",
+     "angular-fundamentals-sr14-11"
+    ],
+    "why": "sr14-02's 'zoneless tests' wording hints at sr14-10 (TestBed is zoneless by default). Its explanation (detectChanges forces a check the app might not schedule) hints at sr14-11 (createComponent does not run change detection synchronously)."
+   }
+  ],
+  "tells": "Lengths pass the rule. Overall, true statements average 88.5 characters and false ones 88.1. In every section the gap is under 5 characters (largest gaps: r10, false longer by 4.7; r4, true longer by 4.3; r1, true longer by 3.6). Explanations of false cards are about 4 characters longer on average, which is not exploitable.\n\nWording tells, ranked by strength:\n(1) 'automatically' predicts False, 8 of 10. False: sr5-02, sr7-04, sr8-07, sr9-06, sr10-03, sr11-07, sr12-04, sr13-07. True: sr7-06, sr7-10. This is also a recurring false-statement template ('Angular automatically does X' where X does not happen), used 8 times against a cap of 2.\n(2) 'by default' predicts True, 11 of 12. True: sr4-07, sr7-05, sr9-01, sr10-12, sr11-11, sr12-02, sr13-01, sr13-09, sr14-04, sr14-08, sr14-10. False: sr13-08 only. Any form of 'default' gives 12 True and 5 False (false: sr1-03, sr4-06, sr6-10, sr13-08, sr14-09).\n(3) 'after' predicts False, 11 of 12. False: sr1-08, sr4-04, sr4-09, sr5-06, sr5-10, sr6-06, sr9-03, sr9-08, sr9-09, sr9-11, sr14-03. True: sr7-11 only.\n(4) Delay verbs ('postpones', 'waits', 'defers', 'delays') appear in 7 false statements and no true ones: sr1-09, sr4-04, sr4-11, sr5-06, sr7-02, sr9-02, sr10-06. Note sr9-04 (true) uses 'delays'. Excluding it, this is another recurring false template ('X is postponed until Y').\n(5) A version prefix ('Since Angular vNN' or 'In Angular vNN') predicts True, 18 of 24. False: sr1-03, sr5-08, sr8-03, sr11-10, sr11-12, sr13-08. True: sr2-12, sr3-12, sr8-02, sr8-04, sr8-12, sr9-01, sr9-05, sr10-12, sr11-08, sr11-09, sr11-11, sr12-01, sr12-02, sr13-09, sr13-12, sr14-07, sr14-08, sr14-10.\n(6) 'Angular's documentation recommends' or 'style guide prefers' predicts True, 7 of 9. True: sr1-06, sr1-12, sr5-09, sr6-12, sr10-05, sr12-08, sr14-02. The two false cards (sr2-03 NgClass, sr3-04 track $index) both recommend the legacy or weaker option, which is itself a tell.\n(7) 'In a zoneless application' is False 3 of 3: sr9-02, sr9-03, sr11-07.\n(8) Order-inversion false template ('A runs before or after B' with the order swapped) appears 4 times: sr5-10, sr8-08, sr9-08, sr10-08. True ordering cards: sr9-12, sr12-11. This exceeds the cap of 2.\n(9) Mild: 'immediately', 'as soon as' and 'straight' are False 2 of 2 (sr12-03, sr12-09). 'directly' is False 2 of 2 (sr4-01, sr14-09). 'can' leans True, 5 of 7 (true: sr3-10, sr4-12, sr5-07, sr7-07, sr10-04; false: sr4-08, sr12-12). 'supports' is balanced (4 true, 6 false).\n\nRebalancing needed: rewrite most of the 'automatically' falses, add 'by default' to some false statements, and vary the timing and delay falses.\n\nCard-quality notes outside the duplicate and conflict scope (not web-verified):\n- sr9-09 is a convoluted 'dev check passes' false statement that reads like trick wording.\n- sr6-07 is false only on a TypeScript return-type shape (Promise<User> versus a Signal of ResourceStreamItem), which is close to trivia.\n- sr10-03 mixes the route title with component input binding, so it is false through conflation, near a strawman.\n- sr6-12 does not name httpResource, so in isolation the statement is a near-truism."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "angular-fundamentals-sr1-02",
+    "reason": "weak_card: the answer can be read from the wording ('imports array' exposes 'imported pipes'). r1 keeps 10 cards (4T/6F) without it."
+   },
+   {
+    "id": "angular-fundamentals-sr1-07",
+    "reason": "weak_card: name giveaway (a select attribute that routes matching children). r1 keeps 10 cards (4T/6F)."
+   },
+   {
+    "id": "angular-fundamentals-sr2-01",
+    "reason": "weak_card: near truism (interpolated text is rendered as a string). r2 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr2-08",
+    "reason": "duplicate: uses the same in-place-mutation distractor as sr9-06 (repeated false template). r2 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr3-07",
+    "reason": "weak_card: name giveaway (@empty shows when the collection is empty). r3 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "angular-fundamentals-sr6-01",
+    "reason": "weak_card: near-copy of the resource guide sentence and only restates the basic idea of a resource. Dropped rather than sr6-03, which also removes the resource-params-reload conflict."
+   },
+   {
+    "id": "angular-fundamentals-sr6-12",
+    "reason": "weak_card: the statement leaves out httpResource, so it reads as a near truism. With sr6-01 also dropped, r6 keeps 10 cards (4T/6F) because sr6-03 is rewritten rather than dropped."
+   },
+   {
+    "id": "angular-fundamentals-sr7-06",
+    "reason": "weak_card: near-copy of the docs example and comment, and the xChange name gives the answer away. r7 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "angular-fundamentals-sr9-02",
+    "reason": "weak_card: self-contradictory wording (a zoneless app waiting for a ZoneJS event), so it can be answered False without knowing Angular. r9 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr10-01",
+    "reason": "weak_card: name giveaway (provideRouter accepts Routes). r10 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr10-03",
+    "reason": "weak_card: strawman (the route title feeding a component input), and the explanation never answers the misconception it sets up. r10 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr11-09",
+    "reason": "weak_card: the answer follows from the directive name and the phrase 'keeps ... synchronized'. r11 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "angular-fundamentals-sr12-05",
+    "reason": "weak_card: wording giveaway (observe: 'response' emits the response object). r12 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr12-09",
+    "reason": "weak_card: strawman with a wording tell ('when later interceptors remain' plus the name next). r12 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "angular-fundamentals-sr13-02",
+    "reason": "weak_card: name giveaway (getPrerenderParams runs at build time). r13 keeps 10 cards (4T/6F)."
+   },
+   {
+    "id": "angular-fundamentals-sr13-06",
+    "reason": "weak_card: definition card (hydration reuses server DOM). r13 keeps 10 cards (4T/6F)."
+   },
+   {
+    "id": "angular-fundamentals-sr14-01",
+    "reason": "weak_card: strawman (no developer expects one project's build options to change its sibling projects). r14 keeps 11 cards (6T/5F)."
+   }
+  ],
+  "source": [
+   {
+    "id": "angular-fundamentals-sr6-08",
+    "title": "Signals interop",
+    "url": "https://angular.dev/ecosystem/rxjs-interop"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "angular-fundamentals-sr4-10",
+    "reason": "ambiguous: the original read as an unconditional claim, but prefetching only happens when a prefetch trigger is declared. The new version names the trigger pair, using the guide's own example. Shortened to 94 characters to keep r4's true/false length gap at 5.",
+    "statement": "`@defer (on interaction; prefetch on idle)` loads its code at idle and renders on interaction.",
+    "answer": true,
+    "explanation": "A prefetch trigger only loads the block's JavaScript ahead of time. The main on or when trigger still decides when the deferred content replaces the placeholder.",
+    "misconception": "",
+    "sourceTitle": "Deferred loading with @defer",
+    "sourceUrl": "https://angular.dev/guide/templates/defer"
+   },
+   {
+    "id": "angular-fundamentals-sr5-11",
+    "reason": "ambiguous: in v22, view effects are destroyed with their view whatever manualCleanup says, so the manualCleanup/DestroyRef claim is arguable. Replaced with the view-effect versus root-effect lifetime from the effect guide (\"A 'Root effect' is destroyed when the application is destroyed\"; root effects are \"created in the context of a root provided service instantiation\"). New factKey: effect-root-lifetime.",
+    "statement": "A root-provided service's effect keeps running after the component that injected the service is destroyed.",
+    "answer": true,
+    "explanation": "Effects created during a root-provided service's instantiation are root effects: Angular destroys them with the application, or when code calls destroy() on the returned EffectRef.",
+    "misconception": "",
+    "sourceTitle": "Side effects for non-reactive APIs",
+    "sourceUrl": "https://angular.dev/guide/signals/effect"
+   },
+   {
+    "id": "angular-fundamentals-sr6-03",
+    "reason": "weak_card (near-copy of the guide sentence). Rewritten rather than dropped: dropping sr6-01, sr6-03 and sr6-12 would leave r6 at 3T/6F. The fact and answer are kept with new wording. The guide says 'A resource aborts an outstanding loading operation if the params computation changes while the resource is loading', and its loader example passes abortSignal to fetch.",
+    "statement": "If a resource's params change mid-load, Angular aborts the loader's abortSignal.",
+    "answer": true,
+    "explanation": "Angular aborts an outstanding load when params change. A loader that passes abortSignal to fetch or a similar API cancels the obsolete request.",
+    "misconception": "",
+    "sourceTitle": "Async reactivity with resources",
+    "sourceUrl": "https://angular.dev/guide/signals/resource"
+   },
+   {
+    "id": "angular-fundamentals-sr6-11",
+    "reason": "explanation_error: JSON is the default for every httpResource call form, and only the .text, .blob and .arrayBuffer variants change it; 'default factory' in the statement was also unclear. Verified on the guide: 'By default, httpResource returns and parses the response as JSON ... httpResource.text ... httpResource.blob ... httpResource.arrayBuffer'.",
+    "statement": "httpResource parses the response body as JSON unless a variant like httpResource.text is used.",
+    "answer": true,
+    "explanation": "JSON parsing is the httpResource default. httpResource.text, httpResource.blob and httpResource.arrayBuffer give a string, a Blob or an ArrayBuffer in value() instead.",
+    "misconception": "",
+    "sourceTitle": "Reactive data fetching with httpResource",
+    "sourceUrl": "https://angular.dev/guide/http/http-resource"
+   },
+   {
+    "id": "angular-fundamentals-sr7-10",
+    "reason": "explanation_error: the explanation only repeated the statement. The statement and answer are kept. The new explanation adds programmatic subscribe() as the context, as on the OutputRef page ('Registers a callback that is invoked whenever the output emits ... Angular will automatically clean up the subscription when the directive/component of the output is destroyed').",
+    "statement": "Angular automatically cleans up output subscriptions when the component owning the output is destroyed.",
+    "answer": true,
+    "explanation": "Code that calls OutputRef.subscribe() programmatically needs no manual teardown: Angular ends the subscription when the directive or component owning the output is destroyed.",
+    "misconception": "",
+    "sourceTitle": "OutputRef API",
+    "sourceUrl": "https://angular.dev/api/core/OutputRef"
+   },
+   {
+    "id": "angular-fundamentals-sr9-09",
+    "reason": "ambiguous: the answer depended on whether the binding reads a signal, since Angular re-refreshes views dirtied by signal writes, and the old wording was hard to parse. The rewrite limits the card to a non-signal field under Eager and cites NG0100, which says the error is thrown only in development mode, where Angular rechecks bindings after each run, and names ngAfterViewInit with the constructor or ngOnInit as the fix. The answer stays false.",
+    "statement": "With Eager change detection, changing a non-signal bound field in ngAfterViewInit passes Angular's dev-mode check.",
+    "answer": false,
+    "explanation": "In development mode Angular rechecks bindings after each change detection run, so a bound value changed in ngAfterViewInit throws ExpressionChangedAfterItHasBeenCheckedError. Set initial values in the constructor or ngOnInit.",
+    "misconception": "ngAfterViewInit is a safe place to synchronously change a bound field.",
+    "sourceTitle": "NG0100: Expression Changed After Checked",
+    "sourceUrl": "https://angular.dev/errors/NG0100"
+   },
+   {
+    "id": "angular-fundamentals-sr5-02",
+    "reason": "tell: 'automatically' marked false statements (8 of 10). The word is removed. Fact and answer are unchanged: asReadonly() does not freeze nested objects.",
+    "statement": "A WritableSignal's asReadonly() also freezes the nested objects stored in the signal's value.",
+    "answer": false,
+    "explanation": "asReadonly() exposes a read-only signal API while leaving nested objects mutable.",
+    "misconception": "Read-only signals freeze their contents.",
+    "sourceTitle": "WritableSignal API",
+    "sourceUrl": "https://angular.dev/api/core/WritableSignal"
+   },
+   {
+    "id": "angular-fundamentals-sr7-04",
+    "reason": "tell: 'automatically' marked false statements. The word is removed; fact and answer are unchanged.",
+    "statement": "booleanAttribute converts the string \"false\" to true when Angular transforms an input.",
+    "answer": false,
+    "explanation": "Angular's booleanAttribute explicitly converts the literal string \"false\" to the boolean false.",
+    "misconception": "Any present string becomes true.",
+    "sourceTitle": "Accepting data with input properties",
+    "sourceUrl": "https://angular.dev/guide/components/inputs"
+   },
+   {
+    "id": "angular-fundamentals-sr8-07",
+    "reason": "tell: 'automatically' marked false statements. Reworded without it; the fact (a component-level provider creates its own instance) and the answer are unchanged.",
+    "statement": "A component that lists a root-provided service in its providers reuses the root instance.",
+    "answer": false,
+    "explanation": "Listing the class creates a separate component-scoped service instance, tied to that component's lifetime.",
+    "misconception": "Component class providers reuse root instances.",
+    "sourceTitle": "Hierarchical injectors",
+    "sourceUrl": "https://angular.dev/guide/di/hierarchical-dependency-injection"
+   },
+   {
+    "id": "angular-fundamentals-sr9-06",
+    "reason": "tell: 'automatically' marked false statements. The word is removed; fact and answer are unchanged.",
+    "statement": "Changing a field of an object input in place by itself triggers a check of an OnPush child.",
+    "answer": false,
+    "explanation": "Angular compares input values with Object.is. An in-place edit preserves the input reference and does not itself trigger an OnPush check.",
+    "misconception": "Angular treats nested edits to an input object as a new input value.",
+    "sourceTitle": "Skipping component subtrees",
+    "sourceUrl": "https://angular.dev/best-practices/skipping-subtrees"
+   },
+   {
+    "id": "angular-fundamentals-sr12-04",
+    "reason": "tell: 'automatically' marked false statements and 'by default' marked true ones (11 of 12). This swaps one for the other in a false card. Fact and answer are unchanged: each subscription sends its own request.",
+    "statement": "By default, subscribers to one HttpClient request Observable share a single backend request.",
+    "answer": false,
+    "explanation": "HttpClient runs an independent backend request for each subscription to its request Observable.",
+    "misconception": "HttpClient shares one backend request among subscriptions to the same Observable.",
+    "sourceTitle": "Making HTTP requests",
+    "sourceUrl": "https://angular.dev/guide/http/making-requests"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "two-way-binding-syntax",
+    "ids": [
+     "angular-fundamentals-sr2-05",
+     "angular-fundamentals-sr7-07"
+    ]
+   },
+   {
+    "name": "object-is-comparison",
+    "ids": [
+     "angular-fundamentals-sr5-05",
+     "angular-fundamentals-sr9-06"
+    ]
+   },
+   {
+    "name": "defer-placeholder-implicit-target",
+    "ids": [
+     "angular-fundamentals-sr4-07",
+     "angular-fundamentals-sr4-08"
+    ]
+   },
+   {
+    "name": "resource-stream-option",
+    "ids": [
+     "angular-fundamentals-sr6-07",
+     "angular-fundamentals-sr6-08"
+    ]
+   },
+   {
+    "name": "service-auto-provision",
+    "ids": [
+     "angular-fundamentals-sr8-02",
+     "angular-fundamentals-sr8-04",
+     "angular-fundamentals-sr8-12"
+    ]
+   },
+   {
+    "name": "component-scoped-provider-instance",
+    "ids": [
+     "angular-fundamentals-sr8-04",
+     "angular-fundamentals-sr8-07"
+    ]
+   },
+   {
+    "name": "zoneless-notifications",
+    "ids": [
+     "angular-fundamentals-sr9-01",
+     "angular-fundamentals-sr11-07"
+    ]
+   },
+   {
+    "name": "change-detection-default-eager",
+    "ids": [
+     "angular-fundamentals-sr9-05",
+     "angular-fundamentals-sr9-09"
+    ]
+   },
+   {
+    "name": "ssr-browser-only-code",
+    "ids": [
+     "angular-fundamentals-sr9-11",
+     "angular-fundamentals-sr13-03"
+    ]
+   },
+   {
+    "name": "hydrate-trigger-initial-load",
+    "ids": [
+     "angular-fundamentals-sr13-10",
+     "angular-fundamentals-sr13-11"
+    ]
+   },
+   {
+    "name": "httpclient-cold-observable",
+    "ids": [
+     "angular-fundamentals-sr12-03",
+     "angular-fundamentals-sr12-04"
+    ]
+   },
+   {
+    "name": "route-matching-sequence",
+    "ids": [
+     "angular-fundamentals-sr10-02",
+     "angular-fundamentals-sr10-07"
+    ]
+   },
+   {
+    "name": "vitest-default",
+    "ids": [
+     "angular-fundamentals-sr14-08",
+     "angular-fundamentals-sr14-09"
+    ]
+   },
+   {
+    "name": "testbed-zoneless-cd",
+    "ids": [
+     "angular-fundamentals-sr14-02",
+     "angular-fundamentals-sr14-10",
+     "angular-fundamentals-sr14-11"
+    ]
+   }
+  ],
+  "sectionBalance": "Cards left and true/false split after the edits, with average statement length (true vs false). r1: 10 cards, 4T/6F (83.0 vs 78.7). r2: 10, 5T/5F (84.6 vs 84.4). r3: 11, 5T/6F (75.0 vs 72.2). r4: 12, 6T/6F (84.0 vs 79.0, gap exactly 5). r5: 12, 6T/6F (89.0 vs 84.3). r6: 10, 4T/6F (about 84.8 vs 83.0). r7: 11, 5T/6F (85.8 vs 84.3). r8: 12, 6T/6F (87.8 vs 89.5). r9: 11, 6T/5F (94.8 vs 96.0). r10: 10, 5T/5F (92.0 vs 96.2). r11: 11, 5T/6F (97.2 vs 97.0). r12: 10, 5T/5F (90.8 vs 89.8). r13: 10, 4T/6F (100.5 vs 97.8). r14: 11, 6T/5F (97.8 vs 94.8). Deck total: 151 cards, 72 true and 79 false. Every section has at least 10 cards and a split of 4 to 6 per 10 or better.",
+  "notes": "I fetched and checked every rewrite on angular.dev (all footers read v22.2.2):\n- sr4-10: prefetch example and wording from /guide/templates/defer.\n- sr5-11: root versus view effect lifetime from /guide/signals/effect.\n- sr6-03: abort on params change and the abortSignal fetch example from /guide/signals/resource.\n- sr6-11: JSON default and the .text, .blob and .arrayBuffer variants from /guide/http/http-resource.\n- sr6-08 (new source): /ecosystem/rxjs-interop, page title 'Signals interop', says 'Instead of accepting a loader function, rxResource accepts a stream function that returns an RxJS Observable'. The existing explanation is supported by that page, so only the source changes.\n- sr7-10: subscribe() and automatic cleanup from /api/core/OutputRef.\n- sr9-09: cited to /errors/NG0100, which says 'Angular only throws this error in development mode', describes the extra check after each run, and gives the constructor or ngOnInit as the fix for ngAfterViewInit. The lifecycle page states the same error without conditions, but it does not mention dev mode.\n\nSection rules applied:\n- r6 had three true weak cards (01, 03, 12). Dropping all three would leave 3T/6F, so I dropped 01 and 12 and rewrote 03 with new wording, keeping its fact and answer.\n- For sr9-09 and sr5-11 I chose rewrites over drops, because a clean card was possible for each.\n\nTells:\n- I used all five 'tell' rewrites to remove 'automatically' from false statements: sr5-02, sr7-04, sr8-07, sr9-06 and sr12-04. sr12-04 also moves 'By default' into a false card.\n- After the edits, 'automatically' appears in 1 true (sr7-10) and 2 false (sr11-07, sr13-07) statements.\n- 'by default' is still 11 true to 2 false (sr12-04, sr13-08). 'after' is now 4 true to 11 false; the new sr5-11 adds one true use.\n- These two tells remain the strongest in the deck and should be rebalanced in a later pass.\n\nConflict groups:\n- Removed groups whose cards I dropped: reference-vs-in-place-mutation, resource-params-reload, hydration-dom-reuse-match, interceptor-chain-order and prerender-at-build-time. The last lost its target card, sr13-02.\n- zoneless-notifications is kept as sr9-01 plus sr11-07, a weaker link now that sr9-02 is gone.\n- The rewrites create no new giveaways.\n\nNot flagged, left for the author:\n- sr13-08: appliesTo 'Angular v22.1 and later' is too narrow. The changelog shows withCredentials requests were already excluded in 21.2.15 and 20.3.22; consider 'Angular v22'.\n- sr1-06: says 'host metadata' where the docs say 'host property'.\n- sr4-03 and sr4-12: explanations are very short.\n- sr5-05: the explanation never names Object.is."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "angular-fundamentals-sr4-10",
+    "decision": "fixed",
+    "statement": "With `on interaction; prefetch on idle`, the @defer placeholder stays after the idle prefetch.",
+    "answer": true,
+    "explanation": "A prefetch trigger only downloads the block's JavaScript. The placeholder stays until the main on or when trigger fires, here a user interaction with the placeholder.",
+    "reason": "Took the wording lens fix: the editor's statement could be answered from the syntax alone. Checked on angular.dev/guide/templates/defer: a prefetch trigger loads 'the JavaScript associated with the @defer block before the deferred content is shown', and with `on interaction; prefetch on idle` the placeholder stays visible until the user interacts. The fact lens found no fact problem, so the merged card meets both lenses. 93 chars."
+   },
+   {
+    "id": "angular-fundamentals-sr5-11",
+    "decision": "fixed",
+    "statement": "An effect created in a root-provided service's constructor outlives the component that injected the service.",
+    "answer": true,
+    "explanation": "Effects created while a root-provided service is instantiated are root effects: Angular destroys them with the application, or when code calls destroy() on the returned EffectRef.",
+    "reason": "Took the fact lens fix: an effect that a root service creates in a method called from a component's injection context is a view effect, so the statement now names the constructor, which matches the explanation. 'Outlives' also replaces 'keeps running'. Checked on angular.dev/guide/signals/effect: a Root Effect 'is created in the context of a root provided service instantiation' and 'gets destroyed when the application is destroyed'; EffectRef has destroy. 108 chars."
+   },
+   {
+    "id": "angular-fundamentals-sr6-03",
+    "decision": "keep",
+    "statement": "If a resource's params change mid-load, Angular aborts the loader's abortSignal.",
+    "answer": true,
+    "explanation": "Angular aborts an outstanding load when params change. A loader that passes abortSignal to fetch or a similar API cancels the obsolete request.",
+    "reason": "Both lenses keep it. The resource guide says a resource 'aborts an outstanding loading operation if the params computation changes while the resource is loading', and its loader example passes abortSignal to fetch."
+   },
+   {
+    "id": "angular-fundamentals-sr6-11",
+    "decision": "keep",
+    "statement": "httpResource parses the response body as JSON unless a variant like httpResource.text is used.",
+    "answer": true,
+    "explanation": "JSON parsing is the httpResource default. httpResource.text, httpResource.blob and httpResource.arrayBuffer give a string, a Blob or an ArrayBuffer in value() instead.",
+    "reason": "Both lenses keep it. The httpResource guide says 'By default, httpResource returns and parses the response as JSON', and lists the .text, .blob and .arrayBuffer variants."
+   },
+   {
+    "id": "angular-fundamentals-sr7-10",
+    "decision": "fixed",
+    "statement": "Angular automatically ends programmatic subscriptions to an output() when its owning component is destroyed.",
+    "answer": true,
+    "explanation": "An output() returns an OutputEmitterRef. Angular drops the listeners registered with its subscribe() when the owning directive or component is destroyed, so no manual unsubscribe is needed.",
+    "reason": "Took the fact lens fix. I checked the source: EventEmitter (used by @Output) implements OutputRef, but its subscribe() returns a plain RxJS Subscription and is not cleaned up on destroy. Only OutputEmitterRef registers a destroyRef.onDestroy hook that sets listeners = null. So 'output subscriptions' in general, or OutputRef.subscribe(), overclaims. The outputs guide confirms that output() returns OutputEmitterRef and that Angular cleans up subscriptions automatically. This also matches the r7 spec ('output() returning an OutputEmitterRef ... programmatic subscribe and automatic cleanup'). 'Automatically' stays in this true card. Sources: angular.dev/guide/components/outputs and api/core/OutputRef."
+   },
+   {
+    "id": "angular-fundamentals-sr9-09",
+    "decision": "keep",
+    "statement": "With Eager change detection, changing a non-signal bound field in ngAfterViewInit passes Angular's dev-mode check.",
+    "answer": false,
+    "explanation": "In development mode Angular rechecks bindings after each change detection run, so a bound value changed in ngAfterViewInit throws ExpressionChangedAfterItHasBeenCheckedError. Set initial values in the constructor or ngOnInit.",
+    "reason": "Both lenses keep it. NG0100 says the error is thrown only in development mode, after an extra check that follows each change detection run. It names ngAfterViewInit as a common cause and recommends the constructor or ngOnInit. The Eager and non-signal qualifiers rule out the opposite reading."
+   },
+   {
+    "id": "angular-fundamentals-sr5-02",
+    "decision": "keep",
+    "statement": "A WritableSignal's asReadonly() also freezes the nested objects stored in the signal's value.",
+    "answer": false,
+    "explanation": "asReadonly() exposes a read-only signal API while leaving nested objects mutable.",
+    "reason": "Both lenses keep it. The WritableSignal API says read-only signals 'do not have any built-in mechanism that would prevent deep-mutation of their value'. The tell word is gone."
+   },
+   {
+    "id": "angular-fundamentals-sr7-04",
+    "decision": "keep",
+    "statement": "booleanAttribute converts the string \"false\" to true when Angular transforms an input.",
+    "answer": false,
+    "explanation": "Angular's booleanAttribute explicitly converts the literal string \"false\" to the boolean false.",
+    "reason": "Both lenses keep it. The inputs guide says booleanAttribute 'treats the literal string \"false\" as the boolean false'. The tell word is gone."
+   },
+   {
+    "id": "angular-fundamentals-sr8-07",
+    "decision": "keep",
+    "statement": "A component that lists a root-provided service in its providers reuses the root instance.",
+    "answer": false,
+    "explanation": "Listing the class creates a separate component-scoped service instance, tied to that component's lifetime.",
+    "reason": "Both lenses keep it. The hierarchical DI guide says a component-level provider gives 'every instance of the component ... a private instance of the service', which is destroyed with the component."
+   },
+   {
+    "id": "angular-fundamentals-sr9-06",
+    "decision": "keep",
+    "statement": "Changing a field of an object input in place by itself triggers a check of an OnPush child.",
+    "answer": false,
+    "explanation": "Angular compares input values with Object.is. An in-place edit preserves the input reference and does not itself trigger an OnPush check.",
+    "reason": "Both lenses keep it. The skipping-subtrees page says inputs are compared with Object.is, and that a mutated object input with the same reference does not trigger change detection."
+   },
+   {
+    "id": "angular-fundamentals-sr12-04",
+    "decision": "keep",
+    "statement": "By default, subscribers to one HttpClient request Observable share a single backend request.",
+    "answer": false,
+    "explanation": "HttpClient runs an independent backend request for each subscription to its request Observable.",
+    "reason": "Both lenses keep it. The making-requests guide says 'Subscribing to the same Observable multiple times will trigger multiple backend requests. Each subscription is independent.' 'By default' is fair, since sharing needs an explicit operator, and it helps the tell-word balance."
+   }
+  ]
+ }
+}

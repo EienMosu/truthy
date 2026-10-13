@@ -1,0 +1,261 @@
+{
+ "drop": {
+  "rust-fundamentals-sr1-03": "weak_card: 'Cloning ... produces a copy' is readable from the word clone; r1 stays at 11 cards (5T/6F).",
+  "rust-fundamentals-sr2-08": "weak_card: restates Rust's data-race slogan almost verbatim from the Book; r2 stays at 10 (5T/5F).",
+  "rust-fundamentals-sr2-12": "duplicate of sr2-06 (write through *r leaves the binding r alone; sr2-06's explanation answers it), also near-strawman.",
+  "rust-fundamentals-sr3-05": "duplicate of sr3-02: distinct elided input lifetimes is the same fact that makes the two-input signature need an annotation.",
+  "rust-fundamentals-sr4-02": "weak_card: self-contradictory strawman ('owns the buffer it views through the reference').",
+  "rust-fundamentals-sr5-06": "weak_card: restates the Counter::new() call syntax the statement quotes; nobody would answer False.",
+  "rust-fundamentals-sr5-11": "weak_card: strawman, impl blocks named after a variant are not something a studied learner writes.",
+  "rust-fundamentals-sr6-03": "weak_card: strawman, a match type picked at run time is not a realistic misconception.",
+  "rust-fundamentals-sr6-05": "weak_card: definition card, an or-pattern matching either alternative follows from the meaning of |.",
+  "rust-fundamentals-sr6-11": "weak_card: near-strawman (&& short-circuits); r6 stays at 9 cards (5T/4F), so drop rather than rewrite.",
+  "rust-fundamentals-sr7-12": "weak_card: near-truism, 'return Result when callers can recover' follows from the chapter title 'Recoverable Errors with Result'.",
+  "rust-fundamentals-sr8-06": "weak_card: <Type as Trait> spells out its own answer; does not test which method wins on a name collision.",
+  "rust-fundamentals-sr8-08": "weak_card and scan duplicate of sr8-03 (static vs dynamic dispatch is one split); 'dyn' gives away 'dynamic dispatch'. r8 ends at 10 (4T/6F), at the allowed limit.",
+  "rust-fundamentals-sr9-04": "weak_card: name giveaway, a function called drop dropping its argument.",
+  "rust-fundamentals-sr9-08": "weak_card: generic hashing truism, near-copy of the Hash docs sentence. r9 ends at 10 (4T/6F), at the allowed limit.",
+  "rust-fundamentals-sr10-06": "weak_card: tautology, next returns Some(item) when it yields an item; circular explanation.",
+  "rust-fundamentals-sr11-03": "weak_card: definition and name giveaway, implementing Deref enables *p.",
+  "rust-fundamentals-sr12-09": "weak_card: truism about what a Mutex is for; 'mutable lock guard' is also imprecise.",
+  "rust-fundamentals-sr13-07": "weak_card: near-copy of the Cargo FAQ clause, guessable from vague wording, and the retired library rule also fits it.",
+  "rust-fundamentals-sr14-08": "weak_card: async plus .await is guessable from the word async. r14 ends at 10 (4T/6F), at the allowed limit.",
+  "rust-fundamentals-sr14-11": "weak_card: name giveaway, an async closure satisfying an AsyncFn bound; explanation repeats the statement."
+ },
+ "source": {
+  "rust-fundamentals-sr4-10": {
+   "title": "Range expressions - The Rust Reference",
+   "url": "https://doc.rust-lang.org/reference/expressions/range-expr.html"
+  },
+  "rust-fundamentals-sr5-07": {
+   "title": "E0592 - Error codes index",
+   "url": "https://doc.rust-lang.org/error_codes/E0592.html"
+  },
+  "rust-fundamentals-sr8-09": {
+   "title": "Traits: Dyn compatibility",
+   "url": "https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility"
+  },
+  "rust-fundamentals-sr8-10": {
+   "title": "Type coercions: Unsized Coercions",
+   "url": "https://doc.rust-lang.org/reference/type-coercions.html#unsized-coercions"
+  }
+ },
+ "rewrite": {
+  "rust-fundamentals-sr1-11": {
+   "reason": "ambiguous: 'alone' hid the no-Drop condition and the local-variable condition was missing; both now stated (Reference: 'If the struct does not implement Drop and is stored in a local variable, this also applies to moving out of each of its fields'). (final: keep)",
+   "statement": "For a local `p` whose struct type lacks a `Drop` impl, `let x = p.a;` leaves the `String` field `p.b` usable.",
+   "answer": true,
+   "explanation": "For a struct without Drop held in a local variable, Rust tracks each field separately, so moving out one field leaves the others usable, though not the whole struct.",
+   "misconception": "",
+   "source": {
+    "title": "Field access expressions - The Rust Reference",
+    "url": "https://doc.rust-lang.org/reference/expressions/field-expr.html"
+   }
+  },
+  "rust-fundamentals-sr2-04": {
+   "reason": "ambiguous: 'two &mut references to one String' also covered a reborrow (&mut *r1), which compiles. The new statement names two direct borrows of s, matching the Book's r1/r2 example (E0499, 'first borrow later used here'). Source moved to the Book page that shows it. (final: keep)",
+   "statement": "`let a = &mut s; let b = &mut s;` compiles when `a` is still used after `b` is created.",
+   "answer": false,
+   "explanation": "The first mutable borrow of s stays live until a's last use, so creating b in the meantime is a second simultaneous &mut borrow, which the borrow checker rejects.",
+   "misconception": "A second mutable borrow of the same value is fine while the first one is still used later.",
+   "source": {
+    "title": "References and Borrowing - The Rust Programming Language",
+    "url": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+   }
+  },
+  "rust-fundamentals-sr3-06": {
+   "reason": "explanation_error: the old example (named input, elided output) is flagged by the warn-by-default mismatched_lifetime_syntaxes lint. Replaced by a clean case of the same rule; the Reference's debug1(lvl: usize, s: &str) example shows a non-reference parameter alongside one reference. (final: keep)",
+   "statement": "In `fn head(s: &str, n: usize) -> &str`, elision ties the returned reference to the lifetime of `s`.",
+   "answer": true,
+   "explanation": "Only one lifetime appears among the parameters, since usize holds none, so elision assigns it to the elided output and the signature needs no annotation.",
+   "misconception": "",
+   "source": {
+    "title": "Lifetime elision - The Rust Reference",
+    "url": "https://doc.rust-lang.org/reference/lifetime-elision.html"
+   }
+  },
+  "rust-fundamentals-sr4-10": {
+   "reason": "source_problem: the slice page never mentions ..=. The Reference range-expr table gives start..=end as RangeInclusive with start <= x <= end. Statement and explanation unchanged. (final: fixed)",
+   "statement": "For an array with enough elements, `&a[1..=3]` includes the element at index 3.",
+   "answer": true,
+   "explanation": "The start..=end syntax builds a RangeInclusive, which contains its end value, so slicing with 1..=3 borrows the elements at indexes 1, 2 and 3.",
+   "misconception": "",
+   "source": {
+    "title": "Range expressions - The Rust Reference",
+    "url": "https://doc.rust-lang.org/reference/expressions/range-expr.html"
+   }
+  },
+  "rust-fundamentals-sr5-07": {
+   "reason": "source_problem: the Book only says several impl blocks are allowed, and the Reference does not state the duplicate-name rule. The error index page E0592 shows two impl Foo blocks both defining bar as a 'duplicate definition'. The explanation now gives the real outcome without naming the error code (the prompt bars error codes outside E0040/E0752). Statement unchanged. (final: keep)",
+   "statement": "A second inherent `impl` block can replace a struct's previously defined methods.",
+   "answer": false,
+   "explanation": "Inherent impl blocks for one type add their items together. Reusing a method name that an earlier impl block of the type already defines is a duplicate definition the compiler rejects.",
+   "misconception": "A later inherent impl block overwrites the type's previously defined methods.",
+   "source": {
+    "title": "E0592 - Error codes index",
+    "url": "https://doc.rust-lang.org/error_codes/E0592.html"
+   }
+  },
+  "rust-fundamentals-sr10-04": {
+   "reason": "ambiguous: 'makes an F: FnOnce() bound sufficient for an F: Fn() parameter' could be read in the true direction, and the 'supertrait chain makes' opener nudged towards True. Now one direction is concrete: a value known only as FnOnce passed where Fn is required. (final: keep)",
+   "statement": "Inside `fn run<F: FnOnce()>(f: F)`, passing `f` to a parameter bounded by `Fn()` compiles.",
+   "answer": false,
+   "explanation": "Fn has FnMut and FnOnce as supertraits, so every Fn type also satisfies FnOnce. A type known only to be FnOnce gives no Fn guarantee, so the call is rejected.",
+   "misconception": "A FnOnce bound is enough to satisfy an Fn bound because the closure traits form a supertrait chain.",
+   "source": {
+    "title": "Fn in std::ops - Rust",
+    "url": "https://doc.rust-lang.org/std/ops/trait.Fn.html"
+   }
+  },
+  "rust-fundamentals-sr1-04": {
+   "reason": "tell: removes 'keeps' (1T/4F in the deck). Same fact and answer: the Book says assigning a new value drops the old one immediately. (final: keep)",
+   "statement": "When code assigns a new `String` to `s`, Rust frees the old buffer at the end of `s`'s scope.",
+   "answer": false,
+   "explanation": "Replacing an existing String drops its previous value immediately. Its old allocation is released during the assignment.",
+   "misconception": "Replacing a String delays cleanup of its old buffer until scope exit.",
+   "source": {
+    "title": "What Is Ownership? - The Rust Programming Language",
+    "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+   }
+  },
+  "rust-fundamentals-sr9-05": {
+   "reason": "tell: breaks the false template 'Rust automatically <convenience>' (4 false cards, cap 2). Same fact and answer. (final: keep)",
+   "statement": "`#[derive(Default)]` on an enum makes its first unit variant the default value.",
+   "answer": false,
+   "explanation": "Derived Default needs a #[default] marker on a unit variant; declaration order does not select the value. Default::default() returns the marked variant.",
+   "misconception": "Deriving Default chooses the earliest unit variant automatically.",
+   "source": {
+    "title": "Default in std::default - Rust",
+    "url": "https://doc.rust-lang.org/std/default/trait.Default.html"
+   }
+  },
+  "rust-fundamentals-sr13-03": {
+   "reason": "tell: second card taken off the 'automatically <convenience>' false template, leaving sr5-10 and sr9-01 (at the cap of 2). Same fact and answer. (final: keep)",
+   "statement": "Marking a struct `pub` makes its fields part of the struct's public API.",
+   "answer": false,
+   "explanation": "pub makes the struct type public while its fields retain their own visibility. Mark a field pub to expose that field through the public API.",
+   "misconception": "Public visibility on a struct propagates to its fields.",
+   "source": {
+    "title": "Paths for Referring to an Item in the Module Tree - The Rust Programming Language",
+    "url": "https://doc.rust-lang.org/book/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html"
+   }
+  },
+  "rust-fundamentals-sr13-09": {
+   "reason": "tell: drops a redundant 'automatically' so the word does not swing to marking True after the two false rewrites (now 4T/2F). Same fact and answer. (final: keep)",
+   "statement": "In the 2024 edition, the prelude brings `Future` and `IntoFuture` into scope.",
+   "answer": true,
+   "explanation": "Rust 2024's standard prelude includes Future and IntoFuture. The compiler makes those traits available through the prelude in ordinary module code.",
+   "misconception": "",
+   "source": {
+    "title": "Changes to the prelude - The Rust Edition Guide",
+    "url": "https://doc.rust-lang.org/edition-guide/rust-2024/prelude.html"
+   }
+  },
+  "rust-fundamentals-sr14-06": {
+   "reason": "tell: removes 'directly' (0T/2F) and the 'In the 2024 edition,' opener (which predicts False), and puts a hedge verb on a false card to balance hedges. Same fact and answer. (final: keep)",
+   "statement": "Safe code in a 2024 edition crate may call `std::env::set_var` to change an environment variable.",
+   "answer": false,
+   "explanation": "Edition 2024 marks std::env::set_var as unsafe. Calling it requires an unsafe context and upholding its documented safety conditions.",
+   "misconception": "Changing an environment variable remains a safe standard library call in edition 2024.",
+   "source": {
+    "title": "Unsafe functions - The Rust Edition Guide",
+    "url": "https://doc.rust-lang.org/edition-guide/rust-2024/newly-unsafe-functions.html"
+   }
+  }
+ },
+ "conflictGroups": {
+  "borrow-liveness-nll": [
+   "rust-fundamentals-sr2-04",
+   "rust-fundamentals-sr2-05",
+   "rust-fundamentals-sr2-11"
+  ],
+  "field-level-tracking": [
+   "rust-fundamentals-sr1-11",
+   "rust-fundamentals-sr2-09"
+  ],
+  "lifetime-syntax-keeps-value-alive": [
+   "rust-fundamentals-sr3-01",
+   "rust-fundamentals-sr3-12"
+  ],
+  "elision-two-reference-inputs": [
+   "rust-fundamentals-sr3-02",
+   "rust-fundamentals-sr3-07"
+  ],
+  "elision-single-or-zero-input": [
+   "rust-fundamentals-sr3-06",
+   "rust-fundamentals-sr3-08",
+   "rust-fundamentals-sr3-02"
+  ],
+  "utf8-byte-model": [
+   "rust-fundamentals-sr4-03",
+   "rust-fundamentals-sr4-04",
+   "rust-fundamentals-sr4-05"
+  ],
+  "char-unicode-scalar": [
+   "rust-fundamentals-sr4-06",
+   "rust-fundamentals-sr4-08",
+   "rust-fundamentals-sr4-03"
+  ],
+  "let-assignment-moves": [
+   "rust-fundamentals-sr1-02",
+   "rust-fundamentals-sr1-06"
+  ],
+  "panic-vs-err-mirror": [
+   "rust-fundamentals-sr7-01",
+   "rust-fundamentals-sr12-02"
+  ],
+  "question-mark-conversion": [
+   "rust-fundamentals-sr7-05",
+   "rust-fundamentals-sr7-06"
+  ],
+  "automatic-option-conversion": [
+   "rust-fundamentals-sr5-10",
+   "rust-fundamentals-sr7-06"
+  ],
+  "termination-skips-cleanup": [
+   "rust-fundamentals-sr7-09",
+   "rust-fundamentals-sr7-11"
+  ],
+  "clone-deep-vs-refcount": [
+   "rust-fundamentals-sr9-02",
+   "rust-fundamentals-sr11-05"
+  ],
+  "closure-trait-from-body": [
+   "rust-fundamentals-sr10-01",
+   "rust-fundamentals-sr10-02"
+  ],
+  "iter-into-iter-item-types": [
+   "rust-fundamentals-sr10-09",
+   "rust-fundamentals-sr10-10",
+   "rust-fundamentals-sr10-11"
+  ],
+  "collect-target-type": [
+   "rust-fundamentals-sr10-08",
+   "rust-fundamentals-sr10-12"
+  ],
+  "box-known-size": [
+   "rust-fundamentals-sr11-02",
+   "rust-fundamentals-sr11-04"
+  ],
+  "spawn-static-vs-scope": [
+   "rust-fundamentals-sr12-01",
+   "rust-fundamentals-sr12-03"
+  ],
+  "edition-2024-temporary-scope": [
+   "rust-fundamentals-sr13-11",
+   "rust-fundamentals-sr13-12"
+  ],
+  "raw-pointer-unsafe-deref": [
+   "rust-fundamentals-sr14-01",
+   "rust-fundamentals-sr14-03"
+  ],
+  "lazy-not-eager": [
+   "rust-fundamentals-sr10-07",
+   "rust-fundamentals-sr14-07"
+  ],
+  "edition-prelude-additions": [
+   "rust-fundamentals-sr9-10",
+   "rust-fundamentals-sr13-09"
+  ]
+ }
+}

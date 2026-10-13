@@ -533,6 +533,7 @@ describe("the real content", () => {
           ["nextjs", "Next.js", ["nextjs-rendering"]],
           ["react", "React", []],
           ["vue", "Vue", []],
+          ["angular", "Angular", []],
           ["javascript", "JavaScript", []],
           ["typescript", "TypeScript", []],
           ["css", "CSS", []],
@@ -551,6 +552,7 @@ describe("the real content", () => {
           ["github", "GitHub", []],
           ["gitlab", "GitLab", []],
           ["linux", "Linux", []],
+          ["networking", "Networking", []],
         ],
       ],
       [
@@ -561,8 +563,10 @@ describe("the real content", () => {
           ["nodejs", "Node.js", []],
           ["go", "Go", []],
           ["java", "Java", []],
+          ["rust", "Rust", []],
           ["sql", "SQL", []],
           ["graphql", "GraphQL", []],
+          ["kafka", "Kafka", []],
         ],
       ],
     ]);
@@ -677,8 +681,8 @@ describe("the real content: Solutions Architect Associate", () => {
   });
 });
 
-// Thirty-four decks entered after step 2 shipped: two more AWS decks, three more Google Cloud decks, four Azure decks,
-// six Frontend platforms with three more Web platform decks, the DevOps platforms with three Kubernetes decks, and
+// Forty decks entered after step 2 shipped: four more AWS decks, three more Google Cloud decks, four Azure decks,
+// seven Frontend platforms with three more Web platform decks, the DevOps platforms with three Kubernetes decks, and
 // the Backend area. This pins what the deploy builds from
 // every reviewed file in the repository, which the blocks above never build all at once.
 describe("the real content: the decks added after step 2", () => {
@@ -722,6 +726,12 @@ describe("the real content: the decks added after step 2", () => {
     "vue-fundamentals",
     "azure-az-400",
     "gcp-pde",
+    "aws-sap-c02",
+    "aws-soa-c03",
+    "networking-fundamentals",
+    "angular-fundamentals",
+    "rust-fundamentals",
+    "kafka-fundamentals",
   ];
   const output = buildDecks({
     catalog: readContent("catalog.json"),
@@ -736,7 +746,7 @@ describe("the real content: the decks added after step 2", () => {
         "cloud",
         "Cloud",
         [
-          ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03", "aws-dva-c02", "aws-aif-c01"]],
+          ["aws", "AWS", ["aws-clf-c02", "aws-saa-c03", "aws-dva-c02", "aws-aif-c01", "aws-sap-c02", "aws-soa-c03"]],
           ["gcp", "Google Cloud", ["gcp-cdl", "gcp-ace", "gcp-pca", "gcp-pde"]],
           ["azure", "Azure", ["azure-az-900", "azure-az-104", "azure-az-305", "azure-az-400"]],
         ],
@@ -748,6 +758,7 @@ describe("the real content: the decks added after step 2", () => {
           ["nextjs", "Next.js", ["nextjs-rendering"]],
           ["react", "React", ["react-fundamentals"]],
           ["vue", "Vue", ["vue-fundamentals"]],
+          ["angular", "Angular", ["angular-fundamentals"]],
           ["javascript", "JavaScript", ["javascript-fundamentals"]],
           ["typescript", "TypeScript", ["typescript-fundamentals"]],
           ["css", "CSS", ["css-fundamentals"]],
@@ -766,6 +777,7 @@ describe("the real content: the decks added after step 2", () => {
           ["github", "GitHub", ["github-actions"]],
           ["gitlab", "GitLab", ["gitlab-ci"]],
           ["linux", "Linux", ["linux-command-line"]],
+          ["networking", "Networking", ["networking-fundamentals"]],
         ],
       ],
       [
@@ -776,8 +788,10 @@ describe("the real content: the decks added after step 2", () => {
           ["nodejs", "Node.js", ["nodejs-fundamentals"]],
           ["go", "Go", ["go-fundamentals"]],
           ["java", "Java", ["java-fundamentals"]],
+          ["rust", "Rust", ["rust-fundamentals"]],
           ["sql", "SQL", ["sql-fundamentals"]],
           ["graphql", "GraphQL", ["graphql-fundamentals"]],
+          ["kafka", "Kafka", ["kafka-fundamentals"]],
         ],
       ],
     ]);
@@ -1272,6 +1286,92 @@ describe("the real content: the decks added after step 2", () => {
         ["STO", "Storing the data", 27],
         ["ANA", "Analysis, ML and sharing", 27],
         ["OPS", "Maintaining and automating", 28],
+      ],
+    ],
+    [
+      "aws-sap-c02",
+      "SAP",
+      "Solutions Architect Professional",
+      "AWS Solutions Architect Professional",
+      145,
+      [
+        ["ORG", "Organizational complexity", 37],
+        ["NEW", "New solutions", 45],
+        ["IMP", "Continuous improvement", 36],
+        ["MIG", "Migration and modernization", 27],
+      ],
+    ],
+    [
+      "aws-soa-c03",
+      "SOA",
+      "CloudOps Engineer Associate",
+      "AWS CloudOps Engineer Associate",
+      133,
+      [
+        ["MON", "Monitoring and performance", 29],
+        ["REL", "Reliability and continuity", 30],
+        ["DEP", "Deployment and automation", 19],
+        ["SEC", "Security and compliance", 23],
+        ["NET", "Networking and content delivery", 32],
+      ],
+    ],
+    [
+      "networking-fundamentals",
+      "NET",
+      "Fundamentals",
+      "Networking Fundamentals",
+      139,
+      [
+        ["LNK", "Layers and IPv4", 30],
+        ["IP6", "IPv6 and host configuration", 22],
+        ["RTE", "ICMP, MTU and routing", 19],
+        ["TRN", "UDP and TCP", 28],
+        ["DNS", "DNS", 20],
+        ["SEC", "TLS 1.3 and QUIC", 20],
+      ],
+    ],
+    [
+      "angular-fundamentals",
+      "ANG",
+      "Fundamentals",
+      "Angular Fundamentals",
+      151,
+      [
+        ["CMP", "Components and templates", 43],
+        ["SIG", "Signals, resources and inputs", 33],
+        ["SVC", "Services and change detection", 23],
+        ["APP", "Routing, forms and HTTP", 31],
+        ["SRV", "Server rendering and tooling", 21],
+      ],
+    ],
+    [
+      "rust-fundamentals",
+      "RST",
+      "Fundamentals",
+      "Rust Fundamentals",
+      147,
+      [
+        ["OWN", "Ownership and borrowing", 32],
+        ["TYP", "Strings, types and patterns", 30],
+        ["TRT", "Errors and traits", 31],
+        ["FNC", "Closures and smart pointers", 22],
+        ["CON", "Concurrency, unsafe and async", 21],
+        ["CRG", "Modules, Cargo and editions", 11],
+      ],
+    ],
+    [
+      "kafka-fundamentals",
+      "KFK",
+      "Fundamentals",
+      "Kafka Fundamentals",
+      141,
+      [
+        ["LOG", "Topics, partitions and the log", 27],
+        ["CLU", "Brokers and replication", 30],
+        ["PRD", "Producers", 22],
+        ["CON", "Consumers and groups", 31],
+        ["EOS", "Transactions, Streams and Connect", 21],
+        ["SEC", "Security basics", 10],
       ],
     ],
   ];

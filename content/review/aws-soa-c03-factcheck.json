@@ -1,0 +1,796 @@
+{
+ "deck": "aws-soa-c03",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s1.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official docs.aws.amazon.com, current",
+     "evidence": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/metrics-collected-by-CloudWatch-agent.html: \"You can collect metrics from servers by installing the CloudWatch agent on the server.\" The Linux table lists mem_used_percent (\"The percentage of memory currently in use\"). The page also says: \"The default namespace for metrics collected by the CloudWatch agent is CWAgent.\"",
+     "problem": "The fact is correct and the source supports it, but the statement gives the answer away. Opening with \"With the CloudWatch agent installed\" and then claiming it \"can publish\" memory metrics makes True the obvious guess for someone who knows nothing about the subject. The useful operator point, where the agent's metrics land and that memory comes from the OS, is not what the card tests.",
+     "suggestedFix": "Replacement (answer True): \"The CloudWatch agent publishes the memory metrics it collects from a Linux instance to the CWAgent namespace by default.\" Explanation: \"The agent reads memory data from the operating system (on Linux, /proc/meminfo) and publishes metrics such as mem_used_percent to CWAgent, its default namespace, unless the agent configuration names another.\" Same source URL. The section keeps 6 true and 6 false."
+    },
+    {
+     "id": "aws-soa-c03-s1.1-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official docs.aws.amazon.com, current",
+     "evidence": "https://docs.aws.amazon.com/grafana/latest/userguide/AMG-manage-permissions.html: \"In either of the service-managed permission modes, Amazon Managed Grafana creates roles and policies that are needed to access and discover AWS data sources in your account or organization.\" Customer-managed: \"you specify an existing IAM role in your account when you create an Amazon Managed Grafana workspace. The role must have a trust policy which trusts grafana.amazonaws.com.\"",
+     "problem": "The statement is true and the source supports it, but the answer can be read from the wording. \"Service-managed permissions\" already means the service creates and manages the role, so the card is a definition or name-giveaway card under the RULES (no answer readable from the name or wording, no definition card).",
+     "suggestedFix": "Replacement (answer True): \"With customer-managed permissions, an Amazon Managed Grafana workspace role must trust grafana.amazonaws.com.\" Explanation: \"In customer-managed mode you supply an existing IAM role. Its trust policy must allow grafana.amazonaws.com, and you attach the data source permissions yourself, which service-managed mode would create for you.\" Same source URL. The section keeps 6 true and 6 false. \"must\" is acceptable here because the source says it that way."
+    }
+   ],
+   "notes": "I checked all 12 section 1.1 cards (all in raw/aws-soa-c03-b1.json). Every source URL loads, is on docs.aws.amazon.com and is current. Quotes that settle the cards I did not flag:\n- 02: Create_Composite_Alarm shows rule expressions built only from ALARM/OK/INSUFFICIENT_DATA states of other alarms.\n- 03 and 04: alarm-actions.html says \"Invoke a Lambda function\" is a supported action and \"Except for Auto Scaling actions, the actions happen only on state transitions, and are not performed again if the condition persists for hours or days\".\n- 05: CloudWatch_Dashboards says \"Dashboards help you to monitor your resources in a single view, even those resources that are spread across different Regions\".\n- 06: MonitoringLogData says \"Filters do not retroactively filter data. Filters only publish the metric data points for events that happen after the filter was created\".\n- 07: SubscriptionFilters says \"You can use a subscription filter with Amazon Kinesis Data Streams, AWS Lambda, Amazon Data Firehose, or Amazon OpenSearch Service\" and that CloudWatch Logs forwards \"all the incoming log events that match the filter pattern\" to Firehose.\n- 08: AnalyzingLogData lists \"Automatic discovery of log fields in ... any application or custom log that emits log events as JSON\".\n- 09: the CloudTrail data events page says \"By default, trails and event data stores do not log data events\" and lists S3 object-level API activity as data events.\n- 10: AMP-collector says it \"uses remote_write to push the data to your Amazon Managed Service for Prometheus workspace using a VPC endpoint. The scraped data never travels on the public internet\".\n- 12: the SNS email page says \"You must confirm the subscription before the email address can start to receive messages\".\n\nOther checks:\n- Balance: 6 true and 6 false. Average statement length is 103.8 for true and 102.3 for false, within the 5-character rule.\n- Wording tells: requirement words are balanced. \"directly\" appears in 03 (true) and 02 (false); \"automatically\" in 08 (true) and \"by default\" in 09 (false).\n- Duplicates: I compared these cards with the rest of the deck. 1.2-04 and 1.2-05 (CloudTrail to EventBridge) and 4.1-07 (event history) rest on different facts from 09. No card mirrors another.\n- Retired names: none. The cards use Amazon Data Firehose and Amazon Managed Service for Prometheus, and nothing tests the CloudWatch Logs agent, CloudTrail Lake or Incident Manager.\n\nMinor point, not flagged: 07's wording (\"sends ... to Amazon Data Firehose\") reads like a general claim that subscription filters always deliver to Firehose. \\\"can send\\\" or \\\"With an Amazon Data Firehose destination, ...\\\" would be more precise, but no expert would argue for False.\n\nSource notes, no action needed: AMP managed collectors now also cover Amazon MSK and OpenSearch sources, but 10 names EKS, so it stays correct. The alarm-actions page still mentions Incident Manager actions; no 1.1 card relies on them."
+  },
+  {
+   "section": "1.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s1.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html), current",
+     "evidence": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html: \"You can customize the text from an event before EventBridge passes the information to the target of a rule... The transformed event is sent to a target instead of the original event.\" The page never states anything about what other rules receive.",
+     "problem": "Strawman. An input transformer is configured on one target of one rule, so nobody who has set one up would think it rewrites the event on the bus for other rules. The 'Lambda' qualifier adds nothing. The source supports the answer only by inference, because it never mentions other rules.",
+     "suggestedFix": "Replacement (answer false): \"An EventBridge input transformer sets a variable to null when its input path is missing from the matched event.\" Explanation: \"When an input path references a JSON path that the event lacks, EventBridge does not create that variable, so it is left out of the transformed input sent to the target.\" Same URL (Common Issues section: \"that variable isn't created and won't appear in the output\")."
+    },
+    {
+     "id": "aws-soa-c03-s1.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (systems-manager/latest/userguide/automation-setup.html), current",
+     "evidence": "https://docs.aws.amazon.com/systems-manager/latest/userguide/automation-setup.html: \"Automations can be initiated under the context of a service role (or assume role). This allows the service to perform actions on your behalf. If you don't specify an assume role, Automation uses the context of the user who invoked the automation.\"",
+     "problem": "Give-away. The wording 'uses its specified assume role's permissions' answers itself: an assume role that is specified is by definition the role whose permissions are used. The fact an operator actually needs is what happens when no assume role is set, and the card does not test it.",
+     "suggestedFix": "Replacement (answer true): \"With the assume role left unset, AWS Systems Manager Automation runs runbook actions under the invoking user's permissions.\" Explanation: \"If no assume role is specified, Automation uses the context of the user who invoked it. A service role lets a user with restricted permissions run an automation that needs elevated permissions.\" Same URL."
+    },
+    {
+     "id": "aws-soa-c03-s1.2-12",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (devopsagent/latest/userguide/about-aws-devops-agent.html), current",
+     "evidence": "https://docs.aws.amazon.com/devopsagent/latest/userguide/about-aws-devops-agent.html: \"AWS DevOps Agent automatically builds an application topology that maps your resources and their relationships.\" Also: \"Supporting applications in multicloud and hybrid environments.\"",
+     "problem": "The answer is right, but a player can read it from the wording. 'Operators manually build' set against an AI-powered 'Agent' signals False without any knowledge, so the misconception is close to a strawman.",
+     "suggestedFix": "Replacement (answer false, keep may_change): \"AWS DevOps Agent limits its incident investigations to resources running in AWS accounts.\" Explanation: \"AWS DevOps Agent supports applications in multicloud and hybrid environments and works with tools such as Datadog, Splunk and ServiceNow while it investigates incidents.\" Same URL."
+    },
+    {
+     "id": "aws-soa-c03-s1.2-06",
+     "verdict": "explanation_error",
+     "urlStatus": "loads, official (eventbridge/latest/userguide/eb-use-resource-based.html), current",
+     "evidence": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-use-resource-based.html: \"For Lambda, Amazon SNS, and Amazon SQS resources, EventBridge can use either an IAM execution role or a resource-based policy.\" Also: \"Alternatively, you can configure an IAM execution role on the target with lambda:InvokeFunction permission. Resource-based policies are required only when no execution role is configured on the target.\"",
+     "problem": "The statement is true, but the explanation presents the function's resource-based policy as the way to authorize the rule. The page now documents an IAM execution role on the target as an equal alternative, so the explanation teaches an outdated, incomplete picture. The statement is also an easy 'can' true.",
+     "suggestedFix": "Keep the statement and replace the explanation: \"A Lambda function resource-based policy can grant lambda:InvokeFunction to events.amazonaws.com. EventBridge relies on it when no IAM execution role is set on the target.\" (170 chars). Same URL."
+    }
+   ],
+   "notes": "I checked all 12 section 1.2 cards in aws-soa-c03-b1.json. Every source URL loads and is official, current docs.aws.amazon.com.\n\nThe current split is 6 true and 6 false, and every suggested replacement keeps the flagged card's answer, so the split stays the same.\n\nCards that passed, with the quote that settles each:\n- 01: \"For strings, EventBridge uses exact character-by-character matching without case-folding.\" equals-ignore-case is on eb-create-pattern-operators.html.\n- 02: \"EventBridge ignores the fields in the event that aren't included in the event pattern.\"\n- 04: \"All CloudTrail events are delivered to the default event bus only.\" The page also requires a trail with logging.\n- 05: \"A rule in the default ENABLED state does not match read-only management events.\"\n- 07: \"Only standard queues are supported. You can't use a FIFO queue for a DLQ in EventBridge.\"\n- 09: \"Invocations that are already running an automation when an error threshold is reached are allowed to be completed.\"\n- 10: Choices \"can be based on ... a dynamic value generated as output from the previous step.\"\n- 11: \"you can use the Health event to determine the ID of the affected instances.\"\n\nCards 01 and 02 use the same page but test separate facts. Cards 04 and 05 test separate facts too: which bus the events reach, and which rule state matches them.\n\nNo duplicates with other sections. The nearest cards are s1.1-03 (an alarm invoking Lambda directly) and s1.1-09 (S3 data events need opt-in), and both test different facts. This is the only AWS DevOps Agent card in the deck, under the cap of two.\n\nLimit of this review: the web search budget ran out, so I could not find when the IAM execution role option for Lambda, SNS and SQS targets arrived. The current EventBridge user guide documents it, and the API Target RoleArn field describes a per-target role. No 1.2 card depends on a support plan, a number or a preview feature."
+  },
+  {
+   "section": "1.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s1.3-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/datasync/latest/userguide/configure-metadata.html: \"Transfer only data that has changed | TransferMode set to CHANGED | After your initial full transfer, DataSync copies only the data and metadata that differs between the source and destination location.\" The fact is correct, but the answer can be read from the wording: \"set to CHANGED ... skips unchanged data\" is close to a tautology, so a player who knows nothing about DataSync would still answer True.",
+     "problem": "Gives the answer away through the value name CHANGED (rule: no answer readable from the name or the wording). It teaches nothing beyond what the enum value already says.",
+     "suggestedFix": "Replacement (answer true): \"With TransferMode set to ALL, AWS DataSync skips scanning the destination location and copies the whole source.\" (111 chars) Explanation: \"ALL makes DataSync copy every source file on each run with no comparison, so the task cannot also delete destination files that are missing from the source. CHANGED compares the two locations.\" (192 chars) Same URL; it supports this: \"When you transfer all data, DataSync doesn't scan your destination location and doesn't know what to delete.\""
+    },
+    {
+     "id": "aws-soa-c03-s1.3-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card only by implication",
+     "evidence": "https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html: \"Transition into Standard – Instructs lifecycle management whether to transition files out of the IA or Archive storage class and back in to the Standard storage class when the files are accessed... By default, files are not moved back to the Standard storage class, and they remain in the IA or Archive storage class when they are accessed.\" The statement gives away its own answer: \"With On first access configured ... moves accessed IA files back\".",
+     "problem": "Give-away: the setting name \"On first access\" plus \"moves accessed files back\" lets a player answer from the words alone. The operator fact that matters, and that the prompt asks for (default behaviour), is that accessed files stay in IA unless you change the policy.",
+     "suggestedFix": "Replacement (answer true): \"By default, Amazon EFS keeps a file in the IA storage class when an application reads it.\" (89 chars) Explanation: \"The Transition into Standard lifecycle policy defaults to None, so accessed files stay in IA or Archive. Choosing On first access moves them back to Standard for latency-sensitive workloads.\" (190 chars) Same URL."
+    },
+    {
+     "id": "aws-soa-c03-s1.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy.html: \"RDS Proxy establishes a database connection pool and reuses connections in this pool. This approach avoids the memory and CPU overhead of opening a new database connection each time.\" The card is a close paraphrase of this headline sentence.",
+     "problem": "It only names what RDS Proxy is for (connection pooling), which the prompt assigns to aws-clf-c02, and it closely paraphrases the overview's first paragraph. It tests no setting, behaviour or tuning lever an operator works with.",
+     "suggestedFix": "Replacement (answer true): \"Moving session SET statements into an RDS Proxy initialization query helps preserve transaction-level connection reuse.\" (119 chars) Explanation: \"Session state changes such as SET statements pin a client to one database connection. An initialization query applies them to each new proxy connection, keeping transaction-level multiplexing.\" (192 chars) URL: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy-pinning.html (\"you move the statements that set up the initial session state into the initialization query used by a proxy\")."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 1.3 (all in aws-soa-c03-b1.json). Each source URL loads, is on docs.aws.amazon.com and is current. Balance is 6 true and 6 false. Average statement length is 99.7 characters for true cards and 103.0 for false cards. The three suggested replacements are all true, so the balance stays 6/6, and the true average would be about 104.3, inside the 5-character rule. None of the 12 cards rests on the same fact as a card in another section (I checked the EBS, EFS and FSx cards in 2.2 and 2.3).\n\nCards that passed, with the sentence that settles each:\n- 01 gp3: \"scale volume performance independently of volume size\". One nitpick: gp3 throughput is limited to 0.25 MiB/s per provisioned IOPS, and IOPS to 500 per GiB, so at very small sizes the throughput ceiling still depends on size. The explanation's phrase \"within the volume type's performance constraints\" covers this.\n- 02 BurstBalance: \"This metric shows the percentage of I/O credits for gp2 remaining\".\n- 04 Transfer Acceleration: \"You can continue to use the regular endpoints for standard data transfer\". This one is borderline for low value and sits close to the doc's wording, but I did not flag it.\n- 05 multipart upload: \"If transmission of any part fails, you can retransmit that part without affecting other parts\" and \"Amazon S3 retains all the parts until you either complete or stop the upload\".\n- 07 FSx for Windows: \"For Multi-AZ file systems, switching to a new file server triggers an automatic failover and failback\".\n- 08 S3 Files: \"S3 Files loads file contents onto the high-performance storage on demand without duplicating your entire dataset\". One nuance: large reads (1 MiB or more) are streamed straight from S3, but this does not change the False answer.\n- 10 Database Insights: the feature table shows \"Visualize per-query statistics | Not supported | Supported\" for Standard and Advanced modes.\n- 11 cluster placement group: \"Packs instances close together inside an Availability Zone\".\n- 12 Compute Optimizer: \"uses the maximum utilization point within each five-minute time interval over the lookback period\".\n\nNo card uses a retired product, a preview feature, or the Performance Insights console as if it were current."
+  },
+  {
+   "section": "2.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s2.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.aws.amazon.com/AmazonElastiCache/latest/dg/BestPractices.LoadBalancing.html)",
+     "evidence": "Source: \"Consistent hashing uses an algorithm such that whenever a node is added or removed from a cluster, the number of keys that must be moved is roughly 1 / n (where n is the new number of nodes).\" The answer is correct and supported, but it follows from what consistent hashing means (it reduces remapping, it cannot stop it, or a new node would receive no keys). That is general distributed-systems knowledge, not ElastiCache operator behaviour, and anyone who knows the term would reject \"keeps key mappings unchanged\", which makes it close to a strawman. The page also covers only node-based multi-node Memcached clusters and client-library hashing, which is closer to developer work than to what an operator configures.",
+     "problem": "Definitional or truism card. The false reason comes from the meaning of the term 'consistent hashing', not from an AWS-specific fact, and the hashing algorithm is a client-side choice made by developers.",
+     "suggestedFix": "Replace and keep the answer False. Statement (100 chars): \"An ElastiCache for Valkey cluster with cluster mode disabled scales write capacity by adding shards.\" Explanation (207 chars): \"A Valkey cluster with cluster mode disabled always has a single shard. Spreading writes across shards needs cluster mode enabled, where online resharding adds shards while the cluster keeps serving requests.\" Source: https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/Replication.Redis-RedisCluster.html (\"A Valkey or Redis OSS (cluster mode disabled) cluster always has a single shard\") together with https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/scaling-redis-cluster-mode-enabled.html (\"The online resharding process allows scaling in/out while the cluster continues serving incoming requests\"). New factKey: valkey-cluster-mode-disabled-single-shard. This is a different fact from s2.1-06 (reader endpoint)."
+    },
+    {
+     "id": "aws-soa-c03-s2.1-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.aws.amazon.com/amazondynamodb/latest/developerguide/on-demand-capacity-mode.html)",
+     "evidence": "Source: \"Throughput requests that exceed the maximum table throughput are throttled.\" The dedicated page https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/on-demand-capacity-mode-max-throughput.html adds: \"The maximum throughput for an on-demand table is applied on a best-effort basis and should be thought of as targets instead of guaranteed request ceilings. Your workload might temporarily exceed the maximum throughput specified because of burst capacity.\" The answer False is correct. However, no DynamoDB capacity mode queues requests, so 'queues' is a misconception that few learners who studied would hold, which makes the card close to a strawman. The explanation also leaves out the best-effort and burst-capacity caveat.",
+     "problem": "Near-strawman distractor: no DynamoDB mode buffers or queues requests. The real operator trap is believing that the configured maximum is a soft limit DynamoDB raises by itself. The explanation also presents the maximum as a hard ceiling, which the max-throughput page contradicts.",
+     "suggestedFix": "Replace and keep the answer False and the same factKey. Statement (106 chars): \"Amazon DynamoDB raises an on-demand table's configured maximum throughput when traffic keeps exceeding it.\" Explanation (about 165 chars): \"DynamoDB throttles requests above an on-demand table's configured maximum throughput, apart from best-effort burst capacity. An operator changes that maximum with a table update.\" Better source URL: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/on-demand-capacity-mode-max-throughput.html"
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.1, all in aws-soa-c03-b1.json. Every source URL returned 200 on official docs.aws.amazon.com pages, and I read each page as text.\n\nThe 10 cards that pass, with the sentence from the source that settles each:\n- 01: \"You can define different step adjustments based on the breach size of the alarm.\"\n- 02: \"If the forecast expects a decrease in load, it will not scale in to remove capacity. If you want to remove capacity that is no longer needed, you must create dynamic scaling policies.\"\n- 03: \"After a scheduled scaling action runs, the scaling policy can continue to make decisions about whether to further scale capacity.\"\n- 04: \"If the metric is missing data points, this causes the CloudWatch alarm state to change to INSUFFICIENT_DATA. When this happens, Amazon EC2 Auto Scaling cannot scale your group until new data points are found.\"\n- 06: \"A reader endpoint is not a load balancer. It is a DNS record that will resolve to an IP address of one of the replica nodes in a round robin fashion.\"\n- 07: \"DAX passes strongly consistent read requests to DynamoDB... returns the results to the client, but it does not cache the results.\"\n- 08: \"Requests for content that is not in Origin Shield's cache are consolidated with other requests for the same object, resulting in as few as one request going to your origin.\"\n- 09: \"When you promote a read replica, RDS reboots the DB instance before making it available.\"\n- 10: \"Each Aurora serverless writer and reader can scale between the minimum and maximum capacity values. Thus, the total capacity... depends on both the capacity range... and the number of writers and readers.\"\n- 11: \"Every global secondary index has its own provisioned throughput capacity, separate from that of its base table.\"\n\nBalance: 6 true (01, 03, 07, 08, 09, 11) and 6 false (02, 04, 05, 06, 10, 12). Both proposed replacements keep the answer False, so the balance stays at 6 and 6.\n\nDuplicates: I searched the rest of the deck for Auto Scaling, ElastiCache, DAX, Origin Shield, read replica, Aurora and DynamoDB cards and found no overlap with 2.1. The near neighbours rest on different facts:\n- s2.2-12 is Aurora failover priority.\n- s2.3-05 is DynamoDB PITR tags.\n- s1.1-02 is the inputs of a composite alarm.\n\nMinor observations that did not need a flag:\n- 06: the ElastiCache endpoints page mixes \"Valkey or Redis OSS\" headings with \"ElastiCache for Redis OSS cluster\" in the reader-endpoint sentence. The behaviour is the same for both engines, so the card stands.\n- 03: if a scheduled action sets min = max, the dynamic policies stay active but cannot move capacity. The card's wording \"active\" still holds."
+  },
+  {
+   "section": "2.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s2.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (Route 53 API Reference, HealthCheckConfig)",
+     "evidence": "https://docs.aws.amazon.com/Route53/latest/APIReference/API_HealthCheckConfig.html: \"HealthThreshold: The number of child health checks that are associated with a CALCULATED health check that Amazon Route 53 must consider healthy for the CALCULATED health check to be considered healthy.\" The answer is right, but a player who has never seen the API reads it straight from the parameter name: a field called HealthThreshold on a calculated check obviously sets how many children must be healthy. That makes it a name giveaway and API trivia, not an operator behaviour.",
+     "problem": "Name giveaway: the true answer follows from the parameter name HealthThreshold, so the card teaches nothing a guesser could not infer.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Route 53 counts a disabled child health check as healthy when it evaluates a calculated health check.\" (101 chars). Explanation: \"Route 53 treats a disabled child health check as healthy, so a disabled check never pulls a calculated health check down; invert the child check to count it as unhealthy.\" (170 chars). Source: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-creating-values.html (\"If you disable a health check that a calculated health check is monitoring, Route 53 considers the disabled health check to be healthy as it calculates whether the calculated health check is healthy. If you want the disabled health check to be considered unhealthy, choose the Invert health check status check box.\"). factKey can stay route53-calculated-health-checks."
+    },
+    {
+     "id": "aws-soa-c03-s2.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (Amazon EFS User Guide, Features)",
+     "evidence": "https://docs.aws.amazon.com/efs/latest/ug/features.html: \"Regional file systems (recommended) store data redundantly across multiple geographically separated Availability Zones within the same AWS Region.\" The card is correct and the source supports it, but the statement answers itself: a file system type called \"Regional\" storing data across the Availability Zones \"within the same AWS Region\" is readable from the name alone, so the prompt's no-name-giveaway and no-definition rules are broken.",
+     "problem": "Name giveaway / definition card: \"Regional\" plus \"across Availability Zones within the same Region\" makes True guessable without knowing EFS.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"EC2 instances in another Availability Zone can mount an EFS One Zone file system through its single mount target.\" (113 chars). Explanation: \"A One Zone file system has one mount target, in its own Availability Zone. Instances in other zones of the VPC can still mount it, with cross-AZ data access charges, but lose access if that zone fails.\" (about 200 chars). Source: https://docs.aws.amazon.com/efs/latest/ug/accessing-fs.html (\"For One Zone file systems, you can only create a single mount target in the same Availability Zone as the file system.\" and \"Accessing the file system by using the EC2 instance in the us-west2c Availability Zone incurs data access charges because it is located in a different Availability Zone than the mount target.\"). New factKey e.g. efs-one-zone-cross-az-mount."
+    },
+    {
+     "id": "aws-soa-c03-s2.2-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (ARC Developer Guide, safety rules); routing control is still listed as a current ARC capability on the What is ARC page, with no availability-change notice",
+     "evidence": "https://docs.aws.amazon.com/r53recovery/latest/dg/routing-control.safety-rules.html: \"With an assertion rule, when you change one or a set of routing control states, ARC enforces that the criteria that you set when you configured the rule is met, or else the routing control states aren't changed.\" The answer is right, but the statement is close to a definition: a \"safety rule\" rejecting changes that \"violate\" it is what the words mean, and the hedge \"can\" on a true statement makes it easier still. No studied learner would answer False, and someone who never studied ARC would not either.",
+     "problem": "Definition card or truism: an enforced safety rule rejecting violating updates follows from the term, so the card does not separate learners who know ARC routing control from those who do not.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"An ARC gating rule blocks updates to its target routing controls while the gating routing control is set to Off.\" (112 chars). Explanation: \"A gating rule works as an on-off switch: with the gating routing control Off, ARC refuses manual or automated state changes to the target routing controls; set it On to allow them.\" (180 chars). Same source URL (\"to prevent manual or automated state updates to the target routing controls that you've configured for the gating rule, you set the gating routing control state to Off. To allow updates, you set it to On.\"). factKey e.g. arc-routing-control-gating-rule."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.2 (6 true, 6 false). Every source URL loads, is on docs.aws.amazon.com, is current and supports its card. Scope check: exam guide v1.1 Task 2.2 has Skill 2.2.1 (ELB and Route 53 health checks) and Skill 2.2.2 (fault-tolerant systems, for example Multi-AZ). Every card fits one of them. I found no duplicate against 1.3, 2.1, 2.3, 5.2 or 5.3. Nearby cards rest on different facts: 1.3-11 (cluster placement group AZ), 2.1-09 (read replica promotion), 5.2-03 and 5.2-05 (Route 53 routing with health checks).\n\nCards that pass, with the deciding quote:\n- 01: \"The load balancer sends a health check request to each registered target ... using the specified port, protocol, and health check path.\" Health check settings are per target group.\n- 02: \"If a target group contains only unhealthy registered targets, the load balancer routes requests to all those targets, regardless of their health status.\" False is right under the deck's default context.\n- 04: Route 53 \"cannot check the health of endpoints for which the IP address is in local, private, nonroutable, or multicast ranges\". Optional improvement: the explanation could add that CLOUDWATCH_METRIC health checks are the way to monitor private resources.\n- 05: \"You can't use a standby replica to serve read traffic.\" The statement names a Multi-AZ DB instance deployment, so the readable standbys of Multi-AZ DB clusters do not make it ambiguous.\n- 06: \"The failover mechanism automatically changes the Domain Name System (DNS) record of the DB instance to point to the standby DB instance.\"\n- 08: \"You can attach volumes to instances that are in the same Availability Zone only.\"\n- 09: \"automatic, asynchronous copying of objects\"; Cross-Region Replication (CRR) is still the official name. The wording \"new objects\" matches the rule that live replication skips objects that existed before.\n- 10: \"Existing connections to targets in the affected Availability Zone are not terminated by zonal shift.\" Note: the NLB page also says zonal shift is disabled by default per NLB, which the card does not depend on. Difficulty 1 looks low but is not a defect.\n- 12: \"If two or more Aurora Replicas share the same priority, then Amazon RDS promotes the replica that is largest in size\" and \"After five unsuccessful failover attempts, promotion tiers are no longer considered.\" The statement's \"initial failover attempt\" qualifier handles that exception.\n\nAll three flags are weak_card (give-away or definition cards), and each replacement stays true, so the section keeps its 6/6 balance. The WebSearch budget for the session was used up. Every check was therefore done with WebFetch on official pages."
+  },
+  {
+   "section": "2.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s2.3-12",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official AWS whitepaper, current",
+     "evidence": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html. The Note supports the answer: 'pilot light cannot process requests without additional action taken first, whereas warm standby can handle traffic (at reduced capacity levels) immediately.' The pilot light 'AWS services' subsection on the same page says the opposite about EC2: 'A scaled down version of your core workload infrastructure with fewer or smaller resources must be deployed in your DR Region ... Amazon EC2 instances are deployed in a scaled-down configuration (less instances than in your primary Region).'",
+     "problem": "The statement ties pilot light to 'using Amazon EC2' and 'reduced capacity'. That is the same wording the whitepaper's pilot light subsection uses when it describes scaled-down EC2 instances already deployed in the DR Region. Quoting that subsection, an expert could argue True. The settled fact is the Note's distinction (switched-off application servers versus a running, scaled-down copy), but the EC2 framing blurs it. The explanation also uses passive 'activate or deploy' where the whitepaper says 'turn on'.",
+     "suggestedFix": "Answer stays False. Statement (120 chars): 'In the AWS pilot light strategy, the recovery Region serves requests before an operator switches on application servers.' Explanation (about 200 chars): 'The AWS DR whitepaper says pilot light keeps data stores live but application servers switched off, so it cannot process requests until they are turned on; warm standby handles reduced traffic at once.' Keep the same URL."
+    },
+    {
+     "id": "aws-soa-c03-s2.3-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official AWS Backup Developer Guide, current",
+     "evidence": "https://docs.aws.amazon.com/aws-backup/latest/devguide/cross-region-backup.html: 'For Copy to destination, Choose the destination AWS Region for your backup copy. Your backup will be copied to this Region.' Same page: 'AWS Backup does not pass the option group when performing a cross-Region copy. Instead, AWS Backup copies the default option group, even if you have configured a custom option group.'",
+     "problem": "The answer is right but readable from the name: a 'cross-Region copy rule' that 'sends recovery points to a vault in another AWS Region' is true by definition, so the card teaches nothing beyond the feature's name.",
+     "suggestedFix": "Answer stays True. Statement (116 chars): 'For a cross-Region copy of an Amazon RDS backup, AWS Backup copies the default option group instead of a custom one.' Explanation (about 207 chars): 'AWS Backup cannot copy option groups across Regions, so an operator creates a matching option group in the destination Region first; a copy whose custom option group uses persistent options fails without it.' Keep the same URL."
+    },
+    {
+     "id": "aws-soa-c03-s2.3-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official Amazon FSx for Windows File Server guide, current",
+     "evidence": "https://docs.aws.amazon.com/fsx/latest/WindowsGuide/shadow-copies-fsxW.html: 'A Microsoft Windows shadow copy is a snapshot of a Windows file system at a point in time. With shadow copies enabled, users can quickly recover deleted or changed files that are stored on the network, and compare file versions.' Same page: 'All shadow copies stored in your file system are included in file system backups.' and 'Shadow copies are not enabled on FSx for Windows File Server by default.'",
+     "problem": "This is a definition card and almost a copy of the source. 'With shadow copies enabled, users can restore earlier file versions' repeats the source's own sentence ('With shadow copies enabled, users can quickly recover ...'), and the answer follows from what a Windows shadow copy is. It tests no operator behaviour on FSx.",
+     "suggestedFix": "Answer stays True. Statement (109 chars): 'Amazon FSx backups of a Windows File Server file system include the shadow copies stored on that file system.' Explanation (about 191 chars): 'Shadow copies are stored alongside file system data and are captured in FSx backups. They are off by default; an operator enables them and sets a schedule with Amazon FSx PowerShell commands.' Keep the same URL."
+    },
+    {
+     "id": "aws-soa-c03-s2.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official AWS Backup Developer Guide, current",
+     "evidence": "https://docs.aws.amazon.com/aws-backup/latest/devguide/assigning-resources.html: 'You can assign resources in the following ways: ... Use tags to include or exclude resources' and 'If you only use tags for resource assignment, then the service opt-in settings will still apply.'",
+     "problem": "Close to a truism: a learner who never studied AWS Backup would still answer True to 'a backup plan can select resources by tags'. The hedge 'can' marks it as true, and the 'With service opt-in enabled' qualifier gives the answer away. The documented operator fact is the opposite way round: opt-in still filters tag-based selection.",
+     "suggestedFix": "Answer stays True. Statement (about 118 chars): 'If a backup plan assigns resources only by tags, service opt-in settings still decide which tagged resources it protects.' Explanation: 'AWS Backup applies the Region's service opt-in settings on top of tag-based assignment, so a tagged resource whose service type is not opted in is left out of the plan.' Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 2.3; every source URL loads and is an official, current AWS page. Cards 02-09 pass. 02: vault-lock.html: 'Once the grace time expires, the vault and its lock are immutable and cannot be changed or deleted by any user or by AWS.' 03: restore-testing.html: 'When the scheduled time in your plan arrives, AWS Backup starts restore jobs based on your plan.' 04: USER_PIT.html: 'creating a new DB instance without modifying the source DB instance.' 05: pointintimerecovery_restores.html lists Tags under 'You must manually set the following on the restored table'; restore-testing.html agrees that DynamoDB restores do not support tag-on-restore. 06: how_snapshots_work.html: 'Subsequent snapshots ... include only changed and new data blocks.' 07: ebs-deleting-snapshot.html: 'Deleting previous snapshots of a volume does not affect your ability to create volumes from later snapshots of that volume.' 08: DeleteMarker.html: a simple DELETE request is one with no version ID, and the delete marker becomes the current version. 09: VersionSuspendedBehavior.html: 'When you suspend versioning, existing objects in your bucket do not change.' Cards 06 and 07 both rest on snapshot block referencing, but they test different facts and neither answer gives away the other, so they are not duplicates. I found no duplicates with other sections; the closest is 2.2-09 on S3 CRR, a different fact. All four flags keep their True or False answer, so the section stays balanced at 6 true / 6 false. The most serious flag is 12: the whitepaper contradicts itself about scaled-down EC2 in pilot light, and the card's EC2 wording sits right on that contradiction. Flags 01, 10 and 11 are quality problems (truism, definition and near-copy, name giveaway), not wrong facts. Replacement lengths were counted for statements and approximately for explanations; each statement is at most 120 characters and each explanation stays under 240."
+  },
+  {
+   "section": "3.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s3.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/ram/latest/userguide/what-is.html)",
+     "evidence": "\"The resource owning account retains full ownership of the resources that it shares.\" (https://docs.aws.amazon.com/ram/latest/userguide/what-is.html). The answer is correct and the source supports it, but the false reason is close to a strawman: the word \"share\" already rules out a transfer of ownership, so anyone who has studied AWS RAM answers False. The card tests no operator-level behaviour. Nothing else in the deck covers RAM or VPC sharing, so a replacement adds no duplicate.",
+     "problem": "The false statement rests on a misconception that almost no one who studied would hold (that sharing transfers ownership), and the answer can be read from the meaning of \"share\". The card tests no behaviour an operator observes.",
+     "suggestedFix": "Replace and keep it false. Statement (113 chars): \"In a VPC subnet shared through AWS RAM, a participant account can associate its own route table with that subnet.\" answer=false. Explanation (212 chars): \"Only the VPC owner creates, associates and manages route tables for a shared subnet. Participants can describe them and manage their own resources there, such as instances, network interfaces and security groups.\" Source: https://docs.aws.amazon.com/vpc/latest/userguide/vpc-share-limitations.html (\"Participants cannot work with route tables (for example, create, delete, or associate route tables) in a shared VPC subnet.\"). factKey: ram-vpc-sharing-participant-route-tables."
+    },
+    {
+     "id": "aws-soa-c03-s3.1-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.aws.amazon.com/cdk/v2/guide/ref-cli-cmd-synth.html)",
+     "evidence": "\"Synthesize a CDK app to produce a cloud assembly, including an AWS CloudFormation template for each stack.\" (https://docs.aws.amazon.com/cdk/v2/guide/ref-cli-cmd-synth.html). The fact is correct, but CDK turning into CloudFormation templates is what defines the AWS CDK. It is the identify-what-the-service-is fact that the prompt assigns to CLF (\"cards that only identify what a service is for belong to aws-clf-c02\"), and it is close to a definition card. The bootstrap page states a better operator prerequisite: \"Before you deploy a CDK stack into an AWS environment, the environment must first be bootstrapped.\" and \"AWS environments are independent. Each environment that you want to use with the AWS CDK must first be bootstrapped.\" (https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html)",
+     "problem": "This is a definition-level card (CDK synthesizes to CloudFormation) at CLF depth, not an operational prerequisite or behaviour of the kind the prompt asks for (\"the prerequisite a feature needs before it works\").",
+     "suggestedFix": "Replace and keep it true. Statement (118 chars): \"AWS CDK v2 requires each target account and Region to be bootstrapped before an operator can deploy a CDK stack there.\" answer=true. Explanation (202 chars): \"Bootstrapping deploys the CDKToolkit stack, which provisions an S3 bucket, an ECR repository and IAM roles that CDK deployments use. Environments are independent, so each one is bootstrapped separately.\" Source: https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping.html. factKey: cdk-v2-environment-bootstrap. The true statement also uses \"requires\" and \"each\", which helps the deck's wording balance."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 3.1 (b2, ids s3.1-01 to s3.1-12). The section is balanced at 6 true and 6 false, every statement is 120 characters or less and every explanation 240 or less. All source URLs load and are official docs.aws.amazon.com pages. Flagged: s3.1-09 (weak, strawman) and s3.1-06 (weak, definition card at CLF depth); both replacements keep the original answer. Cards that passed, with the sentence that settles each:\n- 01: \"The target AMI has its own unique AMI ID.\"\n- 02: the default Test stage \"Launches a test instance from the new image, runs your test components\".\n- 03: ImageTagAlreadyExistsException \"is returned if you push an image with a tag that is already in the repository\". IMMUTABLE_WITH_EXCLUSION exists, but the card names IMMUTABLE, so it holds.\n- 04: \"CloudFormation makes the changes to your stack only when you decide to execute the change set\".\n- 05: \"Drift-aware change sets will update the actual state of all stack resources to match the desired state, even if a resource was not explicitly changed in the template.\" Exceptions (AWS-managed properties, immutable properties, unsupported types) are covered by \"can\" and by \"supported\" in the explanation.\n- 07: the answer is right. The cited API page only implies it (\"return your stack to a working state ... and then try to update the stack again\"). Optional improvement: switch the URL to https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-continueupdaterollback.html, which says it outright: \"A stack in the UPDATE_ROLLBACK_FAILED state can't be updated, but it can be rolled back to a working state (UPDATE_ROLLBACK_COMPLETE).\"\n- 08: \"CloudFormation can automatically deploy additional stacks to new AWS Organizations accounts when they're added to your target organization or organizational units (OUs).\"\n- 10: \"A launch constraint specifies the ... IAM role that AWS Service Catalog assumes when an end user launches, updates, or terminates a product.\"\n- 11: \"If a task has one or more essential containers with a health check defined, the service scheduler waits for the task to reach a healthy status before counting it towards the minimum healthy percent total.\" With a load balancer, ECS also waits for the target group health check, which makes the statement even more clearly false.\n- 12: \"the blue revision is kept running until the bake time expires.\"\nNo duplicates found: no other section has a card on AMI copy, Image Builder, ECR mutability, change sets or drift, CDK, StackSets, RAM, Service Catalog or ECS deployments (the only ECR mention is 4.2-12, which is about Inspector rescans). The replacement facts (CDK bootstrap, VPC sharing route tables) appear nowhere in the deck. Nothing retired or in preview is used. ECS blue/green is described as native, with no CodeDeploy dependency, as the prompt requires."
+  },
+  {
+   "section": "3.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s3.2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/systems-manager/latest/userguide/run-command.html: \"The Run Command API follows an eventual consistency model, due to the distributed nature of the system supporting the API. This means that the result of an API command you run that affects your resources might not be immediately visible to all subsequent commands you run.\"",
+     "problem": "The answer is right, but the card tests a generic API caveat that many AWS APIs share. It is not Run Command behaviour that an operator configures or repairs. A learner who studied has no realistic belief either way, so the card comes down to guessing. Under the prompt's depth rule it is trivia.",
+     "suggestedFix": "Replacement (answer false, keeps 6/6 balance): statement \"Run Command reports a shell script as failed when an early command fails even if the final command succeeds.\" (108 chars). Explanation: \"By default, Run Command uses the exit code of the last command as the script exit code, so a script whose final command succeeds is reported as succeeded unless it exits early.\" (176 chars). Source: https://docs.aws.amazon.com/systems-manager/latest/userguide/run-command-handle-exit-status.html (\"By default, the exit code of the last command run in a script is reported as the exit code for the entire script... Because the final command succeeded, the status of the execution is reported as succeeded.\")"
+    },
+    {
+     "id": "aws-soa-c03-s3.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/systems-manager/latest/userguide/inventory-custom.html: \"You can assign any metadata you want to your nodes by creating AWS Systems Manager Inventory custom inventory... When you collect inventory by using Systems Manager, the metadata is collected with other inventory metadata.\"",
+     "problem": "The wording gives the answer away. The statement says that Inventory can collect metadata \"supplied through custom inventory\", and custom inventory is a feature of Inventory, so the statement is close to true by definition. A player can answer True without knowing anything about the service.",
+     "suggestedFix": "Replacement (answer true): statement \"Systems Manager Inventory collects custom inventory from JSON files an operator saves on the managed node.\" (~104 chars). Explanation: \"Besides the PutInventory API, an operator can save a custom inventory JSON file, with a TypeName starting with Custom:, in the node's inventory/custom folder for Inventory to collect.\" (183 chars). Same URL; it says \"After you create the file, you must save it on the node\" and gives the inventory/custom paths."
+    },
+    {
+     "id": "aws-soa-c03-s3.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current; supports the card",
+     "evidence": "https://docs.aws.amazon.com/systems-manager/latest/userguide/what-is-systems-manager.html: \"To use Systems Manager, nodes must be managed, which means SSM Agent is installed on the machine and the agent can communicate with the Systems Manager service.\"",
+     "problem": "The fact is correct and the prompt lists it as a verified operator fact. The statement is a close paraphrase of the source's definition, though, and the answer is easy to read from \"SSM Agent\" plus \"managed\". The explanation only repeats the statement, while the rules ask a true card's explanation to add the reason or context that makes it stick.",
+     "suggestedFix": "Keep the statement and answer (true). Replace the explanation with: \"SSM Agent connects out to Systems Manager endpoints and also needs IAM permissions, from an instance profile or Default Host Management Configuration, before the instance is a managed node.\" (189 chars). Same URL, plus https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-setting-up-ec2.html for the IAM part."
+    }
+   ],
+   "notes": "I checked all 12 cards of section 3.2 (6 true: 01, 04, 05, 07, 08, 10; 6 false: 02, 03, 06, 09, 11, 12). Every source URL loaded, is official docs.aws.amazon.com and is current. Every answer is correct today.\n\nCards that pass, with the deciding quote:\n- 03, Session Manager: \"provides secure node management without the need to open inbound ports, maintain bastion hosts, or manage SSH keys\" (session-manager.html).\n- 04, Patch Manager: under ALLOW_AS_DEPENDENCY, \"Linux and macOS: A package in the rejected patches list is installed only if it is a dependency of another package. It is considered compliant with the patch baseline, and its status is reported as INSTALLED_OTHER\" (API_UpdatePatchBaseline).\n- 05, State Manager: under ApplyOnlyAtCronInterval, \"By default, when you create a new association, the system runs it immediately after it is created and then according to the schedule\" (API_CreateAssociation).\n- 06, Parameter Store: \"Each time you edit the value of a parameter, Parameter Store ... creates a new version of the parameter and retains the previous versions\" (sysman-paramstore-versions.html).\n- 07, Maintenance Windows: \"Specify instance tags ... When the maintenance window runs, it attempts to perform tasks on all of the managed nodes to which these tags have been added\" (sysman-maintenance-assign-targets.html).\n- 09, S3 Event Notifications: \"they aren't guaranteed to arrive in the same order that the events occurred\" (notification-how-to-event-types-and-destinations.html).\n- 10, SQS destination Region: \"The Amazon SQS queue must be in the same AWS Region as your Amazon S3 bucket\" (same page).\n- 11, SQS visibility timeout: \"If you don't delete it before the timeout expires, the message becomes visible again in the queue and can be retrieved by another consumer\" (sqs-visibility-timeout.html).\n- 12, Step Functions: \"When a state has both Retry and Catch fields, Step Functions uses any appropriate retriers first. If the retry policy fails to resolve the error, Step Functions applies the matching catcher transition\" (concepts-error-handling.html).\n\nMinor points that I did not flag:\n- 04 sits at the edge of trivia because it hinges on the INSTALLED_OTHER state name. It still tests a real ALLOW_AS_DEPENDENCY versus BLOCK distinction and is marked hard.\n- 04's factKey \"patch-manager-baseline-approval\" is broader than what the card tests.\n- 09 uses the odd phrase \"can guarantee\", but the answer is unambiguous.\n\nDuplicates: I grepped every other section for SSM, Session Manager, Parameter Store, SQS, S3 events and Step Functions and found no card that rests on the same fact. The 1.2 Automation cards (1.2-08/09/10) and 4.2-08 (SecureString with a KMS key) are distinct facts. Template check: 1.2-09 is false because Automation cancels running invocations when its error threshold is reached. For that reason I did not propose a Run Command MaxErrors replacement for card 02; an exit-code card avoids repeating that template.\n\nScope: the exam guide's Task 3.2 has two skills, 3.2.1 (Systems Manager) and 3.2.2 (Lambda, S3 Event Notifications, EventBridge, AWS DevOps Agent). The section covers both, and Step Functions and SQS are placed in 3.2 by the prompt.\n\nThe three replacements keep the 6/6 true and false balance: 02 stays false, while 08 and 01 stay true."
+  },
+  {
+   "section": "4.1",
+   "checked": 12,
+   "flagged": [],
+   "notes": "I checked all 12 cards in section 4.1 (s4.1-01 to s4.1-12, all in aws-soa-c03-b3.json) and flagged none. Every source URL loads, is on docs.aws.amazon.com, is current, and supports both the statement and the explanation. The split is 6 true (01, 03, 07, 09, 10, 11) and 6 false (02, 04, 05, 06, 08, 12). Average statement length is 108.5 characters for true cards and 105.8 for false ones. Difficulty is 5 easy, 5 medium, 2 hard. The longest explanation is 168 characters. No card repeats a fact from another section; the only nearby cards are s3.1-08 (StackSets auto-deployment) and s3.2-03 (Session Manager), and they test different facts.\n\nEvidence that settles each card:\n- 01 (True): access_policies_boundaries.html says \"If any one of these policy types explicitly denies access for an operation, then the request is denied.\" It also says permissions granted directly to a role session ARN \"are not limited by an implicit deny in ... a permissions boundary\". Read together, only an explicit deny limits them, which matches the card.\n- 02 (False): the same page says the boundary \"limits the user's permissions but does not provide permissions on its own.\"\n- 03 (True): reference_policies_elements_principal.html says \"Using the account ARN in the Principal element does not limit permissions to only the root user of the account.\" It also says an administrator in that account \"must then grant access to an identity\".\n- 04 (False): id_credentials_passwords_account-policy.html says \"If a password expires, the IAM user can't sign in to the AWS Management Console but can continue to use their access keys.\"\n- 05 (False): access-analyzer-findings.html says \"Any principal in the organization or account that you choose for the analyzer is considered trusted.\"\n- 06 (False): access_policies_testing-policies.html says the simulator \"does not use real context key values from production\". It fills only principal and organization keys automatically, and says \"You provide the values for all other condition keys.\"\n- 07 (True): view-cloudtrail-events.html says \"An event history search is limited to a single AWS account, only returns events from a single AWS Region\".\n- 08 (False): orgs_manage_policies_scps.html says \"SCPs don't affect users or roles in the management account.\"\n- 09 (True): permissionsetsconcept.html says \"When you assign a permission set, IAM Identity Center creates corresponding IAM Identity Center-controlled IAM roles in each account\".\n- 10 (True): security-checks.html says \"This check only evaluates security groups that you create and their inbound rules for IPv4 addresses.\" The source uses \"only\", so the absolute in the statement is allowed.\n- 11 (True): conformance-pack-organization-apis.html says \"The API call to deploy rules and conformance packs across accounts is AWS Region specific.\"\n- 12 (False): detective-controls.html says \"detective controls apply to enrolled accounts only, not to all member accounts in the OU, if some accounts are not enrolled\".\n\nMinor observations, none worth a flag:\n- Card 06 uses factKey iam-policy-simulator-source-ip-context, not the plan's iam-policy-simulator-execution. Batch b3's notes record this swap.\n- Card 10 is the narrowest card in the section: it asks about one named Trusted Advisor check and its IPv4-only coverage. It is still an operator-observable blind spot, it does not depend on support plans (rule e), and it is marked may_change. The \"Security Groups – Unrestricted Access\" check has the same IPv4-only wording, but no other card tests it.\n- Cards 01 and 02 both use the permissions boundaries page but test different facts: an explicit deny overriding a resource policy that grants the role session ARN, versus the boundary granting nothing on its own.\n- Nothing retired is named. SCPs, IAM Identity Center, AWS Config, AWS Control Tower, IAM Access Analyzer and the IAM policy simulator all use their current names."
+  },
+  {
+   "section": "4.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s4.2-06",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, official, current (docs.aws.amazon.com/secretsmanager/latest/userguide/rotation-strategy.html)",
+     "evidence": "rotation-strategy.html: \"Secrets Manager creates the cloned user with the same permissions as the original user. If you change the original user's permissions after the clone is created, you must also change the cloned user's permissions.\" The fact is right, but the statement \"the alternating users template keeps clone permissions after the original user's permissions change\" reads two ways. It can mean the clone keeps its old permissions (True, as intended) or that the template keeps the clone's permissions in step with the original (False). It also makes a template the actor, but the template does nothing after a rotation. Because it says what the template does not do, it is a disguised negation.",
+     "problem": "The wording is unclear and names the wrong actor. A careful player could read \"keeps clone permissions\" as \"keeps them synchronized\" and answer False.",
+     "suggestedFix": "Answer stays True. Statement: \"With alternating users rotation, an operator who changes the original user's permissions must also update the clone.\" (116 chars) Explanation: \"Secrets Manager creates the clone with the original user's permissions during the first rotation. Later permission changes to the original user do not carry over to the clone.\" Keep the same URL."
+    },
+    {
+     "id": "aws-soa-c03-s4.2-12",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official, current (docs.aws.amazon.com/inspector/latest/user/scanning-ecr.html)",
+     "evidence": "scanning-ecr.html: \"For continuous scanning, Amazon Inspector initiates new vulnerability scans ... Whenever Amazon Inspector adds a new common vulnerabilities and exposures (CVE) item to its database, and that CVE is relevant to that container image (continuous scanning only).\" The same page says: \"Amazon Inspector does not scan container images archived in ECR (imageStatus is ARCHIVED). When an active image in ECR is transitioned to archived, Amazon Inspector automatically closes findings ... If an archived container image is transitioned to active in ECR, Amazon Inspector triggers a new scan.\"",
+     "problem": "The answer (False) is correct and the source supports it. The problem is that the feature name gives it away: \"continuous scanning ... waits for another push\" contradicts the word \"continuous\" itself, so a player can answer from the name alone. This breaks the no-name-giveaway rule.",
+     "suggestedFix": "Answer stays False. Statement: \"Amazon Inspector keeps rescanning an ECR image for newly added CVEs after the image's status changes to ARCHIVED.\" (about 112 chars) Explanation: \"Amazon Inspector scans only ECR images with ACTIVE status. When an image is archived it closes the image's findings, and moving the image back to ACTIVE triggers a new scan.\" Keep the same URL. factKey: inspector-ecr-archived-images."
+    },
+    {
+     "id": "aws-soa-c03-s4.2-07",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, official, current, but only partly supports the card (docs.aws.amazon.com/secretsmanager/latest/userguide/replicate-secrets.html)",
+     "evidence": "replicate-secrets.html says only: \"If you turn on rotation for your primary secret, Secrets Manager rotates the secret in the primary Region, and the new secret value propagates to all of the associated replica secrets.\" It never says a replica cannot rotate on its own or that you must promote it first. standalone-secret.html settles the point: \"A replica secret can't be updated independently from its primary secret, except for its encryption key. ... you might want to promote a replica to a standalone secret if you want to turn on rotation for the replica.\"",
+     "problem": "The answer (False) and the explanation are correct. The cited page does not support the deciding fact: a replica cannot be rotated independently, and independent rotation requires promoting it to a standalone secret.",
+     "suggestedFix": "Change the source URL to https://docs.aws.amazon.com/secretsmanager/latest/userguide/standalone-secret.html (title: \"Promote a replica secret to a standalone secret in AWS Secrets Manager\"). The card text needs no change."
+    }
+   ],
+   "notes": "I checked all 12 cards in section 4.2 against the Domain 4 page of the exam guide (Skills 4.2.1 to 4.2.5) and against the current docs on 2026-10-13. Every source URL loaded and is official. Six cards are True (01, 03, 04, 06, 09, 10) and six are False (02, 05, 07, 08, 11, 12). The two suggested replacements keep their answers, so the balance stays 6/6.\n\nThe 9 cards that passed, with the evidence that settles each:\n- 01 Macie: findings-types.html says \"If Macie detects sensitive data in the same S3 object during a subsequent job run or automated sensitive data discovery cycle, Macie generates a new sensitive data finding ... all sensitive data findings are treated as new (unique).\"\n- 02 KMS: key-policies.html says \"Unless the key policy explicitly allows it, you cannot use IAM policies to allow access to a KMS key ... The default key policy enables IAM policies.\"\n- 03 KMS rotation: rotate-keys.html says \"You cannot select a particular key material for decrypt operations, AWS KMS automatically chooses the correct key material.\" Borderline: a player can guess it by common sense, but it is a classic operator misconception and I kept it.\n- 04 ACM: dns-renewal-validation.html lists two renewal criteria: \"The certificate is currently in use by an AWS service\" and \"All required ACM-provided DNS CNAME records ... are present and accessible via public DNS.\"\n- 05 ACM: import-certificate.html says \"ACM does not provide managed renewal for imported certificates.\"\n- 08 Parameter Store: ps-restrict-decryption.html says \"Any principal that retrieves the decrypted value must have kms:Decrypt permission on that key, whichever Parameter Store operation they call.\"\n- 09 Security Hub CSPM: what-is-securityhub.html says \"You must enable AWS Config and record resources in AWS Config for Security Hub CSPM to generate most control findings.\" The card correctly names CSPM.\n- 10 Security Hub: what-is-securityhub-v2.html says \"Security Hub generates findings in OCSF.\" It also describes exposure findings. The card correctly names the new Security Hub, not CSPM.\n- 11 GuardDuty: findings_suppression-rule.html says \"GuardDuty continues to generate findings even when they match your suppression rules, however, those findings are automatically marked as archived.\"\n\nDuplicates: no other section repeats a 4.2 fact. The nearest cards are 5.2-09 (OAC with SSE-KMS key policy) and 5.2-10 (ACM in us-east-1 for CloudFront), and both rest on different facts.\n\nCoverage gap, not flagged: no 4.2 card tests tagging for data classification. The prompt puts tagging in 4.2 alongside Macie, but Skill 4.2.1 is covered only by Macie card 01."
+  },
+  {
+   "section": "5.1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s5.1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.aws.amazon.com/vpc/latest/userguide/nat-gateways-regional.html)",
+     "evidence": "The page says: \"Automatic mode – In this mode, AWS automatically manages IP addresses and Availability Zone expansion (recommended).\" and \"When you launch resources in a new Availability Zone, the regional NAT gateway detects the presence of an network interface(ENI) in that Availability Zone and automatically expands to that zone.\" The fact is correct, but the statement reads \"In automatic mode, a regional NAT gateway automatically expands...\". Because the setting name is repeated as the verb, a player who knows nothing about the subject would guess True. This breaks the prompt's \"No wording tells\" and \"no answer readable from the name\" rules. The same page also states a regional-NAT fact that the statement's own wording does not give away.",
+     "problem": "The answer can be read from the wording: \"automatic mode\" followed by \"automatically expands\" tells the player the answer is True. This is the deck's only regional NAT gateway card, and the prompt treats regional NAT as changed behaviour that makes popular study material wrong, so the card should test a fact the words do not reveal.",
+     "suggestedFix": "Replace and keep it True. Statement (106 chars): \"A regional NAT gateway gets an AWS-created route table with a preconfigured route to the internet gateway.\" Explanation (181 chars): \"When an operator creates a regional NAT gateway, AWS creates a route table for it with a route to the internet gateway. Unlike a zonal public NAT gateway, it needs no public subnet.\" Keep the same source URL. Page quote: \"Once you create your regional NAT Gateway, AWS automatically creates a route table for it, which comes with a pre-configured route to the internet gateway.\" Keep volatility may_change. New factKey: regional-nat-own-route-table."
+    }
+   ],
+   "notes": "Section 5.1 has 12 cards: 6 true (01, 02, 04, 05, 11, 12) and 6 false (03, 06, 07, 08, 09, 10). Average statement length is 107.3 characters for true and 108.8 for false. I opened every source URL; all load and are official docs.aws.amazon.com pages. Cards that passed, with the sentence that settles each:\n- 01: the route-tables-priority page says \"If the destination of a propagated route is identical to the destination of a static route, the static route takes priority.\" The card's factKey (vpc-static-route-propagated-priority) differs from the b1 plan (vpc-longest-prefix-routing), but the batch notes do not mention the change. Not a problem in itself; recording it.\n- 02: vpc-security-groups says \"Responses to allowed inbound traffic are allowed to leave the instance, regardless of the outbound rules.\" The word \"admit\" is slightly odd for outbound replies but not wrong.\n- 03: vpc-network-acls says \"If the traffic matches a rule, the rule is applied and we do not evaluate any additional rules.\"\n- 05: gateway-endpoints applies longest prefix match, with the endpoint route taking precedence over a 0.0.0.0/0 route for same-Region S3. Traffic to S3 in another Region does not match the prefix list, and the statement's \"matching traffic\" covers that.\n- 06: create-interface-endpoint says the endpoint's security group \"must allow inbound HTTPS traffic\", and the endpoint policy is a separate setting. The page does not state the policy's scope explicitly; vpc-endpoints-access.html would support the explanation better. The card is borderline strawman but passes.\n- 07: vpc-peering-basics says \"VPC peering does not support transitive peering relationships.\"\n- 08: vpn-route-priority says \"For a virtual private gateway, one tunnel across all Site-to-Site VPN connections on the gateway will be selected\" and \"ECMP is not supported for Site-to-Site VPN connections on a virtual private gateway.\" The statement says egress, so asymmetric inbound traffic is not an exception.\n- 09: how-it-works-ipam says \"Scopes enable you to reuse IP addresses across multiple unconnected networks without causing IP address overlap or conflict.\" A more direct source is https://docs.aws.amazon.com/vpc/latest/ipam/monitor-cidr-compliance-ipam.html: \"Overlapping: The resource CIDR overlaps with another CIDR in the same scope.\" Optional URL upgrade. Discovered VPC CIDRs land in the default private scope until someone moves them, which is consistent with the card.\n- 10: the DNS Firewall configuration page says \"By default, the failure mode is closed, which means that VPC Resolver blocks any queries for which it doesn't receive a reply from DNS Firewall and sends a SERVFAIL DNS response.\" That page now writes \"Route 53 VPC Resolver\". The card uses the exam guide's name \"Route 53 Resolver\" and does not hinge on the name, so it is not flagged.\n- 11: waf-rule-action says Count \"is a non-terminating action. AWS WAF continues processing the remaining rules\".\n- 12: vpc-config-route-tables says \"After you create your firewall, you reroute your VPC network traffic through the firewall endpoints\".\n\nNo duplicates with other sections. 5.3-09 (VPN propagated route retention) and 5.2-07 (Resolver inbound endpoints) rest on different facts. Wording tell to rebalance at deck level, not flagged per card: within 5.1 the hedge verb \"can\" appears in 3 true statements (02, 11, 12) and no false ones; only false card 07 uses \"supports\". Breadth: Transit Gateway, PrivateLink services, Client VPN, Elastic IP addresses and AWS Shield have no 5.1 card, which is acceptable for a 12-card section. One limitation: the session's web search budget was used up, so this review relied on direct fetches of the official pages."
+  },
+  {
+   "section": "5.2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s5.2-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (Route 53 Developer Guide, Weighted routing)",
+     "evidence": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy-weighted.html: \"If you add health checks to all the records in a group of weighted records ... If all the records that have a weight greater than 0 are unhealthy, then Route 53 considers the zero-weighted records.\" The answer (true) is correct, but the statement is that source sentence with a few words swapped (\"With health checks on each record\" + \"considers zero-weight records when all nonzero-weight records are unhealthy\"). The RULES forbid reproducing an official sentence with a word or two changed. Also, volatility is set to may_change with the note \"depends on the configured numeric weight zero\". That is not a volatile number: zero is a semantic value, not a quota or limit.",
+     "problem": "Near-copy of the source sentence. The volatility flag is unjustified.",
+     "suggestedFix": "Keep answer true, reword: \"In a weighted group where every record has a health check, a healthy weight-0 record answers once all positive-weight records fail.\" (118 chars). Explanation: \"Route 53 first considers only nonzero-weight records. When every one of them is unhealthy, it falls back to the zero-weight records, so a healthy weight-0 record acts as a standby answer.\" Set volatility to stable and clear volatilityNote."
+    },
+    {
+     "id": "aws-soa-c03-s5.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (Forwarding inbound DNS queries to your VPCs)",
+     "evidence": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver-forwarding-inbound-queries.html: \"An inbound endpoint specifies the IP addresses (from the range of IP addresses available to your VPC) that you want DNS resolvers on your network to forward DNS queries to.\" The answer (true) is correct. However, https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resolver.html says \"Inbound Resolver endpoints allow DNS queries to your VPC from your on-premises network\", which is what the word \"inbound\" says on its face. A player who knows nothing about Resolver can answer True from the endpoint's name. The same page also notes \"Route 53 VPC Resolver was previously called Route 53 Resolver\", so the statement uses the old name.",
+     "problem": "Name giveaway: the direction (on-premises into the VPC goes to the inbound endpoint) can be read from the word \"inbound\". The statement also uses the pre-rename product name.",
+     "suggestedFix": "Replace with a true card on what an inbound endpoint lets on-premises clients resolve: \"On-premises resolvers that forward to a VPC Resolver inbound endpoint get answers from private hosted zones associated with its VPC.\" (119 chars). Explanation: \"The inbound endpoint passes queries to Route 53 VPC Resolver, which answers from private hosted zones associated with the endpoint's VPC. The VPN or Direct Connect link carries the traffic to its private IPs.\" Source: resolver-forwarding-inbound-queries.html (\"allowing the VPC Resolver to respond with records from the associated private hosted zone\")."
+    }
+   ],
+   "notes": "I opened and checked all 12 cards of section 5.2 against their source URLs. Every URL loads and is official and current. The answers of all 12 are correct, and the true/false balance is 6/6 (true: 02, 03, 05, 07, 08, 09; false: 01, 04, 06, 10, 11, 12). The quotes that settle the passing cards:\n- 01: hosted-zones-private.html: \"You create a private hosted zone ... and specify the VPC that you want to associate ... After you create the hosted zone you can associate more VPCs with it.\"\n- 02: resource-record-sets-choosing-alias-non-alias.html: alias at the zone apex; \"An Elastic Load Balancing load balancer ... This includes Application Load Balancer\".\n- 04: routing-policy-geo.html: \"If you don't create a default record, Route 53 returns a 'no answer' response\".\n- 05: routing-policy-multivalue.html: \"If you don't associate a health check with a multivalue answer record, Route 53 always considers the record to be healthy.\"\n- 06: query-logs.html: \"Amazon Route 53 sends query logs directly to CloudWatch Logs ... export logs to Amazon S3\". I could not run a web search for a 2026 change because the search budget was exhausted, but the current page lists CloudWatch Logs as the only destination.\n- 08: resolver-overview-forward-vpc-to-network-domain-name-matches.html: \"routes outbound DNS queries using the rule that contains the most specific domain name\".\n- 09: private-content-restricting-access-to-s3.html: the SSE-KMS section says to add a statement to the KMS key policy for the cloudfront.amazonaws.com principal, with an AWS:SourceArn condition naming the distribution.\n- 10: cnames-and-https-requirements.html: \"request (or import) the certificate in the US East (N. Virginia) Region (us-east-1)\".\n- 11: controlling-origin-requests.html: \"Use the origin request policy to specify the information that you want to include in origin requests, but not include in the cache key.\" This card tests distribution configuration, not troubleshooting, so it stays in 5.2 and does not duplicate any 5.3 card.\n- 12: introduction-how-it-works.html: \"The static IP addresses remain assigned to your accelerator for as long as it exists, even if you disable the accelerator\".\n\nDeck-wide naming issue: resolver.html now says \"Route 53 VPC Resolver was previously called Route 53 Resolver, but was renamed when Route 53 Global Resolver was introduced.\" Cards 5.2-07 and 5.2-08 (and 5.1-10 outside this section) still write \"Route 53 Resolver\". No card hinges on the name, but the prompt's rule is to use today's official names, so I suggest changing them to \"Route 53 VPC Resolver\". The exam guide still writes \"Route 53 Resolver\", so this is cosmetic, not a wrong answer.\n\nDuplicates: I found none within 5.2 or against 2.2 (Route 53 health checks), 4.2 (KMS key policy, ACM renewal), 5.1 (DNS Firewall) or 5.3 (CloudFront logs and TTL). Read-only check; I edited no files."
+  },
+  {
+   "section": "5.3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "aws-soa-c03-s5.3-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (Athena User Guide, Query Amazon VPC flow logs)",
+     "evidence": "https://docs.aws.amazon.com/athena/latest/ug/vpc-flow-logs.html: \"The logs are created in a GZIP compression format that Athena lets you query directly.\" The same page also says: \"Amazon VPC Console – Use the Athena integration feature in the Amazon VPC Console to generate an CloudFormation template that creates an Athena database, workgroup, and flow logs table with partitioning for you. The template also creates a set of predefined flow log queries.\"",
+     "problem": "The card is correct but close to a truism. Anyone who knows Athena runs SQL over S3 data after a table is defined will answer True, so the only content is the word 'compressed', and few learners would doubt it. That makes it a borderline 'what is the service for' card (CLF territory) and the weakest card in the section, not an operator distinction.",
+     "suggestedFix": "Replace (keeps answer true, so the section stays 6 true and 6 false). Statement (117 chars): \"The Amazon VPC console can generate a CloudFormation template that creates an Athena table and queries for flow logs.\" Explanation (168 chars): \"The VPC console's Athena integration generates a CloudFormation template that creates an Athena database, workgroup, partitioned flow logs table and predefined queries.\" Keep factKey athena-network-log-query and the same URL, or use https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-athena.html."
+    }
+   ],
+   "notes": "I checked all 12 cards of 5.3 (aws-soa-c03-b4.json). Every source URL loaded and is official and current, and each one supports its card, including the corrected fact in the explanation of each false card.\n\nSettling quotes for the cards that pass:\n- 01: \"It does not send packets or analyze the data plane.\"\n- 02: \"REJECT — ... or packets arrived after the connection was closed.\"\n- 03: enable-access-logging says \"The bucket must be located in the same Region as the load balancer.\" The word 'legacy' itself appears only on the parent page load-balancer-access-logs.html, which says \"While traditional 'legacy' logs ... remain available, Application Load Balancer now offers enhanced logging options through CloudWatch Logs.\" That makes the 'legacy' qualifier necessary and correct. Optionally switch the URL to the parent page so one page carries the whole card.\n- 04: RedactedFields \"has no impact on request sampling. You can only exclude fields from request sampling by disabling sampling ... or by configuring data protection for the web ACL.\"\n- 05: standard logging (v2) can \"Send access logs to Amazon CloudWatch Logs, Amazon Data Firehose, and Amazon Simple Storage Service\", and \"CloudFront uses CloudWatch vended logs to deliver access logs.\"\n- 06: the real-time page says \"For StreamType, the only valid value is Kinesis\" and logs go to Kinesis Data Streams, with Firehose as a downstream consumer.\n- 08: \"If your minimum TTL is greater than 0, CloudFront will cache content for at least the duration specified ... even if the Cache-Control: no-cache, no-store, or private directives are present.\"\n- 09: \"If your connection is interrupted but the VPN connection remains UP, any propagated routes that are in your route table are not automatically removed ... you might have to disable route propagation.\"\n- 10: \"Network Flow Monitor collects data from lightweight software agents that you install on your instances.\"\n- 11: \"Internet Monitor uses the connectivity data that AWS captures from its global networking footprint to calculate a baseline.\"\n- 12: \"A probe is the traffic that's sent from an AWS-hosted resource to an on-premises destination IP address.\"\n\nBalance: 6 true and 6 false. Average statement length is 112.5 for true and 109.0 for false, within 5 characters. All statements are 120 characters or less and all explanations 240 or less.\n\nDuplicate check against other sections: no duplicates found. 5.1-01 (static versus propagated route priority) and 5.1-08 (VGW tunnel selection) rest on different facts from 5.3-09. 5.2-11 (origin request policy versus cache key) differs from 5.3-08. 1.1-07 (subscription filter to Firehose) differs from 5.3-06.\n\nMinor points, not flagged:\n- 5.3-08 is hard to read (\"skips caching otherwise cacheable successful Cache-Control: private responses\"); a simpler phrasing would help.\n- 5.3-08's volatility note (may_change because the minimum TTL is a number) is weakly justified but harmless.\n- 5.3-10, 11 and 12 all draw on the prompt's network monitoring trio. They test distinct facts (installed agent, data source, probe direction), so they are not duplicates.\n\nMy web-search budget was used up, so I could not search for a retirement notice for Internet Monitor. Its user guide page loaded with no availability-change banner."
+  }
+ ],
+ "scan": {
+  "cardsRead": 156,
+  "duplicates": [],
+  "conflictGroups": [
+   {
+    "name": "network-monitor-data-sources",
+    "ids": [
+     "aws-soa-c03-s5.3-10",
+     "aws-soa-c03-s5.3-11",
+     "aws-soa-c03-s5.3-12"
+    ],
+    "why": "Three cards split one three-way distinction that the prompt lists as one fact to test once (where each CloudWatch network monitor gets its data). Once s5.3-10 (agents on EC2) and s5.3-11 (AWS global data) are known, s5.3-12's remaining slot (probes from AWS to on-premises, no agents) follows by elimination, and the reverse also holds."
+   },
+   {
+    "name": "ebs-snapshot-incremental",
+    "ids": [
+     "aws-soa-c03-s2.3-06",
+     "aws-soa-c03-s2.3-07"
+    ],
+    "why": "s2.3-07's explanation says later snapshots reference data captured earlier, which gives away s2.3-06's incremental-block answer (True). s2.3-06's 'reuses unchanged snapshot data' then strongly frames the deletion question in s2.3-07."
+   },
+   {
+    "name": "iam-permissions-boundary",
+    "ids": [
+     "aws-soa-c03-s4.1-01",
+     "aws-soa-c03-s4.1-02"
+    ],
+    "why": "Both test how a permissions boundary on a role behaves. s4.1-02's explanation ('sets a ceiling for identity-based permissions') pushes the player on s4.1-01's boundary-versus-resource-policy question, and s4.1-01's explicit Deny framing hints that boundaries restrict and do not grant."
+   },
+   {
+    "name": "ssm-agent-connectivity",
+    "ids": [
+     "aws-soa-c03-s3.2-01",
+     "aws-soa-c03-s3.2-03"
+    ],
+    "why": "s3.2-03's explanation (sessions start 'through service communication rather than inbound SSH access') hints at s3.2-01's answer (SSM Agent installed with service connectivity), and s3.2-01's statement in turn hints at s3.2-03's answer."
+   },
+   {
+    "name": "rds-multi-az-instance-standby",
+    "ids": [
+     "aws-soa-c03-s2.2-05",
+     "aws-soa-c03-s2.2-06"
+    ],
+    "why": "s2.2-06's statement (DNS is repointed to the standby only during failover) and s2.2-05's explanation (the standby 'provides failover support') each hint at the other: the standby is a passive failover target that serves no reads, and DNS moves to it on failover."
+   },
+   {
+    "name": "cloudtrail-eventbridge-logging-trail",
+    "ids": [
+     "aws-soa-c03-s1.2-04",
+     "aws-soa-c03-s1.2-05",
+     "aws-soa-c03-s1.1-09"
+    ],
+    "why": "All three hinge on what a logging trail delivers. s1.2-04 and s1.2-05 both open 'With a logging trail', and s1.2-04's 'sends captured API events to the default bus' primes a True on s1.2-05, which is False. Seen next to s1.2-05's state-based exception, s1.1-09's by-default question also becomes easier to guess. Weak to moderate; keep them in separate rounds."
+   },
+   {
+    "name": "s3-versioning-preservation",
+    "ids": [
+     "aws-soa-c03-s2.3-08",
+     "aws-soa-c03-s2.3-09"
+    ],
+    "why": "s2.3-08's explanation says a delete marker is added 'while preserving the object's earlier versions', which strongly hints that suspending versioning also leaves existing versions and their IDs untouched (s2.3-09, False)."
+   }
+  ],
+  "tells": "Length is balanced: every section's true and false statement averages are within 5 characters (largest gap 4.2 in section 3.2; deck-wide 105.6 vs 106.0). No statement is over 120 characters and no explanation is over 240. Hedge words are balanced ('can' 22 true / 20 false; 'automatically' 7 / 6). These are the exploitable patterns:\n\n(1) Destructive side effect means False, preservation means True. This is the strongest tell. Rule: answer False when the statement claims an action destroys, stops, removes or changes existing state, and True when it claims existing state is kept. It is right on about 26 of the 30 cards it covers.\n- 17 false statements claim a destructive side effect: s1.1-04 (repeats), s1.2-03 (rewrites the event for other rules), s1.2-09 (cancels running invocations), s1.3-05 (discards parts), s2.1-02 (removes instances), s2.2-02 (stops forwarding), s2.2-10 (terminates connections), s2.3-04 (rewinds the existing instance), s2.3-07 (invalidates snapshots), s2.3-09 (nulls existing version IDs), s3.1-04 (starts updating resources), s3.1-09 (transfers ownership), s3.2-11 (deletes the message), s4.1-04 (revokes keys), s4.2-11 (stops generating findings), s5.1-06 (replaces SG rules), s5.2-12 (releases IPs).\n- 9 true statements claim preservation: s1.2-02, s1.3-04, s2.1-03, s2.1-07, s2.3-06, s3.1-12, s4.2-03, s4.2-06, s5.3-09.\n- Only 2 true cards are disruptive (s2.1-09 reboot, s1.3-07 failover), and few false cards are preservation-style (s2.1-05, s2.1-12).\n\n(2) Scope spill-over means False. 'other' or 'different' appears in 6 false statements and 0 true ones: s1.2-03, s4.1-05, s5.1-07, s5.2-01, s5.1-09, s5.3-03. Related false cards that extend a setting beyond its scope: s1.3-11, s2.2-08, s5.2-10.\n\n(3) Order words. 'before' appears in 5 false statements (s1.1-06, s1.1-12, s1.3-08, s3.1-11, s3.2-12) and 1 true one (s4.2-03). 'after' appears in 9 true statements (s1.3-03, s2.1-03, s2.3-06, s3.1-12, s3.2-05, s4.2-06, s5.1-11, s5.3-02, s5.3-07) and 3 false ones (s1.3-05, s2.3-02, s3.1-09).\n\n(4) Coverage words mark False, which the prompt forbids. 'by default' plus 'directly' appear in 2 true statements (s1.1-03, s3.2-05) and 6 false ones (s1.1-02, s1.1-09, s1.2-01, s2.2-04, s5.1-10, s5.2-06).\n\n(5) A recurring false template goes over the prompt's limit of 2. 'The service automatically does the convenient thing for you' appears 6 times: s2.3-05 (carries tags), s4.1-06 (uses the requester IP), s4.2-05 (renews an imported cert), s5.2-01 (associates other VPCs), s1.3-08 (preloads the dataset), s4.2-08 ('also grants' decryption). The word 'automatically' itself is balanced, so this is a template tell, not a word tell.\n\n(6) Concession phrasing leans True. 'can ... even / still / despite' appears in 3 true statements (s3.1-05, s5.1-02, s5.1-11) and 0 false ones. With 'even' and 'regardless' added in any form, the count is 3 true vs 2 false (s5.1-03, s1.2-01). Weak.\n\n(7) Retention verbs lean True. 'keeps / retains / remain' appears in 4 true statements (s2.1-03, s3.1-12, s4.2-06, s5.3-09) and 2 false ones (s2.1-05, s2.3-02). This is part of tell 1.\n\n(8) Tag-based selection is always True: s2.3-01 and s3.2-07 use the same 'can select X by matching tags' template.\n\n(9) Minor:\n- Statements opening with 'An ' are 6 true vs 13 false (mostly 'An Amazon EC2 Auto Scaling ...' and 'An IAM ...').\n- In section 1.2, false explanations average 17 characters longer than true ones (143.8 vs 126.7). This is visible only after answering, so it is not exploitable.\n\nThe prompt's process rule was not followed: the three network-monitor cards (s5.3-10/11/12) test the single network-monitor item that the prompt allows once ('each at most once'). They are reported as a conflict group, not as duplicates, because each tests a different service."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "aws-soa-c03-s1.1-01",
+    "reason": "weak_card: the 'With the CloudWatch agent installed ... can publish' wording gives True away. 1.1 still has 10 cards (4 true, 6 false) without it."
+   },
+   {
+    "id": "aws-soa-c03-s1.1-11",
+    "reason": "weak_card: name giveaway, since 'service-managed permissions' already means the service creates the role. Dropping it leaves 10 cards (4 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s1.2-03",
+    "reason": "weak_card: strawman, because an input transformer is set per target, and the page never mentions other rules. Dropping it leaves 9 cards (5 true, 4 false)."
+   },
+   {
+    "id": "aws-soa-c03-s1.2-08",
+    "reason": "weak_card: gives itself away, since a 'specified assume role's permissions' are by definition the ones used. Dropping it leaves 9 cards (5 true, 4 false)."
+   },
+   {
+    "id": "aws-soa-c03-s1.2-12",
+    "reason": "weak_card: 'Operators manually build' set against an AI agent signals False. Dropping it leaves 9 cards (5 true, 4 false)."
+   },
+   {
+    "id": "aws-soa-c03-s1.3-03",
+    "reason": "weak_card: TransferMode CHANGED 'skips unchanged data' is close to a tautology. 1.3-06 is rewritten instead to keep the split at 4 true, 6 false."
+   },
+   {
+    "id": "aws-soa-c03-s1.3-09",
+    "reason": "weak_card: an RDS Proxy connection-pooling definition at CLF depth that paraphrases the overview. 1.3 keeps 10 cards (4 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s2.1-05",
+    "reason": "weak_card: a consistent-hashing truism (generic distributed-systems knowledge, set on the client). Dropping it leaves 10 cards (6 true, 4 false)."
+   },
+   {
+    "id": "aws-soa-c03-s2.1-12",
+    "reason": "weak_card: near-strawman, since no DynamoDB mode queues requests, and the explanation leaves out the best-effort burst caveat. Dropping it leaves 10 cards (6 true, 4 false)."
+   },
+   {
+    "id": "aws-soa-c03-s2.2-07",
+    "reason": "weak_card: name giveaway ('Regional' file system spread across the AZs of a Region). 2.2-03 is rewritten instead, so 2.2 stays at 4 true, 6 false."
+   },
+   {
+    "id": "aws-soa-c03-s2.2-11",
+    "reason": "weak_card: a definition card (a safety rule rejects changes that violate it). 2.2 keeps 10 cards (4 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s2.3-01",
+    "reason": "weak_card: truism with a 'can' hedge, and it shares the tag-selection template with 3.2-07 (scan tell 8). 2.3-10 is rewritten instead to keep 4 true, 6 false."
+   },
+   {
+    "id": "aws-soa-c03-s2.3-11",
+    "reason": "weak_card: name giveaway (a cross-Region copy rule copies to another Region). 2.3 keeps 10 cards (4 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s3.1-06",
+    "reason": "weak_card: CDK synth to CloudFormation is a definition-level fact at CLF depth. Dropping it leaves 10 cards (5 true, 5 false)."
+   },
+   {
+    "id": "aws-soa-c03-s3.1-09",
+    "reason": "weak_card: strawman, because 'share' already rules out a transfer of ownership. Dropping it leaves 10 cards (5 true, 5 false)."
+   },
+   {
+    "id": "aws-soa-c03-s3.2-01",
+    "reason": "weak_card: close paraphrase of the source's definition, readable from 'SSM Agent' plus 'managed'. Dropping it leaves 9 cards (4 true, 5 false) and dissolves the scan's ssm-agent-connectivity group."
+   },
+   {
+    "id": "aws-soa-c03-s3.2-02",
+    "reason": "weak_card: a generic eventual-consistency API caveat, not Run Command behaviour an operator configures. Dropping it leaves 9 cards (4 true, 5 false)."
+   },
+   {
+    "id": "aws-soa-c03-s3.2-08",
+    "reason": "weak_card: true by definition (Inventory collects custom inventory). Dropping it leaves 9 cards (4 true, 5 false)."
+   },
+   {
+    "id": "aws-soa-c03-s4.2-12",
+    "reason": "weak_card: name giveaway ('continuous scanning ... waits for another push'). Dropping it leaves 11 cards (6 true, 5 false)."
+   },
+   {
+    "id": "aws-soa-c03-s5.1-04",
+    "reason": "weak_card: 'automatic mode ... automatically expands' gives True away. Dropping it leaves 11 cards (5 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s5.2-03",
+    "reason": "weak_card: copies the source sentence with a few words swapped, and the volatility flag has no basis. Dropping it leaves 10 cards (4 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s5.2-07",
+    "reason": "weak_card: name giveaway ('inbound' endpoint receives on-premises queries), and it uses the pre-rename Resolver name. Dropping it leaves 10 cards (4 true, 6 false)."
+   },
+   {
+    "id": "aws-soa-c03-s5.3-07",
+    "reason": "weak_card: near-truism (Athena queries S3 data once a table exists). Dropping it leaves 11 cards (5 true, 6 false)."
+   }
+  ],
+  "source": [
+   {
+    "id": "aws-soa-c03-s4.2-07",
+    "title": "Promote a replica secret to a standalone secret in AWS Secrets Manager",
+    "url": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/standalone-secret.html"
+   },
+   {
+    "id": "aws-soa-c03-s3.1-07",
+    "title": "Continue rolling back an update",
+    "url": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-continueupdaterollback.html"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "aws-soa-c03-s1.2-06",
+    "reason": "explanation_error: the explanation presented the resource-based policy as the only route. The page now documents an IAM execution role on the target as an alternative. Statement kept.",
+    "statement": "A Lambda function's resource-based policy can grant EventBridge permission to invoke the function.",
+    "answer": true,
+    "explanation": "A resource-based policy that grants lambda:InvokeFunction to events.amazonaws.com authorizes the rule. EventBridge relies on it when no IAM execution role is configured on the target.",
+    "misconception": "",
+    "sourceTitle": "Using resource-based policies for Amazon EventBridge",
+    "sourceUrl": "https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-use-resource-based.html"
+   },
+   {
+    "id": "aws-soa-c03-s1.3-06",
+    "reason": "weak_card (giveaway 'On first access ... moves accessed files back'). Rewritten rather than dropped, because dropping 03, 06 and 09 would leave 1.3 at 3 true out of 9. It now tests the default behaviour. Page: 'By default, files are not moved back to the Standard storage class, and they remain in the IA or Archive storage class when they are accessed.'",
+    "statement": "By default, Amazon EFS leaves a file in the IA storage class when an application reads its content.",
+    "answer": true,
+    "explanation": "The Transition into Standard lifecycle policy leaves accessed files in IA or Archive by default. Setting it to On first access moves them back to Standard for latency-sensitive workloads.",
+    "misconception": "",
+    "sourceTitle": "Managing storage lifecycle",
+    "sourceUrl": "https://docs.aws.amazon.com/efs/latest/ug/lifecycle-management-efs.html"
+   },
+   {
+    "id": "aws-soa-c03-s2.2-03",
+    "reason": "weak_card (HealthThreshold name giveaway). Rewritten rather than dropped, because dropping 03, 07 and 11 would leave 2.2 at 3 true out of 9. Page: 'If you disable a health check that a calculated health check is monitoring, Route 53 considers the disabled health check to be healthy ... choose the Invert health check status check box.'",
+    "statement": "Amazon Route 53 treats a disabled child health check as healthy while it evaluates the parent calculated health check.",
+    "answer": true,
+    "explanation": "A disabled health check that a calculated health check monitors is treated as healthy. To have Route 53 count it as unhealthy instead, an operator inverts its health check status.",
+    "misconception": "",
+    "sourceTitle": "Values that you specify when you create or update health checks",
+    "sourceUrl": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-creating-values.html"
+   },
+   {
+    "id": "aws-soa-c03-s2.3-10",
+    "reason": "weak_card (definition card, near-copy of the source). Rewritten rather than dropped, because dropping 01, 10 and 11 would leave 2.3 at 3 true out of 9. Page: 'All shadow copies stored in your file system are included in file system backups.' and 'Shadow copies are not enabled on FSx for Windows File Server by default.'",
+    "statement": "Backups of an Amazon FSx for Windows File Server file system include the shadow copies stored on it.",
+    "answer": true,
+    "explanation": "Shadow copies are stored alongside the file system's data, so file system backups capture them. Shadow copies are off by default; an operator enables and schedules them with PowerShell commands.",
+    "misconception": "",
+    "sourceTitle": "Protecting your data with shadow copies",
+    "sourceUrl": "https://docs.aws.amazon.com/fsx/latest/WindowsGuide/shadow-copies-fsxW.html"
+   },
+   {
+    "id": "aws-soa-c03-s2.3-12",
+    "reason": "ambiguous: the 'using Amazon EC2 ... reduced capacity' framing matches the whitepaper's own pilot light subsection ('EC2 instances are deployed in a scaled-down configuration'). The new statement names neither EC2 nor capacity, does not reveal that the servers are off, and rests on the Note: 'pilot light cannot process requests without additional action taken first ... requires you to turn on servers'.",
+    "statement": "In the AWS pilot light strategy, the recovery Region processes requests as soon as traffic is redirected to it.",
+    "answer": false,
+    "explanation": "Pilot light keeps data stores live but application servers switched off, so the recovery Region cannot process requests until they are turned on. Warm standby handles reduced traffic immediately.",
+    "misconception": "A pilot light recovery Region already runs application servers that take traffic the moment it is redirected.",
+    "sourceTitle": "Disaster recovery options in the cloud",
+    "sourceUrl": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html"
+   },
+   {
+    "id": "aws-soa-c03-s4.2-06",
+    "reason": "ambiguous: 'keeps clone permissions' can be read as 'keeps them in sync', and it named the template as the actor. Page: 'Secrets Manager creates the cloned user with the same permissions as the original user. If you change the original user's permissions after the clone is created, you must also change the cloned user's permissions.'",
+    "statement": "With alternating users rotation, an operator who changes the original user's permissions must also update the clone.",
+    "answer": true,
+    "explanation": "Secrets Manager creates the clone with the original user's permissions during the first rotation. Later permission changes to the original user do not carry over to the clone.",
+    "misconception": "",
+    "sourceTitle": "Lambda function rotation strategies",
+    "sourceUrl": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/rotation-strategy.html"
+   },
+   {
+    "id": "aws-soa-c03-s4.2-07",
+    "reason": "source_problem: replicate-secrets.html never says a replica cannot rotate on its own. standalone-secret.html says 'A replica secret can't be updated independently from its primary secret, except for its encryption key' and suggests promoting a replica 'if you want to turn on rotation for the replica'. Statement kept; explanation aligned with the new page.",
+    "statement": "AWS Secrets Manager can rotate a replica secret independently while its replication link remains active.",
+    "answer": false,
+    "explanation": "A replica secret can't be updated independently of its primary, apart from its KMS key. To turn on rotation for a replica, an operator promotes it to a standalone secret.",
+    "misconception": "An active replica secret has a rotation schedule independent of its primary secret.",
+    "sourceTitle": "Promote a replica secret to a standalone secret in AWS Secrets Manager",
+    "sourceUrl": "https://docs.aws.amazon.com/secretsmanager/latest/userguide/standalone-secret.html"
+   },
+   {
+    "id": "aws-soa-c03-s3.1-07",
+    "reason": "source_problem (the verifier's optional improvement): the API reference only implies the fact. The user guide page states it: 'A stack in the UPDATE_ROLLBACK_FAILED state can't be updated, but it can be rolled back to a working state (UPDATE_ROLLBACK_COMPLETE).' Text unchanged.",
+    "statement": "AWS CloudFormation can accept a new stack update while the stack is in UPDATE_ROLLBACK_FAILED.",
+    "answer": false,
+    "explanation": "A stack in UPDATE_ROLLBACK_FAILED needs recovery before another update. The operator can use ContinueUpdateRollback to restore it to UPDATE_ROLLBACK_COMPLETE.",
+    "misconception": "A new stack update can repair UPDATE_ROLLBACK_FAILED before rollback recovery.",
+    "sourceTitle": "Continue rolling back an update",
+    "sourceUrl": "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-continueupdaterollback.html"
+   },
+   {
+    "id": "aws-soa-c03-s2.3-06",
+    "reason": "tell: removes the scan's strongest pattern (preservation wording 'reusing unchanged snapshot data' means True) and the 'after' order word. It also puts 'each' and 'only' in a true statement; the source uses 'only'. The fact (incremental blocks since the last snapshot) and the answer (True) are unchanged. Page: 'Subsequent snapshots of the same volume are incremental snapshots. They include only changed and new data blocks written to the volume since the last snapshot was created.'",
+    "statement": "Apart from the first, each Amazon EBS snapshot of a volume holds only blocks changed or added since the last snapshot.",
+    "answer": true,
+    "explanation": "The first snapshot of a volume is a full snapshot. Later incremental snapshots save only new and changed blocks and reference unchanged data stored in earlier snapshots.",
+    "misconception": "",
+    "sourceTitle": "How Amazon EBS snapshots work",
+    "sourceUrl": "https://docs.aws.amazon.com/ebs/latest/userguide/how_snapshots_work.html"
+   },
+   {
+    "id": "aws-soa-c03-s2.2-04",
+    "reason": "tell: removes 'directly', one of the coverage words the scan found marking False (tell 4). The fact and the answer (False) are unchanged. The explanation now adds the documented alternative for private resources. Page: 'Route 53 cannot check the health of endpoints for which the IP address is in local, private, nonroutable, or multicast ranges' and the 'State of CloudWatch alarm data stream' option.",
+    "statement": "Amazon Route 53 health checkers probe an endpoint's private IP address inside an Amazon VPC.",
+    "answer": false,
+    "explanation": "Route 53 cannot health check endpoints whose IP address is in a private, local or nonroutable range. For a private resource, a health check can monitor a CloudWatch alarm instead.",
+    "misconception": "Route 53 endpoint health checkers reach private VPC addresses directly.",
+    "sourceTitle": "Values that you specify when you create or update health checks",
+    "sourceUrl": "https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/health-checks-creating-values.html"
+   },
+   {
+    "id": "aws-soa-c03-s1.1-02",
+    "reason": "tell: removes 'directly' from a false statement (scan tell 4). The fact (composite alarm rules use the states of other alarms, not metric values) and the answer (False) are unchanged.",
+    "statement": "A CloudWatch composite alarm can evaluate a rule expression built from raw metric values.",
+    "answer": false,
+    "explanation": "A composite alarm applies a logical rule to the states of other alarms. Its inputs are alarm states such as ALARM, OK, and INSUFFICIENT_DATA.",
+    "misconception": "Composite alarms aggregate metric values rather than evaluate other alarms' states.",
+    "sourceTitle": "Create a composite alarm",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Create_Composite_Alarm.html"
+   },
+   {
+    "id": "aws-soa-c03-s1.1-05",
+    "reason": "tell: scope words 'other' and 'different' appeared only in false statements (scan tell 2, 0 true against 5 false after the drops). Changing 'multiple' to 'different' in a true card breaks that. The fact and the answer (True) are unchanged; the source says dashboards cover 'resources that are spread across different Regions'.",
+    "statement": "A CloudWatch dashboard displays metrics from different AWS Regions together in the same operational view.",
+    "answer": true,
+    "explanation": "CloudWatch dashboards bring metrics from different Regions into one view. Widget or metric settings identify the Region supplying the data.",
+    "misconception": "",
+    "sourceTitle": "Using Amazon CloudWatch dashboards",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Dashboards.html"
+   },
+   {
+    "id": "aws-soa-c03-s3.2-09",
+    "reason": "tell: removes the hedge 'can' from a false statement, since after the drops hedges lean False (16 true against 20 false). It also fixes the odd 'can guarantee' wording the verifier noted. The fact (notifications are not guaranteed to arrive in order) and the answer (False) are unchanged. Page: 'they aren't guaranteed to arrive in the same order that the events occurred'.",
+    "statement": "Amazon S3 guarantees that event notifications arrive in the order of the object operations that generated them.",
+    "answer": false,
+    "explanation": "Amazon S3 Event Notifications can arrive out of order. The order of notifications can differ from the order of the underlying object operations.",
+    "misconception": "S3 Event Notifications preserve the sequence of the object operations that generated them.",
+    "sourceTitle": "Event notification types and destinations",
+    "sourceUrl": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "network-monitor-data-sources",
+    "ids": [
+     "aws-soa-c03-s5.3-10",
+     "aws-soa-c03-s5.3-11",
+     "aws-soa-c03-s5.3-12"
+    ]
+   },
+   {
+    "name": "ebs-snapshot-incremental",
+    "ids": [
+     "aws-soa-c03-s2.3-06",
+     "aws-soa-c03-s2.3-07"
+    ]
+   },
+   {
+    "name": "iam-permissions-boundary",
+    "ids": [
+     "aws-soa-c03-s4.1-01",
+     "aws-soa-c03-s4.1-02"
+    ]
+   },
+   {
+    "name": "rds-multi-az-instance-standby",
+    "ids": [
+     "aws-soa-c03-s2.2-05",
+     "aws-soa-c03-s2.2-06"
+    ]
+   },
+   {
+    "name": "cloudtrail-eventbridge-logging-trail",
+    "ids": [
+     "aws-soa-c03-s1.2-04",
+     "aws-soa-c03-s1.2-05",
+     "aws-soa-c03-s1.1-09"
+    ]
+   },
+   {
+    "name": "s3-versioning-preservation",
+    "ids": [
+     "aws-soa-c03-s2.3-08",
+     "aws-soa-c03-s2.3-09"
+    ]
+   }
+  ],
+  "sectionBalance": "After the edits: 133 cards (156 - 23). Per section: cards left, true/false split, then average statement length for true vs false. 1.1: 10 cards, 4T/6F (102.3 vs 101.5). 1.2: 9 cards, 5T/4F (93.8 vs 96.3). 1.3: 10 cards, 4T/6F (101.5 vs 103.0). 2.1: 10 cards, 6T/4F (106.2 vs 111.0). 2.2: 10 cards, 4T/6F (111.5 vs 113.0). 2.3: 10 cards, 4T/6F (106.3 vs 106.8). 3.1: 10 cards, 5T/5F (107.6 vs 103.2). 3.2: 9 cards, 4T/5F (102.0 vs 100.6). 4.1: 12 cards, 6T/6F (108.5 vs 105.8). 4.2: 11 cards, 6T/5F (103.8 vs 105.8). 5.1: 11 cards, 5T/6F (105.2 vs 108.8). 5.2: 10 cards, 4T/6F (104.3 vs 107.0). 5.3: 11 cards, 5T/6F (114.0 vs 109.0, a gap of exactly 5.0, at the limit). Every section has at least 9 cards and a split no worse than 4 to 6 per 10. Statement averages are within 5 characters everywhere, with 5.3 exactly at the limit.",
+  "notes": "I applied the policy as written. Every weak_card was dropped unless dropping would break the 9-card minimum or the 4-6 per 10 balance. That rule forced one rewrite each in 1.3 (06), 2.2 (03) and 2.3 (10). Each replacement keeps the original answer. I checked every rewrite word by word against the official page opened today (2026-10-13).\n\nDeviations from the verifiers' suggested text:\n- 2.3-12: the suggested 'before an operator switches on application servers' tells the player the servers are off, so the card reads as a truism. The new statement tests only that redirecting traffic is not enough, which the whitepaper Note settles.\n- 1.3-06: the verifier's 'defaults to None' is not on the page. The explanation uses the page's own wording.\n- 2.2-03: lengthened, to bring 2.2's true and false averages within 5 characters.\n- 4.2-07: the explanation is rewritten to match the new source page, since the old 'propagates to replicas' line came from the old page.\n- 3.1-07: the URL is upgraded to the user guide page that states the fact outright, as the verifier suggested.\n\nTell rewrites (5, each keeping the fact and the answer):\n- 2.3-06 removes the preservation-means-True wording and 'after'.\n- 2.2-04 and 1.1-02 remove 'directly'.\n- 1.1-05 puts 'different' into a true statement.\n- 3.2-09 removes a false 'can'.\n\nDeck-wide counts after the edits:\n- Hedges: 16 true vs 19 false.\n- Requirement and coverage words: 14 vs 12.\n- 'other' or 'different': 1 vs 5.\n- 'before': 1 vs 5.\n- 'after': 5 vs 2.\n\nThe scan's tell 5 is still there: the false template 'the service automatically does the convenient thing for you' (2.3-05, 4.1-06, 4.2-05, 5.2-01, 1.3-08, 4.2-08). It is semantic, so rewording cannot fix it; breaking it needs new cards. Preservation-means-True (tell 1) is weaker but not gone. 14 destructive false cards remain, and the drops removed both preservation-style false counterexamples (2.1-05, 2.1-12).\n\nNo new conflict groups were needed, and no rewrite hints at another card. The scan's ssm-agent-connectivity group dissolved because 3.2-01 was dropped.\n\nCoverage losses to refill in a later round:\n- Skill 1.1.1 has no CloudWatch agent card left (1.1-01 dropped). The verifier's CWAgent-namespace replacement is a ready candidate.\n- 3.2 lost the 'SSM Agent installed and connected makes a managed node' fact, which the prompt lists as a verified operator fact (3.2-01 dropped under the weak_card rule, although its verifier only asked for a new explanation).\n- 4.2 has no tagging for data classification card.\n- AWS RAM and the CDK have no cards in 3.1.\n- The regional NAT gateway has no card in 5.1.\nThe verifiers' other replacements (1.2-03/08/12, 1.3-03/09, 2.1-05/12, 2.2-07/11, 2.3-01/11, 3.1-06/09, 3.2-02/08, 4.2-12, 5.1-04, 5.2-03/07, 5.3-07) can feed that round, but I have not checked them on their pages.\n\nNaming, not edited: 5.1-10 and 5.2-08 still say 'Route 53 Resolver'. The Route 53 guide now says 'Route 53 VPC Resolver', while the exam guide and this prompt still use the old name. No card hinges on the name.\n\n5.3 sits exactly at the 5-character length limit, because 5.3-07 (a long true card) was dropped."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "aws-soa-c03-s1.2-06",
+    "decision": "keep",
+    "statement": "A Lambda function's resource-based policy can grant EventBridge permission to invoke the function.",
+    "answer": true,
+    "explanation": "A resource-based policy that grants lambda:InvokeFunction to events.amazonaws.com authorizes the rule. EventBridge relies on it when no IAM execution role is configured on the target.",
+    "reason": "Both lenses keep. Checked on eb-use-resource-based.html: 'For Lambda, Amazon SNS, and Amazon SQS resources, EventBridge can use either an IAM execution role or a resource-based policy... If no execution role is configured, EventBridge uses resource-based policies on the target resource.' The policy example uses lambda:InvokeFunction with principal events.amazonaws.com."
+   },
+   {
+    "id": "aws-soa-c03-s1.3-06",
+    "decision": "keep",
+    "statement": "By default, Amazon EFS leaves a file in the IA storage class when an application reads its content.",
+    "answer": true,
+    "explanation": "The Transition into Standard lifecycle policy leaves accessed files in IA or Archive by default. Setting it to On first access moves them back to Standard for latency-sensitive workloads.",
+    "reason": "Both lenses keep. Checked on lifecycle-management-efs.html: 'By default, files are not moved back to the Standard storage class, and they remain in the IA or Archive storage class when they are accessed.' The On first access option is stated for performance-sensitive use cases. Metadata operations don't count as access, so 'reads its content' is the right wording."
+   },
+   {
+    "id": "aws-soa-c03-s2.2-03",
+    "decision": "keep",
+    "statement": "Amazon Route 53 treats a disabled child health check as healthy while it evaluates the parent calculated health check.",
+    "answer": true,
+    "explanation": "A disabled health check that a calculated health check monitors is treated as healthy. To have Route 53 count it as unhealthy instead, an operator inverts its health check status.",
+    "reason": "Both lenses keep. Checked on health-checks-creating-values.html, calculated section in both consoles: 'If you disable a health check that a calculated health check is monitoring, Route 53 considers the disabled health check to be healthy... If you want the disabled health check to be considered unhealthy, choose the Invert health check status check box.' 118 characters."
+   },
+   {
+    "id": "aws-soa-c03-s2.3-10",
+    "decision": "keep",
+    "statement": "Backups of an Amazon FSx for Windows File Server file system include the shadow copies stored on it.",
+    "answer": true,
+    "explanation": "Shadow copies are stored alongside the file system's data, so file system backups capture them. Shadow copies are off by default; an operator enables and schedules them with PowerShell commands.",
+    "reason": "Both lenses keep. Checked on shadow-copies-fsxW.html: 'Shadow copies are stored alongside your file system's data... All shadow copies stored in your file system are included in file system backups.' 'Shadow copies are not enabled on FSx for Windows File Server by default.' 'You enable and schedule periodic shadow copies on your file system using Windows PowerShell commands defined by Amazon FSx.'"
+   },
+   {
+    "id": "aws-soa-c03-s2.3-12",
+    "decision": "fixed",
+    "statement": "In the AWS pilot light strategy, the recovery Region handles requests the moment failover begins.",
+    "answer": false,
+    "explanation": "Pilot light keeps data stores live but application servers switched off, so the recovery Region cannot process requests until they are turned on. Warm standby serves traffic at reduced capacity immediately.",
+    "reason": "Merged both fixes. Wording lens: 'as soon as traffic is redirected' was defensible as True, because operators switch servers on before traffic moves; the timing is now tied to the start of failover (97 chars). Fact lens: 'handles reduced traffic' misread the whitepaper, which says warm standby handles traffic at reduced capacity (206 chars). Checked on disaster-recovery-options-in-the-cloud.html. Note: 'pilot light cannot process requests without additional action taken first, whereas warm standby can handle traffic (at reduced capacity levels) immediately.' Pilot light section: databases and object storage 'are always on'; application servers 'are \"switched off\"'. Misconception to update: 'A pilot light recovery Region already runs application servers that take traffic the moment failover begins.'"
+   },
+   {
+    "id": "aws-soa-c03-s4.2-06",
+    "decision": "keep",
+    "statement": "With alternating users rotation, an operator who changes the original user's permissions must also update the clone.",
+    "answer": true,
+    "explanation": "Secrets Manager creates the clone with the original user's permissions during the first rotation. Later permission changes to the original user do not carry over to the clone.",
+    "reason": "Both lenses keep. Checked on rotation-strategy.html: 'during the first rotation, the rotation function clones it to create the second user' and 'Secrets Manager creates the cloned user with the same permissions as the original user. If you change the original user's permissions after the clone is created, you must also change the cloned user's permissions.' 'must' comes straight from the source."
+   },
+   {
+    "id": "aws-soa-c03-s4.2-07",
+    "decision": "keep",
+    "statement": "AWS Secrets Manager can rotate a replica secret independently while its replication link remains active.",
+    "answer": false,
+    "explanation": "A replica secret can't be updated independently of its primary, apart from its KMS key. To turn on rotation for a replica, an operator promotes it to a standalone secret.",
+    "reason": "Both lenses keep. Checked on standalone-secret.html: 'A replica secret can't be updated independently from its primary secret, except for its encryption key.' 'Or you might want to promote a replica to a standalone secret if you want to turn on rotation for the replica.' The source swap to this page is correct."
+   },
+   {
+    "id": "aws-soa-c03-s3.1-07",
+    "decision": "keep",
+    "statement": "AWS CloudFormation can accept a new stack update while the stack is in UPDATE_ROLLBACK_FAILED.",
+    "answer": false,
+    "explanation": "A stack in UPDATE_ROLLBACK_FAILED needs recovery before another update. The operator can use ContinueUpdateRollback to restore it to UPDATE_ROLLBACK_COMPLETE.",
+    "reason": "Both lenses keep. Checked on using-cfn-updating-stacks-continueupdaterollback.html: 'A stack in the UPDATE_ROLLBACK_FAILED state can't be updated, but it can be rolled back to a working state (UPDATE_ROLLBACK_COMPLETE). After returning the stack to its original settings, you can try to update it again.' The source swap to the user guide is correct."
+   },
+   {
+    "id": "aws-soa-c03-s2.3-06",
+    "decision": "fixed",
+    "statement": "Apart from the first, each Amazon EBS snapshot of a volume saves only blocks changed or added since the last snapshot.",
+    "answer": true,
+    "explanation": "The first snapshot of a volume is a full snapshot. Later incremental snapshots save only new and changed blocks and reference unchanged data stored in earlier snapshots.",
+    "reason": "Applied the fact lens fix; the wording lens had no objection. 'holds' became 'saves' because how_snapshots_work.html says an archived incremental snapshot 'is converted to a full snapshot', so a present-tense 'holds' could be argued False for an archived snapshot. 'Saves' describes what happens when the snapshot is created. Checked on how_snapshots_work.html: 'Subsequent snapshots of the same volume are incremental snapshots. They include only changed and new data blocks written to the volume since the last snapshot was created'. Unchanged data 'is referenced... rather than being backed up again'. Still 118 chars; 'only' comes from the source."
+   },
+   {
+    "id": "aws-soa-c03-s2.2-04",
+    "decision": "fixed",
+    "statement": "Amazon Route 53 health checkers probe an endpoint's private IP address inside an Amazon VPC.",
+    "answer": false,
+    "explanation": "Route 53 health checkers run outside the VPC, so an endpoint checked by IP address needs a public IP. For instances with only private IPs, a health check can monitor a CloudWatch alarm instead.",
+    "reason": "Applied the fact lens fix: the source changes to 'Configuring failover in a private hosted zone', https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/dns-failover-private-hosted-zones.html. The old page never links the alarm option to private resources. The new page does not say 'local or nonroutable range', so the explanation now uses only what the new page states (193 chars): 'Route 53 health checkers are outside the VPC. To check the health of an endpoint within a VPC by IP address, you must assign a public IP address' and 'create a health check that is based on the data stream for the alarm to check instances within a Virtual Private Cloud (VPC) that only have private IP addresses.' Statement and answer unchanged; the wording lens kept them."
+   },
+   {
+    "id": "aws-soa-c03-s1.1-02",
+    "decision": "keep",
+    "statement": "A CloudWatch composite alarm can evaluate a rule expression built from raw metric values.",
+    "answer": false,
+    "explanation": "A composite alarm applies a logical rule to the states of other alarms. Its inputs are alarm states such as ALARM, OK, and INSUFFICIENT_DATA.",
+    "reason": "Both lenses keep. Checked on Create_Composite_Alarm.html: the rule expression references existing alarms, and 'You can change the required state for each of your alarms from ALARM to OK or INSUFFICIENT_DATA'. For example: (ALARM(\"CPUUtilizationTooHigh\") OR ALARM(\"DiskReadOpsTooHigh\")) AND OK(\"NetworkOutTooHigh\"). Metric values are not an operand."
+   },
+   {
+    "id": "aws-soa-c03-s1.1-05",
+    "decision": "keep",
+    "statement": "A CloudWatch dashboard displays metrics from different AWS Regions together in the same operational view.",
+    "answer": true,
+    "explanation": "CloudWatch dashboards bring metrics from different Regions into one view. Widget or metric settings identify the Region supplying the data.",
+    "reason": "Both lenses keep. Checked on CloudWatch_Dashboards.html: 'Dashboards help you to monitor your resources in a single view, even those resources that are spread across different Regions.' The parameter table says 'region | Specifies the Region of the metric. | Widget or metric'."
+   },
+   {
+    "id": "aws-soa-c03-s3.2-09",
+    "decision": "fixed",
+    "statement": "Amazon S3 Event Notifications preserve the order of the object operations that generated them.",
+    "answer": false,
+    "explanation": "Amazon S3 Event Notifications are delivered at least once and aren't guaranteed to arrive in the same order as the object operations that generated them.",
+    "reason": "Applied the wording lens fix; the fact lens had no objection. 'guarantees' was an absolute-word tell in a False card, which swapped the hedge tell for a new one. The neutral 'preserve' (94 chars) matches the misconception field, and preservation wording in a False card offsets the scan's lean toward True. Checked on notification-how-to-event-types-and-destinations.html: 'Amazon S3 Event Notifications is designed to deliver notifications at least once, but they aren't guaranteed to arrive in the same order that the events occurred.' I grepped the deck: no other card covers at-least-once delivery or duplicates."
+   }
+  ]
+ }
+}

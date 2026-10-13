@@ -1,0 +1,1175 @@
+{
+ "deck": "kafka-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr1-08",
+     "verdict": "duplicate",
+     "urlStatus": "200, official 4.3 page; it states the hash mapping only conditionally ('If data is partitioned by hash(key) % number_of_partitions')",
+     "evidence": "https://kafka.apache.org/43/operations/basic-kafka-operations/ : 'the default partitioner's mapping logic changes when the partition count increases. This means that messages with the same key may be routed to different partitions after the expansion'. Card 08's qualifier 'With a fixed partition count' rests on the same hash(key) % partition-count fact as sr1-09 and gives away its answer: a player who reads 08 knows the mapping depends on the count, so 09 (adding partitions keeps the mapping intact = false) answers itself. The prompt treats the two as one ordering trap ('the same key goes to the same partition only while the partition count is unchanged'). Without the qualifier, 08 would be ambiguous.",
+     "problem": "Rests on the same fact as sr1-09 (partition-expansion-key-remapping) and its qualifier gives away 09's answer. Also, the cited page states the hash mapping only conditionally; the producer config partitioner.class entry states it directly.",
+     "suggestedFix": "Replace with a TRUE card on another r1 fact. Statement: 'Each Kafka record carries a timestamp in addition to its key and value.' Explanation: 'Kafka models an event as a key, a value and a timestamp; the record format stores each record's timestamp as a delta from its batch's base timestamp.' URL: https://kafka.apache.org/43/getting-started/introduction/ ('Conceptually, an event has a key, value, timestamp, and optional metadata headers.'). Keep sr1-09 as the only key-mapping card."
+    },
+    {
+     "id": "kafka-fundamentals-sr1-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 introduction, supports the card",
+     "evidence": "https://kafka.apache.org/43/getting-started/introduction/ : 'Topics in Kafka are always multi-producer and multi-subscriber: a topic can have zero, one, or many producers that write events to it'. The same page also says: 'Note that both producers can write to the same partition if appropriate.'",
+     "problem": "Strawman/truism. Nobody who studied, and hardly anyone guessing, would answer False to 'several producers can publish to the same topic', so the card teaches nothing. The less obvious point on the same page, that producers do not own partitions, would make a better card.",
+     "suggestedFix": "TRUE replacement. Statement: 'Two independent producers can write records to the same partition of a topic.' Explanation: 'A partition is not reserved for one producer: Kafka's introduction notes that independent producers can both write to the same partition, which keeps them in one ordered log.' Same URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 introduction, supports the card",
+     "evidence": "https://kafka.apache.org/43/getting-started/introduction/ : 'When a new event is published to a topic, it is actually appended to one of the topic's partitions.'",
+     "problem": "Truism. 'Appends ... to the end of a partition's log' follows from the meaning of 'append' and 'log', so the answer is readable from the wording. It also names the wrong actor: the producer sends, and the partition leader appends. The explanation ('New events extend the partition's existing log') only restates the statement.",
+     "suggestedFix": "TRUE replacement covering the r1 item 'partitions spread over brokers'. Statement: 'Kafka spreads the partitions of one topic over several brokers of the cluster.' Explanation: 'A topic's partitions are buckets located on different brokers, so client applications can read and write the topic through many brokers at the same time.' Same URL ('a topic is spread over a number of buckets located on different Kafka brokers')."
+    },
+    {
+     "id": "kafka-fundamentals-sr1-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 message format page, supports the card",
+     "evidence": "https://kafka.apache.org/43/implementation/message-format/ : 'Messages (aka Records) are always written in batches. The technical term for a batch of messages is a record batch, and a record batch contains one or more records. In the degenerate case, we could have a record batch containing a single record.'",
+     "problem": "The wording is circular: 'writes a single record inside a record batch, even when the batch has one record' assumes the batch it is supposed to test, so it reads as a truism. The explanation restates the statement without saying that every write uses a batch.",
+     "suggestedFix": "TRUE rewrite. Statement: 'A record the producer sends on its own is still written to the log inside a record batch.' Explanation: 'Kafka always writes records in record batches; a batch holds one or more records, so a lone record is stored as a single-record batch.' Same URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr1-06",
+     "verdict": "explanation_error",
+     "urlStatus": "200, official 4.3 consumer config page, supports the facts",
+     "evidence": "https://kafka.apache.org/43/configuration/consumer-configs/ : 'allow.auto.create.topics Allow automatic topic creation on the broker when subscribing to or assigning a topic. A topic being subscribed to will be automatically created only if the broker allows for it using auto.create.topics.enable broker configuration. Type: boolean Default: true'.",
+     "problem": "The answer (true) depends on allow.auto.create.topics defaulting to true. The explanation says creation 'needs both' settings but never says the consumer one is on by default, so a player cannot tell why the answer is True. The statement also makes the consumer's request depend on the broker setting. In fact the consumer asks for creation whenever its own setting is true, and the broker decides, so an expert could object to the causal wording.",
+     "suggestedFix": "TRUE rewrite. Statement: 'A KafkaConsumer subscribing to a missing topic gets it created when the broker sets auto.create.topics.enable=true.' Explanation: 'allow.auto.create.topics defaults to true on the consumer, so the broker's auto.create.topics.enable decides whether a subscribed missing topic is created.' Same URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr1-05",
+     "verdict": "source_problem",
+     "urlStatus": "200, official 4.3 page, but its offset description is outdated",
+     "evidence": "https://kafka.apache.org/43/implementation/log/ : 'Each message is uniquely identified by a 64-bit integer offset giving the byte position of the start of this message in the stream of all messages ever sent to that topic on that partition.' This is legacy byte-offset wording; Kafka offsets are logical record positions. The page does support per-partition scope ('monotonically increasing integers unique to a partition'). The 4.3 javadoc https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html (title 'KafkaConsumer (kafka 4.3.1 API)') says: 'Kafka maintains a numerical offset for each record in a partition. This offset acts as a unique identifier of a record within that partition'.",
+     "problem": "The answer and the explanation are right, but the cited page describes offsets as byte positions, which is outdated. A learner who opens it gets a misleading picture of what an offset is.",
+     "suggestedFix": "Keep the card and change the URL to https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html (title 'KafkaConsumer (kafka 4.3.1 API)')."
+    },
+    {
+     "id": "kafka-fundamentals-sr1-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 message format page; supports only the broker half",
+     "evidence": "https://kafka.apache.org/43/implementation/message-format/ record schema: 'key: byte[] ... value: byte[]'. The serializer half is in https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html : 'The key.serializer and value.serializer instruct how to turn the key and value objects the user provides with their ProducerRecord into bytes.'",
+     "problem": "'By default' implies a non-default mode in which brokers do deserialize values. No such mode exists, so the qualifier adds a misleading second idea and works as a wording tell (the only 'by default' in r1 sits on a false card). The cited page does not support the explanation's client deserializer half.",
+     "suggestedFix": "FALSE rewrite. Statement: 'Kafka brokers deserialize record values into application objects before writing them.' Explanation: 'Brokers store keys and values as byte arrays; the producer's serializer turns objects into bytes and the consumer's deserializer turns them back into objects.' Keep the message-format URL, or use the KafkaProducer 4.3 javadoc for the serializer half."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (6 true, 6 false; every replacement keeps its card's answer, so the balance stays 6/6). All four cited pages returned 200 under https://kafka.apache.org/43/ ('Last modified May 22, 2026: Add 4.3 docs'), and the KafkaConsumer javadoc title reads 'kafka 4.3.1 API'. No answer is wrong. Cards that pass: sr1-01 (intro: 'an event has a key, value, timestamp, and optional metadata headers'; easy but fair), sr1-03 (intro: 'events are not deleted after consumption'), sr1-07 (intro: per-partition ordering only), sr1-09 (basic ops: 'the default partitioner's mapping logic changes when the partition count increases ... Kafka will not attempt to automatically redistribute existing data'), and sr1-10 (basic ops: 'Kafka does not currently support reducing the number of partitions for a topic'). Optional improvement for sr1-09's explanation: add that existing records stay in their old partitions. Cross-section check: r1 does not repeat the r7 partitioner facts or the r9 auto.offset.reset new-partition risk. If sr1-08 is replaced by the timestamp card, its explanation must not cover CreateTime versus LogAppendTime (that belongs to r2's log-append-time-timestamp-owner). Broker auto.create.topics.enable is confirmed as default true on the 4.3 broker config page, and producer partitioner.class confirms hash-of-key for keyed records."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 topic-configs page; partial support only",
+     "evidence": "Topic config page (https://kafka.apache.org/43/configuration/topic-configs/), message.timestamp.type: \"Define whether the timestamp in the message is message create time or log append time.\" It never says who sets the timestamp or that the producer's value is overwritten. The 4.3.1 ProducerRecord javadoc (https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html) does: \"If the topic is configured to use LogAppendTime, the timestamp in the producer record will be overwritten by the broker with the broker local time when it appends the message to its log.\"",
+     "problem": "The answer is right but the name gives it away. \"LogAppendTime\" literally says the timestamp is the append time, so a player who knows no Kafka can work out that the producer's timestamp is not kept. The cited config entry also does not support the explanation's claim that the broker supplies the timestamp.",
+     "suggestedFix": "Replace (keeps False): \"With the default CreateTime, the broker replaces the producer's record timestamp with its own clock.\" Explanation: \"Under CreateTime the broker uses the timestamp from the ProducerRecord; only LogAppendTime makes the broker overwrite it with its local time when it appends the record.\" URL: https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/ProducerRecord.html"
+    },
+    {
+     "id": "kafka-fundamentals-sr2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 topic-configs page, supports the card",
+     "evidence": "https://kafka.apache.org/43/configuration/topic-configs/ cleanup.policy: \"It is also possible to specify both policies in a comma-separated list (e.g. \"delete,compact\"). In this case, old segments will be discarded per the retention time and size configuration, while retained segments will be compacted.\"",
+     "problem": "The answer is correct, but anyone can guess it from the value \"delete,compact\": both policies apply. The explanation (\"applies compaction to retained segments\") is almost word for word the source sentence. The card misses the behaviour worth learning, which is that retention still removes a key's latest value once its segment is old enough.",
+     "suggestedFix": "Replace (keeps True): \"With cleanup.policy=delete,compact, retention.ms can remove a key's latest value once its segment expires.\" Explanation: \"The combined policy discards old segments by retention time and size and compacts only the segments retention keeps, so even a key's newest value ages out.\" Same URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr2-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official 4.3 log implementation page, supports the card",
+     "evidence": "https://kafka.apache.org/43/implementation/log/: \"Data is deleted one log segment at a time.\" But sr2-03's statement (\"Kafka judges a segment's time retention by its earliest record timestamp\") and sr2-07's explanation (\"delete, which expires old segments\") both say retention works per segment.",
+     "problem": "The answer is correct, but other cards in the same section give it away. sr2-03 presupposes that time retention is judged per segment, so a player who has seen it knows at once that records are not deleted one by one. That breaks the prompt's self-check rule that no card may give away another card's answer. The section's \"deleteRecords advancing the log start offset\" fact has no card yet and can fill the slot.",
+     "suggestedFix": "Replace (keeps False): \"Admin deleteRecords lets an application remove one record from the middle of a partition.\" Explanation: \"deleteRecords removes every record below a given offset by advancing the partition's log start offset; Kafka offers no call to delete a single record mid-log.\" URL: https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/admin/Admin.html (\"Delete records whose offset is smaller than the given offset of the corresponding partition.\")"
+    }
+   ],
+   "notes": "All 12 r2 cards checked against the live 4.3 pages, which all returned 200: implementation/log, implementation/message-format, configuration/topic-configs, design/design, getting-started/upgrade, plus the 4.3.1 javadoc for ProducerRecord and Admin. Every answer is correct. Balance is 6 true and 6 false, with average statement length 71.2 for true and 70.0 for false.\n\nCards that pass, with their evidence:\n- 01: message-format calls RecordBatch the \"on-disk format\", and compressed record data is serialized inside it. design/design is more direct: \"The batch will remain compressed in the log\". The card is true only under the default topic compression.type=producer, which the default-context rule covers.\n- 03: \"the largest timestamp in a segment file ... defining the retention time for the entire segment\".\n- 04: \"Since this limit is enforced at the partition level, multiply it by the number of partitions\".\n- 05: \"Size-based retention is disabled by default\". The explanation (\"enables a ... limit when configured\") adds almost nothing. A better one: retention.bytes defaults to -1, so only retention.ms removes segments unless a size limit is set.\n- 06: segment.ms \"force the log to roll even if the segment file isn't full\".\n- 07: \"The \\\"delete\\\" policy (which is the default)\".\n- 09: the 4.2.0 notable changes say \"cleanup.policy now supports empty values, which means infinite retention\". The same notes add that deleteRecords can still remove segments, and that with remote storage local retention still applies. Consider saying in the explanation that it equals retention.ms=-1 and retention.bytes=-1.\n- 11: \"written to a persistent log on the filesystem without necessarily flushing to disk\" and \"we do not want to require the use of fsync on every write\".\n- 12: \"sendfile is not used when SSL is enabled\". The page says in-kernel SSL_sendfile is \"currently\" unsupported, so volatility could be may_change.\n\nGaps:\n- The section lists \"end-to-end compression decompressed by the consumer\" and \"topic compression.type producer default\", and neither has a card. They are free slots if more replacements are needed.\n- No duplicates found against r3 (compaction) or sr7-07 (producer compression default)."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr3-02",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://kafka.apache.org/43/configuration/topic-configs/ (current 4.3 docs)",
+     "evidence": "Topic configs: cleanup.policy \"... Server Default Property: log.cleanup.policy\". But the 4.3 design page (https://kafka.apache.org/43/design/design/, Configuring The Log Cleaner) says: \"To enable log cleaning on a particular topic, add the log-specific property log.cleanup.policy=compact\".",
+     "problem": "The official design page says, word for word, that log.cleanup.policy enables cleaning on a particular topic, so an expert can defend True from Kafka's own docs. The prompt calls out this naming inconsistency. The card's false answer also depends only on the 'log.' prefix, which is close to the trick-by-spelling the rules forbid.",
+     "suggestedFix": "Replace (answer false): \"Kafka ignores a topic's cleanup.policy=compact while the broker's log.cleanup.policy is still delete.\" Explanation: \"A topic's cleanup.policy overrides the broker default log.cleanup.policy, which applies only to topics that have no override of their own.\" Keep the topic-configs URL; the design page backs it up: \"it affects all of the topics in the cluster that do not have a configuration override\"."
+    },
+    {
+     "id": "kafka-fundamentals-sr3-10",
+     "verdict": "ambiguous",
+     "urlStatus": "200, https://kafka.apache.org/43/configuration/topic-configs/",
+     "evidence": "Topic configs: \"max.compaction.lag.ms The maximum time a message will remain ineligible for compaction in the log.\" Design page (https://kafka.apache.org/43/design/design/): \"Note that this compaction deadline is not a hard guarantee since it is still subjected to the availability of log cleaner threads and the actual compaction time.\"",
+     "problem": "The 4.3 design page itself calls max.compaction.lag.ms a \"compaction deadline\", so the statement that it is Kafka's \"deadline for finishing compaction\" can be defended from the official text. The real point is that it bounds eligibility and is not a hard guarantee, and the statement's wording does not isolate that point.",
+     "suggestedFix": "Replace (answer false): \"On a compacted topic, max.compaction.lag.ms guarantees that a superseded record is removed within that time.\" Explanation: \"max.compaction.lag.ms only bounds how long a record stays ineligible for compaction; actual cleaning still depends on free log cleaner threads, so it is not a hard deadline.\" (173 chars) Cite https://kafka.apache.org/43/design/design/ because it holds the not-a-hard-guarantee sentence."
+    },
+    {
+     "id": "kafka-fundamentals-sr3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/configuration/topic-configs/",
+     "evidence": "Topic configs: \"delete.retention.ms The amount of time to retain delete tombstone markers for log compacted topics.\"",
+     "problem": "The statement restates the config description almost word for word, and the answer can be read from the name (delete + retention). It teaches nothing about behaviour. The section's real fact, a lagging reader missing tombstones, is not tested by any card in the deck.",
+     "suggestedFix": "Replace (answer true): \"A consumer reading a compacted topic from the start can miss tombstones if it lags longer than delete.retention.ms.\" Explanation: \"Tombstones are themselves cleaned out after delete.retention.ms, so a slow reader still gets each key's final value but may never see the delete marker.\" Source https://kafka.apache.org/43/design/design/: \"it is possible for a consumer to miss delete markers if it lags by more than delete.retention.ms\"."
+    },
+    {
+     "id": "kafka-fundamentals-sr3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/design/design/",
+     "evidence": "Design page: \"The head of the log is identical to a traditional Kafka log. It has dense, sequential offsets and retains all messages.\" and \"Any consumer that stays caught-up to within the head of the log will see every message that is written\".",
+     "problem": "As worded (\"sees each record at a compacted partition's head\"), the statement is a truism: the head is by definition the part that keeps every record, so it says nothing about what a caught-up reader gains. The doc's real guarantee, that a caught-up reader sees every record ever written including ones compacted later, is lost. The explanation is vague too.",
+     "suggestedFix": "Replace (answer true): \"A consumer that keeps up with a compacted topic's head sees every record written, even values compaction removes later.\" Explanation: \"Compaction only rewrites the tail; the head keeps every record with sequential offsets, so a reader that stays within it misses nothing.\" Same URL."
+    }
+   ],
+   "notes": "All 12 r3 cards checked against the live 4.3 pages, which all returned 200: design/design (Log Compaction section), configuration/topic-configs and configuration/broker-configs. The section balance is 6 true (01, 04, 06, 08, 09, 12) and 6 false (02, 03, 05, 07, 10, 11). Each replacement keeps its card's answer, so the balance holds. No duplicates with r2 (sr2-07 is default delete, sr2-08 is delete,compact) or with r1 (sr1-05 is offsets per partition).\n\nCards that passed, with minor remarks:\n- 01: true and backed by the design page (\"always retain at least the last known value for each message key within ... a single topic partition\"). It is close to the definition of compaction, but acceptable at difficulty 1.\n- 03: correct. The docs give a key with a \"null payload\" as the delete marker, and in the record format an empty array is a non-null value. This is a subtle null-versus-empty distinction, so difficulty 1 is too low; 2 or 3 fits better.\n- 05, 06, 07, 08: each is settled by a design-page sentence:\n  - 05: \"The offset for a message never changes\"\n  - 06: \"all offsets remain valid positions in the log, even if the message with that offset has been compacted away\"\n  - 07: \"The active segment will not be compacted even if all of its messages are older than the minimum compaction time lag\"\n  - 08: \"Cleaning does not block reads\"\n- 11: matches the min.cleanable.dirty.ratio entry (\"A higher ratio will mean fewer, more efficient cleanings\").\n- 12: backed by log.cleaner.enable (\"Default: true ... Should be enabled if using any topics with a cleanup.policy=compact including the internal offsets topic\"). That entry is deprecated since 4.1 with removal planned for 5.0, but the card does not name it and stays true after removal. The wording \"for topics configured with\" suggests the cleaner is switched on per topic, but it is broker-wide. Optionally mention the offsets topic in the explanation."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr4-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/operations/kraft/ (AK 4.3.X, last modified May 22, 2026)",
+     "evidence": "KRaft page, Add New Controller: \"If a dynamic controller cluster already exists, it can be expanded by first provisioning a new controller using the kafka-storage.sh tool and starting the controller. ... Once the new controller has caught up to the active controller, it can be added to the cluster using the bin/kafka-metadata-quorum.sh add-controller command.\" The answer is right, but the card is weak.",
+     "problem": "\"An operator expands a quorum by adding a controller\" is true by definition. The only real content is \"that has caught up\", and a player who knows nothing would still guess True. The card also tests an operator procedure (provision, wait, add-controller) that is not in the r4 scope list and is below the developer depth the prompt sets. The r4 item it was meant to cover, dynamic quorums found through controller.quorum.bootstrap.servers with controller.quorum.voters as the deprecated static way, has no card.",
+     "suggestedFix": "Replace with a TRUE card (keeps 6 true and 6 false). Statement: \"With kraft.version 1, Kafka nodes locate the controllers through controller.quorum.bootstrap.servers.\" Explanation: \"KRaft version 1 deprecated controller.quorum.voters, the static list of every voter's ID, host and port; a dynamic quorum leaves it unset and sets controller.quorum.bootstrap.servers instead.\" (191 chars). Source: https://kafka.apache.org/43/operations/kraft/ (\"KRaft version 1 deprecated the controller.quorum.voters property and added the controller.quorum.bootstrap.servers property\"; \"When using a dynamic quorum, controller.quorum.voters must not be set and controller.quorum.bootstrap.servers is set instead\"). Do not say whether it must list every controller (known inconsistency 7)."
+    },
+    {
+     "id": "kafka-fundamentals-sr4-09",
+     "verdict": "source_problem",
+     "urlStatus": "200, https://kafka.apache.org/43/configuration/broker-configs/",
+     "evidence": "The cited broker config entry says only: \"broker.session.timeout.ms The length of time in milliseconds that a broker lease lasts if no heartbeats are made.\" It does not say that the controller treats the broker as offline. The design page does: \"For KRaft clusters, an active session is maintained by sending periodic heartbeats to the controller. If the controller fails to receive a heartbeat before the timeout configured by broker.session.timeout.ms expires, then the node is considered offline.\" (https://kafka.apache.org/43/design/design/, Replication section)",
+     "problem": "The answer (True) is right, but the cited page does not support the whole card. It describes a lease and never names the controller or the offline state, which is the point of the statement.",
+     "suggestedFix": "Change source.url to https://kafka.apache.org/43/design/design/ (title \"Kafka 4.3 Design: Replication\"). Keep the statement and the explanation."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards: 6 true (02, 05, 06, 08, 09, 11) and 6 false (01, 03, 04, 07, 10, 12). Every source URL returned 200 and is the versioned 4.3 page (AK 4.3.X). The cards that pass, with the sentence that settles each one:\n- 01: producer-configs bootstrap.servers says \"Clients use this list to bootstrap and discover the full set of Kafka brokers ... This list does not need to contain the entire set of brokers\".\n- 02 and 03: design page, The Producer, says \"The producer sends data directly to the broker that is the leader for the partition without any intervening routing tier ... all Kafka nodes can answer a request for metadata about which servers are alive and where the leaders for the partitions of a topic are\". In KRaft, only brokers serve client metadata, not controllers, and the card says \"broker\", so it holds. These two cards share one paragraph but test different facts, and the prompt lists both separately, so they are not duplicates.\n- 04: broker-configs. listeners is the \"list of URIs we will listen on ... Specify hostname as 0.0.0.0 to bind to all interfaces\", and advertised.listeners \"Specifies the listener addresses that the Kafka brokers will advertise to clients and other brokers\".\n- 05: KRaft page says \"Each controller is either an active or a hot standby for the current active controller\".\n- 07: KRaft page says \"Combined mode is not recommended in critical deployment environments\".\n- 08: KRaft page says \"A majority of the controllers must be alive in order to maintain availability\" and \"must include 2N + 1 controllers\".\n- 10: KRaft page, Provisioning Nodes, says \"This cluster ID must be used when formatting each server ... Previously, Kafka would format blank storage directories automatically\". The Docker image entrypoint does format storage, but Docker is out of scope, so no expert would defend True.\n- 11: upgrade notes say \"Apache Kafka 4.3 only supports KRaft mode - ZooKeeper mode has been removed\". The source states the \"only\", so it is allowed.\n- 12: upgrade notes say \"Once the cluster's behavior and performance have been verified, finalize the upgrade by running bin/kafka-features.sh ... upgrade --release-version 4.3\".\n\nNot flagged but worth fixing in polish:\n- 11's explanation (\"KRaft controllers manage metadata in Kafka's supported runtime\") is vague and adds no context. A better one (175 chars): \"Kafka 4.0 removed ZooKeeper mode, so 4.3 brokers run only with KRaft controllers; a ZooKeeper cluster must first migrate to KRaft through a bridge release, 3.9 being the last.\"\n- 02 (\"Any broker supplies cluster-wide partition metadata.\") and 03 (\"Producers contact partition leaders directly.\") have very thin explanations.\n- 03 and 07 are easy and close to the strawman line but describe realistic beginner misconceptions, so I let them pass.\n\nNot a defect, just coverage: no r4 card tests the __cluster_metadata log, process.roles values beyond combined mode, or node.id. The sr4-06 replacement covers the controller.quorum.bootstrap.servers item. sr4-09 and sr5-06 both involve the controller session, but they test different facts (offline detection versus ISR conditions), so they are not duplicates."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr5-11",
+     "verdict": "weak_card",
+     "urlStatus": "https://kafka.apache.org/43/operations/basic-kafka-operations/ loads (official, 4.3)",
+     "evidence": "Basic Kafka Operations, Balancing leadership: preferred replicas are \"the first broker in a partition's replica list\", restored automatically with \"auto.leader.rebalance.enable=true\". Broker configs (https://kafka.apache.org/43/configuration/broker-configs/), auto.leader.rebalance.enable: \"A background thread checks the distribution of partition leaders at regular intervals\", Default: true.",
+     "problem": "The answer (false) and the explanation are correct, but the distractor makes little sense. In normal operation the current leader already holds the most recent write, so 'restoring' leadership to the freshest replica means nothing, and an expert would argue about the wording instead of the fact. The statement also never touches auto.leader.rebalance.enable, the setting the card is tagged with and the section lists. A learner who studied gains little from it.",
+     "suggestedFix": "Replace (keeps answer false, 102 chars): \"By default, a partition keeps its failover leader until an operator runs a preferred replica election.\" Explanation: \"auto.leader.rebalance.enable is true by default, so the controller periodically moves leadership back to the preferred replica, the first broker in the partition's replica list.\" Keep the basic-kafka-operations URL (or the broker-configs auto.leader.rebalance.enable entry)."
+    },
+    {
+     "id": "kafka-fundamentals-sr5-03",
+     "verdict": "weak_card",
+     "urlStatus": "https://kafka.apache.org/43/design/design/ loads (official, 4.3)",
+     "evidence": "Design, Replication: \"Under non-failure conditions, each partition in Kafka has a single leader and zero or more followers.\"",
+     "problem": "The answer (false) is correct and the page supports it, but 'equal leadership' is vague and close to a strawman: hardly anyone who has read about partitions would answer True. The section's own fact, writes going to the leader, is a more realistic misconception, and the leader-plus-followers fact would stay tested.",
+     "suggestedFix": "Replace (keeps answer false, 95 chars): \"Under normal operation, any replica of a partition accepts produce requests for that partition.\" Explanation: \"Each partition has one leader that handles its writes; followers copy the leader's log and one of them takes over only if the leader fails.\" Same design URL."
+    }
+   ],
+   "notes": "All 12 r5 cards checked (6 true, 6 false; average statement length 81.8 for true and 83.7 for false, so balanced). Every source URL loaded and is the official Kafka 4.3 documentation. Two cards are flagged as weak_card. No card in r5 has a wrong answer, and none is a duplicate of a card in r1-r4 or r6-r14 (r6-12 on committed-record survival and r4-09 on broker heartbeats are separate facts). Quotes for the cards that passed: sr5-01 (Design): \"you can set this replication factor on a topic-by-topic basis\". sr5-02 (Introduction): \"This replication is performed at the level of topic-partitions.\" sr5-04 (broker-configs, replica.selector.class): \"By default, we use an implementation that returns the leader.\" Default null. sr5-05 (Design): \"Followers consume messages from the leader just as a normal Kafka consumer would and apply them to their own log.\" sr5-06 (Design): \"If the follower lags too far behind the leader but still has an active session, then the leader can also remove it from the ISR\". The replica.lag.time.max.ms entry: \"the leader will remove the follower from ISR\". sr5-07 (broker-configs, unclean.leader.election.enable): Default false. sr5-08 (eligible-leader-replicas): \"If ISR is not empty, select one of them. If ELR is not empty, select one that is not fenced. Select the last known leader if it is unfenced.\" Design: the controller \"is responsible for electing one of the remaining members of the ISR\". sr5-09 (unclean.leader.election.enable): \"even though doing so may result in data loss\". The word 'unclean' gives some of this away, but the card is acceptable. sr5-10 (upgrade notes, 4.1.0): \"Eligible Leader Replicas(ELR) will be enabled by default on the new clusters\". The ELR page says the same and is the better URL if one is wanted. sr5-12 (basic-kafka-operations): replicas are spread over \"as many distinct racks as possible (up to the replication factor)\". The broker.rack entry: \"used in rack aware replication assignment\". Minor point that needs no flag: sr5-01's explanation (\"Topic replication factors determine how many broker copies Kafka maintains\") is correct but adds little context. It could mention that default.replication.factor only applies when no factor is given."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr6-05",
+     "verdict": "duplicate",
+     "urlStatus": "loads; KafkaProducer (kafka 4.3.1 API), official and current",
+     "evidence": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html: \"If the producer is configured with acks = 0, the RecordMetadata will have offset = -1 because the producer does not wait for the acknowledgement from the broker.\" The javadoc gives the offset -1 as a direct consequence of the fact sr6-01 tests (acks=0 gets no broker acknowledgement), and both cards are False with the same misconception (acks=0 gets something back from the broker).",
+     "problem": "Duplicates sr6-01 (acks-zero-delivery-feedback): a player who knows acks=0 gets no broker reply can deduce that no stored offset comes back. The answer is correct, but the card tests the same fact again.",
+     "suggestedFix": "Replace with a TRUE card (the section stays 6/6 if sr6-09 also becomes False, see below). Statement: \"The Kafka docs describe replication factor 3, min.insync.replicas=2 and acks=all as a typical durable setup.\" Explanation: \"The min.insync.replicas entry calls this a typical scenario: an acks=all write then needs two of the three replicas, so one broker can fail without blocking writes.\" factKey typical-rf3-minisr2-acks-all. URL https://kafka.apache.org/43/configuration/broker-configs/ (\"A typical scenario would be to create a topic with a replication factor of 3, set min.insync.replicas to 2, and produce with acks of 'all'.\")"
+    },
+    {
+     "id": "kafka-fundamentals-sr6-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads; Kafka 4.3 Design, official and current",
+     "evidence": "https://kafka.apache.org/43/design/design/: \"we attempt to handle a 'fail/recover' model of failures where nodes suddenly cease working and then later recover\" and \"Kafka does not handle so-called 'Byzantine' failures in which nodes produce arbitrary or malicious responses.\"",
+     "problem": "This is a truism. Every replicated system is built to survive nodes that crash and come back, so nobody who studied would answer False, and the card teaches nothing specific to Kafka. The part worth teaching is the limit the prompt lists: Kafka does not handle Byzantine failures.",
+     "suggestedFix": "Replace with a FALSE card (balances the sr6-05 change). Statement: \"Kafka's replication protocol tolerates brokers that return arbitrary or malicious responses.\" Explanation: \"Kafka's replication targets fail/recover failures, where nodes stop and later restart; Byzantine failures with arbitrary or malicious responses are outside its model.\" Misconception: Kafka replication protects against Byzantine or malicious brokers. Keep the same design URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr6-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads; Kafka 4.3 Topic Configs, official and current",
+     "evidence": "https://kafka.apache.org/43/configuration/topic-configs/: \"Configurations pertinent to topics have both a server default as well an optional per-topic override. If no per-topic configuration is given the server default is used.\" min.insync.replicas lists \"Server Default Property: min.insync.replicas\".",
+     "problem": "The answer is readable from the wording: a \"topic-specific setting overrides the cluster's default\" is true of any per-topic override by definition, so the player can answer without knowing anything about min.insync.replicas. The real misconception, that min.insync.replicas is a producer setting next to acks, goes untested.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"Kafka takes min.insync.replicas from the topic or broker configuration rather than from producer settings.\" Explanation: \"min.insync.replicas is a topic config with a broker-wide default. The producer only picks acks, and the topic's minimum then applies to its acks=all writes.\" Keep the topic-configs URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr6-02",
+     "verdict": "source_problem",
+     "urlStatus": "loads; Kafka 4.3 Design, official, but does not state the card's fact",
+     "evidence": "The design page mentions acks=1 only as the message being \"committed ... synchronously only on the leader if acks=1\" and does not say an acknowledged acks=1 record can be lost. https://kafka.apache.org/43/configuration/producer-configs/ (acks entry) does: \"acks=1 ... If the leader fails immediately after acknowledging the record but before the followers have replicated it then the record will be lost.\"",
+     "problem": "The answer is correct (True), but the cited design page does not support the loss scenario the card tests. The producer config acks entry states it outright.",
+     "suggestedFix": "Change the source URL to https://kafka.apache.org/43/configuration/producer-configs/ (title \"Kafka 4.3 Producer Configs\"). Statement and answer stay as they are."
+    }
+   ],
+   "notes": "All 12 r6 cards were checked against the 4.3 pages: producer-configs (acks), topic-configs and broker-configs (min.insync.replicas), design (availability and durability guarantees, the fail/recover model), the eligible-leader-replicas page, and the KafkaProducer and NotEnoughReplicasAfterAppendException 4.3.1 javadoc. Every page loads and is official.\n\nPassed without changes: sr6-01, 03, 04, 07, 08, 10, 11 and 12. For sr6-03, the topic-configs entry says the minimum counts the leader and defaults to 1. For sr6-04, the javadoc says the default is \"all\". For sr6-07, the design page says the setting \"only takes effect if the producer uses acks=all\".\n\nOn sr6-10 I tried to refute the answer and it holds. The 4.3 topic-configs and design pages both say: \"Regardless of the acks setting, the messages will not be visible to the consumers until they are replicated to all in-sync replicas and the min.insync.replicas condition is met.\" The high-watermark rule behind this (KAFKA-15583, a KIP-966 subtask, fixed in 3.7.0) is not tied to whether ELR is enabled. The card already carries may_change.\n\nThe suggested fixes for sr6-05 (False to True) and sr6-09 (True to False) are paired, so the section stays 6 True and 6 False. sr6-06 stays True.\n\nThe replacements add two facts the prompt's r6 list asks for that the section does not cover yet: the documented typical setup (replication factor 3, min.insync.replicas 2, acks=all) and Kafka not handling Byzantine failures.\n\nNo conflict with r5 or r8 was found: r5 never tests whether a committed record survives, and r8 never tests acks=0."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr7-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/configuration/producer-configs/ loads (Kafka 4.3 docs) and supports the card",
+     "evidence": "partitioner.ignore.keys entry, https://kafka.apache.org/43/configuration/producer-configs/: \"When set to 'true' the producer won't use record keys to choose a partition. If 'false', producer would choose a partition based on a hash of the key when a key is present. Note: this setting has no effect if a custom partitioner is used.\"",
+     "problem": "The answer is right (False). The card tests the footnote, though: the setting has no effect with a custom Partitioner. It skips what partitioner.ignore.keys actually does to keyed records under the default logic. The prompt says hard cards should test a real distinction, not an obscure detail. The wording \"override its key handling\" is also vague: \"its\" could mean the producer or the partitioner.",
+     "suggestedFix": "Replace (answer stays False, so the section keeps 6 true and 6 false). Statement (about 101 chars): \"With partitioner.ignore.keys=true, KafkaProducer's default partitioning logic still hashes the key of a keyed record.\" Explanation: \"With partitioner.ignore.keys=true, the default logic skips the key, so keyed records are placed the same way as keyless ones. The setting has no effect when a custom Partitioner is configured.\" Same URL. Note: sr7-12 is also a false 'uses key hashes' card. That makes two false cards on this template, which is the most the prompt allows."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards (6 true, 6 false) against the live Kafka 4.3 pages, fetched on 2026-10-13. All five source URLs return 200, and the javadoc pages say \"kafka 4.3.1 API\". Average statement length: true 92.2, false 87.5 characters, within the 5-character rule.\n\nCards that pass, with the evidence:\n- sr7-01: KafkaProducer javadoc, \"Since the send call is asynchronous it returns a Future for the RecordMetadata\".\n- sr7-02: \"The producer is thread safe and sharing a single producer instance across threads will generally be faster than having multiple instances.\"\n- sr7-03: \"The producer maintains buffers of unsent records for each partition.\"\n- sr7-04: linger.ms entry, \"once we get batch.size worth of records for a partition it will be sent immediately regardless of this setting\".\n- sr7-05: 4.0 upgrade notes, \"The default linger.ms changed from 0 to 5 in Apache Kafka 4.0\".\n- sr7-06: \"When the buffer space is exhausted additional send calls will block. The threshold for time to block is determined by max.block.ms after which it returns a failed future with BufferExhaustedException.\"\n- sr7-07: compression.type entry, \"The default is none (i.e. no compression).\"\n- sr7-08: ProducerRecord javadoc, \"If a valid partition number is specified that partition will be used\". KafkaProducer also checks the record's partition before calling any partitioner.\n- sr7-09: partitioner.class entry, \"choose the sticky partition that changes when at least batch.size bytes are produced to the partition\".\n- sr7-11: partitioner.adaptive.partitioning.enable, default true, \"produce more messages to partitions hosted on faster brokers\".\n- sr7-12: RoundRobinPartitioner javadoc, \"This is the behaviour regardless of record key hash.\"\n\nNo card duplicates another section. sr1-08 covers same-key-same-partition while the count is fixed, and r7 has no key-hash card. sr2-01 covers compressed batches kept in the log, while sr7-07 is the producer default.\n\nObservations that are not flags:\n1. Two official pages contain old wording that no r7 card relies on, but reviewers should know about it. The ProducerRecord javadoc, which is sr7-08's source, still says keyless records are \"assigned in a round-robin fashion\". That contradicts sr7-09 and the producer config page. The KafkaProducer javadoc still says \"By default a buffer is available to send immediately ... you can set linger.ms to something greater than 0\", which contradicts the 4.0 default of 5 that sr7-05 tests. sr7-05 cites the upgrade notes, so it is fine. Do not switch sr7-08 or sr7-05 to these javadoc paragraphs.\n2. sr7-01's explanation (\"The Future reports the send result.\") is correct but adds little. Consider: \"The Future completes with RecordMetadata giving the record's partition, offset and timestamp; get() blocks until the request completes.\"\n3. In sr7-06, \"send buffer\" could be confused with the TCP setting send.buffer.bytes. The answer is still False under that reading, so it is not ambiguous. Naming buffer.memory in the statement would make it cleaner.\n4. sr7-11 says \"for keyless records\", which the config entry does not state. It is accurate, because keyed records are placed by the key hash under the default logic."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr8-12",
+     "verdict": "explanation_error",
+     "urlStatus": "KafkaProducer 4.3 javadoc loads (title 'KafkaProducer (kafka 4.3.1 API)'). It supports the answer only through the transactional/idempotent fatal-error paragraph. It does not support the general claim in the explanation.",
+     "evidence": "The answer (False) is right. Callback javadoc (https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/Callback.html) lists AuthorizationException under 'Non-Retriable exceptions (fatal, the message will never be sent)'. The retries entry (https://kafka.apache.org/43/configuration/producer-configs/) says: 'Requests will be retried this many times until they succeed, fail with a non-transient error, or the delivery.timeout.ms expires.' The explanation says instead that 'subsequent producer API calls fail'. The KafkaProducer javadoc says that only for transactional sends, and for an idempotent producer it says 'UnsupportedVersionException and AuthorizationException are considered fatal errors'. That sentence covers the producer-id/cluster authorization case. In the 4.x client, a TopicAuthorizationException (the usual AuthorizationException a developer meets, a missing Write ACL on one topic) fails only that record. A non-transactional producer stays usable for other topics, so the explanation teaches an overgeneralisation.",
+     "problem": "The answer is right, but the explanation turns 'non-retriable, this record is never sent' into 'the whole producer becomes defunct'. That is wrong for the common topic-level authorization failure on a non-transactional producer. The source the card cites also does not hold the clearest statement of the fact.",
+     "suggestedFix": "Keep the statement (False). Use this explanation (161 chars): \"AuthorizationException is non-retriable: KafkaProducer fails that record at once and reports the error to the send() callback rather than resending it.\" Change the source to https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/Callback.html, with the retries entry on https://kafka.apache.org/43/configuration/producer-configs/ as backup."
+    },
+    {
+     "id": "kafka-fundamentals-sr8-03",
+     "verdict": "duplicate",
+     "urlStatus": "Page loads and supports the card: 'If the request fails, the producer can automatically retry. The retries setting defaults to Integer.MAX_VALUE, and it's recommended to use delivery.timeout.ms to control retry behavior, instead of retries.' (https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html)",
+     "evidence": "sr8-02 (True) says 'The Kafka docs recommend leaving retries unset and controlling retries with delivery.timeout.ms.' A player who knows that leaving retries unset still yields retries bounded by delivery.timeout.ms knows that the default producer resends transient failures by itself. That answers sr8-03 ('leaves potentially transient send failures to manual application resends by default', False). Both cards rest on the same sentence of the same javadoc paragraph: 'the producer can automatically retry ... it's recommended to use delivery.timeout.ms to control retry behavior'.",
+     "problem": "This card rests on the same fact as sr8-02 (default automatic retries governed by delivery.timeout.ms). Knowing one answer gives you the other, which the prompt forbids.",
+     "suggestedFix": "Replace with a False card on the retries=0 behaviour that no other card tests. Statement (90 chars): \"Setting retries=0 makes KafkaProducer silently drop a record whose send hits a transient error.\" Answer: false. Explanation (163 chars): \"retries=0 only turns off automatic resending: the transient error is propagated to the application through the send() Future and callback, which decides what to do.\" Source: https://kafka.apache.org/43/configuration/producer-configs/ (retries entry: 'Setting a value of zero will disable this automatic retry behaviour, so that the transient errors will be propagated to the application to be handled.'). This keeps the section at 6 True / 6 False."
+    }
+   ],
+   "notes": "Checked all 12 r8 cards (6 True, 6 False). I read the 4.3 pages from the live site on 2026-10-13: producer-configs, the KafkaProducer javadoc (title 'kafka 4.3.1 API'), the Callback javadoc, the upgrade notes, design and message-format.\n\nPassing cards and the sentence that settles each:\n- 01: delivery.timeout.ms entry, 'An upper bound on the time to report success or failure after a call to send() returns'.\n- 02: retries entry, 'Users should generally prefer to leave this config unset and instead use delivery.timeout.ms to control retry behavior'.\n- 04: retries entry on reordering with enable.idempotence=false and max.in.flight > 1.\n- 05: design page, 'the message may be written to the log again during resending if the original request had in fact succeeded'.\n- 06: enable.idempotence entry, 'Idempotence is enabled by default if no conflicting configurations are set'.\n- 07: enable.idempotence entry, 'If idempotence is explicitly enabled and conflicting configurations are set, a ConfigException is thrown'.\n- 08: 4.0.0 notable changes, 'The enable.idempotence configuration will no longer automatically fall back when the max.in.flight.requests.per.connection value exceeds 5'. The max.in.flight entry adds 'enabling idempotence requires the value of this configuration to be less than or equal to 5'.\n- 09: javadoc, 'the producer can only guarantee idempotence for messages sent within a single session'.\n- 10: message-format page, 'the broker checks incoming Produce requests for duplicates by verifying that the first and last sequence numbers of the incoming batch match the last from that producer'. The design page says it more clearly ('the broker assigns each producer an ID and deduplicates messages using a sequence number'), so it would be the better URL. Not flagged.\n- 11: javadoc, 'it is imperative to avoid application level re-sends since these cannot be de-duplicated'.\n\nSmaller issues, not flagged:\n- 01, 02 and 09 are close paraphrases of single source sentences. 02's wording comes from the prompt's own allowed recommendation list.\n- The explanations of 02 ('Kafka recommends a delivery deadline over tuning retry counts.') and 06 ('Compatible default settings enable idempotence.') mostly restate the statement. Better: for 02, say that unset retries default to Integer.MAX_VALUE and delivery.timeout.ms bounds the whole send. For 06, say that enable.idempotence defaults to true since Kafka 3.0 (KIP-679).\n- 01 is also partly hinted by 02, which ties delivery.timeout.ms to retries. Acceptable, because 01 tests the total send bound, not the retry advice.\n- 05's source describes the pre-0.11 behaviour. The enable.idempotence entry ('If false, producer retries due to broker failures, etc., may write duplicates') is a more current URL for it.\n\nNo r8 card mentions transactions. No card in other sections duplicates an r8 fact. sr12-01 (transactional.id implies idempotence) is distinct."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr9-12",
+     "verdict": "ambiguous",
+     "urlStatus": "loads (https://kafka.apache.org/43/getting-started/upgrade/), official 4.3 docs",
+     "evidence": "Upgrade notes, 'Notable changes in 4.1.0': \"Apache Kafka 4.1 ships with a preview of Queues for Kafka (KIP-932) ... Share groups also introduce per-record acknowledgement and counting of delivery attempts.\" The 4.2.0 notes repeat the same sentence with \"Queues for Kafka (KIP-932) is production-ready in Apache Kafka 4.2.\" Design page (https://kafka.apache.org/43/design/design/): \"Records are acknowledged individually, though the system is optimized for batch processing to improve efficiency.\"",
+     "problem": "'Since Kafka 4.2' implies that per-record acknowledgement started in 4.2. The 4.3 upgrade notes show it already in the 4.1 preview (and the 4.0 early access), so an expert could object to the release qualifier. The card ends up resting on a release number, which the prompt forbids. The explanation is also thin, and the design page is the better source for the behaviour itself.",
+     "suggestedFix": "Answer stays True. Statement: \"In a share group, consumers acknowledge delivered records individually rather than committing partition offsets.\" Explanation: \"Share groups, production-ready since Kafka 4.2, track acknowledgement and delivery attempts per record, so several consumers of one share group can read the same partition.\" Keep appliesTo \"Kafka 4.2 and later\" and volatility may_change. Source: https://kafka.apache.org/43/design/design/ (share consumer section)."
+    },
+    {
+     "id": "kafka-fundamentals-sr9-05",
+     "verdict": "source_problem",
+     "urlStatus": "loads (https://kafka.apache.org/43/implementation/distribution/), official, but does not state the fact",
+     "evidence": "The Distribution page covers only offset storage: \"Kafka provides the option to store all the offsets for a given consumer group in a designated broker (for that group) called the group coordinator\". It never says that different groups consume independently. The KafkaConsumer 4.3.1 javadoc (https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html) does: \"To get semantics similar to pub-sub in a traditional messaging system each process would have its own consumer group, so each process would subscribe to all the records published to the topic.\" It also says: \"Kafka naturally supports having any number of consumer groups for a given topic without duplicating data.\"",
+     "problem": "The answer (False) is right, but the cited page does not support the card. The explanation is also generic and does not say why groups stay independent (each group has its own committed offsets).",
+     "suggestedFix": "Change the source to https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html (section \"Consumer Groups and Topic Subscriptions\"). Answer stays False. Optional explanation: \"Each consumer group commits its own offsets, so every group reads all of a topic's records at its own pace without affecting other groups.\""
+    },
+    {
+     "id": "kafka-fundamentals-sr9-10",
+     "verdict": "weak_card",
+     "urlStatus": "loads (KafkaConsumer, kafka 4.3.1 API), official, supports the card",
+     "evidence": "KafkaConsumer javadoc: seek(TopicPartition, long) lets the consumer \"manually control its position, moving forward or backwards in a partition at will\" and \"Overrides the fetch offsets that the consumer will use on the next poll(timeout).\"",
+     "problem": "The answer can be read from the wording. Calling seek() with an earlier offset moving the position back is almost a definition, so a player who knows no Kafka would guess True. The card teaches little beyond the method's name.",
+     "suggestedFix": "Answer stays True. Statement: \"After KafkaConsumer.seek(), the group's committed offset for that partition keeps its previous value until the next commit.\" Explanation: \"seek() only overrides the fetch position used by the next poll(); a restart still resumes from the committed offset unless the application commits the new position.\" Source: the same KafkaConsumer 4.3.1 javadoc (seek and the position versus committed position section). Check that this does not overlap sr9-07; it tests seek's effect, not what position() returns."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards (6 true, 6 false, balance kept) against the live 4.3 pages: the design page, the KafkaConsumer 4.3.1 javadoc, the consumer configs, the broker configs, the Distribution page and the upgrade notes. These cards passed with supporting quotes. sr9-01: the design page says Kafka uses a pull-based consumer model and calls the waiting fetch a \"long poll\". sr9-02: max.poll.records \"does not impact the underlying fetching behavior. The consumer will cache the records from each fetch request\". sr9-03: \"The Kafka consumer is NOT thread-safe\", with wakeup() as the exception. sr9-04: \"each partition is assigned to exactly one consumer in the group\"; its explanation is vague but not wrong. sr9-06: \"Manual partition assignment does not use group coordination\". sr9-07: position is \"the offset of the next record that will be given out\", while the committed position is \"the last offset that has been stored securely\". sr9-08: the coordinator \"appends the request to a special compacted Kafka topic named __consumer_offsets\". sr9-09: the auto.offset.reset note says \"altering partition numbers while setting this config to latest may cause message delivery loss\". sr9-11: offsets.retention.minutes says offsets expire once \"this retention period has elapsed after the consumer group loses all its consumers\". No r9 card rests on the same fact as a card in r1, r3, r10, r11 or r12. sr12-12 (resetting the position after an abort) is a separate fact from sr9-10. The section has only one share-group card, inside the limit of two. Minor, not flagged: the explanations of sr9-04 and sr9-06 are terse and could add context, such as extra group members sitting idle, or offsets still being committable to the coordinator under assign()."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr10-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://kafka.apache.org/43/getting-started/introduction/ (official, 4.3). It supports the card only loosely; the 'two problems' fact is on the design page.",
+     "evidence": "Introduction: \"In Kafka, producers and consumers are fully decoupled and agnostic of each other ... For example, producers never need to wait for consumers.\" Design page (https://kafka.apache.org/43/design/design/): \"It's worth noting that this breaks down into two problems: the durability guarantees for publishing a message and the guarantees when consuming a message.\"",
+     "problem": "Strawman. Nobody who has studied Kafka thinks a producer acknowledgement means a subscriber has finished processing, and the answer follows from common sense about pub/sub. The explanation is thin and leaves out the planned fact (publishing durability and consumption guarantees as two separate problems). The cited page is the introduction, not the design section that states the fact.",
+     "suggestedFix": "Replace (answer false). Statement: \"With acks=all, a successful send also guarantees that consuming applications process the record exactly once.\" Explanation: \"The design page splits delivery semantics into two problems: durability when publishing and guarantees when consuming. acks=all covers only the first; the consumer's commit strategy decides the second.\" URL: https://kafka.apache.org/43/design/design/"
+    },
+    {
+     "id": "kafka-fundamentals-sr10-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, KafkaConsumer (kafka 4.3.1 API) javadoc; it supports the card.",
+     "evidence": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html, commitSync(): \"This is a synchronous commit and will block until either the commit succeeds, an unrecoverable error is encountered ... or the timeout specified by default.api.timeout.ms expires\". commitAsync(): \"This is an asynchronous call and will not block. Any errors encountered are either passed to the callback (if provided) or discarded.\"",
+     "problem": "The answer is correct, but the card is configuration-name trivia: which timeout property bounds commitSync(). The prompt asks for behaviour, not config spelling, and the misconception (max.poll.interval.ms as the commit timeout) is unlikely to be held. The section's planned fact 'commitSync versus commitAsync' (blocking versus non-blocking, errors to the callback) is not tested by any r10 card.",
+     "suggestedFix": "Replace (answer false). Statement: \"KafkaConsumer.commitAsync() blocks the calling thread until the broker acknowledges the offset commit.\" Explanation: \"commitAsync() returns at once and passes errors to its callback or discards them; commitSync() is the call that blocks until the commit succeeds, fails unrecoverably or default.api.timeout.ms expires.\" Same javadoc URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr10-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://kafka.apache.org/43/design/design/ (official, 4.3); it supports the card.",
+     "evidence": "Design page, Message Delivery Semantics: \"In many cases messages have a primary key and so the updates are idempotent (receiving the same message twice just overwrites a record with another copy of itself).\"",
+     "problem": "Truism. 'Overwriting output by key makes duplicates harmless' is true by the meaning of overwrite and idempotence, so someone who knows nothing about Kafka answers True. The hedge 'can' also marks it as true. The explanation (\"Repeated identical keyed overwrites preserve the stored output value\") just restates the statement and never ties it to at-least-once redelivery after a crash, which is the Kafka point.",
+     "suggestedFix": "Reword (answer true). Statement: \"At-least-once redelivery is harmless when a consumer writes each record as an upsert keyed by the record's primary key.\" Explanation: \"After a crash, a consumer re-reads from its last committed offset; if each record carries a primary key and the output is an upsert, the replay rewrites the same row, so the update is idempotent.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards (6 true, 6 false) against the live 4.3 pages: the design page, consumer-configs, the introduction, and the KafkaConsumer, OffsetCommitCallback and CommitFailedException javadoc, all titled \"kafka 4.3.1 API\". Every URL loads. These 9 cards pass with quoted support:\n- 02: enable.auto.commit \"If true the consumer's offset will be periodically committed in the background. Default: true\".\n- 03: javadoc \"must consume all data returned from each call to poll(Duration) before any subsequent calls, or before closing the consumer\".\n- 05: design page \"crashes after processing messages but before saving its position ... will already have been processed\".\n- 07: javadoc \"store both the offset and the results of the consumption in the same system ... stored atomically\". The explanation is thin; adding the seek() on restart would make it stick, but it is not wrong.\n- 08: javadoc \"filtered out for consumers in both isolation levels\".\n- 09: design page \"Kafka guarantees at-least-once delivery by default\".\n- 10: javadoc \"Corresponding commit callbacks are also invoked in the same order\".\n- 11: OffsetCommitCallback \"The callback may be executed in any thread calling poll()\". This is also true under group.protocol=consumer, because callbacks still run on application threads.\n- 12: CommitFailedException \"This can happen when a group rebalance completes before the commit could be successfully applied\".\n\nCoverage gap, not flagged per card: no r10 card tests the at-most-once side (saving the position before processing, or the design page's at-most-once recipe of disabling producer retries and committing before processing). Without the fix for 04, no card tests commitSync versus commitAsync. The replacement for 04 fills the commitSync/commitAsync gap. If a slot frees up, an at-most-once card would complete the section, for example a false card saying at-most-once comes from committing offsets after processing. Duplicate check against the other 156 cards found no clash: sr12-08 (external system cooperation) and sr12-05 (read_uncommitted returns aborted records) rest on different facts from sr10-07 and sr10-08. All three suggested fixes keep the section at 6 true and 6 false. Statements are under 120 characters and explanations under 240."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr11-06",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://kafka.apache.org/43/configuration/consumer-configs/ (4.3 docs)",
+     "evidence": "session.timeout.ms entry: \"The timeout used to detect client failures when using Kafka's group management facility... this client configuration is not supported when group.protocol is set to \\\"consumer\\\". In that case, session timeout is controlled by the broker config group.consumer.session.timeout.ms.\" Consumer Rebalance Protocol page (https://kafka.apache.org/43/operations/consumer-rebalance-protocol/): \"The consumer heartbeat interval and the session timeout are controlled by the server now\".",
+     "problem": "The answer is right, but the card is the other side of the split that sr11-11 already tests: liveness timers are set by the client in the classic protocol and by the broker in the consumer protocol. The prompt says the two sides of one distinction count as one fact. It is also close to a definition: a 'session timeout' used for failure detection can be guessed from the name, and group.protocol=classic is the default anyway.",
+     "suggestedFix": "Replace with a TRUE card on a section fact no other card covers (keeps the 6/6 balance). Statement (116 chars): \"A rolling restart with group.protocol=consumer can migrate a classic group whose assignor embeds no custom metadata.\" Explanation (170 chars): \"When the first group.protocol=consumer member joins, Kafka converts the classic group without downtime; this works only if the classic assignor embeds no custom metadata.\" Source: https://kafka.apache.org/43/operations/consumer-rebalance-protocol/ (Upgrade & Downgrade > Online). appliesTo \"Kafka 4.0 and later\", difficulty 3."
+    },
+    {
+     "id": "kafka-fundamentals-sr11-05",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/CooperativeStickyAssignor.html (kafka 4.3.1 API)",
+     "evidence": "The cited page says only: \"This follows the same (sticky) assignment logic as StickyAssignor but allows for cooperative rebalancing while the StickyAssignor follows the eager rebalancing protocol. See ConsumerPartitionAssignor.RebalanceProtocol for an explanation of the rebalancing protocols.\" The retention fact is on https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/ConsumerPartitionAssignor.RebalanceProtocol.html: \"COOPERATIVE rebalance protocol allows a consumer to retain its currently owned partitions before participating in a rebalance event. The assignor should not reassign any owned partitions immediately\".",
+     "problem": "The answer (True) is correct, but the cited page does not state the card's fact that consumers keep their unmoved partitions during a rebalance. It points to another javadoc page instead.",
+     "suggestedFix": "Keep the statement and explanation, and change the source to https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/ConsumerPartitionAssignor.RebalanceProtocol.html (title \"ConsumerPartitionAssignor.RebalanceProtocol (kafka 4.3.1 API)\")."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards. 6 are true (01, 04, 05, 06, 08, 11) and 6 false (02, 03, 07, 09, 10, 12). Every source URL returned 200 on kafka.apache.org/43 (kafka 4.3.1 API javadoc and the 4.3 docs pages). The other 10 cards pass, with these settling quotes:\n- 01: \"a partition re-assignment will be triggered any time the members of the group change\" (ConsumerRebalanceListener javadoc). It is an easy card and close to a truism because of the \"can cause\" hedge, but it is still Kafka-specific, so not flagged.\n- 02: max.poll.interval.ms entry: \"For consumers using a non-null group.instance.id which reach this timeout, partitions will not be immediately reassigned... reassigned after expiration of the session timeout\".\n- 03: partition.assignment.strategy entry: \"The default assignor is [RangeAssignor, CooperativeStickyAssignor], which will use the RangeAssignor by default\".\n- 04: RangeAssignor javadoc: \"The range assignor works on a per-topic basis.\" One edge case: rack-aware co-partitioning links topics, but only with rack configuration, so not flagged.\n- 07: design page: \"If you accidentally configure duplicate ids for different instances, a fencing mechanism on broker side will inform your duplicate client to shutdown immediately by triggering a ... FencedInstanceIdException\". The group.instance.id entry says \"only one instance with this ID is allowed in the consumer group at any time\". The explanation is very terse but correct.\n- 08: onPartitionsRevoked: \"A callback method the user can implement to provide handling of offset commits to a customized store\", and \"It is common for the revocation callback to use the consumer instance in order to commit offsets\".\n- 09: group.protocol entry: \"The default value is classic\". may_change is set correctly (KIP-1274 timeline).\n- 10: protocol page: \"When the new rebalance protocol is enabled, the following configurations and APIs are no longer usable: ... partition.assignment.strategy\", and \"The assignment strategy is also controlled by the server.\"\n- 11: heartbeat.interval.ms entry: \"If group.protocol is set to \\\"consumer\\\", this config is not supported, as the heartbeat interval is controlled by the broker with group.consumer.heartbeat.interval.ms.\"\n- 12: protocol page: \"With these methods, the regular expression uses the RE2J format and is now evaluated on the server side.\"\n\nNo card in r11 repeats a fact from r9, r10 or r13 (I checked against sr9-04, sr10-12 and sr13-07). None of the cards names a non-default setting without stating it. Section facts no card covers: a missed session timeout as a rebalance trigger, uniform as the default server-side assignor, the fully incremental design with no global barrier, RoundRobinAssignor and StickyAssignor, and online migration. The suggested replacement for sr11-06 fills the migration gap."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr12-01",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official 4.3 producer config page (Last modified May 22, 2026)",
+     "evidence": "https://kafka.apache.org/43/configuration/producer-configs/ transactional.id: \"If a TransactionalId is configured, enable.idempotence is implied.\" The 4.3 ProducerConfig source (checked only to refute, not as a citation) says: if (!idempotenceEnabled && userConfiguredTransactions) throw new ConfigException(\"Cannot set a transactional.id without also enabling idempotence.\"). enable.idempotence entry: \"Idempotence is enabled by default if no conflicting configurations are set.\"",
+     "problem": "Setting transactional.id does not switch idempotence on. Idempotence is already on by default (card sr8-06 tests that), and with enable.idempotence=false set explicitly, or with acks=1 or retries=0, the producer throws a ConfigException at construction and does not override the setting. An expert can therefore argue False against \"enables idempotence automatically\". Under default settings the card also adds almost nothing beyond sr8-06.",
+     "suggestedFix": "Keep the answer True. Statement (95 chars): \"A KafkaProducer with transactional.id set needs idempotent delivery to stay enabled to start.\" Better: \"KafkaProducer refuses to start with transactional.id set when idempotence is turned off.\" Explanation: \"The transactional.id entry says enable.idempotence is implied. Transactions build on idempotent delivery, so the producer rejects a transactional.id combined with disabled idempotence.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r12 cards (6 true, 6 false; average statement length 98.8 for true and 102.5 for false; no explanation over 240 chars). Every source URL loads (200) and is an official kafka.apache.org/43 page. The javadoc identifies itself as \"kafka 4.3.1 API\".\n\nQuotes that settle the cards that pass:\n- 02: KafkaProducer javadoc, \"allows an application to send messages to multiple partitions (and topics!) atomically\".\n- 03: \"These offsets will be considered committed only if the transaction is committed successfully.\"\n- 04: design page, \"it is only the producer which is transactional\". Borderline easy, but the prompt lists it as a fact.\n- 05: consumer configs, \"read_uncommitted (the default), consumer.poll() will return all messages, even transactional messages which have been aborted\".\n- 06: \"read_committed consumers will not be able to read up to the high watermark when there are in flight transactions\". This is close to the source wording, but reworded enough to pass.\n- 07: KafkaProducer javadoc, \"the consumer should have enable.auto.commit=false\". The design page says the same.\n- 08: design page, \"Exactly-once delivery for other destination systems generally requires cooperation with such systems\".\n- 09: initTransactions javadoc, \"If the previous instance had failed with a transaction in progress, it will be aborted. If the last transaction had begun completion, but not yet finished, this method awaits its completion.\"\n- 10: transaction.timeout.ms, \"If this value is larger than the transaction.max.timeout.ms setting in the broker, the request will fail with a InvalidTxnTimeoutException error.\"\n- 11: 4.0 upgrade notes, \"When using 4.0 producer clients, the producer epoch is bumped on every transaction\". The same note says the new protocol \"is enabled when the upgrade to 4.0 is finalized\". The card holds in the assumed 4.3 context. Optionally, the explanation could mention that it needs a finalized upgrade and 4.0+ clients.\n- 12: design page, \"in the event of a transaction abort, the application's state and in particular the current position of the consumer must be reset explicitly\".\n\nDuplicate check: I compared against r8, r9, r10, r11 and r13 and found no shared factKey. sr10-08 (offset gaps), sr10-07 (external atomic offset storage) and sr13-12 (Connect exactly-once) test distinct facts. The one overlap is sr12-01 with sr8-06: under default settings, idempotence is on regardless of transactional.id. That overlap is part of the sr12-01 flag.\n\nPages were saved as text in a scratch folder"
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr13-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/streams/upgrade-guide/ (official, 4.3); the opt-in itself is stated on https://kafka.apache.org/43/streams/developer-guide/streams-rebalance-protocol/",
+     "evidence": "Rebalance protocol page: \"Client Configuration In your Kafka Streams application configuration, set: group.protocol=streams\" and \"Both brokers and clients must be running Apache Kafka 4.2 or later to use this protocol.\" Upgrade guide 4.1.0: \"Early Access of the Streams Rebalance Protocol ... The group.protocol=streams configuration enables the dedicated streams rebalance protocol.\" Streams configs: \"group.protocol ... Default: classic\".",
+     "problem": "The answer can be read from the wording: \"the Streams rebalance protocol\" selected by \"group.protocol=streams\" is a name match, so a player who knows nothing guesses True. The cited upgrade guide only announces GA; the opt-in sentence is on the rebalance-protocol developer guide page. Also, \"Since Kafka 4.2\" is arguable, because 4.1 early access already used group.protocol=streams (4.3 docs only say 4.2+ is needed for the GA protocol).",
+     "suggestedFix": "Replace (answer True, volatility may_change): \"With group.protocol=streams, the broker computes task assignments for the instances of a Kafka Streams application.\" Explanation: \"Under the Streams rebalance protocol (KIP-1071), assignments are computed continuously on the broker instead of by a client during a group-wide rebalance.\" Source: https://kafka.apache.org/43/streams/developer-guide/streams-rebalance-protocol/ (\"Instead of clients computing new assignments on the client during rebalance events involving all members of the group, assignments are computed continuously on the broker.\")"
+    },
+    {
+     "id": "kafka-fundamentals-sr13-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/streams/introduction/ (official, 4.3)",
+     "evidence": "\"Kafka Streams is a client library for building applications and microservices ...\" and \"No separate processing cluster required\" (https://kafka.apache.org/43/streams/introduction/).",
+     "problem": "The answer is right and supported, but the statement is close to a truism: \"within the application that embeds the library\" already says that an embedded library runs in its host application, so the wording gives the answer away. The point worth testing is that no separate processing cluster or broker-side execution is involved.",
+     "suggestedFix": "Replace (answer True): \"Kafka Streams runs a topology's processing inside the application's own instances rather than on the Kafka brokers.\" Explanation: \"Kafka Streams is a client library: the processing runs in the Java application instances you deploy, and the docs note that no separate processing cluster is required.\" Keep the same URL."
+    },
+    {
+     "id": "kafka-fundamentals-sr13-08",
+     "verdict": "source_problem",
+     "urlStatus": "200, https://kafka.apache.org/43/kafka-connect/user-guide/ (official, 4.3)",
+     "evidence": "The user guide never defines the direction of source and sink connectors. It only implies it: \"For configuration of the producers used by Kafka source tasks and the consumers used by Kafka sink tasks ...\". The 4.3 connector development guide states it directly: \"SourceConnectors import data from another system (e.g. JDBCSourceConnector would import a relational database into Kafka) and SinkConnectors export data (e.g. HDFSSinkConnector would export the contents of a Kafka topic to an HDFS file).\" (https://kafka.apache.org/43/kafka-connect/connector-development-guide/)",
+     "problem": "The answer (False) and the explanation are right, but the cited page supports the explanation's fact, a source connector importing into Kafka, only by inference from producer and consumer prefixes. The card also leans on a fairly easy name cue (\"source\").",
+     "suggestedFix": "Change the source URL to https://kafka.apache.org/43/kafka-connect/connector-development-guide/ (the \"Connectors and Tasks\" sentence quoted above). Statement and explanation can stay."
+    }
+   ],
+   "notes": "All 12 r13 cards are in raw/kafka-fundamentals-b4.json (b1 only holds the plan entry). Every source URL returned 200 on the versioned 4.3 docs. The section balance is 6 true and 6 false (true average 96.5 chars, false 95.5). The difficulty mix is 4 easy, 5 medium and 3 hard, so it leans away from easy and toward medium; acceptable.\n\nPassing cards and the sentence that settles each one:\n- 02: dsl-api, \"an aggregation of a KStream also yields a KTable\".\n- 03: interactive-queries, \"Querying state stores is always read-only ... you cannot add new entries\". Borderline: \"query\" hints at read-only, but I left it.\n- 04: architecture, \"Kafka Streams creates a fixed number of tasks based on the input stream partitions\".\n- 05: core-concepts, \"a record is discarded if ... the current stream time is greater than the end of the window plus the grace period\".\n- 06: kafka-streams-configs, \"Possible values are at_least_once (default) and exactly_once_v2\".\n- 09: user-guide, config/offset/status storage topics, each \"configured for compaction\".\n- 10: user-guide, key.converter \"is independent of connectors it allows any connector to work with any serialization format\". A per-connector converter override is still a converter setting, so the answer holds.\n- 11: user-guide, RegexRouter \"modify the topic of a record\".\n- 12: user-guide, \"Even if you set all the correct worker properties ... if a connector is not designed to ... exactly-once may not be possible\".\n\nDuplicate checks: no overlap with sr12-08 (exactly-once to external systems), the r3 compaction cards or sr9-08. The suggested 07 replacement (broker computes Streams task assignments) is close in theme to sr11-10/11 (broker-side assignment for group.protocol=consumer), but it covers a different group type and does not give away their answers. If you want zero thematic overlap, an alternative is the docs sentence \"Instead of using a consumer group, the streams application registers as a streams group with the broker\", but that one has a mild name cue. Hedge words are balanced: only 11 uses \"can\". Pages fetched to the scratchpad: a scratch folder"
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "kafka-fundamentals-sr14-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/security/authorization-and-acls/ (4.3 docs, last modified May 22, 2026)",
+     "evidence": "ACL page: \"Kafka ships with a pluggable authorization framework, which is configured with the authorizer.class.name property in the server configuration.\" Broker configs (https://kafka.apache.org/43/configuration/broker-configs/): authorizer.class.name \"Type: string Default: \"\"\". The answer (false) and the explanation are correct, but the distractor ties authorization to enabling SASL. That is close to a strawman, because anyone who studied security basics separates authentication from authorization. The real misconception worth testing is that ACL enforcement is on by default.",
+     "problem": "The false statement rests on confusing authentication with authorization, which few learners who studied would accept, so the card teaches little. It also leaves out the useful fact the source gives: no authorizer runs until authorizer.class.name is set (default empty string).",
+     "suggestedFix": "Keep the answer false. Statement (85 chars): \"A Kafka broker's default authorizer.class.name value enables StandardAuthorizer ACL checks.\" Explanation (~170 chars): \"authorizer.class.name defaults to an empty string, so no authorizer runs; set it to org.apache.kafka.metadata.authorizer.StandardAuthorizer on all brokers and controllers.\" Keep the URL https://kafka.apache.org/43/security/authorization-and-acls/ (or the broker-configs page for the default). This avoids a third false card using the \"when X is left unset\" pattern, which 03 and 05 already use."
+    },
+    {
+     "id": "kafka-fundamentals-sr14-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://kafka.apache.org/43/security/encryption-and-authentication-using-ssl/ (4.3 docs)",
+     "evidence": "SSL page: \"If SSL is not enabled for inter-broker communication ..., both PLAINTEXT and SSL ports will be necessary. listeners=PLAINTEXT://host.name:port,SSL://host.name:port\". The fact is stated directly at https://kafka.apache.org/43/security/security-overview/: \"It's worth noting that security is optional - non-secured clusters are supported, as well as a mix of authenticated, unauthenticated, encrypted and non-encrypted clients.\"",
+     "problem": "The answer (true) is correct, but the explanation (\"A Kafka cluster can expose both encrypted and unencrypted client connections.\") only repeats the statement. The rules require a true card's explanation to add a reason or context. The statement can also be guessed from its wording (\"can serve ... through separate configured listeners\"), and the cited page shows the fact only through a config example.",
+     "suggestedFix": "Keep the statement and the true answer. New explanation (~170 chars): \"Kafka security is optional: each listener has its own security protocol, so authenticated, unauthenticated, encrypted and plaintext clients can share one cluster.\" Change the URL to https://kafka.apache.org/43/security/security-overview/."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards against the live Kafka 4.3 pages. All cited URLs return 200 and are 4.3 docs, last modified May 22, 2026. The 6 true and 6 false cards are balanced, and the average statement lengths are 92.3 (true) and 92.2 (false). No r14 card duplicates another card in the deck: the nearest are sr2-12 (SSL and sendfile) and sr4-04 (advertised.listeners), which test different facts. Quotes that settle the cards that pass:\n- 02: listener-configuration says \"The security protocol of each listener is defined in a separate configuration: listener.security.protocol.map\", with CLIENT/BROKER as example names.\n- 03: broker-configs gives ssl.client.auth \"Default: none Valid Values: [required, requested, none]\".\n- 04: producer-configs gives ssl.endpoint.identification.algorithm \"Default: https\", and the SSL page says \"as of Kafka 2.0.0 host name verification of servers is enabled by default for client connections\".\n- 05: producer-configs says of sasl.mechanism: \"GSSAPI is the default mechanism. Default: GSSAPI\".\n- 06: the SASL page says \"SASL/PLAIN should be used only with SSL as transport layer to ensure that clear passwords are not transmitted on the wire\". This is easy and close to common sense, but the prompt explicitly allows it as a recommendation card.\n- 07: the SASL page says \"The default implementation of SASL/SCRAM in Kafka stores SCRAM credentials in the metadata log\" and \"The SCRAM identity consisting of salt, iterations, StoredKey and ServerKey are stored in the metadata log\".\n- 09: the ACL page says \"If a resource (R) does not have any ACLs defined ... only super users are allowed to access it\", with allow.everyone.if.no.acl.found=true to change that.\n- 10: the ACL page says \"–resource-pattern-type defaults to 'literal', which only affects resources with the exact same name or, in the case of the wildcard resource name '*', a resource with any name\".\n- 11: the 4.3 ACL page never uses the word \"precedence\". It shows the rule only through its example, \"allow all users to Read from Test-topic but only deny User:BadBob ... --allow-principal User:'*' ... --deny-principal User:BadBob\". The 4.3 Authorizer javadoc does not state it either. The answer (true) is correct and the support is acceptable, but it is implicit. The explicit \"Deny takes precedence\" wording is only in KIP-11 on cwiki, which the prompt does not allow as a behaviour source.\n- 12: the ACL page says \"Note that --allow-host and --deny-host only support IP addresses (hostnames are not supported)\". volatility is correctly set to may_change because of KIP-1276 (CIDR).\nFor these cards I found no version difference or recent change in 4.3.1 that would make an expert defend the opposite answer."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "kafka-fundamentals-sr6-01",
+     "kafka-fundamentals-sr6-05"
+    ],
+    "why": "Both cards test one fact: with acks=0 the broker gives the producer no feedback. sr6-01 says the producer reports whether the broker accepted the record, sr6-05 says RecordMetadata carries a broker-assigned offset. Both are false, and sr6-01's explanation ('broker receipt unconfirmed') answers sr6-05. sr6-01 is also close to a definition card, because acks=0 literally means zero acknowledgements. sr6-05 tests the concrete documented behaviour (offset -1), so keep it.",
+    "dropId": "kafka-fundamentals-sr6-01"
+   },
+   {
+    "ids": [
+     "kafka-fundamentals-sr11-06",
+     "kafka-fundamentals-sr11-11"
+    ],
+    "why": "These are the two sides of one distinction: who owns group liveness timing. With the classic protocol the client sets session.timeout.ms (sr11-06), and with group.protocol=consumer the broker sets the timing (sr11-11). The prompt rule says the two sides of one distinction count as one fact. sr11-06 is also near-trivial in the default classic context. Borderline, but drop sr11-06.",
+    "dropId": "kafka-fundamentals-sr11-06"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "topic-cleanup-setting-name",
+    "ids": [
+     "kafka-fundamentals-sr3-02",
+     "kafka-fundamentals-sr3-01",
+     "kafka-fundamentals-sr3-12",
+     "kafka-fundamentals-sr2-08",
+     "kafka-fundamentals-sr2-09",
+     "kafka-fundamentals-sr2-07"
+    ],
+    "why": "sr3-02 is false because the topic setting is cleanup.policy, not log.cleanup.policy. sr3-01, sr3-12 and sr2-08 write 'cleanup.policy=compact' or 'cleanup.policy=delete,compact' in their statements, sr2-09 says 'empty cleanup.policy', and sr2-07's explanation says 'The default cleanup.policy is delete'. Each one shows the correct topic-level name."
+   },
+   {
+    "name": "segment-retention-unit",
+    "ids": [
+     "kafka-fundamentals-sr2-02",
+     "kafka-fundamentals-sr2-03"
+    ],
+    "why": "sr2-03's statement ('a segment's time retention') and its explanation ('a segment's retention age') show that retention works per segment, which answers sr2-02 (records deleted individually, false)."
+   },
+   {
+    "name": "compaction-offsets",
+    "ids": [
+     "kafka-fundamentals-sr3-05",
+     "kafka-fundamentals-sr3-06"
+    ],
+    "why": "sr3-06 (the offset of a removed record is still a valid read position) implies that offsets are not renumbered, which answers sr3-05. sr3-05's explanation ('Records retain their original offsets') in turn points to sr3-06."
+   },
+   {
+    "name": "compaction-head-active-segment",
+    "ids": [
+     "kafka-fundamentals-sr3-07",
+     "kafka-fundamentals-sr3-09"
+    ],
+    "why": "sr3-09's explanation ('The head retains incoming records before later cleaning') hints that the segment being written is not compacted, which is sr3-07's answer (false)."
+   },
+   {
+    "name": "key-partition-mapping",
+    "ids": [
+     "kafka-fundamentals-sr1-08",
+     "kafka-fundamentals-sr1-09"
+    ],
+    "why": "sr1-08's qualifier 'With a fixed partition count' and its explanation 'while the partition count stays fixed' signal that adding partitions changes the mapping, which answers sr1-09 (false)."
+   },
+   {
+    "name": "records-retained-after-read",
+    "ids": [
+     "kafka-fundamentals-sr1-03",
+     "kafka-fundamentals-sr9-10"
+    ],
+    "why": "sr9-10 rewinds with seek() to 'an earlier retained offset', so records survive being read. That answers sr1-03 (records removed after consumption, false)."
+   },
+   {
+    "name": "bootstrap-metadata-discovery",
+    "ids": [
+     "kafka-fundamentals-sr4-01",
+     "kafka-fundamentals-sr4-02",
+     "kafka-fundamentals-sr4-03"
+    ],
+    "why": "sr4-01's explanation (the producer discovers the remaining brokers) and sr4-02 (any broker answers metadata) together answer sr4-03 (routing through the controller, false). sr4-03's explanation ('Producers contact partition leaders directly') in turn supports sr4-01 and sr4-02."
+   },
+   {
+    "name": "active-controller",
+    "ids": [
+     "kafka-fundamentals-sr4-03",
+     "kafka-fundamentals-sr4-05"
+    ],
+    "why": "sr4-03's statement assumes 'the active controller', which hints at sr4-05 (one active controller, the others hot standbys, true). This is a weak hint."
+   },
+   {
+    "name": "leader-follower-roles",
+    "ids": [
+     "kafka-fundamentals-sr5-03",
+     "kafka-fundamentals-sr5-04",
+     "kafka-fundamentals-sr5-05"
+    ],
+    "why": "sr5-05 ('fetches records from its partition leader') and sr5-04's explanation ('directs reads to the partition leader') show a single leader, which answers sr5-03 (equal leadership, false)."
+   },
+   {
+    "name": "unclean-election",
+    "ids": [
+     "kafka-fundamentals-sr5-07",
+     "kafka-fundamentals-sr5-08",
+     "kafka-fundamentals-sr5-09"
+    ],
+    "why": "sr5-09's wording 'Enabling unclean.leader.election.enable' implies the setting is off by default (sr5-07, true). sr5-08's explanation (the search starts with the ISR) together with sr5-09's explanation (risk of losing committed records) give each other away."
+   },
+   {
+    "name": "acks-zero-feedback",
+    "ids": [
+     "kafka-fundamentals-sr6-01",
+     "kafka-fundamentals-sr6-05"
+    ],
+    "why": "These two cards rest on the same fact (also listed as duplicates). Each explanation answers the other card."
+   },
+   {
+    "name": "raised-min-isr-availability",
+    "ids": [
+     "kafka-fundamentals-sr6-08",
+     "kafka-fundamentals-sr6-11"
+    ],
+    "why": "sr6-08 ('With a raised min.insync.replicas, a leader can report an ISR shortfall') shows that a higher minimum causes write errors, which answers sr6-11 (higher minimum more available, false)."
+   },
+   {
+    "name": "min-isr-acks1",
+    "ids": [
+     "kafka-fundamentals-sr6-07",
+     "kafka-fundamentals-sr6-10"
+    ],
+    "why": "Both cards are false, both use the 'With acks=1, ... min.insync.replicas' template, and both pair acks=1 with min.insync.replicas. sr6-10's explanation (visibility is held until the minimum ISR is met) pushes the player toward the wrong answer on sr6-07, and sr6-07's explanation makes sr6-10 look true. Dealt together, they read as a mirrored pair."
+   },
+   {
+    "name": "send-future",
+    "ids": [
+     "kafka-fundamentals-sr7-01",
+     "kafka-fundamentals-sr7-06"
+    ],
+    "why": "sr7-06's statement ('returns a failed Future') and its explanation ('send() waits ...') show that send() returns a Future, which answers sr7-01."
+   },
+   {
+    "name": "retries-delivery-timeout",
+    "ids": [
+     "kafka-fundamentals-sr8-01",
+     "kafka-fundamentals-sr8-02",
+     "kafka-fundamentals-sr8-03"
+    ],
+    "why": "sr8-02 ('controlling retries with delivery.timeout.ms') and sr8-01's explanation ('covers batching, acknowledgements and retries') show that the producer retries automatically by default, which answers sr8-03 (false). sr8-02 also answers sr8-01."
+   },
+   {
+    "name": "idempotence-conflict-validation",
+    "ids": [
+     "kafka-fundamentals-sr8-07",
+     "kafka-fundamentals-sr8-08"
+    ],
+    "why": "sr8-08's explanation ('rejects the conflict instead of silently falling back') answers sr8-07 (explicit enable.idempotence=true with acks=1 silently disabled, false), and sr8-07's explanation answers sr8-08 the same way."
+   },
+   {
+    "name": "idempotence-default",
+    "ids": [
+     "kafka-fundamentals-sr8-06",
+     "kafka-fundamentals-sr8-04",
+     "kafka-fundamentals-sr8-05"
+    ],
+    "why": "Under the deck's convention, sr8-04 and sr8-05 open with 'With enable.idempotence=false', which marks false as a non-default value and so answers sr8-06 (idempotence on by default, true)."
+   },
+   {
+    "name": "idempotence-dedup-scope",
+    "ids": [
+     "kafka-fundamentals-sr8-09",
+     "kafka-fundamentals-sr8-10",
+     "kafka-fundamentals-sr8-11"
+    ],
+    "why": "sr8-11 (duplicate payloads from separate send() calls are kept) shows that the broker does not deduplicate by content or key, which answers sr8-10 (false). sr8-10's explanation (producer identity plus sequence) hints at sr8-09 (scope limited to one producer session)."
+   },
+   {
+    "name": "auto-commit-default",
+    "ids": [
+     "kafka-fundamentals-sr10-02",
+     "kafka-fundamentals-sr10-05",
+     "kafka-fundamentals-sr10-07"
+    ],
+    "why": "sr10-05 and sr10-07 name 'enable.auto.commit=false' as a non-default setting, which shows that auto commit is on by default (sr10-02, true)."
+   },
+   {
+    "name": "default-at-least-once",
+    "ids": [
+     "kafka-fundamentals-sr10-09",
+     "kafka-fundamentals-sr10-03",
+     "kafka-fundamentals-sr10-05",
+     "kafka-fundamentals-sr10-06"
+    ],
+    "why": "sr10-03 says the default auto commit 'gives at-least-once delivery'. sr10-05's explanation (the work can run again) and sr10-06 ('make duplicate processing harmless') show that duplicates are expected. Together they answer sr10-09 (exactly once by default, false)."
+   },
+   {
+    "name": "consumer-protocol-opt-in-server-side",
+    "ids": [
+     "kafka-fundamentals-sr11-09",
+     "kafka-fundamentals-sr11-10",
+     "kafka-fundamentals-sr11-11",
+     "kafka-fundamentals-sr11-12",
+     "kafka-fundamentals-sr11-06"
+    ],
+    "why": "sr11-10, sr11-11 and sr11-12 spell out 'with group.protocol=consumer' as an opt-in, which answers sr11-09 (consumer is the client default, false). sr11-10's explanation ('The broker assigns partitions') and sr11-11 (the broker controls the heartbeat) set up a 'server does it' pattern that answers sr11-12 (regex evaluated locally, false). sr11-06 and sr11-11 are mirrored sides of the same timing split."
+   },
+   {
+    "name": "producer-owns-transactions",
+    "ids": [
+     "kafka-fundamentals-sr12-04",
+     "kafka-fundamentals-sr12-03",
+     "kafka-fundamentals-sr12-12"
+    ],
+    "why": "sr12-03 (KafkaProducer.sendOffsetsToTransaction()) and sr12-12 (KafkaProducer.abortTransaction()) name the producer as the owner of the transaction API, which answers sr12-04 (the consumer begins and commits transactions, false)."
+   },
+   {
+    "name": "isolation-level-default",
+    "ids": [
+     "kafka-fundamentals-sr12-05",
+     "kafka-fundamentals-sr12-06"
+    ],
+    "why": "sr12-06 names 'isolation.level=read_committed' as a non-default setting, which hints that the default returns uncommitted and aborted records (sr12-05, true)."
+   },
+   {
+    "name": "connect-source-direction",
+    "ids": [
+     "kafka-fundamentals-sr13-08",
+     "kafka-fundamentals-sr13-11"
+    ],
+    "why": "sr13-11 ('redirect a source record to a different topic') and its explanation ('before publication') show that source records flow into Kafka topics, which answers sr13-08 (a source connector delivers to an external database, false)."
+   }
+  ],
+  "tells": "Balanced, no tell: statement length overall (T 88.2 vs F 87.4 characters), every section within 5 characters (closest to the limit are r7 at 4.7 and r12 at 3.7), explanation length (68.4 vs 68.4), 'can' (14T/11F), 'may' (1/1), 'The Kafka docs recommend' (2T/2F: sr8-02, sr14-06 vs sr4-07, sr12-07), 'by default' (4T/6F), 'before' (6T/8F).\n\nExploitable tells:\n(1) The default-value template '<client> uses/selects <wrong value> when <setting> is left unset' is FALSE in 5 of 6 cards: sr6-04, sr11-09, sr13-06, sr14-03, sr14-05. The one true case, sr5-07, says 'omitted' instead. This breaks the cap of 2 false statements per template. Learning 'left unset means false' wins 5 of 6.\n(2) Openers 'With acks=0' and 'With acks=1' are false in 4 of 5: sr6-01, sr6-05, sr6-07, sr6-10 are F, only sr6-02 is T. In r6, 'With acks=X' overall is 5F/2T.\n(3) Actor-subject bias: a statement opening with 'Kafka ' is 22F/14T, any mention of KafkaConsumer is 14F/7T (sr5-04, sr9-01, sr9-02, sr9-06, sr9-07, sr10-04, sr10-10, sr10-11, sr11-03, sr11-09, sr11-12, sr12-04, sr12-06, sr12-12 vs sr1-06, sr9-03, sr9-10, sr10-02, sr10-08, sr10-12, sr12-05), KafkaProducer is 18F/11T, and StandardAuthorizer is 3F/1T (sr14-08, sr14-09, sr14-10 vs sr14-11).\n(4) Totality words (shared, combined, complete, equal) are 5F/1T: sr1-05, sr2-04, sr4-01, sr4-07, sr5-03 vs sr1-08.\n(5) Immediacy and automation words are 5F/1T: 'automatically' in sr4-10, sr8-08, sr12-12 (F) vs sr12-01 (T), 'immediately' in sr7-06 (F), 'as soon as' in sr12-03 (F).\n(6) 'new' is 6F/2T: sr3-05, sr3-07, sr4-10, sr5-10, sr6-10, sr14-10 vs sr1-04, sr9-09.\n(7) True-leaning words: 'even when' is 3T/0F (sr1-11, sr2-06, sr7-08), 'separately', 'independently' or 'separate' is 5T/1F (sr5-01, sr7-03, sr8-11, sr11-04, sr14-01 vs sr10-11), the opener 'Since Kafka 4.x' is 7T/4F (T: sr2-09, sr4-11, sr7-05, sr9-12, sr11-11, sr12-11, sr13-07; F: sr5-10, sr8-08, sr11-10, sr11-12), and 'risk' appears once, in sr9-09 (T).\n(8) Recurring false template 'config A does config B's job' carries 4 false cards, over the cap: sr3-02 (log.cleanup.policy for cleanup.policy), sr4-04 (advertised.listeners for listeners), sr10-04 (max.poll.interval.ms for default.api.timeout.ms), sr11-10 (partition.assignment.strategy under the consumer protocol).\n(9) Recurring false template 'the wrong actor does it' (client vs broker or controller) carries 5 false cards: sr1-12 (the broker deserializes), sr4-03 (routing through the controller), sr11-12 (regex evaluated locally), sr12-04 (the consumer runs transactions), sr14-08 (SASL activates the authorizer).\n(10) Non-default convention as a tell: because the deck names non-default settings inside statements, a card that names 'enable.auto.commit=false', 'enable.idempotence=false', 'isolation.level=read_committed' or 'group.protocol=consumer' gives away the default-value card in its section. See the conflict groups auto-commit-default, idempotence-default, isolation-level-default and consumer-protocol-opt-in-server-side.\n\nStrawman and truism risk: sr6-01 (acks=0 reporting acceptance contradicts the setting's own name), sr5-03 (equal leadership, when the rest of the deck constantly says 'the leader'), sr10-06 (overwriting by primary key makes duplicates harmless, close to common sense), sr1-02 (several producers on one topic).\n\nAccuracy points to double-check (not tells): sr6-06 (a topic-level min.insync.replicas override while ELR, on by default for new clusters since 4.1, manages min ISR at the cluster level; the prompt asked to avoid cards on how ELR changes min.insync.replicas). sr8-09 (the 'one producer session' scope is cited to the KafkaProducer javadoc; confirm that page actually states it). sr9-12 ('Since Kafka 4.2' framing on per-record acknowledgement, a property share groups had before production readiness)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "kafka-fundamentals-sr1-02",
+    "reason": "weak_card: a truism (several producers on one topic). r1 keeps 9 cards without it; rewrites of sr1-04 and sr1-11 keep the true side at 4."
+   },
+   {
+    "id": "kafka-fundamentals-sr1-08",
+    "reason": "duplicate of sr1-09 (partition-expansion-key-remapping). Its 'fixed partition count' qualifier gives away sr1-09's answer."
+   },
+   {
+    "id": "kafka-fundamentals-sr1-12",
+    "reason": "weak_card: 'by default' implies a mode in which brokers deserialize values, and no such mode exists; it was also the only 'by default' in r1, on a false card. r1 stays at 9 cards (4T/5F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr2-02",
+    "reason": "weak_card: sr2-03 and sr2-07 give it away, because both treat retention as working per segment. r2 stays at 9 (5T/4F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr2-08",
+    "reason": "weak_card: the answer can be read from the value 'delete,compact', and the explanation copies the source sentence."
+   },
+   {
+    "id": "kafka-fundamentals-sr2-10",
+    "reason": "weak_card: name giveaway. 'LogAppendTime' tells the player that the producer's timestamp is replaced, and the cited config entry does not say that the broker overwrites it."
+   },
+   {
+    "id": "kafka-fundamentals-sr3-02",
+    "reason": "ambiguous: the 4.3 design page itself says that adding log.cleanup.policy=compact enables cleaning on a particular topic. The suggested replacement (a topic cleanup.policy overrides the broker default) only tests general override behaviour, which is the truism the r6 verifier flagged in sr6-06. No clean card is possible, so drop. r3 stays at 9 (4T/5F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr3-04",
+    "reason": "weak_card: it restates the delete.retention.ms description, and the answer can be read from the setting's name."
+   },
+   {
+    "id": "kafka-fundamentals-sr3-09",
+    "reason": "weak_card: a truism, since the head of a compacted log keeps every record by definition. Dropping it also removes the hint its explanation gave to sr3-07."
+   },
+   {
+    "id": "kafka-fundamentals-sr4-06",
+    "reason": "weak_card: true by definition ('expand a quorum by adding a controller'), and it tests an operator procedure outside r4's developer depth. r4 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr5-03",
+    "reason": "weak_card: a strawman ('equal leadership'), and sr5-04 and sr5-05 give it away by naming the single leader."
+   },
+   {
+    "id": "kafka-fundamentals-sr5-11",
+    "reason": "weak_card: the distractor ('replica with the most recent write') makes little sense, and the card never reaches auto.leader.rebalance.enable. r5 keeps 10 cards (6T/4F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr6-01",
+    "reason": "duplicate of sr6-05 (acks=0 gives no broker feedback). Following the scan, I keep sr6-05 because it tests the concrete documented behaviour (offset -1), and sr6-01 is close to a definition of acks=0. Dropping it also removes a false card with a 'With acks=X' opener."
+   },
+   {
+    "id": "kafka-fundamentals-sr6-06",
+    "reason": "weak_card: 'a topic-specific setting overrides the cluster default' is true of every per-topic override, and the card sits near ELR's cluster-level management of min.insync.replicas."
+   },
+   {
+    "id": "kafka-fundamentals-sr6-09",
+    "reason": "weak_card: a truism, because every replicated system handles nodes that crash and recover. r6 stays at 9 (4T/5F) without the paired replacements."
+   },
+   {
+    "id": "kafka-fundamentals-sr8-03",
+    "reason": "duplicate of sr8-02 (default automatic retries bounded by delivery.timeout.ms): knowing one answer gives the other. r8 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr9-10",
+    "reason": "weak_card: the answer can be read from the wording (seek() to an earlier offset rewinds). Dropping it also removes the hint it gave to sr1-03. r9 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr10-01",
+    "reason": "weak_card: a strawman, since nobody thinks a producer acknowledgement means downstream processing has finished; the cited page was also the introduction rather than the design section."
+   },
+   {
+    "id": "kafka-fundamentals-sr10-04",
+    "reason": "weak_card: config-name trivia (which timeout bounds commitSync()). I did not use the suggested commitAsync replacement, because 'commitAsync() blocks' is a name giveaway."
+   },
+   {
+    "id": "kafka-fundamentals-sr10-06",
+    "reason": "weak_card: a truism (overwriting by primary key makes duplicates harmless) with a true-marking 'can'. r10 stays at 9 (5T/4F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr11-06",
+    "reason": "duplicate of sr11-11, the other side of the client-versus-broker liveness-timer split. It is also near-trivial in the default classic context. r11 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr12-01",
+    "reason": "ambiguous, and no clean card is possible. The 4.3.1 KafkaProducer javadoc says 'If the transactional.id is set, idempotence is automatically enabled', but an explicit enable.idempotence=false with a transactional.id throws a ConfigException, which only the client source shows. Under default settings the card says no more than sr8-06, and the verifier's suggested replacement rests on behaviour the 4.3 docs do not state. r12 keeps 11 cards (5T/6F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr13-01",
+    "reason": "weak_card: the answer can be read from the wording, because 'the application that embeds the library' already says where the topology runs."
+   },
+   {
+    "id": "kafka-fundamentals-sr13-07",
+    "reason": "weak_card: a name match (the Streams protocol with group.protocol=streams), and 'Since Kafka 4.2' is arguable because 4.1 early access already used that value. r13 keeps 10 cards (4T/6F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr14-01",
+    "reason": "weak_card: the explanation only repeats the statement, the statement can be guessed from its wording, and the cited page shows the fact only through a config example. r14 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "kafka-fundamentals-sr14-08",
+    "reason": "weak_card: a near strawman that confuses authentication (SASL) with authorization; it was also a fifth false card on the 'wrong actor' template."
+   }
+  ],
+  "source": [
+   {
+    "id": "kafka-fundamentals-sr1-05",
+    "title": "KafkaConsumer (kafka 4.3.1 API)",
+    "url": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+   },
+   {
+    "id": "kafka-fundamentals-sr4-09",
+    "title": "Kafka 4.3 Design",
+    "url": "https://kafka.apache.org/43/design/design/"
+   },
+   {
+    "id": "kafka-fundamentals-sr6-02",
+    "title": "Kafka 4.3 Producer Configs",
+    "url": "https://kafka.apache.org/43/configuration/producer-configs/"
+   },
+   {
+    "id": "kafka-fundamentals-sr13-08",
+    "title": "Kafka 4.3 Connector Development Guide",
+    "url": "https://kafka.apache.org/43/kafka-connect/connector-development-guide/"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "kafka-fundamentals-sr1-04",
+    "reason": "weak_card (a truism with the wrong actor), rewritten rather than dropped because dropping it, sr1-02, sr1-08 and sr1-11 would leave r1 with 7 cards and 2 true. The new card covers the r1 item 'partitions spread over brokers'. Introduction: 'a topic is spread over a number of \"buckets\" located on different Kafka brokers'.",
+    "statement": "Kafka spreads a topic's partitions over several brokers of the cluster.",
+    "answer": true,
+    "explanation": "A topic's partitions are buckets placed on different brokers, so client applications can read and write one topic through many brokers at the same time.",
+    "misconception": "",
+    "sourceTitle": "Kafka 4.3 Introduction",
+    "sourceUrl": "https://kafka.apache.org/43/getting-started/introduction/"
+   },
+   {
+    "id": "kafka-fundamentals-sr1-06",
+    "reason": "explanation_error: the explanation never said that allow.auto.create.topics defaults to true, and the statement made the consumer's request depend on the broker setting. The broker is now the actor. Consumer configs: 'A topic being subscribed to will be automatically created only if the broker allows for it using auto.create.topics.enable ... Default: true'.",
+    "statement": "A broker with auto.create.topics.enable=true creates a missing topic a KafkaConsumer subscribes to.",
+    "answer": true,
+    "explanation": "allow.auto.create.topics defaults to true on the consumer, so the broker's auto.create.topics.enable decides whether a subscribed missing topic is created.",
+    "misconception": "",
+    "sourceTitle": "Kafka 4.3 Consumer and Share Consumer Configs",
+    "sourceUrl": "https://kafka.apache.org/43/configuration/consumer-configs/"
+   },
+   {
+    "id": "kafka-fundamentals-sr1-11",
+    "reason": "weak_card (circular wording), rewritten to keep r1 at 9 cards with 4 true. The statement is shortened so that r1's true average (77.0) stays within 5 characters of the false average (73.0). Message format: 'Messages (aka Records) are always written in batches ... we could have a record batch containing a single record.'",
+    "statement": "Kafka stores a record sent alone by a producer inside a record batch.",
+    "answer": true,
+    "explanation": "Kafka always writes records in record batches; a batch holds one or more records, so a lone record is stored as a single-record batch.",
+    "misconception": "",
+    "sourceTitle": "Kafka 4.3 Message Format",
+    "sourceUrl": "https://kafka.apache.org/43/implementation/message-format/"
+   },
+   {
+    "id": "kafka-fundamentals-sr3-10",
+    "reason": "ambiguous: the design page itself calls max.compaction.lag.ms a 'compaction deadline'. The new statement tests a hard guarantee, which the design page denies: 'Note that this compaction deadline is not a hard guarantee since it is still subjected to the availability of log cleaner threads and the actual compaction time.'",
+    "statement": "On a compacted topic, max.compaction.lag.ms guarantees that a superseded record is removed within that time.",
+    "answer": false,
+    "explanation": "max.compaction.lag.ms only bounds how long a record stays ineligible for compaction; cleaning still depends on free log cleaner threads, so it is not a hard deadline.",
+    "misconception": "max.compaction.lag.ms is a hard deadline by which superseded records are removed.",
+    "sourceTitle": "Kafka 4.3 Design",
+    "sourceUrl": "https://kafka.apache.org/43/design/design/"
+   },
+   {
+    "id": "kafka-fundamentals-sr7-10",
+    "reason": "weak_card (it tested only the custom-Partitioner footnote, and 'its' was vague). I rewrote it with the verifier's replacement instead of dropping it: without it, r7's true statements would average 7.6 characters longer than the false ones, which breaks the deck's 5-character rule. With it the gap is 4.0. partitioner.ignore.keys entry: 'When set to true the producer won't use record keys to choose a partition ... this setting has no effect if a custom partitioner is used.' It joins sr7-12 as the second false card on the key-hash template, which is the cap.",
+    "statement": "With partitioner.ignore.keys=true, KafkaProducer's default partitioning logic still hashes a record's key.",
+    "answer": false,
+    "explanation": "With partitioner.ignore.keys=true, the producer stops using record keys to pick a partition; the setting has no effect when a custom Partitioner is configured.",
+    "misconception": "partitioner.ignore.keys only affects keyless records, so keyed records are still placed by key hash.",
+    "sourceTitle": "Kafka 4.3 Producer Configs",
+    "sourceUrl": "https://kafka.apache.org/43/configuration/producer-configs/"
+   },
+   {
+    "id": "kafka-fundamentals-sr8-12",
+    "reason": "explanation_error: 'subsequent producer API calls fail' holds only for transactional or producer-id fatal errors; a topic-level authorization failure fails only that record. The new source is the Callback javadoc, which lists 'Non-Retriable exceptions (fatal, the message will never be sent): ... AuthorizationException'. The statement and the answer are unchanged.",
+    "statement": "KafkaProducer keeps retrying AuthorizationException until delivery.timeout.ms expires.",
+    "answer": false,
+    "explanation": "AuthorizationException is non-retriable: KafkaProducer does not resend that record and reports the failure to the send() callback instead.",
+    "misconception": "Authorization failures are retried until the delivery deadline.",
+    "sourceTitle": "Callback (kafka 4.3.1 API)",
+    "sourceUrl": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/Callback.html"
+   },
+   {
+    "id": "kafka-fundamentals-sr9-05",
+    "reason": "source_problem: the Distribution page covers only offset storage. The KafkaConsumer javadoc states the fact: 'each process would have its own consumer group, so each process would subscribe to all the records published to the topic' and 'any number of consumer groups for a given topic without duplicating data'. The explanation now follows that source; the statement and the answer are unchanged.",
+    "statement": "Consumers with different group.id values share the same consumption position for a partition.",
+    "answer": false,
+    "explanation": "Each consumer group receives all records of the topics it subscribes to, and Kafka supports any number of groups on one topic without duplicating data.",
+    "misconception": "Different groups share a common reading position.",
+    "sourceTitle": "KafkaConsumer (kafka 4.3.1 API)",
+    "sourceUrl": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+   },
+   {
+    "id": "kafka-fundamentals-sr9-12",
+    "reason": "ambiguous: 'Since Kafka 4.2' rested the card on a release number, while per-record acknowledgement already existed in the 4.1 preview. I left out the verifier's 'rather than committing partition offsets' because the design page does not state it. Design page, share groups: 'Records are acknowledged individually ... Delivery attempts to consumers in a share group are counted ... partitions may be assigned to multiple consumers.' Keep appliesTo 'Kafka 4.2 and later' and volatility may_change.",
+    "statement": "In a share group, consumers acknowledge the records delivered to them individually.",
+    "answer": true,
+    "explanation": "Share groups keep delivery state per record: consumers acknowledge each record and delivery attempts are counted, so one partition can feed several share consumers.",
+    "misconception": "",
+    "sourceTitle": "Kafka 4.3 Design",
+    "sourceUrl": "https://kafka.apache.org/43/design/design/"
+   },
+   {
+    "id": "kafka-fundamentals-sr11-05",
+    "reason": "source_problem: the CooperativeStickyAssignor page only points to RebalanceProtocol, and that page states the fact: 'COOPERATIVE rebalance protocol allows a consumer to retain its currently owned partitions before participating in a rebalance event.' The explanation now links the assignor to the COOPERATIVE protocol; the statement and the answer are unchanged.",
+    "statement": "With CooperativeStickyAssignor, consumers keep ownership of their unmoved partitions throughout a rebalance.",
+    "answer": true,
+    "explanation": "CooperativeStickyAssignor uses the COOPERATIVE rebalance protocol: a consumer keeps its owned partitions during a rebalance, and only partitions that must move are revoked.",
+    "misconception": "",
+    "sourceTitle": "ConsumerPartitionAssignor.RebalanceProtocol (kafka 4.3.1 API)",
+    "sourceUrl": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/ConsumerPartitionAssignor.RebalanceProtocol.html"
+   },
+   {
+    "id": "kafka-fundamentals-sr6-04",
+    "reason": "tell: scan tell (1). The '<client> uses <wrong value> when <setting> is left unset' template was false in 5 of 6 cards. This changes only the wording; the fact (default acks=all) and the answer (false) are the same.",
+    "statement": "A KafkaProducer with default settings treats a write as done once the leader has appended it locally.",
+    "answer": false,
+    "explanation": "KafkaProducer defaults to acks=all.",
+    "misconception": "The default acknowledgement mode is acks=1.",
+    "sourceTitle": "KafkaProducer (kafka 4.3.1 API)",
+    "sourceUrl": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/producer/KafkaProducer.html"
+   },
+   {
+    "id": "kafka-fundamentals-sr13-06",
+    "reason": "tell: scan tell (1), the 'left unset' false template. Same fact (the default processing.guarantee is at_least_once) and same answer (false).",
+    "statement": "Kafka Streams runs with processing.guarantee=exactly_once_v2 unless an application overrides it.",
+    "answer": false,
+    "explanation": "Kafka Streams defaults processing.guarantee to at_least_once.",
+    "misconception": "Kafka Streams enables exactly_once_v2 processing by default.",
+    "sourceTitle": "Kafka 4.3 Streams Configs",
+    "sourceUrl": "https://kafka.apache.org/43/configuration/kafka-streams-configs/"
+   },
+   {
+    "id": "kafka-fundamentals-sr14-05",
+    "reason": "tell: scan tell (1), the 'left unset' false template. After this and the two rewrites above, 'left unset' carries only sr11-09 and sr14-03, which is the 2-card cap. Same fact (the default sasl.mechanism is GSSAPI) and same answer (false).",
+    "statement": "For SASL_SSL connections, KafkaProducer's default sasl.mechanism is PLAIN.",
+    "answer": false,
+    "explanation": "For SASL connections, KafkaProducer's default sasl.mechanism is GSSAPI.",
+    "misconception": "SASL_SSL selects PLAIN as the client's default authentication mechanism.",
+    "sourceTitle": "Kafka 4.3 Producer Configs",
+    "sourceUrl": "https://kafka.apache.org/43/configuration/producer-configs/"
+   },
+   {
+    "id": "kafka-fundamentals-sr12-12",
+    "reason": "tell: scan tell (5). 'automatically' marked false cards, and with sr12-01 dropped no true card used it. This removes 'can automatically' from a false card. Same fact (the application resets the consumer position after an abort) and same answer (false).",
+    "statement": "KafkaProducer.abortTransaction() also rewinds KafkaConsumer to the aborted transaction's input records.",
+    "answer": false,
+    "explanation": "After a transaction abort, the application resets consumer position explicitly.",
+    "misconception": "Aborting a producer transaction also restores the consumer's current position.",
+    "sourceTitle": "Kafka 4.3 Design",
+    "sourceUrl": "https://kafka.apache.org/43/design/design/"
+   },
+   {
+    "id": "kafka-fundamentals-sr10-08",
+    "reason": "tell: this removes a true-marking hedge ('can') and shortens a true r10 statement. The r10 drops had pushed the true average 5.4 characters above the false average; the gap is now about 3.8. Same fact and answer. KafkaConsumer javadoc: 'applications reading from topics with transactional messages will see gaps in the consumed offsets ... filtered out for consumers in both isolation levels'.",
+    "statement": "KafkaConsumer returns offsets with gaps on a transactional topic under either isolation level.",
+    "answer": true,
+    "explanation": "Transaction markers occupy offsets but KafkaConsumer filters them from application records.",
+    "misconception": "",
+    "sourceTitle": "KafkaConsumer (kafka 4.3.1 API)",
+    "sourceUrl": "https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "compaction-offsets",
+    "ids": [
+     "kafka-fundamentals-sr3-05",
+     "kafka-fundamentals-sr3-06"
+    ]
+   },
+   {
+    "name": "bootstrap-metadata-discovery",
+    "ids": [
+     "kafka-fundamentals-sr4-01",
+     "kafka-fundamentals-sr4-02",
+     "kafka-fundamentals-sr4-03"
+    ]
+   },
+   {
+    "name": "active-controller",
+    "ids": [
+     "kafka-fundamentals-sr4-03",
+     "kafka-fundamentals-sr4-05"
+    ]
+   },
+   {
+    "name": "unclean-election",
+    "ids": [
+     "kafka-fundamentals-sr5-07",
+     "kafka-fundamentals-sr5-08",
+     "kafka-fundamentals-sr5-09"
+    ]
+   },
+   {
+    "name": "raised-min-isr-availability",
+    "ids": [
+     "kafka-fundamentals-sr6-08",
+     "kafka-fundamentals-sr6-11"
+    ]
+   },
+   {
+    "name": "min-isr-acks1",
+    "ids": [
+     "kafka-fundamentals-sr6-07",
+     "kafka-fundamentals-sr6-10"
+    ]
+   },
+   {
+    "name": "send-future",
+    "ids": [
+     "kafka-fundamentals-sr7-01",
+     "kafka-fundamentals-sr7-06"
+    ]
+   },
+   {
+    "name": "default-key-hash",
+    "ids": [
+     "kafka-fundamentals-sr7-10",
+     "kafka-fundamentals-sr1-09"
+    ]
+   },
+   {
+    "name": "retries-delivery-timeout",
+    "ids": [
+     "kafka-fundamentals-sr8-01",
+     "kafka-fundamentals-sr8-02"
+    ]
+   },
+   {
+    "name": "idempotence-conflict-validation",
+    "ids": [
+     "kafka-fundamentals-sr8-07",
+     "kafka-fundamentals-sr8-08"
+    ]
+   },
+   {
+    "name": "idempotence-default",
+    "ids": [
+     "kafka-fundamentals-sr8-06",
+     "kafka-fundamentals-sr8-04",
+     "kafka-fundamentals-sr8-05"
+    ]
+   },
+   {
+    "name": "idempotence-dedup-scope",
+    "ids": [
+     "kafka-fundamentals-sr8-09",
+     "kafka-fundamentals-sr8-10",
+     "kafka-fundamentals-sr8-11"
+    ]
+   },
+   {
+    "name": "auto-commit-default",
+    "ids": [
+     "kafka-fundamentals-sr10-02",
+     "kafka-fundamentals-sr10-05",
+     "kafka-fundamentals-sr10-07"
+    ]
+   },
+   {
+    "name": "default-at-least-once",
+    "ids": [
+     "kafka-fundamentals-sr10-09",
+     "kafka-fundamentals-sr10-03",
+     "kafka-fundamentals-sr10-05"
+    ]
+   },
+   {
+    "name": "consumer-protocol-opt-in-server-side",
+    "ids": [
+     "kafka-fundamentals-sr11-09",
+     "kafka-fundamentals-sr11-10",
+     "kafka-fundamentals-sr11-11",
+     "kafka-fundamentals-sr11-12"
+    ]
+   },
+   {
+    "name": "producer-owns-transactions",
+    "ids": [
+     "kafka-fundamentals-sr12-04",
+     "kafka-fundamentals-sr12-03",
+     "kafka-fundamentals-sr12-12"
+    ]
+   },
+   {
+    "name": "isolation-level-default",
+    "ids": [
+     "kafka-fundamentals-sr12-05",
+     "kafka-fundamentals-sr12-06"
+    ]
+   },
+   {
+    "name": "connect-source-direction",
+    "ids": [
+     "kafka-fundamentals-sr13-08",
+     "kafka-fundamentals-sr13-11"
+    ]
+   }
+  ],
+  "sectionBalance": "After edits: 142 cards, 69 true and 73 false. Average statement length is shown as true/false in characters.\n- r1: 9 cards, 4T/5F (77.0/73.0)\n- r2: 9 cards, 5T/4F (68.4/67.5)\n- r3: 9 cards, 4T/5F (85.5/88.4)\n- r4: 11 cards, 5T/6F (85.4/83.7)\n- r5: 10 cards, 6T/4F (81.8/83.8)\n- r6: 9 cards, 4T/5F (81.8/85.4)\n- r7: 12 cards, 6T/6F (92.2/88.2)\n- r8: 11 cards, 6T/5F (93.2/89.8)\n- r9: 11 cards, 5T/6F (87.2/89.8)\n- r10: 9 cards, 5T/4F (about 94.8/91.0)\n- r11: 11 cards, 5T/6F (92.6/96.0)\n- r12: 11 cards, 5T/6F (99.4/100.5)\n- r13: 10 cards, 4T/6F (95.0/94.5)\n- r14: 10 cards, 5T/5F (90.8/91.0)\n\nEvery section has at least 9 cards, a split no worse than 4 to 6 per 10, and a true/false length gap of at most 4.0 characters.",
+  "notes": "The counts are 26 drops, 9 fix rewrites (sr1-04, sr1-06, sr1-11, sr3-10, sr7-10, sr8-12, sr9-05, sr9-12, sr11-05), 5 tell rewrites (sr6-04, sr13-06, sr14-05, sr12-12, sr10-08) and 4 source-only changes (sr1-05, sr4-09, sr6-02, sr13-08). Every rewrite was checked against the live 4.3 pages fetched on 2026-10-13: the introduction, design, producer, consumer and topic configs, message format, consumer rebalance protocol, the connector development guide, and the javadoc for KafkaProducer, KafkaConsumer, Callback, RebalanceProtocol and CooperativeStickyAssignor (all titled kafka 4.3.1 API).\n\nJudgement calls:\n1. sr6-01 against sr6-05. The r6 verifier said drop sr6-05; the scan said drop sr6-01. I dropped sr6-01, because sr6-05 tests the concrete documented behaviour (offset -1) and sr6-01 is near a definition. With sr6-06 and sr6-09 also dropped, r6 is 4T/5F, so the paired replacements (typical RF3/minISR2/acks=all setup, Byzantine failures) were not needed.\n2. sr3-02 (ambiguous) was dropped, not rewritten. The suggested card tests general override behaviour, the same truism flagged for sr6-06.\n3. sr12-01 (ambiguous) was dropped. The 4.3.1 KafkaProducer javadoc literally says idempotence is 'automatically enabled' when transactional.id is set, while explicitly disabling it throws a ConfigException that only the client source shows. Neither version gives a clean, docs-backed card that adds anything beyond sr8-06.\n4. sr7-10 (weak) was rewritten, not dropped. Dropping it would have broken the prompt's 5-character length rule in r7 (gap 7.6).\n5. For sr10-04 (weak) I rejected the verifier's commitAsync replacement as a name giveaway and dropped the card.\n6. sr14-01 was dropped as weak_card, even though the verifier would have kept the statement.\n\nsr11-05: the RebalanceProtocol page states the retention fact. The link between CooperativeStickyAssignor and COOPERATIVE comes from the assignor's own javadoc and the partition.assignment.strategy entry ('allows for cooperative rebalancing').\n\nTells after the edits:\n- 'left unset' 0T/2F (at the cap)\n- 'automatically' 0T/2F (sr4-10, sr8-08)\n- 'can' 10T/9F\n- 'by default' 4T/4F\n- 'With acks' 2T/3F\n- KafkaConsumer stays skewed at 6T/13F; I had no tell-rewrite budget left for it.\n\nCoverage gaps the drops leave (candidates for a later top-up):\n- r1: hash mapping and serializers\n- r2: deleteRecords and the LogAppendTime overwrite\n- r3: tombstone loss for a lagging reader\n- r4: controller.quorum.bootstrap.servers\n- r6: the documented typical setup and Byzantine failures\n- r10: commitSync vs commitAsync, at-most-once, and the two-problems split\n- r11: online migration\n\nUnflagged polish the verifiers suggested, not applied:\n- thin explanations on sr2-05, sr4-02, sr4-03, sr4-11, sr7-01, sr8-02 and sr8-06\n- sr3-03 difficulty 1 is too low\n- sr2-12 volatility could be may_change"
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "kafka-fundamentals-sr1-04",
+    "decision": "keep",
+    "statement": "Kafka spreads a topic's partitions over several brokers of the cluster.",
+    "answer": true,
+    "explanation": "A topic's partitions are buckets placed on different brokers, so client applications can read and write one topic through many brokers at the same time.",
+    "reason": "Both lenses keep it. Confirmed on the 4.3 Introduction: 'a topic is spread over a number of \"buckets\" located on different Kafka brokers ... allows client applications to both read and write the data from/to many brokers at the same time.'"
+   },
+   {
+    "id": "kafka-fundamentals-sr1-06",
+    "decision": "fixed",
+    "statement": "A broker with auto.create.topics.enable=true creates a missing topic when a KafkaConsumer subscribes.",
+    "answer": true,
+    "explanation": "allow.auto.create.topics defaults to true on the consumer, so the broker's auto.create.topics.enable decides whether a subscribed missing topic is created.",
+    "reason": "Wording lens fix: the clumsy trailing clause becomes a 'when ... subscribes' clause. I dropped the lens's 'to it' (107 chars): with r1 at 4 true cards, +8 chars would push the true average to about 79 against a false average of 73, which breaks the 5-character rule. This version is 101 chars (+2, so a gap of about 4.5). Consumer configs 4.3, allow.auto.create.topics: 'A topic being subscribed to will be automatically created only if the broker allows for it using auto.create.topics.enable broker configuration. Default: true'."
+   },
+   {
+    "id": "kafka-fundamentals-sr1-11",
+    "decision": "keep",
+    "statement": "Kafka stores a record sent alone by a producer inside a record batch.",
+    "answer": true,
+    "explanation": "Kafka always writes records in record batches; a batch holds one or more records, so a lone record is stored as a single-record batch.",
+    "reason": "Both lenses keep it. Message format page: 'Messages (aka Records) are always written in batches ... a record batch contains one or more records. In the degenerate case, we could have a record batch containing a single record.'"
+   },
+   {
+    "id": "kafka-fundamentals-sr3-10",
+    "decision": "fixed",
+    "statement": "On a compacted topic, Kafka removes a superseded record before max.compaction.lag.ms has elapsed.",
+    "answer": false,
+    "explanation": "max.compaction.lag.ms bounds how long a record stays ineligible for compaction, but it is not a hard deadline: cleaning still depends on free log cleaner threads and compaction time.",
+    "reason": "Wording lens fix: 'guarantees' was a strong word that marked the false answer. The new wording makes the same false claim (a hard removal deadline). The fact lens's facts still hold. Design page 4.3: 'this compaction deadline is not a hard guarantee since it is still subjected to the availability of log cleaner threads and the actual compaction time.' Topic configs, max.compaction.lag.ms: 'The maximum time a message will remain ineligible for compaction in the log.' Statement 97 chars, explanation 182."
+   },
+   {
+    "id": "kafka-fundamentals-sr7-10",
+    "decision": "drop",
+    "statement": "With partitioner.ignore.keys=true, KafkaProducer's default partitioning logic still hashes a record's key.",
+    "answer": false,
+    "explanation": "With partitioner.ignore.keys=true, the producer stops using record keys to pick a partition; the setting has no effect when a custom Partitioner is configured.",
+    "reason": "Name giveaway, raised by the wording lens (drop) and also by the fact lens. A config named ignore.keys that is set to true and 'still hashes a record's key' reads as false from the name alone. The fact is correct (producer configs: 'When set to true the producer won't use record keys to choose a partition'), but the card breaks the no-name-giveaway and no-strawman rules. Side effect: r7 length balance. Per the editor, without this card the true statements average 7.6 chars longer than the false ones. The orchestrator should fix that another way, for example by shortening sr7-09 (true, 117 chars)."
+   },
+   {
+    "id": "kafka-fundamentals-sr8-12",
+    "decision": "keep",
+    "statement": "KafkaProducer keeps retrying AuthorizationException until delivery.timeout.ms expires.",
+    "answer": false,
+    "explanation": "AuthorizationException is non-retriable: KafkaProducer does not resend that record and reports the failure to the send() callback instead.",
+    "reason": "Both lenses keep it. Callback javadoc (kafka 4.3.1 API): 'Non-Retriable exceptions (fatal, the message will never be sent): ... AuthenticationException AuthorizationException'."
+   },
+   {
+    "id": "kafka-fundamentals-sr9-05",
+    "decision": "fixed",
+    "statement": "Consumers with different group.id values share the same consumption position for a partition.",
+    "answer": false,
+    "explanation": "Each consumer group keeps its own offsets, so every group reads all records of a topic independently, and Kafka supports any number of groups on one topic without duplicating data.",
+    "reason": "Wording lens fix: the explanation of a false card has to state the correct fact, and the card tests that positions are per group. I confirmed per-group offsets on the official 4.3 Distribution page: 'store all the offsets for a given consumer group in a designated broker (for that group) called the group coordinator'. KafkaConsumer javadoc: 'each process would have its own consumer group, so each process would subscribe to all the records published to the topic' and 'any number of consumer groups for a given topic without duplicating data'. Statement and answer are unchanged. Explanation 180 chars."
+   },
+   {
+    "id": "kafka-fundamentals-sr9-12",
+    "decision": "fixed",
+    "statement": "In a share group, Kafka tracks the acknowledgement of each delivered record separately.",
+    "answer": true,
+    "explanation": "Share consumers acquire records under a time-limited lock and can acknowledge, release or reject each one; delivery attempts are counted, and a partition may feed several consumers.",
+    "reason": "Fact lens fix, and the issue holds when checked. Consumer configs 4.3: share.acknowledgement.mode 'Default: implicit' ('must not use ShareConsumer.acknowledge() ... delivery is acknowledged implicitly on the next call to poll or commit'), so under defaults 'consumers acknowledge individually' is arguable. Per-record tracking holds in both modes. Design page: 'Records are acknowledged individually ... Delivery attempts to consumers in a share group are counted', 'partitions may be assigned to multiple consumers', 'time-limited acquisition lock' and 'A share consumer holding the lock can handle the record in the following ways: Acknowledge ... Release ... Reject'. I added 'can' because Renew also exists. Keep appliesTo 'Kafka 4.2 and later' and volatility may_change. Statement 87 chars."
+   },
+   {
+    "id": "kafka-fundamentals-sr11-05",
+    "decision": "fixed",
+    "statement": "With CooperativeStickyAssignor, consumers keep ownership of their unmoved partitions throughout a rebalance.",
+    "answer": true,
+    "explanation": "With CooperativeStickyAssignor on every group member, rebalances are cooperative: a consumer retains its owned partitions, and only partitions that must move are revoked, then reassigned in a follow-up rebalance.",
+    "reason": "Fact lens fix: the explanation now states that every member must use the assignor, so it no longer conflicts with sr11-03 (the default Range-first list rebalances eagerly). CooperativeStickyAssignor javadoc 4.3: 'To turn on cooperative rebalancing you must set all your consumers to use this PartitionAssignor'. RebalanceProtocol javadoc: COOPERATIVE 'allows a consumer to retain its currently owned partitions ... revoked partitions can be reassigned to other consumers in the next rebalance event'. Statement unchanged. Source stays the RebalanceProtocol page. Explanation 212 chars."
+   },
+   {
+    "id": "kafka-fundamentals-sr6-04",
+    "decision": "fixed",
+    "statement": "A KafkaProducer with default settings uses acks=1, where the leader responds without waiting for followers.",
+    "answer": false,
+    "explanation": "KafkaProducer defaults to acks=all: the leader waits for the full set of in-sync replicas to acknowledge a record before the request counts as complete.",
+    "reason": "Fact lens fix, and the issue holds when checked. The editor's 'treats a write as done once the leader has appended it locally' is true under acks=all when the leader is the sole ISR member, which sr6-03 teaches. Naming acks=1 removes the ambiguity. I worded the acks=1 clause after producer configs ('respond without awaiting full acknowledgement from all followers') instead of the lens's 'before followers replicate' (107 chars against 104). The explanation follows the fact lens and drops the wording lens's 'not right after its own local append', which is wrong when the leader is the only ISR member. Producer configs 4.3: acks 'Default: all', 'acks=all This means the leader will wait for the full set of in-sync replicas to acknowledge the record'. Check r6 length balance: this false card grew by 6 chars over the editor's version."
+   },
+   {
+    "id": "kafka-fundamentals-sr13-06",
+    "decision": "fixed",
+    "statement": "Kafka Streams runs with processing.guarantee=exactly_once_v2 unless an application overrides it.",
+    "answer": false,
+    "explanation": "Kafka Streams defaults processing.guarantee to at_least_once; an application gets exactly-once processing only by setting exactly_once_v2 explicitly.",
+    "reason": "Wording lens fix: the explanation now also says how exactly-once is turned on. Streams configs 4.3: 'Possible values are at_least_once (default) and exactly_once_v2', so exactly_once_v2 is the only way to get exactly-once. Statement and answer are unchanged."
+   },
+   {
+    "id": "kafka-fundamentals-sr14-05",
+    "decision": "fixed",
+    "statement": "For SASL_SSL connections, KafkaProducer's default sasl.mechanism is PLAIN.",
+    "answer": false,
+    "explanation": "sasl.mechanism defaults to GSSAPI (Kerberos) for SASL connections, so a client that uses PLAIN has to set sasl.mechanism=PLAIN explicitly.",
+    "reason": "Wording lens fix: the explanation now goes beyond restating the statement. Producer configs 4.3, sasl.mechanism: 'GSSAPI is the default mechanism. Default: GSSAPI'. GSSAPI is Kerberos per the 4.3 SASL docs, as the deck prompt also records. Statement and answer are unchanged."
+   },
+   {
+    "id": "kafka-fundamentals-sr12-12",
+    "decision": "fixed",
+    "statement": "KafkaProducer.abortTransaction() also rewinds KafkaConsumer to the aborted transaction's input records.",
+    "answer": false,
+    "explanation": "After an abort, the application must reset the consumer position explicitly so that it reprocesses the records handled by the aborted transaction.",
+    "reason": "Wording lens fix: the explanation now says why the reset is needed. Design page 4.3, Using Transactions: 'in the event of a transaction abort, the application's state and in particular the current position of the consumer must be reset explicitly so that it can reprocess the records processed by the aborted transaction.' Statement and answer are unchanged."
+   },
+   {
+    "id": "kafka-fundamentals-sr10-08",
+    "decision": "fixed",
+    "statement": "KafkaConsumer sees offset gaps on a transactional topic under either isolation level.",
+    "answer": true,
+    "explanation": "Transaction markers occupy offsets in the log, and KafkaConsumer filters them out of the records it returns, so the offsets of returned records skip them.",
+    "reason": "Wording lens fix: KafkaConsumer returns records, not 'offsets with gaps'. The statement is now 85 chars against the editor's 94, so this true card gets shorter and the r10 gap shrinks further. KafkaConsumer javadoc (4.3.1): 'markers are not returned to applications, yet have an offset in the log. As a result, applications reading from topics with transactional messages will see gaps in the consumed offsets ... filtered out for consumers in both isolation levels.'"
+   }
+  ]
+ }
+}

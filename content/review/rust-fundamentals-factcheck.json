@@ -1,0 +1,1032 @@
+{
+ "deck": "rust-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr1-03",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official Book page (ch04-01 What Is Ownership?), current",
+     "evidence": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html: \"If we do want to deeply copy the heap data of the String, not just the stack data, we can use a common method called clone.\" The fact is correct, but the statement \"Cloning a String produces an owned copy with independently editable text\" gives away its answer: \"cloning\" already means \"producing a copy\", so a player who knows no Rust answers True. The point the section wants tested (clone copies the heap data, which is why it is a deep and possibly expensive copy) is never stated.",
+     "problem": "The answer can be read from the word \"Cloning\". The deep copy versus stack-only copy distinction is not tested.",
+     "suggestedFix": "Replacement (answer true, keeps r1 at 6 true and 6 false): statement \"`s.clone()` on a `String` duplicates its heap-stored text as well as the pointer, length and capacity.\" (102 chars). Explanation: \"The Book calls clone a deep copy: it copies the String's heap data, not only its stack part, which is why it is explicit and can be expensive.\" (142 chars). Keep the URL https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html."
+    },
+    {
+     "id": "rust-fundamentals-sr1-11",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, official Reference page (expressions/field-expr.html), current, supports the card",
+     "evidence": "https://doc.rust-lang.org/reference/expressions/field-expr.html: \"The fields of a struct or a reference to a struct are treated as separate entities when borrowing. If the struct does not implement Drop and is stored in a local variable, this also applies to moving out of each of its fields.\" The answer is right only under two conditions: the struct has no Drop implementation and it is stored in a local variable. The statement hides the first condition in the unclear word \"alone\" and leaves out the second. Read plainly, a struct that implements Drop, or one reached through a reference, is a case where an expert would answer False.",
+     "problem": "The conditions that make the card true are not written in the statement. \"alone\" is not standard Rust wording, and a learner cannot tell that it means \"without a Drop implementation\".",
+     "suggestedFix": "Replacement (answer true, keeps the balance): statement \"For a local `p` of a struct type without `Drop`, `let x = p.a;` leaves the `String` field `p.b` usable.\" (103 chars). Explanation: \"For a struct without Drop held in a local variable, Rust tracks each field separately, so moving out one field leaves the others usable, though not the whole struct.\" (165 chars). Keep the field-expr URL."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (b1, ids sr1-01 to sr1-12) against their source pages, and every URL loaded (200, official, current). I confirmed these quotes:\n- Book ch04-01: rule 3 \"When the owner goes out of scope, the value will be dropped\"; \"When you assign a completely new value to an existing variable, Rust will call drop and free the original value's memory immediately\" (supports sr1-04); \"Rust considers s1 as no longer valid\" (sr1-02); the String layout with the pointer, length and capacity on the stack and the contents on the heap (sr1-07).\n- std Copy docs: \"pub trait Copy: Clone\" (sr1-09); \"A type can implement Copy if all of its components implement Copy\" (sr1-10); \"copying &mut T would create an aliased mutable reference\" (sr1-06); \"any type implementing Drop can't be Copy\" (sr1-08); \"impl<T, const N: usize> Copy for [T; N] where T: Copy\" (sr1-05).\n- Book ch03-01: shadowing lets \"we can change the type of the value but reuse the same name\" (sr1-12).\n\nBalance and lengths: 6 true and 6 false. Average statement length is 79.2 for true and 78.7 for false. Difficulty is 5 easy, 5 medium and 2 hard. No r1 card shares a fact with r9 (derive Clone, drop order, mem::drop), r11 (Rc::clone, Box on the heap) or r2.\n\nBorderline cards I passed but you may want to touch up:\n- sr1-01 is a close paraphrase of the Book's third ownership rule and easy to guess True. It is in scope as the prompt words it.\n- sr1-08 avoids the word \"can\", so it reads oddly (\"A user-defined type implements Copy together with its own Drop implementation\"). It is still clearly False.\n- sr1-09 is marked difficulty 3, but knowing the supertrait is not a real hard distinction. Difficulty 2 fits better.\n- sr1-10 is correct for concrete field types such as String. For a generic `struct S<T>(T)`, derive(Copy) compiles anyway and only adds a `T: Copy` bound. An expert could raise that, but the statement's wording points to concrete Clone-only field types.\n- sr1-06 is correct: `let b = a;` with no type annotation moves the &mut and does not reborrow it."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr2-04",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, official Rust Reference (operator-expr.html). It supports the general rule, but the Book page is the more direct source.",
+     "evidence": "Reference https://doc.rust-lang.org/reference/expressions/operator-expr.html: \"For a mutable borrow (&mut), the place may not be accessed in any way until the borrow expires.\" Book https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html: \"The first mutable borrow is in r1 and must last until it's used in the println!, but between the creation of that mutable reference and its usage, we tried to create another mutable reference in r2\". I tested this locally with rustc 1.96 --edition 2024: `let r1 = &mut s; let r2 = &mut *r1; r2.push('a'); r1.push('b');` compiles. That gives two &mut references to one String, both used after the second borrow. Two direct `&mut s` borrows are rejected (E0499).",
+     "problem": "The wording \"two `&mut` references to one `String` when both are used after the second borrow\" also covers a reborrow (`&mut *r1`). An expert would say that compiles, so they could defend True. The statement also does not say the second borrow comes straight from `s`.",
+     "suggestedFix": "Answer stays False. Statement (87 chars): \"`let a = &mut s; let b = &mut s;` compiles when `a` is still used after `b` is created.\" Explanation: \"The first mutable borrow of s stays live until a's last use, so creating b in the meantime is a second simultaneous &mut borrow, which the borrow checker rejects.\" Source: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+    },
+    {
+     "id": "rust-fundamentals-sr2-12",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, official Rust Reference (operator-expr.html). It supports the card.",
+     "evidence": "https://doc.rust-lang.org/reference/expressions/operator-expr.html [expr.deref.result]: \"When applied to a pointer or Box, it denotes the pointed-to location.\" The explanation of card sr2-06 already says: \"The binding r can stay immutable while *r changes x.\" That is exactly the answer of sr2-12.",
+     "problem": "This card rests on the same fact as sr2-06 (factKey mutable-reference-binding-mut): `*r = ...` writes the referent, not the binding r. Knowing one answer gives the other, and sr2-06's explanation reveals this card's answer. The statement is also close to a strawman: few learners who studied would think `*r = 7` rebinds r.",
+     "suggestedFix": "Replace it with a different fact about the dereference operator. Answer stays False. Statement (76 chars): \"`assert_eq!(5, y)` compiles when `y` is a `&i32` that refers to the value 5.\" Explanation: \"An integer and a reference to an integer are different types with no PartialEq between them, so the Book's example fails to compile; writing *y follows the reference to the i32.\" Source: https://doc.rust-lang.org/book/ch15-02-deref.html (section \"Following the Reference to the Value\"). Verified with rustc --edition 2024: E0277."
+    },
+    {
+     "id": "rust-fundamentals-sr2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official Book page. It supports the card.",
+     "evidence": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html: \"The benefit of having this restriction is that Rust can prevent data races at compile time.\"",
+     "problem": "The statement repeats Rust's best-known slogan, almost word for word as the Book puts it. No player who has heard of Rust would answer False, so it teaches nothing and works as a give-away. It is close to a paraphrase of the source sentence.",
+     "suggestedFix": "Keep the data-race motivation, but test the Book's definition that explains why many readers are fine. Answer stays True. Statement (106 chars): \"The Rust Book's data race definition requires at least one of the simultaneous accesses to write the data.\" Explanation: \"Concurrent reads alone are no data race, which is why any number of shared references may coexist; a data race needs a write plus unsynchronized simultaneous access.\" Source: https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+    }
+   ],
+   "notes": "I opened every source URL and each returned HTTP 200: the Book ch04-02, ch05-03, ch08-01 and ch15-02, and the Reference operator-expr and field-expr. I checked the claims that hinge on compiler behaviour by compiling them locally with rustc 1.96 --edition 2024, the newest compiler installed; the deck pins 1.99. Results: reborrowing `&mut *r1` compiles, two direct `&mut s` borrows give E0499, mutable borrows of disjoint struct fields compile, `*q = 7` through an immutable binding `q` compiles, and `assert_eq!(5, y)` with a &i32 gives E0277.\n\nPassing cards:\n- 01, 02, 05 and 11 are directly supported by the Book.\n- 03: the Book says \"First, we change s to be mut\". The Reference says \\\"&mut evaluates its operand in a mutable place expression context\\\".\n- 06: the Reference [expr.deref.mut] says a local variable of type &mut T can be assigned through.\n- 09: the Reference field-expr says \\\"The fields of a struct or a reference to a struct are treated as separate entities when borrowing\\\".\n- 10: the Book says \\\"Rust automatically adds in &, &mut, or * so that object matches the signature of the method\\\".\n\nMinor points I did not flag:\n- 07's explanation credits the borrow checker. In the Book's own `fn dangle() -> &String` example, the rejection is actually the missing-lifetime-specifier error (E0106). E0515 from the borrow checker appears only when a lifetime is present. The answer is still right; the explanation could say \\\"the compiler\\\".\n- 09 says \\\"a local struct\\\", which can be misread as a locally defined struct type. \\\"a struct stored in a local `mut` variable\\\" would be clearer.\n- Tags such as \\\"Rust\\\" and \\\"self\\\" are not API names.\n\nThe section is 6 true and 6 false, with average lengths of 78.5 vs 79.2 characters. All three suggested fixes keep each card's answer, so the balance is unchanged. I found no cross-section duplicates: r1-11 covers partial moves via field-expr, r11-03 covers smart-pointer Deref and r12-10 covers deadlocks, all different facts."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr3-05",
+     "verdict": "duplicate",
+     "urlStatus": "200, official (Rust Reference, lifetime-elision.html), supports the card",
+     "evidence": "https://doc.rust-lang.org/reference/lifetime-elision.html: \"Each elided lifetime in the parameters becomes a distinct lifetime parameter.\" and \"If there is exactly one lifetime used in the parameters (elided or not), that lifetime is assigned to all elided output lifetimes.\" Card sr3-02 (`fn choose(x: &str, y: &str) -> &str` needs an explicit output lifetime, true) fails only because the two elided inputs get distinct lifetimes. If they shared one lifetime, the second rule would apply and the output would elide. So the answer to 05 gives you the answer to 02, and the other way round.",
+     "problem": "This card tests the same fact as sr3-02 (two-input-output-elision-ambiguity): the two elided &str inputs get separate lifetimes. sr3-02 is the Book's classic `longest` case, so keep 02 and replace this one.",
+     "suggestedFix": "Replace with a false card on another elision rule. Statement (false, 87 chars): \"A function pointer type such as `fn(&str) -> &str` needs explicit lifetimes on its references.\" Explanation: \"Lifetime elision also covers function pointer types and closure trait signatures, so `fn(&str) -> &str` means `for<'a> fn(&'a str) -> &'a str`.\" Source: https://doc.rust-lang.org/reference/lifetime-elision.html (\"lifetime arguments can be elided in function item, function pointer, and closure trait signatures\"). Keeps the section at 6 true and 6 false."
+    },
+    {
+     "id": "rust-fundamentals-sr3-06",
+     "verdict": "explanation_error",
+     "urlStatus": "200, official (Rust Reference, lifetime-elision.html), supports the answer",
+     "evidence": "https://doc.rust-lang.org/reference/lifetime-elision.html: \"If there is exactly one lifetime used in the parameters (elided or not), that lifetime is assigned to all elided output lifetimes.\" Running `fn first<'a>(x: &'a str) -> &str { x }` through local rustc with --edition 2024 gives \"warning: eliding a lifetime that's named elsewhere is confusing ... `#[warn(mismatched_lifetime_syntaxes)]` on by default ... help: consistently use `'a`\". The rustc lint listing uses this same pattern as its main example: `pub fn mixing_named_with_elided(v: &'static u8) -> &u8` (https://doc.rust-lang.org/rustc/lints/listing/warn-by-default.html#mismatched-lifetime-syntaxes).",
+     "problem": "The answer (true) is right, but the card shows as normal a signature that the pinned compiler flags with a warn-by-default lint. The explanation does not mention this, so it teaches a style that the compiler warns about. Fixing the explanation would mean naming the lint, which gives away sr3-10. Any example that keeps the 'named input, elided output' twist always mixes the two syntaxes.",
+     "suggestedFix": "Replace with a clean case of the same rule. Statement (true, 85 chars): \"In `fn head(s: &str, n: usize) -> &str`, elision ties the returned reference to the lifetime of `s`.\" Explanation: \"Only one lifetime appears among the parameters, since usize holds none, so elision assigns it to the elided output and the signature needs no annotation.\" Same source URL. The answer stays true."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards. All source pages loaded (HTTP 200) and are official and current: Book ch10-03-lifetime-syntax.html, Reference lifetime-elision.html and trait-bounds.html, and the release notes with the anchor #version-1890-2025-08-07. The section is balanced at 6 true and 6 false, with average statement lengths of 82.2 (true) and 83.0 (false) characters. All statements are within 120 characters and all explanations within 240. I compiled the code examples with local rustc 1.96 and --edition 2024. Rejected as expected: `fn text() -> &str` (sr3-08) and `struct View { text: &str }` (sr3-04), both E0106. Compiled: the `pick(&self, other: &str) -> &str` method (sr3-07). Compiled with the mismatched_lifetime_syntaxes warning: sr3-06.\n\nPassed with quoted support:\n- sr3-01: Book, \"Lifetime annotations don't change how long any of the references live.\"\n- sr3-03: Book, \"the returned reference will also be valid for the length of the smaller of the lifetimes of x and y.\"\n- sr3-04: Book, \"we would need to add a lifetime annotation on every reference in the struct's definition.\"\n- sr3-07: Reference receiver rule.\n- sr3-08: Reference, `fn get_str() -> &str; // ILLEGAL`.\n- sr3-10: 1.89.0 notes, \"Add a warn-by-default mismatched_lifetime_syntaxes lint.\"\n- sr3-12: Reference, \"T: 'a means that all lifetime parameters of T outlive 'a.\"\n\nMinor points, not flagged:\n- sr3-11: the Book says a 'static suggestion \"results from attempting to create a dangling reference or a mismatch of the available lifetimes\". The statement keeps only the dangling-reference half (as the prompt worded it). Consider adding \"or a lifetime mismatch\" to the explanation.\n- sr3-09 (`Thing<'_>` asks Rust to infer a lifetime) is close to a definition card, since `_` means 'infer' elsewhere in Rust. A stronger variant would test the Reference's stated preference: \"The Rust Reference prefers `Thing<'_>` over a bare `Thing` for a return type with a hidden lifetime\" (true).\n\nI found no overlap with the other sections: sr4-01 covers 'static string literals as a type, sr8-12 covers RPIT capture and sr12-01 covers spawn's 'static bound."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr4-02",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (std primitive.str), current",
+     "evidence": "https://doc.rust-lang.org/std/primitive.str.html: \"The str type, also called a 'string slice', is the most primitive string type. It is usually seen in its borrowed form, &str.\" https://doc.rust-lang.org/book/ch04-03-slices.html: \"A string slice is a reference to a contiguous sequence of the elements of a String\".",
+     "problem": "The answer is correct, but the card is a strawman that gives itself away. The statement says the &str 'views' the buffer 'through the reference', and that wording already tells the player it is borrowed, so no one who has studied would answer True. It only restates the definition of a borrowed slice.",
+     "suggestedFix": "Replacement (answer false, keeps the section at 6 true and 6 false): statement \"`let hello = &s[0..5];` copies five bytes of the String `s` into a new heap allocation.\" Explanation: \"A string slice stores a pointer to the String's existing bytes plus a length, so `&s[0..5]` borrows part of `s` and allocates nothing.\" Source: https://doc.rust-lang.org/book/ch04-03-slices.html (\"the slice data structure stores the starting position and the length of the slice\")."
+    },
+    {
+     "id": "rust-fundamentals-sr4-10",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official (std primitive.slice), but it does not mention ..= at all",
+     "evidence": "No sentence or example on https://doc.rust-lang.org/std/primitive.slice.html uses or describes the inclusive range `..=`; its range examples use only `..`. https://doc.rust-lang.org/reference/expressions/range-expr.html lists \"start..=end | std::ops::RangeInclusive | start ≤ x ≤ end\".",
+     "problem": "The answer is correct: `&a[1..=3]` includes index 3. But the cited page does not support the card's key fact, that `..=` includes its end.",
+     "suggestedFix": "Keep the card and change the source URL to https://doc.rust-lang.org/reference/expressions/range-expr.html (Range expressions, the Rust Reference). That table gives `start..=end` as RangeInclusive with start ≤ x ≤ end."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards, 6 true and 6 false, and confirmed each against the current official pages.\n- sr4-01: the std str page has `let hello_world: &'static str = \"Hello, world!\";` and says literals are \"valid for the duration of the entire program\".\n- sr4-03: String::len works \"in bytes, not chars or graphemes\".\n- sr4-04: the Book says \"Rust strings don't support indexing\", and `s1[0]` gives E0277.\n- sr4-05: the Book says slicing off a char boundary makes \"Rust panic at runtime\", and the String docs say \"This will panic if the byte indices provided are not character boundaries\".\n- sr4-06: the char docs say a char is one Unicode scalar value and that a visible character can be several chars.\n- sr4-07: the Book says \"s1 has been moved here and can no longer be used\", because add has the signature `fn add(self, s: &str)`.\n- sr4-08: String::push \"Appends the given char\".\n- sr4-09: from_utf8 \"Returns Err if the slice is not UTF-8\"; from_utf8_lossy is the function that inserts U+FFFD.\n- sr4-11: get returns \"None if out of bounds\".\n- sr4-12: the array page writes the type as `[T; N]` with N a compile-time constant size. This supports the card only by implication; https://doc.rust-lang.org/book/ch03-02-data-types.html says it more explicitly (an array's type is written with the element type and the number of elements) and would be a slightly better source. I did not flag it.\n\nNone of these cards rests on the same fact as a card in r1, r2, r3, r7, r9 or r10.\n\nCoverage gaps (no flag): sr4-09 (from_utf8) is not on the r4 topic list. The section also leaves several listed topics untested: the Book's advice to take &str parameters and &String deref coercion, format! taking none of its arguments, push_str, chars versus bytes, and &mut [T]. A future pass could swap sr4-09 or sr4-08 for one of these. If a replacement covers format!, its source is the Book ch08-02 sentence \"the code generated by the format! macro uses references so that this call doesn't take ownership of any of its parameters\".\n\nBorderline, not flagged: sr4-06's phrase \"including a multi-scalar emoji\" leans toward a give-away for a player who knows what a scalar is, but its false reason is single and realistic."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr5-07",
+     "verdict": "source_problem",
+     "urlStatus": "loads (https://doc.rust-lang.org/book/ch05-03-method-syntax.html, title 'Methods'), official and current, but it does not settle the card",
+     "evidence": "The Book only says: \"Each struct is allowed to have multiple `impl` blocks. For example, Listing 5-15 is equivalent to the code shown in Listing 5-16\" (https://doc.rust-lang.org/book/ch05-03-method-syntax.html). It never says what happens if a later block reuses a method name, and the Reference adds only \"A type can also have multiple inherent implementations.\" (https://doc.rust-lang.org/reference/items/implementations.html). The fact that settles the card is in the error index: \"This error occurs when you defined methods or associated functions with same name.\" Its example has two `impl Foo` blocks that both define `fn bar()`, marked \"duplicate definition here\" (https://doc.rust-lang.org/error_codes/E0592.html). The answer (false) is right. The explanation is not wrong but leaves out the real outcome: redefining the name is a compile error, so nothing is silently replaced or kept.",
+     "problem": "The cited page supports only the claim that multiple impl blocks are allowed. It does not support the tested fact that a later inherent impl block cannot replace an earlier method, and the explanation leaves out that the attempt fails to compile.",
+     "suggestedFix": "Keep the statement (answer false). Change the URL to https://doc.rust-lang.org/error_codes/E0592.html, or add it next to the Book page. New explanation (answer false): \"Inherent impl blocks for one type are additive. Defining a method name that an earlier impl block of the same type already declared is a compile error (E0592), so nothing is replaced.\""
+    },
+    {
+     "id": "rust-fundamentals-sr5-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://doc.rust-lang.org/book/ch05-03-method-syntax.html), official and current, supports the card",
+     "evidence": "\"To call this associated function, we use the `::` syntax with the struct name; `let sq = Rectangle::square(3);` is an example.\" (https://doc.rust-lang.org/book/ch05-03-method-syntax.html). The statement \"For `fn new() -> Self` in `impl Counter`, `Counter::new()` calls the associated function.\" only restates the calling syntax that every Rust developer uses daily (String::new(), Vec::new()). The answer can be read straight from the code fragment and there is no realistic misconception behind a False answer.",
+     "problem": "Give-away or truism: the statement describes the code it quotes, so the card teaches nothing at the depth the prompt sets. The same page has a real distinction to test instead: associated function versus method.",
+     "suggestedFix": "Replacement (answer true). Statement: \"A function in `impl Counter` with no `self` parameter is still an associated function, though it is not a method.\" Explanation: \"The Book calls every function defined in an impl block an associated function. Only those taking self are methods, and one without self, like Counter::new, is called through the type with ::.\" Source: https://doc.rust-lang.org/book/ch05-03-method-syntax.html (\"All functions defined within an impl block are called associated functions ... We can define associated functions that don't have self as their first parameter (and thus are not methods)\")."
+    },
+    {
+     "id": "rust-fundamentals-sr5-11",
+     "verdict": "weak_card",
+     "urlStatus": "loads (https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html), official and current, supports the card",
+     "evidence": "The Book shows `impl Message { fn call(&self) { ... } }` and calls it on `let m = Message::Write(String::from(\"hello\")); m.call();`. It also states that \"both values IpAddrKind::V4 and IpAddrKind::V6 are of the same type: IpAddrKind\" (https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html). The statement \"An enum's inherent methods live in an `impl` block named after one of its variants\" describes syntax nobody writes (`impl Message::Quit` is not even a valid type path), so a learner who studied would not answer True.",
+     "problem": "Strawman: the false statement is not a misconception a studied developer would hold. The real misconception underneath it, that enum variants are types of their own (as in sealed-class languages), is worth testing directly.",
+     "suggestedFix": "Replacement (answer false). Statement: \"An enum variant such as `Message::Quit` is a type of its own that a function parameter can name.\" Explanation: \"Variants are values of the enum's type, not separate types. Message::Quit has type Message, so a parameter or an impl block names Message and accepts any of its variants.\" Source: https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html."
+    }
+   ],
+   "notes": "I checked all 12 r5 cards (sr5-01 to sr5-12). Every source URL loaded on 2026-10-13 and is official and current: Book ch05-01, ch05-03, ch06-01 and ch20-04 (title 'Advanced Functions and Closures'), and the Reference operator-expr page.\n\nCards that passed, with the sentence that settles each:\n- sr5-01: \"Each struct you define is its own type, even though the fields within the struct might have the same types ... a function that takes a parameter of type Color cannot take a Point\".\n- sr5-02: the AlwaysEqual instance is created \"using the name we defined, without any curly brackets or parentheses\".\n- sr5-03: \"we only need to write email rather than email: email\". It stays false even if default field values ever become stable, because the shorthand always reads the variable of the same name.\n- sr5-04: \"the entire instance must be mutable; Rust doesn't allow us to mark only certain fields as mutable\".\n- sr5-05: \"&self is actually short for self: &Self ... Self is an alias for the type that the impl block is for\".\n- sr5-08: the Message enum mixes Quit, Move {x, y}, Write(String) and ChangeColor(i32, i32, i32).\n- sr5-09: \"the name of each enum variant that we define also becomes an initializer function. We can use these initializer functions as function pointers\".\n- sr5-10: Option<T> and T are different types, and the i8 + Option<i8> example fails to compile.\n- sr5-12: the Reference says an enum cast \"Casts an enum to its discriminant\", that casting is limited to unit-only or field-less enums, and that \"Casting is not allowed if the enum implements Drop\". Mode as declared has no Drop impl, and Mode::Slow as u8 is 1.\n\nThe section is balanced at 6 true and 6 false. Average statement length is 82.8 for true and 84.2 for false. The two proposed replacements keep both: sr5-06 stays true and sr5-11 stays false, and each replacement is about the same length.\n\nNo card duplicates a fact elsewhere in the deck. I checked sr5-01, 02, 04 and 08 against r1 partial moves, r9 default-enum-unit-variant, r6 patterns and r8 trait mechanics. The proposed sr5-06 replacement (associated function versus method) does not overlap sr5-05 (the Self alias).\n\nCoverage gaps, not flagged: the section text names struct update syntax with its move of non-Copy fields, and derive(Debug) for {:?} output, but the plan has no card for either. A future card could cover struct update syntax.\n\nOne limit on my checking: the web search budget was used up, so I could not confirm whether default field values were stabilised by Rust 1.99. It does not change the sr5-03 verdict.\n\nThe E0592 page is on doc.rust-lang.org (error index), outside the source list in the prompt. The prompt allows E0592 in an explanation, never as the tested fact; if the error index is not an accepted source, keep the Book URL and use only the improved explanation."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr6-03",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official Rust Reference (current)",
+     "evidence": "https://doc.rust-lang.org/reference/expressions/match-expr.html: \"The type of the overall match expression is the least upper bound of the individual match arms.\" The answer (false) is right, but the misconception is a strawman. No developer who writes Rust weekly thinks a statically typed expression's type is picked at run time. The card also does not test the section's real point, that the arms must have compatible types.",
+     "problem": "Strawman. The false statement ('the selected arm determines the result type at run time') is something no learner who has studied Rust would answer True, so it teaches nothing about arm type compatibility.",
+     "suggestedFix": "Replace (answer false). Statement: \"A `match` used as a `let` initializer may yield an `i32` from one arm and a `&str` from another.\" Explanation: \"A match expression has a single type, the least upper bound of its arms, so arms yielding i32 and &str are rejected at compile time as mismatched types.\" Keep the same Reference URL."
+    },
+    {
+     "id": "rust-fundamentals-sr6-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official Rust Reference (current)",
+     "evidence": "https://doc.rust-lang.org/reference/expressions/match-expr.html: \"Multiple match patterns may be joined with the | operator. Each pattern will be tested in left-to-right sequence until a successful match is found.\" The statement only says an or-pattern matches either of its alternatives, which is the definition of an or-pattern.",
+     "problem": "Truism or definition card. 'Some(0) | Some(1) matches either of its alternatives' follows from the meaning of 'alternatives' and '|'. A player can answer from the wording alone.",
+     "suggestedFix": "Replace (answer true), testing the binding rule of or-patterns. Statement: \"For `Result<u8, u8>`, the match arm pattern `Ok(n) | Err(n)` compiles and binds `n` in either case.\" Explanation: \"Each alternative of an or-pattern must bind the same names with the same type and binding mode. Both variants here hold a u8, so n is bound either way.\" Same URL. The Reference says: \"Every binding in each | separated pattern must appear in all of the patterns in the arm\" and \"Every binding of the same name must have the same type, and have the same binding mode.\""
+    },
+    {
+     "id": "rust-fundamentals-sr6-11",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official Rust Reference (current)",
+     "evidence": "https://doc.rust-lang.org/reference/expressions/if-expr.html: \"Similar to a && LazyBooleanExpression, each operand is evaluated from left-to-right until an operand evaluates as false or a let match fails, in which case the subsequent operands are not evaluated.\" The answer (false) is right, but the misconception is close to a strawman: let chains are written with &&, and anyone who knows Rust expects && to short-circuit. The section's real let-chain trap is listed in the prompt and has no card: the parentheses needed around || next to a let. Reference, same page: \"If any condition operand is a let pattern, then none of the condition operands can be a || lazy boolean operator expression due to ambiguity and precedence with the let scrutinee.\"",
+     "problem": "The tested misconception (eager evaluation after a failed pattern) is one a learner who has studied Rust would almost never hold. Meanwhile the prompt's named let-chain trap (|| next to a let needs parentheses) goes untested.",
+     "suggestedFix": "Replace (answer false). Statement: \"In the 2024 edition, `if let Some(x) = a && x > 0 || done` compiles without parentheses.\" Explanation: \"A let chain rejects an unparenthesized || operand because of precedence with the let scrutinee. Write if let Some(x) = a && (x > 0 || done) instead.\" Same URL (sections expr.if.chains.or and expr.if.edition2024). appliesTo stays \"Rust 1.88 and later, edition 2024\"."
+    }
+   ],
+   "notes": "I checked all 12 r6 cards: 6 true (01, 05, 06, 07, 10, 12) and 6 false (02, 03, 04, 08, 09, 11). All nine source pages loaded with HTTP 200 and are current official pages on doc.rust-lang.org: Book ch06-02, ch19-01, ch19-02 and ch19-03; Reference match-expr, patterns, statements, loop-expr and if-expr.\n\nEvery answer is correct. The three flags are about card quality, not wrong answers. Each suggested fix keeps the original answer, so the section stays 6 true and 6 false.\n\nEvidence for the cards that pass:\n- 01: Book ch06-02: \"Matches in Rust are exhaustive: We must exhaust every last possibility in order for the code to be valid.\"\n- 02: Book ch19-01: \"_ will match anything, but it never binds to a variable.\"\n- 04: Book ch19-03: \"the compiler doesn't try to check for exhaustiveness when match guard expressions are involved.\" The explanation's wording (guarded arms are excluded from the coverage proof) is the more precise version of this.\n- 06: Reference patterns: \"To bind the matched value of a pattern to a variable, use the syntax variable @ subpattern.\" So `whole` holds the whole Option<i32>.\n- 07: Reference patterns: \".. stands in for all the remaining fields.\" The card's code is almost the same as Book Listing 19-24 (`struct Point { x, y, z }` with `Point { x, .. }`) and the card is easy. Acceptable, but it is the weakest of the passing cards.\n- 08: Reference statements: \"The else block must always diverge (evaluate to the never type).\"\n- 09: Book ch19-02: \"Function parameters, let statements, and for loops can only accept irrefutable patterns.\"\n- 10: Reference loop-expr: \"If any condition operand evaluates to false or any let pattern does not match its scrutinee, the body is not executed and execution continues after the while expression.\"\n- 12: Reference match-expr: \"The let pattern creates a new binding (first_char), which can be used alongside the original pattern bindings (name) in the arm's body.\" The 1.95 version is confirmed by the blog announcement https://blog.rust-lang.org/2026/04/16/Rust-1.95.0/ (its example says \"Both `x` and `y` are available here\").\n\nDeck-wide checks:\n- No r6 fact is repeated in another section. sr13-11 (if let temporaries in 2024) is a different fact from any r6 card.\n- No card mentions a version or term the prompt says is retired.\n\nCoverage gaps, not flagged, for the author to consider: no r6 card covers the matches! macro, inclusive range patterns, destructuring references or tuples, or the rule that if let guard patterns do not count toward exhaustiveness. The sr6-11 replacement adds the || parentheses trap."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr7-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://doc.rust-lang.org/book/ch09-03-to-panic-or-not-to-panic.html (current Book, official)",
+     "evidence": "The Book supports the claim: \"returning Result is a good default choice when you're defining a function that might fail\" and \"when failure is expected, it's more appropriate to return a Result than to make a panic! call\". The problem is that the chapter that introduces Result is titled \"Recoverable Errors with Result\" (ch09-02). That makes \"return Result when callers can recover\" close to a definition: a player who knows only the name \"recoverable errors\" answers True without knowing the Book's guidance. The phrase \"reasonable way ... to recover\" appears in the Book only in the panic context (\"there's no reasonable way for calling code to recover; the calling programmers need to fix the code\").",
+     "problem": "The answer follows from how Result is framed (recoverable errors), so the card is near-truism and teaches nothing beyond the chapter title. The Book's less obvious guidance, such as when unwrap and expect are acceptable and the parser example, goes untested.",
+     "suggestedFix": "Replacement (answer true, keeps the 6/6 balance): statement \"The Rust Book calls `unwrap` and `expect` handy while prototyping, before you decide how to handle errors.\" Explanation: \"The Book says unwrap and expect suit prototype code because they leave clear markers where more robust error handling, such as returning a Result, can be added later.\" Source: the same URL, quote \"the unwrap and expect methods are very handy when you're prototyping and you're not yet ready to decide how to handle errors\"."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards (ids sr7-01 to sr7-12). Every source URL returned 200 on doc.rust-lang.org, and the balance is 6 true / 6 false. Only one card is flagged (sr7-12). Each of the other 11 has a supporting quote:\n- sr7-01: Result docs, unwrap: \"Panics if the value is an Err\".\n- sr7-02: Option::map: \"applying a function to a contained value (if Some) or returns None (if None)\".\n- sr7-03: and_then has the signature F: FnOnce(T) -> Result<U, E> and returns Result<U, E>; the docs say \"Calls op if the result is Ok, otherwise returns the Err value of self\". No extra Ok layer, and confusing it with map is a realistic mistake.\n- sr7-04: \"Returns the contained Ok value or computes it from a closure\". The std::result module docs list the closure-taking methods as \"lazily evaluated\".\n- sr7-05: Book ch09-02: \"Error values that have the ? operator called on them go through the from function\".\n- sr7-06: Book ch09-02: \"The ? operator won't automatically convert a Result to an Option or vice versa ... the ok_or method on Option\". I also tried to refute it: FromResidual is unstable, and the orphan rules block a user impl, so no stable way exists.\n- sr7-07 and the Ok/Err exit status: Book: \"exit with a value of 0 if main returns Ok(()) and ... a nonzero value if main returns an Err value\".\n- sr7-08: std::result: \"Result is annotated with the #[must_use] attribute\" and \"warning (by default, controlled by the unused_must_use lint)\". Naming io::Error avoids the recent exemption for uninhabited error types.\n- sr7-09: Book ch09-01: \"the alternative of immediately aborting, which ends the program without cleaning up\".\n- sr7-10: Book ch03-02: \"When you're compiling in release mode with the --release flag, Rust does not include checks for integer overflow that cause panics. Instead ... two's complement wrapping\". \"At run time\" correctly leaves out the compile-time arithmetic_overflow lint.\n- sr7-11: process::exit docs: \"no destructors on the current stack or any other thread's stack will be run\".\n\nNo r7 card shares a fact with another section. I checked these near neighbours: r4 slice get/indexing, r5 Option type boundary, r10 collect into Result, r12 join on panic.\n\nMinor points that did not reach a flag:\n- sr7-04: \"skips evaluation of its fallback closure\" is loose. The closure value is still created; only the call is skipped. \"skips calling its fallback closure\" would be more precise.\n- sr7-01 is an easy card that comes close to a strawman. The misconception it relies on is confusing unwrap with ?.\n- sr7-02 is near-forced logically, because map on None has no value to pass to f.\n- sr7-09 writes panic = \"abort\" without \"in a Cargo profile\". The Book writes panic = 'abort'; both are valid TOML.\n- ok_or, which the section lists, has no card of its own. It appears only in sr7-06's explanation."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr8-08",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (Book ch18-02 'Using Trait Objects to Abstract over Shared Behavior'), supports the card",
+     "evidence": "https://doc.rust-lang.org/book/ch18-02-trait-objects.html: \"When we use trait objects, Rust must use dynamic dispatch... at runtime, Rust uses the pointers inside the trait object to know which method to call.\" The answer is right, but `dyn` is literally short for 'dynamic', so a player who does not know Rust reads 'dyn ... uses dynamic dispatch' and answers True from the keyword alone. That is a name giveaway and close to a definition card.",
+     "problem": "The answer can be read from the keyword: `dyn Trait` plus 'dynamic dispatch' is a name giveaway that teaches nothing beyond the meaning of the keyword.",
+     "suggestedFix": "Replacement (answer TRUE, keeps the r8 6/6 balance): statement \"A `&dyn Trait` value holds a pointer to the data and a pointer to a vtable of the concrete type's trait methods.\" Explanation: \"A trait object reference is a wide pointer. A call loads the method's function pointer from the vtable at run time, so the concrete type's implementation is chosen during execution.\" URL: https://doc.rust-lang.org/reference/types/trait-object.html (\"Each instance of a pointer to a trait object includes: a pointer to an instance of a type T ... a virtual method table, often just called a vtable\")."
+    },
+    {
+     "id": "rust-fundamentals-sr8-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (Book ch20-02 'Advanced Traits'), supports the card",
+     "evidence": "https://doc.rust-lang.org/book/ch20-02-advanced-traits.html: \"<Type as Trait>::function(receiver_if_method, next_arg, ...);\". The card only restates what the syntax spells out: `<Type as Trait>` reads as 'Type as Trait', so the answer comes from the wording, and no learner who studied would answer False (a strawman/truism). The fact worth testing is in the same Book section: \"When we call fly on an instance of Human, the compiler defaults to calling the method that is directly implemented on the type\" and \"To call the fly methods from either the Pilot trait or the Wizard trait, we need to use more explicit syntax\".",
+     "problem": "The answer is readable from the syntax in the statement, and the card does not test the real point of fully qualified syntax, which is which method wins when names collide.",
+     "suggestedFix": "Replacement (answer TRUE, keeps the r8 6/6 balance): statement \"When `Human` has an inherent `fly` method and also implements `Pilot::fly`, `person.fly()` calls the inherent one.\" Explanation: \"The compiler defaults to the method implemented directly on the type. Calling the trait's version needs `Pilot::fly(&person)` or the fully qualified `<Human as Pilot>::fly(&person)`.\" Keep the URL https://doc.rust-lang.org/book/ch20-02-advanced-traits.html."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards (b2): 6 true (01, 03, 06, 08, 09, 11) and 6 false (02, 04, 05, 07, 10, 12), so the balance is right. All 10 source URLs loaded on doc.rust-lang.org and are official and current; the anchors #dyn-compatibility and #unsized-coercions exist. I found no wrong answers.\n\nHow each card was checked:\n- 01: Book ch10-02 says \"Default implementations can call other methods in the same trait, even if those other methods don't have a default implementation\".\n- 02: ch10-02 says \"you can only use impl Trait if you're returning a single type\".\n- 03: ch10-01 describes monomorphization: \"generates code for the concrete types the generic code is called with\".\n- 04: ch20-02 states the orphan rule and gives the newtype example with Wrapper(Vec<String>).\n- 05: ch20-02 says \"we can't implement a trait on a type multiple times ... there can be only one impl Iterator for Counter\".\n- 07: ch20-03 says \"Rust implicitly adds a bound on Sized to every generic function\". Trait `Self` is the one implicitly ?Sized case, and \"plain generic type parameter T\" excludes it.\n- 09: the Reference says explicitly non-dispatchable functions \"Have a where Self: Sized bound\", so a generic method with that bound keeps the trait dyn compatible.\n- 10: the Reference lists \"dyn T to dyn U, when U is one of T's supertraits\", so the stated direction is reversed. The answer False is right.\n- 11: Edition Guide 2021 says \"The use of the dyn keyword to identify trait objects will be mandatory in Rust 2021\".\n- 12: Edition Guide RPIT says \"In Rust 2024, all in-scope generic parameters, including lifetime parameters, are implicitly captured when the use<..> bound is not present\". The answer False is right.\n\nBorderline but not flagged:\n- 04: the word \"local\" in \"local tuple struct\" hints at the orphan rule condition. That is acceptable, because only a learner who knows the rule can use the hint.\n- 10: the card is false because Super and Sub are swapped. The misconception it encodes (thinking the 1.86 upcasting coercion also goes from supertrait to subtrait, a downcast) is realistic, so I kept it. If you want a harder card, use this false replacement: \"Since Rust 1.86, coercing `&dyn Sub` to `&dyn Super` requires an explicit `as` cast when `Sub: Super`.\" Its explanation would say the upcast is an implicit coercion.\n- 09: the explanation sentence \"Its type parameter therefore leaves this trait dyn compatible\" reads awkwardly. Better: \"...so despite its type parameter the trait stays dyn compatible\". The content is correct.\n\nDuplicates: no r8 card shares a fact with r1, r9, r10, r11, r12 or r14. In particular, sr11-04 (Box<dyn Display> size) and sr14-12 (AsyncFn dyn) are different facts. Both proposed replacements are TRUE, so the section stays at 6 true and 6 false."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr9-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://doc.rust-lang.org/book/ch15-03-drop.html (current Book), supports the card",
+     "evidence": "Book ch15-03: \"if we need to force a value to be cleaned up early, we use the std::mem::drop function.\" The card is correct, but the function's name gives the answer away: a player who has never seen std::mem::drop would guess that `drop(s)` drops `s`. The fact the prompt sets for r9 is the other half: \"Rust doesn't let you call the Drop trait's drop method manually; instead, you have to call the std::mem::drop function\", and the card never tests it.",
+     "problem": "Name giveaway and near-truism. A function called drop dropping its argument teaches nothing, and the card skips the real point of the section item: a direct call to Drop::drop is rejected.",
+     "suggestedFix": "Replace with a TRUE card (keeps the 6/6 balance). Statement: \"Rust rejects a direct `value.drop()` call on a value whose type implements `Drop`.\" Explanation: \"Rust rejects an explicit call to Drop::drop so the value is not dropped twice at scope end. std::mem::drop(value) takes ownership instead and drops the value early.\" Keep the URL https://doc.rust-lang.org/book/ch15-03-drop.html."
+    },
+    {
+     "id": "rust-fundamentals-sr9-08",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://doc.rust-lang.org/std/hash/trait.Hash.html (std 1.99.0), supports the card",
+     "evidence": "Hash docs: \"k1 == k2 -> hash(k1) == hash(k2) In other words, if two keys are equal, their hashes must also be equal. HashMap and HashSet both rely on this behavior.\" The statement \"requires equal keys to produce equal hashes\" restates that sentence, and any programmer who knows hashing in general answers True without knowing Rust. The Rust-specific consequence is in the HashMap docs (https://doc.rust-lang.org/std/collections/struct.HashMap.html): \"Violating this property is a logic error... The behavior resulting from either logic error is not specified, but will be encapsulated to the HashMap that observed the logic error and not result in undefined behavior.\"",
+     "problem": "Truism and near-copy of the source sentence: the answer follows from what a hash is, not from Rust. The prompt's own trap list names the Rust-specific point (\"breaking that is a logic error, not undefined behaviour\"), and the card does not test it.",
+     "suggestedFix": "Replace with a TRUE card (keeps the 6/6 balance). Statement: \"A `HashMap` key type whose equal keys hash differently causes a logic error rather than undefined behaviour.\" Explanation: \"The Hash docs require equal keys to hash equally. Breaking that is a logic error: HashMap behaviour becomes unspecified, but the docs rule out undefined behaviour.\" URL: https://doc.rust-lang.org/std/collections/struct.HashMap.html"
+    }
+   ],
+   "notes": "I checked all 12 r9 cards. Every source URL returned 200 on doc.rust-lang.org (std pages show 1.99.0), and each page supports its card. Quotes that settle the 10 cards that pass:\n- 01: Book appendix C says \"An example of a trait that can't be derived is Display\".\n- 02: Clone docs say \"#[derive(Clone)] on structs containing smart pointers like Arc<Mutex<T>> - the cloned struct will share mutable state with the original\".\n- 03: Drop docs say \"local variables are dropped in reverse order\".\n- 05: Default docs say \"When using #[derive(Default)] on an enum, you need to choose which unit variant will be default... placing the #[default] attribute on the variant\".\n- 06: Eq docs say \"f32 and f64 implement only PartialEq but not Eq because NaN != NaN\".\n- 07: PartialOrd docs say \"a lexicographic ordering based on the top-to-bottom declaration order of the struct's members\".\n- 09: From docs say \"implementing From automatically provides one with an implementation of Into thanks to the blanket implementation\".\n- 10: Edition Guide 2021 prelude page says \"The TryInto, TryFrom and FromIterator traits are now part of the prelude\".\n- 11: the String trait list shows AsRef<OsStr>, AsRef<Path>, AsRef<[u8]> and AsRef<str>, with no AsRef<Vec<u8>>.\n- 12: Deref docs say \"Values of type &T are coerced to values of type &U\", so coercion applies only to references.\n\nNone of the 12 duplicates a card in another section. I compared them with r1 (Copy, Drop, scope drop), r4, r5 (no derive(Debug) card), r11 (Deref * operator) and r12 (Arc<Mutex>). The section is balanced at 6 true and 6 false, and both suggested replacements stay true, so the balance holds.\n\nMinor issues, not flagged:\n- 03 has a pronoun mismatch (\"When their block ends, Rust drops its remaining local variables\"). A cleaner wording: \"At the end of a block, Rust drops its remaining local variables in declaration order.\"\n- 11 is somewhat trait-impl trivia, but the misconception is plausible because String wraps a Vec<u8>.\n- 01 assumes no third-party crates, which the prompt's context allows, so the derive_more Display derive does not apply."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr10-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (std Iterator page)",
+     "evidence": "https://doc.rust-lang.org/std/iter/trait.Iterator.html: \"Advances the iterator and returns the next value. Returns None when iteration is finished. Individual iterator implementations may choose to resume iteration...\" The statement only says next returns Some(item) when it yields an item. That follows from Option's meaning, and nobody who has seen an iterator would answer False, so the card is close to a truism. The explanation's \"None signals that the call yields no item\" is circular and leaves out what None means: iteration is finished, and some iterators may resume. Answering also does not need Rust knowledge.",
+     "problem": "Truism or definition card. The answer can be read from the wording, so the card teaches nothing about Rust's iterator protocol. The explanation is circular and incomplete about None.",
+     "suggestedFix": "Replace with a card covering the section's 'consuming adapters such as sum' scope, same answer (TRUE). Statement: \"After `let it = v.iter(); let n: i32 = it.sum();`, later uses of `it` fail to compile.\" Explanation: \"Iterator::sum takes self by value and calls next until None, so it consumes the iterator. The Book calls such methods consuming adapters.\" factKey: sum-consumes-iterator. Source: https://doc.rust-lang.org/book/ch13-02-iterators.html (\"We aren't allowed to use v1_iter after the call to sum because sum takes ownership of the iterator we call it on.\")"
+    },
+    {
+     "id": "rust-fundamentals-sr10-04",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (std Fn page)",
+     "evidence": "https://doc.rust-lang.org/std/ops/trait.Fn.html: \"Since both FnMut and FnOnce are supertraits of Fn, any instance of Fn can be used as a parameter where a FnMut or FnOnce is expected.\" The fact itself is right: a value bounded only by FnOnce does not satisfy an Fn bound. The wording is the problem. \"makes an F: FnOnce() bound sufficient for an F: Fn() parameter\" can be read in either direction: a FnOnce bound satisfying an Fn requirement (false), or a FnOnce bound being enough when you hold an Fn parameter (true by the quote above). The lead-in \"The supertrait chain makes...\" also asserts a mechanism, which nudges players towards True.",
+     "problem": "Awkward wording with two possible readings. An expert could take it to mean the documented, true direction (an Fn value used where FnOnce is expected) and defend True.",
+     "suggestedFix": "Reword, keeping the answer FALSE. Statement: \"A generic `F: FnOnce()` value can be passed to a function whose parameter is bounded by `F: Fn()`.\" Explanation: \"Fn has FnMut as a supertrait and FnMut has FnOnce, so every Fn type satisfies FnOnce. A value known only to be FnOnce gives no Fn guarantee and is rejected.\" Keep the URL https://doc.rust-lang.org/std/ops/trait.Fn.html."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards: 6 true (01, 03, 06, 08, 09, 10) and 6 false (02, 04, 05, 07, 11, 12). Both suggested replacements keep their card's answer, so the balance stays 6/6. Every source URL loaded and is official and current.\n\nEvidence for the cards that passed:\n- 01 and 02: Reference types/closure.html says \"move closures may still implement Fn or FnMut ... determined by what the closure does with captured values, not how it captures them\". The Book ch13-01 says \"A closure that moves captured values out of its body will only implement FnOnce\".\n- 03: the Reference says \"Non-async, non-capturing closures can be coerced to function pointers\".\n- 05: Edition Guide 2021 disjoint capture says \"|| a.x + 1 now captures only a.x instead of a\".\n- 07: std::iter Laziness section says \"Iterators (and iterator adapters) are lazy\".\n- 08: Iterator::collect docs use the `let doubled: Vec<_> = ... .collect()` example and the turbofish note. It is acceptable but borderline give-away, since the wording itself suggests the annotation picks the container. Consider stressing the inferred element type `_`.\n- 09: the Book says \"The iter method produces an iterator over immutable references\".\n- 10: Edition Guide says \"array.into_iter() changes meaning to be the call to IntoIterator::into_iter in Rust 2021\".\n- 11: Edition Guide 2024 says boxed_slice.into_iter() yields T by value in 2024 and the box is consumed.\n- 12: Result's FromIterator docs say \"if it is an Err, no further elements are taken, and the Err is returned\", with the shared-counter example.\n\nNo card touches the excluded areas: partial captures through patterns (1.94 and 1.95) and Box<[T; N]> iteration (1.99).\n\nCross-deck duplicate check:\n- sr8-05 already tests Iterator::Item (one Item per implementation), so I avoided an Item-based replacement for 06.\n- sr7-04 (unwrap_or_else lazy closure) and the sr14 async closure cards rest on different facts."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr11-03",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official std docs (doc.rust-lang.org/std/ops/trait.Deref.html), current",
+     "evidence": "The Deref docs open with \"Used for immutable dereferencing operations, like `*v`.\" and \"In immutable contexts, `*v` (where `T` is neither a reference nor a raw pointer) is equivalent to `*Deref::deref(&v)`.\" (https://doc.rust-lang.org/std/ops/trait.Deref.html). The statement says that implementing the dereference trait lets the dereference operator reach the target, so the trait's name gives away the answer. A player who knows no Rust answers True. The fact is correct.",
+     "problem": "The card is a definition and a name giveaway: implementing Deref<Target = T> enables *pointer, which is just what the trait is for. Its explanation (\"*pointer uses *Deref::deref(&pointer)\") also stays close to the std doc sentence. The section's Deref topic deserves a card with real content, such as the desugaring and why deref returns a reference (The Rust Programming Language, ch15-02).",
+     "suggestedFix": "Replacement (answer: true). Statement: \"For `y` of a type implementing `Deref`, Rust runs `*y` as `*(y.deref())`, where `deref` returns a reference.\" Explanation: \"deref returns a reference so the inner value is not moved out of the smart pointer. The outer * then dereferences that reference, once for each * written.\" Source: https://doc.rust-lang.org/book/ch15-02-deref.html (quotes: \"behind the scenes Rust actually ran this code: `*(y.deref())`\"; \"If the `deref` method returned the value directly instead of a reference to the value, the value would be moved out of `self`.\")"
+    }
+   ],
+   "notes": "I checked all 12 r11 cards: 6 true (01, 03, 04, 07, 08, 12) and 6 false (02, 05, 06, 09, 10, 11). The average statement length is 98.2 characters for true cards and 99.0 for false ones. Every statement is 120 characters or less and every explanation 240 or less. Every source URL loaded and is current official documentation.\n\nEvidence for the 11 cards that pass:\n- 01: Book ch15-01, \\\"Boxes allow you to store data on the heap rather than the stack. What remains on the stack is the pointer to the heap data.\\\"\n- 02: Book ch15-01, the compiler looks at Cons, \\\"and this process continues infinitely\\\"; \\\"By using a box, we've broken the infinite, recursive chain.\\\" Nil does not save the layout, so the answer False holds.\n- 04: Reference, dynamically-sized-types: \\\"Pointer types to DSTs are sized but have twice the size of pointers to sized types... Pointers to trait objects store a pointer to a vtable.\\\"\n- 05: Book ch15-04, \\\"The implementation of `Rc::clone` doesn't make a deep copy... only increments the reference count.\\\"\n- 06: std::rc, \\\"you cannot generally obtain a mutable reference to something inside an `Rc`. If you need mutability, put a `Cell` or `RefCell` inside the `Rc`.\\\" Rc::get_mut and make_mut do not defeat the card: the statement says \\\"shared\\\" and \\\"through dereferencing\\\", get_mut returns None while the Rc is shared, and make_mut clones the data.\n- 07: Weak::upgrade has the signature `-> Option<Rc<T, A>>` and returns None if the inner value \\\"has since been dropped or moved out\\\".\n- 08: Book ch15-06, \\\"memory leaks are memory safe in Rust\\\" and reference cycles \\\"will never be dropped\\\".\n- 09: Cell::get is `pub const fn get(&self) -> T` where T: Copy, \\\"Returns a copy of the contained value.\\\"\n- 10: Book ch15-05, \\\"With `RefCell<T>`, these invariants are enforced at runtime... your program will panic and exit.\\\"\n- 11: std::cell, Cell, RefCell and OnceCell \\\"allow doing this in a single-threaded way—they do not implement Sync\\\". The Cell page lists `impl<T: ?Sized> !Sync for Cell<T>`.\n- 12: Arc docs, \\\"Arc<T> uses atomic operations for its reference counting... atomic operations are more expensive than ordinary memory accesses.\\\"\n\nMinor points I did not flag:\n- 05 never says outright that `value` is an Rc<String>. \\\"the pointed-to String\\\" implies it, but \\\"`Rc::clone(&value)` on an `Rc<String>`\\\" would be cleaner.\n- 06 reads awkwardly (\\\"lets its owner change a shared `Rc<Vec<i32>>`'s elements\\\").\n\nDuplicate check against the other sections found no overlap:\n- r9-12 tests deref coercion of a Box argument, while r11-03 tests the * operator (and so does its replacement).\n- r12-09 tests Arc<Mutex> mutation and r11-12 the cost of Arc's atomic counting.\n- r13-12 tests the 2024 tail-expression RefCell rule, not run-time borrow checking.\n- r8-07 tests the implicit Sized bound, not the size of a pointer to a DST.\n\nCoverage: no r11 card tests try_borrow_mut or Rc<RefCell<T>> as its own fact. 06's explanation names Rc<RefCell>. This is a coverage choice, not an error."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr12-09",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://doc.rust-lang.org/book/ch16-03-shared-state.html (Book, current)",
+     "evidence": "Book ch16-03 shows the pattern (`let mut num = counter.lock().unwrap(); *num += 1;`) and the Mutex page says \"An RAII guard is returned to allow scoped unlock of the lock.\" So the card is supported, but anyone who knows what a Mutex is for answers True. The statement just describes the Arc<Mutex<T>> pattern: a Mutex exists to allow this mutation. \"Mutable lock guard\" is also not a std concept (lock() returns a MutexGuard; the binding is what is `mut`). The section topic Arc<Mutex<T>> is already covered by sr12-07/08 and by sr9-02 (Arc<Mutex<T>> sharing through derive(Clone)).",
+     "problem": "Give-away: the answer follows from what a Mutex is for, so the card is close to a truism and nobody who studied would answer False. The wording \"mutable lock guard\" is also imprecise.",
+     "suggestedFix": "Replace (answer stays True, keeping the 6/6 balance): Statement: \"`Mutex<T>` implements `Sync` whenever its contained type `T` implements `Send`.\" Explanation: \"The std docs implement Sync for Mutex<T> where T: Send: the lock gives one thread at a time access to T, so T itself needs no Sync bound. That is why Arc<Mutex<T>> can share a non-Sync value.\" URL: https://doc.rust-lang.org/std/sync/struct.Mutex.html (quote: \"impl<T: ?Sized + Send> Sync for Mutex<T> ... T must be Send for Mutex to be Sync.\")"
+    }
+   ],
+   "notes": "I checked all 12 r12 cards in raw/rust-fundamentals-b3.json against their source pages. Every page returned 200 and the std pages show std 1.99.0 (b940084d7 2026-09-28). The section balance is 6 True and 6 False. Average statement length is 85.3 for True and 83.2 for False, so it passes; the suggested replacement for sr12-09 keeps it within 5.\n\nQuotes that settle each passing card:\n- 01: the spawn signature reads \"F: FnOnce() -> T + Send + 'static\".\n- 02: the JoinHandle::join docs say \"If the associated thread panics, Err is returned with the parameter given to panic!\". The answer False is safe under the deck's default unwind profile.\n- 03: the scope docs say \"scoped threads can borrow non-'static data, as the scope guarantees all threads will be joined at the end of the scope\".\n- 04: the mpsc docs say \"Both senders are clone-able (multi-producer)\".\n- 05: the sync_channel docs say \"a buffer size of 0 is valid, in which case this becomes 'rendezvous channel' where each send will not return until a recv is paired with it\". Small wording mismatch: the misconception field says \"unbounded queue\" while the statement says \"a buffer\". Not flagged.\n- 06: Receiver::recv says \"messages sent before the disconnect will still be properly received\".\n- 07: the Mutex docs say \"The lock will be unlocked when the guard is dropped\".\n- 08: Mutex::lock says \"The acquired mutex guard will be contained in the returned error\", and the Poisoning section says \"PoisonError type has an into_inner method which will return the guard\". std::sync::Mutex is still the poisoning Mutex in 1.99.\n- 10: Book ch16-03 says \"Mutex<T> comes with the risk of creating deadlocks\". It is an easy card, but not a strawman given the \"fearless concurrency\" framing.\n- 11: Sync docs say \"a type T is Sync if and only if &T is Send\". The &mut T distractor cannot be defended.\n- 12: Book ch16-04 says \"Manually implementing these traits involves implementing unsafe Rust code\", and Sync is declared as \"pub unsafe auto trait Sync\".\n\nNo duplicates with other sections:\n- sr2-08 is about the borrow checker preventing data races. sr12-10 is about deadlocks, a different fact.\n- sr9-02 is about derive(Clone) sharing an Arc<Mutex<T>>. sr12-09 and the suggested replacement are not about Clone.\n- sr11-11 says the Cell family is not Sync. The suggested Mutex Sync card is a different fact.\n- sr11-12 is about Arc's atomic counts.\n\nSection topics left untested: spawned threads ending when main completes, send taking ownership, iterating a Receiver, Rc being neither Send nor Sync, and the atomic types. The breadth is still acceptable."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr13-07",
+     "verdict": "weak_card",
+     "urlStatus": "https://doc.rust-lang.org/cargo/faq.html loads, official, current",
+     "evidence": "Cargo FAQ, 'Why have Cargo.lock in version control?': \"While cargo new defaults to tracking Cargo.lock in version control, whether you do is dependent on the needs of your package.\" The statement \"The Cargo FAQ ties tracking `Cargo.lock` in version control to the needs of the package\" restates that clause with a few words changed. A player who knows nothing will guess True from the vague 'depends on needs' wording. Even someone holding the retired rule (binaries commit it, libraries do not) would also call that 'tied to the needs of the package', so the card does not separate the misconception it is meant to catch. The fact is accurate.",
+     "problem": "The card nearly copies the FAQ sentence, and its answer can be guessed from the wording. It also does not test the retired library rule the prompt targets, because that rule fits the statement too.",
+     "suggestedFix": "Replacement (answer true): \"`cargo new` creates a library package whose Cargo.lock is tracked in version control by default.\" Explanation: \"The Cargo FAQ says cargo new defaults to tracking Cargo.lock for every package; whether to keep it depends on the package's needs, since the lockfile pins exact versions for reproducible builds.\" Keep the URL https://doc.rust-lang.org/cargo/faq.html and keep volatility may_change."
+    }
+   ],
+   "notes": "I opened every source URL and each one loaded from the official doc.rust-lang.org site. I checked all 12 cards against the sources and the prompt rules.\n\nCards that passed:\n- 01: the Book says \"A package can contain as many binary crates as you like, but at most only one library crate.\" The statement is a reordered paraphrase of that sentence, close to the rule against near-copies but passed.\n- 02: the Book says \"If you use both styles for the same module, you'll get a compiler error.\"\n- 03: the Book says \"we make the struct public, but the struct's fields will still be private.\"\n- 04: the Book's pub use example re-exports from a private front_of_house module, so the \"even when the module is private\" part holds.\n- 05: the Cargo Book's table gives 0.2.3 as \">=0.2.3, <0.3.0\", and \"= 1.2.3\" as the exact form.\n- 06: the features page says \"Cargo will use the union of all features enabled on that dependency\". The statement's \"normal dependency\" and \"same target build\" wording correctly excludes the resolver 2 cases that do not unify (build-deps, proc-macros, dev-deps, other targets).\n- 08: the Edition Guide's cargo-resolver page says \"the setting is ignored in dependencies. The setting is only honored for the top-level package of the workspace\", and that edition 2024 implies resolver = \"3\".\n- 09: the prelude page says Future and IntoFuture are added to the 2024 prelude.\n- 10: the gen keyword page says gen is a reserved keyword, and its own migration example rewrites `fn gen()` as `fn r#gen()`.\n- 11: the if let temporary scope page says temporaries are \"dropped before the program enters the else branch\".\n- 12: the tail expression page shows the same RefCell example failing in 2021 and compiling in 2024, and says the change covers blocks as well as function bodies.\n\nSection-level checks:\n- True/false balance is 6/6.\n- Average statement length is 92.2 characters for the true cards and 94.3 for the false ones, within the 5-character rule. No statement is over 120 characters and no explanation is over 240.\n- I found no card elsewhere in the deck that rests on the same fact as an r13 card. r6 covers let chains and if let guards, not temporary scope.\n\nCoverage gap (not flagged on any card): 5 of the 12 cards test 2024 edition changes. No card covers the dev and release profile settings, a missing edition key meaning 2015, cargo new writing edition = \"2024\", cargo fix --edition, crates of different editions interoperating, or the rule that a child module can use its ancestors' private items. The section is narrower than its scope list."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "rust-fundamentals-sr14-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://blog.rust-lang.org/2025/02/20/Rust-1.85.0/ (official release announcement)",
+     "evidence": "Blog: \"Rust now supports asynchronous closures like async || {} which return futures when called. ... This also comes with 3 analogous traits in the standard library prelude: AsyncFn, AsyncFnMut, and AsyncFnOnce.\" The answer is correct, but anyone can read it from the names: an async closure satisfying an AsyncFn bound is what the trait name says. The explanation repeats the statement. The same post states the real point of async closures: \"the future returned by such an inner block is not able to borrow from the closure captures, but this does work with async closures\".",
+     "problem": "Name giveaway. A player who does not know Rust guesses True because an async closure fits a bound called AsyncFn, so the card teaches nothing about what async closures add.",
+     "suggestedFix": "Replace (answer stays true): statement \"Since Rust 1.85, an `async ||` closure returns a future that can borrow from the values the closure captured.\" (109 chars). Explanation: \"A plain closure returning an async block yields a future that cannot borrow the closure's captures; async closures, added in Rust 1.85, remove that limit.\" (154 chars). Keep the same URL, appliesTo \"Rust 1.85 and later\", difficulty 3."
+    },
+    {
+     "id": "rust-fundamentals-sr14-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://doc.rust-lang.org/reference/expressions/await-expr.html",
+     "evidence": "Reference: \"Await expressions are legal only within an async context, like an async fn, async closure, or async block.\" Reference block-expr (https://doc.rust-lang.org/reference/expressions/block-expr.html): \"Because async blocks construct a future, they define an async context which can in turn contain await expressions.\" The card is correct, but \"an async closure's body can use .await\" is guessable from the word async alone.",
+     "problem": "Near-giveaway or truism: the statement pairs async with .await, so a player who does not know Rust answers True. It does not test where an async context starts and stops.",
+     "suggestedFix": "Replace (answer stays true): statement \"`.await` is legal inside an `async` block written in the body of an ordinary synchronous `fn`.\" (94 chars). Explanation: \"An async block creates its own async context wherever it appears, so it may contain await expressions; the block evaluates to a future, so the enclosing fn need not be async.\" (174 chars). Source: https://doc.rust-lang.org/reference/expressions/block-expr.html (Async context)."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards. Every source URL loaded on 2026-10-13 (HTTP 200, official doc.rust-lang.org or blog.rust-lang.org) and supports its card. The section's true/false balance is 6/6, and both proposed replacements keep it because they stay true.\n\nPassed, with the quote that settles each:\n- 01: Book ch20-01: \"We can create raw pointers in safe code; we just can't dereference raw pointers outside an unsafe block\", with &raw const num on a local.\n- 02: Book ch20-01: \"unsafe doesn't turn off the borrow checker or disable any of Rust's other safety checks: If you use a reference in unsafe code, it will still be checked.\"\n- 03: Edition Guide unsafe-op-in-unsafe-fn: \"The unsafe_op_in_unsafe_fn lint now warns by default.\" It is a warning, as the prompt requires.\n- 04: Edition Guide unsafe-extern: \"Starting with the 2024 Edition, it is now required to include the unsafe keyword on an extern block.\"\n- 05: Edition Guide static-mut-references: \"The static_mut_refs lint level is now deny by default.\" Its example puts `let y = &X; // ERROR: shared reference to mutable static` inside an unsafe block, so \"inside unsafe blocks\" is accurate.\n- 06: Edition Guide newly-unsafe-functions: \"The following functions are now marked unsafe: std::env::set_var, std::env::remove_var\". Minor style point: \"safe code directly calls\" is awkward and uses the coverage word \"directly\" in a false card. It is not wrong.\n- 07: Reference functions: \"Async functions do no work when called: instead, they capture their arguments into a future. When polled, that future will execute the function's body.\"\n- 09: Book ch17-01: \"Most languages that support async bundle a runtime, but Rust does not.\"\n- 10: std Future: `fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>` and \"poll returns Poll::Pending\". This one is fairly easy, but acceptable.\n- 12: Reference traits: \"The AsyncFn, AsyncFnMut, and AsyncFnOnce traits are not dyn-compatible.\"\n\nEdition and version: the 2024 edition is named in every card whose answer depends on it (03-06), and appliesTo is set correctly. Card 11 names 1.85.\n\nDuplicates: none. I checked r8 (dyn compatibility and RPIT), r10 (closures), r12 (unsafe impl Send/Sync) and r13 (Future/IntoFuture prelude, gen, if let scope). None rests on the same fact as an r14 card.\n\nNot flagged: I first considered testing that a plain closure nested in an async fn is not an async context. I dropped the idea because the Reference does not state that case explicitly."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "rust-fundamentals-sr2-06",
+     "rust-fundamentals-sr2-12"
+    ],
+    "why": "Both test the same fact: an assignment through *r writes the referent and leaves the binding r alone. sr2-06's explanation ('The binding r can stay immutable while *r changes x') is literally sr2-12's answer. sr2-12 is the weaker card, close to a strawman for a working Rust developer.",
+    "dropId": "rust-fundamentals-sr2-12"
+   },
+   {
+    "ids": [
+     "rust-fundamentals-sr8-03",
+     "rust-fundamentals-sr8-08"
+    ],
+    "why": "These are the two sides of one distinction: generics are monomorphized for static dispatch at compile time, and dyn uses dynamic dispatch at run time. The prompt's rule counts the two sides of a split as one fact. sr8-08 is also a name giveaway, since 'dyn' plus 'dynamic dispatch' is readable from the keyword alone.",
+    "dropId": "rust-fundamentals-sr8-08"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "borrow-liveness-nll",
+    "ids": [
+     "rust-fundamentals-sr2-04",
+     "rust-fundamentals-sr2-05",
+     "rust-fundamentals-sr2-11"
+    ],
+    "why": "The same rule seen from both sides: a borrow conflicts only while it is still used later. sr2-05 (T, accepted after last use) gives away sr2-04 and sr2-11 (F, 'Rust accepts X while Y is used after'), and the reverse also works."
+   },
+   {
+    "name": "deref-write-through-mut-ref",
+    "ids": [
+     "rust-fundamentals-sr2-06",
+     "rust-fundamentals-sr2-12"
+    ],
+    "why": "sr2-06's explanation states that *r changes x without r being mut, which answers sr2-12."
+   },
+   {
+    "name": "races-prevented-deadlocks-not",
+    "ids": [
+     "rust-fundamentals-sr2-08",
+     "rust-fundamentals-sr12-10"
+    ],
+    "why": "These are the two halves of the Book's line that Rust prevents data races but not deadlocks. Together they read as a mirrored pair about what the borrow checker catches."
+   },
+   {
+    "name": "lifetime-syntax-keeps-value-alive",
+    "ids": [
+     "rust-fundamentals-sr3-01",
+     "rust-fundamentals-sr3-12"
+    ],
+    "why": "Same misconception in two false cards (lifetime syntax extends or guarantees a value's life). sr3-01's explanation ('do not lengthen the lifetime of any referenced value') answers sr3-12."
+   },
+   {
+    "name": "elision-two-reference-inputs",
+    "ids": [
+     "rust-fundamentals-sr3-02",
+     "rust-fundamentals-sr3-05",
+     "rust-fundamentals-sr3-07"
+    ],
+    "why": "sr3-02's explanation ('The two input lifetimes make the output ambiguous') gives away sr3-05 (F, inputs share one lifetime). sr3-07's 'even when the method has other reference parameters' contrasts directly with sr3-02's no-self case."
+   },
+   {
+    "name": "elision-single-or-zero-input",
+    "ids": [
+     "rust-fundamentals-sr3-06",
+     "rust-fundamentals-sr3-08"
+    ],
+    "why": "sr3-06's explanation (the sole input lifetime is assigned to outputs) and sr3-08's ('With no input lifetime to select, output lifetime elision fails') each state the other's rule."
+   },
+   {
+    "name": "utf8-byte-model",
+    "ids": [
+     "rust-fundamentals-sr4-03",
+     "rust-fundamentals-sr4-04",
+     "rust-fundamentals-sr4-05"
+    ],
+    "why": "Each explanation repeats the byte-position or variable-width UTF-8 model ('several bytes for one Unicode scalar value', 'String ranges use byte positions'). That model answers the other two cards."
+   },
+   {
+    "name": "char-unicode-scalar",
+    "ids": [
+     "rust-fundamentals-sr4-06",
+     "rust-fundamentals-sr4-08",
+     "rust-fundamentals-sr4-03"
+    ],
+    "why": "sr4-08's explanation ('encodes the supplied Unicode scalar value') and sr4-03's ('several bytes for one Unicode scalar value') both tell the player that char is a scalar value, which is sr4-06's answer (F)."
+   },
+   {
+    "name": "let-assignment-moves",
+    "ids": [
+     "rust-fundamentals-sr1-02",
+     "rust-fundamentals-sr1-06"
+    ],
+    "why": "Same '`let b = a;`' frame, both false. sr1-02's explanation (assignment moves the value) carries over directly to sr1-06's &mut case."
+   },
+   {
+    "name": "panic-vs-err-mirror",
+    "ids": [
+     "rust-fundamentals-sr7-01",
+     "rust-fundamentals-sr12-02"
+    ],
+    "why": "A mirrored false pair: sr7-01 gives unwrap the behaviour of returning Err (it panics), and sr12-02 gives join the behaviour of rethrowing the panic (it returns Err). Each explanation states the other side."
+   },
+   {
+    "name": "question-mark-conversion",
+    "ids": [
+     "rust-fundamentals-sr7-05",
+     "rust-fundamentals-sr7-06"
+    ],
+    "why": "Both are '? converts X' statements. sr7-05's explanation, which scopes the conversion to 'Result-based ?' through From::from, hints that ? does not convert Option to Result."
+   },
+   {
+    "name": "automatic-option-conversion",
+    "ids": [
+     "rust-fundamentals-sr5-10",
+     "rust-fundamentals-sr7-06"
+    ],
+    "why": "Both false cards say Rust converts an Option implicitly. sr5-10's explanation ('the programmer handles the Option explicitly') hints at sr7-06."
+   },
+   {
+    "name": "termination-skips-cleanup",
+    "ids": [
+     "rust-fundamentals-sr7-09",
+     "rust-fundamentals-sr7-11"
+    ],
+    "why": "The same false template ('<X> unwinds or runs destructors before terminating') appears twice. sr7-09's explanation ('does not unwind the stack or run stack-local destructors') primes sr7-11."
+   },
+   {
+    "name": "static-vs-dynamic-dispatch",
+    "ids": [
+     "rust-fundamentals-sr8-03",
+     "rust-fundamentals-sr8-08"
+    ],
+    "why": "These are the two sides of one distinction and are listed as duplicates. Until one is dropped, never deal both."
+   },
+   {
+    "name": "clone-deep-vs-refcount",
+    "ids": [
+     "rust-fundamentals-sr1-03",
+     "rust-fundamentals-sr9-02",
+     "rust-fundamentals-sr11-05"
+    ],
+    "why": "sr9-02's explanation ('Cloning an Arc<Mutex<T>> field retains a handle to the existing allocation') gives away sr11-05 (F, Rc::clone deep-copies). sr1-03's String deep copy is the contrasting side of the same clone-semantics split."
+   },
+   {
+    "name": "arc-mutex-sharing",
+    "ids": [
+     "rust-fundamentals-sr9-02",
+     "rust-fundamentals-sr12-09"
+    ],
+    "why": "sr12-09's explanation ('Arc shares ownership of the mutex') confirms that cloned Arc<Mutex<T>> handles share state, which is sr9-02's answer."
+   },
+   {
+    "name": "closure-trait-from-body",
+    "ids": [
+     "rust-fundamentals-sr10-01",
+     "rust-fundamentals-sr10-02"
+    ],
+    "why": "sr10-01's explanation (the trait follows what the body does, not the move keyword) answers sr10-02, whose body moves the captured String out."
+   },
+   {
+    "name": "iter-into-iter-item-types",
+    "ids": [
+     "rust-fundamentals-sr10-09",
+     "rust-fundamentals-sr10-10",
+     "rust-fundamentals-sr10-11"
+    ],
+    "why": "iter yields borrowed items and into_iter yields owned values. sr10-10 (array into_iter by value, T) and sr10-11 (boxed slice into_iter borrows in 2024, F) are mirrored edition cards: knowing one predicts the other."
+   },
+   {
+    "name": "collect-target-type",
+    "ids": [
+     "rust-fundamentals-sr10-08",
+     "rust-fundamentals-sr10-12"
+    ],
+    "why": "sr10-12's statement shows a turbofish that picks Result<Vec<_>, _> as the collect target, which shows sr10-08's fact."
+   },
+   {
+    "name": "box-known-size",
+    "ids": [
+     "rust-fundamentals-sr11-02",
+     "rust-fundamentals-sr11-04"
+    ],
+    "why": "sr11-02's explanation ('Box<List> gives the recursive link a known size') gives away sr11-04 (a Box to an unsized target has a known size)."
+   },
+   {
+    "name": "deref-mechanics",
+    "ids": [
+     "rust-fundamentals-sr9-12",
+     "rust-fundamentals-sr11-03"
+    ],
+    "why": "sr11-03's explanation (Deref::deref supplies a shared reference) hints that Deref coercion works on references, which is sr9-12's answer."
+   },
+   {
+    "name": "spawn-static-vs-scope",
+    "ids": [
+     "rust-fundamentals-sr12-01",
+     "rust-fundamentals-sr12-03"
+    ],
+    "why": "These are the two sides of one distinction: spawn needs 'static, while scope lets threads borrow locals. Each explanation implies the other ('excludes closures borrowing shorter-lived data' / 'complete before scope returns')."
+   },
+   {
+    "name": "edition-2024-temporary-scope",
+    "ids": [
+     "rust-fundamentals-sr13-11",
+     "rust-fundamentals-sr13-12"
+    ],
+    "why": "sr13-11's explanation (2024 drops the scrutinee's temporaries earlier) signals that 2024 shortens temporary scopes, which predicts sr13-12's RefCell tail expression compiling."
+   },
+   {
+    "name": "raw-pointer-unsafe-deref",
+    "ids": [
+     "rust-fundamentals-sr14-01",
+     "rust-fundamentals-sr14-03"
+    ],
+    "why": "sr14-03's statement treats raw-pointer dereference as an unsafe operation, and sr14-01's explanation contrasts creating a pointer with accessing memory through it. Each supports the other."
+   },
+   {
+    "name": "async-closures-exist",
+    "ids": [
+     "rust-fundamentals-sr14-08",
+     "rust-fundamentals-sr14-11"
+    ],
+    "why": "sr14-11's statement shows a working `async || {}` passed to AsyncFn, which strongly hints that sr14-08 is true (await inside an async closure body)."
+   },
+   {
+    "name": "lazy-not-eager",
+    "ids": [
+     "rust-fundamentals-sr10-07",
+     "rust-fundamentals-sr14-07"
+    ],
+    "why": "Both are false 'X runs immediately or starts running' cards about laziness (iterator adapters, async fn). One explanation's laziness lesson answers the other."
+   },
+   {
+    "name": "edition-prelude-additions",
+    "ids": [
+     "rust-fundamentals-sr9-10",
+     "rust-fundamentals-sr13-09"
+    ],
+    "why": "Same true template ('In the <edition> edition, the prelude brings X into scope'). Seeing one makes the other guessable as true."
+   }
+  ],
+  "tells": "Lengths are balanced: all True average 85.7 characters against 85.9 for False, and every section is within 5 characters (the widest gap is r10, T 79.2 vs F 83.8). Exploitable patterns:\n(1) An edition prefix predicts False. 'In the 2024 edition' appears on 11 cards, 4 True (sr13-09, sr13-12, sr14-03, sr14-05) and 7 False (sr6-11, sr8-12, sr10-11, sr13-08, sr13-10, sr13-11, sr14-06). sr14-04 also names edition 2024 at the end and is False, which makes 8 False. Six of the false ones share one template, '2024 still behaves the old, permissive way': sr8-12, sr10-11, sr13-10, sr13-11, sr14-04, sr14-06. The rule 'a 2024 card describing the stricter or new behaviour is True, the old behaviour is False' answers about 10 of 12. 'In the 2021 edition' runs the other way, 3T/1F (T sr8-11, sr9-10, sr10-10; F sr10-05).\n(2) An authority opener predicts True: 4 of 4 ('The Rust Book says/recommends' sr3-11, sr7-12; 'The Cargo FAQ ties' sr13-07; 'The Hash contract requires' sr9-08).\n(3) A recurring false template, 'Rust automatically <does a convenience>', carries 4 False cards (sr5-10 auto-unwraps Some, sr9-01 derive(Display), sr9-05 auto-picks first variant, sr13-03 pub exposes fields). The prompt's cap is 2. 'automatically' as a word is 5T/4F.\n(4) Eager or cleanup verbs predict False, 4 of 4: 'runs', 'starts', 'immediately', 'unwinds before terminating' (sr7-09, sr7-11, sr10-07, sr14-07). 'keeps' is 1T/4F (F sr1-02, sr1-04, sr10-12, sr13-11; T sr1-07). 'directly' is 0T/2F (sr6-02, sr14-06), and 'implicitly' (sr1-06) and 'replace' (sr5-07) appear in False only.\n(5) 'The compiler ...' as subject is 0T/2F (sr11-02, sr11-10), and 'rejects' is 1T/3F (T sr2-07; F sr3-10, sr8-04, sr12-10). A false 'the compiler or borrow checker catches X at compile time' template appears 3 times (sr11-10, sr12-10, sr3-10 'rejects by default'). 'Rust warns' is 2T/0F (sr7-08, sr14-03).\n(6) Other word skews: 'same' is 5T/1F (T sr2-05, sr8-01, sr9-08, sr12-04, sr13-06; F sr3-05). 'preserves' is 2T/0F (sr7-02, sr9-02). A statement opening with a '`let ...`' code fragment is 3T/6F (F sr1-02, sr1-06, sr1-12, sr2-06, sr5-10, sr6-08; T sr5-02, sr10-03, sr14-01). A 'For <setup>,' opener is 6T/3F (T sr4-10, sr5-02, sr5-06, sr5-12, sr6-07, sr10-01; F sr10-02, sr11-02, sr13-02). Hedges are fine: 'can' 5T/6F, 'lets' 2T/2F, 'accepts' 5T/4F, 'by default' 2T/2F.\n(7) The mirrored false template 'returns Err instead of panicking' versus 'panics instead of returning Err' (sr7-01, sr12-02), and the '`let b = a;` keeps or copies a' false frame used twice (sr1-02, sr1-06).\n(8) Truisms, definitions and strawmen that a non-Rust player can answer: sr10-06 (next returns Some(item) when it yields an item, tautological), sr6-05 (an or-pattern matches either alternative), sr12-09 (mutate while holding a mutable lock guard), sr12-07 (dropping the guard releases the lock), sr11-03 (Deref<Target = T> lets *p reach T), sr8-08 (dyn means dynamic dispatch, a name giveaway), sr7-02 (map preserves None). On the False side: sr5-11 (an impl block named after a variant), sr6-03 (a match's type decided at run time), sr4-02 ('&str owns the buffer it views through the reference', self-contradictory), sr5-03 (field init shorthand takes a default value)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "rust-fundamentals-sr1-03",
+    "reason": "weak_card: 'Cloning ... produces a copy' is readable from the word clone; r1 stays at 11 cards (5T/6F)."
+   },
+   {
+    "id": "rust-fundamentals-sr2-08",
+    "reason": "weak_card: restates Rust's data-race slogan almost verbatim from the Book; r2 stays at 10 (5T/5F)."
+   },
+   {
+    "id": "rust-fundamentals-sr2-12",
+    "reason": "duplicate of sr2-06 (write through *r leaves the binding r alone; sr2-06's explanation answers it), also near-strawman."
+   },
+   {
+    "id": "rust-fundamentals-sr3-05",
+    "reason": "duplicate of sr3-02: distinct elided input lifetimes is the same fact that makes the two-input signature need an annotation."
+   },
+   {
+    "id": "rust-fundamentals-sr4-02",
+    "reason": "weak_card: self-contradictory strawman ('owns the buffer it views through the reference')."
+   },
+   {
+    "id": "rust-fundamentals-sr5-06",
+    "reason": "weak_card: restates the Counter::new() call syntax the statement quotes; nobody would answer False."
+   },
+   {
+    "id": "rust-fundamentals-sr5-11",
+    "reason": "weak_card: strawman, impl blocks named after a variant are not something a studied learner writes."
+   },
+   {
+    "id": "rust-fundamentals-sr6-03",
+    "reason": "weak_card: strawman, a match type picked at run time is not a realistic misconception."
+   },
+   {
+    "id": "rust-fundamentals-sr6-05",
+    "reason": "weak_card: definition card, an or-pattern matching either alternative follows from the meaning of |."
+   },
+   {
+    "id": "rust-fundamentals-sr6-11",
+    "reason": "weak_card: near-strawman (&& short-circuits); r6 stays at 9 cards (5T/4F), so drop rather than rewrite."
+   },
+   {
+    "id": "rust-fundamentals-sr7-12",
+    "reason": "weak_card: near-truism, 'return Result when callers can recover' follows from the chapter title 'Recoverable Errors with Result'."
+   },
+   {
+    "id": "rust-fundamentals-sr8-06",
+    "reason": "weak_card: <Type as Trait> spells out its own answer; does not test which method wins on a name collision."
+   },
+   {
+    "id": "rust-fundamentals-sr8-08",
+    "reason": "weak_card and scan duplicate of sr8-03 (static vs dynamic dispatch is one split); 'dyn' gives away 'dynamic dispatch'. r8 ends at 10 (4T/6F), at the allowed limit."
+   },
+   {
+    "id": "rust-fundamentals-sr9-04",
+    "reason": "weak_card: name giveaway, a function called drop dropping its argument."
+   },
+   {
+    "id": "rust-fundamentals-sr9-08",
+    "reason": "weak_card: generic hashing truism, near-copy of the Hash docs sentence. r9 ends at 10 (4T/6F), at the allowed limit."
+   },
+   {
+    "id": "rust-fundamentals-sr10-06",
+    "reason": "weak_card: tautology, next returns Some(item) when it yields an item; circular explanation."
+   },
+   {
+    "id": "rust-fundamentals-sr11-03",
+    "reason": "weak_card: definition and name giveaway, implementing Deref enables *p."
+   },
+   {
+    "id": "rust-fundamentals-sr12-09",
+    "reason": "weak_card: truism about what a Mutex is for; 'mutable lock guard' is also imprecise."
+   },
+   {
+    "id": "rust-fundamentals-sr13-07",
+    "reason": "weak_card: near-copy of the Cargo FAQ clause, guessable from vague wording, and the retired library rule also fits it."
+   },
+   {
+    "id": "rust-fundamentals-sr14-08",
+    "reason": "weak_card: async plus .await is guessable from the word async. r14 ends at 10 (4T/6F), at the allowed limit."
+   },
+   {
+    "id": "rust-fundamentals-sr14-11",
+    "reason": "weak_card: name giveaway, an async closure satisfying an AsyncFn bound; explanation repeats the statement."
+   }
+  ],
+  "source": [
+   {
+    "id": "rust-fundamentals-sr4-10",
+    "title": "Range expressions - The Rust Reference",
+    "url": "https://doc.rust-lang.org/reference/expressions/range-expr.html"
+   },
+   {
+    "id": "rust-fundamentals-sr5-07",
+    "title": "E0592 - Error codes index",
+    "url": "https://doc.rust-lang.org/error_codes/E0592.html"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "rust-fundamentals-sr1-11",
+    "reason": "ambiguous: 'alone' hid the no-Drop condition and the local-variable condition was missing; both now stated (Reference: 'If the struct does not implement Drop and is stored in a local variable, this also applies to moving out of each of its fields').",
+    "statement": "For a local `p` whose struct type lacks a `Drop` impl, `let x = p.a;` leaves the `String` field `p.b` usable.",
+    "answer": true,
+    "explanation": "For a struct without Drop held in a local variable, Rust tracks each field separately, so moving out one field leaves the others usable, though not the whole struct.",
+    "misconception": "",
+    "sourceTitle": "Field access expressions - The Rust Reference",
+    "sourceUrl": "https://doc.rust-lang.org/reference/expressions/field-expr.html"
+   },
+   {
+    "id": "rust-fundamentals-sr2-04",
+    "reason": "ambiguous: 'two &mut references to one String' also covered a reborrow (&mut *r1), which compiles. The new statement names two direct borrows of s, matching the Book's r1/r2 example (E0499, 'first borrow later used here'). Source moved to the Book page that shows it.",
+    "statement": "`let a = &mut s; let b = &mut s;` compiles when `a` is still used after `b` is created.",
+    "answer": false,
+    "explanation": "The first mutable borrow of s stays live until a's last use, so creating b in the meantime is a second simultaneous &mut borrow, which the borrow checker rejects.",
+    "misconception": "A second mutable borrow of the same value is fine while the first one is still used later.",
+    "sourceTitle": "References and Borrowing - The Rust Programming Language",
+    "sourceUrl": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+   },
+   {
+    "id": "rust-fundamentals-sr3-06",
+    "reason": "explanation_error: the old example (named input, elided output) is flagged by the warn-by-default mismatched_lifetime_syntaxes lint. Replaced by a clean case of the same rule; the Reference's debug1(lvl: usize, s: &str) example shows a non-reference parameter alongside one reference.",
+    "statement": "In `fn head(s: &str, n: usize) -> &str`, elision ties the returned reference to the lifetime of `s`.",
+    "answer": true,
+    "explanation": "Only one lifetime appears among the parameters, since usize holds none, so elision assigns it to the elided output and the signature needs no annotation.",
+    "misconception": "",
+    "sourceTitle": "Lifetime elision - The Rust Reference",
+    "sourceUrl": "https://doc.rust-lang.org/reference/lifetime-elision.html"
+   },
+   {
+    "id": "rust-fundamentals-sr4-10",
+    "reason": "source_problem: the slice page never mentions ..=. The Reference range-expr table gives start..=end as RangeInclusive with start <= x <= end. Statement and explanation unchanged.",
+    "statement": "For an array with enough elements, `&a[1..=3]` includes the element at index 3.",
+    "answer": true,
+    "explanation": "The ..= range includes its end position. Used for slicing, it includes that final indexed element in the borrowed slice.",
+    "misconception": "",
+    "sourceTitle": "Range expressions - The Rust Reference",
+    "sourceUrl": "https://doc.rust-lang.org/reference/expressions/range-expr.html"
+   },
+   {
+    "id": "rust-fundamentals-sr5-07",
+    "reason": "source_problem: the Book only says several impl blocks are allowed, and the Reference does not state the duplicate-name rule. The error index page E0592 shows two impl Foo blocks both defining bar as a 'duplicate definition'. The explanation now gives the real outcome without naming the error code (the prompt bars error codes outside E0040/E0752). Statement unchanged.",
+    "statement": "A second inherent `impl` block can replace a struct's previously defined methods.",
+    "answer": false,
+    "explanation": "Inherent impl blocks for one type add their items together. Reusing a method name that an earlier impl block of the type already defines is a duplicate definition the compiler rejects.",
+    "misconception": "A later inherent impl block overwrites the type's previously defined methods.",
+    "sourceTitle": "E0592 - Error codes index",
+    "sourceUrl": "https://doc.rust-lang.org/error_codes/E0592.html"
+   },
+   {
+    "id": "rust-fundamentals-sr10-04",
+    "reason": "ambiguous: 'makes an F: FnOnce() bound sufficient for an F: Fn() parameter' could be read in the true direction, and the 'supertrait chain makes' opener nudged towards True. Now one direction is concrete: a value known only as FnOnce passed where Fn is required.",
+    "statement": "Inside `fn run<F: FnOnce()>(f: F)`, passing `f` to a parameter bounded by `Fn()` compiles.",
+    "answer": false,
+    "explanation": "Fn has FnMut and FnOnce as supertraits, so every Fn type also satisfies FnOnce. A type known only to be FnOnce gives no Fn guarantee, so the call is rejected.",
+    "misconception": "A FnOnce bound is enough to satisfy an Fn bound because the closure traits form a supertrait chain.",
+    "sourceTitle": "Fn in std::ops - Rust",
+    "sourceUrl": "https://doc.rust-lang.org/std/ops/trait.Fn.html"
+   },
+   {
+    "id": "rust-fundamentals-sr1-04",
+    "reason": "tell: removes 'keeps' (1T/4F in the deck). Same fact and answer: the Book says assigning a new value drops the old one immediately.",
+    "statement": "When code assigns a new `String` to `s`, Rust frees the old buffer at the end of `s`'s scope.",
+    "answer": false,
+    "explanation": "Replacing an existing String drops its previous value immediately. Its old allocation is released during the assignment.",
+    "misconception": "Replacing a String delays cleanup of its old buffer until scope exit.",
+    "sourceTitle": "What Is Ownership? - The Rust Programming Language",
+    "sourceUrl": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+   },
+   {
+    "id": "rust-fundamentals-sr9-05",
+    "reason": "tell: breaks the false template 'Rust automatically <convenience>' (4 false cards, cap 2). Same fact and answer.",
+    "statement": "`#[derive(Default)]` on an enum makes its first unit variant the default value.",
+    "answer": false,
+    "explanation": "Derived Default needs a #[default] marker on a unit variant; declaration order does not select the value. Default::default() returns the marked variant.",
+    "misconception": "Deriving Default chooses the earliest unit variant automatically.",
+    "sourceTitle": "Default in std::default - Rust",
+    "sourceUrl": "https://doc.rust-lang.org/std/default/trait.Default.html"
+   },
+   {
+    "id": "rust-fundamentals-sr13-03",
+    "reason": "tell: second card taken off the 'automatically <convenience>' false template, leaving sr5-10 and sr9-01 (at the cap of 2). Same fact and answer.",
+    "statement": "Marking a struct `pub` makes its fields part of the struct's public API.",
+    "answer": false,
+    "explanation": "pub makes the struct type public while its fields retain their own visibility. Mark a field pub to expose that field through the public API.",
+    "misconception": "Public visibility on a struct propagates to its fields.",
+    "sourceTitle": "Paths for Referring to an Item in the Module Tree - The Rust Programming Language",
+    "sourceUrl": "https://doc.rust-lang.org/book/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html"
+   },
+   {
+    "id": "rust-fundamentals-sr13-09",
+    "reason": "tell: drops a redundant 'automatically' so the word does not swing to marking True after the two false rewrites (now 4T/2F). Same fact and answer.",
+    "statement": "In the 2024 edition, the prelude brings `Future` and `IntoFuture` into scope.",
+    "answer": true,
+    "explanation": "Rust 2024's standard prelude includes Future and IntoFuture. The compiler makes those traits available through the prelude in ordinary module code.",
+    "misconception": "",
+    "sourceTitle": "Changes to the prelude - The Rust Edition Guide",
+    "sourceUrl": "https://doc.rust-lang.org/edition-guide/rust-2024/prelude.html"
+   },
+   {
+    "id": "rust-fundamentals-sr14-06",
+    "reason": "tell: removes 'directly' (0T/2F) and the 'In the 2024 edition,' opener (which predicts False), and puts a hedge verb on a false card to balance hedges. Same fact and answer.",
+    "statement": "Safe code in a 2024 edition crate may call `std::env::set_var` to change an environment variable.",
+    "answer": false,
+    "explanation": "Edition 2024 marks std::env::set_var as unsafe. Calling it requires an unsafe context and upholding its documented safety conditions.",
+    "misconception": "Changing an environment variable remains a safe standard library call in edition 2024.",
+    "sourceTitle": "Unsafe functions - The Rust Edition Guide",
+    "sourceUrl": "https://doc.rust-lang.org/edition-guide/rust-2024/newly-unsafe-functions.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "borrow-liveness-nll",
+    "ids": [
+     "rust-fundamentals-sr2-04",
+     "rust-fundamentals-sr2-05",
+     "rust-fundamentals-sr2-11"
+    ]
+   },
+   {
+    "name": "field-level-tracking",
+    "ids": [
+     "rust-fundamentals-sr1-11",
+     "rust-fundamentals-sr2-09"
+    ]
+   },
+   {
+    "name": "lifetime-syntax-keeps-value-alive",
+    "ids": [
+     "rust-fundamentals-sr3-01",
+     "rust-fundamentals-sr3-12"
+    ]
+   },
+   {
+    "name": "elision-two-reference-inputs",
+    "ids": [
+     "rust-fundamentals-sr3-02",
+     "rust-fundamentals-sr3-07"
+    ]
+   },
+   {
+    "name": "elision-single-or-zero-input",
+    "ids": [
+     "rust-fundamentals-sr3-06",
+     "rust-fundamentals-sr3-08",
+     "rust-fundamentals-sr3-02"
+    ]
+   },
+   {
+    "name": "utf8-byte-model",
+    "ids": [
+     "rust-fundamentals-sr4-03",
+     "rust-fundamentals-sr4-04",
+     "rust-fundamentals-sr4-05"
+    ]
+   },
+   {
+    "name": "char-unicode-scalar",
+    "ids": [
+     "rust-fundamentals-sr4-06",
+     "rust-fundamentals-sr4-08",
+     "rust-fundamentals-sr4-03"
+    ]
+   },
+   {
+    "name": "let-assignment-moves",
+    "ids": [
+     "rust-fundamentals-sr1-02",
+     "rust-fundamentals-sr1-06"
+    ]
+   },
+   {
+    "name": "panic-vs-err-mirror",
+    "ids": [
+     "rust-fundamentals-sr7-01",
+     "rust-fundamentals-sr12-02"
+    ]
+   },
+   {
+    "name": "question-mark-conversion",
+    "ids": [
+     "rust-fundamentals-sr7-05",
+     "rust-fundamentals-sr7-06"
+    ]
+   },
+   {
+    "name": "automatic-option-conversion",
+    "ids": [
+     "rust-fundamentals-sr5-10",
+     "rust-fundamentals-sr7-06"
+    ]
+   },
+   {
+    "name": "termination-skips-cleanup",
+    "ids": [
+     "rust-fundamentals-sr7-09",
+     "rust-fundamentals-sr7-11"
+    ]
+   },
+   {
+    "name": "clone-deep-vs-refcount",
+    "ids": [
+     "rust-fundamentals-sr9-02",
+     "rust-fundamentals-sr11-05"
+    ]
+   },
+   {
+    "name": "closure-trait-from-body",
+    "ids": [
+     "rust-fundamentals-sr10-01",
+     "rust-fundamentals-sr10-02"
+    ]
+   },
+   {
+    "name": "iter-into-iter-item-types",
+    "ids": [
+     "rust-fundamentals-sr10-09",
+     "rust-fundamentals-sr10-10",
+     "rust-fundamentals-sr10-11"
+    ]
+   },
+   {
+    "name": "collect-target-type",
+    "ids": [
+     "rust-fundamentals-sr10-08",
+     "rust-fundamentals-sr10-12"
+    ]
+   },
+   {
+    "name": "box-known-size",
+    "ids": [
+     "rust-fundamentals-sr11-02",
+     "rust-fundamentals-sr11-04"
+    ]
+   },
+   {
+    "name": "spawn-static-vs-scope",
+    "ids": [
+     "rust-fundamentals-sr12-01",
+     "rust-fundamentals-sr12-03"
+    ]
+   },
+   {
+    "name": "edition-2024-temporary-scope",
+    "ids": [
+     "rust-fundamentals-sr13-11",
+     "rust-fundamentals-sr13-12"
+    ]
+   },
+   {
+    "name": "raw-pointer-unsafe-deref",
+    "ids": [
+     "rust-fundamentals-sr14-01",
+     "rust-fundamentals-sr14-03"
+    ]
+   },
+   {
+    "name": "lazy-not-eager",
+    "ids": [
+     "rust-fundamentals-sr10-07",
+     "rust-fundamentals-sr14-07"
+    ]
+   },
+   {
+    "name": "edition-prelude-additions",
+    "ids": [
+     "rust-fundamentals-sr9-10",
+     "rust-fundamentals-sr13-09"
+    ]
+   }
+  ],
+  "sectionBalance": "r1: 11 cards, 5T/6F. r2: 10, 5T/5F. r3: 11, 6T/5F. r4: 11, 6T/5F. r5: 10, 5T/5F. r6: 9, 5T/4F. r7: 11, 5T/6F. r8: 10, 4T/6F. r9: 10, 4T/6F. r10: 11, 5T/6F. r11: 11, 5T/6F. r12: 11, 5T/6F. r13: 11, 5T/6F. r14: 10, 4T/6F. Deck: 147 cards (168 minus 21 dropped), 69T/78F. Every section has at least 9 cards and no split worse than 4:6 per 10. r8, r9 and r14 sit exactly at 4T/6F and r6 at the 9-card floor.",
+  "notes": "Edits: 21 drops, 6 fixes (3 ambiguous, 1 explanation_error, 2 source_problem) and 5 rewrites that only change wording to remove tells. No wrong_answer verdicts. All weak/duplicate cards were dropped, because no section fell below 9 cards or past a 4:6 split. That leaves the verifiers' good replacement ideas unused, and they are listed below for a later authoring pass.\n\nVerified today on the official pages:\n- field-expr: the Drop and local-variable conditions for partial moves.\n- Book ch04-02: the r1/r2 example, E0499 and the 'first borrow later used here' text.\n- Reference lifetime-elision: the rules, plus the debug1(lvl: usize, s: &str) example.\n- range-expr: start..=end is RangeInclusive, start <= x <= end.\n- std Fn: the supertrait sentence.\n- Reference implementations: 'A type can also have multiple inherent implementations', with no rule on duplicate names.\n- E0592: the two impl Foo blocks with 'duplicate definition here'.\n\nJudgement calls:\n1. sr5-07 now cites the error index (doc.rust-lang.org/error_codes). It is official and the only page that settles the card, but the prompt's source list does not name it. If that is not accepted, put back the Book URL (https://doc.rust-lang.org/book/ch05-03-method-syntax.html) with the same explanation, or drop the card (r5 would then have 9 cards, 5T/4F).\n2. In sr1-11 I wrote 'lacks a Drop impl' instead of the verifier's 'without'. 'without' is on the prompt's negation list. 'lacks' is a condition, not the claim being tested.\n\nTells still in the deck, which wording changes cannot fix without flipping answers:\n- 'In the 2024 edition' / 'edition 2024' predicts False. After the edits it is 4T/6F, and 5 of the false cards still follow the 'old permissive behaviour persists' template (sr8-12, sr10-11, sr13-10, sr13-11, sr14-04).\n- Fixing this needs new true cards about 2024 strictness, or turning some of these false cards into true ones. That is an authoring job.\n\nCoverage gaps the drops open up. Each gap below has a verifier replacement that I checked only in the verifier's quotes, not on the page:\n- r1 clone as a deep heap copy (sr1-03 fix).\n- r2 the Book's data-race definition (sr2-08 fix) and assert_eq!(5, y) with &i32 (sr2-12 fix).\n- r3 elision for fn pointer types (sr3-05 fix).\n- r4 &s[0..5] allocates nothing (sr4-02 fix).\n- r5 associated function vs method (sr5-06 fix) and variants are not types (sr5-11 fix).\n- r6 arm type compatibility (sr6-03 fix), Ok(n) | Err(n) binding (sr6-05 fix) and the || parentheses rule in let chains (sr6-11 fix). This last one is a trap the prompt names and nothing now tests.\n- r7 unwrap and expect for prototyping (sr7-12 fix).\n- r8 the vtable wide pointer (sr8-08 fix) and the inherent method winning over a trait method (sr8-06 fix).\n- r9 a direct .drop() call being rejected (sr9-04 fix; a named r9 topic now untested) and the HashMap logic error, not UB (sr9-08 fix; a named trap).\n- r10 sum consumes the iterator (sr10-06 fix).\n- r11 *y as *(y.deref()) (sr11-03 fix).\n- r12 Mutex<T> is Sync when T: Send (sr12-09 fix).\n- r13 cargo new tracks Cargo.lock (sr13-07 fix).\n- r14 async closure futures borrowing captures (sr14-11 fix) and .await in an async block inside a sync fn (sr14-08 fix).\nAdding some of these back as true cards would also lift r8, r9 and r14 off the 4T/6F edge.\n\nMinor points the verifiers raised that I did not edit:\n- sr2-07: the explanation credits the borrow checker, but the Book's example fails with E0106.\n- sr7-04: 'skips evaluation' would be more exact as 'skips calling'.\n- sr9-03: a pronoun mismatch.\n- sr1-09: difficulty 3 is better as 2.\n\nConflict groups: I removed the groups that lost members (deref-write-through-mut-ref, races-prevented-deadlocks-not, static-vs-dynamic-dispatch, arc-mutex-sharing, deref-mechanics, async-closures-exist), took sr3-05 out of elision-two-reference-inputs and sr1-03 out of clone-deep-vs-refcount, and added two: field-level-tracking (the sr1-11 rewrite's explanation hints at sr2-09), and sr3-02 into elision-single-or-zero-input (the sr3-06 rewrite's 'only one lifetime' answers it)."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "rust-fundamentals-sr1-11",
+    "decision": "keep",
+    "statement": "For a local `p` whose struct type lacks a `Drop` impl, `let x = p.a;` leaves the `String` field `p.b` usable.",
+    "answer": true,
+    "explanation": "For a struct without Drop held in a local variable, Rust tracks each field separately, so moving out one field leaves the others usable, though not the whole struct.",
+    "reason": "Both lenses keep. Checked on Reference field-expr: 'If the struct does not implement Drop and is stored in a local variable, this also applies to moving out of each of its fields.' Both conditions are in the statement, and the answer is True whether p.a is moved or copied."
+   },
+   {
+    "id": "rust-fundamentals-sr2-04",
+    "decision": "keep",
+    "statement": "`let a = &mut s; let b = &mut s;` compiles when `a` is still used after `b` is created.",
+    "answer": false,
+    "explanation": "The first mutable borrow of s stays live until a's last use, so creating b in the meantime is a second simultaneous &mut borrow, which the borrow checker rejects.",
+    "reason": "Both lenses keep. The statement matches the Book ch04-02 r1/r2 example, where the first mutable borrow lasts until its later use and the second &mut s is rejected. The reborrow loophole is closed."
+   },
+   {
+    "id": "rust-fundamentals-sr3-06",
+    "decision": "keep",
+    "statement": "In `fn head(s: &str, n: usize) -> &str`, elision ties the returned reference to the lifetime of `s`.",
+    "answer": true,
+    "explanation": "Only one lifetime appears among the parameters, since usize holds none, so elision assigns it to the elided output and the signature needs no annotation.",
+    "reason": "Both lenses keep. The Reference lifetime-elision page states the exactly-one-lifetime rule and gives substr1(s: &str, until: usize) -> &str expanding to &'a str, which is the same shape. Input and output are both elided, so mismatched_lifetime_syntaxes does not fire."
+   },
+   {
+    "id": "rust-fundamentals-sr4-10",
+    "decision": "fixed",
+    "statement": "For an array with enough elements, `&a[1..=3]` includes the element at index 3.",
+    "answer": true,
+    "explanation": "The start..=end syntax builds a RangeInclusive, which contains its end value, so slicing with 1..=3 borrows the elements at indexes 1, 2 and 3.",
+    "reason": "Both lenses flag the source: the Reference range-expr page has no slicing example. I moved the source to 'RangeInclusive in std::ops - Rust' (https://doc.rust-lang.org/std/ops/struct.RangeInclusive.html). I fetched it and it says 'start..=end contains all values with x >= start and x <= end' and shows assert_eq!(arr[1..=3], [1, 2, 3]). I used the fact lens's explanation because it can be checked against that page. The statement and answer are unchanged."
+   },
+   {
+    "id": "rust-fundamentals-sr5-07",
+    "decision": "keep",
+    "statement": "A second inherent `impl` block can replace a struct's previously defined methods.",
+    "answer": false,
+    "explanation": "Inherent impl blocks for one type add their items together. Reusing a method name that an earlier impl block of the type already defines is a duplicate definition the compiler rejects.",
+    "reason": "Both lenses keep. I fetched E0592: two impl Foo blocks both defining bar give 'duplicate definition here'. The page is official and on doc.rust-lang.org but outside the six listed doc sets. Neither lens asks to drop for that, and the Reference only says multiple inherent impls are allowed. The explanation names no error code."
+   },
+   {
+    "id": "rust-fundamentals-sr10-04",
+    "decision": "keep",
+    "statement": "Inside `fn run<F: FnOnce()>(f: F)`, passing `f` to a parameter bounded by `Fn()` compiles.",
+    "answer": false,
+    "explanation": "Fn has FnMut and FnOnce as supertraits, so every Fn type also satisfies FnOnce. A type known only to be FnOnce gives no Fn guarantee, so the call is rejected.",
+    "reason": "Both lenses keep. The std Fn page has 'pub trait Fn<Args>: FnMut<Args>' and names FnMut and FnOnce as supertraits of Fn. The implication goes only one way, so an F bounded only by FnOnce fails an Fn() bound. The statement now asks about one direction only."
+   },
+   {
+    "id": "rust-fundamentals-sr1-04",
+    "decision": "keep",
+    "statement": "When code assigns a new `String` to `s`, Rust frees the old buffer at the end of `s`'s scope.",
+    "answer": false,
+    "explanation": "Replacing an existing String drops its previous value immediately. Its old allocation is released during the assignment.",
+    "reason": "Both lenses keep. Book ch04-01: assigning a completely new value to an existing variable makes Rust call drop and free the original value's memory immediately. The tell word is removed and the fact is unchanged."
+   },
+   {
+    "id": "rust-fundamentals-sr9-05",
+    "decision": "keep",
+    "statement": "`#[derive(Default)]` on an enum makes its first unit variant the default value.",
+    "answer": false,
+    "explanation": "Derived Default needs a #[default] marker on a unit variant; declaration order does not select the value. Default::default() returns the marked variant.",
+    "reason": "Both lenses keep. The std Default docs say that with #[derive(Default)] on an enum you choose the default unit variant by placing #[default] on it. The 'automatically' template is gone and the fact is unchanged."
+   },
+   {
+    "id": "rust-fundamentals-sr13-03",
+    "decision": "keep",
+    "statement": "Marking a struct `pub` makes its fields part of the struct's public API.",
+    "answer": false,
+    "explanation": "pub makes the struct type public while its fields retain their own visibility. Mark a field pub to expose that field through the public API.",
+    "reason": "Both lenses keep. Book ch07-03: 'If we use pub before a struct definition, we make the struct public, but the struct's fields will still be private.' The 'automatically' template is gone and the fact is unchanged."
+   },
+   {
+    "id": "rust-fundamentals-sr13-09",
+    "decision": "keep",
+    "statement": "In the 2024 edition, the prelude brings `Future` and `IntoFuture` into scope.",
+    "answer": true,
+    "explanation": "Rust 2024's standard prelude includes Future and IntoFuture. The compiler makes those traits available through the prelude in ordinary module code.",
+    "reason": "Both lenses keep. The Edition Guide page rust-2024/prelude lists std::future::Future and std::future::IntoFuture as added to the 2024 prelude. Only a redundant 'automatically' was removed."
+   },
+   {
+    "id": "rust-fundamentals-sr14-06",
+    "decision": "keep",
+    "statement": "Safe code in a 2024 edition crate may call `std::env::set_var` to change an environment variable.",
+    "answer": false,
+    "explanation": "Edition 2024 marks std::env::set_var as unsafe. Calling it requires an unsafe context and upholding its documented safety conditions.",
+    "reason": "Both lenses keep. The Edition Guide page newly-unsafe-functions lists std::env::set_var as unsafe starting in the 2024 edition. The statement names the edition, as the prompt requires for edition-dependent cards, and the hedge on a false card helps the hedge balance."
+   }
+  ]
+ }
+}
