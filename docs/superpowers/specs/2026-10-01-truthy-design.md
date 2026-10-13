@@ -290,7 +290,7 @@ Overpass and Overpass Mono (SIL OFL 1.1), the four static weights the design use
 
 ### Motion
 
-Motion (the library) drives the start flow's transitions and the card's reveal. Card dragging is hand-written on pointer events because the swipe rules need exact control. Transitions use transforms and opacity, with four small exceptions: a missed card's "Why" row grows its height (`grid-template-rows`), the strike of a lost life draws its line (`pathLength`), the continue line darkens while pressed (`background-color`) and a pressed pill lowers its shadow (`box-shadow`). Every transition has a reduced-motion fallback (a cross-fade, or no transition), as specified in the design system.
+Motion (the library) drives the start flow's transitions and the card's reveal. It is loaded through `LazyMotion` with the `domAnimation` features in strict mode (`components/MotionFeatures.tsx`), so components render `m.*` elements, never the full `motion.*` ones, and each component that renders an `m` element wraps it in `MotionFeatures` itself. Card dragging is hand-written on pointer events because the swipe rules need exact control. Transitions use transforms and opacity, with four small exceptions: a missed card's "Why" row grows its height (`grid-template-rows`), the strike of a lost life draws its line (`pathLength`), the continue line darkens while pressed (`background-color`) and a pressed pill lowers its shadow (`box-shadow`). Every transition has a reduced-motion fallback (a cross-fade, or no transition), as specified in the design system.
 
 ### Accessibility
 
