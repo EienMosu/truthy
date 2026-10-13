@@ -6,8 +6,8 @@
 // so the reload looks like part of opening the app. The other safe moment, coming back from a round, belongs
 // to the play screen's ways back to the start (goToStart).
 import { useEffect, useRef } from "react";
-import { browserAppServices, type AppServices } from "@/src/app-state/services";
-import type { OfflineClient } from "@/src/offline/register";
+import type { AppServices } from "@/src/app-state/services";
+import { browserOfflineClient, type OfflineClient } from "@/src/offline/register";
 
 /**
  * Registers the worker; then, when the page opened on /, lets a waiting update take over and reloads once it
@@ -40,6 +40,11 @@ export interface OfflineStartProps {
   reload?: () => void;
 }
 
+// The browser's service worker, without the rest of browserAppServices: the layout is in every route, and the
+// other services bring the progress rules and zod with them. The same client, so every screen still shares
+// one registration. A module constant, so it is stable across renders.
+const browserServices: Pick<AppServices, "offline"> = { offline: browserOfflineClient };
+
 function reloadPage(): void {
   window.location.reload();
 }
@@ -50,7 +55,7 @@ function pagePath(): string {
 
 const PRESSES = ["pointerdown", "keydown"] as const;
 
-export function OfflineStart({ services = browserAppServices, reload = reloadPage }: OfflineStartProps) {
+export function OfflineStart({ services = browserServices, reload = reloadPage }: OfflineStartProps) {
   // Whether the player has pressed anything since the page opened: a finger, pen or mouse, or a key.
   const pressed = useRef(false);
   useEffect(() => {
