@@ -4,9 +4,10 @@
 // the left; on the right the comparison with the record for this route and mode. Beating an earlier record
 // is the one celebration: the New best stamp (5.11, "New best on results") lands over "Previous best".
 // "Equals your best" and the other lines are plain text, not stamps.
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 import type { Comparison } from "@/src/progress/progress";
 import { SPRING_EASE, STAMP_LANDING, STAMP_REST } from "./easing";
+import { MotionFeatures } from "./MotionFeatures";
 import { StarIcon } from "./icons";
 
 export interface ScoreBlockProps {
@@ -45,7 +46,7 @@ const NEW_BEST =
 function NewBestStamp({ animate }: { animate: boolean }) {
   const reduced = useReducedMotion() ?? false;
   return (
-    <motion.span
+    <m.span
       data-new-best=""
       className={NEW_BEST}
       initial={animate && !reduced ? STAMP_LANDING : false}
@@ -54,7 +55,7 @@ function NewBestStamp({ animate }: { animate: boolean }) {
     >
       <StarIcon />
       New best
-    </motion.span>
+    </m.span>
   );
 }
 
@@ -99,28 +100,30 @@ function ComparisonLines({ comparison, best, animate }: { comparison: Comparison
 export function ScoreBlock({ score, unit, best, comparison, label = "Your score", animate = false }: ScoreBlockProps) {
   const wraps = comparison.kind === "new-best";
   return (
-    <div
-      data-score-block=""
-      className={`flex items-end justify-between gap-x-(--space-16) gap-y-(--space-10) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-18) ${wraps ? "flex-wrap" : "flex-nowrap"}`}
-    >
-      <dl className="m-0">
-        <dt className={LABEL}>{label}</dt>
-        <dd data-score="" className={SCORE}>
-          {score}
-          {unit === undefined ? null : (
-            <>
-              {" "}
-              <small className="text-[20px] tracking-normal whitespace-nowrap text-(--color-ink-muted)">{unit}</small>
-            </>
-          )}
-        </dd>
-      </dl>
-      <p
-        data-comparison={comparison.kind}
-        className={`m-0 flex flex-col items-end pb-(--space-2) text-right ${wraps ? "ml-auto" : "min-w-0"}`}
+    <MotionFeatures>
+      <div
+        data-score-block=""
+        className={`flex items-end justify-between gap-x-(--space-16) gap-y-(--space-10) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-18) ${wraps ? "flex-wrap" : "flex-nowrap"}`}
       >
-        <ComparisonLines comparison={comparison} best={best} animate={animate} />
-      </p>
-    </div>
+        <dl className="m-0">
+          <dt className={LABEL}>{label}</dt>
+          <dd data-score="" className={SCORE}>
+            {score}
+            {unit === undefined ? null : (
+              <>
+                {" "}
+                <small className="text-[20px] tracking-normal whitespace-nowrap text-(--color-ink-muted)">{unit}</small>
+              </>
+            )}
+          </dd>
+        </dl>
+        <p
+          data-comparison={comparison.kind}
+          className={`m-0 flex flex-col items-end pb-(--space-2) text-right ${wraps ? "ml-auto" : "min-w-0"}`}
+        >
+          <ComparisonLines comparison={comparison} best={best} animate={animate} />
+        </p>
+      </div>
+    </MotionFeatures>
   );
 }

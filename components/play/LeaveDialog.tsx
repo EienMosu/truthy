@@ -4,11 +4,12 @@
 // bottom of the frame, over a scrim. "Keep playing" is the primary action and has focus when it opens;
 // Escape and a tap on the scrim also keep playing. Focus stays inside while it is open. The screen behind
 // should be made inert by the caller (PlayScreen sets inert on its <main>).
-import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useIsPresent, useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { PillButton } from "@/components/PillButton";
 import { QuietButton } from "@/components/QuietButton";
 import { EASE } from "@/components/easing";
+import { MotionFeatures } from "@/components/MotionFeatures";
 import { SWIPE } from "@/src/input/swipe";
 
 export interface LeaveDialogProps {
@@ -30,9 +31,11 @@ const DECIDED_TEXT = "This round is over and its score is kept. Leaving skips it
 
 export function LeaveDialog({ open, onStay, onLeave, decided = false, now = browserNow }: LeaveDialogProps) {
   return (
-    <AnimatePresence>
-      {open ? <Sheet key="leave" onStay={onStay} onLeave={onLeave} decided={decided} now={now} /> : null}
-    </AnimatePresence>
+    <MotionFeatures>
+      <AnimatePresence>
+        {open ? <Sheet key="leave" onStay={onStay} onLeave={onLeave} decided={decided} now={now} /> : null}
+      </AnimatePresence>
+    </MotionFeatures>
   );
 }
 
@@ -118,7 +121,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
     // scrolls, both ways, so its title and both actions can be reached: the sheet keeps the 320 px of the
     // smallest phone, as the page under it does, and grows the layer upwards instead of running off the top.
     <div className={`fixed inset-0 z-50 overscroll-contain ${atRest && present ? "overflow-auto" : "overflow-hidden"}`}>
-      <motion.div
+      <m.div
         aria-hidden="true"
         data-scrim=""
         className="fixed inset-0 bg-(--color-scrim)"
@@ -131,7 +134,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
         }}
       />
       <div className="pointer-events-none relative mx-auto flex min-h-full w-full max-w-(--app-max-width) min-w-[320px] flex-col justify-end px-(--size-gutter) pt-(--space-12) pb-(--size-safe-bottom)">
-        <motion.section
+        <m.section
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -166,7 +169,7 @@ function Sheet({ onStay, onLeave, decided, now }: SheetProps) {
               Leave round
             </QuietButton>
           </div>
-        </motion.section>
+        </m.section>
       </div>
     </div>
   );

@@ -4,9 +4,10 @@
 // outlined heart with a slash. The slash of the life just lost is drawn as the Not quite stamp lands (the one
 // documented use of stroke length besides the Why disclosure's height); everywhere else it is at rest.
 import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 import { Mark, Num, PathFrame, Plane, cardList } from "./FlightPath";
 import { EASE } from "./easing";
+import { MotionFeatures } from "./MotionFeatures";
 import { ICON_PATHS } from "./icons";
 import { LIVES } from "@/src/engine/round";
 
@@ -70,7 +71,7 @@ function Slash({ draw }: { draw: boolean }) {
   if (!draw) return <path data-strike="rest" {...common} />;
   // Opacity switches on with the stroke so the round cap of an empty stroke is not drawn during the delay.
   return (
-    <motion.path
+    <m.path
       data-strike="draw"
       {...common}
       initial={{ pathLength: 0, opacity: 0 }}
@@ -117,56 +118,58 @@ export function LivesPath({ results, answered, className }: LivesPathProps): Rea
   const here = { x: 238, y: 17 };
 
   return (
-    <PathFrame
-      label={livesLabel(results)}
-      className={className}
-      progress={
-        left === 0 ? (
+    <MotionFeatures>
+      <PathFrame
+        label={livesLabel(results)}
+        className={className}
+        progress={
+          left === 0 ? (
+            <>
+              <Num>No</Num> lives left
+            </>
+          ) : (
+            <>
+              <Num>{left}</Num> of {LIVES} lives left
+            </>
+          )
+        }
+        tally={
           <>
-            <Num>No</Num> lives left
+            <Num>{results.length}</Num> answered
           </>
-        ) : (
-          <>
-            <Num>{left}</Num> of {LIVES} lives left
-          </>
-        )
-      }
-      tally={
-        <>
-          <Num>{results.length}</Num> answered
-        </>
-      }
-    >
-      {HEART_X.map((_, j) => (
-        <Heart key={j} index={j} lost={j >= left} draw={!reduced && j === striking} />
-      ))}
-      {marks.length > 0 ? (
-        <path d={`M${layout.x(0)} 17H238`} fill="none" className="stroke-(--color-ink)" strokeWidth="1.2" strokeLinecap="round" />
-      ) : null}
-      <path d="M238 17H274" fill="none" className="stroke-(--color-ink)" strokeWidth="1.6" strokeDasharray="2 5" strokeLinecap="round" />
-      {marks.map((correct, i) =>
-        correct && layout.r > MIN_DOT_RADIUS ? <circle key={i} data-trail="correct" cx={layout.x(i)} cy={17} r={layout.r} className="fill-(--color-ink)" /> : null,
-      )}
-      {/* The wrong squares after every dot, so the dots of the cards around them never cover their x. */}
-      {marks.map((correct, i) => {
-        if (correct) return null;
-        const x = layout.x(i);
-        return (
-          <g key={i} data-trail="wrong">
-            <rect x={round1(x - layout.side / 2)} y={round1(17 - layout.side / 2)} width={layout.side} height={layout.side} rx="1.5" className="fill-(--color-wrong)" />
-            {layout.cross ? (
-              <path
-                d={`M${round1(x - crossReach)} ${17 - crossReach}l${round1(crossReach * 2)} ${round1(crossReach * 2)}m0-${round1(crossReach * 2)}l-${round1(crossReach * 2)} ${round1(crossReach * 2)}`}
-                fill="none"
-                className="stroke-(--color-surface-raised)"
-                strokeWidth={crossStroke}
-              />
-            ) : null}
-          </g>
-        );
-      })}
-      <Plane at={here} heading={0} hidden={answered} />
-      {answered && last !== undefined ? <Mark verdict={last ? "correct" : "wrong"} at={here} fresh /> : null}
-    </PathFrame>
+        }
+      >
+        {HEART_X.map((_, j) => (
+          <Heart key={j} index={j} lost={j >= left} draw={!reduced && j === striking} />
+        ))}
+        {marks.length > 0 ? (
+          <path d={`M${layout.x(0)} 17H238`} fill="none" className="stroke-(--color-ink)" strokeWidth="1.2" strokeLinecap="round" />
+        ) : null}
+        <path d="M238 17H274" fill="none" className="stroke-(--color-ink)" strokeWidth="1.6" strokeDasharray="2 5" strokeLinecap="round" />
+        {marks.map((correct, i) =>
+          correct && layout.r > MIN_DOT_RADIUS ? <circle key={i} data-trail="correct" cx={layout.x(i)} cy={17} r={layout.r} className="fill-(--color-ink)" /> : null,
+        )}
+        {/* The wrong squares after every dot, so the dots of the cards around them never cover their x. */}
+        {marks.map((correct, i) => {
+          if (correct) return null;
+          const x = layout.x(i);
+          return (
+            <g key={i} data-trail="wrong">
+              <rect x={round1(x - layout.side / 2)} y={round1(17 - layout.side / 2)} width={layout.side} height={layout.side} rx="1.5" className="fill-(--color-wrong)" />
+              {layout.cross ? (
+                <path
+                  d={`M${round1(x - crossReach)} ${17 - crossReach}l${round1(crossReach * 2)} ${round1(crossReach * 2)}m0-${round1(crossReach * 2)}l-${round1(crossReach * 2)} ${round1(crossReach * 2)}`}
+                  fill="none"
+                  className="stroke-(--color-surface-raised)"
+                  strokeWidth={crossStroke}
+                />
+              ) : null}
+            </g>
+          );
+        })}
+        <Plane at={here} heading={0} hidden={answered} />
+        {answered && last !== undefined ? <Mark verdict={last ? "correct" : "wrong"} at={here} fresh /> : null}
+      </PathFrame>
+    </MotionFeatures>
   );
 }

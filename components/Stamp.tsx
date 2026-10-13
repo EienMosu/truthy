@@ -8,8 +8,9 @@
 // with reduced motion it is simply shown at rest.
 // StubStamp is the Timed variant (design system 5.11, "Stub stamp"): the same stamp at 28 px on raised paper,
 // stamped onto the stub of the card; it also says Time is up when the clock reaches zero.
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 import { SPRING_EASE, STAMP_LANDING, STAMP_REST } from "./easing";
+import { MotionFeatures } from "./MotionFeatures";
 import { CheckIcon, ClockIcon, CrossIcon, StarIcon } from "./icons";
 
 export type Verdict = "correct" | "wrong" | "new-best";
@@ -31,26 +32,28 @@ export function Stamp({ verdict, animate = false, className }: StampProps) {
   const reduced = useReducedMotion() ?? false;
   const land = animate && !reduced;
   return (
-    <motion.div
-      data-verdict={verdict}
-      className={[BASE, verdict === "wrong" ? "text-(--color-wrong)" : "text-(--color-correct)", className]
-        .filter(Boolean)
-        .join(" ")}
-      initial={land ? STAMP_LANDING : false}
-      animate={STAMP_REST}
-      transition={{ duration: 0.42, delay: 0.38, ease: SPRING_EASE }}
-    >
-      {verdict === "correct" ? <CheckIcon size={22} /> : verdict === "wrong" ? <CrossIcon size={18} /> : <StarIcon size={20} />}
-      {verdict === "new-best" ? (
-        <>
-          <span className="sr-only">Correct. </span>New best
-        </>
-      ) : verdict === "correct" ? (
-        "Correct"
-      ) : (
-        "Not quite"
-      )}
-    </motion.div>
+    <MotionFeatures>
+      <m.div
+        data-verdict={verdict}
+        className={[BASE, verdict === "wrong" ? "text-(--color-wrong)" : "text-(--color-correct)", className]
+          .filter(Boolean)
+          .join(" ")}
+        initial={land ? STAMP_LANDING : false}
+        animate={STAMP_REST}
+        transition={{ duration: 0.42, delay: 0.38, ease: SPRING_EASE }}
+      >
+        {verdict === "correct" ? <CheckIcon size={22} /> : verdict === "wrong" ? <CrossIcon size={18} /> : <StarIcon size={20} />}
+        {verdict === "new-best" ? (
+          <>
+            <span className="sr-only">Correct. </span>New best
+          </>
+        ) : verdict === "correct" ? (
+          "Correct"
+        ) : (
+          "Not quite"
+        )}
+      </m.div>
+    </MotionFeatures>
   );
 }
 
@@ -77,15 +80,17 @@ export function StubStamp({ kind }: { kind: StubStampKind }) {
   const reduced = useReducedMotion() ?? false;
   const { colour, word } = STUB_KINDS[kind];
   return (
-    <motion.div
-      data-stub-stamp={kind}
-      className={`${STUB_BASE} ${colour}`}
-      initial={reduced ? false : STAMP_LANDING}
-      animate={STAMP_REST}
-      transition={{ duration: 0.3, delay: kind === "time-up" ? 0.12 : 0, ease: SPRING_EASE }}
-    >
-      {kind === "correct" ? <CheckIcon size={24} /> : kind === "wrong" ? <CrossIcon size={20} /> : <ClockIcon />}
-      {word}
-    </motion.div>
+    <MotionFeatures>
+      <m.div
+        data-stub-stamp={kind}
+        className={`${STUB_BASE} ${colour}`}
+        initial={reduced ? false : STAMP_LANDING}
+        animate={STAMP_REST}
+        transition={{ duration: 0.3, delay: kind === "time-up" ? 0.12 : 0, ease: SPRING_EASE }}
+      >
+        {kind === "correct" ? <CheckIcon size={24} /> : kind === "wrong" ? <CrossIcon size={20} /> : <ClockIcon />}
+        {word}
+      </m.div>
+    </MotionFeatures>
   );
 }

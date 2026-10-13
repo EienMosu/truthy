@@ -14,12 +14,13 @@
 //     line and Start round are ignored (the next step's cards appear where the chosen card was);
 //   - the motion: AnimatePresence per zone (top, main, foot), plus one "ghost" copy of the chosen name
 //     that travels into its field of the pass. Reduced motion swaps all of it for a cross-fade.
-import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Transition, type Variants } from "motion/react";
+import { AnimatePresence, m, useIsPresent, useReducedMotion, type Transition, type Variants } from "motion/react";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { DestinationCard } from "@/components/DestinationCard";
 import { FillInPass, type FillInPassValues, type PassFieldName, type PassStage } from "@/components/FillInPass";
 import { Logo } from "@/components/Logo";
+import { MotionFeatures } from "@/components/MotionFeatures";
 import { PillButton } from "@/components/PillButton";
 import { SkyBackdrop } from "@/components/SkyBackdrop";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
@@ -664,123 +665,125 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   };
 
   return (
-    <main
-      ref={mainRef}
-      onFocus={(event) => {
-        lastFocused.current = event.target;
-      }}
-      className={[
-        "flex min-h-0 flex-1 flex-col",
-        // Short screens: the column scrolls, over the whole frame (its padding moves inside, so the frame's top 8
-        // and bottom 12 scroll with the content and every position stays the same at the top of the column).
-        "short:-mx-(--size-gutter) short:-mt-(--size-safe-top) short:-mb-(--size-safe-bottom) short:overflow-y-auto",
-        "short:px-(--size-gutter) short:pt-(--size-safe-top) short:pb-(--size-safe-bottom)",
-      ].join(" ")}
-      inert={boarding}
-    >
-      <SkyBackdrop lowerCloud="start" />
+    <MotionFeatures>
+      <main
+        ref={mainRef}
+        onFocus={(event) => {
+          lastFocused.current = event.target;
+        }}
+        className={[
+          "flex min-h-0 flex-1 flex-col",
+          // Short screens: the column scrolls, over the whole frame (its padding moves inside, so the frame's top 8
+          // and bottom 12 scroll with the content and every position stays the same at the top of the column).
+          "short:-mx-(--size-gutter) short:-mt-(--size-safe-top) short:-mb-(--size-safe-bottom) short:overflow-y-auto",
+          "short:px-(--size-gutter) short:pt-(--size-safe-top) short:pb-(--size-safe-bottom)",
+        ].join(" ")}
+        inert={boarding}
+      >
+        <SkyBackdrop lowerCloud="start" />
 
-      {/* Top zone, 176 tall: the logo on step 1, the Back pill and the pass from step 2 on (same place),
-          and the theme switch at the top right on every step. On a short screen it is as tall as what it holds. */}
-      <header className="relative z-[7] grid h-(--size-start-top-zone) flex-none short:h-auto">
-        <AnimatePresence initial={false}>
-          {step === 1 ? (
-            <motion.div key="brand" className="[grid-area:1/1] pt-9" {...swapMotion(reduced, -12)}>
-              <Logo as="h1" />
-              <p className={`${TEXT_ROLE.tagline} mt-(--space-14) max-w-[300px]`}>True or false cards that teach you IT, one swipe at a time.</p>
-            </motion.div>
-          ) : (
-            <motion.div key="trip" data-trip="" className="flex flex-col gap-(--space-12) self-start [grid-area:1/1]" {...swapMotion(reduced, 12)}>
-              {/* Boarding: the Back pill fades out; on /play the Leave round button takes its place. */}
-              <motion.button
-                type="button"
-                aria-label={`Back to ${BACK_TO[previousStep(step, hasSections)]}`}
-                onClick={() => tapBackTo(previousStep(step, hasSections))}
-                animate={{ opacity: boarding ? 0 : 1 }}
-                transition={{ duration: 0.11 }}
-                className={[
-                  "flex h-(--size-pill-small) cursor-pointer items-center gap-(--space-8) self-start rounded-(--radius-pill-small) bg-(--color-surface-raised) pr-(--space-20) pl-(--space-14)",
-                  "text-(--color-ink) shadow-(--elevation-small) transition-transform duration-(--duration-t1) ease-(--easing-ease) active:scale-[0.96]",
-                  "font-(family-name:--type-button-back-family) text-(length:--type-button-back-size) font-(--type-button-back-weight) leading-(--type-button-back-line-height) tracking-(--type-button-back-letter-spacing)",
-                ].join(" ")}
-              >
-                <BackArrowIcon variant="pill" />
-                Back
-              </motion.button>
-              <FillInPass
-                stage={stageOf(step)}
-                values={passValues}
-                now={NOW_FIELD[step]}
-                sectionChoosable={hasSections}
-                onJump={(field) => tapBackTo(STEP_OF_FIELD[field])}
-                travelling={travel?.field}
-                unroll={boarding && !reduced}
-                onUnrolled={onUnrolled}
-                className={step === 6 ? "mt-(--space-8)" : undefined}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* The theme switch, on every step. It moves (a transform) between the logo row and the Back pill
-            row, and fades out with the Back pill when the round starts. */}
-        <motion.div
-          className="absolute top-0 right-0"
-          initial={false}
-          animate={{ y: step === 1 ? SWITCH_OFFSET_LOGO_ROW : 0, opacity: boarding ? 0 : 1 }}
-          transition={reduced ? { duration: 0 } : { y: { duration: 0.24, ease: EASE }, opacity: { duration: 0.11 } }}
-        >
-          <ThemeSwitch storage={services.localStorage} />
-        </motion.div>
-      </header>
+        {/* Top zone, 176 tall: the logo on step 1, the Back pill and the pass from step 2 on (same place),
+            and the theme switch at the top right on every step. On a short screen it is as tall as what it holds. */}
+        <header className="relative z-[7] grid h-(--size-start-top-zone) flex-none short:h-auto">
+          <AnimatePresence initial={false}>
+            {step === 1 ? (
+              <m.div key="brand" className="[grid-area:1/1] pt-9" {...swapMotion(reduced, -12)}>
+                <Logo as="h1" />
+                <p className={`${TEXT_ROLE.tagline} mt-(--space-14) max-w-[300px]`}>True or false cards that teach you IT, one swipe at a time.</p>
+              </m.div>
+            ) : (
+              <m.div key="trip" data-trip="" className="flex flex-col gap-(--space-12) self-start [grid-area:1/1]" {...swapMotion(reduced, 12)}>
+                {/* Boarding: the Back pill fades out; on /play the Leave round button takes its place. */}
+                <m.button
+                  type="button"
+                  aria-label={`Back to ${BACK_TO[previousStep(step, hasSections)]}`}
+                  onClick={() => tapBackTo(previousStep(step, hasSections))}
+                  animate={{ opacity: boarding ? 0 : 1 }}
+                  transition={{ duration: 0.11 }}
+                  className={[
+                    "flex h-(--size-pill-small) cursor-pointer items-center gap-(--space-8) self-start rounded-(--radius-pill-small) bg-(--color-surface-raised) pr-(--space-20) pl-(--space-14)",
+                    "text-(--color-ink) shadow-(--elevation-small) transition-transform duration-(--duration-t1) ease-(--easing-ease) active:scale-[0.96]",
+                    "font-(family-name:--type-button-back-family) text-(length:--type-button-back-size) font-(--type-button-back-weight) leading-(--type-button-back-line-height) tracking-(--type-button-back-letter-spacing)",
+                  ].join(" ")}
+                >
+                  <BackArrowIcon variant="pill" />
+                  Back
+                </m.button>
+                <FillInPass
+                  stage={stageOf(step)}
+                  values={passValues}
+                  now={NOW_FIELD[step]}
+                  sectionChoosable={hasSections}
+                  onJump={(field) => tapBackTo(STEP_OF_FIELD[field])}
+                  travelling={travel?.field}
+                  unroll={boarding && !reduced}
+                  onUnrolled={onUnrolled}
+                  className={step === 6 ? "mt-(--space-8)" : undefined}
+                />
+              </m.div>
+            )}
+          </AnimatePresence>
+          {/* The theme switch, on every step. It moves (a transform) between the logo row and the Back pill
+              row, and fades out with the Back pill when the round starts. */}
+          <m.div
+            className="absolute top-0 right-0"
+            initial={false}
+            animate={{ y: step === 1 ? SWITCH_OFFSET_LOGO_ROW : 0, opacity: boarding ? 0 : 1 }}
+            transition={reduced ? { duration: 0 } : { y: { duration: 0.24, ease: EASE }, opacity: { duration: 0.11 } }}
+          >
+            <ThemeSwitch storage={services.localStorage} />
+          </m.div>
+        </header>
 
-      {/* Main area: the title of the step and its options, one step at a time in the same place. */}
-      <section className={`mt-(--space-20) grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] short:flex-none ${returning ? "mb-(--size-foot-gap) short:mb-0" : ""}`}>
-        <AnimatePresence initial={false} custom={view.dir}>
-          <StepPanel key={step} step={step} dir={view.dir} reduced={reduced}>
-            {renderOptions()}
-          </StepPanel>
-        </AnimatePresence>
-      </section>
+        {/* Main area: the title of the step and its options, one step at a time in the same place. */}
+        <section className={`mt-(--space-20) grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] short:flex-none ${returning ? "mb-(--size-foot-gap) short:mb-0" : ""}`}>
+          <AnimatePresence initial={false} custom={view.dir}>
+            <StepPanel key={step} step={step} dir={view.dir} reduced={reduced}>
+              {renderOptions()}
+            </StepPanel>
+          </AnimatePresence>
+        </section>
 
-      {/* Foot zone: where a game's action row sits. The continue line on step 1, Start round on step 6. It lies
-          over the bottom of the step's list and is empty on most steps, so only what it holds takes a tap. On a
-          short screen it follows the list in the column, and takes no room while it is empty. */}
-      <div className="pointer-events-none absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)] short:static short:mb-(--space-4) short:empty:hidden">
-        <AnimatePresence initial={false}>
-          {returning ? (
-            <motion.div key="continue" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
-              <ContinueLine
-                deckCode={returning.found.deck.code}
-                deckName={deckPassName(returning.found.platform, returning.found.deck)}
-                sectionCode={returning.found.section?.id ?? WHOLE_DECK}
-                sectionTitle={returning.found.section?.title ?? "Whole deck"}
-                modeLabel={modeInfo(returning.mode).name}
-                lastScore={returning.lastScore ? lastScoreText(returning.mode, returning.lastScore.score, returning.lastScore.total) : undefined}
-                needsConnection={!available.has(returning.found.deck.id)}
-                onContinue={continueLast}
-              />
-            </motion.div>
-          ) : null}
-          {step === 6 && !boarding ? (
-            <motion.div key="start" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
-              <PillButton trailingIcon="→" onClick={startRound}>
-                Start round
-              </PillButton>
-            </motion.div>
-          ) : null}
-          {status.kind === "error" && step === 1 ? (
-            <motion.div key="retry" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
-              <PillButton onClick={retry}>Try again</PillButton>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </div>
+        {/* Foot zone: where a game's action row sits. The continue line on step 1, Start round on step 6. It lies
+            over the bottom of the step's list and is empty on most steps, so only what it holds takes a tap. On a
+            short screen it follows the list in the column, and takes no room while it is empty. */}
+        <div className="pointer-events-none absolute right-(--size-gutter) bottom-[calc(var(--size-safe-bottom)+var(--space-4))] left-(--size-gutter) z-[6] grid h-(--size-pill) grid-cols-[minmax(0,1fr)] short:static short:mb-(--space-4) short:empty:hidden">
+          <AnimatePresence initial={false}>
+            {returning ? (
+              <m.div key="continue" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
+                <ContinueLine
+                  deckCode={returning.found.deck.code}
+                  deckName={deckPassName(returning.found.platform, returning.found.deck)}
+                  sectionCode={returning.found.section?.id ?? WHOLE_DECK}
+                  sectionTitle={returning.found.section?.title ?? "Whole deck"}
+                  modeLabel={modeInfo(returning.mode).name}
+                  lastScore={returning.lastScore ? lastScoreText(returning.mode, returning.lastScore.score, returning.lastScore.total) : undefined}
+                  needsConnection={!available.has(returning.found.deck.id)}
+                  onContinue={continueLast}
+                />
+              </m.div>
+            ) : null}
+            {step === 6 && !boarding ? (
+              <m.div key="start" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
+                <PillButton trailingIcon="→" onClick={startRound}>
+                  Start round
+                </PillButton>
+              </m.div>
+            ) : null}
+            {status.kind === "error" && step === 1 ? (
+              <m.div key="retry" className="pointer-events-auto [grid-area:1/1]" {...swapMotion(reduced, 12)}>
+                <PillButton onClick={retry}>Try again</PillButton>
+              </m.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
 
-      {/* The travelling copy of the chosen name, above everything. */}
-      <div ref={layerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[9]">
-        {travel?.to ? <Ghost travel={travel} to={travel.to} onLanded={() => setTravel(null)} /> : null}
-      </div>
-    </main>
+        {/* The travelling copy of the chosen name, above everything. */}
+        <div ref={layerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[9]">
+          {travel?.to ? <Ghost travel={travel} to={travel.to} onLanded={() => setTravel(null)} /> : null}
+        </div>
+      </main>
+    </MotionFeatures>
   );
 
   function renderOptions(): ReactNode {
@@ -940,7 +943,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
   const more = useListCue(listRef, contentRef);
   return (
     <ItemMotion.Provider value={{ variants: item, dir }}>
-      <motion.div
+      <m.div
         data-step={step}
         inert={!present}
         className={`flex min-h-0 flex-col [grid-area:1/1] ${step === 6 ? "pt-(--size-ready-offset) tight:pt-[calc(var(--size-ready-offset)-var(--space-24))] short:pt-0" : ""}`}
@@ -950,9 +953,9 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
         exit="gone"
         custom={dir}
       >
-        <motion.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={reduced ? undefined : TITLE} custom={dir}>
+        <m.h2 tabIndex={-1} className={TEXT_ROLE.title} variants={reduced ? undefined : TITLE} custom={dir}>
           {STEP_TITLE[step]}
-        </motion.h2>
+        </m.h2>
         {/* The list scrolls when it is taller than the screen; its margin and padding leave room for the focus ring.
             While more lies below what it shows, it fades out over 28 px at its bottom, or a little higher so that
             the fade lies over a card (./listCue.ts). A mask: right on any sky, in both themes. */}
@@ -971,7 +974,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
             {children}
           </div>
         </div>
-      </motion.div>
+      </m.div>
     </ItemMotion.Provider>
   );
 }
@@ -980,9 +983,9 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
 function Option({ id, children }: { id: string; children: ReactNode }) {
   const { variants, dir } = useContext(ItemMotion);
   return (
-    <motion.div data-option={id} className="flex-none" variants={variants} custom={dir}>
+    <m.div data-option={id} className="flex-none" variants={variants} custom={dir}>
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -1019,7 +1022,7 @@ function Ghost({ travel, to, onLanded }: { travel: Travel; to: NonNullable<Trave
   const { from } = travel;
   const scale = to.fontSize / from.fontSize;
   return (
-    <motion.span
+    <m.span
       className="absolute origin-top-left whitespace-nowrap"
       style={{ ...from.style, left: from.left, top: from.top, lineHeight: `${from.height}px` }}
       initial={{ x: 0, y: 0, scale: 1 }}
@@ -1028,6 +1031,6 @@ function Ghost({ travel, to, onLanded }: { travel: Travel; to: NonNullable<Trave
       onAnimationComplete={onLanded}
     >
       {from.text}
-    </motion.span>
+    </m.span>
   );
 }

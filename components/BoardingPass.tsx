@@ -4,10 +4,11 @@
 // (shadow box, carrier band, legs, field grid, a body, the perforation and a lower part); the game fills
 // the body with PassStatement and the lower part with PassStub (question) or PassSlip (answered).
 // The result screen reuses the shell with its own body and lower part (PassLower gives the notched paper).
-import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
+import { AnimatePresence, m, useReducedMotion, type Variants } from "motion/react";
 import type { CSSProperties, ReactNode, Ref } from "react";
 import { EASE, EASE_IN, FALL } from "./easing";
 import { CardText } from "./CardText";
+import { MotionFeatures } from "./MotionFeatures";
 import { Stamp } from "./Stamp";
 import { BookIcon, CheckIcon, CloudIcon, CrossIcon } from "./icons";
 
@@ -91,65 +92,67 @@ export function BoardingPass({ from, to, fields, children, lower, jolt = false, 
   const reduced = useReducedMotion() ?? false;
   const legName = shortLegs ? `${LEG_NAME} [@media(max-height:600px)]:sr-only` : LEG_NAME;
   return (
-    <div data-boarding-pass="" className={["relative text-(--color-ink)", className].filter(Boolean).join(" ")}>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-(--radius-card) shadow-(--elevation-ticket)" />
-      <motion.div
-        className="relative overflow-hidden rounded-t-(--radius-card)"
-        style={MAIN_PAPER}
-        variants={JOLT}
-        custom={joltDelay}
-        initial={false}
-        animate={jolt && !reduced ? "jolt" : "rest"}
-      >
-        <div
-          aria-hidden="true"
-          className="flex h-(--size-carrier) items-center gap-(--space-10) bg-(--color-accent) px-(--space-16) text-(--color-on-accent)"
+    <MotionFeatures>
+      <div data-boarding-pass="" className={["relative text-(--color-ink)", className].filter(Boolean).join(" ")}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 rounded-(--radius-card) shadow-(--elevation-ticket)" />
+        <m.div
+          className="relative overflow-hidden rounded-t-(--radius-card)"
+          style={MAIN_PAPER}
+          variants={JOLT}
+          custom={joltDelay}
+          initial={false}
+          animate={jolt && !reduced ? "jolt" : "rest"}
         >
-          <CloudIcon />
-          <span className="font-(family-name:--type-carrier-title-family) text-(length:--type-carrier-title-size) leading-(--type-carrier-title-line-height) font-(--type-carrier-title-weight) tracking-(--type-carrier-title-letter-spacing)">
-            Truthy
-          </span>
-          <span className="ml-auto font-(family-name:--type-carrier-label-family) text-(length:--type-carrier-label-size) leading-(--type-carrier-label-line-height) font-(--type-carrier-label-weight) tracking-(--type-carrier-label-letter-spacing)">
-            BOARDING PASS
-          </span>
-        </div>
-        {/* The approved screens show no arrow between the legs (the mockup's 40px arrow collapses to zero
-            height), only its 40px column. Codes align at the top so a one-line name does not push its code down. */}
-        <div
-          className={[
-            "grid grid-cols-[1fr_40px_1fr] items-start gap-(--space-8) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-12)",
-            shortLegs ? "[@media(max-height:600px)]:pt-(--space-8) [@media(max-height:600px)]:pb-(--space-8)" : "",
-          ].join(" ")}
-        >
-          <div data-leg="from">
-            <span className={LEG_CODE}>{from.code}</span>
-            <span className={legName}>{from.name}</span>
+          <div
+            aria-hidden="true"
+            className="flex h-(--size-carrier) items-center gap-(--space-10) bg-(--color-accent) px-(--space-16) text-(--color-on-accent)"
+          >
+            <CloudIcon />
+            <span className="font-(family-name:--type-carrier-title-family) text-(length:--type-carrier-title-size) leading-(--type-carrier-title-line-height) font-(--type-carrier-title-weight) tracking-(--type-carrier-title-letter-spacing)">
+              Truthy
+            </span>
+            <span className="ml-auto font-(family-name:--type-carrier-label-family) text-(length:--type-carrier-label-size) leading-(--type-carrier-label-line-height) font-(--type-carrier-label-weight) tracking-(--type-carrier-label-letter-spacing)">
+              BOARDING PASS
+            </span>
           </div>
-          <span aria-hidden="true" />
-          <div data-leg="to" className="text-right">
-            <span className={LEG_CODE}>{to.code}</span>
-            <span className={legName}>{to.name}</span>
-          </div>
-        </div>
-        <dl className={`mx-(--size-ticket-inset) my-0 grid ${FIELD_COLUMNS} border-y-(length:--stroke-rule) border-(--color-rule)`}>
-          {fields.map((field, i) => (
-            <div
-              key={field.label}
-              className={[
-                "pt-(--space-8) pb-[7px]",
-                i > 0 ? "border-l-(length:--stroke-rule) border-(--color-rule) pl-(--space-12)" : "",
-              ].join(" ")}
-            >
-              <dt className={FIELD_LABEL}>{field.label}</dt>
-              <dd className={FIELD_VALUE}>{field.value}</dd>
+          {/* The approved screens show no arrow between the legs (the mockup's 40px arrow collapses to zero
+              height), only its 40px column. Codes align at the top so a one-line name does not push its code down. */}
+          <div
+            className={[
+              "grid grid-cols-[1fr_40px_1fr] items-start gap-(--space-8) px-(--size-ticket-inset) pt-(--space-14) pb-(--space-12)",
+              shortLegs ? "[@media(max-height:600px)]:pt-(--space-8) [@media(max-height:600px)]:pb-(--space-8)" : "",
+            ].join(" ")}
+          >
+            <div data-leg="from">
+              <span className={LEG_CODE}>{from.code}</span>
+              <span className={legName}>{from.name}</span>
             </div>
-          ))}
-        </dl>
-        {children}
-        <div aria-hidden="true" className="absolute bottom-0 h-(--stroke-perforation)" style={PERFORATION} />
-      </motion.div>
-      {lower}
-    </div>
+            <span aria-hidden="true" />
+            <div data-leg="to" className="text-right">
+              <span className={LEG_CODE}>{to.code}</span>
+              <span className={legName}>{to.name}</span>
+            </div>
+          </div>
+          <dl className={`mx-(--size-ticket-inset) my-0 grid ${FIELD_COLUMNS} border-y-(length:--stroke-rule) border-(--color-rule)`}>
+            {fields.map((field, i) => (
+              <div
+                key={field.label}
+                className={[
+                  "pt-(--space-8) pb-[7px]",
+                  i > 0 ? "border-l-(length:--stroke-rule) border-(--color-rule) pl-(--space-12)" : "",
+                ].join(" ")}
+              >
+                <dt className={FIELD_LABEL}>{field.label}</dt>
+                <dd className={FIELD_VALUE}>{field.value}</dd>
+              </div>
+            ))}
+          </dl>
+          {children}
+          <div aria-hidden="true" className="absolute bottom-0 h-(--stroke-perforation)" style={PERFORATION} />
+        </m.div>
+        {lower}
+      </div>
+    </MotionFeatures>
   );
 }
 
@@ -362,48 +365,50 @@ export interface PassStubProps {
 export function PassStub({ routeLine, cardLabel, barcode, stamp, hint, className }: PassStubProps) {
   const reduced = useReducedMotion() ?? false;
   return (
-    <motion.div
-      aria-hidden="true"
-      data-stub=""
-      className={["relative z-10", className].filter(Boolean).join(" ")}
-      variants={reduced ? STUB_VARIANTS_REDUCED : STUB_VARIANTS}
-      initial="hidden"
-      animate="shown"
-      exit="tear"
-    >
-      <div
-        className="h-full transition-transform duration-(--duration-t3) ease-(--easing-spring) group-data-dragging:transition-none"
-        style={STUB_PULL}
+    <MotionFeatures>
+      <m.div
+        aria-hidden="true"
+        data-stub=""
+        className={["relative z-10", className].filter(Boolean).join(" ")}
+        variants={reduced ? STUB_VARIANTS_REDUCED : STUB_VARIANTS}
+        initial="hidden"
+        animate="shown"
+        exit="tear"
       >
-        <PassLower
-          tone="raised"
-          className="flex h-full flex-col justify-between px-(--size-ticket-inset) pt-[22px] pb-(--space-14)"
+        <div
+          className="h-full transition-transform duration-(--duration-t3) ease-(--easing-spring) group-data-dragging:transition-none"
+          style={STUB_PULL}
         >
-          <div className={`flex items-baseline justify-between text-(--color-ink-muted) ${MONO_DATA}`}>
-            <span>{routeLine}</span>
-            <b className={`text-(--color-ink) ${MONO_STRONG}`}>{cardLabel}</b>
-          </div>
-          <Barcode data={barcode} />
-          {hint === undefined ? (
-            <div className={`flex min-h-8 items-center justify-between gap-(--space-8) ${MONO_STRONG}`}>
-              <span className="flex items-center gap-(--space-4) text-(--color-false)">← False</span>
-              <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">swipe to board</span>
-              <span className="flex items-center gap-(--space-4) text-(--color-true)">True →</span>
+          <PassLower
+            tone="raised"
+            className="flex h-full flex-col justify-between px-(--size-ticket-inset) pt-[22px] pb-(--space-14)"
+          >
+            <div className={`flex items-baseline justify-between text-(--color-ink-muted) ${MONO_DATA}`}>
+              <span>{routeLine}</span>
+              <b className={`text-(--color-ink) ${MONO_STRONG}`}>{cardLabel}</b>
             </div>
-          ) : (
-            <div data-hint="" className={`flex min-h-8 items-center justify-center text-center ${MONO_STRONG}`}>
-              <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">{hint}</span>
+            <Barcode data={barcode} />
+            {hint === undefined ? (
+              <div className={`flex min-h-8 items-center justify-between gap-(--space-8) ${MONO_STRONG}`}>
+                <span className="flex items-center gap-(--space-4) text-(--color-false)">← False</span>
+                <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">swipe to board</span>
+                <span className="flex items-center gap-(--space-4) text-(--color-true)">True →</span>
+              </div>
+            ) : (
+              <div data-hint="" className={`flex min-h-8 items-center justify-center text-center ${MONO_STRONG}`}>
+                <span className="font-(--font-weight-mono-regular) text-(--color-ink-muted)">{hint}</span>
+              </div>
+            )}
+          </PassLower>
+          {stamp === undefined ? null : (
+            <div className="pointer-events-none absolute top-[96px] left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <AnimatePresence>{stamp}</AnimatePresence>
             </div>
           )}
-        </PassLower>
-        {stamp === undefined ? null : (
-          <div className="pointer-events-none absolute top-[96px] left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <AnimatePresence>{stamp}</AnimatePresence>
-          </div>
-        )}
-        {hint === undefined ? <IntentStamps /> : null}
-      </div>
-    </motion.div>
+          {hint === undefined ? <IntentStamps /> : null}
+        </div>
+      </m.div>
+    </MotionFeatures>
   );
 }
 
@@ -455,41 +460,43 @@ export interface PassSlipProps {
 export function PassSlip({ answer, correct, explanation, source, animateStamp = false, newBest = false, className }: PassSlipProps) {
   const reduced = useReducedMotion() ?? false;
   return (
-    <AnimatePresence>
-      <motion.div
-        data-slip=""
-        className={className}
-        initial={reduced ? { opacity: 0 } : false}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.14 }}
-      >
-        <PassLower tone="sunk" className="flex h-full flex-col px-(--size-ticket-inset) pt-(--space-18) pb-(--space-12)">
-          <div className="flex min-h-[60px] items-center justify-between gap-(--space-12)">
-            <p className="m-0 font-(family-name:--type-answer-label-family) text-(length:--type-answer-label-size) leading-(--type-answer-label-line-height) font-(--type-answer-label-weight) text-(--color-ink-muted)">
-              The answer is
-              <b className="mt-(--space-2) block font-(family-name:--type-answer-value-family) text-(length:--type-answer-value-size) leading-(--type-answer-value-line-height) font-(--type-answer-value-weight) tracking-(--type-answer-value-letter-spacing) text-(--color-ink)">
-                {answer ? "True" : "False"}
-              </b>
+    <MotionFeatures>
+      <AnimatePresence>
+        <m.div
+          data-slip=""
+          className={className}
+          initial={reduced ? { opacity: 0 } : false}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.14 }}
+        >
+          <PassLower tone="sunk" className="flex h-full flex-col px-(--size-ticket-inset) pt-(--space-18) pb-(--space-12)">
+            <div className="flex min-h-[60px] items-center justify-between gap-(--space-12)">
+              <p className="m-0 font-(family-name:--type-answer-label-family) text-(length:--type-answer-label-size) leading-(--type-answer-label-line-height) font-(--type-answer-label-weight) text-(--color-ink-muted)">
+                The answer is
+                <b className="mt-(--space-2) block font-(family-name:--type-answer-value-family) text-(length:--type-answer-value-size) leading-(--type-answer-value-line-height) font-(--type-answer-value-weight) tracking-(--type-answer-value-letter-spacing) text-(--color-ink)">
+                  {answer ? "True" : "False"}
+                </b>
+              </p>
+              <Stamp verdict={!correct ? "wrong" : newBest ? "new-best" : "correct"} animate={animateStamp} />
+            </div>
+            <p className="m-0 mt-(--space-10) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight) text-(--color-ink)">
+              <CardText text={explanation} />
             </p>
-            <Stamp verdict={!correct ? "wrong" : newBest ? "new-best" : "correct"} animate={animateStamp} />
-          </div>
-          <p className="m-0 mt-(--space-10) font-(family-name:--type-body-family) text-(length:--type-body-size) leading-(--type-body-line-height) font-(--type-body-weight) text-(--color-ink)">
-            <CardText text={explanation} />
-          </p>
-          <a
-            href={source.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`${source.title} (opens in a new tab)`}
-            className="mt-auto flex min-h-(--size-touch-min) items-center gap-(--space-8) font-(family-name:--type-mono-data-strong-family) text-[13.5px] leading-(--type-mono-data-strong-line-height) font-(--type-mono-data-strong-weight) text-(--color-true) no-underline"
-          >
-            <BookIcon className="flex-none" />
-            <u className="decoration-[1.5px] underline-offset-[3px]">{source.title}</u>
-            <span aria-hidden="true">→</span>
-          </a>
-        </PassLower>
-      </motion.div>
-    </AnimatePresence>
+            <a
+              href={source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${source.title} (opens in a new tab)`}
+              className="mt-auto flex min-h-(--size-touch-min) items-center gap-(--space-8) font-(family-name:--type-mono-data-strong-family) text-[13.5px] leading-(--type-mono-data-strong-line-height) font-(--type-mono-data-strong-weight) text-(--color-true) no-underline"
+            >
+              <BookIcon className="flex-none" />
+              <u className="decoration-[1.5px] underline-offset-[3px]">{source.title}</u>
+              <span aria-hidden="true">→</span>
+            </a>
+          </PassLower>
+        </m.div>
+      </AnimatePresence>
+    </MotionFeatures>
   );
 }
 

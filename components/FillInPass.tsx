@@ -11,11 +11,12 @@
 // body grow or shrink over 360 ms while the old block fades out and the new one fades in, and the values on
 // both layouts travel to their new places. With reduced motion it is the start flow's cross-fade: the paper
 // takes its new shape at once, the old block fades out (100) and the new one fades in (140, delay 90).
-import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useIsPresent, useReducedMotion } from "motion/react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FIELD_COLUMNS } from "./BoardingPass";
 import { EASE, EASE_OUT } from "./easing";
 import { LogoMark } from "./Logo";
+import { MotionFeatures } from "./MotionFeatures";
 import { travelPassValues } from "./passValueTravel";
 import { CloudIcon } from "./icons";
 
@@ -135,7 +136,7 @@ function Blank({ now, reduced }: { now: boolean; reduced: boolean }) {
   // Leaving dashes are only a picture: the field already says its value, so they no longer say "not chosen".
   const present = useIsPresent();
   return (
-    <motion.span
+    <m.span
       data-pass-blank=""
       className="flex h-(--space-20) items-center gap-[5px] [grid-area:1/1]"
       initial={reduced ? false : { opacity: 0 }}
@@ -150,7 +151,7 @@ function Blank({ now, reduced }: { now: boolean; reduced: boolean }) {
           className={`block h-[3px] w-[14px] rounded-(--radius-tick) ${now ? "bg-(--color-ink)" : "bg-(--color-rule)"}`}
         />
       ))}
-    </motion.span>
+    </m.span>
   );
 }
 
@@ -474,62 +475,64 @@ export function FillInPass({
   );
 
   return (
-    <div ref={rootRef} data-fill-in-pass={stage} className={["relative isolate", className].filter(Boolean).join(" ")}>
-      <div
-        className={[
-          "relative overflow-hidden rounded-(--radius-card) bg-(--color-surface-raised) text-(--color-ink)",
-          // While unrolling, the paper below carries the shadow, so none falls across the join.
-          ready ? (unroll ? "" : "shadow-(--elevation-ticket)") : "shadow-(--elevation-small)",
-        ].join(" ")}
-      >
-        {/* The band grows from 30 to 44 with the paper (no CSS transition runs under reduced motion). */}
+    <MotionFeatures>
+      <div ref={rootRef} data-fill-in-pass={stage} className={["relative isolate", className].filter(Boolean).join(" ")}>
         <div
-          ref={bandRef}
-          data-pass-band=""
-          className={`overflow-hidden transition-[height] duration-(--duration-t3) ease-(--easing-ease) ${ready ? "h-(--size-carrier)" : "h-(--size-carrier-compact)"}`}
+          className={[
+            "relative overflow-hidden rounded-(--radius-card) bg-(--color-surface-raised) text-(--color-ink)",
+            // While unrolling, the paper below carries the shadow, so none falls across the join.
+            ready ? (unroll ? "" : "shadow-(--elevation-ticket)") : "shadow-(--elevation-small)",
+          ].join(" ")}
         >
-          {ready ? <TicketBand /> : <CompactBand />}
-        </div>
-        <div ref={bodyRef} data-pass-body="" aria-live="polite" className="relative transition-[height] duration-(--duration-t3) ease-(--easing-ease)">
-          <motion.div
-            key={stage}
-            ref={blockRef}
-            data-pass-block={stage}
-            initial={mounted.current ? { opacity: 0 } : false}
-            animate={reduced ? BLOCK_IN_REDUCED : BLOCK_IN}
+          {/* The band grows from 30 to 44 with the paper (no CSS transition runs under reduced motion). */}
+          <div
+            ref={bandRef}
+            data-pass-band=""
+            className={`overflow-hidden transition-[height] duration-(--duration-t3) ease-(--easing-ease) ${ready ? "h-(--size-carrier)" : "h-(--size-carrier-compact)"}`}
           >
-            <PassBlock stage={stage} values={values} now={now} sectionChoosable={sectionChoosable} onJump={onJump} travelling={travelling} />
-          </motion.div>
-          {leaving ? (
-            <motion.div
-              key={`leaving-${leaving.id}`}
-              ref={leavingRef}
-              data-pass-block={leaving.stage}
-              data-leaving=""
-              aria-hidden="true"
-              inert
-              className="pointer-events-none absolute inset-x-0 top-0"
-              initial={{ opacity: 1 }}
-              animate={reduced ? BLOCK_OUT_REDUCED : BLOCK_OUT}
-              onAnimationComplete={() => setLeaving((current) => (current?.id === leaving.id ? null : current))}
+            {ready ? <TicketBand /> : <CompactBand />}
+          </div>
+          <div ref={bodyRef} data-pass-body="" aria-live="polite" className="relative transition-[height] duration-(--duration-t3) ease-(--easing-ease)">
+            <m.div
+              key={stage}
+              ref={blockRef}
+              data-pass-block={stage}
+              initial={mounted.current ? { opacity: 0 } : false}
+              animate={reduced ? BLOCK_IN_REDUCED : BLOCK_IN}
             >
-              <PassBlock {...leaving} />
-            </motion.div>
-          ) : null}
+              <PassBlock stage={stage} values={values} now={now} sectionChoosable={sectionChoosable} onJump={onJump} travelling={travelling} />
+            </m.div>
+            {leaving ? (
+              <m.div
+                key={`leaving-${leaving.id}`}
+                ref={leavingRef}
+                data-pass-block={leaving.stage}
+                data-leaving=""
+                aria-hidden="true"
+                inert
+                className="pointer-events-none absolute inset-x-0 top-0"
+                initial={{ opacity: 1 }}
+                animate={reduced ? BLOCK_OUT_REDUCED : BLOCK_OUT}
+                onAnimationComplete={() => setLeaving((current) => (current?.id === leaving.id ? null : current))}
+              >
+                <PassBlock {...leaving} />
+              </m.div>
+            ) : null}
+          </div>
         </div>
+        {ready && unroll ? (
+          <m.div
+            aria-hidden="true"
+            data-unroll=""
+            className="absolute inset-x-0 -z-10 origin-top rounded-b-(--radius-card) bg-(--color-surface-raised) shadow-(--elevation-ticket)"
+            style={UNROLL}
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ duration: 0.36, ease: EASE }}
+            onAnimationComplete={onUnrolled}
+          />
+        ) : null}
       </div>
-      {ready && unroll ? (
-        <motion.div
-          aria-hidden="true"
-          data-unroll=""
-          className="absolute inset-x-0 -z-10 origin-top rounded-b-(--radius-card) bg-(--color-surface-raised) shadow-(--elevation-ticket)"
-          style={UNROLL}
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 0.36, ease: EASE }}
-          onAnimationComplete={onUnrolled}
-        />
-      ) : null}
-    </div>
+    </MotionFeatures>
   );
 }

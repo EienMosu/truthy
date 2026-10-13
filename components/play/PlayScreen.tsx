@@ -5,7 +5,7 @@
 // function, reveals the answer slip, and leaves with one confirmation. Timed shows no slip: the verdict is
 // stamped on the stub, the next card is dealt 700 ms later, and at time up only "See results" is left.
 // A finished round shows its result (ResultView), which records it and offers Play again and another route.
-import { AnimatePresence, motion, useIsPresent, useReducedMotion, type Variants } from "motion/react";
+import { AnimatePresence, m, useIsPresent, useReducedMotion, type Variants } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import { AnswerButtons } from "@/components/AnswerButtons";
@@ -21,6 +21,7 @@ import {
 } from "@/components/BoardingPass";
 import { FlightPath } from "@/components/FlightPath";
 import { LivesPath } from "@/components/LivesPath";
+import { MotionFeatures } from "@/components/MotionFeatures";
 import { StreakPath } from "@/components/StreakPath";
 import { StubStamp } from "@/components/Stamp";
 import { TimedPath } from "@/components/TimedPath";
@@ -162,7 +163,7 @@ const CARD_SWAP: Variants = {
 function CardSlot({ animated, children }: { animated: boolean; children: ReactNode }) {
   const present = useIsPresent();
   return (
-    <motion.div
+    <m.div
       className="min-w-0 [grid-area:1/1]"
       style={animated ? { zIndex: present ? 0 : 1 } : undefined}
       variants={animated ? CARD_SWAP : undefined}
@@ -171,7 +172,7 @@ function CardSlot({ animated, children }: { animated: boolean; children: ReactNo
       exit={animated ? "leave" : undefined}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -708,7 +709,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
       : undefined;
 
   return (
-    <>
+    <MotionFeatures>
       <main className="flex min-h-0 flex-1 flex-col" inert={confirming}>
         <SkyBackdrop />
         {/* The page's heading, for those who move by headings: the route and the class, as on the ticket. */}
@@ -814,7 +815,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
         <div className="relative z-10 mt-(--space-12) h-(--size-actions) flex-none">
           <AnimatePresence initial={false}>
             {!awaitsNext ? (
-              <motion.div
+              <m.div
                 key="answer"
                 className="absolute inset-0"
                 onFocus={() => {
@@ -829,9 +830,9 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
                 transition={{ duration: 0.22, ease: EASE }}
               >
                 <AnswerButtons onAnswer={answer} disabled={beat} />
-              </motion.div>
+              </m.div>
             ) : (
-              <motion.div
+              <m.div
                 key="next"
                 className={`absolute inset-0${nextArrived ? "" : " pointer-events-none"}`}
                 initial={reduced ? { opacity: 0 } : { opacity: 0, y: 12 }}
@@ -842,7 +843,7 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
                 <PillButton ref={nextRef} trailingIcon="→" onClick={next}>
                   {actionLabel}
                 </PillButton>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -867,6 +868,6 @@ function RoundView({ round, ticket, services, dispatch, onLeave }: RoundViewProp
         }}
         onLeave={onLeave}
       />
-    </>
+    </MotionFeatures>
   );
 }
