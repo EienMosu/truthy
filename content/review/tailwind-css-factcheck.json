@@ -1,0 +1,1296 @@
+{
+ "deck": "tailwind-css",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr1-01",
+     "verdict": "ambiguous",
+     "urlStatus": "https://tailwindcss.com/docs/installation/using-vite loads (200, header shows v4.3) but only gives install steps. It says nothing about compiled or static output.",
+     "evidence": "https://tailwindcss.com/docs/styling-with-utility-classes: \"Tailwind CSS isn't one big static stylesheet like you might be used to with other CSS frameworks — it generates the CSS needed based on the classes you're actually using when you compile your CSS.\" https://tailwindcss.com/docs/installation/play-cdn: \"Use the Play CDN to try Tailwind right in the browser without any build step.\"",
+     "problem": "The official docs say in so many words that Tailwind \"isn't one big static stylesheet\", so an expert could answer False to a card that calls the output a \"static CSS stylesheet\". \"During the build\" also fails for the official Play CDN, which generates CSS in the browser with no build step. The cited Vite page supports none of the card. The explanation (\"The browser loads compiled utility rules\") adds nothing and comes close to a truism.",
+     "suggestedFix": "Replacement (answer true): \"Tailwind generates CSS only for the class names it finds in your project when you compile your CSS.\" Explanation: \"Tailwind isn't one prebuilt stylesheet of every utility. It scans your files for possible class names and compiles just the styles they need, including arbitrary values like bg-[#316ff6].\" Source: https://tailwindcss.com/docs/styling-with-utility-classes"
+    },
+    {
+     "id": "tailwind-css-sr1-06",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/styling-with-utility-classes loads (200, v4.3). It does not mention recompilation at all.",
+     "evidence": "https://tailwindcss.com/docs/styling-with-utility-classes: \"Inline styles are still very useful in Tailwind CSS projects, particularly when a value is coming from a dynamic source like a database or API\"",
+     "problem": "This is a strawman. A plain inline style attribute is not Tailwind output, so nobody who has studied Tailwind would think changing it recompiles anything. Answering False needs only general web knowledge, so the card teaches nothing specific to Tailwind. The source also never states the recompilation claim. The real teachable fact on the page is that the docs recommend inline styles for values from a database or API.",
+     "suggestedFix": "Replacement (answer false, keeps the 6/6 balance): \"Tailwind's docs recommend arbitrary-value classes over inline styles for colors loaded from a database or API.\" Explanation: \"Tailwind builds CSS from class names it finds when compiling, so its docs recommend plain inline styles for values that come from a dynamic source such as a database or API.\" Source: https://tailwindcss.com/docs/styling-with-utility-classes"
+    }
+   ],
+   "notes": "I opened the sources with curl and they loaded with HTTP 200 (styling-with-utility-classes, upgrade-guide, installation/using-vite, installation/play-cdn). The page header shows \"Tailwind CSS v4.3\", which confirms the prompt's pinned baseline. The section has 6 true and 6 false cards.\n\nCards that passed, with the line that settles each:\n- sr1-03 (leading ! still compatible): upgrade guide, \"The old way is still supported for compatibility but is deprecated.\"\n- sr1-04 (filter variables): \"each utility sets a CSS variable just for the effect it's meant to apply.\"\n- sr1-05 (reuse through components and partials): \"the best strategy is to create a component ... or a template partial\". Custom CSS is \"totally fine\" but not required, so the answer False holds.\n- sr1-07: the page shows hover:bg-(--bg-color-hover) with the variable set through an inline style.\n- sr1-08: \"the class that appears later in the stylesheet wins ... even though flex comes last in the actual class attribute\". The statement names the comparable conditions, as the prompt requires.\n- sr1-09: the generated CSS shows background-color: var(--color-red-500) !important.\n- sr1-10: the important flag \"mark[s] all utilities as !important\", and the compiled example shows !important declarations, not higher specificity.\n- sr1-11: the compiled CSS shows --tw-color-red-500 under prefix(tw).\n- sr1-12: upgrade guide, \"Prefixes now look like variants and are always at the beginning of the class name\", with the example tw:hover:bg-red-600.\n\nBorderline, not flagged: sr1-02 (\"duplicates the p-4 rule when two elements use p-4\", answer False) comes close to a strawman for a production-level deck, and the source supports it only indirectly (\"Your CSS stops growing — since utility classes are so reusable\"). It is an acceptable easy card. Across r1, the explanations are very short (often under 80 characters) and add little beyond the verdict, though they are not wrong.\n\nThe prompt rules I checked for this section (v4.3 baseline, leading ! deprecated but supported, the trailing ! form, prefix-first placement, prefixed theme variables, and conflicts decided by stylesheet order rather than class-attribute order) are all correct on the official pages. One addition: the prompt never mentions the Play CDN, which generates CSS in the browser with no build step. Cards that say all compilation happens \"during the build\" need a context qualifier. I found no prompt rule that was wrong for r1."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr2-02",
+     "verdict": "ambiguous",
+     "urlStatus": "https://tailwindcss.com/docs/theme loads (200), official, header shows v4.3",
+     "evidence": "Docs (https://tailwindcss.com/docs/theme): \"Theme variables are also required to be defined top-level and not nested under other selectors or media queries, and using a special syntax makes it possible to enforce that.\" But compiling with tailwindcss 4.3.3 (npm latest), `@media (min-width:100px){ @theme { --color-brand: red; } }` and `.x { @theme {...} }` both compile without error: output is `@layer theme { :root, :host { --color-brand: red; } }` plus a global `.bg-brand` utility. In packages/tailwindcss/src/index.ts, @utility, @source and @custom-variant throw \"cannot be nested\", but the @theme handler has no parent check.",
+     "problem": "The statement says Tailwind \"requires\" top-level @theme, and the explanation says \"Selectors and media queries cannot contain @theme\". The compiler accepts a nested @theme and hoists its tokens globally, so an expert who has tried it could answer False. The explanation is wrong as a description of how the compiler behaves.",
+     "suggestedFix": "Replacement (answer true): \"Tailwind registers tokens globally even from a @theme block placed inside a media query.\" Explanation: \"Theme variables belong at the top level; Tailwind v4.3 neither rejects nor scopes a nested @theme, it hoists the tokens to :root, :host and their utilities apply at every viewport.\" appliesTo Tailwind CSS v4.3. Note: the docs give only the top-level rule, and the hoisting was verified by compiling 4.3.3. If a fully documented card is required, drop and choose another fact."
+    },
+    {
+     "id": "tailwind-css-sr2-03",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/colors loads (200), official, v4.3",
+     "evidence": "Colors (https://tailwindcss.com/docs/colors): \"Now utilities like bg-midnight, text-tahiti, and fill-bermuda will be available in your project in addition to the default colors.\" The theme page also says: \"you can use utility classes like bg-mint-500, text-mint-500, or fill-mint-500\".",
+     "problem": "Strawman: nobody who has used Tailwind thinks a --color-* token makes only background utilities (text-* colors are the most common use), so the misconception \"Color tokens configure backgrounds alone\" is not realistic. It also follows the same distractor template as sr2-04 (a namespace token wrongly tied to another utility kind).",
+     "suggestedFix": "Replacement (answer false, keeps balance): \"Tailwind needs a separate @utility to pair font-display with a --font-display--font-feature-settings token.\" Explanation: \"Tailwind reads the --font-display--font-feature-settings companion token itself, so font-display sets font-family and font-feature-settings together.\" Source https://tailwindcss.com/docs/font-family (\"You can also provide default font-feature-settings and font-variation-settings values for a font family\"). Verified with 4.3.3: .font-display emits font-family: var(--font-display) and font-feature-settings: var(--font-display--font-feature-settings)."
+    },
+    {
+     "id": "tailwind-css-sr2-11",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/theme loads (200), official, v4.3",
+     "evidence": "Theme (https://tailwindcss.com/docs/theme): \"Tailwind also generates regular CSS variables for your theme variables so you can reference your design tokens in arbitrary values or inline styles\".",
+     "problem": "Truism: once the statement says the tokens are \"emitted\" as CSS variables, it follows from plain CSS that an inline style can read them with var(). The prompt reserves general var() resolution for css-fundamentals. The card overlaps sr2-10 (variable emission), and \"work in inline style declarations\" is vague. (In 4.3.3 a variable named only in a template is still detected and emitted, so the answer itself holds.)",
+     "suggestedFix": "Replacement (answer true): \"Tailwind can drop @keyframes declared inside @theme from its output, while ones declared outside @theme stay.\" Explanation: \"Keyframes inside @theme travel with their --animate-* token and are emitted when that animation is used; define @keyframes outside @theme to always include them.\" Source https://tailwindcss.com/docs/theme (\"If you want your custom @keyframes rules to always be included even when not adding an --animate-* theme variable, define them outside of @theme instead.\"). Verified with 4.3.3: unused theme keyframes are omitted, and animate-x emits them."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards (6 true, 6 false) against https://tailwindcss.com/docs/theme, /docs/colors and /docs/font-family. All three pages load and the docs header shows v4.3. I also compiled each claim with tailwindcss 4.3.3, the current npm latest, installed in the scratchpad.\n\nConfirmed by compiling:\n- 01: a :root variable makes no bg-brand utility.\n- 04: --font-editor: 700 still gives font-family.\n- 06: bg-red-500 reads var(--color-red-500).\n- 07: --color-*: initial also removes bg-white and bg-black, while bg-transparent and text-current stay.\n- 08: --*: initial keeps flex.\n- 09: inline gives font-family: var(--font-inter).\n- 10: static emits an unused --color-brand, which non-static omits.\n- 12: matches the docs' sharing-across-projects section.\n\nNot flagged, but worth a look:\n- sr2-05 (adding --font-script extends the defaults) and sr2-07 (--color-*: initial removes the defaults) are close to the two sides of one extend-versus-replace distinction, because knowing 07 hints at 05. The section scope lists extending and resetting separately, so I left both.\n- sr2-05 reuses the docs' own --font-script example.\n- sr2-12 is mild: its hedge (\"can share\") points toward True.\n\nPrompt rules: the v4.3 baseline is correct. The upgrade-guide trap is real: the guide contains --text-red-500 (2 matches) as well as --color-red-500. The theme-boundary trap (:root registers no utilities) holds, and so does the inline/static distinction. One weakness: the docs say @theme is \"required\" at the top level, but the 4.3.3 compiler does not enforce this. A nested @theme is hoisted globally without an error, so any card that says Tailwind rejects or requires a non-nested @theme can be argued against (sr2-02)."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr3-06",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (docs header shows 4.3)",
+     "evidence": "https://tailwindcss.com/docs/detecting-classes-in-source-files: \"Tailwind uses the current working directory as its starting point when scanning for class names by default.\" and \"Use @source to explicitly register source paths relative to the stylesheet\". The fact is right, but sr3-05's false statement is built on the same working-directory-versus-stylesheet split.",
+     "problem": "The prompt treats \"@source paths are stylesheet-relative, while automatic detection starts at the working directory\" as one two-way distinction. sr3-05 (@source paths are not working-directory-relative) and sr3-06 (automatic detection starts at the working directory) test its two sides, which breaks the rule against testing both sides of one distinction, and each card hints at the other. The explanation \"Monorepo builds use that working directory.\" also makes no sense on its own.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"Tailwind's automatic detection skips files that match patterns in the project's .gitignore file.\" Explanation: \"Tailwind follows .gitignore during automatic scanning, so ignored folders such as build output are skipped unless you register them with @source.\" Same URL; doc quote: \"Files that are in your .gitignore file\"."
+    },
+    {
+     "id": "tailwind-css-sr3-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://tailwindcss.com/docs/detecting-classes-in-source-files: \"Use @source not to ignore specific paths, relative to the stylesheet, when scanning for class names\"",
+     "problem": "The answer is readable from the wording. The directive literally contains \"not\", so nobody who has seen it would think it adds a directory to the scan. That makes the card a strawman and a name giveaway. It is also marked difficulty 1, which shows how trivial it is.",
+     "suggestedFix": "Replace with a FALSE card that tests the other explicit-exclusion form in scope. Statement: \"Tailwind still generates underline from template markup after @source not inline('underline') is declared.\" Explanation: \"@source not inline() stops the listed classes from being generated even when Tailwind finds them in scanned files, while @source not ignores whole paths.\" Same URL; doc quote: \"Use @source not inline() to prevent specific classes from being generated, even if they are detected in your source files\"."
+    },
+    {
+     "id": "tailwind-css-sr3-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current",
+     "evidence": "https://tailwindcss.com/docs/detecting-classes-in-source-files: \"To set the base path for source detection explicitly, use the source() function when importing Tailwind in your CSS: @import \"tailwindcss\" source(\"../src\");\"",
+     "problem": "The distractor (source() sets the CSS output directory) is a strawman that the function's name gives away. Anyone who studied detection knows source() is about where Tailwind scans, not where it writes CSS. The realistic misconception is that source() adds a path to the working directory instead of replacing the detection base.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"With @import 'tailwindcss' source('../src'), Tailwind scans ../src in addition to the working directory.\" Explanation: \"source() sets the base path for automatic detection, so scanning starts from ../src instead of the working directory, which helps monorepos whose build runs from the root.\""
+    },
+    {
+     "id": "tailwind-css-sr3-03",
+     "verdict": "source_problem",
+     "urlStatus": "loads, official, current, but only partly supports the card",
+     "evidence": "The cited https://tailwindcss.com/docs/functions-and-directives says only: \"Use the @source directive to explicitly specify source files that aren't picked up by Tailwind's automatic content detection: @source \"../node_modules/@my-company/ui-lib\";\". It never says node_modules is excluded. https://tailwindcss.com/docs/detecting-classes-in-source-files states it directly: \"Tailwind will scan every file in your project for class names, except in the following cases: ... Files in the node_modules directory\".",
+     "problem": "The answer (false) and the explanation are correct. The cited page only implies the exclusion through an example, so the whole card cannot be checked there.",
+     "suggestedFix": "Change source.url to https://tailwindcss.com/docs/detecting-classes-in-source-files (title \"Detecting classes in source files\"). Keep the statement and the answer."
+    }
+   ],
+   "notes": "I read the prompt (DECK, SECTIONS, source step, RULES, level rules) and fetched the raw HTML of https://tailwindcss.com/docs/detecting-classes-in-source-files and https://tailwindcss.com/docs/functions-and-directives on 2026-10-13. The docs header still shows 4.3, so the prompt's v4 / v4.3 baseline is correct.\n\nPrompt rules checked and found correct:\n- Tailwind scans source files as plain text.\n- Complete class names are detected; constructed fragments are not.\n- Automatic scanning excludes node_modules, .gitignore'd files, binary files, CSS files and lock files.\n- @source paths are stylesheet-relative.\n- Automatic detection starts at the current working directory by default.\n- source(\"../src\") sets the detection base.\n- source(none) disables automatic detection.\n- @source not ignores paths.\n- @source inline() safelists classes; variants need {hover:,focus:,}; the input is brace expanded.\n- @source not inline() excludes classes.\n- functions-and-directives says \\\"To safelist utilities in v4 use @source inline()\\\".\nI found no prompt rule for this section to be wrong.\n\nCards that pass: 01, 02, 04, 05, 08, 10, 11, 12.\n- 11: hover:underline needs an explicit {hover:,} prefix; the docs confirm this.\n- 12: the docs say \\\"The source input is brace expanded\\\" and show bg-red-{50,{100..900..100},950}.\n\nPossible nuance, not flagged: the docs say automatic detection starts at the current working directory. Individual integrations (for example the Vite plugin) may pass their own base. I did not verify this, and the docs' wording supports the cards as written.\n\nNot flagged, but should be fixed: every r3 explanation is 25 to 70 characters and mostly restates the statement. For example sr3-04 says \\\"Tailwind skips CSS sources.\\\" and sr3-02 says \\\"Complete strings remain visible in scanned source.\\\" The prompt requires true-card explanations to add the reason or context. Suggested enrichments:\n- sr3-04: CSS files are excluded alongside lock files and binaries; register one with @source if needed.\n- sr3-02: the lookup values are literal class strings that the plain-text scanner can see, unlike interpolated fragments.\n\nBalance after the suggested replacements stays 6 true and 6 false. The replacement for 06 is true; the replacements for 07 and 09 are false. If 06's replacement is adopted, it slightly overlaps sr3-03 (dependencies usually sit in .gitignore). Its explanation avoids naming node_modules."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr4-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (v4.3 header)",
+     "evidence": "https://tailwindcss.com/docs/hover-focus-and-other-states quick reference: \"focus & :focus ... focus-visible & :focus-visible\". The answer is correct, but the variant name is the pseudo-class name, so anyone can see from the wording that focus-visible: compiles to :focus-visible. The difficulty 3 label is not earned.",
+     "problem": "Name giveaway. The card only maps a variant to the pseudo-class with the same name, so it teaches nothing about Tailwind.",
+     "suggestedFix": "Replace (false): \"In Tailwind CSS v4, active: shares the hover-capability media query that wraps hover: rules.\" Explanation: \"Tailwind's variant reference lists active: as a plain &:active rule with no media condition, so it does not depend on the device's hover capability.\" URL: https://tailwindcss.com/docs/hover-focus-and-other-states"
+    },
+    {
+     "id": "tailwind-css-sr4-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (v4.3 header)",
+     "evidence": "https://tailwindcss.com/docs/hover-focus-and-other-states quick reference: \"invalid & :invalid\". The statement 'invalid:border-red-500 using the :invalid condition' gives away its own answer.",
+     "problem": "Name giveaway and near-truism. It also uses the same 'compiles X: using :Y' template as sr4-03, which makes the pair predictable.",
+     "suggestedFix": "Replace (true): \"Tailwind's invalid: styles can appear on an empty required field before the user has typed anything.\" Explanation: \"invalid: compiles to :invalid, which matches as soon as the value fails validation; Tailwind's user-invalid: variant compiles to :user-invalid, which waits for user interaction.\" URL: https://tailwindcss.com/docs/hover-focus-and-other-states"
+    },
+    {
+     "id": "tailwind-css-sr4-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (v4.3 header)",
+     "evidence": "https://tailwindcss.com/docs/hover-focus-and-other-states: \"Style form elements in different states using variants like required, invalid, and disabled\"; quick reference \"disabled & :disabled\".",
+     "problem": "Strawman. Nobody who has studied Tailwind thinks a styling class disables a form control. It also repeats the 'variant performs a behavior' false template used by sr4-01 and sr4-12.",
+     "suggestedFix": "Replace (false): \"Tailwind's disabled: variant styles a button that carries only aria-disabled=\\\"true\\\".\" Explanation: \"disabled: compiles to :disabled, which needs the native disabled state; a button marked only with aria-disabled=\\\"true\\\" needs Tailwind's aria-disabled: variant.\" URL: https://tailwindcss.com/docs/hover-focus-and-other-states"
+    },
+    {
+     "id": "tailwind-css-sr4-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (v4.3 header)",
+     "evidence": "https://tailwindcss.com/docs/hover-focus-and-other-states: \"Notice how this example only defines styles for the :hover state? It does nothing by default, but as soon as you hover over an element with that class, the background color will change to sky-700.\"",
+     "problem": "Strawman: a learner who has studied would not answer True. The statement closely paraphrases the docs' own intro example, and 'the button's' has no antecedent.",
+     "suggestedFix": "Replace (false): \"In Tailwind CSS v4, @custom-variant hover (&:hover) keeps hover: limited to hover-capable devices.\" Explanation: \"That override replaces the built-in hover condition with plain :hover. The upgrade guide offers it for sites that rely on touch taps triggering hover styles.\" URL: https://tailwindcss.com/docs/upgrade-guide (quote: \"you can override the hover variant with your own variant that uses the old implementation: @custom-variant hover (&:hover);\")"
+    }
+   ],
+   "notes": "I checked all 12 r4 cards. I downloaded the hover-focus-and-other-states, dark-mode and upgrade-guide pages directly. Both docs pages show 'Tailwind CSS v4.3' in their header, so the prompt's v4 / v4.3 pin is correct. The r4 rules in the prompt also hold on the official pages: v4 hover: compiles to @media (hover: hover) { &:hover } (quick reference plus the upgrade guide's 'Hover styles on mobile' section); default dark uses prefers-color-scheme; a @custom-variant dark selector override replaces the media query; the data-theme example is &:where([data-theme=dark], [data-theme=dark] *); and the docs say theme persistence (localStorage, server side) is 'totally up to you'. I found no prompt rule wrong for this section.\n\nPassing cards, with minor observations:\n- sr4-02 is correct. Its source is the upgrade guide, which describes the v4.0 change. The current states page quick reference ('hover @media (hover: hover) { &:hover }') is a better current-behavior URL; optional swap.\n- sr4-04 (focus-within) is partly guessable from the word 'within'. I did not flag it, but it is borderline.\n- sr4-07 (checked: means live :checked, not the [checked] attribute) and sr4-11 (the data-theme selector also matches the marked element) are correct. Both lean on CSS/HTML selector semantics that css-fundamentals owns. Acceptable because the Tailwind-generated selector decides the answer.\n- sr4-08 is correct (stacked focus:invalid: requires both conditions; the docs example uses focus:invalid:border-pink-500). Difficulty 3 is overstated; 2 fits.\n- sr4-09, sr4-10 and sr4-12 are verified against the dark-mode page.\n\nSection balance: the four replacements keep 6 true / 6 false (01 F to F, 03 F to F, 05 F to F, 06 T to T). They also break the repeated 'variant does a non-styling job' false template (01, 05, 12), which came from the prompt's 'These variants style existing state' trap."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr5-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v4 docs (https://tailwindcss.com/docs/hover-focus-and-other-states)",
+     "evidence": "\"When nesting groups, you can style something based on the state of a specific parent group by giving that parent a unique group name using a group/{name} class, and including that name in variants using classes like group-hover/{name}.\" The generated CSS on the same page uses the descendant pattern :is(:where(.group)... *).",
+     "problem": "The answer can be read from the wording. The variant says /card, so nobody who reads the class would think it follows group/menu, which makes the card a strawman. The misconception people really hold is about the unnamed variant: with nested groups, a plain group-hover: matches any .group ancestor, not just the closest one.",
+     "suggestedFix": "Keep the answer False. Statement: \"With nested .group elements, Tailwind's unnamed group-hover: tracks the closest .group ancestor.\" Explanation: \"Unnamed group-* variants compile to a descendant selector of any .group ancestor, so hovering an outer group also triggers them. A group/{name} marker with group-hover/{name} picks one ancestor.\""
+    },
+    {
+     "id": "tailwind-css-sr5-07",
+     "verdict": "duplicate",
+     "urlStatus": "200, official v4 docs (https://tailwindcss.com/docs/hover-focus-and-other-states)",
+     "evidence": "\"you can mark the sibling with the peer class and use the peer-has-* variant\" (example: label.peer containing a checked checkbox, svg.peer-has-checked:hidden). The group section says the same thing: \"mark the parent with the group class and use the group-has-* variant\".",
+     "problem": "This card rests on the same fact as sr5-06: a marker-has-X variant checks the marker's descendants, not the styled element's. If you know one card you know the other, so it is a mirrored pair. Its \"preceding peer\" wording also repeats sr5-03's sibling-order fact. Implicit groups (in-*), a relational variant on the same page, is not tested anywhere.",
+     "suggestedFix": "Keep the answer True. Statement: \"Tailwind's in-focus: reacts when any ancestor of the styled element has focus, even one lacking a group class.\" Explanation: \"The in-* variant works like group-* but needs no group marker on the parent, and it responds to state changes in any parent. Use group or group/{name} when you need finer control over which ancestor counts.\" Source: https://tailwindcss.com/docs/hover-focus-and-other-states#implicit-groups"
+    },
+    {
+     "id": "tailwind-css-sr5-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v4 docs (https://tailwindcss.com/docs/hover-focus-and-other-states)",
+     "evidence": "\"use square brackets to generate a property on the fly using any arbitrary value\". The page's generated CSS is .aria-\\[sort\\=ascending\\]... { &[aria-sort=\"ascending\"] {...} }, and the card copies the page's own aria-[sort=ascending] example.",
+     "problem": "This is a give-away. aria-[sort=ascending] matching aria-sort=\"ascending\" can be read straight from the class name, and the card reuses the docs example as written. The card could test something a learner can actually get wrong: which element the value is checked on when the variant is used with group-aria-*.",
+     "suggestedFix": "Keep the answer True. Statement: \"Tailwind's group-aria-[sort=ascending]: checks aria-sort on the group ancestor rather than on the styled element.\" Explanation: \"Tailwind compiles it to :where(.group)[aria-sort=\\\"ascending\\\"] *, so an icon inside a th marked group can rotate once that th is sorted ascending.\""
+    },
+    {
+     "id": "tailwind-css-sr5-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v4 docs (https://tailwindcss.com/docs/hover-focus-and-other-states)",
+     "evidence": "\"Groups can be named however you like and don't need to be configured in any way, just name your groups directly in your markup and Tailwind will automatically generate the necessary CSS.\" The same sentence appears for peers.",
+     "problem": "The statement is vague enough to be a truism. Tailwind generates every class from the markup it scans, so \"generates variants from markup\" is true of everything. The real fact is that names need no configuration, and the explanation (\"Names belong in group/name and peer/name markers\") never says so. The rule requires a true card's explanation to add the reason.",
+     "suggestedFix": "Keep the answer True. Statement: \"Writing group/sidebar in markup is enough for Tailwind to generate working group-hover/sidebar: styles.\" Explanation: \"Group and peer names need no configuration. Tailwind reads the group/{name} or peer/{name} marker and its matching variants from your markup and generates the CSS.\""
+    },
+    {
+     "id": "tailwind-css-sr5-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official v4 docs (https://tailwindcss.com/docs/hover-focus-and-other-states)",
+     "evidence": "\"For more control, you can use the & character to mark where .peer should end up in the final selector relative to the selector you are passing in.\" Generated CSS: .peer-\\[\\:nth-of-type\\(3\\)_\\&\\]\\:block { &:is(:nth-of-type(3) :where(.peer) ~ *) {...} }",
+     "problem": "The statement closely paraphrases the docs sentence. It names the wrong actor: the developer writes &, and Tailwind only interprets it. The explanation repeats the statement and adds no context. As written, the card tests that & exists, not what it produces.",
+     "suggestedFix": "Keep the answer True. Statement: \"In peer-[:nth-of-type(3)_&]:, Tailwind matches a .peer that sits inside a third-of-type element.\" Explanation: \"The & marks where .peer lands, so Tailwind generates :nth-of-type(3) .peer ~ *. The third-of-type element is an ancestor of the peer, not the peer itself.\""
+    }
+   ],
+   "notes": "The source page loaded (HTTP 200): https://tailwindcss.com/docs/hover-focus-and-other-states. Its static HTML contains \">4.3<\", which fits the prompt's v4.3 baseline. All 12 r5 cards use this page. They passed source and factual checks; none has a wrong answer.\n\nCards that passed:\n- sr5-01 (group-focus): generated as :where(.group):focus *.\n- sr5-03 (peer): \\\"the peer marker can only be used on previous siblings\\\".\n- sr5-05 (has-checked): \\\"Use the has-* variant to style an element based on the state or content of its descendants\\\".\n- sr5-06 (group-has): searches the group's descendants.\n- sr5-08 (group-[.is-ready]): generated CSS :is(:where(.group):is(.is-published) *) puts both classes on the same element, so the answer False is correct.\n- sr5-10 (data-active): presence; \\\"To check if a data attribute exists (and not a specific value), you can just specify the attribute name\\\".\n- sr5-11 (aria-expanded): the docs table maps aria-expanded to & [aria-expanded=\\\"true\\\"].\n\nThe section is 6 True and 6 False. Every suggested replacement keeps the original card's answer, so the balance holds.\n\nPossible weak card I did not flag: sr5-01 leans on its name (group-focus). It still separates group-focus (the group itself is focused) from focus-within, so I let it pass. Most explanations are very short (under 70 characters) and give little context. That fits the length limit but not the spirit of \\\"add the reason\\\".\n\nPrompt rules: the r5 traps hold on the official page. A peer marker precedes its target, named groups and peers need no configuration, built-in boolean ARIA variants match \\\"true\\\", and data presence differs from value matching. I found no prompt rule that is wrong for r5. Gap: the r5 section list leaves out the documented in-* implicit-group variant and group-aria-*/peer-aria-*. Both are in scope and are better material than the give-away cards."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr6-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://tailwindcss.com/docs/responsive-design (header shows v4.3), supports the card",
+     "evidence": "https://tailwindcss.com/docs/responsive-design: \"unprefixed utilities (like uppercase) take effect on all screen sizes, while prefixed utilities (like md:uppercase) only take effect at the specified breakpoint and above.\"",
+     "problem": "This is true by definition. An unprefixed utility has no variant, so of course Tailwind emits it without a breakpoint condition, and anyone who knows what a variant prefix is answers True. The card does not test the real misconception, which is that unprefixed styles are 'mobile only'. The explanation 'supply the starting styles' also only half states that fact.",
+     "suggestedFix": "Replace (answer True): \"Tailwind's unprefixed uppercase utility stays active on screens at and above the md breakpoint.\" Explanation: \"Unprefixed utilities apply at every screen size, not only on mobile; a prefixed utility such as md:normal-case is what overrides them from its breakpoint up.\" URL: https://tailwindcss.com/docs/responsive-design"
+    },
+    {
+     "id": "tailwind-css-sr6-05",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://tailwindcss.com/docs/cursor (v4.3), supports the card",
+     "evidence": "https://tailwindcss.com/docs/responsive-design: \"This works for every utility class in the framework, which means you can change literally anything at a given breakpoint — even things like letter spacing or cursor styles.\" https://tailwindcss.com/docs/cursor: \"Prefix a cursor utility with a breakpoint variant like md: to only apply the utility at medium screen sizes and above\"",
+     "problem": "This is a strawman and close to a copy of the docs. The docs sentence names cursor styles as its example of 'every utility class', so nobody who studied would answer True. It also adds nothing beyond r8-01 and r8-07: if md: works on arbitrary values and arbitrary properties, it obviously works on cursor utilities. It is also a utility-lookup kind of card, which the depth rule discourages.",
+     "suggestedFix": "Replace (answer False; this fact is not used elsewhere in the deck): \"Redefining --breakpoint-sm: 30rem in @theme leaves Tailwind's sm: variant at its default 40rem threshold.\" Explanation: \"A --breakpoint-* token that reuses a default name replaces that threshold instead of adding a variant, so sm: then triggers at 30rem.\" URL: https://tailwindcss.com/docs/theme (quote: \"Now the sm:* variant will trigger at 30rem instead of the default 40rem viewport size\")"
+    }
+   ],
+   "notes": "I checked all 12 r6 cards against the live v4.3 docs. Every page header shows \"Tailwind CSS v4.3\", and every source URL loaded (HTTP 200) and is official.\n\nAnswers confirmed:\n- **02 (sm: is a minimum width):** styling-with-utility-classes shows `.sm\\:grid-cols-3 { @media (width >= 40rem) ... }`.\n- **03 (max-* is exclusive):** \"max-md @media (width < 48rem)\".\n- **04 (ranges):** \"stack a responsive variant like md with a max-* variant ... md:max-xl:flex\".\n- **07 (thresholds compiled in):** the docs show literal values such as `@media (width >= 64rem)`. In the source, variants.ts writes `atRule('@media', `(width >= ${value})`)`, and functional min/max reject values containing var().\n- **08 (removal):** \"To remove a default breakpoint, reset its value to the initial keyword\".\n- **09 (ordering):** the docs example \"Width of 16 by default, 32 on medium screens, and 48 on large screens\"; breakpoint variants are sorted ascending.\n- **10 (mixed units):** the docs say to \"always use the same unit ... or the generated utilities may be sorted in an unexpected order\". The current main-branch utils/compare-breakpoints.ts groups values by unit string and only compares numbers within the same unit, so Tailwind does not normalize px and rem. The False answer is correct.\n- **11 (arbitrary thresholds):** \"min-[...] @media (width >= ...)\".\n- **12 (max-* for custom breakpoints):** \"Tailwind generates a corresponding max-* variant for each breakpoint\". In the code, functional max resolves named values through the --breakpoint namespace.\n\nBorderline issues I did not flag:\n- **06 and 12:** both are True and use the same --breakpoint-tablet setup. Knowing 12 (max-tablet: exists) implies 06 (tablet: exists). Consider dropping one or rewording 06, which is also fairly guessable from the token name.\n- **08 and r2-07:** r6-08 (`--breakpoint-2xl: initial` removes 2xl:) and r2-07 (`--color-*: initial` removes the palette) rest on the same reset-to-initial mechanism. The scopes differ (one key versus a whole namespace, a variant versus utilities), and the prompt itself assigns breakpoint removal to r6, so I left it to the r2 reviewer.\n- **11's source:** it points to the hover-focus reference table. That page supports the mechanism, but https://tailwindcss.com/docs/responsive-design#using-arbitrary-values (\"one-off breakpoint that doesn't make sense to include in your theme\") supports the whole card better.\n\nStyle:\n- Both 03 and 05 use the verb \"excludes\". With my 05 replacement, the r6 balance stays 6 True and 6 False.\n\nPrompt rules checked for r6, none found wrong:\n- v4.3 is the version displayed.\n- sm: is a minimum-width breakpoint, and unprefixed utilities give the small-screen base styles.\n- --breakpoint-* and --container-* are separate theme namespaces.\n- @container-size is documented on the v4.3 responsive page.\n\nThe upgrade-guide and other migration traps are outside r6 and I did not check them."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr7-07",
+     "verdict": "duplicate",
+     "urlStatus": "https://tailwindcss.com/docs/responsive-design loads (header shows v4.3), official, current",
+     "evidence": "Responsive design, Named containers: \"you can name containers using @container/{name} and target specific containers with variants like @sm/{name} ... This makes it possible to style something based on the size of a distant container, rather than just the nearest container.\" The answer itself is right: unnamed variants compile to `@container (width >= …)` with no name (packages/tailwindcss/src/variants.ts), so CSS picks the nearest container.",
+     "problem": "The answer is correct, but 07 (unnamed queries use the nearest container) and 08 (named queries reach a distant container) are the two sides of the split that one doc sentence sets up. The prompt says two sides of one distinction count as one fact. Also, picking the nearest container is CSS container-query mechanics, which the prompt assigns to css-fundamentals. Keep 08 and replace 07.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"Tailwind's container class marks its element as a query container for @md: variants.\" Explanation: \"The container class sets width: 100% plus a max-width at each viewport breakpoint; Tailwind's @container class is what sets container-type so @md: can query it.\" Source: https://tailwindcss.com/docs/max-width (\"Use the container utility to set the maximum width of an element to match the min-width of the current breakpoint\") together with https://tailwindcss.com/docs/responsive-design (\"Use the @container class to mark an element as an inline-size container\")."
+    },
+    {
+     "id": "tailwind-css-sr7-10",
+     "verdict": "duplicate",
+     "urlStatus": "https://tailwindcss.com/docs/theme loads (v4.3), official, current",
+     "evidence": "Theme variables namespace table: \"--container-* Container query variants like @sm:* and size utilities like max-w-md\". Responsive design: \"Use the --container-* theme variables to customize your container sizes ... This adds a new 8xl container query variant\". The answer is true.",
+     "problem": "This rests on the same fact as sr7-05, which already tests that container variants come from the --container-* namespace and not from --breakpoint-*. If you know --container-wide creates @wide:, you know the answer to 05. The card also copies the r6 template of sr6-06 (\"--breakpoint-tablet makes tablet: available\") with the other namespace swapped in, and it is close to the docs' 8xl example.",
+     "suggestedFix": "Replace with a TRUE card on named size containers (v4.3, appliesTo \"Tailwind CSS v4.3\"). Statement: \"Tailwind lets @sm/chart: target an ancestor marked with @container-size/chart.\" Explanation: \"Size containers take names the same way inline-size ones do, so a named variant can query the full-size container that block-size units such as cqb need.\" Source: https://tailwindcss.com/docs/responsive-design (\"You can also name size containers using @container-size/{name}\")."
+    },
+    {
+     "id": "tailwind-css-sr7-11",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/responsive-design loads (v4.3), official, current",
+     "evidence": "Responsive design, Using arbitrary values: \"Use variants like @min-[475px] and @max-[960px] for one-off container query sizes you don't want to add to your theme\". The variants.ts source compiles @max-[960px] to `@container (width < 960px)`.",
+     "problem": "\"Treats ... as an unsupported variant\" is a negated claim in disguise (\"Tailwind does not support X\"), and it reuses the exact class the docs show. Nobody who studied would answer True, so it is a strawman. The explanation also states the right fact only vaguely. The fact itself (arbitrary container thresholds) is in scope and worth keeping.",
+     "suggestedFix": "Keep it FALSE and test a realistic misconception. Statement: \"Tailwind requires a --container-* token in @theme before @min-[475px]: compiles.\" Explanation: \"Bracket thresholds such as @min-[475px]: and @max-[960px]: compile straight to one-off @container width queries without adding a size to the theme.\" Same URL."
+    }
+   ],
+   "notes": "All 12 r7 cards were checked against https://tailwindcss.com/docs/responsive-design (header shows v4.3), /docs/theme, /docs/hover-focus-and-other-states, /docs/max-width, the v4.0 blog post, and the tailwindcss main-branch source (variants.ts and utilities.ts) and CHANGELOG.\n\nPrompt rules I verified:\n- The docs display v4.3.\n- @container-size is a v4.3 addition. CHANGELOG 4.3.0 (2026-05-08) says \"Add `@container-size` utility\". The utility source maps @container-size to container-type: size, so sr7-02 is correctly pinned to v4.3.\n- Container queries moved into core in v4.0. The blog says \"We've brought container query support into core for v4.0, so you don't need the @tailwindcss/container-queries plugin anymore\", which settles sr7-01.\n- Viewport and container sizes use separate namespaces. Container variants resolve only from --container (variants.ts: theme.resolveValue(..., ['--container'])), which settles sr7-05. max-w, w and min-w read --container, which settles sr7-09.\n- Named modifiers compile to `@container name (width >= …)`, which settles sr7-08.\n- Stacking @sm:@max-md: gives a bounded range, as the docs state (\"Stack a regular container query variant with a max-width container query variant to target a specific range\"), which settles sr7-06.\nI found no wrong prompt rule for this section.\n\nCards that passed but are borderline:\n- sr7-02: the statement leaves the actor implicit (\"Tailwind CSS v4.3 uses @container-size\"). The developer adds the class, and the explanation does not say why block-size units such as cqb need a size container. Consider rewording it to \"Marking an element @container-size lets descendant h-[50cqb] utilities resolve against its block size.\"\n- sr7-12: whether w-[50cqw] works follows largely from general bracket-value knowledge, which r8 covers, and its explanation (\"retains the supplied cqw value\") teaches little. The fact is within the section's listed scope, so I did not flag it.\n- Cross-section mirroring with r6: sr7-04 (@sm: is a minimum, not a band) parallels sr6-02, and sr7-06 (@sm:@max-md: range) parallels sr6-04. The docs tie them together (\"Just like breakpoint variants, container queries are mobile-first\"). They test different namespaces, so I noted them rather than flagging them, but a player who knows r6 can infer these two.\n- Explanations across r7 are very terse (often about 60 characters). Several just restate the verdict without adding context, for example sr7-01, sr7-08 and sr7-10.\n\nAll source URLs load and support their cards. sr7-03 cites the states page, which supports it (\"To style an element based on the width of a parent element instead of the viewport, use variants like @md and @lg\"). /docs/responsive-design would be the more specific source."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr8-07",
+     "verdict": "duplicate",
+     "urlStatus": "https://tailwindcss.com/docs/adding-custom-styles loads (official, header shows v4.3); supports the fact",
+     "evidence": "adding-custom-styles: arbitrary values are 'like inline styles, with the major benefit that you can combine it with interactive modifiers like hover and responsive modifiers like lg: ... top-[117px] lg:top-[344px]' and arbitrary properties are 'really like inline styles, but again with the benefit that you can use modifiers: [mask-type:luminance] hover:[mask-type:alpha]'. Compiled with tailwindcss 4.3.3: md:[mask-type:luminance] is emitted inside @media (width >= 48rem). The answer is correct.",
+     "problem": "This card tests the same fact as sr8-01: a variant prefix makes bracket syntax conditional. If you know one answer, you know the other. sr8-08 (md:[--panel-gap:24px]) also gives it away, because that card already shows md: working on an arbitrary property. It is also close to a strawman: nobody who has studied Tailwind would expect md: to be ignored.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"Tailwind compiles a bracket selector variant like [&.open]:block only after @custom-variant registers it.\" Explanation: \"Tailwind builds arbitrary variants on the fly from the bracketed selector in the class. @custom-variant only gives a name to a condition you reuse often, such as theme-midnight:.\" Source: https://tailwindcss.com/docs/hover-focus-and-other-states#using-arbitrary-variants"
+    },
+    {
+     "id": "tailwind-css-sr8-12",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/functions-and-directives loads (official, v4.3); supports the card",
+     "evidence": "functions-and-directives: 'Use the @custom-variant directive to add a custom variant in your project ... This lets you write utilities theme-midnight:bg-black and theme-midnight:text-white.' Compiled with 4.3.3, @custom-variant busy (&[data-busy]) emits nothing for the bare candidate 'busy' and emits .busy\\:underline[data-busy] for busy:underline. The answer is correct.",
+     "problem": "Strawman. Nobody who has read about @custom-variant would expect it to emit a standalone .busy class rule. The misconception (\"a variant definition creates a utility rule\") is not one a studied learner would realistically hold, so the card teaches little.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"Tailwind's one-line @custom-variant shorthand can nest a :hover selector inside an @media query.\" Explanation: \"Nested conditions need the block form: put the @media and &:hover rules in braces and mark the utility's place with @slot. The parenthesized shorthand is for conditions that need no nesting.\" Source: https://tailwindcss.com/docs/adding-custom-styles#adding-custom-variants (quote: 'You can create variants using the shorthand syntax when nesting isn't required'; 'When a custom variant has multiple rules, they can be nested within each other'). Checked in 4.3.3: the shorthand with nesting compiles to invalid CSS ('@media (any-hover: hover) { &:hover } {')."
+    }
+   ],
+   "notes": "Method: I opened every source URL with curl (all load, all on tailwindcss.com, and the page header shows v4.3). I also compiled every r8 candidate with tailwindcss 4.3.3 via @tailwindcss/node in the scratchpad (no deck files were touched).\n\nCompiled output confirms all 12 answers:\n- md:top-[37px] is inside @media (width >= 48rem).\n- w-(--panel-width) compiles to width: var(--panel-width).\n- text-(length:--label-size) compiles to font-size: var(--label-size).\n- grid-cols-[1fr_2fr] compiles to 1fr 2fr.\n- url('/team_photo.png') keeps its underscore.\n- content-['user\\_name'] compiles to --tw-content: 'user_name'.\n- md:[--panel-gap:24px] is inside the md media query.\n- [&.selected]:underline compiles to .x.selected.\n- [@supports(display:grid)]:grid is wrapped in @supports without &.\n- first:*:pt-0 compiles to :is(.x:first-child > *). This matches sr8-11's explanation; the v4 equivalent of the old behaviour, *:first:pt-0, compiles to :is(.x > *):first-child.\n\nNo wrong answers found. Two flags: sr8-07 (duplicate of sr8-01, and sr8-08 gives its answer away) and sr8-12 (strawman). Each has a false replacement, so the section keeps its 6 true / 6 false balance. Statement lengths are balanced (true average 87.8, false average 91.7).\n\nMinor, not flagged:\n- sr8-04 cites the upgrade guide. It does support the card ('underscores must be used to represent spaces' for grid-cols), but the current reference section https://tailwindcss.com/docs/adding-custom-styles#handling-whitespace is a better source for present behaviour.\n- sr8-03 cites the font-size page, which shows only the length: hint. adding-custom-styles#resolving-ambiguities shows both the length: and color: hints and is a stronger source.\n- sr8-01 is easy and close to a give-away; it is kept as the single variant-composition card.\n- sr8-10's wording 'implicit utility target' is opaque but correct.\n- Checked against sr5-09 (& positioning .peer in arbitrary peer selectors): it rests on a different fact from sr8-09.\n\nPrompt rules checked against official pages:\n- v4.3 as the displayed docs version: confirmed.\n- CSS-variable shorthand now uses parentheses: confirmed in the upgrade guide ('bg-[--brand-color]' becomes 'bg-(--brand-color)').\n- Stacked variants apply left to right in v4: confirmed in the upgrade guide ('In v3, stacked variants were applied from right to left, but in v4 ... left to right').\n- At-rule arbitrary variants need no & placeholder: confirmed on the hover-focus-and-other-states page.\n\nNo prompt rule relevant to r8 was found wrong."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr9-05",
+     "verdict": "ambiguous",
+     "urlStatus": "https://tailwindcss.com/docs/preflight loads, official, header shows v4.3",
+     "evidence": "Preflight page: \"Since the border class only sets the border-width property, this reset ensures that adding that class always adds a solid 1px border that uses currentColor.\" But the shipped v4.3 compiler (node_modules/tailwindcss 4.3.3, dist/lib.js) defines border as width:k=>[o(\"border-style\",\"var(--tw-border-style)\"),o(\"border-width\",k)] and registers --tw-border-style with initial value solid. So in v4 the border utility emits border-style: var(--tw-border-style) itself; the solid style comes from the utility, not from Preflight. The docs sentence is stale relative to v4 output.",
+     "problem": "An expert can defend False: without Preflight, the v4 border utility still produces a solid border because it sets its own border-style through --tw-border-style. The card leans on a docs sentence that no longer describes the v4 generated CSS.",
+     "suggestedFix": "Replace (keeps True): \"Preflight zeroes default borders, so a button or fieldset shows no browser border until a border utility is added.\" Explanation: \"Preflight applies border: 0 solid to every element, removing user-agent borders. In v4.3 the border utility sets its own border-style through --tw-border-style, which defaults to solid.\" URL unchanged."
+    },
+    {
+     "id": "tailwind-css-sr9-11",
+     "verdict": "ambiguous",
+     "urlStatus": "https://tailwindcss.com/docs/adding-custom-styles loads, official, v4.3",
+     "evidence": "Adding custom styles: \"Use the components layer for any more complicated classes you want to add to your project that you'd still like to be able to override with utility classes.\" and \"By defining component classes in the components layer, you can still use utility classes to override them when necessary\". Preflight page shows the order \"@layer theme, base, components, utilities;\".",
+     "problem": "The statement \"active normal utilities override competing normal component-layer rules with more specific selectors\" has two readings: component rules that have more specific selectors (intended, True) or utilities overriding by means of more specific selectors (False, since utilities are single-class selectors and win by layer order). The explanation leaves out the decisive point that layer order beats specificity.",
+     "suggestedFix": "Rewrite (keeps True): \"In Tailwind CSS v4, a utility beats a conflicting @layer components rule that uses a more specific selector.\" Explanation: \"Utilities sit in a later cascade layer than components, and for normal declarations a later layer wins regardless of selector specificity.\""
+    },
+    {
+     "id": "tailwind-css-sr9-03",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/preflight loads, official, v4.3",
+     "evidence": "Preflight page: \"To disable Preflight, simply omit its import while keeping everything else\", with the example @layer theme, base, components, utilities; @import \"tailwindcss/theme.css\" layer(theme); @import \"tailwindcss/utilities.css\" layer(utilities);",
+     "problem": "Strawman. Nobody who has read the split-import example would think utilities.css \"restores\" Preflight after preflight.css was deliberately left out. The realistic misconception is that Preflight is switched off with an option, as in v3's corePlugins.preflight.",
+     "suggestedFix": "Replace (keeps False): \"Tailwind CSS v4 turns off Preflight through a preflight(none) option on the @import \\\"tailwindcss\\\" rule.\" Explanation: \"No such import option exists. To drop Preflight, replace @import \\\"tailwindcss\\\" with the layer declaration plus separate theme.css and utilities.css imports.\" URL unchanged."
+    },
+    {
+     "id": "tailwind-css-sr9-01",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/preflight loads, official, v4.3",
+     "evidence": "Preflight page: \"When you import tailwindcss into your project, Preflight is automatically injected into the base layer: @layer theme, base, components, utilities; ...\"",
+     "problem": "This is trivia about the layer declaration (\"declares a components layer before a project adds component rules\"), and sr9-11 (utilities override components through layer order) already implies that the declared components layer exists. The card teaches almost nothing on its own and overlaps sr9-11.",
+     "suggestedFix": "Replace (keeps True) with an untested reset: \"Preflight's universal reset zeroes padding as well as margin, so a ul loses its browser-indented left padding.\" Explanation: \"Preflight sets margin: 0 and padding: 0 on every element and pseudo-element, so lists lose their user-agent indentation along with margins.\" URL https://tailwindcss.com/docs/preflight (rule shown under \"Margins are removed\")."
+    }
+   ],
+   "notes": "All 12 r9 cards cite https://tailwindcss.com/docs/preflight (11 cards) or https://tailwindcss.com/docs/adding-custom-styles (sr9-11). Both pages loaded, are official and show v4.3 in the header. I checked against the live pages and against the installed tailwindcss 4.3.3 package (preflight.css and dist/lib.js), read-only. These cards pass, with their quotes:\n- sr9-02: \"Preflight is automatically injected into the base layer\".\n- sr9-04: \"removes all of the default margins from all elements including headings, blockquotes, paragraphs\".\n- sr9-06: h1-h6 get \"font-size: inherit; font-weight: inherit\". This false card is not a strawman, because the docs' own Extending Preflight example sets h1 to var(--text-2xl).\n- sr9-07: \"ol,ul,menu { list-style: none; }\".\n- sr9-08: \"img,svg,video,canvas,audio,iframe,embed,object { display: block; ... }\".\n- sr9-09: \"img,video { max-width: 100%; height: auto; }\".\n- sr9-10: \"add them to the base CSS layer in your CSS using @layer base\".\n- sr9-12: \"box-sizing: border-box\".\nBalance today is 6 true and 6 false. The suggested fixes keep that balance: 01, 05 and 11 stay true, 03 stays false.\nTwo false templates repeat. \"Preflight retains/preserves <browser default>\" appears in 04 and 07, and \"Preflight selects <X> as the default\" in 06 and 12. Each sits at the prompt's limit of two.\nPrompt rule problems: none of the r9-relevant prompt rules are wrong. The baseline (v4 with v4.3 docs), the layer declaration and the Preflight import are as stated. One thing to know: the official Preflight page says \"the border class only sets the border-width property\", but v4.3 output has border emit border-style: var(--tw-border-style) as well. Any card resting on that sentence, such as sr9-05, is unreliable.\nProcess note: by mistake I copied a scratch script (.tmp-check.mjs) into the worktree and deleted it straight away. No deck or content file was touched."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr10-10",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/adding-custom-styles loads, official, shows v4.3; it supports the answer",
+     "evidence": "https://tailwindcss.com/docs/adding-custom-styles: \"Modifiers are handled using the --modifier() function which works exactly like the --value() function but operates on a modifier if present\" and \"This matches tab-2/3 with a line-height of 3, and tab-2 with a line-height of 1.\" The answer (False) is correct, but anyone who has used Tailwind knows the modifier is the part after the slash (bg-red-500/50), so nobody who studied would answer True. That makes it a strawman, not the hard (difficulty 3) distinction it claims to be.",
+     "problem": "Strawman. The false reason (the modifier is read from the part before /) contradicts the basic meaning of a Tailwind modifier, so the card gives its answer away and teaches nothing about how --modifier() resolves.",
+     "suggestedFix": "Replace (keeps answer False). Statement: \"With --value(ratio) in @utility aspect-*, Tailwind reads the 4 in aspect-3/4 as a separate --modifier() value.\" Explanation: \"A ratio type in --value() makes Tailwind treat the value and the modifier as one value, so aspect-3/4 resolves to the ratio 3 / 4.\" Source: https://tailwindcss.com/docs/adding-custom-styles (Fractions: \"it's a signal to Tailwind to treat the value and modifier as a single value\")."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards. The section has 6 true and 6 false cards, and every statement is 120 characters or less and every explanation 240 or less. I fetched each source page directly (adding-custom-styles, functions-and-directives, upgrade-guide); all load, are official and show v4.3. Supporting quotes for the cards that pass:\n- 01: upgrade-guide: \"Custom utilities are now also sorted based on the amount of properties they define.\" I also confirmed this in the Tailwind source code, which stores a property count as a sort key after the variant order.\n- 02: functions-and-directives: \"@utility ... work with variants like hover, focus and lg\".\n- 03: adding-custom-styles: \"Custom utilities are automatically inserted into the utilities layer\".\n- 04: the nested scrollbar-hidden example on adding-custom-styles.\n- 05: adding-custom-styles: \"This will match utilities like tab-2, tab-4, and tab-github\".\n- 06: \"--value([integer]) ... will match utilities like tab-[1]\". I confirmed in the source that bare types only resolve named values and that an arbitrary value needs a bracketed [type].\n- 07: \"any declarations that fail to resolve will be omitted in the output\".\n- 08: \"resolve them left to right\".\n- 09: \"register separate positive and negative utilities\".\n- 11: \"Use the @apply directive to inline any existing utility classes\".\n- 12: the @variant dark example, which compiles to @media (prefers-color-scheme: dark).\nSmall points I did not flag:\n- 04 is close to a copy of the docs' scrollbar-hidden example, and \"the utility's scrollbar\" really means the scrollbar of the element that has the utility.\n- 11's explanation says @apply inserts \"declarations\"; for variant utilities it inserts nested rules, which is fine for this plain-utility case.\n- 01's only source is the upgrade guide (v4.0 wording), but the current source code confirms the behavior still applies.\n- No duplicates with other sections. sr9-11 tests the order of the layers, and sr10-03 tests which layer @utility goes into, so they rest on different facts.\nPrompt rules I checked for r10 and found correct: the docs show v4.3; @utility registers variant-enabled utilities in the utilities layer; unresolved functional declarations are omitted; @apply inlines utilities; @variant applies a condition inside custom CSS. I found no wrong prompt rules for this section."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr11-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, docs header shows v4.3",
+     "evidence": "https://tailwindcss.com/docs/compatibility: \"Under the hood Tailwind uses Lightning CSS to process nested CSS like this ... Tailwind flattens that nested CSS for you so it can be understood by all modern browsers.\" But the official source (github.com/tailwindlabs/tailwindcss main): @tailwindcss/vite runs optimize() (the Lightning CSS pass, include: Features.Nesting) only in the apply:'build' step, never on the dev server; @tailwindcss/postcss sets `optimize = opts.optimize ?? process.env.NODE_ENV === 'production'`; the CLI optimizes only with --minify or --optimize. The documented CLI command `npx @tailwindcss/cli -i ./src/input.css -o ./src/output.css --watch` therefore emits nested rules unchanged, and Tailwind's own variant output (e.g. hover) is nested in unoptimized builds.",
+     "problem": "Answer False holds only for optimized builds. With the Vite dev server, PostCSS outside production or the documented CLI command, nesting stays in the output, so an expert can defend True. The hedge 'documented Lightning CSS nesting step' is meta wording that hints at the answer instead of naming the build mode.",
+     "suggestedFix": "Keep False and name the build mode. Statement: \"When Tailwind optimizes a build, it keeps authored nested CSS rules nested in the emitted stylesheet.\" Explanation: \"Tailwind's optimization pass uses Lightning CSS to flatten nested rules into plain selectors such as .typography p. Unoptimized output, like the Vite dev server, can still contain nesting.\" Keep the compatibility URL."
+    },
+    {
+     "id": "tailwind-css-sr11-06",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, docs header shows v4.3",
+     "evidence": "https://tailwindcss.com/docs/compatibility: \"Tailwind itself will do things like bundle your imports and add vendor prefixes.\" The prefixing comes from the same Lightning CSS optimize() call (targets safari 16.4, chrome 111, firefox 128) that the Vite plugin runs only in build mode, the PostCSS plugin only when NODE_ENV is production, and the CLI only with --minify or --optimize.",
+     "problem": "Answer True holds only for optimized builds. A plain CLI build or the Vite dev server outputs custom declarations unprefixed, so the statement is not true without that condition. The explanation ('belongs to Tailwind's documented CSS build processing') gives no reason or context to remember.",
+     "suggestedFix": "Keep True and name the condition. Statement: \"Tailwind adds vendor prefixes to the project's custom CSS declarations when it optimizes a build with Lightning CSS.\" Explanation: \"Optimized builds run Lightning CSS, which adds the prefixes Tailwind's browser targets need. Unoptimized output (Vite dev server, CLI without --minify or --optimize) skips this pass.\""
+    },
+    {
+     "id": "tailwind-css-sr11-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, docs header shows v4.3",
+     "evidence": "https://tailwindcss.com/docs/installation/using-postcss: \"Add @tailwindcss/postcss to your postcss.config.mjs file, or wherever PostCSS is configured in your project.\" The page never discusses PostCSS core expanding @theme, and nobody who has used PostCSS believes its core understands Tailwind directives.",
+     "problem": "Strawman. Nobody who studied would answer True to 'PostCSS itself expands @theme before the Tailwind plugin runs'. The source does not address the claim, only that the plugin gets registered.",
+     "suggestedFix": "Replace with a False card (it also replaces 08's topic, see 08). Statement: \"For Vite-based frameworks such as SvelteKit, Tailwind's docs recommend its PostCSS plugin as the smoothest integration.\" Explanation: \"Tailwind's docs call @tailwindcss/vite the most seamless option for Vite frameworks like SvelteKit, Nuxt and Laravel, and suggest the PostCSS plugin for Next.js and Angular.\" URL: https://tailwindcss.com/docs/installation/using-vite (\"Installing Tailwind CSS as a Vite plugin is the most seamless way to integrate it with frameworks like Laravel, SvelteKit, React Router, Nuxt, and SolidJS.\") plus the PostCSS page wording for Next.js and Angular."
+    },
+    {
+     "id": "tailwind-css-sr11-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, docs header shows v4.3",
+     "evidence": "https://tailwindcss.com/docs/installation/using-vite: \"Add the @tailwindcss/vite plugin to your Vite configuration.\" The statement 'Tailwind's Vite plugin supplies Tailwind compilation directly in Vite's pipeline' follows from what a Vite plugin is.",
+     "problem": "Definition card and name giveaway: a Vite plugin runs inside Vite's pipeline by definition, so the card teaches nothing about how Tailwind compiles.",
+     "suggestedFix": "Replace with a True card from https://tailwindcss.com/docs/compatibility (\"Alternatively, you can also just use CSS variables instead of @apply which has the added benefit of letting Tailwind skip processing those files and will improve your build performance\"). Statement: \"In a CSS module, writing var(--color-blue-500) instead of @apply bg-blue-500 lets Tailwind skip processing that file.\" Explanation: \"Plain CSS variables need no Tailwind compilation, so a CSS module that avoids @apply can skip Tailwind entirely and builds faster.\""
+    },
+    {
+     "id": "tailwind-css-sr11-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, docs header shows v4.3",
+     "evidence": "https://tailwindcss.com/docs/functions-and-directives (Subpath Imports): \"When using the CLI, Vite, or PostCSS the directives @import, @reference, @plugin, and @config all support subpath imports which work similarly to bundler and TypeScript path aliases: package.json { \"imports\": { \"#app.css\": \"./src/css/app.css\" } }\"",
+     "problem": "The answer is right, but the distinction tested (package.json 'imports' versus 'exports' for '#' specifiers) is Node module resolution, owned by javascript/Node decks. Anyone who knows Node's '#' convention answers it without knowing Tailwind, so the card tests no Tailwind behavior.",
+     "suggestedFix": "Keep False and test the Tailwind fact. Statement: \"Subpath imports such as '#app.css' work in @import and @reference but are rejected by @config and @plugin.\" Explanation: \"With the CLI, Vite or PostCSS, @import, @reference, @plugin and @config all resolve package.json subpath imports, like bundler or TypeScript path aliases.\" appliesTo Tailwind CSS v4.3, same URL."
+    }
+   ],
+   "notes": "I opened every source URL with curl. All return 200, are official tailwindcss.com /docs pages, and show the \"Tailwind CSS v4.3\" header. The functions-and-directives, compatibility and installation (Vite, PostCSS, CLI) pages carry all of r11. The Compatibility page still says \"Tailwind CSS v4.0 is designed for...\". I checked the build behavior against the official source on GitHub: packages/@tailwindcss-vite, @tailwindcss-postcss, @tailwindcss-node/optimize.ts and @tailwindcss-cli.\n\nThese cards pass:\n- 01: \"...make those values available in that context...\"\n- 02: \"If you're just using the default theme with no customizations... you can import tailwindcss directly\"\n- 03: \"without actually including the styles\"\n- 04: the Vite install step \"@import \\\"tailwindcss\\\"\". It is easy and close to install spelling, but the prompt's guardrail asks for it.\n- 05: \"Tailwind will automatically bundle other CSS files you include with @import\". The compiler resolves imports in every mode.\n- 10: \"The CLI is also available as a standalone executable if you want to use it without installing Node.js.\"\n- 11: \"is not designed to be used with CSS preprocessors like Sass, Less, or Stylus.\"\n\nMinor issue on 01, not flagged: \"Tailwind uses @reference\" names the wrong actor. The developer writes @reference, Tailwind does not.\n\nIf the fixes are applied, the true/false balance stays 6/6:\n- 06 stays True.\n- 07 stays False.\n- 08 becomes a True card about using var() so Tailwind skips the file.\n- 09 becomes a False card about the PostCSS plugin versus the Vite plugin.\n- 12 stays False.\n\nI did not use the \"Tailwind runs once per CSS module\" fact as a replacement, because card 01's wording (\"separately processed CSS Modules\") already gives that answer away.\n\nPrompt rules I found wrong or overstated:\n1. The r11 scope and the tooling rule present \"automatic vendor prefixing and nesting processing\" as unconditional. In the source, the Lightning CSS pass (nesting flattening plus prefixing for Safari 16.4, Chrome 111 and Firefox 128) runs only in optimized builds: Vite build (not the dev server), PostCSS when NODE_ENV is production or optimize is set, and the CLI with --minify or --optimize. The docs' wording hides this. Cards on these features must name the optimized build.\n2. The stale-material rule says \"@tailwind directives ... were removed\". That is too absolute. The v4 package's own utilities.css is literally \"@tailwind utilities;\", and index.css imports it, so the directive still exists inside v4. The user-facing entry is @import \"tailwindcss\", as the upgrade guide says. No r11 card depends on this.\n\nThe other r11 prompt rules match the live v4.3 docs: @reference for separately processed styles, referencing the main stylesheet in customized projects, Sass/Less/Stylus not designed to work with v4, and subpath imports for @import, @reference, @plugin and @config."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "tailwind-css-sr12-12",
+     "verdict": "ambiguous",
+     "urlStatus": "https://tailwindcss.com/docs/upgrade-guide loads (200, docs header v4.3) and is official",
+     "evidence": "Upgrade guide: \"In v3, the container utility had several configuration options like center and padding that no longer exist in v4. To customize the container utility in v4, extend it using the @utility directive.\" But the shipped v4 code honors them from a legacy JS config: tailwindcss/packages/tailwindcss/src/compat/container.ts (https://github.com/tailwindlabs/tailwindcss/blob/main/packages/tailwindcss/src/compat/container.ts) has registerContainerCompat(userConfig) reading userConfig.theme.container and emitting margin-inline: auto for center and padding-inline for padding; the same code is present in the published tailwindcss@4.3.3 dist/lib.js (function ka({center:e,padding:i,screens:r}) ... margin-inline auto).",
+     "problem": "The statement says 'legacy container.center and container.padding configuration options', which reads as a JavaScript config loaded with @config. In current v4 (4.3.3) such a config's theme.container.center and padding are honored by the compatibility layer, so an expert can defend True. The docs' 'no longer exist' only holds for CSS-first configuration.",
+     "suggestedFix": "Replace (answer False). Statement: \"Tailwind CSS v4 customizes the container utility's centering and padding through --container-* tokens in @theme.\" Explanation: \"--container-* tokens define sizes. To center and pad the container utility in CSS-first v4, extend it with @utility container { margin-inline: auto; padding-inline: 2rem; }.\" Source: https://tailwindcss.com/docs/upgrade-guide (Container configuration)."
+    },
+    {
+     "id": "tailwind-css-sr12-04",
+     "verdict": "weak_card",
+     "urlStatus": "https://tailwindcss.com/docs/functions-and-directives loads (200, docs header v4.3) and is official",
+     "evidence": "Functions and directives: \"Use the @plugin directive to load a legacy JavaScript-based plugin\" and \"The @plugin directive accepts either a package name or a local path.\"",
+     "problem": "Answer is correct, but the statement is a near-copy of the doc sentence and the answer can be read from the name: '@plugin directive loads a plugin' is guessable as True without study. It teaches nothing beyond the directive's name.",
+     "suggestedFix": "Replace (answer True). Statement: \"In a CSS-first Tailwind CSS v4 project, a stylesheet's @plugin line alone loads a JavaScript plugin such as @tailwindcss/typography.\" Explanation: \"@plugin takes a package name or local path straight from the stylesheet, so a legacy JavaScript plugin runs in v4 even when the project has no tailwind.config.js or @config line.\" Source: https://tailwindcss.com/docs/functions-and-directives"
+    }
+   ],
+   "notes": "Baseline confirmed: tailwindcss.com docs header shows v4.3 (v<!-- -->4.3 in served HTML), npm tailwindcss@4 resolves to 4.3.3. All 12 r12 sources load (200) and are official. Passed cards: 01 (upgrade guide: JS configs 'no longer detected automatically in v4', load with @config), 02 (directives: 'Things defined in CSS will be merged where possible and otherwise take precedence over those defined in configs, presets, and plugins'), 03 (corePlugins/safelist/separator 'not supported in v4.0'; same sentence in the v4.3 docs and the 4.3.3 build has no handling for them), 05 (theme(): 'This function is deprecated'), 06 (resolveConfig 'removed in v4'; 4.3.3 package exports confirm no resolveConfig), 07 (gradient stops 'preserved' in v4), 08 (border default currentColor and ring default color changed 'from blue-500 to currentColor'), 09 (transform-none 'no longer works', use scale-none; scale reference shows scale: property), 10 (space-y now '> :not(:last-child)', confirmed on margin reference page), 11 (divide-y now '> :not(:last-child) { border-bottom-width }', confirmed on border-width reference page). Minor, not flagged: 08's explanation only restates the statement; a better one would give context, e.g. 'v3 defaulted borders to gray-200 and rings to blue-500; v4 switched both to currentColor, so add an explicit color class where you relied on the old defaults.' 05's explanation says theme() remains for 'legacy usage', but the upgrade guide still points to theme(--breakpoint-xl) for media queries where CSS variables do not work; consider mentioning that. 10 and 11 rest on the same selector rewrite (:not([hidden]) ~ :not([hidden]) to :not(:last-child)) but test different consequences (hidden children vs border edge), so I did not mark them as duplicates; watch it. Prompt rule found wrong: the 'Verified migration traps' line says the removed container center/padding configuration is a settled fact. The upgrade guide says so, but the v4.3.3 compatibility layer (compat/container.ts) still applies theme.container center, padding and screens from a JS config loaded with @config. So 'removed' is true only for CSS-first configuration. The other r12 prompt rules (explicit @config, CSS precedence, unsupported corePlugins/safelist/separator, @plugin compatibility, theme() deprecated, resolveConfig removed, gradient preservation, currentColor defaults, transform-none boundary, space/divide selectors) match the current official pages."
+  }
+ ],
+ "scan": {
+  "cardsRead": 144,
+  "duplicates": [
+   {
+    "ids": [
+     "tailwind-css-sr6-06",
+     "tailwind-css-sr6-12"
+    ],
+    "why": "Both rest on the fact that a --breakpoint-tablet token in @theme registers viewport variants. sr6-12 (max-tablet: is generated automatically) presupposes sr6-06 (tablet: becomes available), so knowing sr6-12 answers sr6-06. sr6-06 also uses the same token-registers-variant template as sr7-10.",
+    "dropId": "tailwind-css-sr6-06"
+   },
+   {
+    "ids": [
+     "tailwind-css-sr8-01",
+     "tailwind-css-sr8-07"
+    ],
+    "why": "Both test that variants compose with bracket syntax and stay conditional. sr8-01's explanation ('md:top-[37px] supplies its value under the md condition') is the answer to sr8-07. sr8-01 is a weak, near-truism 'can compile' card.",
+    "dropId": "tailwind-css-sr8-01"
+   },
+   {
+    "ids": [
+     "tailwind-css-sr5-06",
+     "tailwind-css-sr5-07"
+    ],
+    "why": "Same fact for two markers: group-has-* and peer-has-* test descendants of the marked element (group or peer), not of the styled element. Knowing one answers the other (sr5-06 False, sr5-07 True). Drop sr5-07, because its 'preceding peer label' wording also gives away sr5-03.",
+    "dropId": "tailwind-css-sr5-07"
+   },
+   {
+    "ids": [
+     "tailwind-css-sr4-09",
+     "tailwind-css-sr4-10"
+    ],
+    "why": "Two sides of one distinction, which the prompt itself pairs: by default dark: follows prefers-color-scheme, while a selector override hands activation to the application. sr4-10's statement ('still requires the system's dark preference') presupposes the default that sr4-09 tests. sr4-09 is the easier, near-definitional side.",
+    "dropId": "tailwind-css-sr4-09"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "important-modifier",
+    "ids": [
+     "tailwind-css-sr1-03",
+     "tailwind-css-sr1-09",
+     "tailwind-css-sr1-10"
+    ],
+    "why": "sr1-03's explanation (the leading ! is 'older' and deprecated) implies a newer form exists, the trailing bg-red-500! of sr1-09. sr1-10's explanation (marks output !important) restates what ! does in sr1-09."
+   },
+   {
+    "name": "runtime-variable-reference",
+    "ids": [
+     "tailwind-css-sr1-07",
+     "tailwind-css-sr8-02"
+    ],
+    "why": "sr1-07 (a hover utility reads a variable set by an inline style at runtime, explanation shows hover:bg-(--bg-color-hover)) only works if (--var) compiles to var() rather than an inlined value, which gives away sr8-02 (False)."
+   },
+   {
+    "name": "inline-runtime-values",
+    "ids": [
+     "tailwind-css-sr1-06",
+     "tailwind-css-sr1-07"
+    ],
+    "why": "Both cover runtime values through inline styles. sr1-07's premise that inline-style variables drive utilities at runtime hints that inline changes need no recompilation (sr1-06 False)."
+   },
+   {
+    "name": "conflict-resolution-order",
+    "ids": [
+     "tailwind-css-sr1-08",
+     "tailwind-css-sr6-09",
+     "tailwind-css-sr10-01"
+    ],
+    "why": "sr6-09's explanation (Tailwind orders responsive rules by breakpoint size) and sr10-01's explanation (sorting lets smaller utilities override) both say generated stylesheet order decides conflicts, which gives away sr1-08 (class-attribute order, False)."
+   },
+   {
+    "name": "theme-extend-vs-reset",
+    "ids": [
+     "tailwind-css-sr2-05",
+     "tailwind-css-sr2-07",
+     "tailwind-css-sr2-08"
+    ],
+    "why": "sr2-07 (an explicit --color-*: initial is needed to clear defaults) implies that adding a token keeps the defaults (sr2-05 False). sr2-08's explanation ('static utilities survive theme resets') sits next to sr2-07's namespace reset."
+   },
+   {
+    "name": "theme-initial-reset",
+    "ids": [
+     "tailwind-css-sr2-07",
+     "tailwind-css-sr6-08"
+    ],
+    "why": "sr2-07 shows that setting a theme namespace to initial removes its utilities. The same mechanism applied to --breakpoint-2xl: initial gives away sr6-08 (False)."
+   },
+   {
+    "name": "plain-text-scanning",
+    "ids": [
+     "tailwind-css-sr3-01",
+     "tailwind-css-sr3-02"
+    ],
+    "why": "sr3-01's explanation ('scans source text for class-like tokens') directly implies that complete strings in a lookup object are detected (sr3-02 True)."
+   },
+   {
+    "name": "detection-base-path",
+    "ids": [
+     "tailwind-css-sr3-05",
+     "tailwind-css-sr3-06",
+     "tailwind-css-sr3-07"
+    ],
+    "why": "Two sides of one distinction (@source is relative to the stylesheet, automatic detection starts at the working directory), and both statements say 'working directory'. sr3-05's explanation and sr3-06's statement answer each other. sr3-07's explanation ('source() sets the detection base') touches the same base-path fact."
+   },
+   {
+    "name": "source-import-option",
+    "ids": [
+     "tailwind-css-sr3-07",
+     "tailwind-css-sr3-08"
+    ],
+    "why": "sr3-08 shows source(none) controlling which paths are scanned, which reveals that the source() import option sets detection and does not set the output directory (sr3-07 False)."
+   },
+   {
+    "name": "inline-underline-pair",
+    "ids": [
+     "tailwind-css-sr3-10",
+     "tailwind-css-sr3-11"
+    ],
+    "why": "Mirrored pair: both statements open 'An @source inline('underline') directive can ...'. One is True (generates underline), the other False (also generates hover:underline)."
+   },
+   {
+    "name": "base-vs-conditional-styles",
+    "ids": [
+     "tailwind-css-sr4-01",
+     "tailwind-css-sr6-01",
+     "tailwind-css-sr6-02"
+    ],
+    "why": "The same principle: unprefixed utilities supply the resting or starting style and prefixed ones are conditional. sr6-01's explanation ('unprefixed utilities supply the starting styles') answers sr6-02 and, by analogy, sr4-01."
+   },
+   {
+    "name": "form-state-pseudo-classes",
+    "ids": [
+     "tailwind-css-sr4-06",
+     "tailwind-css-sr4-07",
+     "tailwind-css-sr4-08",
+     "tailwind-css-sr5-05"
+    ],
+    "why": "sr4-08's explanation (':focus and :invalid') answers sr4-06. sr5-05's explanation (':has(:checked)') and sr4-07's own explanation show that checked: is the :checked pseudo-class and not the HTML attribute, so these cards confirm one another."
+   },
+   {
+    "name": "dark-mode-activation",
+    "ids": [
+     "tailwind-css-sr4-09",
+     "tailwind-css-sr4-10",
+     "tailwind-css-sr4-11",
+     "tailwind-css-sr4-12"
+    ],
+    "why": "sr4-10's statement presupposes the default media query (sr4-09). Its &:where(.dark, .dark *) selector visibly includes the marked element, which gives away sr4-11's data-theme self-match. sr4-12's explanation (the app owns the theme state) supports sr4-10 being False."
+   },
+   {
+    "name": "variant-no-side-effects",
+    "ids": [
+     "tailwind-css-sr4-05",
+     "tailwind-css-sr4-12"
+    ],
+    "why": "Same false template: a variant performs an application action (disables a control, persists a theme). sr4-05's explanation ('styles :disabled; it does not disable') gives away sr4-12."
+   },
+   {
+    "name": "named-relational-markers",
+    "ids": [
+     "tailwind-css-sr5-02",
+     "tailwind-css-sr5-04"
+    ],
+    "why": "sr5-02 uses group/card and group-focus/card: directly in markup with no configuration, which shows that named groups come from markup (sr5-04 True)."
+   },
+   {
+    "name": "peer-sibling-order",
+    "ids": [
+     "tailwind-css-sr5-03",
+     "tailwind-css-sr5-07"
+    ],
+    "why": "sr5-07's statement says 'a preceding peer label', which reveals that the peer must precede its target and so answers sr5-03 (False). sr5-03's explanation in turn supports sr5-07."
+   },
+   {
+    "name": "marker-has-descendants",
+    "ids": [
+     "tailwind-css-sr5-06",
+     "tailwind-css-sr5-07"
+    ],
+    "why": "group-has and peer-has run the :has() check on the marker's own descendants. Each explanation answers the other card."
+   },
+   {
+    "name": "arbitrary-relational-selectors",
+    "ids": [
+     "tailwind-css-sr5-08",
+     "tailwind-css-sr5-09"
+    ],
+    "why": "Both test how an arbitrary group or peer selector combines with the marker (attached to the marker, or placed with &). sr5-08's explanation ('combines .group and .is-ready on one element') and sr5-09 explain the same placement rule."
+   },
+   {
+    "name": "data-vs-aria-matching",
+    "ids": [
+     "tailwind-css-sr5-10",
+     "tailwind-css-sr5-11"
+    ],
+    "why": "A contrasting pair from the prompt: aria-* booleans match \"true\" while data-* matches presence. sr5-11's explanation (matches aria-expanded=\"true\") sits directly against sr5-10's 'waits for true' misconception and steers the answer."
+   },
+   {
+    "name": "open-ended-minimum-variants",
+    "ids": [
+     "tailwind-css-sr6-02",
+     "tailwind-css-sr6-04",
+     "tailwind-css-sr7-04",
+     "tailwind-css-sr7-06"
+    ],
+    "why": "sr6-04's explanation (a bounded range needs md:max-xl:) and sr7-06 (@sm:@max-md: forms the interval) both show that a bare minimum variant is open-ended. This gives away sr6-02 and sr7-04 (both False) and lets sr6-04 and sr7-06 answer each other across the viewport and container namespaces."
+   },
+   {
+    "name": "token-registers-variant",
+    "ids": [
+     "tailwind-css-sr6-06",
+     "tailwind-css-sr6-12",
+     "tailwind-css-sr7-10"
+    ],
+    "why": "All three use the same template, '@theme --X-name token makes name variant available' (all True). Seeing one makes the others obvious."
+   },
+   {
+    "name": "breakpoint-ordering-units",
+    "ids": [
+     "tailwind-css-sr6-09",
+     "tailwind-css-sr6-10"
+    ],
+    "why": "sr6-09's explanation ('orders responsive rules by breakpoint size') is the premise of sr6-10. The docs' note on consistent units ties the two together."
+   },
+   {
+    "name": "arbitrary-thresholds",
+    "ids": [
+     "tailwind-css-sr6-11",
+     "tailwind-css-sr7-11"
+    ],
+    "why": "sr6-11 (min-[37rem]: creates a one-off viewport threshold) gives away by analogy that @max-[960px]: is supported (sr7-11 False)."
+   },
+   {
+    "name": "container-vs-viewport-target",
+    "ids": [
+     "tailwind-css-sr7-03",
+     "tailwind-css-sr7-05"
+    ],
+    "why": "sr7-05's explanation (the @max-md: threshold belongs to the --container-* scale) reveals that @-variants measure a container and not the viewport (sr7-03 False)."
+   },
+   {
+    "name": "container-token-namespace",
+    "ids": [
+     "tailwind-css-sr7-05",
+     "tailwind-css-sr7-09",
+     "tailwind-css-sr7-10"
+    ],
+    "why": "sr7-09's explanation ('--container-* also registers size utilities') implies its primary role is query sizes (sr7-10 True). sr7-05's explanation states the --container-* scale outright."
+   },
+   {
+    "name": "nearest-vs-named-container",
+    "ids": [
+     "tailwind-css-sr7-07",
+     "tailwind-css-sr7-08"
+    ],
+    "why": "Two sides of one distinction: sr7-08 (a named variant reaches past a nearer container) implies that unnamed variants use the nearest one (sr7-07 False)."
+   },
+   {
+    "name": "arbitrary-variant-composition",
+    "ids": [
+     "tailwind-css-sr8-01",
+     "tailwind-css-sr8-07",
+     "tailwind-css-sr8-08"
+    ],
+    "why": "sr8-08's statement uses md:[--panel-gap:24px] as a conditional arbitrary property, and sr8-01's explanation shows md: on a bracket value. Both give away sr8-07 (False)."
+   },
+   {
+    "name": "underscore-handling",
+    "ids": [
+     "tailwind-css-sr8-04",
+     "tailwind-css-sr8-05",
+     "tailwind-css-sr8-06"
+    ],
+    "why": "Three cards on one underscore rule set: decoded to a space (sr8-04), preserved in URLs (sr8-05), escaped to stay literal (sr8-06). Together they show the rule and its exceptions side by side, and sr8-05 and sr8-06 explain each other's exception."
+   },
+   {
+    "name": "preflight-import",
+    "ids": [
+     "tailwind-css-sr9-02",
+     "tailwind-css-sr9-03"
+    ],
+    "why": "sr9-02's explanation ('brings in preflight.css under layer(base)') shows Preflight is a separate stylesheet, which answers sr9-03 (utilities.css does not restore it)."
+   },
+   {
+    "name": "functional-value-resolution",
+    "ids": [
+     "tailwind-css-sr10-05",
+     "tailwind-css-sr10-06",
+     "tailwind-css-sr10-08"
+    ],
+    "why": "sr10-05 shows --value(--tab-size-*) resolving a theme key, which sr10-08 builds on. sr10-06's explanation shows the bracketed --value([integer]) form, which frames the argument list in sr10-08."
+   },
+   {
+    "name": "reference-context",
+    "ids": [
+     "tailwind-css-sr11-01",
+     "tailwind-css-sr11-02",
+     "tailwind-css-sr11-03",
+     "tailwind-css-sr11-12"
+    ],
+    "why": "sr11-01's statement ('expose main-stylesheet definitions') and sr11-12's '#app.css' target give away sr11-02 (a customized project references app.css, not 'tailwindcss'). The explanations of sr11-01 and sr11-03 restate what @reference supplies and omits."
+   },
+   {
+    "name": "lightning-css-processing",
+    "ids": [
+     "tailwind-css-sr11-05",
+     "tailwind-css-sr11-06",
+     "tailwind-css-sr11-07"
+    ],
+    "why": "All three describe Tailwind's own build step (import bundling, prefixing, nesting). sr11-07's premise of a 'documented Lightning CSS nesting step' confirms sr11-05 and sr11-06, and their explanations frame sr11-07."
+   },
+   {
+    "name": "space-divide-selector",
+    "ids": [
+     "tailwind-css-sr12-10",
+     "tailwind-css-sr12-11"
+    ],
+    "why": "The upgrade guide documents one selector change for both: :not([hidden]) ~ :not([hidden]) became > :not(:last-child). sr12-11's explanation ('direct children except the last') gives away sr12-10 (hidden children are no longer filtered)."
+   },
+   {
+    "name": "legacy-options-honors-template",
+    "ids": [
+     "tailwind-css-sr12-03",
+     "tailwind-css-sr12-12"
+    ],
+    "why": "Both use the false template 'Tailwind CSS v4 honors legacy ... configuration options'. Dealt together, they teach the template rather than the facts."
+   }
+  ],
+  "tells": "Lengths are balanced. Statement length averages 80.5 characters on True cards and 80.6 on False cards, and every section is within 5 characters (largest gaps: r7 +4.8, r5 -4.3, r10 +4.0). Explanations average 64 (True) against 65 (False). Hedge words are balanced: 'can' 7 True / 6 False, 'automatically' 2/2. The exploitable tells are wording and templates.\n\n1. Narrowing or limiting verbs are always False (5/5): restricts (sr3-01, sr5-06), confines (sr7-04), limits (sr2-03), waits for (sr5-10). This recurring 'X restricts/limits Y' template carries more than the allowed 2 false statements.\n\n2. 'Tailwind treats X as ...' is always False (3/3): sr6-04, sr7-11, sr8-07. It is a recurring mislabel template.\n\n3. Over-reaching side-effect verbs appear only in False statements: triggers (sr1-06), duplicates (sr1-02), raises (sr1-10), stretches (sr9-09), resets (sr12-09), tracks (sr7-05), keeps (sr6-08), replaces (sr2-05, sr10-07), 'still requires' (sr4-10), 'unsupported' (sr7-11). That makes 11 cards, all False.\n\n4. Verbs that lean True. 'Tailwind accepts' at the start of a statement: 4/4 True (sr7-12, sr8-10, sr9-10, sr10-04); 'accepts' overall is 4 True / 2 False. 'uses': 5/0 True (sr5-09, sr7-02, sr10-01, sr11-01, sr12-08). 'includes': 2/0 True (sr4-02, sr9-02). '... makes X available': 3 True (sr6-06, sr6-12, sr7-09) against 1 False (sr2-09). 'selects' leans False: 3 False (sr7-07, sr9-06, sr9-12) against 1 True (sr7-08).\n\n5. Preflight cards are 6 False / 3 True. When Preflight is the subject and the verb keeps a browser default or picks a value, the card is always False: 'retains/preserves browser margins/numbering' (sr9-04, sr9-07), 'selects text-2xl/content-box' (sr9-06, sr9-12), 'stretches' (sr9-09). The only True ones use 'supplies' or 'changes' (sr9-05, sr9-08).\n\n6. 'honors legacy ... configuration options' is 2/2 False (sr12-03, sr12-12). In r12, every claim that v4 keeps a legacy mechanism is False (sr12-01 auto-discovers, sr12-03, sr12-06 exposes resolveConfig, sr12-12), apart from sr12-04 and sr12-05.\n\n7. 'also' marks over-generalization: 2 of 3 are False (sr3-11 'also generate hover:underline', sr10-09 'also registers -shift-*'; the True one is sr4-11).\n\n8. Name-match tell for variant cards. When the variant name equals the generated pseudo-class, the card is True (sr4-06 invalid:→:invalid, sr4-08 focus:invalid:→:focus+:invalid, sr5-05 has-checked→:has(:checked)). When it does not match, the card is False (sr4-03 focus-visible: shown as :focus). sr4-06 is effectively a name-giveaway card.\n\n9. Variant-performs-an-action template, 2/2 False: sr4-05 (disabled: disables), sr4-12 (dark variant persists to localStorage).\n\n10. Mirrored opening: sr3-10 (True) and sr3-11 (False) both start 'An @source inline('underline') directive can ...'.\n\n11. Truism or giveaway risk: sr8-01 ('can compile responsive variants' of bracket values), sr11-04 (v4 starts with @import 'tailwindcss', installation knowledge), sr11-08 (the Vite plugin compiles Tailwind in Vite). A player answers True from general sense.\n\n12. Difficulty 3 is skewed slightly towards False (10 True / 14 False), so a hard card is a weak signal for False. The appliesTo label 'Tailwind CSS v4.3' (10 cards) does not predict the answer.\n\nSpot-checked against the live docs (no problems found): sr11-07 (Compatibility says 'Tailwind flattens that nested CSS'), sr11-10 (the standalone executable that runs without Node.js is documented on the CLI page), sr7-02 (@container-size is on the responsive-design page), sr10-01 (the upgrade guide says custom utilities are sorted by property count), sr12-09/10/11 (the upgrade guide's transform, space and divide before/after code matches the cards)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "tailwind-css-sr1-06",
+    "reason": "weak_card: strawman, changing a plain inline style obviously needs no Tailwind recompilation; r1 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "tailwind-css-sr2-02",
+    "reason": "ambiguous: docs say @theme is required top-level, but the 4.3.3 compiler accepts and hoists a nested @theme. The suggested replacement rests only on compiler behaviour that contradicts the docs, so no clean card is possible."
+   },
+   {
+    "id": "tailwind-css-sr2-03",
+    "reason": "weak_card: strawman (color tokens obviously feed text-* as well as bg-*), and it repeats the sr2-04 namespace distractor template."
+   },
+   {
+    "id": "tailwind-css-sr2-11",
+    "reason": "weak_card: truism once the tokens are said to be emitted as CSS variables; general var() use belongs to css-fundamentals. r2 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "tailwind-css-sr3-06",
+    "reason": "duplicate: other side of the sr3-05 working-directory versus stylesheet-relative distinction."
+   },
+   {
+    "id": "tailwind-css-sr3-07",
+    "reason": "weak_card: the name source() gives away that it does not set the output directory."
+   },
+   {
+    "id": "tailwind-css-sr3-09",
+    "reason": "weak_card: name giveaway, '@source not' cannot plausibly add a path. r3 keeps 9 cards (5T/4F)."
+   },
+   {
+    "id": "tailwind-css-sr4-01",
+    "reason": "weak_card: strawman that paraphrases the docs' intro example (hover: obviously does not set the resting style)."
+   },
+   {
+    "id": "tailwind-css-sr4-03",
+    "reason": "weak_card: name giveaway, focus-visible: maps to the pseudo-class with the same name."
+   },
+   {
+    "id": "tailwind-css-sr4-09",
+    "reason": "scan duplicate: sr4-10 presupposes the default prefers-color-scheme behaviour; sr4-09 is the near-definitional side. r4 keeps 9 cards after rewriting sr4-05 and sr4-06 (5T/4F)."
+   },
+   {
+    "id": "tailwind-css-sr5-02",
+    "reason": "weak_card: strawman, group-focus/card: plainly names group/card."
+   },
+   {
+    "id": "tailwind-css-sr5-04",
+    "reason": "weak_card: vague truism (every class is generated from markup), and sr5-02 already showed it."
+   },
+   {
+    "id": "tailwind-css-sr5-09",
+    "reason": "weak_card: near-copy of the docs sentence, wrong actor, explanation adds nothing. r5 keeps 9 cards after rewriting sr5-07 and sr5-12 (4T/5F)."
+   },
+   {
+    "id": "tailwind-css-sr6-01",
+    "reason": "weak_card: true by definition (an unprefixed utility has no breakpoint condition)."
+   },
+   {
+    "id": "tailwind-css-sr6-05",
+    "reason": "weak_card: strawman lifted from the docs sentence naming cursor styles; utility-lookup type."
+   },
+   {
+    "id": "tailwind-css-sr6-06",
+    "reason": "scan duplicate: sr6-12 (max-tablet: exists) presupposes tablet: exists. r6 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "tailwind-css-sr7-07",
+    "reason": "duplicate: other side of the nearest versus named container distinction tested by sr7-08; nearest-container selection is CSS mechanics."
+   },
+   {
+    "id": "tailwind-css-sr7-10",
+    "reason": "duplicate: same --container-* namespace fact as sr7-05, and copies the token-registers-variant template."
+   },
+   {
+    "id": "tailwind-css-sr7-11",
+    "reason": "weak_card: disguised negation ('treats as unsupported') reusing the docs' own class; strawman. r7 keeps 9 cards (5T/4F)."
+   },
+   {
+    "id": "tailwind-css-sr8-01",
+    "reason": "scan duplicate of sr8-07 (variants compose with bracket syntax); near-truism 'can compile' card."
+   },
+   {
+    "id": "tailwind-css-sr8-07",
+    "reason": "duplicate of sr8-01, and sr8-08 already shows md: on an arbitrary property; near strawman."
+   },
+   {
+    "id": "tailwind-css-sr8-12",
+    "reason": "weak_card: strawman, nobody expects @custom-variant to emit a standalone utility rule. r8 keeps 9 cards (5T/4F)."
+   },
+   {
+    "id": "tailwind-css-sr9-01",
+    "reason": "weak_card: layer-declaration trivia, overlaps the layer-order fact in sr9-11."
+   },
+   {
+    "id": "tailwind-css-sr9-03",
+    "reason": "weak_card: strawman, utilities.css restoring Preflight is not a belief anyone who read the split import would hold. r9 keeps 10 cards (5T/5F)."
+   },
+   {
+    "id": "tailwind-css-sr10-10",
+    "reason": "weak_card: strawman, the modifier is by definition the part after the slash. r10 keeps 11 cards (6T/5F)."
+   },
+   {
+    "id": "tailwind-css-sr11-07",
+    "reason": "ambiguous with no clean docs-verifiable fix: nesting is flattened only in optimized builds (Vite build, PostCSS in production, CLI with --minify/--optimize), a condition the official docs never state, so any rewrite naming it cannot be checked on tailwindcss.com."
+   },
+   {
+    "id": "tailwind-css-sr11-08",
+    "reason": "weak_card: definition card, a Vite plugin runs in Vite's pipeline by definition."
+   },
+   {
+    "id": "tailwind-css-sr11-12",
+    "reason": "weak_card / out_of_scope: package.json imports versus exports is Node module resolution, not Tailwind behaviour."
+   },
+   {
+    "id": "tailwind-css-sr12-04",
+    "reason": "weak_card: near-copy of the doc sentence; '@plugin loads a plugin' is readable from the name. r12 keeps 11 cards (5T/6F)."
+   }
+  ],
+  "source": [
+   {
+    "id": "tailwind-css-sr3-03",
+    "title": "Detecting classes in source files",
+    "url": "https://tailwindcss.com/docs/detecting-classes-in-source-files"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "tailwind-css-sr1-01",
+    "reason": "ambiguous: 'static stylesheet during the build' contradicts the docs ('isn't one big static stylesheet') and fails for the Play CDN; cited Vite page did not support it. Rebuilt from verifier text, checked on styling-with-utility-classes.",
+    "statement": "Tailwind generates CSS for the utility classes it finds in your project when you compile your CSS.",
+    "answer": true,
+    "explanation": "Tailwind isn't one big prebuilt stylesheet: it builds just the styles your classes need at compile time, which is how a one-off class like bg-[#316ff6] works.",
+    "misconception": "",
+    "sourceTitle": "Styling with utility classes",
+    "sourceUrl": "https://tailwindcss.com/docs/styling-with-utility-classes"
+   },
+   {
+    "id": "tailwind-css-sr3-01",
+    "reason": "tell: narrowing verb 'restricts' marked False 5/5 in the deck; reworded with a neutral verb, same fact (detection is plain-text, not HTML-attribute parsing) and same answer.",
+    "statement": "Tailwind finds utility candidates by parsing the class attributes in your HTML templates.",
+    "answer": false,
+    "explanation": "Tailwind treats every source file as plain text and picks out class-like tokens wherever they appear, without parsing the file as code.",
+    "misconception": "Tailwind parses HTML class attributes instead of scanning source files as plain text.",
+    "sourceTitle": "Detecting classes in source files",
+    "sourceUrl": "https://tailwindcss.com/docs/detecting-classes-in-source-files"
+   },
+   {
+    "id": "tailwind-css-sr4-05",
+    "reason": "weak_card (strawman); dropping all weak r4 cards would leave 7, so rewritten with the verifier's replacement, confirmed in the states quick reference (disabled &:disabled, aria-disabled &[aria-disabled=\"true\"]).",
+    "statement": "Tailwind's disabled: variant matches a button that signals its state with aria-disabled=\"true\" alone.",
+    "answer": false,
+    "explanation": "disabled: compiles to :disabled, which needs the native disabled state; a button marked only with aria-disabled=\"true\" needs Tailwind's aria-disabled: variant.",
+    "misconception": "Tailwind's disabled: variant also matches aria-disabled=\"true\".",
+    "sourceTitle": "Hover, focus, and other states",
+    "sourceUrl": "https://tailwindcss.com/docs/hover-focus-and-other-states"
+   },
+   {
+    "id": "tailwind-css-sr4-06",
+    "reason": "weak_card (name giveaway); needed to keep r4 at 9 cards, rewritten with the verifier's replacement, confirmed on the states page (invalid &:invalid; user-invalid applies once the user has interacted).",
+    "statement": "Tailwind's invalid: styles show on an empty required field before the user has typed anything.",
+    "answer": true,
+    "explanation": "invalid: compiles to :invalid, which matches as soon as the value fails validation; Tailwind's user-invalid: variant waits until the user has interacted with the field.",
+    "misconception": "",
+    "sourceTitle": "Hover, focus, and other states",
+    "sourceUrl": "https://tailwindcss.com/docs/hover-focus-and-other-states"
+   },
+   {
+    "id": "tailwind-css-sr5-06",
+    "reason": "tell: narrowing verb 'restricts' reworded; same fact (group-has searches the group's descendants) and same answer.",
+    "statement": "Tailwind's group-has-[a]: looks for a link inside the styled element's own subtree.",
+    "answer": false,
+    "explanation": "group-has-[a]: runs its :has() check on the element marked group, so the link can sit anywhere inside that group.",
+    "misconception": "The styled target supplies the searched subtree.",
+    "sourceTitle": "Hover, focus, and other states",
+    "sourceUrl": "https://tailwindcss.com/docs/hover-focus-and-other-states"
+   },
+   {
+    "id": "tailwind-css-sr5-07",
+    "reason": "duplicate of sr5-06 (and gave away sr5-03); dropping all flagged r5 cards would leave 7 with 2 True, so rewritten with the verifier's implicit-groups card, confirmed under 'Implicit groups' on the states page.",
+    "statement": "Tailwind's in-focus: variant reacts to focus on any parent element, whether or not that parent has the group class.",
+    "answer": true,
+    "explanation": "The in-* variant works like group-* but needs no group marker on the parent, and it responds to state changes in any parent; use group for finer control.",
+    "misconception": "",
+    "sourceTitle": "Hover, focus, and other states",
+    "sourceUrl": "https://tailwindcss.com/docs/hover-focus-and-other-states"
+   },
+   {
+    "id": "tailwind-css-sr5-12",
+    "reason": "weak_card (give-away copy of the docs example); needed for r5 balance, rewritten with the verifier's group-aria card, confirmed in the page's generated CSS (&:is(:where(.group)[aria-sort=\"ascending\"] *)).",
+    "statement": "Tailwind's group-aria-[sort=ascending]: checks aria-sort on the group ancestor rather than on the styled element.",
+    "answer": true,
+    "explanation": "Tailwind compiles it to :where(.group)[aria-sort=\"ascending\"] *, so an icon inside a th marked group rotates once that th is sorted ascending.",
+    "misconception": "",
+    "sourceTitle": "Hover, focus, and other states",
+    "sourceUrl": "https://tailwindcss.com/docs/hover-focus-and-other-states"
+   },
+   {
+    "id": "tailwind-css-sr7-04",
+    "reason": "tell: narrowing verb 'confines' reworded; same fact (@sm: is an open-ended minimum, not a band) and same answer.",
+    "statement": "Tailwind's @sm: variant stops matching once its container reaches the @md size.",
+    "answer": false,
+    "explanation": "Container variants are mobile-first like breakpoints: @sm: sets a minimum container width and stays active at every larger size.",
+    "misconception": "Named container variants represent size bands.",
+    "sourceTitle": "Responsive design",
+    "sourceUrl": "https://tailwindcss.com/docs/responsive-design"
+   },
+   {
+    "id": "tailwind-css-sr9-05",
+    "reason": "ambiguous: the docs sentence that the border class only sets border-width is stale against v4.3 output. Rebuilt on the documented reset itself (border: 0 solid on all elements), avoiding the contested border-style claim.",
+    "statement": "Preflight sets border width to zero on all elements, so inputs and buttons lose their browser-drawn borders.",
+    "answer": true,
+    "explanation": "Preflight applies border: 0 solid to every element and pseudo-element, overriding the user-agent borders on form controls such as inputs and buttons.",
+    "misconception": "",
+    "sourceTitle": "Preflight",
+    "sourceUrl": "https://tailwindcss.com/docs/preflight"
+   },
+   {
+    "id": "tailwind-css-sr9-10",
+    "reason": "tell: statement-initial 'Tailwind accepts' was True 4/4; reworded, same fact (custom element defaults go in @layer base) and same answer.",
+    "statement": "A project's own @layer base rules give HTML elements custom defaults, such as a color for h1 headings.",
+    "answer": true,
+    "explanation": "Tailwind's docs put a project's own element defaults in @layer base, for example @layer base { h1 { color: red; } }, next to Preflight in the base layer.",
+    "misconception": "",
+    "sourceTitle": "Adding custom styles",
+    "sourceUrl": "https://tailwindcss.com/docs/adding-custom-styles"
+   },
+   {
+    "id": "tailwind-css-sr9-11",
+    "reason": "ambiguous: 'override competing component-layer rules with more specific selectors' had two readings. Rewritten with the verifier's wording so the more specific selector clearly belongs to the component rule.",
+    "statement": "In Tailwind CSS v4, a utility class beats a conflicting @layer components rule that has a more specific selector.",
+    "answer": true,
+    "explanation": "Tailwind declares its layers as theme, base, components, utilities; a later cascade layer wins for normal declarations whatever the selector specificity.",
+    "misconception": "",
+    "sourceTitle": "Adding custom styles",
+    "sourceUrl": "https://tailwindcss.com/docs/adding-custom-styles"
+   },
+   {
+    "id": "tailwind-css-sr10-04",
+    "reason": "tell: statement-initial 'Tailwind accepts' was True 4/4; reworded (also fixes the 'utility's scrollbar' wording), same fact and answer.",
+    "statement": "A nested &::-webkit-scrollbar rule inside @utility styles the scrollbar of the element using that utility.",
+    "answer": true,
+    "explanation": "Nesting inside @utility adds an extra selector to the generated utility, as in the docs' scrollbar-hidden example.",
+    "misconception": "",
+    "sourceTitle": "Adding custom styles",
+    "sourceUrl": "https://tailwindcss.com/docs/adding-custom-styles"
+   },
+   {
+    "id": "tailwind-css-sr11-06",
+    "reason": "ambiguous: unconditional prefixing claim with a vague explanation. The verifier's 'when it optimizes a build' condition is not stated on any tailwindcss.com page, so the card is rebuilt on the documented consequence (upgrade guide: prefixing handled for you, remove autoprefixer).",
+    "statement": "Tailwind CSS v4 adds vendor prefixes itself, which makes autoprefixer unnecessary in its PostCSS setup.",
+    "answer": true,
+    "explanation": "Vendor prefixing is part of Tailwind's own CSS processing in v4, so the upgrade guide removes autoprefixer from the PostCSS plugin list.",
+    "misconception": "",
+    "sourceTitle": "Upgrade guide",
+    "sourceUrl": "https://tailwindcss.com/docs/upgrade-guide"
+   },
+   {
+    "id": "tailwind-css-sr11-09",
+    "reason": "weak_card (strawman); dropping 07, 08, 09 and 12 would leave r11 with 8 cards, so rewritten with the verifier's replacement, confirmed on the Vite installation page.",
+    "statement": "Tailwind's docs name the PostCSS plugin as the most seamless way to add Tailwind to SvelteKit.",
+    "answer": false,
+    "explanation": "Tailwind's docs call the Vite plugin the most seamless way to integrate with frameworks like Laravel, SvelteKit, React Router, Nuxt and SolidJS.",
+    "misconception": "The PostCSS plugin is the recommended integration for Vite-based frameworks.",
+    "sourceTitle": "Installing Tailwind CSS with Vite",
+    "sourceUrl": "https://tailwindcss.com/docs/installation/using-vite"
+   },
+   {
+    "id": "tailwind-css-sr12-12",
+    "reason": "ambiguous: the v4.3.3 compatibility layer still honors theme.container center/padding from a JS config loaded with @config. Rewritten with the verifier's CSS-first replacement, confirmed in the upgrade guide's Container configuration section.",
+    "statement": "In Tailwind CSS v4, --container-* tokens in @theme set the container utility's centering and padding.",
+    "answer": false,
+    "explanation": "The upgrade guide replaces v3's container center and padding options with CSS: @utility container { margin-inline: auto; padding-inline: 2rem; }.",
+    "misconception": "Container centering and padding moved into --container-* theme tokens.",
+    "sourceTitle": "Upgrade guide",
+    "sourceUrl": "https://tailwindcss.com/docs/upgrade-guide"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "important-modifier",
+    "ids": [
+     "tailwind-css-sr1-03",
+     "tailwind-css-sr1-09",
+     "tailwind-css-sr1-10"
+    ]
+   },
+   {
+    "name": "runtime-variable-reference",
+    "ids": [
+     "tailwind-css-sr1-07",
+     "tailwind-css-sr8-02"
+    ]
+   },
+   {
+    "name": "conflict-resolution-order",
+    "ids": [
+     "tailwind-css-sr1-08",
+     "tailwind-css-sr6-09",
+     "tailwind-css-sr10-01"
+    ]
+   },
+   {
+    "name": "theme-extend-vs-reset",
+    "ids": [
+     "tailwind-css-sr2-05",
+     "tailwind-css-sr2-07",
+     "tailwind-css-sr2-08"
+    ]
+   },
+   {
+    "name": "theme-initial-reset",
+    "ids": [
+     "tailwind-css-sr2-07",
+     "tailwind-css-sr6-08"
+    ]
+   },
+   {
+    "name": "plain-text-scanning",
+    "ids": [
+     "tailwind-css-sr3-01",
+     "tailwind-css-sr3-02"
+    ]
+   },
+   {
+    "name": "inline-underline-pair",
+    "ids": [
+     "tailwind-css-sr3-10",
+     "tailwind-css-sr3-11"
+    ]
+   },
+   {
+    "name": "form-state-pseudo-classes",
+    "ids": [
+     "tailwind-css-sr4-05",
+     "tailwind-css-sr4-06",
+     "tailwind-css-sr4-07",
+     "tailwind-css-sr4-08",
+     "tailwind-css-sr5-05"
+    ]
+   },
+   {
+    "name": "dark-mode-activation",
+    "ids": [
+     "tailwind-css-sr4-10",
+     "tailwind-css-sr4-11",
+     "tailwind-css-sr4-12"
+    ]
+   },
+   {
+    "name": "aria-variant-matching",
+    "ids": [
+     "tailwind-css-sr4-05",
+     "tailwind-css-sr5-11"
+    ]
+   },
+   {
+    "name": "implicit-vs-marked-groups",
+    "ids": [
+     "tailwind-css-sr5-01",
+     "tailwind-css-sr5-07"
+    ]
+   },
+   {
+    "name": "group-marker-attribute",
+    "ids": [
+     "tailwind-css-sr5-08",
+     "tailwind-css-sr5-12"
+    ]
+   },
+   {
+    "name": "data-vs-aria-matching",
+    "ids": [
+     "tailwind-css-sr5-10",
+     "tailwind-css-sr5-11"
+    ]
+   },
+   {
+    "name": "open-ended-minimum-variants",
+    "ids": [
+     "tailwind-css-sr6-02",
+     "tailwind-css-sr6-04",
+     "tailwind-css-sr7-04",
+     "tailwind-css-sr7-06"
+    ]
+   },
+   {
+    "name": "breakpoint-ordering-units",
+    "ids": [
+     "tailwind-css-sr6-09",
+     "tailwind-css-sr6-10"
+    ]
+   },
+   {
+    "name": "container-vs-viewport-target",
+    "ids": [
+     "tailwind-css-sr7-03",
+     "tailwind-css-sr7-05"
+    ]
+   },
+   {
+    "name": "container-token-namespace",
+    "ids": [
+     "tailwind-css-sr7-05",
+     "tailwind-css-sr7-09"
+    ]
+   },
+   {
+    "name": "container-token-role",
+    "ids": [
+     "tailwind-css-sr7-09",
+     "tailwind-css-sr12-12"
+    ]
+   },
+   {
+    "name": "underscore-handling",
+    "ids": [
+     "tailwind-css-sr8-04",
+     "tailwind-css-sr8-05",
+     "tailwind-css-sr8-06"
+    ]
+   },
+   {
+    "name": "functional-value-resolution",
+    "ids": [
+     "tailwind-css-sr10-05",
+     "tailwind-css-sr10-06",
+     "tailwind-css-sr10-08"
+    ]
+   },
+   {
+    "name": "reference-context",
+    "ids": [
+     "tailwind-css-sr11-01",
+     "tailwind-css-sr11-02",
+     "tailwind-css-sr11-03"
+    ]
+   },
+   {
+    "name": "tailwind-build-processing",
+    "ids": [
+     "tailwind-css-sr11-05",
+     "tailwind-css-sr11-06"
+    ]
+   },
+   {
+    "name": "space-divide-selector",
+    "ids": [
+     "tailwind-css-sr12-10",
+     "tailwind-css-sr12-11"
+    ]
+   }
+  ],
+  "sectionBalance": "r1: 11 cards, 6T/5F. r2: 9 cards, 4T/5F. r3: 9 cards, 5T/4F. r4: 9 cards, 5T/4F. r5: 9 cards, 4T/5F. r6: 9 cards, 4T/5F. r7: 9 cards, 5T/4F. r8: 9 cards, 5T/4F. r9: 10 cards, 5T/5F. r10: 11 cards, 6T/5F. r11: 9 cards, 5T/4F. r12: 11 cards, 5T/6F. Deck total 115 cards (59T/56F), from 144.",
+  "notes": "Method: I downloaded the official v4.3 pages (styling-with-utility-classes, theme, colors, font-family, detecting-classes-in-source-files, hover-focus-and-other-states, dark-mode, responsive-design, adding-custom-styles, preflight, functions-and-directives, compatibility, the Vite/PostCSS/CLI installation pages, upgrade-guide, max-width, play-cdn) and checked every rewrite against them. Nothing was edited, and no git, gh or vercel command was run.\n\nDecisions that depart from a verifier's suggestion:\n- sr2-02 dropped, not rewritten. The suggested card (a nested @theme is hoisted globally) rests only on how the 4.3.3 compiler behaves, and the official page says the opposite (\"required to be defined top-level\").\n- sr11-06 rewritten without the verifier's \"when it optimizes a build\" condition. That condition, and the unoptimized-dev-server behaviour, appear only in the GitHub source, not on tailwindcss.com. I rebuilt the card on the upgrade guide's documented consequence: prefixing is handled for you, so autoprefixer can be removed.\n- sr11-07 dropped for the same reason: no clean card could be checked on the docs. To keep r11 at 9 cards, I rewrote sr11-09 with the verifier's Vite-versus-PostCSS replacement. Its explanation keeps only what the Vite page itself says.\n- sr9-05: the explanation avoids the docs' stale sentence that \"the border class only sets border-width\". The verifier's border-style claim comes from the compiler, not the docs, so it is left out too.\n- sr3-03: source fix only (see \"source\"). Statement, answer and explanation are unchanged.\n\nRewrites to keep sections at size and balance:\n- r4: dropping all 5 weak/duplicate cards would leave 7. I rewrote sr4-05 (False) and sr4-06 (True) and dropped sr4-01, sr4-03 and sr4-09. I chose 05 and 06 over the 01 and 03 replacements because those two give away sr4-02 (the hover media condition).\n- r5: dropping would leave 7 cards (2T/5F). I rewrote sr5-07 (in-* implicit groups) and sr5-12 (group-aria-*), both True. I chose them over the 04 and 09 replacements as the less guessable cards.\n\nTell rewrites (5), each keeping its fact and answer:\n- Narrowing verbs: sr3-01 (restricts), sr5-06 (restricts), sr7-04 (confines).\n- Statement-initial \"Tailwind accepts\": sr9-10 and sr10-04.\nAfter these and the drops, \"restricts/confines/limits\" are gone and \"Tailwind accepts\" survives only in sr7-12 and sr8-10.\n\nResidual items not fixed:\n- sr3-10 and sr3-11 still share the opening \"An @source inline('underline') directive can\"; they are in a conflict group.\n- The over-reaching-verb False pattern (duplicates, raises, stretches, resets, tracks, keeps, replaces) is still present in the remaining False cards.\n- Optional source upgrades the verifiers suggested, which I did not apply because those cards were not flagged:\n  - sr6-11 to /docs/responsive-design#using-arbitrary-values\n  - sr8-04 to adding-custom-styles#handling-whitespace\n  - sr8-03 to adding-custom-styles#resolving-ambiguities\n  - sr4-02 to the states page quick reference\n  - sr7-03 to /docs/responsive-design\n- Many surviving explanations are very short (under 70 characters) and only restate the verdict, especially in r3, r5 and r7. They are worth an enrichment pass.\n\nPrompt rule issues for the deck definition:\n1. r11's \"automatic vendor prefixing and nesting processing\" is applied unconditionally. In the official source it runs only in optimized builds, and the docs do not say so. Future cards should avoid these as unconditional claims.\n2. \"Removed container center/padding configuration\" holds only for CSS-first configuration, because the v4.3.3 compatibility layer still honors them from an @config JS file.\n3. \"@theme must be top-level\" is documented but not enforced by the compiler.\n4. The docs' Preflight claim that \"the border class only sets border-width\" is stale against v4.3 output.\n5. \"@tailwind directives were removed\" is too absolute: they are still used inside the package's own utilities.css.\n6. The r5 scope leaves out the in-* and group-aria-*/peer-aria-* variants, which are documented, good material (now used in sr5-07 and sr5-12)."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "tailwind-css-sr1-01",
+    "decision": "keep",
+    "statement": "Tailwind generates CSS for the utility classes it finds in your project when you compile your CSS.",
+    "answer": true,
+    "explanation": "Tailwind isn't one big prebuilt stylesheet: it builds just the styles your classes need at compile time, which is how a one-off class like bg-[#316ff6] works.",
+    "reason": "Both lenses keep. Confirmed on styling-with-utility-classes: 'isn't one big static stylesheet ... generates the CSS needed based on the classes you're actually using when you compile your CSS', with the bg-[#316ff6] example."
+   },
+   {
+    "id": "tailwind-css-sr3-01",
+    "decision": "keep",
+    "statement": "Tailwind finds utility candidates by parsing the class attributes in your HTML templates.",
+    "answer": false,
+    "explanation": "Tailwind treats every source file as plain text and picks out class-like tokens wherever they appear, without parsing the file as code.",
+    "reason": "Both lenses keep. Confirmed on detecting-classes-in-source-files: 'treats all of your source files as plain text, and doesn't attempt to actually parse your files as code'."
+   },
+   {
+    "id": "tailwind-css-sr4-05",
+    "decision": "keep",
+    "statement": "Tailwind's disabled: variant matches a button that signals its state with aria-disabled=\"true\" alone.",
+    "answer": false,
+    "explanation": "disabled: compiles to :disabled, which needs the native disabled state; a button marked only with aria-disabled=\"true\" needs Tailwind's aria-disabled: variant.",
+    "reason": "Both lenses keep. Confirmed in the states page quick reference ('disabled &:disabled') and the ARIA table ('aria-disabled &[aria-disabled=\"true\"]')."
+   },
+   {
+    "id": "tailwind-css-sr4-06",
+    "decision": "keep",
+    "statement": "Tailwind's invalid: styles show on an empty required field before the user has typed anything.",
+    "answer": true,
+    "explanation": "invalid: compiles to :invalid, which matches as soon as the value fails validation; Tailwind's user-invalid: variant waits until the user has interacted with the field.",
+    "reason": "Both lenses keep. Confirmed on the states page: 'invalid &:invalid', 'user-invalid &:user-invalid', and 'Style an input when it's invalid and the user has interacted with it, using the user-invalid variant'."
+   },
+   {
+    "id": "tailwind-css-sr5-06",
+    "decision": "keep",
+    "statement": "Tailwind's group-has-[a]: looks for a link inside the styled element's own subtree.",
+    "answer": false,
+    "explanation": "group-has-[a]: runs its :has() check on the element marked group, so the link can sit anywhere inside that group.",
+    "reason": "Both lenses keep. Confirmed on the states page: 'mark the parent with the group class and use the group-has-* variant'. In the example the svg uses group-has-[a]:block and the link is elsewhere in the group."
+   },
+   {
+    "id": "tailwind-css-sr5-07",
+    "decision": "fixed",
+    "statement": "Tailwind's in-focus: variant reacts to focus on any parent element, whether or not that parent has the group class.",
+    "answer": true,
+    "explanation": "The in-* variants respond to a state change in any ancestor and need no marker class, so in-focus: also fires when an outer wrapper higher up receives focus.",
+    "reason": "Applied the wording lens fix: the old explanation said group-* needs a group marker, which is the answer to sr5-01. Confirmed under 'Implicit groups': 'you don't need to add group to the parent element' and 'The in-* variant responds to state changes in any parent'."
+   },
+   {
+    "id": "tailwind-css-sr5-12",
+    "decision": "drop",
+    "statement": "Tailwind's group-aria-[sort=ascending]: checks aria-sort on the group ancestor rather than on the styled element.",
+    "answer": true,
+    "explanation": "Tailwind compiles it to :where(.group)[aria-sort=\"ascending\"] *, so an icon inside a th marked group rotates once that th is sorted ascending.",
+    "reason": "The wording lens's drop holds up. The card tests the same principle as sr5-01 and sr5-06, that a group-* variant checks its condition on the group ancestor, so knowing either one answers this card. The fact lens also found the explanation wrong: in the docs example ascending applies rotate-0 (0deg) and only descending applies rotate-180. Fixing it would still leave the duplicate, so the card is dropped."
+   },
+   {
+    "id": "tailwind-css-sr7-04",
+    "decision": "fixed",
+    "statement": "Tailwind's @sm: variant stops matching once its container reaches the @md size.",
+    "answer": false,
+    "explanation": "Tailwind compiles @sm: to @container (width >= 24rem), a minimum with no upper bound, so its styles stay active as the container grows past @md.",
+    "reason": "Both lenses fix the explanation: 'mobile-first like breakpoints' gave away sr6-02. Merged into one version based on the generated query only. Confirmed in the responsive-design table ('@sm 24rem ... @container (width >= 24rem)') and in 'apply at the target container size and up'."
+   },
+   {
+    "id": "tailwind-css-sr9-05",
+    "decision": "fixed",
+    "statement": "Preflight's border reset strips the browser-drawn borders from text inputs and buttons.",
+    "answer": true,
+    "explanation": "Preflight applies border: 0 solid to every element plus ::before, ::after, ::backdrop and ::file-selector-button, which overrides the user-agent borders on text inputs and buttons.",
+    "reason": "Applied the fact lens fix. 'All elements' plus 'inputs' was too broad: checkbox and radio inputs keep their native drawing, and the explanation's 'every pseudo-element' overstated the selector list. Confirmed in Preflight 'Border styles are reset': '*, ::after, ::before, ::backdrop, ::file-selector-button { box-sizing: border-box; border: 0 solid; }' for all elements."
+   },
+   {
+    "id": "tailwind-css-sr9-10",
+    "decision": "fixed",
+    "statement": "Tailwind's docs put a project's own element defaults, such as h1 styles, in @layer base rather than @layer components.",
+    "answer": true,
+    "explanation": "Element defaults belong in Tailwind's base layer, for example @layer base { h1 { color: red; } }; the docs keep @layer components for class-based components like .card.",
+    "reason": "Merged both fixes. The statement uses the wording lens's base-versus-components contrast so it is no longer a truism. The explanation stops attributing the h1 color example to the docs, which use h1/h2 font-size, per the fact lens. I also removed 'Preflight lives in the base layer' because that is sr9-02's answer. Confirmed on adding-custom-styles: base styles for HTML elements go in the base layer, and component classes like .card go in the components layer."
+   },
+   {
+    "id": "tailwind-css-sr9-11",
+    "decision": "fixed",
+    "statement": "In Tailwind CSS v4, a normal utility beats a conflicting normal @layer components rule with a more specific selector.",
+    "answer": true,
+    "explanation": "Tailwind orders its utilities layer after components; for declarations without !important a later cascade layer wins whatever the selector specificity.",
+    "reason": "Applied the wording lens fix: the statement now states importance, because !important reverses layer order and that technicality could be defended against the old wording. I trimmed the full layer list from the explanation so it no longer restates sr9-01. Confirmed on preflight ('@layer theme, base, components, utilities') and adding-custom-styles ('you can still use utility classes to override them')."
+   },
+   {
+    "id": "tailwind-css-sr10-04",
+    "decision": "keep",
+    "statement": "A nested &::-webkit-scrollbar rule inside @utility styles the scrollbar of the element using that utility.",
+    "answer": true,
+    "explanation": "Nesting inside @utility adds an extra selector to the generated utility, as in the docs' scrollbar-hidden example.",
+    "reason": "Both lenses keep. Confirmed under adding-custom-styles 'Complex utilities': '@utility scrollbar-hidden { &::-webkit-scrollbar { display: none; } }'."
+   },
+   {
+    "id": "tailwind-css-sr11-06",
+    "decision": "keep",
+    "statement": "Tailwind CSS v4 adds vendor prefixes itself, which makes autoprefixer unnecessary in its PostCSS setup.",
+    "answer": true,
+    "explanation": "Vendor prefixing is part of Tailwind's own CSS processing in v4, so the upgrade guide removes autoprefixer from the PostCSS plugin list.",
+    "reason": "Both lenses keep. Confirmed in the upgrade guide 'Using PostCSS': 'in v4 imports and vendor prefixing is now handled for you automatically, so you can remove postcss-import and autoprefixer'."
+   },
+   {
+    "id": "tailwind-css-sr11-09",
+    "decision": "keep",
+    "statement": "Tailwind's docs name the PostCSS plugin as the most seamless way to add Tailwind to SvelteKit.",
+    "answer": false,
+    "explanation": "Tailwind's docs call the Vite plugin the most seamless way to integrate with frameworks like Laravel, SvelteKit, React Router, Nuxt and SolidJS.",
+    "reason": "Both lenses keep. Confirmed on installation/using-vite: 'Installing Tailwind CSS as a Vite plugin is the most seamless way to integrate it with frameworks like Laravel, SvelteKit, React Router, Nuxt, and SolidJS.'"
+   },
+   {
+    "id": "tailwind-css-sr12-12",
+    "decision": "keep",
+    "statement": "In Tailwind CSS v4, --container-* tokens in @theme set the container utility's centering and padding.",
+    "answer": false,
+    "explanation": "The upgrade guide replaces v3's container center and padding options with CSS: @utility container { margin-inline: auto; padding-inline: 2rem; }.",
+    "reason": "Both lenses keep. Confirmed in the upgrade guide 'Container configuration': the center and padding options 'no longer exist in v4', and the guide shows the @utility container replacement."
+   }
+  ]
+ }
+}

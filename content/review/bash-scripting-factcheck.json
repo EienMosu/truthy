@@ -1,0 +1,1158 @@
+{
+ "deck": "bash-scripting",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr1-01",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/bash.1.html (upstream Bash 5.3 man page, Git snapshot 2026-08-03)",
+     "evidence": "man7 bash(1) QUOTING: \"Enclosing characters in single quotes preserves the literal value of each character within the quotes.\" The answer (false, argument is value=$x) is correct and reproduced on GNU bash 5.3.20. But linux-command-line-sr8-04 (factKey single-quotes-literal-dollar) already tests the same fact: \"In Bash, single-quoting `$HOME` as a command argument can expand HOME to its stored value.\" (false). The prompt says linux-command-line owns introductory quoting facts, which may serve only as context here, \"rather than standalone repeats\".",
+     "problem": "Repeats the linux-command-line deck's fact that single quotes keep $ literal. It is the most basic quoting fact, with no added scripting depth.",
+     "suggestedFix": "Replace (answer false). Statement: \"Inside single quotes, Bash treats \\' as an escaped quote that keeps the quoted string open.\" Explanation: \"Inside single quotes a backslash is literal, and the next ' ends the string, even right after a backslash. To include a quote, write 'it'\\''s' or use $'it\\'s'.\" Source: man7 QUOTING, \"A single quote may not occur between single quotes, even when preceded by a backslash.\" Alternative URL: https://www.gnu.org/software/bash/manual/html_node/Single-Quotes.html"
+    },
+    {
+     "id": "bash-scripting-sr1-11",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/bash.1.html",
+     "evidence": "man7 bash(1) Special Parameters, @: \"When the expansion occurs within double quotes, and word splitting is performed, each parameter expands to a separate word. That is, \\\"$@\\\" is equivalent to \\\"$1\\\" \\\"$2\\\" ...\" The answer (true) is correct and verified on bash 5.3.20 (<a b><>, 2 args). But linux-command-line-sr8-05 (factKey quoted-at-preserves-argument-boundaries) already says: \"In Bash, `tool \\\"$@\\\"` can preserve a separate argument for each positional parameter, including empty ones.\" (true). Knowing one card gives the answer to the other.",
+     "problem": "Same fact as linux-command-line-sr8-05: quoted \"$@\" keeps spaced and empty parameters intact. The prompt assigns that introductory fact to linux-command-line.",
+     "suggestedFix": "Replace with a deeper positional-forwarding fact (answer true). Statement: \"With positional parameters a and b, Bash expands \\\"x$@y\\\" into the two arguments xa and by.\" Explanation: \"Inside a word, quoted $@ joins the first parameter to the text before it and the last parameter to the text after it, and keeps the parameters as separate words.\" (verified on bash 5.3.20: <xa><by>). Source: man7 Special Parameters, \"If the double-quoted expansion occurs within a word, the expansion of the first parameter is joined with the expansion of the beginning part of the original word...\" Alternative URL: https://www.gnu.org/software/bash/manual/html_node/Special-Parameters.html"
+    },
+    {
+     "id": "bash-scripting-sr1-02",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/bash.1.html",
+     "evidence": "man7 Word Splitting: \"The shell scans the results of parameter expansion, command substitution, and arithmetic expansion that did not occur within double quotes for word splitting.\" The answer (true) is correct. linux-command-line-sr8-06 (factKey unquoted-expansion-word-splitting) tests the other side of the same split: \"With default IFS in Bash, `items='red blue'; tool $items` passes red and blue as separate arguments.\" (true). The prompt's rule says: \"The two sides of one distinction are one fact.\"",
+     "problem": "Tests the quoted side of the quoted versus unquoted word-splitting distinction. The linux-command-line deck already teaches that distinction, so this card adds no depth (difficulty 1).",
+     "suggestedFix": "Replace (answer true). Statement: \"With x='', Bash passes the word -d\\\"$x\\\" to a command as the single argument -d.\" Explanation: \"A quoted empty part inside a word with non-null text adds nothing. Bash keeps one argument, -d, rather than adding an extra empty argument.\" (verified on bash 5.3.20: <-d>, 1 arg). Source: man7 Word Splitting, \"When a quoted null argument appears as part of a word whose expansion is non-null, word splitting removes the null argument portion... the word -d'' becomes -d\". Alternative URL: https://www.gnu.org/software/bash/manual/html_node/Word-Splitting.html"
+    }
+   ],
+   "notes": "I checked all 12 r1 cards (6 true, 6 false) against the man7 Bash man page, which loaded with HTTP 200 and says GNU Bash 5.3. I also ran each example in GNU bash 5.3.20(1)-release, which is Bash 5.3 with patch 020. Every stated answer is correct: value=$x; one argument \"a b\"; a tab in $'a\\tb'; a\\q keeps its backslash; a\\ b is one word; premidpost; ' a ' gives only a; a::b gives a, an empty field and b; IFS='' gives no splitting; \"\" $x gives one empty argument; \"$@\" keeps 'a b' and the empty parameter; IFS=':,' makes \"$*\" give a:b. The man7 page supports every card and every explanation (Quoting, Special Parameters and Word Splitting text quoted in the flags). No answer depends on the version. The three flags are not wrong answers. They are cross-deck repeats of linux-command-line facts that the prompt assigns to that deck: sr1-01 with linux-command-line-sr8-04, sr1-11 with linux-command-line-sr8-05, and sr1-02 with the other side of linux-command-line-sr8-06. The replacements keep r1 at 6 true and 6 false, and I verified each one in bash 5.3.20. Inside the deck, r1 shares no fact with r2-r14: sr14-08 (read surplus fields with IFS=:) and sr10-01 (nounset with \"$@\") are different mechanisms. Form balance: true statements average 73.8 characters and false ones 76.5, all statements are 120 or fewer and all explanations 240 or fewer, and no hedge or coverage words act as tells. Prompt rules checked: ftp.gnu.org bash-5.3-patches still ends at bash53-020 today, so the 5.3 plus 001-020 pin is correct. The man7 COLOPHON matches the prompt exactly (upstream Git fetched 2026-08-03, latest commit 2026-06-10, footer 'GNU Bash 5.3'). The GNU reference manual pages (Word-Splitting, Special-Parameters, Double-Quotes) now load with HTTP 200, so the prompt's timeout fallback note is out of date, and those section URLs would be more precise sources than the whole man7 page. I found no prompt rule that is wrong for this section."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7 bash(1) 'GNU Bash 5.3 2025 April 7' (upstream Git snapshot 2026-08-03, latest commit 2026-06-10); supports the card",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, shopt: \"globskipdots If set, pathname expansion will never match the filenames . and .., even if the pattern begins with a '.'. This option is enabled by default.\" Local check with GNU bash 5.3.20 (= patch 020): `shopt globskipdots` -> on, `echo .*` -> .app.cfg .env; after `shopt -u globskipdots` -> . .. .app.cfg .env.",
+     "problem": "The answer is factually right, but it can be read straight from the option name: 'globskipdots enabled' -> glob skips the dots. That breaks the prompt's name-giveaway rule. The card also tests nothing a player could get wrong. The useful, non-obvious fact is that this option is on by default since 5.2, which the card leaves out.",
+     "suggestedFix": "Answer stays true. Statement: \"With default shell options, Bash 5.3 leaves . and .. out of the matches for the pattern .*.\" Explanation: \"globskipdots is enabled by default, so pathname expansion never yields . or .. even when the pattern begins with a dot. Running shopt -u globskipdots brings them back.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards in two ways: against the man7 bash(1) page (HTTP 200; the footer says GNU Bash 5.3, 2025 April 7, and the COLOPHON says it was taken from upstream Git on 2026-08-03 with a latest commit dated 2026-06-10, as the prompt states), and by running each claim in GNU bash 5.3.20(1)-release (5.3 plus patch 020) with LC_ALL=C. All 12 answers came out as the cards say:\n- 01: $x expands to a.cfg b.cfg\n- 02: $x prints ; as a literal argument\n- 03: {1..$n} stays as the literal {1..3}\n- 04: {b,a} gives b a\n- 05: \"~/cfg\" stays ~/cfg\n- 06: declare -p shows value=\"a *\"\n- 07: nullglob leaves $# = 0\n- 08: failglob prints \"no match\" and the command does not run\n- 09: dotglob makes * include .env\n- 10: as flagged above\n- 11: GLOBSORT=-name sorts descending, name sorts ascending\n- 12: \"*\".cfg stays literal\n\nQuotes from the man page that settle the cards:\n- Expansion order: \"The order of expansions is: brace expansion; tilde expansion, parameter and variable expansion, arithmetic expansion, and command substitution (done in a left-to-right fashion); word splitting; pathname expansion; and quote removal.\" and \"Quote removal is always performed last.\"\n- Brace expansion: \"Brace expansion is performed before any other expansions\" and \"brace expansion preserves left to right order.\"\n- Tilde expansion: \"If a word begins with an unquoted tilde character.\"\n- Assignments: \"Word splitting and pathname expansion are not performed.\"\n- nullglob and failglob: \"If the nullglob option is set, and no matches are found, the word is removed. If the failglob shell option is set, and no matches are found, bash prints an error message and does not execute the command.\"\n- GLOBSORT: \"a valid value begins with an optional +, which is ignored, or -, which reverses the sort order from ascending to descending.\"\n\nOther checks:\n- No r2 card shares a fact with r1, r3 or r4. I also checked the nearby cards elsewhere: sr1-01, sr6-03 and sr12-12 cover different contexts.\n- Each section's true/false split is 6/6.\n- Prompt rules confirmed: bash53-020 is the highest patch on ftp.gnu.org. The 2025-07 release announcement lists GLOBSORT as new in 5.3, so card 11 is right to say \"In Bash 5.3\". The man7 provenance matches the prompt.\n- www.gnu.org still could not be reached from here (the connection timed out after 75 s), so the released GNU HTML manual was not opened. The man7 page and a local 5.3.20 binary stood in for it. The prompt already warns about this timeout.\n- The prompt's controlled example conditions do not say that globskipdots is on by default in 5.3. That is a gap rather than an error, but the deck would benefit from naming it.\n\nBorderline, not flagged:\n- Cards 07 (nullglob) and 09 (dotglob) are partly guessable from the option names, though less plainly than 10.\n- Card 08's explanation is right. In a noninteractive run, though, the failglob error also dropped the rest of that input line (a later `echo` after `;` did not run). That is worth knowing if a future card relies on what happens after a failglob error.\n- Card 02 is supported only indirectly by the man page (\"Expansion is performed on the command line after it has been split into words\"). The GNU manual's Shell Operation page would state the parse-before-expand order more clearly, but it could not be opened from here.\n\nOdd behaviour in the local test environment, not affecting any card: running HOME=/srv/me inside a bash 5.3.20 -c script changed cd's target but not unquoted ~, which still expanded to the real home directory. Card 05 is unaffected because the quoted tilde stays literal either way. Avoid any future true card that depends on assigning HOME inside the script and then expanding an unquoted ~."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr3-02",
+     "verdict": "source_problem",
+     "urlStatus": "https://man7.org/linux/man-pages/man1/bash.1.html loads (HTTP 200, GNU Bash 5.3 page)",
+     "evidence": "The answer is right. Bash 5.3.20 never runs the substitution in ${x:-$(echo RAN >&2; printf fallback)} when x=ready; it printed [ready] and no RAN. The cited man page only says \"In each of the cases below, word is subject to tilde expansion, parameter expansion, command substitution, and arithmetic expansion.\" Nothing on it says an unneeded word stays unexpanded, so the source does not support the explanation. POSIX XCU 2.6.2 (https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html#tag_19_06_02) says: \"In each case that a value of word is needed ... If word is not needed, it shall not be expanded.\" The GNU reference manual page timed out twice, so I could not check it for an equivalent sentence.",
+     "problem": "No allowed gnu.org or man7.org source states that the unused word is left unexpanded. The card is true in practice but cannot be checked against its cited page.",
+     "suggestedFix": "Change the source to the POSIX Shell Command Language, section 2.6.2 Parameter Expansion (https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html#tag_19_06_02), and allow the specification as a source for this card. If only gnu.org and man7.org sources are allowed, drop the card and pick another false r3 fact that man7 supports."
+    },
+    {
+     "id": "bash-scripting-sr3-07",
+     "verdict": "weak_card",
+     "urlStatus": "https://man7.org/linux/man-pages/man1/bash.1.html loads (HTTP 200)",
+     "evidence": "man7: \"If offset evaluates to a number less than zero, the value is used as an offset in characters from the end of the value of parameter ... Note that a negative offset must be separated from the colon by at least one space to avoid being confused with the :- expansion.\" Bash 5.3.20: x=abcdef; \"${x: -2}\" gives ef and \"${x:-2}\" gives abcdef.",
+     "problem": "The answer (ef) is right, but the false claim is a strawman. Hardly anyone who studied would expect a negative offset to pick the first characters. The real, documented trap is leaving out the space, which turns the form into :-. The card is rated difficulty 3 but is easy.",
+     "suggestedFix": "Replacement (answer false): \"With x=abcdef, Bash expands ${x:-2}, written without a space, to the last two characters ef.\" Explanation: \"Without the space, :- is the default-value operator; x is set and non-null, so the result is abcdef. Write ${x: -2} or ${x:(-2)} to get ef.\""
+    },
+    {
+     "id": "bash-scripting-sr3-09",
+     "verdict": "duplicate",
+     "urlStatus": "https://man7.org/linux/man-pages/man1/bash.1.html loads (HTTP 200)",
+     "evidence": "man7: \"the result of the expansion is the expanded value of parameter with the shortest matching pattern (the “%” case) or the longest matching pattern (the “%%” case) deleted\". The prefix forms use the same wording: \"shortest ... (the “#” case) or the longest ... (the “##” case)\". Card sr3-08 explanation: \"# chooses the shortest match\". Card sr3-09 explanation: \"%% chooses the longest match\". In Bash 5.3.20, ${x%.*} gives a.b and ${x##*/} gives c.",
+     "problem": "Cards sr3-08 and sr3-09 both rest on one rule: the single operator removes the shortest match, the doubled one the longest. Whoever knows that rule for # and ## can answer % and %% too, and each card's explanation states the other side. The prompt counts the two sides of one distinction as one fact.",
+     "suggestedFix": "Replace sr3-09 with a different fact (answer true): \"With x=report.tar.gz, Bash expands ${x/%.gz/.bz2} to report.tar.bz2.\" Explanation: \"A % before the pattern anchors the substitution to the end of the value, so only a trailing .gz is replaced.\" Source: same man7 URL (\"If pattern is preceded by % ... it must match at the end of the expanded value of parameter\"). Checked in Bash 5.3.20: the output is report.tar.bz2."
+    },
+    {
+     "id": "bash-scripting-sr3-06",
+     "verdict": "weak_card",
+     "urlStatus": "https://man7.org/linux/man-pages/man1/bash.1.html loads (HTTP 200)",
+     "evidence": "man7: \"${#parameter} Parameter length. Substitutes the length in characters of the expanded value of parameter. If parameter is * or @, the value substituted is the number of positional parameters.\" Bash 5.3.20: x=\"a b  c\"; ${#x} gives 6.",
+     "problem": "This is close to a truism. Once a player knows ${#x} is the length of the value, \"including spaces\" follows by common sense, and few who studied would answer False. The card adds nothing beyond the operator's definition.",
+     "suggestedFix": "Replacement (answer true): \"With positional parameters a, bc and def set, Bash expands ${#@} to 3 rather than a character count.\" Explanation: \"For * or @, the length operator substitutes the number of positional parameters, so ${#@} matches $# instead of measuring the joined text.\" Same man7 URL."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards. Each one cites https://man7.org/linux/man-pages/man1/bash.1.html, which loads with HTTP 200, and I re-read its Parameter Expansion section. I also ran every card in Homebrew GNU bash 5.3.20, which is exactly the pinned release plus patch 020, with LC_ALL=C. The stated answers matched for all 12: [] for 01, [ready] with no substitution run for 02, ready for 03, an error and exit with status 127 for 04 so 'continued' never printed, enabled for 05, 6 for 06, ef for 07, c for 08, a.b for 09, bXnXnX for 10, AB while x stayed ab for 11, and ready for 12. None of the answers is wrong. All four flags concern the source, card quality or a duplicate. Cards 01, 03, 04, 05, 08, 10, 11 and 12 pass. On 04, the statement leaves out 'noninteractive', but that is the deck's assumed context, and an interactive shell would not run the command either. On 11, the case-conversion misconception is weak but plausible because of :=. Overlap with other sections: sr10-12 (${x-} under nounset) and sr4-03 (null variable in arithmetic) rest on different facts than sr3-01. sr5-03/sr5-09 (array ${#a[@]} and ${!a[@]}) differ from sr3-06/sr3-12. Prompt rules I could verify: bash53-020 is still the highest patch on ftp.gnu.org/pub/gnu/bash/bash-5.3-patches/. The man7 COLOPHON matches the prompt: it was taken from upstream Git on 2026-08-03, with the latest commit dated 2026-06-10, and the footer reads 'GNU Bash 5.3 2025 April 7'. The www.gnu.org manual pages timed out again (twice, with 60 s and 90 s curl limits), as the prompt warned, so I could not check the reference manual itself. One gap in the prompt's sources: no allowed gnu.org or man7.org page states that ${x:-word} leaves an unneeded word unexpanded, so card 02 can only be checked against POSIX. No prompt rule I could check was wrong."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr4-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org bash(1), GNU Bash 5.3 page (upstream Git snapshot 2026-08-03)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html ARITHMETIC EVALUATION: \"Otherwise, numbers take the form [base#]n, where the optional base is a decimal number between 2 and 64 representing the arithmetic base\". Local Bash 5.3.20: $((10#08)) = 8. The fact is right, but the statement itself says \"using the explicitly selected decimal base\", so a player who sees the 10# prefix can read the answer from the wording. The explanation (\"makes this 08 a valid decimal value\") also implies that 08 is otherwise invalid octal, which gives away sr4-04 (leading zero means octal).",
+     "problem": "Give-away. The wording tells the player that 10# selects decimal, and the explanation hints at the answer of sr4-04.",
+     "suggestedFix": "TRUE replacement. Statement: \"Bash's base#n notation in arithmetic expansion accepts bases from 2 through 64.\" Explanation: \"Digits above 9 use lowercase letters, uppercase letters, @ and _ in that order, so $((64#_)) is 63; up to base 36, upper and lowercase letters are interchangeable.\" (163 chars). Verified on Bash 5.3.20: $((64#_)) = 63. Same URL."
+    },
+    {
+     "id": "bash-scripting-sr4-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7.org bash(1), GNU Bash 5.3",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html Command Substitution: \"Command substitutions may be nested.\" and \"When using the $(command) form, all characters between the parentheses make up the command; none are treated specially.\" Nesting is the best-known advantage of $(...) over backquotes. The statement also names the answer itself (\"as a nested command substitution\"), and the outer substitution is unquoted, so the case has no trap. Nobody who studied would answer False.",
+     "problem": "Strawman or near-truism. The statement names its own answer and tests no realistic misconception. The useful nesting fact is that quotes inside $(...) pair separately from the double quotes around it.",
+     "suggestedFix": "TRUE replacement. Statement: \"In \\\"$(printf '%s' \\\"a  b\\\")\\\", Bash pairs the inner double quotes with each other, keeping both spaces.\" (100 chars). Explanation: \"All text between $( and ) forms a fresh command, so its quotes pair independently of the enclosing double quotes and the inner spaces survive in the result.\" (156 chars). Verified on Bash 5.3.20: the output is [a  b]. Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r4 cards against the man7 bash(1) page, which returned HTTP 200. Its footer reads \"GNU Bash 5.3 2025 April 7\", and its COLOPHON says it came from upstream Git on 2026-08-03, with the latest commit dated 2026-06-10. That matches what the prompt says.\n\nI also ran every card's example on a local GNU bash 5.3.20(1)-release. Results: $((7/2)) is 3 and $((-7/2)) is -3, so division truncates toward zero. y=2+3; $((y*2)) gives 10, so a variable's value is evaluated as an expression. x=''; $((x+1)) gives 1. $((010)) gives 8. n becomes 3 after $((n+=2)). stderr is not captured. \"$(printf 'a\\n\\n\\n')\" gives [a]. $(<f) gives abc. ${ x=changed; printf ok; } leaves x=changed. ${| REPLY=ready; printf shown; } prints shown to stdout and expands to ready.\n\nCards 01, 02, 03, 04, 06, 07, 08, 09, 11 and 12 pass. Each is backed by quoted man-page text, for example \"A shell variable need not have its integer attribute turned on to be used in an expression\", \"A shell variable that is null or unset evaluates to 0 when referenced by name\", \"Constants with a leading 0 are interpreted as octal numbers\", \"with any trailing newlines deleted\", \"$(< file)\", \"Any side effects of command take effect immediately in the current execution environment and persist\", and the ${| passage: \"expands to the value of the REPLY shell variable ... and the standard output of command remains the same as in the calling shell\".\n\nThe section's 6/6 true and false balance holds; both suggested replacements are true cards.\n\nTwo smaller points:\n- sr4-01's explanation (\"truncates toward zero\") relies on the man page's \"same as in the C language\" rather than an explicit sentence. The behaviour is confirmed by the run above.\n- sr4-11 (${ } keeps state) and sr13-01 ((x=new) does not) contrast the same idea, persistence versus subshell, but they test different constructs that the prompt places in different sections. I did not flag them as a duplicate.\n\nPrompt rules I checked against the official sources:\n- The pin is correct. ftp.gnu.org lists bash-5.3.tar.gz as the newest release, and bash-5.3-patches goes up to bash53-020.\n- The lists.gnu.org 2025-07 msg00005 announcement confirms the new current-environment command substitution, in two forms: one reads output and one reads REPLY.\n- The GNU html_node manual (Shell-Arithmetic.html) timed out (curl code 000), as the prompt predicted, so the man7 fallback was needed.\n\nI found no prompt rule to be wrong for this section."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr5-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, man7 bash(1) loads (GNU Bash 5.3 footer); fact supported",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html (PARAMETERS): \"When \"+=\" is applied to an array variable using compound assignment (see Arrays below), the variable's value is not unset (as it is when using \"=\"), and new values are appended to the array beginning at one greater than the array's maximum index (for indexed arrays)\". Local Bash 5.3.20: a=(x y); a+=(z) gives [0]=x [1]=y [2]=z. So the answer is right, but the card is close to definitional.",
+     "problem": "The answer is correct, but the card is close to a truism. \"+=\" is the append operator, so saying it keeps the existing elements follows from what the operator means, and nobody who studied would answer False. A more useful fact sits in the same source sentence: appending starts at one greater than the maximum index, not at the element count.",
+     "suggestedFix": "Replacement (answer true, keeps the section at 6 true / 6 false). Statement: \"For indexed a=([5]=x), Bash stores z at index 6 when it executes a+=(z).\" Explanation: \"A += compound assignment keeps existing elements and appends new values starting one greater than the array's maximum index, so z lands at a[6], not at the element count.\" Verified locally: declare -a a=([5]=\"x\" [6]=\"z\"). Same man7 URL."
+    }
+   ],
+   "notes": "I ran all 12 r5 cards in Homebrew GNU bash 5.3.20(1)-release with LC_ALL=C. Every stated answer matched what Bash actually does:\n- 01: red is at a[0].\n- 02: a['']=ready fails with \"bad array subscript\", for both the single-element and compound forms.\n- 03: ${#a[@]} is 2.\n- 04: ${a[1+2]} gives yes.\n- 05: ${a[-8]} gives x.\n- 06: y goes to index 5.\n- 07: a+=(z) keeps x and y.\n- 08: two arguments, \"red blue\" and the empty string.\n- 09: ${!a[@]} gives red.\n- 10: ${a[@]:2:2} gives red and blue.\n- 11: y stays at index 1.\n- 12: \"$a\" is empty.\n\nSources: every card uses https://man7.org/linux/man-pages/man1/bash.1.html, which loads (HTTP 200) with the footer \"GNU Bash 5.3 2025 April 7\". Its Arrays section quotes the deciding sentence for each card:\n- 01: \"Indexing starts at zero.\"\n- 02: \"Empty strings cannot be used as associative array keys.\"\n- 03: \"If subscript is * or @, the expansion is the number of elements in the array.\"\n- 04: indices are \"arithmetic expressions that must expand to an integer\".\n- 05: negative subscripts are \"relative to one greater than the maximum index of the array\".\n- 06: \"the last index assigned to by the statement plus one\".\n- 08: ${name[@]} \"expands each element of name to a separate word\".\n- 09: ${!name[@]} expands \"to the indices assigned\".\n- 11: \"unset name[subscript] unsets the array element at index subscript\".\n- 12: \"Referencing an array variable without a subscript is equivalent to referencing the array with a subscript of 0.\"\n- 10 is supported by Parameter Expansion on the same page: \"the result is the length members of the array beginning with ${parameter[offset]}\".\n- 07 is supported by PARAMETERS on the same page.\n\nThe GNU HTML manual (www.gnu.org/software/bash/manual/html_node/Arrays.html) timed out from here, as the prompt warned, so I used man7 as the fallback.\n\nDuplicates: no r5 card rests on the same fact as a card in another section. I compared against sr14-09 (read -a replaces the array, a different fact from += keeping it), sr8-11 (nameref to an array), sr6-11 (BASH_REMATCH) and r1's \"$@\" forwarding.\n\nSection balance: 6 true / 6 false. The suggested replacement for 07 is true, so the balance holds.\n\nMinor, not flagged: card 01 (zero-based indexing) is about as easy as a card can be, but it is Bash-specific (zsh is 1-based by default), so it holds up as the easy card.\n\nPrompt rules checked and confirmed:\n- ftp.gnu.org lists bash-5.3.tar.gz as the newest stable release, and bash53-020 as the highest patch. No newer stable release or patch is listed.\n- The man7 COLOPHON says the page was taken from upstream Git on 2026-08-03, latest commit 2026-06-10, exactly as the prompt states.\n\nI found no prompt rule that was wrong for this section."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr6-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/bash.1.html (GNU Bash 5.3 man page, upstream Git snapshot 2026-08-03)",
+     "evidence": "man7 bash(1), Compound Commands, if: \"The if list is executed. If its exit status is zero, the then list is executed. Otherwise, each elif list is executed in turn, and if its exit status is zero, the corresponding then list is executed and the command completes.\" The answer (False) is correct, and Bash 5.3.20 confirms it: the elif condition after a successful branch never runs.",
+     "problem": "Strawman/truism. Every if/elif construct in every mainstream language skips the later branches once one matches, so nobody who has studied would answer True. The card teaches nothing specific to Bash.",
+     "suggestedFix": "Replacement (answer false, keeps the section at 6 true / 6 false). Statement: \"When no if or elif condition succeeds and no else list exists, Bash gives the if command exit status 1.\" Explanation: \"If no condition tests true, an if command returns zero, not the failing condition's status. A script that checks $? after such an if sees success.\" Same URL (Conditional Constructs: \"or zero if no condition tested true\"). Verified in Bash 5.3.20: if false; then :; fi; echo $? prints 0."
+    },
+    {
+     "id": "bash-scripting-sr6-07",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, https://man7.org/linux/man-pages/man1/bash.1.html",
+     "evidence": "man7 bash(1), CONDITIONAL EXPRESSIONS: \"-v varname True if the shell variable varname is set (has been assigned a value).\" The answer (True) is correct and verified in Bash 5.3.20. However, bash-scripting-sr3-01 explains: \"A null value still counts as set.\"",
+     "problem": "This card rests on the same fact as sr3-01: a variable holding an empty string counts as set. A player who knows that ${x-fallback} keeps an empty x already knows that [[ -v x ]] succeeds for an empty x.",
+     "suggestedFix": "Replacement (answer true, keeps the balance). Statement: \"With indexed array a=(x y), Bash evaluates [[ -v a[1] ]] as a successful variable test.\" Explanation: \"The -v primary accepts a subscripted array name and checks whether that element is set. Index 1 holds y, so the test succeeds, while [[ -v a[5] ]] fails.\" Same URL. Verified in Bash 5.3.20: a1=0, a5=1."
+    }
+   ],
+   "notes": "I checked all 12 r6 cards. All use https://man7.org/linux/man-pages/man1/bash.1.html, which loads (HTTP 200). Its footer reads \"GNU Bash 5.3 2025 April 7\". I ran every card's fragment in GNU Bash 5.3.20 (patch level 20, the same as the pin) with LC_ALL=C, and every stated answer is correct.\n\nEach card is supported by a sentence on the page:\n- 01 and 02: \"If its exit status is zero, the then list is executed.\"\n- 03: \"The words between the [[ and ]] do not undergo word splitting and pathname expansion.\"\n- 04: test with \"1 argument: The expression is true if and only if the argument is not null.\"\n- 05: \"When used with [[, the < and > operators sort lexicographically using the current locale.\"\n- 06: \"When used with the [[ command, arg1 and arg2 are evaluated as arithmetic expressions.\"\n- 08: -s \"True if file exists and has a size greater than zero.\"\n- 09: \"the string to the right of the operator is considered a pattern.\"\n- 10: \"quoting the variable expansion forces the entire pattern to be matched literally.\"\n- 11: \"The element of BASH_REMATCH with index 0 contains the portion of the string matching the entire regular expression.\"\n- 12: \"The && and || operators do not evaluate expression2 if the value of expression1 is sufficient to determine the return value.\"\n\nThe section is balanced at 6 true / 6 false. No card uses the deprecated -a/-o operators or parenthesized test parsing, so the 5.3 test-parsing change does not affect any card. I found no other cross-section duplicates. sr7-05 (while list final status), sr9-06 (list && ||) and sr10-02/05 (errexit in if) each rest on a different mechanism than these cards.\n\nPrompt rules: the ones I checked hold.\n- ftp.gnu.org lists bash-5.3.tar.gz as the newest release, and its highest patch is bash53-020.\n- The man7 colophon matches the prompt: \"obtained from the project's upstream Git repository on 2026-08-03\", with the most recent commit dated 2026-06-10.\n\nI found no wrong prompt rule. One weakness: every r6 card cites the same man7 page, which is an upstream Git snapshot, not a release snapshot. That page says what the prompt claims for these facts, and Bash 5.3.20 behaves the same way."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr7-04",
+     "verdict": "weak_card",
+     "urlStatus": "man7 bash.1 loads (footer 'GNU Bash 5.3 2025 April 7', COLOPHON: upstream Git 2026-08-03, latest commit 2026-06-10); supports the card",
+     "evidence": "man7 bash.1: \"First, evaluate the arithmetic expression expr1 ... Then, repeatedly evaluate the arithmetic expression expr2 until it evaluates to zero.\" (https://man7.org/linux/man-pages/man1/bash.1.html). Answer is right (verified in Bash 5.3.20: a side effect in expr1 ran once), but this is the generic C for-loop rule that anyone who knows any C-like language answers by common sense, so it is close to a truism and teaches nothing Bash-specific.",
+     "problem": "Truism: the initializer running once is the universal C-style for semantics, not a Bash-specific fact.",
+     "suggestedFix": "Replacement (true): \"Bash treats the omitted condition in for (( ; ; )) as 1, so the loop repeats until break runs.\" Explanation: \"Each omitted expression in Bash's arithmetic for loop behaves as if it evaluates to 1, so an empty condition never ends the loop by itself; break or exit must stop it.\" Source: same man7 URL (\"If any expression is omitted, it behaves as if it evaluates to 1.\"). Verified in Bash 5.3.20."
+    },
+    {
+     "id": "bash-scripting-sr7-05",
+     "verdict": "duplicate",
+     "urlStatus": "man7 bash.1 loads; supports the card",
+     "evidence": "man7 bash.1: \"The while command continuously executes the list list-2 as long as the last command in the list list-1 returns an exit status of zero.\" (https://man7.org/linux/man-pages/man1/bash.1.html). The answer is correct, but the card rests on the rule that a list reports its last command's status, which sr9-08 already tests (\"Bash reports success for { false; true; } because true runs last in the group.\") and sr8-06 tests for function bodies. Knowing sr9-08 gives this answer. The 'because its final test succeeds' clause also reads like the justification and points to True.",
+     "problem": "Same fact as bash-scripting-sr9-08 (list status = last command's status). The prompt gives compound-command status to r9. The reason clause in the statement also gives the answer away.",
+     "suggestedFix": "Replacement (true): \"Bash gives while false; do :; done an exit status of zero because its body never runs.\" Explanation: \"A while or until loop returns the status of the last body command it ran, or zero if the body never ran, even though the condition itself failed.\" Source: man7 bash.1 (\"The exit status of the while and until commands is the exit status of the last command executed in list-2, or zero if none was executed.\"). Verified in Bash 5.3.20 (status 0)."
+    },
+    {
+     "id": "bash-scripting-sr7-10",
+     "verdict": "weak_card",
+     "urlStatus": "man7 bash.1 loads, but its case prose loses the '|' when rendered: it reads \"A pattern list is a set of one or more patterns separated by , and the ) operator terminates the pattern list.\" Only the synopsis \"[ [(] pattern [ | pattern ] ... )\" shows the separator.",
+     "evidence": "Bash 5.3 reference manual (Conditional Constructs, Edition 5.3, 18 May 2025): \"The '|' is used to separate multiple patterns in a pattern list\" (https://www.gnu.org/software/bash/manual/html_node/Conditional-Constructs.html; gnu.org timed out today, so this was quoted from the released 5.3 bash.info shipped with bash 5.3.20). The answer is right, but '|' reads as 'or' to anyone who knows any language or regex, so a player who doesn't know case can guess True from the wording. Difficulty 2 is too high.",
+     "problem": "Give-away: the '|' means 'or' in nearly every notation, so the answer can be read from the wording. The man7 prose that should support it is also garbled.",
+     "suggestedFix": "Replacement (true): \"With nocasematch enabled, Bash selects the case clause yes) for the word YES.\" Explanation: \"The nocasematch shell option makes case ignore the case of alphabetic characters when it matches the word against each pattern.\" Source: man7 bash.1 (\"If the nocasematch shell option is enabled, the match is performed without regard to the case of alphabetic characters.\"). If you keep the original card, use the URL https://www.gnu.org/software/bash/manual/html_node/Conditional-Constructs.html."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards three ways: against man7 bash.1, which loads and has the footer 'GNU Bash 5.3 2025 April 7'; against the released Bash 5.3 reference manual (Edition 5.3, 18 May 2025, read from the local Homebrew bash 5.3.20 bash.info, because gnu.org/software/bash/manual timed out again today); and by running each fragment in GNU bash 5.3.20(1)-release. All 12 stated answers are correct. They produced: for re-expansion [a][b]; implicit positional items; empty in list leaves old; init once; while false;true enters the body; until true skips the body; break 2 exits both loops; continue 2 runs the outer step (s=2); first match wins; red|blue; ;;& resumes pattern testing while ;& falls through; \"a\"* matches abc. Balance: 6 true / 6 false. The three replacements I suggest are all true, so the balance holds. Cards that pass with caveats: (a) sr7-08: no official page states outright that continue N runs the outer arithmetic loop's expr3. It follows from 'continue resumes the next iteration' plus 'execute list and evaluate expr3', and the runtime test confirms it. Acceptable, but the support is inferred. (b) sr7-12: neither manual describes partial quoting for case patterns specifically. The explicit 'quoted portion is matched literally' sentence belongs to [[ ==, and case relies on the Pattern Matching sentence 'The special pattern characters must be quoted if they are to be matched literally.' Quoting the plain letter a also shows no real effect of quoting. The answer is correct; a stronger example would quote a special character, such as \"*\"x. (c) sr7-11's explanation states the ;& behaviour. That is fine now, but it would clash with any future standalone ;& card. Prompt rules checked: the bash-5.3-patches listing on ftp.gnu.org shows bash53-020 as the highest patch (confirmed today). The man7 COLOPHON matches the prompt (obtained from upstream Git 2026-08-03, latest commit 2026-06-10). The prompt's warning that the GNU manual pages time out is accurate. I found no prompt rule wrong for this section. One man7 rendering defect: the case prose drops '|' (\"patterns separated by , and the )\"), so cards about pattern alternation should cite the GNU manual."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr8-02",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, man7 bash(1) (GNU Bash 5.3, upstream Git snapshot 2026-08)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html FUNCTIONS: \"Local variables 'shadow' variables with the same name declared at previous scopes, including global variables: references and assignments refer to the local variable, leaving the variables at previous scopes unmodified.\" Recursion is only mentioned as \"Functions may be recursive.\" The man page does not say separately that each recursive call gets its own local. Tested on GNU bash 5.3.20: f(){ local x=$1; ((x<2)) && f $((x+1)); echo $x; } prints 2 1 0, so the answer is right.",
+     "problem": "The answer (false) is correct. The card rests on the same shadowing rule as sr8-09 (local-shadow-restores-global): a local hides any variable at a previous scope and leaves it unmodified. The outer recursive call's local is simply another previous scope, so a player who knows sr8-09 gets this card for free. The source also supports the recursion case only by inference.",
+     "suggestedFix": "Replace with a false card on the unset side of dynamic scope. Statement (false): \"With localvar_unset off, after helper g runs unset x on f's local x, Bash shows x as unset for the rest of f.\" Explanation: \"Without localvar_unset, unsetting a caller's local removes that instance, so f then sees the next visible x, such as a global x, until f returns.\" Source: same man7 URL, FUNCTIONS paragraph on unset and localvar_unset. Verified on 5.3.20: x=global; g(){ unset x; }; f(){ local x=fl; g; echo $x; } prints global."
+    },
+    {
+     "id": "bash-scripting-sr8-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7 bash(1)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html FUNCTIONS: \"If return is supplied a numeric argument, that is the function's return status\"; return builtin: \"If n is supplied, the return value is its least significant 8 bits.\"",
+     "problem": "The answer (true) is correct, but the card restates what return does by definition. Anyone who has seen return in any language answers True without knowing Bash, so it teaches nothing. It also sits next to sr9-02 (exit-explicit-status), which tests the same 'explicit numeric argument becomes the status' pattern for exit.",
+     "suggestedFix": "Keep it true but test the real Bash detail. Statement (true): \"Inside f, return 300 gives the function call an exit status of 44.\" Explanation: \"Bash keeps only the least significant 8 bits of return's numeric argument, so 300 wraps to 300 minus 256, which is 44.\" Verified on GNU bash 5.3.20: f(){ return 300; }; f; echo $? prints 44. Same URL, return builtin."
+    },
+    {
+     "id": "bash-scripting-sr8-06",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, man7 bash(1)",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html Shell Function Definitions: \"When executed, the exit status of a function is the exit status of the last command executed in the body.\" sr9-08 (group-last-command-status) tests that { false; true; } returns the status of its last command, and a function body is a { list; } group command.",
+     "problem": "The answer (true) is correct and was verified on 5.3.20 (status 1). It is the same rule as sr9-08 (the last command in a group decides the status), now applied to a function body that is itself a group command. Knowing sr9-08 answers this card. Being easy and true, it adds little.",
+     "suggestedFix": "Replace with a true scope card. Statement (true): \"With global x=g and localvar_inherit off, local x inside f leaves x unset until f assigns it.\" Explanation: \"A local declaration without a value creates a new unset variable that shadows the caller's x; it takes the outer value only with local -I or localvar_inherit.\" Verified on 5.3.20 (${x-UNSET} prints UNSET). Source: same man7 URL, declare -I and the shopt localvar_inherit entries."
+    }
+   ],
+   "notes": "I checked all 12 r8 cards in three ways. I opened the man7 bash(1) page and quoted the deciding sentences. I ran every scenario on a local GNU bash 5.3.20 (/opt/homebrew/bin/bash, which matches the 5.3 + patch 020 pin). I judged each card against the prompt's rules.\n\nAll 12 answers are correct:\n- 01: positional parameters are restored after set --.\n- 03: $0 is unchanged inside a function. Man page: \"Special parameter 0 is unchanged\".\n- 05: exit 7 ends the script with status 7, and the caller does not resume.\n- 07: a plain declare inside a function makes the variable local; the global stays old.\n- 08: dynamic scope works as stated (the helper prints inner).\n- 09: the global x stays outer after the local is changed.\n- 10: FUNCNEST=3 stops a chain of four different functions with \"maximum function nesting level exceeded\", so it limits total nesting, not per-function recursion.\n- 11: a scalar nameref ref[2]=x changes a[2].\n- 12: shopt -s nullglob persists after local -. Man page: local - restores only \"shell options changed using the set builtin\".\n\nThree cards are flagged:\n- 02: duplicate of sr8-09 (same shadowing rule).\n- 04: weak card (return 7 giving status 7 is true by definition).\n- 06: duplicate of sr9-08 (last command decides a group's status).\n\nAll three proposed replacements keep the section's 6 true / 6 false balance and were verified on 5.3.20.\n\nMinor, not flagged:\n- 05: if the function runs in a subshell (for example inside $(f)), exit only ends that subshell. The explanation's \"terminates the shell executing the function\" covers this.\n- 12: the source supports the shopt exclusion by implication (\"set builtin\" only), not with an explicit sentence.\n- All 12 cards cite the same bare man7 URL. Section anchors (#FUNCTIONS, #SHELL_BUILTIN_COMMANDS) would help the player.\n- Statement lengths and the true/false length balance are within the rules (true average 89.5, false average 84.8 characters).\n\nPrompt rules checked against official pages:\n- ftp.gnu.org still lists bash-5.3.tar.gz as the newest release, and bash53-020 as the highest patch. No newer release or patch.\n- The man7 COLOPHON matches the prompt: it was taken from upstream Git in 2026-08, with the last commit dated 2026-06-10, and the footer reads \"GNU Bash 5.3 2025 April 7\".\n- I found no prompt rule that r8 depends on to be wrong.\n\nOverlap caveat: the prompt itself assigns \"last-command function status\" to r8 and \"compound-command status\" to r9. That allocation is what produces the sr8-06 / sr9-08 overlap."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr9-08",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, man7 bash.1 (GNU Bash 5.3)",
+     "evidence": "man7 bash.1, Compound Commands: \"{ list; } ... This is known as a group command. The return status is the exit status of list.\" The deck already has bash-scripting-sr8-06 (function-last-command-status): \"For f(){ true; false; }, Bash reports a failure status when f reaches the end of its body.\" Both cards test the same rule: a compound body reports the status of the last command it ran. Bash 5.3.20 check: { false; true; } gives 0, so the answer itself is correct.",
+     "problem": "The answer is right, but it is the same fact as sr8-06 (last command in a compound list sets its status). Knowing one card gives away the other. It is also close to a truism.",
+     "suggestedFix": "Replace with a TRUE card that tests a distinct compound-command status rule. Statement: \"Bash gives if false; then :; fi a zero status when its only condition fails.\" Explanation: \"An if command returns the status of the last command it executed, or zero when no condition tested true, so the failed condition's status is discarded.\" Source: https://man7.org/linux/man-pages/man1/bash.1.html (Compound Commands, if: \"or zero if no condition tested true\"). Verified in Bash 5.3.20: prints 0."
+    },
+    {
+     "id": "bash-scripting-sr9-02",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7 bash.1 (GNU Bash 5.3)",
+     "evidence": "man7 bash.1, exit builtin: \"exit [n] Cause the shell to exit with a status of n. If n is omitted, the exit status is that of the last command executed.\" Bash 5.3.20: bash -c 'true; exit 7' gives 7.",
+     "problem": "Strawman: nobody who has studied would think exit 7 reports the earlier true's status. The card does not test the real learning point, which is what a bare exit returns.",
+     "suggestedFix": "Replace with a FALSE card. Statement: \"For a script ending false; exit, Bash exits with status 0, the default for a bare exit.\" Explanation: \"exit with no argument uses the status of the last command executed, so this script exits with false's status 1. Pass an explicit number to exit to choose the status.\" Same URL. Verified in Bash 5.3.20: exits 1. This is outside any trap context, so the prompt's 5.3 nested-trap exit caveat does not apply."
+    },
+    {
+     "id": "bash-scripting-sr9-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, man7 bash.1 (GNU Bash 5.3)",
+     "evidence": "man7 bash.1, Special Parameters: \"? Expands to the exit status of the most recently executed command.\" Bash 5.3.20: false; saved=$?; true leaves saved=1.",
+     "problem": "Near-truism: the answer only depends on an ordinary variable keeping its value after a later command runs. Nothing about $? that a learner could get wrong is actually tested.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"When SIGTERM kills a foreground child, Bash sets $? to 128 plus the signal's number.\" Explanation: \"A command ended by fatal signal N reports status 128+N, so a child killed by SIGTERM reports 143. Scripts can use this to tell signal deaths apart from ordinary failures.\" Source: https://man7.org/linux/man-pages/man1/bash.1.html (EXIT STATUS: \"the value of 128+N as the exit status\"). Verified in Bash 5.3.20: 143."
+    }
+   ],
+   "notes": "All 12 r9 cards have the stated answer, checked two ways: against the man7 bash.1 page and by running each scenario in GNU bash 5.3.20(1)-release (Homebrew): 01:1, 02:7, 03:1, 04:0, 05:1, 06 printed x, 07:1, 08:0, 09:0, 10:9, 11:'7 9', 12:7.\n\nEvery card cites https://man7.org/linux/man-pages/man1/bash.1.html, which loaded with HTTP 200. The page contains the settling sentences:\n- Pipelines: \"The return status of a pipeline is the exit status of the last command, unless the pipefail option is enabled ... the last (rightmost) command to exit with a non-zero status ... the exit status of that pipeline is the logical negation\".\n- Lists: \"&& and || have equal precedence\", \"executed with left associativity\", \"The return status of AND and OR lists is the exit status of the last command executed in the list\", \"executes the command in the background ... the return status is 0\".\n- PIPESTATUS: \"Bash sets PIPESTATUS after executing ... simple commands\".\n- Simple Command Expansion: \"the exit status of the last command substitution performed\".\n- wait: \"return the termination status of the last id\".\n\nCards 03-07 and 09-12 pass. Card 09 (pipefail off) and card 10 (rightmost failure with pipefail) test different facts and do not overlap with sr10-06 (pipefail together with set -e). Card 03 does not collide with sr10-10 (local masking a substitution failure).\n\nSmall gap that did not change any verdict: source titles name sections, but the URL is the whole page, not an anchor.\n\nPrompt rules checked against the official pages, and all held:\n- The FTP listing shows bash-5.3.tar.gz as the newest release and bash53-020 as the highest patch.\n- The man7 COLOPHON matches the prompt: it was taken from upstream Git on 2026-08-03, with the latest commit dated 2026-06-10, and the footer reads \"GNU Bash 5.3 2025 April 7\".\n\nI found no prompt rule that was wrong. None of the r9 cards depend on unreleased behavior."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr10-07",
+     "verdict": "weak_card",
+     "urlStatus": "man7.org bash.1 loads (HTTP 200), version footer 'GNU Bash 5.3', supports the card",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, set -e: \"Exit immediately if a pipeline (which may consist of a single simple command), a list, or a compound command ... exits with a non-zero status.\" Local Bash 5.3.20 run: 'set -e; false; printf x' prints nothing, rc=1. The answer is right, but the card is just the definition of -e applied to its simplest case. It also creates a wording tell: the 'Bash exits before printf x' frame appears only on true cards (06, 07, 09). The false cards use other verbs ('stops f at', 'triggers errexit at', 'uses ... as status').",
+     "problem": "This is a definition card. Anyone who knows what set -e means answers True without learning anything about errexit. Its shared 'exits before printf x' frame with 06 and 09 also lets a player who knows nothing about the subject guess True for that frame in this section.",
+     "suggestedFix": "Replace with a TRUE card on the compound-command exception (checked in Bash 5.3.20: prints x, rc 0). Statement: \"With set -e, Bash still reaches printf x after the group { false && :; } returns status 1.\" Explanation: \"When a compound command other than a subshell fails only because a command failed while -e was ignored, Bash does not exit. Here the exempt false makes the group fail, yet the script continues.\" Same man7 URL (set -e paragraph: 'If a compound command other than a subshell returns a non-zero status because a command failed while -e was being ignored, the shell does not exit.')."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards (6 true, 6 false; average statement length 77.0 true vs 80.5 false, within the 5-character rule; all statements are 120 characters or fewer and all explanations 240 or fewer). Each card was run in local GNU Bash 5.3.20 (Homebrew), and every stated answer matched what Bash actually did. Results: 01 \"$@\" with zero params under -u expands cleanly, rc 0. 02 ERR trap does not fire for an if condition. 03 prints x. 04 '! true' does not exit. 05 a tested function body ignores -e and prints x. 06 pipefail+errexit gives rc 1. 08 with inherit_errexit gives rc 1 and the printf inside the substitution is skipped; without it value=x, which confirms the contrast. 09 ((n++)) with n=0 gives rc 1. 10 local value=$(false) gives status 0 and continues. 11 'x: unbound variable', exits with 127 before printf. 12 ${x-} gives rc 0.\n\nAll cards cite https://man7.org/linux/man-pages/man1/bash.1.html, which loads and supports them. Key quotes:\n- set -e exception list: '...part of the test following the if or elif reserved words, part of any command executed in a && or || list except the command following the final && or ||, any command in a pipeline but the last (subject to the state of the pipefail shell option), or if the command's return value is being inverted with !'\n- 'If a compound command or shell function executes in a context where -e is being ignored, none of the commands executed within the compound command or function body will be affected by the -e setting'\n- -u: 'Treat unset variables and parameters other than the special parameters \"@\" and \"*\" ... as an error ... if not interactive, exits with a non-zero status'\n- inherit_errexit: 'If set, command substitution inherits the value of the errexit option, instead of unsetting it in the subshell environment'\n- ((expression)): 'otherwise the return status is 1'\n- local: 'The return status is 0 unless local is used outside a function, an invalid name is supplied, or name is a readonly variable'\n- ERR trap: 'These are the same conditions obeyed by the errexit (-e) option.'\n- 'Omitting the colon tests only for a parameter that is unset.'\n\nMinor point: for card 12 the man page does not say outright that ${x-} is exempt from nounset. That follows from the Use Default Values semantics and matches the runtime result, so I did not flag it.\n\nOverlap check against other sections found no duplicates. sr9-03 (value=$(false) fails) and sr10-10 (local masks it) are the split the prompt asks for. sr9-07/09/10 test pipeline status only, while sr10-04/06 test errexit interaction. sr11-10 tests errtrace inheritance, while sr10-02 tests the shared ERR if-exemption. sr3-01/04 test null vs unset and :?, while sr10-11/12 test nounset.\n\nChecks of the prompt's rules: the pin is correct. The ftp.gnu.org listing today shows bash-5.3.tar.gz as the newest release and bash53-020 as the highest patch, with no newer patch. The man7 provenance claim is correct: COLOPHON says it was 'obtained from the project's upstream Git repository ... on 2026-08-03', with the most recent commit dated 2026-06-10, and the footer reads 'GNU Bash 5.3 2025 April 7'. The GNU manual timeout the prompt mentions still happens: www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html timed out after 40 s today, so the man7 fallback is justified. The prompt's statement that inherit_errexit is enabled in POSIX mode matches the man page. None of the prompt rules relevant to r10 turned out to be wrong."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr11-02",
+     "verdict": "weak_card",
+     "urlStatus": "man7 bash.1 loads (GNU Bash 5.3, COLOPHON: upstream Git 2026-08-03, last commit 2026-06-10); same text in the released 5.3 bash.1/bash.info",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, trap: \"If -p is given, and action is not present, then trap displays the actions associated with each sigspec\". The card is correct, but it is a strawman. No learner expects a display option to remove a handler, so the answer can be read from the word 'inspection'. Tested on bash 5.3.20: trap -p EXIT printed the trap and the EXIT handler still ran.",
+     "problem": "A strawman or truism. It tests whether printing a trap deletes it, which nobody who studied would believe. It teaches nothing about inspecting traps.",
+     "suggestedFix": "Answer TRUE: \"In a command substitution, trap -p EXIT prints the parent shell's EXIT trap until a trap change there.\" Explanation: \"Command substitution runs in a subshell, yet trap -p there reports the parent's traps until a trap command in that subshell changes signal handling.\" Verified on 5.3: $(trap -p EXIT) printed the parent trap, and printed nothing after trap '' INT. The released 5.3 man page states it: \"The -P or -p options may be used in a subshell environment (e.g., command substitution) and, as long as they are used before trap is used to change a signal's handling, will display the state of its parent's traps.\" Same URL."
+    },
+    {
+     "id": "bash-scripting-sr11-11",
+     "verdict": "duplicate",
+     "urlStatus": "man7 bash.1 loads",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, FUNCTIONS: \"the DEBUG and RETURN traps ... are not inherited unless the function has been given the trace attribute ... or the -o functrace shell option has been enabled ..., and the ERR trap is not inherited unless the -o errtrace shell option has been enabled.\" sr11-10 is false because 'a function inherits the ERR trap while errtrace is off'. sr11-11 is false because 'a function inherits the DEBUG trap while functrace is off'. Both come from the same sentence and use the same distractor with a different X.",
+     "problem": "The answer is correct (verified: without functrace the DEBUG trap fired only for the call 'f', not for 'echo inside'). But it repeats sr11-10's false template and fact. The prompt's plan rules forbid using one distractor trick again with a different X, and a player who knows sr11-10 can guess this one.",
+     "suggestedFix": "Replace it with a different limit-of-trapping fact and keep it FALSE: \"A noninteractive Bash script that starts with TERM ignored can install a TERM trap that runs on TERM.\" (101 chars). Explanation: \"A noninteractive shell cannot trap or reset signals that were ignored when it started, so TERM stays ignored and the trap action never runs.\" Source on the same URL, trap: \"When the shell is not interactive, signals ignored upon entry to the shell cannot be trapped or reset.\" Verified on 5.3: a child script run under trap '' TERM showed trap -- '' SIGTERM and survived kill -TERM $$."
+    },
+    {
+     "id": "bash-scripting-sr11-01",
+     "verdict": "weak_card",
+     "urlStatus": "man7 bash.1 loads, but it only partly supports the card",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, exit: \"Cause the shell to exit with a status of n. If n is omitted, the exit status is that of the last command executed. Any trap on EXIT is executed before the shell terminates.\" Neither man7 nor the released 5.3 bash.info says that $? at the start of an EXIT handler holds the pending exit status. Tested on 5.3.20: the card's trap gave status 7 after 'exit 7'. The same trap without the capture ('cleanup' only) also gave 7, because cleanup(){ :; } cannot change the outcome.",
+     "problem": "The answer can be read from the fragment: the code visibly saves $? and exits with it, so a player who knows nothing answers True. With a no-op cleanup, capturing the status makes no observable difference, so the card does not test the hazard it claims to cover. The source never states the key premise (the value of $? on entry to the EXIT trap).",
+     "suggestedFix": "Answer TRUE: \"With cleanup(){ return 3; }, trap 'cleanup; exit $?' EXIT makes a script ending in exit 0 finish with status 3.\" (111 chars). Explanation: \"Inside the handler, $? after cleanup is cleanup's own status, so exit $? reports 3. Save $? at the top of the handler and exit with that value to keep the script's status.\" Verified on 5.3 (status 3). It uses an explicit exit argument, which follows the prompt's rule against exit without an argument in traps. Same URL (exit [n] entry)."
+    }
+   ],
+   "notes": "I checked all 12 r11 cards against the man7 Bash man page (loads, GNU Bash 5.3), signal(7), the released Bash 5.3 bash.1/bash.info from the local Homebrew 5.3.20 install, and the 5.3 release NEWS on lists.gnu.org. I also ran each claim on bash 5.3.20. gnu.org's manual pages refused the connection or timed out (ECONNREFUSED), so I used the man7 page and the release docs instead.\n\nCards that passed:\n- 03: trap - TERM resets to the disposition at shell start.\n- 04: verified, a child ignores TERM.\n- 05: foreground deferral, man quote: \"it will not execute the trap until the command completes\".\n- 06: verified, wait=143 and then the trap ran.\n- 07, 08: DEBUG runs \"before every simple command\".\n- 09: verified, RET printed after sourcing.\n- 10: verified, ERR fires only with set -E.\n- 12: signal(7): \"The signals SIGKILL and SIGSTOP cannot be caught, blocked, or ignored.\"\n\nThe section is balanced 6 true and 6 false, all statements are 120 characters or less, and all explanations are 240 or less. My three replacements keep the balance: 01 and 02 stay true, 11 stays false.\n\nMinor items I did not flag:\n- 03 names the wrong actor (\"Bash uses trap - TERM to restore\"). The script author runs trap - TERM, so \"Running trap - TERM restores 'cleanup'\" would read better.\n- 12's source (signal(7)) supports that SIGKILL cannot be caught but does not mention the EXIT trap. The rest is a sound inference.\n- 05: the man page applies deferral to any command Bash is waiting for, not only external ones. The card's narrower wording is still correct.\n\nPrompt rules I checked:\n- The bash53-020 patch is still the highest on ftp.gnu.org.\n- The man7 COLOPHON matches the prompt (upstream Git 2026-08-03, last commit 2026-06-10).\n- The 5.3 NEWS confirms that exit without an argument in a trap changed (item uu) and that trap -P is new.\n\nI found no wrong prompt rule for r11."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr12-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, man7 bash(1) (GNU Bash 5.3), supports the card",
+     "evidence": "man7 REDIRECTION: \"ls 2>&1 > dirlist directs only the standard output to file dirlist, because the standard error was directed to the standard output before the standard output was redirected to dirlist.\" The answer is right (local Bash 5.3.20 test: stderr stayed on the terminal). But the published linux-command-line deck already has linux-command-line-sr7-03, 'With stdout on a terminal, Bash's `command 2>&1 > log` sends standard error into log', which tests the same fact with the same example. The prompt says linux-command-line's introductory redirection facts may be context here, 'rather than standalone repeats'. The card is also close to the man page's own example.",
+     "problem": "This repeats a published linux-command-line card (sr7-03): same fact, same 2>&1-before-> example.",
+     "suggestedFix": "Replace (true): \"For exec {fd}>log, Bash assigns fd a descriptor number of 10 or higher.\" Explanation: \"A {varname} before a redirection makes Bash allocate a free descriptor of at least 10 and store its number in the variable, so scripts avoid hard-coded numbers.\" Source: https://man7.org/linux/man-pages/man1/bash.1.html (REDIRECTION: 'the shell allocates a file descriptor greater than or equal to 10 and assigns it to varname'). Verified locally: fd=10."
+    },
+    {
+     "id": "bash-scripting-sr12-05",
+     "verdict": "duplicate",
+     "urlStatus": "200, man7 bash(1), supports the card",
+     "evidence": "man7 Redirecting Output: \"If the redirection operator is >|, or the redirection operator is > and the noclobber option to the set builtin is not enabled, bash attempts the redirection even if the file named by word exists.\" The answer is right (local test: : >|out returned 0 and truncated out). But the published linux-command-line-sr7-12 says 'In Bash, `command >| log` overrides noclobber protection for an existing regular file': the same fact. Knowing that card answers this one.",
+     "problem": "This repeats a published linux-command-line card (sr7-12): >| overrides noclobber for an existing regular file.",
+     "suggestedFix": "Replace (false): \"With noclobber enabled, Bash rejects : >/dev/null because /dev/null already exists.\" Explanation: \"noclobber blocks > only when the existing target is a regular file. /dev/null is a character device, so Bash opens it and the redirection succeeds.\" Source: man7 bash(1) Redirecting Output ('fails if the file ... exists and is a regular file'). Verified locally: status 0 under set -C."
+    },
+    {
+     "id": "bash-scripting-sr12-07",
+     "verdict": "duplicate",
+     "urlStatus": "200, man7 bash(1), supports the card",
+     "evidence": "man7 Here Documents: \"If any part of word is quoted, the delimiter is the result of quote removal on word, and the lines in the here-document are not expanded.\" The answer is right. But the published linux-command-line-sr7-08 says 'In Bash, `<<'EOF'` lets a here-document contain literal `$HOME` text rather than the variable's value': the same fact.",
+     "problem": "This repeats a published linux-command-line card (sr7-08): a quoted here-document delimiter makes the body literal.",
+     "suggestedFix": "Replace (true): \"For cmd 3<<END, Bash supplies the here-document body on descriptor 3 instead of standard input.\" Explanation: \"A number before << selects the descriptor that receives the here-document. Standard input is left unchanged, so the command must read descriptor 3 to get the body.\" Source: man7 bash(1) Here Documents ('become the standard input (or file descriptor n if n is specified)'). Verified locally."
+    },
+    {
+     "id": "bash-scripting-sr12-11",
+     "verdict": "duplicate",
+     "urlStatus": "200, man7 bash(1), supports the card",
+     "evidence": "man7 Here Strings: \"The result is supplied as a single string, with a newline appended, to the command on its standard input.\" The answer is right (local od -c showed t e x t \\n). But the published linux-command-line-sr7-09 explanation teaches 'Bash appends a newline to a here-string before supplying it as standard input' (factKey here-string-appends-newline): the same fact. It is also nearly a copy of the source sentence.",
+     "problem": "This repeats a published linux-command-line card (sr7-09): a here-string gets a newline appended.",
+     "suggestedFix": "Replace (true): \"With HOME=a home directory, Bash makes cat <<< ~ print a home directory.\" Explanation: \"A here-string word undergoes tilde, parameter, command and arithmetic expansion plus quote removal, so the unquoted ~ becomes the value of HOME before cat reads it.\" Source: man7 bash(1) Here Strings ('The word undergoes tilde expansion, ...'). Verified locally."
+    },
+    {
+     "id": "bash-scripting-sr12-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, man7 bash(1); the page lacks the sentence that settles the card",
+     "evidence": "The man7 Compound Commands entry for { list; } only says 'list is executed in the current shell environment ... The return status is the exit status of list.' Nothing on the page says a redirection on a compound command covers every command inside it. The released Bash 5.3 manual (bash.info shipped with 5.3.20, Compound Commands) states: \"Any redirections (*note Redirections::) associated with a compound command apply to all commands within that compound command unless explicitly overridden.\" The answer itself is right.",
+     "problem": "The cited man page does not state the fact the card tests. The GNU Reference Manual's Compound Commands page does.",
+     "suggestedFix": "Change the source URL to https://www.gnu.org/software/bash/manual/html_node/Compound-Commands.html (title 'Bash Reference Manual: Compound Commands'). Keep the statement and explanation."
+    }
+   ],
+   "notes": "I checked all 12 r12 cards. I opened each source, quoted the man7 page, and ran every scenario in local GNU Bash 5.3.20 (5.3 with patches up to 020). All 12 answers are correct.\n\nPin is correct: on 2026-10-13 ftp.gnu.org still lists bash-5.3.tar.gz as the newest release and bash53-020 as the highest patch. The man7 page reads 'GNU Bash 5.3 2025 April 7', and its COLOPHON names the upstream repository with a latest commit dated 2026-06-10. This matches the prompt.\n\nwww.gnu.org was unreachable (connection refused and timeout), so I could not open the GNU manual pages online. For the GNU manual wording I used the released bash.info shipped with Homebrew bash 5.3.20 instead.\n\nMain problem: four r12 cards repeat facts that are already published in reviewed/linux-command-line.json. The prompt forbids standalone repeats of that deck's introductory redirection facts.\n- sr12-01 repeats sr7-03 (2>&1 before >).\n- sr12-05 repeats sr7-12 (>| overrides noclobber).\n- sr12-07 repeats sr7-08 (a quoted delimiter makes the body literal).\n- sr12-11 repeats sr7-09 (a here-string gets a newline appended).\nThe author apparently did not check the plan against that deck.\n\nThe replacements keep the section balance: three of them are true and one is false, the same as the cards they replace. Each was run locally, and none collides with another bash-scripting or linux-command-line card. They test {varname} descriptor allocation, the regular-file-only scope of noclobber, here-document descriptor selection and tilde expansion in here-strings.\n\nBorderline cards I did not flag:\n- sr12-06 and sr12-12 test opposite sides of whether a redirection word is word-split (an ordinary target is split and gives an ambiguous-redirect error; a here-string is not split). Knowing one does not give the other's answer, so I kept both, but they share the same scenario.\n- sr12-08's explanation says Bash 'applies quote removal' to the delimiter. For an unquoted word the man page says 'the delimiter is word itself'. The effect is the same, so I left it. The local run confirmed that the line $marker closes the here-document and the line END does not.\n- sr12-02 (3>&-) is easy and close to the source wording, but it is acceptable as an easy card.\n\nPrompt rule problems: none of the rules I checked (version pin, man7 provenance) were wrong. One thing to know about the man7 page: its Here Documents section says '\\<newline> is treated literally' and then describes '\\<newline>' as a line continuation. Bash 5.3.20 joins the lines. No r12 card relies on this."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr13-04",
+     "verdict": "weak_card",
+     "urlStatus": "man7.org bash.1 loads (200); GNU Bash 5.3 footer",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html, Compound Commands: \"{ list; } list is executed in the current shell environment. list must be terminated with a newline or semicolon.\" The fact is correct (confirmed on Bash 5.3.20: a newline before } works), but every multiline function body or brace group a script maintainer writes ends with a newline before }. Nobody who has studied or maintained Bash scripts would answer False, so the card is close to a truism and a strawman on its False side. It also repeats the brace-token syntax area that sr13-03 already tests, and it does not test the section's focus (execution environments).",
+     "problem": "Correct, but it teaches nothing at the deck's depth (anyone who has written a multiline function knows the answer), and it adds a second group-syntax token card next to sr13-03 instead of an execution-environment fact.",
+     "suggestedFix": "Replace with a TRUE card. Statement: \"At top level, Bash prints 1 for ( printf '%s' \"$BASH_SUBSHELL\" ).\" Explanation: \"BASH_SUBSHELL starts at 0 in the main shell, and Bash increments it by one each time it begins running in a subshell, so a parenthesized group at top level sees 1.\" factKey: bash-subshell-counter; source: https://man7.org/linux/man-pages/man1/bash.1.html (Shell Variables: BASH_SUBSHELL \"Incremented by one within each subshell or subshell environment ... The initial value is 0.\"). Tested on Bash 5.3.20: prints 1, and 2 for a nested ( ( ... ) ). This keeps the 6 true / 6 false balance."
+    }
+   ],
+   "notes": "I checked all 12 r13 cards in two ways: against the man7 Bash man page (the source URL of every card), and by running each claim on a local GNU Bash 5.3.20 (Homebrew). Every answer matched the shell's real behavior:\n- 01 prints old.\n- 02: noclobber stays on in the subshell.\n- 03: {echo x; } is a syntax error, not a brace group.\n- 05: sleep 2 | true waits about 2 s.\n- 06: lastpipe keeps value=x.\n- 07: $$ and BASHPID differ inside ( ), and BASH_SUBSHELL is 1 there.\n- 08: a background read gets EOF from /dev/null (status 1), and the parent read still gets the piped input.\n- 09: the argument is /dev/fd/63.\n- 12: with pipefail, true < <(exit 7) returns 0, and wait $! returns 7.\n\nSupporting man7 quotes:\n- Pipelines: \"the shell waits for all commands in the pipeline to terminate before returning a value\". Also: \"If the lastpipe option is enabled ... and job control is not active, the last element of a pipeline may be run by the shell process\".\n- (list): \"Variable assignments and builtin commands that affect the shell's environment do not remain in effect after the command completes.\"\n- { list; }: \"{ and } are reserved words ... they must be separated from list by whitespace or another shell metacharacter\".\n- $$: \"In a subshell, it expands to the process ID of the parent shell, not the subshell\". BASHPID: \"This differs from $$ under certain circumstances, such as subshells\".\n- Command Execution Environment: subshell environment \"is a duplicate of the shell environment\" (it includes options enabled by set). Also: \"If a command is followed by a & and job control is not active, the default standard input for the command is the empty file /dev/null.\"\n- Process Substitution: \"The process list is run asynchronously, and its input or output appears as a filename. This filename is passed as an argument to the current command\". Also: \"If the >(list) form is used, writing to the file provides input for list.\"\n\nBalance and mix: 6 true / 6 false. Average statement length: true 92.7, false 88.7 (within 5 characters). Difficulty: five 1s, five 2s, two 3s. All statements are at most 120 characters and all explanations at most 240.\n\nOverlap check against the rest of the deck: no duplicates. sr4-11 covers ${ } persistence, sr9-08 brace-group status, sr12-04 grouped redirection and sr12-05 the >| override. These are separate facts from the r13 cards.\n\nPrompt rules checked:\n- The pin is correct. ftp.gnu.org lists bash-5.3.tar.gz as the newest stable release and bash53-020 as the highest patch.\n- The man7 COLOPHON matches the prompt: obtained from upstream Git on 2026-08-03, latest commit 2026-06-10, footer \"GNU Bash 5.3 2025 April 7\".\n- The GNU reference manual (www.gnu.org/software/bash/manual) was unreachable again (curl timeout, WebFetch ECONNREFUSED). So I used the man7 upstream page as the fallback, as the prompt allows. The r13 passages describe long-standing behavior, not material new in 5.3.\n\nI found no prompt rule that is wrong for this section. One small finding:\n- sr13-05 uses the slightly awkward phrase \"synchronous pipeline stage\" (it is the pipeline that is synchronous, not a stage). The answer is still clear, so I did not flag it."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "bash-scripting-sr14-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, man7.org bash.1 (GNU Bash 5.3 upstream page), getopts entry present",
+     "evidence": "https://man7.org/linux/man-pages/man1/bash.1.html (getopts): \"if a character is followed by a colon, the option is expected to have an argument\" and \"When an option requires an argument, getopts places that argument into the variable OPTARG.\" Card 01 (true: getopts 'f:' opt -f config consumes config as f's argument) and card 02 (false: the same command stores f in OPTARG; explanation: OPTARG contains config) use the same command and the same fact. Card 02's explanation gives card 01's answer, and card 03's explanation repeats it (\"After consuming -f and its argument value\"). Bash 5.3.20 output: opt=f OPTARG=config OPTIND=3.",
+     "problem": "Duplicate of bash-scripting-sr14-02, which rests on the same fact: with optstring 'f:', getopts takes config as f's argument and puts it in OPTARG. Answering one card answers the other. Card 01 is also the weaker of the two, close to a definition of the colon in optstring.",
+     "suggestedFix": "Replace with a true card about how getopts stops at the end of options. Statement (true): \"With OPTIND=1, getopts 'a' opt file -a sets opt to ? because option parsing ends at file.\" Explanation: \"getopts stops at the first non-option argument. It returns a nonzero status and sets the name variable to ?, so a later -a goes unparsed.\" Same URL. Verified in Bash 5.3.20: rc=1 opt=?. Man page: \"When it reaches the end of options, getopts exits with a return value greater than zero... and name is set to ?.\" The section keeps its 6 true and 6 false cards."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards (bash-scripting-b4.json) three ways: against the man7 page (HTTP 200, fetched and read the getopts and read entries), by running each one in GNU bash 5.3.20(1)-release (Homebrew, which matches the 5.3 + patch 020 pin), and against the prompt rules. All 12 stated answers match the man page and the live runs. Results: 01 opt=f OPTARG=config; 02 OPTARG=config; 03 OPTIND=3; 04 opt=b; 05 opt=: OPTARG=f; 06 OPTIND stays 3 after set --; 07 a\\b; 08 rest=[two::three]; 09 a=([0]=new [1]=value); 10 stops at |; 11 REPLY=[ a b ]; 12 rc=1 with value=last.\n\nMan page quotes that settle the passing cards: 03 \"the index of the next argument to be processed into the variable OPTIND\"; 04 \"if more arguments are supplied as arg values, getopts parses those instead\"; 05 \"If getopts is silent, it sets the value of name to a colon (:) and sets OPTARG to the option character found\"; 06 \"The shell does not reset OPTIND automatically; it must be manually reset...\"; 07 \"-r Backslash does not act as an escape character. The backslash is considered to be part of the line\"; 08 \"the remaining words and their intervening delimiters are assigned to the last name\"; 09 \"aname is unset before any new values are assigned\"; 10 \"The first character of delim terminates the input line\"; 11 \"assigns the line read, without the ending delimiter but otherwise unmodified, to the variable REPLY\"; 12 \"The exit status is zero, unless end-of-file is encountered\".\n\nMinor, not flagged: card 12's explanation says read still assigns last to value. That is true in 5.3.20, but neither man page entry states outright that partial data is assigned at EOF; the page only gives the nonzero status.\n\nBalance: 6 true and 6 false, kept by the suggested replacement. The section splits as 6 getopts and 6 read cards, as the prompt asks. No overlap with r13-06/r13-08 (read inside pipelines and asynchronous lists) or with the linux-command-line deck.\n\nPrompt rule checks:\n- Pin: confirmed. ftp.gnu.org bash-5.3-patches lists bash53-020 as the highest patch today.\n- man7 provenance: confirmed. COLOPHON: taken from upstream Git on 2026-08-03, latest commit 2026-06-10, footer \"GNU Bash 5.3 2025 April 7\". The getopts and read text these cards rely on matches the released 5.3 behaviour I ran.\n- GNU manual: the gnu.org reference pages (html_node/Bourne-Shell-Builtins.html) timed out again, just as the prompt says. I used man7 as the fallback.\n\nI found no wrong prompt rule that affects r14."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "bash-scripting-sr14-01",
+     "bash-scripting-sr14-02"
+    ],
+    "why": "Both use the same input (OPTIND=1, getopts 'f:' opt -f config) and rest on one fact: the colon makes f take config as its argument, which goes into OPTARG. sr14-02's explanation ('stores the consumed option argument in OPTARG ... contains config') answers sr14-01 outright. sr14-01 is close to a definition of the colon.",
+    "dropId": "bash-scripting-sr14-01"
+   },
+   {
+    "ids": [
+     "bash-scripting-sr8-06",
+     "bash-scripting-sr9-08"
+    ],
+    "why": "Same mechanism: a brace-bodied function and a { list; } group both return the status of the last command executed. Knowing f(){ true; false; } fails tells you { false; true; } succeeds. sr9-08 is the weaker card because its statement includes the reason ('because true runs last in the group'), which makes it close to a truism.",
+    "dropId": "bash-scripting-sr9-08"
+   },
+   {
+    "ids": [
+     "bash-scripting-sr8-04",
+     "bash-scripting-sr9-02"
+    ],
+    "why": "Same fact: an explicit numeric argument to return or exit becomes the status (7). If you know return 7 yields 7, you know exit 7 yields 7. sr9-02 is also a strawman, since nobody who studied would expect 'true; exit 7' to report true's status.",
+    "dropId": "bash-scripting-sr9-02"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "parameter-colon-null-forms",
+    "ids": [
+     "bash-scripting-sr3-01",
+     "bash-scripting-sr3-03",
+     "bash-scripting-sr3-04"
+    ],
+    "why": "sr3-01's explanation says 'Adding a colon to -, =, ? or + makes that operator test null values too'. That answers sr3-03 (:= on x='' assigns) and half of sr3-04 (:? on x='' fires)."
+   },
+   {
+    "name": "pattern-removal-shortest-longest",
+    "ids": [
+     "bash-scripting-sr3-08",
+     "bash-scripting-sr3-09"
+    ],
+    "why": "Each explanation states the single-versus-doubled rule (# or % is shortest, ## or %% is longest), which gives away the other card's operator."
+   },
+   {
+    "name": "arithmetic-octal-base",
+    "ids": [
+     "bash-scripting-sr4-04",
+     "bash-scripting-sr4-05"
+    ],
+    "why": "sr4-05 ('10#08 ... makes this 08 a valid decimal value') implies a bare leading zero is not decimal, which answers sr4-04."
+   },
+   {
+    "name": "arithmetic-variable-evaluation",
+    "ids": [
+     "bash-scripting-sr4-02",
+     "bash-scripting-sr4-03",
+     "bash-scripting-sr4-06"
+    ],
+    "why": "sr4-03 and sr4-06 evaluate plain variables (x, n) in $(( )) with no declare -i. That hints that sr4-02's 'requires declare -i' is false."
+   },
+   {
+    "name": "array-implicit-index",
+    "ids": [
+     "bash-scripting-sr5-01",
+     "bash-scripting-sr5-06"
+    ],
+    "why": "Both test the compound-assignment indexing rule from the same manual sentence. sr5-01's explanation ('implicit indices ... start at zero') pushes players toward the wrong answer on sr5-06, and sr5-06's explanation covers sr5-01."
+   },
+   {
+    "name": "sparse-array-indices",
+    "ids": [
+     "bash-scripting-sr5-03",
+     "bash-scripting-sr5-05",
+     "bash-scripting-sr5-10",
+     "bash-scripting-sr5-11"
+    ],
+    "why": "Every card here shows or explains gapped indices. sr5-03 and sr5-05 use the same array a=([2]=x [9]=y). Seeing sparse arrays gives away sr5-11 (unset does not reindex), and sr5-05's 'one greater than the maximum index' wording is the distractor in sr5-03."
+   },
+   {
+    "name": "quoted-at-expansion",
+    "ids": [
+     "bash-scripting-sr1-11",
+     "bash-scripting-sr5-08"
+    ],
+    "why": "The same quoted-@ mechanism, one word per element with empty elements preserved, applied to positional parameters and to array elements. Either card answers the other."
+   },
+   {
+    "name": "string-vs-arithmetic-comparison",
+    "ids": [
+     "bash-scripting-sr6-05",
+     "bash-scripting-sr6-06",
+     "bash-scripting-sr6-12"
+    ],
+    "why": "sr6-05 (< is lexical) and sr6-06 (-eq is arithmetic) are the two sides of one distinction. sr6-12's statement puts ++x inside -eq in [[ ]], which shows -eq operands are arithmetic expressions and answers sr6-06."
+   },
+   {
+    "name": "quoting-makes-pattern-literal",
+    "ids": [
+     "bash-scripting-sr6-09",
+     "bash-scripting-sr6-10",
+     "bash-scripting-sr7-12"
+    ],
+    "why": "sr7-12's explanation ('quoting part of a case pattern makes that part literal') and sr6-09's 'unquoted pattern' both give away sr6-10 (a quoted $re is matched literally)."
+   },
+   {
+    "name": "nested-loop-control",
+    "ids": [
+     "bash-scripting-sr7-07",
+     "bash-scripting-sr7-08"
+    ],
+    "why": "sr7-07's explanation ('the numeric argument selects how many enclosing loops') answers continue 2 in sr7-08. Both cards are true."
+   },
+   {
+    "name": "case-terminators",
+    "ids": [
+     "bash-scripting-sr7-09",
+     "bash-scripting-sr7-11"
+    ],
+    "why": "sr7-11's explanation contrasts ;;& (keeps testing) with ;&, which implies plain ;; stops at the first match (sr7-09). sr7-09's explanation states the ;; rule."
+   },
+   {
+    "name": "return-vs-exit",
+    "ids": [
+     "bash-scripting-sr8-04",
+     "bash-scripting-sr8-05",
+     "bash-scripting-sr9-02"
+    ],
+    "why": "A mirrored pair: return ends the function with a status (true) and exit is wrongly given return's job (false). sr9-02 repeats the exit-status fact."
+   },
+   {
+    "name": "function-local-assignment",
+    "ids": [
+     "bash-scripting-sr8-07",
+     "bash-scripting-sr8-09"
+    ],
+    "why": "Identical template ('With global x=..., f(){ ...x=... }; f changes/leaves the global x') with opposite answers. sr8-09's explanation of local shadowing primes sr8-07's declare-is-local answer."
+   },
+   {
+    "name": "last-command-status",
+    "ids": [
+     "bash-scripting-sr8-06",
+     "bash-scripting-sr9-05",
+     "bash-scripting-sr9-08"
+    ],
+    "why": "All three rest on 'status of the last command executed'. Each explanation states the rule, which answers the others."
+   },
+   {
+    "name": "status-overwrite",
+    "ids": [
+     "bash-scripting-sr9-01",
+     "bash-scripting-sr9-04",
+     "bash-scripting-sr9-11"
+    ],
+    "why": "sr9-01's explanation ('the later true changes the current status') and sr9-11's 'Immediately after' wording both signal that the next command replaces PIPESTATUS, which is sr9-04's answer."
+   },
+   {
+    "name": "pipeline-status-pipefail",
+    "ids": [
+     "bash-scripting-sr9-09",
+     "bash-scripting-sr9-10",
+     "bash-scripting-sr10-06",
+     "bash-scripting-sr13-12"
+    ],
+    "why": "sr10-06's explanation ('pipefail makes this untested pipeline fail' for false | true) implies that false | true succeeds without pipefail, which answers sr9-09. sr9-09's explanation and sr9-10 cover the two sides of the pipefail distinction, and sr13-12 reuses pipefail."
+   },
+   {
+    "name": "pipeline-negation",
+    "ids": [
+     "bash-scripting-sr9-07",
+     "bash-scripting-sr10-04"
+    ],
+    "why": "sr10-04's explanation ('a pipeline whose status is inverted with !') tells the player that ! applies to the whole pipeline, which is sr9-07's answer."
+   },
+   {
+    "name": "assignment-substitution-status",
+    "ids": [
+     "bash-scripting-sr9-03",
+     "bash-scripting-sr10-08",
+     "bash-scripting-sr10-10"
+    ],
+    "why": "sr9-03 (plain assignment takes the substitution's status) and sr10-10 (local masks it) are the two sides of one distinction, and each explanation states its own side. sr10-08 also depends on the status of value=$(...)."
+   },
+   {
+    "name": "errexit-tested-contexts",
+    "ids": [
+     "bash-scripting-sr10-02",
+     "bash-scripting-sr10-05"
+    ],
+    "why": "sr10-05's explanation ('calling f as an if condition makes Bash ignore errexit') answers sr10-02, which asks whether an if-condition failure is exempt from errexit and ERR."
+   },
+   {
+    "name": "errexit-untested-failure",
+    "ids": [
+     "bash-scripting-sr10-06",
+     "bash-scripting-sr10-07",
+     "bash-scripting-sr10-09"
+    ],
+    "why": "Each explanation says that errexit ends an untested sequence before printf. Every card uses the same 'exits before printf x' template, all true."
+   },
+   {
+    "name": "nounset-guarded-forms",
+    "ids": [
+     "bash-scripting-sr10-01",
+     "bash-scripting-sr10-11",
+     "bash-scripting-sr10-12"
+    ],
+    "why": "sr10-11 ('$x' fails under set -u) and sr10-12 ('${x-}' succeeds) are a mirrored true/false pair, and sr10-12's explanation answers sr10-11. sr10-01's explanation ('nounset exempts @') implies that ordinary names are not exempt."
+   },
+   {
+    "name": "trap-inheritance-options",
+    "ids": [
+     "bash-scripting-sr11-10",
+     "bash-scripting-sr11-11"
+    ],
+    "why": "A mirrored errtrace/functrace pair: the statement template and the explanation template are the same, and both cards are false. Knowing one answers the other."
+   },
+   {
+    "name": "signal-foreground-vs-wait",
+    "ids": [
+     "bash-scripting-sr11-05",
+     "bash-scripting-sr11-06"
+    ],
+    "why": "The two sides of one distinction: a trap is deferred during foreground waiting, while the wait builtin is interrupted with a status above 128. Each explanation gives away the other card."
+   },
+   {
+    "name": "exit-trap-firing",
+    "ids": [
+     "bash-scripting-sr11-01",
+     "bash-scripting-sr11-07",
+     "bash-scripting-sr11-12"
+    ],
+    "why": "sr11-07 and sr11-12 use the same template ('Bash runs its EXIT trap when ...') with opposite answers. sr11-01 shows the EXIT handler running on normal termination, which answers sr11-07."
+   },
+   {
+    "name": "heredoc-delimiter-quoting",
+    "ids": [
+     "bash-scripting-sr12-07",
+     "bash-scripting-sr12-08",
+     "bash-scripting-sr12-09"
+    ],
+    "why": "sr12-07's explanation (a quoted delimiter suppresses expansion) and sr12-09's ('unquoted ... Bash expands $name') state each other's premise. sr12-08's explanation about delimiter-word quote removal overlaps with sr12-07."
+   },
+   {
+    "name": "redirection-word-splitting",
+    "ids": [
+     "bash-scripting-sr12-06",
+     "bash-scripting-sr12-12"
+    ],
+    "why": "The same scenario (an unquoted $var containing a space as a redirection word), both false, with opposite real outcomes. sr12-06's explanation ('an ordinary redirection target must expand to one word ... redirection error') misleads on sr12-12, and the word 'ordinary' hints that here-strings differ."
+   },
+   {
+    "name": "no-split-contexts",
+    "ids": [
+     "bash-scripting-sr2-06",
+     "bash-scripting-sr6-03",
+     "bash-scripting-sr12-12"
+    ],
+    "why": "The explanations of sr2-06 and sr6-03 both say a context 'skips word splitting'. Together they prime the here-string answer in sr12-12."
+   },
+   {
+    "name": "ifs-whitespace-vs-nonwhitespace",
+    "ids": [
+     "bash-scripting-sr1-07",
+     "bash-scripting-sr1-08",
+     "bash-scripting-sr14-08"
+    ],
+    "why": "sr1-07 (whitespace IFS is trimmed) and sr1-08 (adjacent non-whitespace IFS characters make an empty field) are the two sides of one distinction. sr14-08's 'two::three' remainder depends on the same non-whitespace handling."
+   },
+   {
+    "name": "subshell-copy-isolation",
+    "ids": [
+     "bash-scripting-sr13-01",
+     "bash-scripting-sr13-02",
+     "bash-scripting-sr13-07"
+    ],
+    "why": "sr13-02's explanation ('starts with a copy of the enclosing shell's options') and sr13-01's ('runs in a subshell') give away each other and hint at sr13-07 (a separate process, so BASHPID differs)."
+   },
+   {
+    "name": "process-substitution-separation",
+    "ids": [
+     "bash-scripting-sr13-11",
+     "bash-scripting-sr13-12"
+    ],
+    "why": "sr13-11's explanation ('completing that list is separate from executing its enclosing command') answers sr13-12 (the producer's exit 7 does not become the outer status), and sr13-12's explanation answers sr13-11 the same way."
+   },
+   {
+    "name": "getopts-option-argument",
+    "ids": [
+     "bash-scripting-sr14-01",
+     "bash-scripting-sr14-02",
+     "bash-scripting-sr14-03",
+     "bash-scripting-sr14-05"
+    ],
+    "why": "All four use 'f:' with -f. The explanations of sr14-02 and sr14-03 restate sr14-01's answer. sr14-05's explanation ('OPTARG to the option letter') makes sr14-02's false 'stores f in OPTARG' look plausible."
+   }
+  ],
+  "tells": "168 cards: 84 true and 84 false, 6/6 in every section. Overall, true and false statements average the same length (79.6 characters each), and within each section the gap stays under 5 characters (largest are r8 at 4.7 and r13 at 4.0). Explanations are longer for false cards in r4 (+18), r7 (+17), r12 (+15) and r1 (+14), and for true cards in r14 (+19) and r13 (+15), but a player only sees these after answering.\n\nWord tells in statements (true/false counts):\n1. Bash 'exits/stops before printf x' under set -e: 4/0 (sr10-06, 07, 08, 09). 'reaches printf x': 2/0 (sr9-06, sr10-03). In r10 the 'execution stops before printf x' outcome is always true. The only false card about stopping is worded differently ('stops f at false', sr10-05).\n2. 'before' as an ordering claim, outside that errexit template: 1/6. False: sr2-12, sr3-02, sr4-02, sr7-06, sr7-11, sr11-05. True: sr13-04. Claims that something happens eagerly or earlier are almost always false. sr3-02, sr7-06 and sr11-05 share the template 'Bash runs X before Y', three false cards, which exceeds the cap of two per false template.\n3. An option-off premise ('with X off/disabled'): 1/5. False: sr8-12, sr9-09, sr11-10, sr11-11, sr13-08. True: sr13-06. 'disabled' alone is 0/2. 'enabled' leans true at 6/4.\n4. 'one argument / one operand' as the claimed boundary: 4/0 (sr1-02, sr1-03, sr1-05, sr6-03).\n5. 'treats' 2/5 (false: sr2-02, sr7-12, sr10-01, sr13-03, sr14-10). 'uses' 1/4 (false: sr10-10, sr11-03, sr12-08, sr13-10). 'changes' 1/3 (false: sr3-11, sr8-03, sr8-07). 'restores' 1/2. 'still' 0/2 (sr6-02, sr13-05). 'rejects' 0/2 (sr4-03, sr12-12). 'requires' 0/1 (sr4-02). These verbs mark false.\n6. 'keeps/retains' 3/0 (sr5-07, sr13-02, sr13-06): persistence verbs mark true.\n7. A reason inside the statement ('because ...'): 2/4. False: sr4-03, sr6-04, sr9-07, sr12-05. True: sr7-05, sr9-08. A built-in justification leans false.\n\nRecurring false templates: 'With X off, a function inherits the trap' (sr11-10, sr11-11) uses the same wording on both cards. Redirection with an unquoted $var containing a space (sr12-06, sr12-12) is false on both cards. In r3, the descriptive tail '... to the existing value / the initial two characters / the remaining text' is false 3 of 4 times (sr3-05, sr3-07, sr3-08; true: sr3-09).\n\nWeak cards found while reading: sr9-02 is a strawman; sr6-01 (zero selects then) and sr11-07 (EXIT trap runs on a zero-status finish) are close to truisms; sr11-11's 'ordinary untraced function' hints at its own answer.\n\nFacts spot-checked against the upstream man page on man7.org: sr5-02 ('Empty strings cannot be used as associative array keys') and sr8-12 (local - restores only options changed with set) are both correct. The other statements I reviewed are consistent with the manual."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "bash-scripting-sr1-01",
+    "reason": "Duplicate across decks: linux-command-line-sr8-04 already tests that single quotes keep $ literal. The prompt allows introductory quoting only as context. r1 stays at 9 cards (4/5) without a replacement."
+   },
+   {
+    "id": "bash-scripting-sr1-02",
+    "reason": "Duplicate across decks: this is the quoted side of the word-splitting split that linux-command-line-sr8-06 already teaches. The prompt counts both sides of a distinction as one fact."
+   },
+   {
+    "id": "bash-scripting-sr1-11",
+    "reason": "Duplicate across decks: linux-command-line-sr8-05 already tests that quoted \"$@\" keeps each parameter, including empty ones. It is also the same mechanism as sr5-08."
+   },
+   {
+    "id": "bash-scripting-sr2-10",
+    "reason": "Weak card: 'globskipdots enabled' gives away 'skips . and ..'. r2 keeps 11 cards (5/6)."
+   },
+   {
+    "id": "bash-scripting-sr3-02",
+    "reason": "Source problem with no allowed fix. Neither man7 bash(1) nor the released 5.3 reference manual says an unneeded ${x:-word} word stays unexpanded; I checked the bash.info shipped with 5.3.20, and gnu.org refused connections today. Only POSIX XCU 2.6.2 says it, and the prompt does not allow POSIX as a source. Dropping it also removes the third false 'Bash runs X before Y' card (with sr7-06 and sr11-05), which broke the two-per-template cap."
+   },
+   {
+    "id": "bash-scripting-sr3-06",
+    "reason": "Weak card: once you know ${#x} is the value's length, 'including spaces' is common sense."
+   },
+   {
+    "id": "bash-scripting-sr3-09",
+    "reason": "Duplicate: it uses the same shortest-versus-longest rule as sr3-08, and each card's explanation states the other side."
+   },
+   {
+    "id": "bash-scripting-sr4-05",
+    "reason": "Weak card: 'explicitly selected decimal base' gives the answer away, and the explanation gives away sr4-04 (leading zero means octal). r4 keeps 10 cards (4/6)."
+   },
+   {
+    "id": "bash-scripting-sr4-10",
+    "reason": "Weak card: the statement names its own answer ('as a nested command substitution'), and the case has no trap."
+   },
+   {
+    "id": "bash-scripting-sr5-07",
+    "reason": "Weak card: += keeping existing elements is what append means. r5 keeps 11 cards (5/6)."
+   },
+   {
+    "id": "bash-scripting-sr6-02",
+    "reason": "Weak card (strawman): every if/elif construct skips later branches after a match. r6 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "bash-scripting-sr6-07",
+    "reason": "Duplicate: it uses the same fact as sr3-01 (a null value counts as set)."
+   },
+   {
+    "id": "bash-scripting-sr7-04",
+    "reason": "Weak card: the C-style initializer running once is the same in every C-like language. Nothing Bash-specific is tested."
+   },
+   {
+    "id": "bash-scripting-sr7-10",
+    "reason": "Weak card: '|' reads as 'or' in nearly every notation, so the answer can be read from the wording. The man7 prose also drops the '|' when rendered."
+   },
+   {
+    "id": "bash-scripting-sr8-02",
+    "reason": "Duplicate: it uses the same shadowing rule as sr8-09. Its recursion premise is only implied by the source."
+   },
+   {
+    "id": "bash-scripting-sr8-04",
+    "reason": "Weak card (definition): return 7 giving status 7 is what return means. It is also the same pattern as sr9-02, which is also dropped. r8 keeps 10 cards (5/5)."
+   },
+   {
+    "id": "bash-scripting-sr9-01",
+    "reason": "Weak card: the answer only needs a variable to keep its value. Nothing about $? that a learner could get wrong is tested."
+   },
+   {
+    "id": "bash-scripting-sr9-02",
+    "reason": "Scan duplicate of sr8-04 and a strawman: nobody expects 'true; exit 7' to report true's status."
+   },
+   {
+    "id": "bash-scripting-sr9-08",
+    "reason": "Scan duplicate of sr8-06: a group and a function body both return their last command's status. The 'because' clause also gives the answer. I kept sr8-06 because the prompt gives last-command function status to r8. r9 keeps 9 cards (4/5)."
+   },
+   {
+    "id": "bash-scripting-sr10-07",
+    "reason": "Weak card: the definition of set -e in its simplest case. It was also the fourth true card in the 'exits before printf x' frame, a tell."
+   },
+   {
+    "id": "bash-scripting-sr11-01",
+    "reason": "Weak card: the fragment visibly saves $? and exits with it, and the no-op cleanup cannot change the outcome. The source never states what $? holds when the EXIT handler starts."
+   },
+   {
+    "id": "bash-scripting-sr11-02",
+    "reason": "Weak card (strawman): nobody expects a display option to remove a handler. 'Inspection' gives the answer."
+   },
+   {
+    "id": "bash-scripting-sr11-11",
+    "reason": "Duplicate: it reuses sr11-10's false template and its source sentence, swapping only the option name (functrace/DEBUG for errtrace/ERR). r11 keeps 9 cards (4/5)."
+   },
+   {
+    "id": "bash-scripting-sr12-05",
+    "reason": "Duplicate across decks: published linux-command-line-sr7-12 already tests that >| overrides noclobber."
+   },
+   {
+    "id": "bash-scripting-sr12-07",
+    "reason": "Duplicate across decks: published linux-command-line-sr7-08 already tests that a quoted here-document delimiter makes the body literal."
+   },
+   {
+    "id": "bash-scripting-sr12-11",
+    "reason": "Duplicate across decks: published linux-command-line-sr7-09 already tests that a here-string gets a newline appended."
+   },
+   {
+    "id": "bash-scripting-sr13-04",
+    "reason": "Weak card: anyone who has written a multiline brace group knows a newline before } works. It also tests syntax rather than r13's execution environments."
+   },
+   {
+    "id": "bash-scripting-sr14-01",
+    "reason": "Duplicate (verifier and scan): same input and same fact as sr14-02. sr14-02's explanation answers it."
+   }
+  ],
+  "source": [
+   {
+    "id": "bash-scripting-sr3-07",
+    "title": "GNU Bash man page: Parameter Expansion (substring expansion)",
+    "url": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr7-05",
+    "title": "GNU Bash man page: Compound Commands (while and until)",
+    "url": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr12-01",
+    "title": "GNU Bash man page: REDIRECTION ({varname} descriptor allocation)",
+    "url": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr12-04",
+    "title": "Bash Reference Manual: Compound Commands",
+    "url": "https://www.gnu.org/software/bash/manual/html_node/Compound-Commands.html"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "bash-scripting-sr3-07",
+    "reason": "Weak card (strawman false side), rewritten rather than dropped: dropping sr3-02, sr3-06, sr3-07 and sr3-09 would leave r3 with 8 cards. This uses the verifier's replacement on the documented :- versus negative-offset trap. Confirmed on man7 Parameter Expansion: 'a negative offset must be separated from the colon by at least one space to avoid being confused with the :- expansion'. Bash 5.3.20 gives [abcdef] for ${x:-2} and [ef] for ${x: -2}.",
+    "statement": "With x=abcdef, Bash expands ${x:-2} to ef, the last two characters of x.",
+    "answer": false,
+    "explanation": "Written as ${x:-2}, this is the :- default-value operator; x is set and non-null, so the result is abcdef. A negative substring offset must be separated from the colon by a space, as in ${x: -2}.",
+    "misconception": "${x:-2} is a negative substring offset that counts from the end of the value.",
+    "sourceTitle": "GNU Bash man page: Parameter Expansion",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr7-05",
+    "reason": "Duplicate of sr9-08 (list status is the last command's status), rewritten rather than dropped: dropping sr7-04, sr7-05 and sr7-10 would leave r7 at 3 true / 6 false. This uses the verifier's replacement, with the 'because its body never runs' clause removed (a negation and an answer-giving reason). Confirmed on man7 Compound Commands: 'The exit status of the while and until commands is the exit status of the last command executed in list-2, or zero if none was executed.' Bash 5.3.20 prints while=0.",
+    "statement": "Bash gives while false; do :; done an exit status of zero.",
+    "answer": true,
+    "explanation": "A while or until loop returns the status of the last body command it ran, or zero when the body never ran, so the failed condition's status is discarded.",
+    "misconception": "",
+    "sourceTitle": "GNU Bash man page: Compound Commands (while and until)",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr12-01",
+    "reason": "Duplicate across decks (linux-command-line-sr7-03, 2>&1 before >), rewritten rather than dropped: dropping the four duplicates would leave r12 with 8 cards at 3 true / 5 false. This uses the verifier's {varname} replacement. Confirmed on man7 REDIRECTION: 'the shell allocates a file descriptor greater than or equal to 10 and assigns it to varname'. Bash 5.3.20 gives fd=10.",
+    "statement": "For exec {fd}>log, Bash assigns fd a descriptor number of 10 or higher.",
+    "answer": true,
+    "explanation": "A {varname} word in place of a descriptor number makes Bash allocate a descriptor of at least 10 and store its number in the variable, so scripts avoid hard-coded numbers.",
+    "misconception": "",
+    "sourceTitle": "GNU Bash man page: REDIRECTION",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr12-04",
+    "reason": "Source problem: man7 bash(1) does not say that a redirection on a compound command covers the commands inside it. The Bash Reference Manual's Compound Commands section does: 'Any redirections associated with a compound command apply to all commands within that compound command unless explicitly overridden.' gnu.org refused connections today, so I confirmed this sentence in the released Bash 5.3 bash.info shipped with 5.3.20. Statement and explanation are unchanged.",
+    "statement": "Bash applies { printf a; printf b; } >out to both printf commands.",
+    "answer": true,
+    "explanation": "A redirection attached to the brace group applies to its command list. Both printf commands write through the redirected stdout.",
+    "misconception": "",
+    "sourceTitle": "Bash Reference Manual: Compound Commands",
+    "sourceUrl": "https://www.gnu.org/software/bash/manual/html_node/Compound-Commands.html"
+   },
+   {
+    "id": "bash-scripting-sr10-04",
+    "reason": "tell: in r10, 'exits before printf x' appeared only on true cards (scan tell 1). The fact (errexit ignores a pipeline inverted with !) and the answer (false) are unchanged. Bash 5.3.20 prints x.",
+    "statement": "With set -e, Bash exits before printf x in ! true; printf x.",
+    "answer": false,
+    "explanation": "Bash ignores errexit for a pipeline whose status is inverted with !. This script therefore continues to printf x.",
+    "misconception": "A negated pipeline's failed overall status triggers errexit.",
+    "sourceTitle": "GNU Bash man page: set builtin: errexit",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr10-05",
+    "reason": "tell: this moves a second false card into the 'exits before printf x' frame, which balances scan tell 1. The fact (errexit is ignored throughout a function called as an if condition) and the answer (false) are unchanged. Bash 5.3.20 prints x.",
+    "statement": "With set -e, Bash exits before printf x in f(){ false; printf x; }; if f; then :; fi.",
+    "answer": false,
+    "explanation": "Calling f as an if condition makes Bash ignore errexit throughout that function body. The false is followed by printf x.",
+    "misconception": "A tested function call retains errexit handling for failures inside its body.",
+    "sourceTitle": "GNU Bash man page: set builtin: errexit",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr2-01",
+    "reason": "tell: as an ordering word, 'before' was 1 true to 6 false across the deck (scan tell 2). This rewords the true card's ordering claim to use 'before'. The fact (word splitting comes before pathname expansion) and the answer (true) are unchanged.",
+    "statement": "With x='*.cfg', Bash splits unquoted $x before applying pathname expansion to its words.",
+    "answer": true,
+    "explanation": "An unquoted expansion can supply a glob pattern for the later pathname-expansion stage.",
+    "misconception": "",
+    "sourceTitle": "GNU Bash man page: Expansion",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   },
+   {
+    "id": "bash-scripting-sr8-12",
+    "reason": "tell: the 'With X off' option premise was 1 true to 5 false (scan tell 3). This removes the premise from one false card. The fact (local - restores only set options, not shopt) and the answer (false) are unchanged. Bash 5.3.20 shows nullglob on after f.",
+    "statement": "For f(){ local -; shopt -s nullglob; }, Bash returns nullglob to its earlier off state when f ends.",
+    "answer": false,
+    "explanation": "local - restores options changed through set. This shopt change persists, so nullglob remains enabled after f returns.",
+    "misconception": "local - restores shopt settings together with set options.",
+    "sourceTitle": "GNU Bash man page: local builtin",
+    "sourceUrl": "https://man7.org/linux/man-pages/man1/bash.1.html"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "parameter-colon-null-forms",
+    "ids": [
+     "bash-scripting-sr3-01",
+     "bash-scripting-sr3-03",
+     "bash-scripting-sr3-04",
+     "bash-scripting-sr3-07"
+    ]
+   },
+   {
+    "name": "arithmetic-variable-evaluation",
+    "ids": [
+     "bash-scripting-sr4-02",
+     "bash-scripting-sr4-03",
+     "bash-scripting-sr4-06"
+    ]
+   },
+   {
+    "name": "array-implicit-index",
+    "ids": [
+     "bash-scripting-sr5-01",
+     "bash-scripting-sr5-06"
+    ]
+   },
+   {
+    "name": "sparse-array-indices",
+    "ids": [
+     "bash-scripting-sr5-03",
+     "bash-scripting-sr5-05",
+     "bash-scripting-sr5-10",
+     "bash-scripting-sr5-11"
+    ]
+   },
+   {
+    "name": "string-vs-arithmetic-comparison",
+    "ids": [
+     "bash-scripting-sr6-05",
+     "bash-scripting-sr6-06",
+     "bash-scripting-sr6-12"
+    ]
+   },
+   {
+    "name": "quoting-makes-pattern-literal",
+    "ids": [
+     "bash-scripting-sr6-09",
+     "bash-scripting-sr6-10",
+     "bash-scripting-sr7-12"
+    ]
+   },
+   {
+    "name": "nested-loop-control",
+    "ids": [
+     "bash-scripting-sr7-07",
+     "bash-scripting-sr7-08"
+    ]
+   },
+   {
+    "name": "case-terminators",
+    "ids": [
+     "bash-scripting-sr7-09",
+     "bash-scripting-sr7-11"
+    ]
+   },
+   {
+    "name": "function-local-assignment",
+    "ids": [
+     "bash-scripting-sr8-07",
+     "bash-scripting-sr8-09"
+    ]
+   },
+   {
+    "name": "last-command-status",
+    "ids": [
+     "bash-scripting-sr8-06",
+     "bash-scripting-sr9-05",
+     "bash-scripting-sr7-05"
+    ]
+   },
+   {
+    "name": "status-overwrite",
+    "ids": [
+     "bash-scripting-sr9-04",
+     "bash-scripting-sr9-11"
+    ]
+   },
+   {
+    "name": "pipeline-status-pipefail",
+    "ids": [
+     "bash-scripting-sr9-09",
+     "bash-scripting-sr9-10",
+     "bash-scripting-sr10-06",
+     "bash-scripting-sr13-12"
+    ]
+   },
+   {
+    "name": "pipeline-negation",
+    "ids": [
+     "bash-scripting-sr9-07",
+     "bash-scripting-sr10-04"
+    ]
+   },
+   {
+    "name": "assignment-substitution-status",
+    "ids": [
+     "bash-scripting-sr9-03",
+     "bash-scripting-sr10-08",
+     "bash-scripting-sr10-10"
+    ]
+   },
+   {
+    "name": "errexit-tested-contexts",
+    "ids": [
+     "bash-scripting-sr10-02",
+     "bash-scripting-sr10-05"
+    ]
+   },
+   {
+    "name": "errexit-untested-failure",
+    "ids": [
+     "bash-scripting-sr10-06",
+     "bash-scripting-sr10-09"
+    ]
+   },
+   {
+    "name": "nounset-guarded-forms",
+    "ids": [
+     "bash-scripting-sr10-01",
+     "bash-scripting-sr10-11",
+     "bash-scripting-sr10-12"
+    ]
+   },
+   {
+    "name": "signal-foreground-vs-wait",
+    "ids": [
+     "bash-scripting-sr11-05",
+     "bash-scripting-sr11-06"
+    ]
+   },
+   {
+    "name": "exit-trap-firing",
+    "ids": [
+     "bash-scripting-sr11-07",
+     "bash-scripting-sr11-12"
+    ]
+   },
+   {
+    "name": "heredoc-delimiter-quoting",
+    "ids": [
+     "bash-scripting-sr12-08",
+     "bash-scripting-sr12-09"
+    ]
+   },
+   {
+    "name": "redirection-word-splitting",
+    "ids": [
+     "bash-scripting-sr12-06",
+     "bash-scripting-sr12-12"
+    ]
+   },
+   {
+    "name": "no-split-contexts",
+    "ids": [
+     "bash-scripting-sr2-06",
+     "bash-scripting-sr6-03",
+     "bash-scripting-sr12-12"
+    ]
+   },
+   {
+    "name": "ifs-whitespace-vs-nonwhitespace",
+    "ids": [
+     "bash-scripting-sr1-07",
+     "bash-scripting-sr1-08",
+     "bash-scripting-sr14-08"
+    ]
+   },
+   {
+    "name": "subshell-copy-isolation",
+    "ids": [
+     "bash-scripting-sr13-01",
+     "bash-scripting-sr13-02",
+     "bash-scripting-sr13-07"
+    ]
+   },
+   {
+    "name": "process-substitution-separation",
+    "ids": [
+     "bash-scripting-sr13-11",
+     "bash-scripting-sr13-12"
+    ]
+   },
+   {
+    "name": "getopts-option-argument",
+    "ids": [
+     "bash-scripting-sr14-02",
+     "bash-scripting-sr14-03",
+     "bash-scripting-sr14-05"
+    ]
+   }
+  ],
+  "sectionBalance": "r1: 9 cards, 4 true / 5 false (03,05,06,08 T; 04,07,09,10,12 F). r2: 11, 5/6. r3: 9, 4/5 (01,03,10,12 T; 04,05,07 rewritten,08,11 F). r4: 10, 4/6. r5: 11, 5/6. r6: 10, 5/5. r7: 10, 4/6 (02,05 rewritten,07,08 T; 01,03,06,09,11,12 F). r8: 10, 5/5. r9: 9, 4/5 (03,06,10,11 T; 04,05,07,09,12 F). r10: 11, 5/6. r11: 9, 4/5 (04,06,07,09 T; 03,05,08,10,12 F). r12: 9, 4/5 (01 rewritten,02,04,10 T; 03,06,08,09,12 F). r13: 11, 5/6. r14: 11, 5/6. Deck: 140 cards, 63 true / 77 false. Every section has at least 9 cards and no worse than 4 true to 6 false per 10.",
+  "notes": "Verification: man7 bash(1) returned HTTP 200 (GNU Bash 5.3; man7's HTML rendering is dated 2026-09-09). www.gnu.org refused connections (ECONNREFUSED) through both curl and WebFetch today, as the prompt warns. For GNU reference-manual wording I used the released Bash 5.3 bash.info shipped with Homebrew GNU bash 5.3.20 (5.3 plus patch 020, the pinned set). I ran every rewritten statement in bash 5.3.20: ${x:-2} gives abcdef; while false loop gives 0; exec {fd} gives 10; '! true; printf x' prints x under set -e; a tested f prints x; nullglob is on after local - and shopt; pipefail plus -e exits 1.\n\nJudgment calls:\n(1) sr8-06 and sr9-08 duplicate each other. Both verifiers flagged one against the other; the scan chose to drop sr9-08. I dropped only sr9-08 and kept sr8-06, because the prompt places last-command function status in r8 and dropping both would remove the fact entirely.\n(2) sr3-02 is dropped, not re-sourced. The verifier's POSIX URL is outside the prompt's allowed sources (gnu.org and man7.org). Neither man7 nor the released bash.info states that an unneeded word stays unexpanded; bash.info says only 'WORD is subject to tilde expansion, ...'. Because of this drop I rewrote sr3-07 instead of dropping it, to keep r3 at 9.\n(3) r7 and r12 each needed one rewrite to stay within the floor and the split. I picked sr7-05 (the while/until zero-status fact; the nocasematch replacement for sr7-10 is a name giveaway) and sr12-01 (the {varname} fact). I rejected the here-string tilde replacement because a verifier saw unquoted ~ ignore a HOME reassigned inside a 5.3.20 -c script.\n(4) The sr12-04 source fix points to the GNU Compound Commands page, which I could not open live. Its sentence is confirmed in the released 5.3 bash.info. Re-open the URL once gnu.org is reachable.\n\nTell work used 4 of the 5 allowed rewords: sr10-04 and sr10-05 (the 'exits before printf x' frame is now 3 true / 2 false, counting sr10-08's 'stops before'); sr2-01 (adds a true 'before'); sr8-12 (removes a false option-off premise; after sr11-11 is dropped, option-off premises are 3 false / 1 true). Dropping sr3-02 brings the 'Bash runs X before Y' false template down to the cap of two (sr7-06, sr11-05).\n\nRemaining weaker signals I did not change: 'one argument/operand' is 3/0 true (sr1-03, sr1-05, sr6-03), and sr4-02 still uses 'requires' on a false card. The deck overall is now 63 true / 77 false; every section is within the rule, but a later pass could add true cards in r1, r3, r4, r7, r9, r11 and r12.\n\nCoverage lost through drops: r11 no longer has a cleanup-status-preservation card (sr11-01), r9 no longer tests explicit exit status, and r12 now has 4 descriptor cards and 4 here-document/here-string cards instead of about six each. Candidate replacements already checked by the verifiers, if a top-up round runs later: r11 trap 'cleanup; exit $?' clobbering status; r11 signals ignored on entry cannot be trapped; r12 3<<END; r12 noclobber and /dev/null; r9 bare exit after false; r9 128+N for SIGTERM."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "bash-scripting-sr3-07",
+    "decision": "keep",
+    "statement": "With x=abcdef, Bash expands ${x:-2} to ef, the last two characters of x.",
+    "answer": false,
+    "explanation": "Written as ${x:-2}, this is the :- default-value operator; x is set and non-null, so the result is abcdef. A negative substring offset must be separated from the colon by a space, as in ${x: -2}.",
+    "reason": "Both lenses keep it. I confirmed the fact on man7 bash(1) Parameter Expansion today: 'a negative offset must be separated from the colon by at least one space to avoid being confused with the :- expansion.' Fact lens: rename the factKey, for example to substring-offset-colon-minus-confusion."
+   },
+   {
+    "id": "bash-scripting-sr7-05",
+    "decision": "keep",
+    "statement": "Bash gives while false; do :; done an exit status of zero.",
+    "answer": true,
+    "explanation": "A while or until loop returns the status of the last body command it ran, or zero when the body never ran, so the failed condition's status is discarded.",
+    "reason": "Both lenses keep it. I confirmed the fact on man7 Compound Commands today: 'the exit status of the last command executed in list-2, or zero if none was executed.' Fact lens: rename the factKey, for example to while-loop-status-no-body-run."
+   },
+   {
+    "id": "bash-scripting-sr12-01",
+    "decision": "keep",
+    "statement": "For exec {fd}>log, Bash assigns fd a descriptor number of 10 or higher.",
+    "answer": true,
+    "explanation": "A {varname} word in place of a descriptor number makes Bash allocate a descriptor of at least 10 and store its number in the variable, so scripts avoid hard-coded numbers.",
+    "reason": "Both lenses keep it. I confirmed the fact on man7 REDIRECTION today: 'the shell allocates a file descriptor greater than or equal to 10 and assigns it to varname' (this covers > but not >&- or <&-). Fact lens: rename the factKey, for example to redirection-varname-fd-allocation. Wording lens: no r12 card now covers left-to-right descriptor duplication. That is acceptable because linux-command-line-sr7-03 owns that fact."
+   },
+   {
+    "id": "bash-scripting-sr12-04",
+    "decision": "fixed",
+    "statement": "Bash applies the >out redirection in { printf a; printf b; } >out to both printf commands.",
+    "answer": true,
+    "explanation": "A redirection attached to a compound command such as a brace group applies to every command inside it unless one overrides it, so both printf outputs go to out.",
+    "reason": "I applied the wording lens fix: the statement now names the redirection as the thing applied, and the explanation now says compound command, to match the source. The fact is unchanged and the fact lens agrees with it. gnu.org timed out again today, but the same sentence is in the released Bash 5.3.20 bash.info (lines 800-802): 'redirections associated with a compound command apply to all commands within that compound command unless explicitly overridden.' Statement 90 chars, explanation 160."
+   },
+   {
+    "id": "bash-scripting-sr10-04",
+    "decision": "keep",
+    "statement": "With set -e, Bash exits before printf x in ! true; printf x.",
+    "answer": false,
+    "explanation": "Bash ignores errexit for a pipeline whose status is inverted with !. This script therefore continues to printf x.",
+    "reason": "Both lenses keep it. I confirmed the fact on man7 set -e today: the shell does not exit 'if the command's return value is being inverted with !'. The 'exits before printf x' frame now has 3 true and 2 false cards. That is the most the false-template rule allows."
+   },
+   {
+    "id": "bash-scripting-sr10-05",
+    "decision": "keep",
+    "statement": "With set -e, Bash exits before printf x in f(){ false; printf x; }; if f; then :; fi.",
+    "answer": false,
+    "explanation": "Calling f as an if condition makes Bash ignore errexit throughout that function body. The false is followed by printf x.",
+    "reason": "Both lenses keep it. I confirmed the fact on man7 set -e today: when a shell function runs in a context where -e is ignored, 'none of the commands executed within the compound command or function body will be affected by the -e setting'. This is the second and last false card allowed in the frame."
+   },
+   {
+    "id": "bash-scripting-sr2-01",
+    "decision": "fixed",
+    "statement": "With x='a *.cfg', Bash splits unquoted $x into two words before applying pathname expansion to them.",
+    "answer": true,
+    "explanation": "Word splitting comes before pathname expansion, so the unquoted value first becomes the words a and *.cfg, and Bash then matches *.cfg against filenames.",
+    "reason": "I merged the fixes: the wording lens's fix matches the improvement the fact lens marked as optional. With x='*.cfg' word splitting changes nothing, so the order could not be seen. The fact, the answer and the 'before' wording used for tell balance all stay. I confirmed the order on man7 EXPANSION today ('word splitting; pathname expansion; and quote removal') and in Pathname Expansion ('After word splitting ... bash scans each word'). Statement 100 chars, explanation 153."
+   },
+   {
+    "id": "bash-scripting-sr8-12",
+    "decision": "keep",
+    "statement": "For f(){ local -; shopt -s nullglob; }, Bash returns nullglob to its earlier off state when f ends.",
+    "answer": false,
+    "explanation": "local - restores options changed through set. This shopt change persists, so nullglob remains enabled after f returns.",
+    "reason": "Both lenses keep it. I confirmed the fact on man7 local today: local - restores 'any shell options changed using the set builtin'. nullglob is a shopt option. The deck's assumed context already gives nullglob as off at the start."
+   }
+  ]
+ }
+}

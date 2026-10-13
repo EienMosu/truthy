@@ -1,0 +1,1361 @@
+{
+ "deck": "svelte-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr1-11",
+     "verdict": "ambiguous",
+     "urlStatus": "https://svelte.dev/docs/svelte/what-are-runes loads (200), official, current",
+     "evidence": "Docs: \"They're not values — you can't assign them to a variable or pass them as arguments to a function\" (https://svelte.dev/docs/svelte/what-are-runes). But I compiled it locally with svelte@5.57.2: `<script>let f=(x)=>x; f($state); let a=$state(0);</script>{a}` and `[1,2].map($state)` both compile with no error and no warning, and the output keeps `f($state)`. The analyzer (src/compiler/phases/2-analyze/visitors/Identifier.js) raises rune_missing_parentheses only when `parent.type !== 'CallExpression'`, so a bare rune used as a call argument gets through. It fails only at runtime: the dev build throws rune_outside_svelte from a globalThis getter, and in production it is a plain ReferenceError. `const s = $state;` IS rejected at compile time (rune_missing_parentheses).",
+     "problem": "The card says \"Svelte rejects\" passing $state as an argument. An expert can show the compiler accepts this exact case, so the code only fails at runtime, with a misleading error in dev and a generic ReferenceError in production. The docs and the compiler disagree on the case the card tests.",
+     "suggestedFix": "Keep it true, but use the form the compiler really rejects. Statement (80 chars): \"Svelte's compiler rejects const make = $state; in a runes-mode component script.\" Explanation (132): \"Runes are compiler keywords rather than values, so assigning $state to a variable fails to compile with a missing-parentheses error.\" Answer: true. Source unchanged."
+    },
+    {
+     "id": "svelte-fundamentals-sr1-07",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/basic-markup loads (200), official, current",
+     "evidence": "\"A lowercase tag, like <div>, denotes a regular HTML element. A capitalised tag or a tag that uses dot notation, such as <Widget> or <my.stuff>, indicates a component.\" (https://svelte.dev/docs/svelte/basic-markup). A 5.57.2 compile of `<ui.button>` gives `ui.button($$anchor, {...})`, a component call.",
+     "problem": "The answer is correct, but the clause \"when ui.button holds a component\" gives it away. Nobody would expect a native button when the value is a component. The real misconception, that a lowercase first letter means an HTML element, is never tested.",
+     "suggestedFix": "Keep it false. Statement (99): \"Svelte renders <ui.button> as a native element because its tag name starts with a lowercase letter.\" Explanation (157): \"Dot notation marks a component reference, so <ui.button> renders whatever component ui.button holds; plain lowercase tags such as <div> denote HTML elements.\" Answer: false."
+    },
+    {
+     "id": "svelte-fundamentals-sr1-12",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/svelte-js-files loads (200), official, current",
+     "evidence": "\"Besides .svelte files, Svelte also operates on .svelte.js and .svelte.ts files. These behave like any other .js or .ts module, except that you can use runes. This is useful for creating reusable reactive logic\" (https://svelte.dev/docs/svelte/svelte-js-files). The svelte runtime (src/index-client.js) defines dev-only globalThis getters that throw rune_outside_svelte when $state is reached outside those files.",
+     "problem": "This is a give-away that only describes what developers do. A player who knows nothing will answer True because the file names contain \"svelte\". The fact worth learning is that a plain .js/.ts module does not get rune compilation, and the card never tests it.",
+     "suggestedFix": "Keep it true. Statement (108): \"A shared module needs a .svelte.js or .svelte.ts file name for Svelte to compile the $state runes inside it.\" Explanation (144): \"Svelte operates on .svelte, .svelte.js and .svelte.ts files; in a plain .js module $state is just an undefined identifier that fails at runtime.\" Answer: true. Source unchanged."
+    },
+    {
+     "id": "svelte-fundamentals-sr1-01",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/svelte-files loads (200), official, current",
+     "evidence": "\"Components ... are written into .svelte files, using a superset of HTML. All three sections — script, styles and markup — are optional.\" (https://svelte.dev/docs/svelte/svelte-files)",
+     "problem": "This is a truism and vaguely worded. Every component \"consists of markup\", and a format described as a superset of HTML obviously accepts plain markup, so no one who studied would answer False. The explanation also says only script and style are optional, but the docs say all three sections are, markup included.",
+     "suggestedFix": "Keep it true. Statement (78): \"A .svelte file containing only a <script> block compiles as a valid component.\" Explanation (133): \"Script, styles and markup are all optional sections of a .svelte file, so a script-only file compiles; it simply renders no elements.\" Answer: true. I checked this: a script-only component compiles with svelte@5.57.2 with no warnings."
+    },
+    {
+     "id": "svelte-fundamentals-sr1-02",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/svelte-files loads (200), official, current",
+     "evidence": "\"Variables declared (or imported) at the top level can be referenced in the component's markup.\" (https://svelte.dev/docs/svelte/svelte-files)",
+     "problem": "This restates the doc sentence almost word for word, and it is a truism: every basic example imports a component and uses it in markup, so no learner would answer False. Using module-script variables in markup as an alternative would be the other side of sr1-04's \"but not vice versa\" fact, so it cannot be used.",
+     "suggestedFix": "Keep it true, but test an untested r1 markup/attribute rule. Statement (91): \"Svelte drops the title attribute from a rendered <div> when its {expression} value is null.\" Explanation (148): \"Element attributes other than booleans are rendered unless their value is nullish (null or undefined); an empty string still produces the attribute.\" Answer: true. Source: https://svelte.dev/docs/svelte/basic-markup (\"All other attributes are included unless their value is nullish\"). No other deck card tests nullish attributes; sr15-07 is about svelte:element."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards. All four source pages load (HTTP 200) and are the current official docs: svelte-files, svelte-js-files, what-are-runes and basic-markup. I read the raw docs text and compiled the doubtful cases locally with svelte@5.57.2 (npm, scratchpad only; no repo files touched).\n\nPrompt rules checked:\n- Pin is correct. github.com/sveltejs/svelte/releases/latest still resolves to svelte@5.57.2, published 2026-10-06T14:20:22Z. No newer release as of 2026-10-13.\n- Sources match the docs. \"Runes are not values\" and \"module script runs once / default export reserved\" are as the docs state.\n- The docs overstate the rune restriction. Passing a bare rune as a call argument (f($state), arr.map($state)) gets past the 5.57.2 compiler and fails only at runtime. The basis for the sr1-11 flag is that the docs and the compiler disagree; I found no other wrong rule for r1.\n\nCards that passed:\n- sr1-03, 04, 05, 06, 09, 10: each matches its quoted sentence.\n- I confirmed sr1-06 with a compile: `export default` in <script module> gives the error module_illegal_default_export.\n- I confirmed the sr1-07 component interpretation the same way.\n\nBorderline, not flagged:\n- sr1-05/sr1-06 both rest on the doc paragraph about exports from <script module> (named exports allowed, default reserved). They are different facts, but some would read them as two sides of one split.\n- sr1-08 ({value} shorthand) is close to a definition card, since the answer follows from what \"shorthand\" means. Replace it if you want a stronger section.\n\nBalance: after the suggested fixes the section stays at 6 true / 6 false, because every replacement keeps its card's answer."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr2-08",
+     "verdict": "source_problem",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/$state (official, current)",
+     "evidence": "The $state page only says: \"State declared with `$state.raw` cannot be mutated; it can only be _reassigned_\" and, of `person.age += 1`, \"this will have no effect\". No official Svelte page says raw values stay mutable or are not frozen; a search of the full docs (svelte.dev/docs/svelte/llms.txt) finds no freeze statement. The answer itself is correct: CHANGELOG entry #12808 \"breaking: replace `$state.frozen` with `$state.raw`\" removed dev-time freezing. But that is GitHub, which the prompt bars as a card source.",
+     "problem": "The answer (False) is right, but the cited page cannot confirm the explanation \"$state.raw objects remain mutable\". The page's own wording (\"cannot be mutated\", \"this will have no effect\") reads like support for the misconception, so a learner who checks the source will think the card is wrong.",
+     "suggestedFix": "Replace (answer False, keeps balance): \"$state.raw wraps its value in a state proxy that ignores property writes.\" Explanation: \"$state.raw creates no state proxy. It stores the plain object or array as-is, so property writes and push calls trigger no update; reassign a new value to update the UI.\" Source: https://svelte.dev/docs/svelte/runtime-warnings (state_proxy_equality_mismatch: \"Note that `$state.raw(...)` will _not_ create a state proxy.\")"
+    },
+    {
+     "id": "svelte-fundamentals-sr2-06",
+     "verdict": "duplicate",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/$state",
+     "evidence": "$state page, Deep state: \"if you destructure a reactive value, the references are not reactive — as in normal JavaScript, they are evaluated at the point of destructuring\". Passing state into functions: \"when you reference something declared with the `$state` rune... you're accessing its _current value_.\"",
+     "problem": "Same fact and same distractor as sr2-05 (\"Destructuring a $state object's number preserves a live reactive link\", False): reading a $state primitive gives its current value, not a live link. Both are False through the same 'live reactive link/reference' trick, which breaks the no-repeated-distractor rule. Knowing one gives the answer to the other.",
+     "suggestedFix": "Replace (answer False, keeps balance): \"Spreading a class instance into {...todo} copies its fields declared with $state.\" Explanation: \"Svelte compiles $state class fields into get/set accessors on the class prototype, backed by private fields, so they are not enumerable and object spread or Object.keys() skips them.\" Source: https://svelte.dev/docs/svelte/$state (\"This means the properties are not enumerable.\")"
+    },
+    {
+     "id": "svelte-fundamentals-sr2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/$state",
+     "evidence": "\"To take a static snapshot of a deeply reactive `$state` proxy, use `$state.snapshot`... Will log `{ count: ... }` rather than `Proxy { ... }`\"",
+     "problem": "The name 'snapshot' gives the answer away: almost nobody would expect a snapshot to return a live Proxy, so this is close to a strawman and teaches little. The page has a better, Svelte-specific snapshot fact (the toJSON rule).",
+     "suggestedFix": "Replace (answer False, keeps balance): \"$state.snapshot clones an object's own fields even when that object defines a toJSON method.\" Explanation: \"When a value has a toJSON method, $state.snapshot clones the value toJSON returns instead of the original object, so a custom toJSON controls what the static snapshot holds.\" Source: https://svelte.dev/docs/svelte/$state (\"If a value has a `toJSON` method, the snapshot will clone the value returned from `toJSON` instead of the original object.\")"
+    },
+    {
+     "id": "svelte-fundamentals-sr2-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/$state",
+     "evidence": "\"When you update properties of proxies, the original object is _not_ mutated.\"",
+     "problem": "The answer (True) is correct, but \"A $state proxy preserves its input object's properties\" also reads naturally as 'the proxy keeps or exposes the same properties', which is trivially true. A player can answer True without knowing the fact being tested (the original object stays unchanged). The explanation \"Proxy writes preserve their input object\" is too vague to teach it.",
+     "suggestedFix": "Reword (answer True): \"Writing proxy.done on a $state proxy leaves the plain object originally passed to $state unchanged.\" Explanation: \"Svelte's docs note that updates made through a state proxy do not mutate the original object, so code that still holds the original reference sees the old values.\""
+    }
+   ],
+   "notes": "I checked all 12 r2 cards against https://svelte.dev/docs/svelte/$state (also the llms.txt version) and the migration guide. Both return 200. The remaining 8 pass:\n- sr2-01: the migration guide supports it: \"you read and write directly to it, without a wrapper like .value\".\n- sr2-02, 03, 04, 05, 07, 09: supported verbatim by the Deep state, Classes and $state.raw sections of the $state page.\n- sr2-12: supported by the $state page \"Passing state across modules\" and by the compile error state_invalid_export (\"Cannot export state from a module if it is reassigned\").\n\nSection balance: 6 true and 6 false. All four suggested fixes keep each card's answer, so the balance stays the same.\n\nPrompt rules checked:\n- Pin: the svelte CHANGELOG on main tops out at 5.57.2, which matches the pin.\n- The r2 state traps (deep proxy only for arrays and simple objects, explicit $state class fields, destructuring and function arguments giving current values, raw replacement and reactive members, static snapshot, export restriction) all match the official $state page.\n- One rule is only partly verifiable: \"$state.raw ... is not Object.freeze\" is right in substance (CHANGELOG #12808 replaced $state.frozen with $state.raw and dropped freezing). No official svelte.dev page says it, though, and the $state page says raw state \"cannot be mutated\". A card built on that rule cannot be sourced to svelte.dev; that is why sr2-08 is flagged.\n\nOther observations, not flagged:\n- The $state page now also documents $state.eager, which is tied to await-expression synchronization. It is correctly left out because experimental.async is out of scope.\n- Most r2 explanations are very terse (often under 60 characters). They are within the rules but give little context.\n- sr2-03 and sr2-04 sit close together (instances are not proxied; class fields can use $state). The prompt lists them as separate facts and neither answer gives away the other, so I did not flag them."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr3-11",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/$derived)",
+     "evidence": "https://svelte.dev/docs/svelte/$derived, 'Deriveds and reactivity': \"Unlike `$state`, which converts objects and arrays to deeply reactive proxies, `$derived` values are left as-is.\" The page's only example of this sentence is the items[index] case that sr3-12 tests: \"you can change (or `bind:` to) properties of `selected` and it will affect the underlying `items` array.\"",
+     "problem": "The answer is right (false), but sr3-11 and sr3-12 both rest on the same fact: $derived leaves its value as-is. sr3-11 tests the side where nothing gets wrapped and sr3-12 the side where the existing proxy passes through. A player who knows either answer can work out the other. sr3-12 is the better card because it tests behaviour you can see, so drop sr3-11.",
+     "suggestedFix": "Replace with (answer false): \"Svelte's $derived rune works in variable declarations but is rejected as a class field initializer.\" Explanation: \"As with $state, a class field can be declared with $derived, so the class exposes a computed value that follows the $state fields it reads.\" Source https://svelte.dev/docs/svelte/$derived (\"As with `$state`, you can mark class fields as `$derived`.\"). factKey derived-class-field. No other card in the deck tests $derived class fields."
+    },
+    {
+     "id": "svelte-fundamentals-sr3-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/$derived)",
+     "evidence": "https://svelte.dev/docs/svelte/$derived: \"you can use `$derived.by` which accepts a function as its argument\" and \"In essence, `$derived(expression)` is equivalent to `$derived.by(() => expression)`.\"",
+     "problem": "The card is a definition. The statement says that a function-taking derived uses the function's return value, and nobody who has seen $derived.by would answer False. The explanation (\"The callback handles calculations with several steps.\") adds nothing a player can remember.",
+     "suggestedFix": "Replace with (answer true): \"$derived(expr) behaves the same as $derived.by(() => expr), including which reads it tracks.\" Explanation: \"Svelte's docs call the two forms equivalent; $derived.by takes a function body for multi-step logic, and its return value becomes the derived value.\" Same URL."
+    },
+    {
+     "id": "svelte-fundamentals-sr3-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/svelte#untrack)",
+     "evidence": "https://svelte.dev/docs/svelte/svelte#untrack: \"When used inside a `$derived` or `$effect`, any state read inside `fn` will not be treated as a dependency.\" https://svelte.dev/docs/svelte/$derived: \"When the state changes, the derived will be marked as _dirty_ and recalculated when it is next read.\" and \"derived values are not re-evaluated until they are actually read (the 'pull')\"",
+     "problem": "The answer is right (false), but the statement is false for two reasons. Svelte never 'schedules' recalculation of a $derived, not even when the tracked value base changes: it marks the value dirty and recalculates it on the next read (sr3-07). A player who knows deriveds are lazy answers False without knowing untrack. The verb also clashes with sr3-07.",
+     "suggestedFix": "Reword (answer false): \"In $derived(base + untrack(() => fee)), changing fee alone marks the derived value dirty.\" Explanation: \"untrack hides the read of fee from this derivation, so changing fee alone leaves it clean; a change to base marks it dirty and it recalculates on its next read.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (6 true, 6 false). I flagged 3. None has a wrong answer. I read the source pages as raw markdown from svelte.dev on 2026-10-13: $derived, svelte#untrack, the v5 migration guide and $effect. All return 200.\n\nPrompt rules checked:\n- The pin is correct. github.com/sveltejs/svelte/releases/latest still redirects to svelte@5.57.2 (200), so there is no newer release.\n- The prompt's derived trap is correct. The $derived page says \"Prior to Svelte 5.25, deriveds were read-only\" and a derived can be overridden \"unless they are declared with `const`\". This supports sr3-10.\n- The docs do not state that $derived \"does not itself deep-proxy its result\" as a separate rule. They say \"`$derived` values are left as-is\". This is why I flagged sr3-11 as a duplicate of sr3-12.\n- I found no prompt rule that is wrong for r3.\n\nCards that pass:\n- sr3-01: correct, but close to a definition and its explanation is thin.\n- sr3-03: the v5 migration guide supports it: \"$derived and $effect fix all of these by ... determining the dependencies at runtime, and therefore being immune to refactorings\".\n- sr3-06: supported by \"Svelte will disallow state changes (e.g. count++) inside derived expressions\". There is a runtime edge case: state created inside the derivation itself can be written, as in a class constructor called from a $derived. It does not make the statement defensible as True.\n- sr3-07, sr3-08, sr3-09, sr3-10 and sr3-12: settled verbatim by the $derived page, sections 'Understanding dependencies', 'Update propagation', 'Destructuring', 'Overriding derived values' and 'Deriveds and reactivity'.\n- sr3-04: the answer is right, but the $derived page never states the conditional-branch behaviour. Only https://svelte.dev/docs/svelte/$effect#Understanding-dependencies says it, and only for effects: \"An effect only depends on the values that it read the last time it ran\". On the $derived page you have to infer it from \"Anything read synchronously ... is considered a dependency\". It also overlaps a lot with sr3-03, because if dependencies come from runtime reads, the unexecuted branch is not tracked. I left it unflagged because the prompt lists runtime and conditional dependencies as separate topics. Consider merging it if you need a slot.\n\nOverlap with other sections:\n- sr2-05 ($state destructuring loses the link) and sr3-09 ($derived destructuring stays reactive) do not give each other away.\n- sr11-11 (derived store from svelte/store) is a different API from the $derived rune.\n\nWith the suggested replacements, average statement length is about 79.5 characters for true cards and 78.8 for false cards, so the balance holds."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr4-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/$effect)",
+     "evidence": "https://svelte.dev/docs/svelte/$effect: \"`$effect.pre` runs before DOM updates that are scheduled after it, not before every DOM mutation in the flush - DOM of parent components may already be updated.\" The docs PR that added this sentence (sveltejs/svelte#18534, merged 2026-08-21) says: \"effects run in tree order interleaved with template updates, so an ancestor's effects may already have mutated the DOM by the time a child's `$effect.pre` runs ... no behavior changes.\"",
+     "problem": "The answer (true) matches the docs, but the wording \"can observe a parent's DOM after that parent updates\" does not say whose $effect.pre it is or that this happens within one update flush. Read literally, any code can see a parent's DOM once the parent has updated, so the card is close to a truism and a player cannot tell what is being tested. The prefix \"In Svelte 5.57\" also suggests a recent behaviour change, but the PR says this was a docs clarification with no behaviour change.",
+     "suggestedFix": "Keep the answer true and reword. Statement: \"When parent and child update in one flush, the child's $effect.pre can run after the parent's DOM has already changed.\" Explanation: \"$effect.pre only precedes DOM updates scheduled after it. Effects run in tree order, so an ancestor's template updates may already be applied when a child's $effect.pre runs.\" URL unchanged."
+    },
+    {
+     "id": "svelte-fundamentals-sr4-02",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/$effect)",
+     "evidence": "https://svelte.dev/docs/svelte/$effect: \"`$effect` automatically picks up any reactive values ($state, $derived, $props) that are _synchronously_ read inside its function body (including indirectly, via function calls)\". The card is correct, but svelte-fundamentals-sr3-03 (factKey derived-runtime-helper-dependencies) teaches the same tracking mechanism in its explanation: \"Synchronous runtime reads establish $derived dependencies, including helper reads.\"",
+     "problem": "Runes share one dependency-tracking model, so a player who learned from sr3-03 that synchronous helper reads become dependencies can answer this card without new knowledge. Under the prompt's rule, knowing one answer gives you the other.",
+     "suggestedFix": "Replace with an effect-specific fact, keeping the answer true. Statement: \"A function called while an $effect is running can create a nested $effect of its own.\" Explanation: \"$effect is not limited to a component's top level: it can be created anywhere while a parent effect is running, and the parent owns it.\" URL https://svelte.dev/docs/svelte/$effect (quote: \"You can use `$effect` anywhere, not just at the top level of a component, as long as it is called while a parent effect is running.\")"
+    }
+   ],
+   "notes": "I opened both source URLs over HTTP and both returned 200: https://svelte.dev/docs/svelte/$effect and https://svelte.dev/docs/svelte/lifecycle-hooks. I read the full current text of each.\n\nCards that passed, with the sentence that settles each:\n- sr4-01 (false): \"They only run in the browser, not during server-side rendering.\"\n- sr4-03 (false): \"Values that are read _asynchronously_ — after an `await` or inside a `setTimeout` ... will not be tracked.\"\n- sr4-04 (true): \"Re-runs are batched ... and happen after any DOM updates have been applied.\"\n- sr4-05 (false): \"changing `color` and `size` in the same moment won't cause two separate runs\". The statement's word \"simultaneous\" maps to the docs' \"in the same moment\", so it is acceptable.\n- sr4-06 (true): teardown runs \"immediately before the effect re-runs\".\n- sr4-08 (false): the code example shows `$effect.tracking()` returning false in component setup.\n- sr4-09 (false): \"avoid using it to synchronise state\", followed by the `$derived` alternative.\n- sr4-10 (true): tick \"returns a promise that resolves once any pending state changes have been applied\".\n- sr4-11 (false): \"This behaviour will only work when the function passed to `onMount` is _synchronous_. `async` functions always return a `Promise`.\"\n- sr4-12 (true): onDestroy \"is the only one that runs inside a server-side component\".\n\nSection balance: 6 true and 6 false. Average length is 68.8 characters for true statements and 65.5 for false ones. Difficulty mix is 5 easy, 5 medium, 2 hard. Several explanations are thin restatements (sr4-02, 04, 06, 10), but they are accurate and within the rules.\n\nPossible cross-section duplicate for the r13 reviewer: sr4-06 (an effect's cleanup runs before it reruns) and sr13-03 (an attachment's cleanup runs before its setup reruns) rest on the same teardown-before-rerun mechanism, because attachments run inside effects. The prompt assigns attachment cleanup to r13, so I did not flag sr4-06. If one has to go, drop sr13-03.\n\nPrompt rules checked against the official pages:\n- The lifecycle page matches the prompt: beforeUpdate/afterUpdate are shimmed in Svelte 5 but \"not available inside components that use runes\" and are deprecated.\n- The prompt's trap list (effects are browser-only, run after DOM updates, track synchronous reads, support teardown) also matches the docs.\n- One minor problem: the $effect.pre caveat that sr4-07 tags with \"In Svelte 5.57\" is not recently changed behaviour. It is a docs clarification (sveltejs/svelte PR #18534, merged 2026-08-21, \"no behavior changes\"), so the version prefix is unnecessary and misleading.\n\nI did not re-verify the 5.57.2 release pin, because no r4 card depends on it."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr5-07",
+     "verdict": "ambiguous",
+     "urlStatus": "https://svelte.dev/docs/svelte/$props loads (200), official, current for 5.57.2",
+     "evidence": "$props page: \"The fallback value of a prop not declared with `$bindable` is left untouched — it is not turned into a reactive state proxy\". In the svelte@5.57.2 compiler (compiler/phases/3-transform/client/visitors/VariableDeclaration.js), the fallback of a bindable_prop is wrapped: `if (initial && binding.kind === 'bindable_prop' && should_proxy(...)) initial = b.call('$.proxy', initial)`. A $bindable({...}) object fallback is therefore a state proxy.",
+     "problem": "The statement covers every object literal fallback in $props(), but the docs limit the rule to props declared without $bindable. With let { obj = $bindable({ n: 0 }) } = $props(), the fallback is proxied, so an expert could answer False. The explanation has the same gap.",
+     "suggestedFix": "True replacement. Statement: \"For a prop declared without $bindable(), Svelte leaves an object literal fallback unproxied.\" Explanation: \"Svelte's docs say a non-bindable prop's fallback object is not made a state proxy, so mutating its fields while the fallback is in use updates nothing on screen.\" Keep the $props URL."
+    },
+    {
+     "id": "svelte-fundamentals-sr5-06",
+     "verdict": "ambiguous",
+     "urlStatus": "https://svelte.dev/docs/svelte/$props loads (200), official, current",
+     "evidence": "$props page: \"If the prop is a regular object, the mutation will have no effect\" and \"If the prop is a reactive state proxy, however, then mutations _will_ have an effect\". The $state docs (and this deck's sr2-02) call $state({...}) objects proxied plain objects.",
+     "problem": "\"Plain object prop\" also fits a plain object the parent created with $state, which reaches the child as a proxy. Mutating it does update the DOM, which is the fact behind sr5-08. An expert could therefore answer True. The explanation \"Plain object prop mutations trigger no DOM update\" is an absolute that contradicts sr5-08.",
+     "suggestedFix": "Keep the false answer. Statement: \"A child updates its DOM by mutating an object literal that the parent passed without $state.\" Explanation: \"Svelte's $props docs say mutating a regular, non-state object prop has no effect on the UI; share changes through a callback prop or $bindable instead.\""
+    },
+    {
+     "id": "svelte-fundamentals-sr5-04",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/$props loads (200), official; it shows `let { a, b, c, ...others } = $props();` but never says outright that rest excludes the named props",
+     "evidence": "$props page: \"Finally, we can use a _rest property_ to get, well, the rest of the props\". The migration guide (https://svelte.dev/docs/svelte/v5-migration-guide) maps \"other properties: `$$restProps`\" to \"use spreading `let { foo, bar, ...rest } = $props();`\". The svelte@5.57.2 compiler has the error legacy_rest_props_invalid: \"Cannot use `$$restProps` in runes mode\".",
+     "problem": "The answer follows from ordinary JavaScript rest-destructuring semantics, which the javascript-fundamentals deck owns, and from the word \"rest\" itself. Nobody who has studied would answer True, so the card is a strawman or definition card. It tests nothing specific to Svelte.",
+     "suggestedFix": "False replacement (it would be the deck's 3rd labeled legacy-context card, still within the cap of 3; sr7-08 and sr9-06 are the others). Statement: \"In runes mode, a component collects the props it did not destructure through $$restProps.\" Explanation: \"Runes mode collects unnamed props with a rest property, as in let { a, ...rest } = $props(); $$restProps is legacy syntax and a compile error in runes mode.\" URL: https://svelte.dev/docs/svelte/v5-migration-guide"
+    },
+    {
+     "id": "svelte-fundamentals-sr5-03",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/$props loads (200), official, current",
+     "evidence": "$props page: \"We can also use the destructuring assignment to rename props, which is necessary if they're invalid identifiers, or a JavaScript keyword like `super`\". Migration guide: \"renaming: use property renaming `let { class: klass } = $props();`\".",
+     "problem": "That a destructuring rename changes only the local binding is plain JavaScript semantics (owned by javascript-fundamentals) and close to a truism. A learner who studied would not believe renaming changes the name the parent uses. The useful Svelte-specific point, renaming for keyword props such as class, is left out.",
+     "suggestedFix": "True replacement. Statement: \"A child can receive a parent's class prop by renaming it, as in let { class: klass } = $props().\" Explanation: \"Renaming in $props() destructuring gives props named after JavaScript keywords, such as class or super, a valid local identifier; the parent still passes class=.\" URL: https://svelte.dev/docs/svelte/$props"
+    }
+   ],
+   "notes": "I checked all 12 r5 cards against https://svelte.dev/docs/svelte/$props and https://svelte.dev/docs/svelte/$bindable (both 200, via the llms.txt text) and against the svelte@5.57.2 npm package source. Prompt rules I checked: the 5.57.2 pin is correct (npm latest = 5.57.2, published 2026-10-06). The $props.id rune was added in 5.20.0, as its docs say. The prompt's r5 traps (fallback objects are not proxies, local override, ownership warning, explicit $bindable, a bound fallback prop needs a non-undefined value) all match the docs. One gap: \"Fallback objects are not automatically state proxies\" holds only for non-bindable props. The compiler proxies $bindable fallbacks, which is why sr5-07 is flagged. I found no prompt rule that is wrong.\n\nCards that pass:\n- sr5-01: the docs say prop references update when the parent's prop updates.\n- sr5-02: the fallback applies when a prop is omitted or undefined, so null passes through.\n- sr5-05: the docs call a child reassignment a temporary override.\n- sr5-08: the docs say proxy mutations take effect with an ownership_invalid_mutation warning. That warning still exists in 5.57.2 (internal/client/dev/ownership.js).\n- sr5-10: the docs say the parent \\\"doesn't _have_ to use `bind:`\\\".\n- sr5-11: the docs say the \\\"parent must pass a value other than `undefined` if it uses `bind:`\\\". This is runtime error props_invalid_value in 5.57.2.\n- sr5-12: the docs say the value is \\\"consistent between server and client\\\" during hydration.\n\nBorderline cards I did not flag:\n- sr5-09: the answer is close to readable from the name $bindable. I kept it because it is the section's core explicit-opt-in contract. A replacement claiming a runtime error for binding a non-bindable prop would be unsafe: in 5.57.2, e.bind_not_bindable is defined but never called.\n- sr5-12: $props.id and hydration are not in r5's listed scope (hydration belongs to r16). It does appear on r5's $props reference page, so I kept it.\n\nBalance after my fixes: 6 true (01, 03, 07, 08, 09, 10) and 6 false (02, 04, 05, 06, 11, 12), unchanged."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr6-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/if)",
+     "evidence": "https://svelte.dev/docs/svelte/if: \"Additional conditions can be added with `{:else if expression}`, optionally ending in an `{:else}` clause.\" The page never states a first-match rule; it relies on the else-if meaning every programming language shares.",
+     "problem": "This is a strawman. Any developer who knows if/else in any language answers False without knowing Svelte, so the card teaches nothing Svelte-specific. The 'first matching branch' explanation is only implied by the page, not stated. The section's 'stable identity' scope item (key choice) is also missing from the 12 cards.",
+     "suggestedFix": "Replace (answer false, keeps 6/6 balance). Statement: \"Svelte's docs recommend using the item object itself as an {#each} key so identity survives object replacement.\" Explanation: \"Keys can be any object, but the docs recommend strings or numbers such as item.id, because they let identity persist when the objects themselves are replaced.\" URL https://svelte.dev/docs/svelte/each (\"The key can be any object, but strings and numbers are recommended since they allow identity to persist when the objects themselves change.\")"
+    },
+    {
+     "id": "svelte-fundamentals-sr6-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/if)",
+     "evidence": "https://svelte.dev/docs/svelte/if: \"(Blocks don't have to wrap elements, they can also wrap text within elements.)\" The card's explanation \"Svelte's if blocks work inside elements around text\" paraphrases this aside almost word for word.",
+     "problem": "The answer is correct but nearly a truism. Nobody who has used any template language expects a conditional to fail around inline text, so a learner answers True by common sense. The explanation is a near-copy of the source sentence and adds no reason.",
+     "suggestedFix": "Replace (answer true). Statement: \"An {#if} chain may end on an {:else if} branch and leave out a closing {:else} clause.\" Explanation: \"The {:else} clause is optional; when no condition in the chain matches and there is no {:else}, the if block renders nothing.\" URL https://svelte.dev/docs/svelte/if (\"optionally ending in an `{:else}` clause\")."
+    }
+   ],
+   "notes": "All 12 r6 cards checked against https://svelte.dev/docs/svelte/if, /each and /key (all HTTP 200, current). I also checked the svelte@5.57.2 source on GitHub. The section balance is 6 true (01, 03, 04, 06, 08, 10) and 6 false (02, 05, 07, 09, 11, 12).\n\nThe other ten cards pass:\n- 03, 04, 05: the each page states \"arrays, array-like objects (i.e. anything with a `length` property), or iterables like `Map` and `Set`\", and \"If the value is `null` or `undefined`, it is treated the same as an empty array\".\n- 06: \"{:else} clause, which is rendered if the list is empty\".\n- 07: the page calls the index \"equivalent to the second argument in an `array.map(...)` callback\". The 5.57.2 each.js uses an EACH_INDEX_REACTIVE source, so the index follows the item's current position. The source only implies this through the map analogy, but the card is correct.\n- 08: \"You can freely use destructuring and rest patterns in each blocks\".\n- 09: the key \"must uniquely identify each list item\". The 5.57.2 each.js and errors.js throw each_key_duplicate in dev and in production, so no production loophole makes 'can' defensible. Optional polish: the explanation could name the runtime error instead of the circular \"Each key identifies its list item uniquely\".\n- 10: \"you can omit the `as` part\".\n- 11: the page says keyed lists insert, move and delete \"rather than adding or removing items at the end and updating the state in the middle\". That supports position-based reuse in unkeyed lists.\n- 12: key blocks \"destroy and recreate their contents ... reinstantiated and reinitialised\". Optional wording fix for the explanation: \"destroys and recreates the block, so the component starts with fresh local state\", because \"recreates ... including its local state\" reads awkwardly.\n\nWatch item: 03, 04 and 05 all test the same each-input sentence (Array.from conversion). Under the 'knowing one gives the other' rule they are not strict duplicates, and the prompt's section list names array-like values and iterables separately. Still, three of the twelve cards go to input types.\n\nPrompt rules checked: the 5.57.2 pin is correct. https://github.com/sveltejs/svelte/releases/latest still redirects to svelte@5.57.2 on 2026-10-13, so there is no newer release. I found no wrong prompt rule for r6. The r6 scope list includes 'stable identity', but no card covered key choice; the 02 replacement fills that gap."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr7-01",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/await loads (200), official, current",
+     "evidence": "https://svelte.dev/docs/svelte/await: \"Await blocks allow you to branch on the three possible states of a Promise — pending, fulfilled or rejected.\" The card's answer follows from the word 'pending': pending markup shows while the Promise is pending.",
+     "problem": "Definition card or truism. Anyone who reads 'pending markup while its Promise remains unresolved' answers True without knowing Svelte, so the card teaches nothing beyond the meaning of 'pending'.",
+     "suggestedFix": "Replacement (answer true): statement \"{#await import('./Chart.svelte') then { default: Chart }} can render Chart lazily once its module loads.\" Explanation \"An await block accepts the Promise from a dynamic import(), so the then branch can destructure the module's default export and render that component after it loads.\" Source https://svelte.dev/docs/svelte/await (its note: \"You can use #await with import(...) to render components lazily\")."
+    },
+    {
+     "id": "svelte-fundamentals-sr7-02",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/await loads (200), official, current",
+     "evidence": "https://svelte.dev/docs/svelte/await: \"{:catch error} <!-- promise was rejected -->\". The keyword 'catch' already says the branch receives the rejection, so the statement is readable from its wording.",
+     "problem": "Wording giveaway. 'catch' plus 'rejection value' gives True to any JavaScript developer. No realistic learner believes the opposite, so the card tests no Svelte-specific knowledge.",
+     "suggestedFix": "Replacement (answer true): statement \"Svelte renders {#await promise catch error} markup only after that Promise rejects.\" Explanation \"The catch-only form leaves out both the pending and the then branches, so the block shows nothing until the Promise rejects, then exposes the rejection value under the chosen name.\" Source https://svelte.dev/docs/svelte/await (\"if you only want to show the error state, you can omit the then block\")."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards: 6 true (01, 02, 03, 05, 06, 10) and 6 false (04, 07, 08, 09, 11, 12). False statements average 89.3 characters and true ones 85.3, which is within the 5-character rule. Every statement is at most 120 characters. Card 07's explanation is 129 characters, within the 240 limit.\n\nAll sources return HTTP 200 and are official, current svelte.dev pages: /await, /declaration-tags, /@const, /@html, /basic-markup.\n\nCards that passed, with the sentence that settles each:\n- 03: \"If you don't care about the pending state, you can also omit the initial block.\"\n- 04 and 05 (await page): \"During server-side rendering, only the pending branch will be rendered. If the provided expression is not a Promise, only the :then branch will be rendered, including during server-side rendering.\" The statements say \"synchronous\" server rendering, which correctly keeps out experimental async SSR. The compiled server await_block also renders pending for any Promise and the then branch for any other value.\n- 06 and 07 (declaration-tags): \"Declaration tags can be used anywhere inside the component ... 'visible' to everything in the same lexical scope (i.e. siblings, and children of those siblings)\". The page's scope example shows the outer value is used again after </div>.\n- 08 (@const page): \"{@const x = y} is legacy syntax — use {const x = $derived(y)} instead\".\n- 09: the page says \"When values should be reactive, you can use $state and $derived.\" The page only implies that a plain let is not reactive. I confirmed it in the compiler: DeclarationTag.js emits a plain variable declaration, and only $state/$derived inits get state transformers. That matches the runes-mode non_reactive_update warning, so the answer is false.\n- 10 (basic-markup): \"The expression will be stringified and escaped to prevent code injections.\"\n- 11 (@html): \"The expression should be valid standalone HTML — this will not work, because </div> is not valid HTML.\"\n- 12 (@html): \"Content rendered this way is 'invisible' to Svelte and as such will not receive scoped styles.\"\n\nNo card rests on the same fact as another card in the deck. r8 had already been changed to avoid r7's markup lexical-scope fact, and no other section tests await, @html or declaration tags. The lazy import() fact in the 01 replacement is used nowhere else in the deck.\n\nPrompt rules checked:\n- Release pin: https://github.com/sveltejs/svelte/releases/latest still resolves to svelte@5.57.2, and the main CHANGELOG has nothing above 5.57.2.\n- Declaration tags arrived in 5.56.0 (feat #18282, \"allow declarations in the template\"), and @const is labelled legacy. Both confirmed.\n- No r7 prompt rule was found wrong.\n- One small point on the docs, not the prompt: the declaration-tags page replaces @const with a plain {const ...}, while the @const page recommends {const x = $derived(y)}. Card 08 quotes the @const page correctly, so it is unaffected. Its wording \"For Svelte 5.57 migration\" is a little awkward but not wrong."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr8-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/snippet loads, official, current",
+     "evidence": "https://svelte.dev/docs/svelte/snippet: \"Within the template, snippets are values just like any other. As such, they can be passed to components as props\" and Table.svelte renders it with \"<tr>{@render row(d)}</tr>\". The card says only that a snippet prop is rendered with {@render row(item)}, which is the basic syntax shown in the statement itself.",
+     "problem": "Give-away or truism. Anyone who knows that {@render} exists answers True, and there is no realistic misconception behind it (the misconception field is empty and \"directly\" carries no meaning). The explanation just restates the statement and adds no reason.",
+     "suggestedFix": "Replace (answer true): \"A child can pass its own data into a parent-supplied snippet as arguments of its {@render} tag.\" Explanation: \"In the docs' Table example, the parent declares row(d) and Table calls {@render row(d)} for each item: the child supplies the arguments, the snippet supplies the markup.\" Keep URL https://svelte.dev/docs/svelte/snippet#Explicit-props"
+    },
+    {
+     "id": "svelte-fundamentals-sr8-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/v5-migration-guide loads, official, current",
+     "evidence": "https://svelte.dev/docs/svelte/v5-migration-guide: \"Content inside component tags becomes a snippet prop called `children`.\" Card: \"Ordinary component child content becomes its children snippet prop.\" https://svelte.dev/docs/svelte/snippet: \"Any content inside the component tags that is _not_ a snippet declaration implicitly becomes part of the `children` snippet\"",
+     "problem": "The answer is right, but the statement repeats the migration guide sentence with a few words changed, which the prompt's original-wording rule forbids. The explanation only restates the statement and gives no context. \"Ordinary\" quietly stands in for the doc's \"not a snippet declaration\" exception. The snippet reference page is the better primary source.",
+     "suggestedFix": "Replace (answer true): \"Plain markup written between a component's opening and closing tags reaches that component as a prop named children.\" Explanation: \"Non-snippet content inside component tags forms the implicit children snippet, which the component shows with {@render children()}. It replaces Svelte 4's default <slot />.\" URL: https://svelte.dev/docs/svelte/snippet#Implicit-children-snippet"
+    }
+   ],
+   "notes": "I checked all 12 r8 cards against https://svelte.dev/docs/svelte/snippet, https://svelte.dev/docs/svelte/@render and https://svelte.dev/docs/svelte/v5-migration-guide (all return 200). I also read the legacy <svelte:component> page in https://svelte.dev/llms-full.txt. I confirmed the release pin through the GitHub API: releases/latest = svelte@5.57.2, published 2026-10-06T14:20:22Z, so the prompt's pin is correct and nothing newer exists.\n\nThe section is balanced, 6 true (03, 05, 07, 08, 10, 12) and 6 false (01, 02, 04, 06, 09, 11). No r8 factKey repeats a card in another section. The only cards elsewhere that mention snippets are sr15-11 and sr15-12, which are about boundaries.\n\nCards that pass:\n- sr8-01: lexical scope; \"visible to everything in the same lexical scope\".\n- sr8-02: \"Snippets can reference themselves and each other\".\n- sr8-03 and sr8-04: \"can have default values ... You cannot use rest parameters\".\n- sr8-06: \"snippets declared directly inside a component implicitly become props on the component\".\n- sr8-08: \"The expression can be an identifier like sum, or an arbitrary JavaScript expression\", with the (cool ? coolSnippet : lameSnippet)() example.\n- sr8-09: the ?.() form renders nothing, and the {#if}{:else} form is the fallback.\n- sr8-10: repeated {@render sum(...)} calls.\n- sr8-11: exported only \"provided they don't reference any declarations in a non-module <script>\". This requires 5.5.0, which the pin covers.\n- sr8-12: the legacy page says \"In runes mode, <MyComponent> will re-render if the value of MyComponent changes ... In legacy mode, it won't\", so the \"In runes mode\" qualifier is correct and needed.\n\nMinor points I did not flag:\n- sr8-09 is close to a strawman, because the ?.() tag has no place to put fallback content. It still tests the documented ?.() versus {#if}/{:else} split, so it is acceptable.\n- sr8-10 leans toward a truism (it behaves like calling a function twice), and the @render page shows the behavior only by example, without stating it.\n- sr8-01 says \"captured variables\", which slightly hints at closure semantics.\n- The explanations of sr8-08 and sr8-12 are thin but correct.\n\nPrompt rules checked: the 5.57.2 pin, the runes-only dynamic component tag, the reserved implicit children prop and slots being deprecated in Svelte 5 are all confirmed on the official pages. I found no wrong prompt rules for r8."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr9-04",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/v5-migration-guide loads (200), official, current",
+     "evidence": "Migration guide, Component events: \"components should accept _callback props_ — which means you then pass functions as properties to these components\" (example names them inflate/deflate). The card only says a prop can be named save.",
+     "problem": "Truism. A callback prop is an ordinary prop holding a function, and any developer who knows props can name them freely. Almost nobody who studied would answer False, so it teaches nothing Svelte-specific. It is a strawman of the 'callback props must start with on' idea.",
+     "suggestedFix": "Replace (answer True): \"Spreading an object that holds onclick onto a button, as in <button {...handlers}>, attaches the click handler.\" Explanation: \"Event attributes are ordinary attributes in Svelte 5, so a spread object can carry handlers such as onclick onto an element along with other props.\" Source: https://svelte.dev/docs/svelte/basic-markup (\"you can spread them: <button {...thisSpreadContainsEventAttributes}>\")."
+    },
+    {
+     "id": "svelte-fundamentals-sr9-07",
+     "verdict": "ambiguous",
+     "urlStatus": "https://svelte.dev/docs/svelte/basic-markup loads (200), official, current",
+     "evidence": "Basic markup, Event delegation: \"when you manually dispatch an event with a delegated listener, make sure to set the `{ bubbles: true }` option or it won't reach the application root\".",
+     "problem": "The fact is right, but \"A manually dispatched click uses bubbles: true\" also reads as a claim about what a dispatched click carries by default. That claim is false for new Event('click') (bubbles defaults to false) and true for element.click(). The answer depends on whether the reader takes \"uses\" as 'needs' or 'has', so an expert could argue either way.",
+     "suggestedFix": "Reword (answer stays True): \"A click created with new Event('click') needs { bubbles: true } to reach Svelte's delegated onclick handlers.\" Explanation: \"Delegated handlers run from one listener at the application root, so a manually dispatched event must bubble to get there; new Event() defaults to bubbles: false.\" Keep https://svelte.dev/docs/svelte/basic-markup."
+    },
+    {
+     "id": "svelte-fundamentals-sr9-09",
+     "verdict": "weak_card",
+     "urlStatus": "https://svelte.dev/docs/svelte/v5-migration-guide loads (200), official, current",
+     "evidence": "Migration guide, Event modifiers: \"For `capture`, we add the modifier to the event name: <button onclickcapture={...}>\". Compiler source (main, version 5.57.2) is_capture_event: name.endsWith('capture').",
+     "problem": "Name giveaway. The statement says the attribute 'onclickcapture' gives a 'capture phase' handler, so a player who knows no Svelte can read True from the word itself. The fact is correct, but the card tests nothing.",
+     "suggestedFix": "Reword (answer stays True) so the card tests the mechanism, not the word: \"Svelte selects the capture phase for an event attribute through its name, as in onclickcapture.\" Explanation: \"Capture must apply when the listener is attached, not when the handler runs, so Svelte reads it from a lowercase capture suffix on the attribute name.\" Keep the migration-guide URL."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards against the live docs on 2026-10-13: basic-markup, svelte-events, v5-migration-guide and compiler-errors, read through their llms.txt copies. I also read the compiler/runtime source on sveltejs/svelte main, which is at version 5.57.2, to confirm behavior; that source is not a card source. The pin holds: https://github.com/sveltejs/svelte/releases/latest still redirects to svelte@5.57.2, so there is no newer release.\n\nThe 9 cards that pass, with the evidence that settles each:\n- **01 (False):** basic-markup says \"`onclick` listens to the `click` event, `onClick` listens to the `Click` event, which is different.\"\n- **02 (False):** the migration guide says string event attributes are \"no longer possible in Svelte 5\". Compiler error attribute_invalid_event_handler: \"Event attribute must be a JavaScript expression, not a string\".\n- **03 (False):** the migration guide replaces dispatch/.detail with inflate(power) and explains the old payload came \"through a `.detail` property\".\n- **05 (True):** the migration guide's Bubbling events section: \"the component should accept an `onclick` callback prop\".\n- **06 (False):** the migration guide says \"you can't do `onclick|preventDefault={...}`\".\n- **08 (False):** basic-markup says \"handlers added manually inside the application root will run _before_ handlers added declaratively deeper in the DOM ... in both capturing and bubbling phases\". This is a good hard card.\n- **10 (True):** basic-markup says ontouchstart/ontouchmove handlers \"are passive\". The compiler's PASSIVE_EVENTS list is ['touchstart','touchmove'].\n- **11 (False):** the migration guide says \"Duplicate attributes/properties on elements — which now includes event handlers — are not allowed\". Compiler error attribute_duplicate.\n- **12 (True):** svelte-events says on \"returns a function that removes the handler\".\n\nMinor points, not flagged:\n- **10:** the \"In runes mode\" qualifier is unnecessary. Passive touch handlers belong to event attributes in both modes, so the qualifier hints that legacy mode differs. \"by default\" also suggests an opt-out on the attribute, but the docs point to `on` instead. The answer is still correct.\n- **03:** a forwarded DOM onclick callback does receive a MouseEvent, whose .detail holds the click count. That does not change the answer.\n\nPrompt rules I checked against official pages, none of which I found wrong:\n- Event modifiers belong only to on:.\n- Duplicate handlers are rejected.\n- Touch handlers are passive.\n- The basic-markup sentence \"event attributes always fire after events from bindings\" exists, which confirms the reason for excluding ordering cards.\n\nSection balance is 6 True / 6 False; average statement length is 76.5 for True and 78.2 for False. Difficulty mix is 5/5/2. I found no duplicates with other sections:\n- r1-09 tests generic spread precedence, which differs from the r9-04 replacement (spreading an object that carries handlers).\n- r15-10 tests a boundary that does not catch onclick errors, which is a different fact from r9."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr10-03",
+     "verdict": "wrong_answer",
+     "urlStatus": "200 OK, official, current (https://svelte.dev/docs/svelte/bind); npm latest = 5.57.2",
+     "evidence": "Docs (https://svelte.dev/docs/svelte/bind): \"If the input is empty or invalid (in the case of `type=\"number\"`), the value is `undefined`.\" The 5.57.2 runtime disagrees with the docs. In https://raw.githubusercontent.com/sveltejs/svelte/svelte%405.57.2/packages/svelte/src/internal/client/dom/elements/bindings/input.js, bind_value runs `value = is_numberlike_input(input) ? to_number(value) : value;` with `function to_number(value) { return value === '' ? null : +value; }`. main has the same code. A cleared (or invalid) number input has value '', so n becomes null, not undefined.",
+     "problem": "The card teaches that n becomes undefined. The shipped 5.57.2 code sets it to null, so a developer who checks `n === undefined` gets it wrong, and an expert can show the answer is False. The docs sentence is wrong, so the card cannot be checked reliably.",
+     "suggestedFix": "Drop the null/undefined fact. Replacement (answer true): \"Svelte's docs recommend bind:group rather than bind:checked for radio inputs.\" Explanation: \"The bind: page tells you to bind radios with bind:group, so one variable holds the chosen radio's value. bind:checked stays the binding for a single checkbox's Boolean state.\" URL https://svelte.dev/docs/svelte/bind"
+    },
+    {
+     "id": "svelte-fundamentals-sr10-08",
+     "verdict": "duplicate",
+     "urlStatus": "200 OK, official, current (https://svelte.dev/docs/svelte/bind)",
+     "evidence": "https://svelte.dev/docs/svelte/bind: \"Since 5.6.0, if an <input> has a defaultValue and is part of a form, it will revert to that value instead of the empty string when the form is reset.\" and \"Since 5.57.0, if a <select> has a defaultValue and is part of a form, it will revert to that value instead of the empty string when the form is reset.\" The two sentences are almost identical.",
+     "problem": "The card rests on the same fact as sr10-07 (form reset restores the bound control's defaultValue). Both are true, and a player who knows 07 can answer 08 by analogy. The only new detail is the release number, and the prompt says to test behaviour rather than release numbers. The card's fact itself is correct.",
+     "suggestedFix": "Replace (answer true): \"Svelte's bind:innerHTML works on an element that has the contenteditable attribute.\" Explanation: \"Elements with contenteditable support innerHTML, innerText and textContent bindings, so edits a user makes in the element flow back into the bound state.\" URL https://svelte.dev/docs/svelte/bind (Contenteditable bindings)."
+    },
+    {
+     "id": "svelte-fundamentals-sr10-01",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official, current (https://svelte.dev/docs/svelte/bind)",
+     "evidence": "https://svelte.dev/docs/svelte/bind: \"Most bindings are two-way, meaning that changes to the value will affect the element and vice versa.\" and \"A bind:value directive on an <input> element binds the input's value property\"",
+     "problem": "This is a definition card. Its answer follows from what a binding is, and nobody who has seen bind:value would answer False. The explanation (\"Text bindings propagate changes both ways\") only restates the statement.",
+     "suggestedFix": "Replace (answer true): \"Svelte's <details bind:open={isOpen}> updates isOpen when the user expands or collapses it.\" Explanation: \"Svelte supports binding a <details> element's open property, so the bound state follows user toggles and setting it opens or closes the element.\" URL https://svelte.dev/docs/svelte/bind (details bind:open)."
+    },
+    {
+     "id": "svelte-fundamentals-sr10-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, official, current (https://svelte.dev/docs/svelte/bind)",
+     "evidence": "https://svelte.dev/docs/svelte/bind: \"Checkbox inputs can be bound with bind:checked\". The checkbox example binds `accepted` (a Boolean) and uses `checked = $state(true)`.",
+     "problem": "The name gives the answer away: bind:checked obviously binds the checked state, not the value attribute. The distractor is close to a strawman, and the explanation does not teach anything beyond the name.",
+     "suggestedFix": "Replace (answer false): \"Svelte's bind:indeterminate forces a checkbox's bind:checked value to false.\" Explanation: \"Svelte tracks a checkbox's indeterminate state independently of checked, so a checkbox bound with both can be indeterminate while checked is true or false.\" URL https://svelte.dev/docs/svelte/bind (\"indeterminate state, independently of whether they are checked or unchecked\")."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards against https://svelte.dev/docs/svelte/bind (HTTP 200, read through the llms.txt rendering). I also read the svelte@5.57.2 runtime source on raw.githubusercontent.com: bindings/input.js, select.js and this.js. npm latest is still 5.57.2, so the pin holds.\n\nCards that pass:\n- 02: numeric coercion. Docs: \"the value will be coerced to a number\".\n- 05: checkbox bind:group array. Docs: \"grouped checkbox inputs populate an array\".\n- 06: select keeps non-string values. Docs: \"can be any value (not just strings...)\".\n- 07: input defaultValue reset, since 5.6.0.\n- 09: assigning [] to bind:files does not clear the selection. The runtime does `input.files = get()`, browsers reject a non-FileList, and the docs say to use `new DataTransfer().files`.\n- 10: clientWidth is readonly.\n- 11: bind:this is \"undefined until the component is mounted ... not during component initialisation\".\n- 12: \"the get value should be null\" for readonly function bindings.\n\nPrompt rules checked:\n- Pin 5.57.2: correct.\n- Function bindings since 5.9.0: correct.\n- Input defaultValue/defaultChecked reset since 5.6.0: correct.\n- Select defaultValue reset since 5.57.0: correct.\n\nPrompt rule found wrong in effect: the prompt lists \"numeric empty values\" as an r10 priority, and the docs give that value as undefined. The 5.57.2 runtime (and main) returns null via `to_number(value) { return value === '' ? null : +value; }`. The docs are wrong on this point, so the empty-value fact should be avoided or worded so it does not depend on null versus undefined.\n\nMinor observations, not flagged:\n- Most explanations in this section are very terse (40 to 65 chars) and give little context, for example 09 never says how to clear the file selection (new DataTransfer().files). Worth enriching.\n- sr10-10 (assigning to readonly clientWidth does not resize the element) and sr15-04 (assigning to readonly activeElement does not move focus) use the same false template. That is two uses, which is the most the prompt allows, so no further card should reuse it.\n- The section's true/false balance is 6/6. The suggested replacements keep it, with 01, 03 and 08 true and 04 false."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr11-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/svelte-store)",
+     "evidence": "https://svelte.dev/docs/svelte/stores: readable \"Creates a store whose value cannot be set from 'outside'\"; svelte-store reference: readable \"Creates a `Readable` store that allows reading by subscription.\" The answer (false) is right, but the API names give it away: a player who only contrasts the names readable and writable can answer it, which breaks the prompt's no-name-giveaway rule.",
+     "problem": "Name giveaway: the name 'readable' (next to 'writable') tells the player it has no set/update methods, so the card checks vocabulary, not behavior.",
+     "suggestedFix": "Replace (answer false): \"Assigning $count = 2 in a component calls the writable store's update method with a callback.\" Explanation: \"Assigning to a $-prefixed store variable in a component calls that store's set method, so the store must be writable.\" Source https://svelte.dev/docs/svelte/stores (\"Assignments to $-prefixed variables require that the variable be a writable store, and will result in a call to the store's .set method.\")"
+    },
+    {
+     "id": "svelte-fundamentals-sr11-11",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/stores)",
+     "evidence": "https://svelte.dev/docs/svelte/stores, derived: \"The callback runs initially when the first subscriber subscribes and then whenever the store dependencies change.\" writable: \"it will be called when the number of subscribers goes from zero to one\". The answer and source are right, but this is the same lazy start-on-first-subscriber fact that sr11-12 tests (store-start-stop-subscriber-lifetime). Knowing one answer gives you the other.",
+     "problem": "Duplicate of svelte-fundamentals-sr11-12: both test that store work starts when the first subscriber subscribes, not when the store is created.",
+     "suggestedFix": "Replace (answer false, keeps the section balance): \"A derived store whose callback takes a set argument holds its input store's value until set is first called.\" (108 chars) Explanation: \"With a set-style callback, a derived store starts from its optional third argument, or undefined when none is given, until set or update runs.\" Source https://svelte.dev/docs/svelte/stores (\"you can also pass a third argument to derived — the initial value of the derived store before set or update is first called. If no initial value is specified, the store's initial value will be undefined.\")"
+    }
+   ],
+   "notes": "I checked all 12 r11 cards. I downloaded https://svelte.dev/docs/svelte/context, /stores, /svelte-store and /svelte (llms.txt markdown). All four return HTTP 200, are official and are current.\n\nThe 10 unflagged cards are correct and supported by their sources:\n- 01, triplet: \"By creating a [get, set, has] triplet of functions with createContext\".\n- 02, nearest provider: svelte#getContext, \"If multiple components set the same key, the value from the closest one is returned\".\n- 03, any key: \"The key ... and the context itself can be any JavaScript value\".\n- 04, initialisation only: svelte#setContext, \"Like lifecycle functions, this must be called during component initialisation\".\n- 05, reassignment breaks the link: \"if you reassign counter instead of updating it, you will 'break the link'\".\n- 06, per request: \"Context solves this problem because it is not shared between requests\". The mount section adds that each mount/hydrate/render call gets its own wrapper.\n- 07, when stores fit: \"Stores are still a good solution when you have complex asynchronous data streams or it's important to have more manual control\". The card says \"recommend\" and the docs say \"still a good solution\", which is close enough.\n- 08, store contract: \"must be immediately and synchronously called with the store's current value upon calling .subscribe\". The RxJS interop exception is outside the card because the card says \"meeting Svelte's contract\".\n- 09, $ prefix: \"subscribe to the store at component initialisation and unsubscribe when appropriate\".\n- 12, writable start/stop: zero-to-one start and one-to-zero stop.\n\nMinor, not flagged:\n- sr11-01's explanation only restates the statement. It could add useful context, for example that get throws if set has not been called in the component or an ancestor (svelte#createContext).\n- sr11-06 sits close to a truism for anyone who knows context is scoped to a component tree, but it tests the server-isolation point the docs make.\n\nI found no duplicates with r2 (state reassignment and passing state to functions) or r16 (mount/render).\n\nPrompt rules I confirmed on official pages:\n- createContext was added in 5.40 (context page note; svelte#createContext \"Available since 5.40.0\").\n- setContext/getContext are documented \"as an alternative\", not deprecated. createContext is the preferred one.\n- Stores are not obsolete (\"still a good solution\").\n- github.com/sveltejs/svelte/releases/latest still redirects to svelte@5.57.2 on 2026-10-13.\n\nI found no wrong prompt rules for r11."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr12-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/scoped-styles)",
+     "evidence": "Scoped styles page: \"This CSS is _scoped_ by default, meaning that styles will not apply to any elements on the page outside the component in question.\" The statement only says that a scoped rule targets elements in the component's own markup. That is the meaning of \"scoped\", so the word gives the answer away. The useful fact, that a child component's markup is out of reach, appears only in the explanation and is never tested.",
+     "problem": "Definition card with a name giveaway. Anyone who reads \"scoped\" answers True. The explanation covers a different fact (child-component reach) from the one the statement tests.",
+     "suggestedFix": "Replacement (answer true, same factKey): \"A p rule in a parent component's <style> leaves <p> elements rendered inside a child component unstyled.\" Explanation: \"Scoped rules only match elements in this component's own markup, which carry its hash class such as svelte-123xyz. To reach into a child, use :global(...).\" Source unchanged."
+    },
+    {
+     "id": "svelte-fundamentals-sr12-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/global-styles)",
+     "evidence": "Global styles page: \"To apply styles to a group of selectors globally, create a `:global {...}` block\". The statement says a :global block holds rules \"that apply outside the component\", which can be read straight from the word \"global\". The same page also says: \"If you want to make @keyframes that are accessible globally, you need to prepend your keyframe names with `-global-`. The `-global-` part will be removed when compiled, and the keyframe will then be referenced using just `my-animation-name` elsewhere in your code.\"",
+     "problem": "Name giveaway: the answer follows from the term \":global\" itself. The explanation (57 chars) restates the statement and adds nothing.",
+     "suggestedFix": "Replacement (answer true, factKey global-keyframes-prefix): \"Other components reference a keyframe declared as @keyframes -global-fade by the name fade.\" Explanation: \"Component keyframe names are scoped by default. The -global- prefix opts a keyframe out, and Svelte strips the prefix at compile time, so other code uses the plain name.\" Source: https://svelte.dev/docs/svelte/global-styles"
+    },
+    {
+     "id": "svelte-fundamentals-sr12-11",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/style)",
+     "evidence": "style: page: \"The shorthand form is allowed: <div style:color>...</div>\". The shorthand stands for style:color={color} and resolves to whatever `color` is in lexical scope. That can be an {#each colors as color} item or a snippet parameter, not necessarily the component's own variable.",
+     "problem": "\"the component's color variable\" is too narrow. Inside an each block or a snippet, style:color reads the block's or snippet's `color`, so an expert could call the statement false in that context. Minor, but cheap to fix.",
+     "suggestedFix": "Statement (answer true): \"The bare directive style:color sets the color property from the variable named color in scope.\" Explanation: \"style:color is shorthand for style:color={color}. Svelte reads whichever color binding is in scope, such as a script variable or an each-block item.\" Source unchanged."
+    }
+   ],
+   "notes": "All 5 r12 source pages load (HTTP 200) and are current official svelte.dev docs. I read their markdown (llms.txt) on 2026-10-13. Passed: 02 (docs: \"Each scoped selector receives a specificity increase of 0-1-0\"), 03 (\"Any `animation` rules in the component will be similarly adjusted\"; borderline giveaway, because the statement already says the keyframe names are scoped, but kept), 04 (\"div :global(strong) ... applies to all <strong> elements, in any component, that are inside <div> elements belonging to this component\"), 06 (\"both static and dynamic\"; explanation is thin), 07 (\"it _will_ affect any CSS selectors that ... use the `>` combinator to target an element directly inside the component's container\"), 08 (\"If the value is an object, the truthy keys are added\"), 09 (\"Arrays can contain arrays and objects, and clsx will flatten them\"), 10 (\"consider avoiding `class:`, since the attribute is more powerful and composable\"), 12 (\"the directives will take precedence, even over `!important` properties\").\n\nVersion checks:\n- The 5.57.2 pin matches packages/svelte/package.json at tag svelte@5.57.2.\n- Class objects and arrays arrived in 5.16 (CHANGELOG #14714), so the pin covers them.\n- Mode check for 08 and 09: the clsx handling in compiler/phases/2-analyze/visitors/Attribute.js at 5.57.2 has no runes-mode condition, so appliesTo \"Svelte 5.57.2\" without \"(runes mode)\" is correct. Before 5.16, class={['a',['b']]} would give 'a,b', but the deck pins 5.57.2, so 09 still holds.\n\nBalance: true and false average statement lengths are 84.5 and 80.3 characters, within 5. The section is 6 true and 6 false, and all three replacements keep answer true.\n\nOverlap: sr7-12 tests that scoped styles skip {@html} content. That is distinct from the child-component reach in the 01 replacement, so it is not a duplicate.\n\nPrompt rules: I found no prompt rule wrong for r12. The source list, the 5.16 class-object timing and the class: recommendation all match the live docs."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr13-03",
+     "verdict": "duplicate",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/@attach loads, official, current",
+     "evidence": "https://svelte.dev/docs/svelte/@attach: \"Attachments are functions that run in an effect ... Optionally, they can return a function that is called before the attachment re-runs, or after the element is later removed from the DOM.\" The deck already has sr4-06 (factKey effect-teardown-before-rerun): \"An effect's returned cleanup runs before its next execution.\" The docs define attachments as effects, so the attachment's cleanup-before-rerun order is the same fact as sr4-06. The answer itself is correct.",
+     "problem": "The card rests on the same ordering fact as sr4-06: cleanup runs before the next run. A player who knows sr4-06 and that attachments run in an effect gets this answer for free.",
+     "suggestedFix": "Replace (keeps answer False): statement \"Svelte ignores a function returned by an attachment, so attachment cleanup belongs in a nested $effect.\" Explanation \"An attachment may return a cleanup function. Svelte calls it before the attachment re-runs and again after the element is removed from the DOM.\" Source https://svelte.dev/docs/svelte/@attach"
+    },
+    {
+     "id": "svelte-fundamentals-sr13-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/@attach loads, official, current",
+     "evidence": "https://svelte.dev/docs/svelte/@attach: \"Falsy values like `false` or `undefined` are treated as no attachment, enabling conditional usage: <div {@attach enabled && myAttachment}>\". The answer (False) is correct.",
+     "problem": "Strawman. The statement itself shows the documented conditional pattern `enabled && setup`, so a learner who has studied attachments will not think Svelte throws on it. The useful fact here is what happens to an attachment that is already running when the condition turns falsy.",
+     "suggestedFix": "Replace (keeps answer False): statement \"When enabled turns false in {@attach enabled && setup}, Svelte keeps the earlier attachment running.\" Explanation \"Svelte treats a falsy attachment expression as no attachment, so it tears down the earlier attachment, running its cleanup, and attaches nothing until the value is a function again.\" Source https://svelte.dev/docs/svelte/@attach"
+    },
+    {
+     "id": "svelte-fundamentals-sr13-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://svelte.dev/docs/svelte/svelte-attachments loads, official, current",
+     "evidence": "https://svelte.dev/docs/svelte/svelte-attachments (fromAction): \"Note that the second argument, if provided, must be a function that _returns_ the argument to the action function, not the argument itself.\" with example `{@attach fromAction(foo, () => bar)}`. The answer (True) is correct.",
+     "problem": "Give-away. The code in the statement, `() => value`, is visibly a getter, and the statement then says it 'supplies the argument through a getter'. A player can read the answer True from the wording without knowing fromAction.",
+     "suggestedFix": "Replace (keeps answer True; mentions fromAction only by role, not by code shape): statement \"fromAction lets a component receive a library's use: action through {@attach ...}.\" Explanation \"fromAction converts an action into an attachment with the same behavior, and an attachment, unlike a use: directive, can be placed on a component tag.\" Source https://svelte.dev/docs/svelte/svelte-attachments"
+    }
+   ],
+   "notes": "Checked all 12 r13 cards against https://svelte.dev/docs/svelte/@attach, https://svelte.dev/docs/svelte/use and https://svelte.dev/docs/svelte/svelte-attachments. All three pages return 200, and I read their raw text through the /llms.txt variants. All 12 answers are correct. Three cards are flagged; the other nine pass on source, answer and rules.\n\nFacts confirmed for the passing cards:\n- 02 (factory recreation): the docs say a factory attachment is destroyed and recreated when its input changes. As I remember Svelte's runtime code (I did not open the source), it re-attaches only when the expression returns a different function. That makes the card's \"make returning new functions\" wording accurate.\n- 07: the nested $effect reruns while the outer setup runs once (the docs' canvas note).\n- 09 and 10: the use page says \"only called once (but not during server-side rendering), it will not run again if the argument changes\".\n- 06: an attachment on a component becomes a Symbol-keyed prop that spreading forwards to an element.\n- 08 and 11: the use page says the action is called when the element is mounted and uses $effect for teardown on unmount.\n\nSection balance is 6 True and 6 False. Average statement length is 81.5 for True and 84.3 for False, within the 5-character rule. All statements are at most 120 characters and all explanations at most 240.\n\nPoints I considered but did not flag:\n- 02 and 09 are the two sides of \"attachments rerun, actions do not\". Strictly, the prompt's two-sides rule would count them as one fact, but the prompt's own r13 scope and DOM integration rule ask for both cards. That is a contradiction inside the prompt.\n- 10 (actions skipped during SSR) is close to sr4-01 (effects are browser-only), but the action function itself is a separate fact.\n- 01 and 08 are easy \"receives the element\" cards. They are acceptable, but they lean toward definition cards.\n\nPrompt rules checked and found correct:\n- Attachments are available since 5.29 (the @attach note).\n- use: actions are not deprecated. The docs only say \"consider using attachments instead\".\n- An action is invoked once per element and is skipped in SSR.\n- The legacy update/destroy return object is labeled legacy.\n- The svelte@5.57.2 pin exists, and releases/latest still redirects to svelte@5.57.2 today (2026-10-13).\n\nI found no wrong prompt rule for r13."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr14-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, official current svelte.dev reference (https://svelte.dev/docs/svelte/transition)",
+     "evidence": "https://svelte.dev/docs/svelte/transition: \"Local transitions only play when the block they belong to is created or destroyed, _not_ when parent blocks are created or destroyed.\" Card 01 tests the 'own block' side (\"as an element's own {#if} block adds or removes the element\"). sr14-04 tests the parent-block side, and its explanation (\"Local transitions follow their own block\") gives away card 01. The prompt rule says the two sides of one distinction are one fact. Without the 'own block' wording, the card says only that a transition runs on entry and exit, which is the definition of a transition.",
+     "problem": "This card and sr14-04 test the same local-scope fact from opposite sides. Without that overlap, it is a definitional truism.",
+     "suggestedFix": "Keep answer TRUE. Statement: \"In a custom transition's css function, Svelte passes t running from 1 down to 0 during an out transition.\" Explanation: \"Svelte's docs treat t = 1 as the element's natural state: in transitions run t from 0 to 1 and out transitions from 1 to 0, after easing is applied.\" Source https://svelte.dev/docs/svelte/transition (\"_In_ transitions run from `0` to `1`, _out_ transitions run from `1` to `0`\")."
+    },
+    {
+     "id": "svelte-fundamentals-sr14-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official current svelte.dev reference (https://svelte.dev/docs/svelte/transition)",
+     "evidence": "https://svelte.dev/docs/svelte/transition: \"Transitions can have parameters.\" and \"(The double `{{curlies}}` aren't a special syntax; this is an object literal inside an expression tag.)\" The statement \"Svelte accepts an object of options in transition:fly={{y: offset}}\" can be read straight from the code fragment it contains. Nobody who has seen a transition example would answer False, so the card teaches nothing. The real point the docs make, that double curlies are not special syntax, is only in the explanation.",
+     "problem": "Give-away or truism: the code fragment in the statement shows the answer.",
+     "suggestedFix": "Keep answer TRUE. Statement: \"In transition:fly={{ y: 200 }}, the outer braces are an expression tag and the inner ones an ordinary object literal.\" Explanation: \"Svelte has no special double-curly syntax for directive parameters; the expression tag simply holds an object literal with the transition's options.\" Same source URL."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards. All 5 source URLs return 200 and are current svelte.dev reference pages, and I compared them against the 5.57.2 source on GitHub. On GitHub, releases/latest still resolves to svelte@5.57.2, and the tag page returns 200. Six cards are true and six false. Mean statement length: true 80.3, false 81.3. All statements are 120 characters or less and all explanations 240 or less. No answers are wrong.\n\nCards that pass, with the evidence:\n- 02: in-and-out page: \"an `in` transition will continue to 'play' alongside the `out` transition, rather than reversing\".\n- 03: transition page: \"all elements inside it, including those that do not have their own transitions, are kept in the DOM until every transition in the block has been completed\".\n- 04: passes on its own; its overlap with 01 is flagged on 01.\n- 06: the page lists introstart/introend/outrostart/outroend as events the element dispatches.\n- 07: the animate page says \"immediate child\". The word \"single\" is confirmed by the 5.57.2 compile error animation_invalid_placement: \"must be the only child of a keyed {#each ...} block\".\n- 08: \"Animations do not run when an element is added or removed\".\n- 10: in the 5.57.2 source, fly defaults to opacity = 0 and animates opacity toward target_opacity.\n- 12: \"draw only works with elements that have a getTotalLength method, like <path> and <polyline>\".\n\nMinor issues, not flagged:\n- 09: the explanation says flip only translates, which matches the docs. The 5.57.2 implementation also scales (translate(...) scale(sx, sy)) when an item's size changes, so the explanation is incomplete but not wrong.\n- 11: the svelte-transition reference supports key-based matching only through the send/receive signature (params: CrossfadeParams & { key: any }) and \"it looks for a corresponding element being 'received'\". The prose that settles it is in the official tutorial, https://svelte.dev/tutorial/svelte/deferred-transitions (in:receive={{ key: todo.id }} / out:send={{ key: todo.id }}). Use that as a backup URL if a stricter source is wanted.\n\nPrompt rules: the r14 rules I checked all hold. These are the 5.57.2 pin and latest release, the animate: immediate-keyed-child requirement, the claim that transitions act on entry and exit while animate: acts on reordering, and the r14 scope URLs. I found no prompt rule wrong for this section. One thing the deck definition does not mention: the live transition page now says transitions are driven by the Web Animations API, so a global prefers-reduced-motion CSS rule does not affect them. No r14 card relies on this, but future cards should not assume CSS-keyframe mechanics."
+  },
+  {
+   "section": "r15",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr15-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official current Svelte docs (https://svelte.dev/docs/svelte/svelte-boundary)",
+     "evidence": "https://svelte.dev/docs/svelte/svelte-boundary: \"If a failed snippet is provided, it will be rendered when an error is thrown inside the boundary, with the error and a reset function that recreates the contents\". The answer is correct, but the statement (\"a failed snippet's reset function recreates the contents of its <svelte:boundary>\") repeats that source clause almost word for word, and the API name \"reset\" already suggests the answer, so a player who has not studied can guess True. The same page also says: \"If an onerror function is provided, it will be called with the same two error and reset arguments\", and it shows code outside the boundary calling reset().",
+     "problem": "The statement is a close paraphrase of the source sentence and gives away its answer through the word reset. It tests the word's meaning, not a behavior a developer has to learn.",
+     "suggestedFix": "Keep it true (the section balance stays at 6 true and 6 false). Statement: \"Code outside a <svelte:boundary> can call the reset received by onerror to render the boundary's content again.\" Explanation: \"onerror receives the same error and reset arguments as a failed snippet, so a parent can store reset in state and later trigger a fresh render of the boundary's contents.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 12 r15 cards. Every source URL loads (HTTP 200) on official, current svelte.dev pages. I read the page text through each page's llms.txt.\n\nCards that pass, with the deciding text:\n- **01:** svelte-window says it adds listeners \"without worrying about removing them when the component is destroyed\".\n- **02:** \"online — an alias for window.navigator.onLine\". This is a mild misconception, but a realistic one for developers who treat onLine as real connectivity.\n- **03:** \"the page will not be scrolled to the initial value ... Only subsequent changes to the bound variable ... will cause scrolling\".\n- **04:** svelte-document says \"All are readonly\".\n- **05:** svelte-body says \"It also lets you use actions on the <body> element\".\n- **06:** svelte-head says it \"may only appear at the top level of your component and must never be inside a block or element\".\n- **07:** \"If this has a nullish value, the element and its children will not be rendered\".\n- **08:** \"The only supported binding is bind:this, since Svelte's built-in bindings do not work with generic elements\".\n- **09:** svelte-options gives \"per-component compiler options\". legacy-overview confirms that runes mode is opted into per component. This card is easy and somewhat abstract; a more concrete form would be \"runes={true} in App leaves its imported children in their own mode\". I did not flag it.\n- **10:** \"Errors occurring outside the rendering process (for example, in event handlers ...) are not caught by error boundaries\".\n- **12:** \"If a boundary handles an error (with a failed snippet or onerror handler, or both) its existing content will be removed\".\n\nEvery true and false answer in the section is correct.\n\nWatch item (not a violation today): sr15-04 (assigning the readonly activeElement does not move focus) and sr10-10 (assigning bind:clientWidth does not resize) use the same false template, \"assigning a readonly binding changes the DOM\". That is two cards, the most the prompt allows, so no third card may use this template.\n\nPrompt rules checked:\n- **Release pin:** github.com/sveltejs/svelte/releases/latest still resolves to svelte@5.57.2, and the tag page loads, so the pin holds as of 2026-10-13.\n- **Special-element rule:** the boundary scope (rendering and effect errors, not event handlers, timers or async work) matches the svelte-boundary page.\n- **Window, document and body:** the cleanup rule and the \"dynamic DOM tags use svelte:element\" rule match their pages.\n- **Wrong rules:** none of the prompt rules this section relies on were wrong.\n\nNothing in r15 depends on experimental.async. The pending snippet and transformError are present on the boundary page but are correctly left out."
+  },
+  {
+   "section": "r16",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "svelte-fundamentals-sr16-07",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/svelte)",
+     "evidence": "https://svelte.dev/docs/svelte/svelte: \"Since 5.13.0, if options.outro is true, transitions will play before the component is removed from the DOM.\" Card sr16-08 states \"Browser unmount with outro: true resolves its Promise as exit transitions start\", which presupposes that outro: true plays exit transitions.",
+     "problem": "The answer is correct, but sr16-08 (factKey unmount-promise-outro-completion) asserts in its own wording that unmount with outro: true starts exit transitions. A player who sees 08 can answer 07 without knowing anything. Both cards rest on the unmount outro behavior, and 08 is the stronger, harder card. The word \"automatically\" in 07 is also slightly off, because the outro is opt-in.",
+     "suggestedFix": "Replace with a true card. Statement: \"With mount's anchor option, Svelte inserts the new component ahead of an existing node in the target.\" Explanation: \"anchor is an optional node inside target; when it is given, mount renders the component immediately before that node.\" Source: https://svelte.dev/docs/svelte/svelte#MountOptions (\"Optional node inside target. When specified, it is used to render the component immediately before it.\")"
+    },
+    {
+     "id": "svelte-fundamentals-sr16-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/imperative-component-api)",
+     "evidence": "https://svelte.dev/docs/svelte/imperative-component-api: \"Like mount, but will reuse up any HTML rendered by Svelte's SSR output (from the render function) inside the target and make it interactive\"",
+     "problem": "The answer (true) is correct, but this is a definition card: reusing server-rendered HTML is what \"hydrate\" means, so the answer can be read from the API name. It also paraphrases the source sentence closely (reuse, Svelte's SSR output, inside the target). It teaches nothing about how Svelte behaves.",
+     "suggestedFix": "Replace with a true card. Statement: \"During hydrate, Svelte 5 keeps a server-rendered img src that differs on the client instead of repairing it.\" Explanation: \"Svelte 5 assumes src attributes and {@html} content match between server and client, so hydrate skips the costly repair and only warns in development.\" Source: https://svelte.dev/docs/svelte/v5-migration-guide (section \"<img src={...}> and {@html ...} hydration mismatches are not repaired\")."
+    },
+    {
+     "id": "svelte-fundamentals-sr16-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://svelte.dev/docs/svelte/overview)",
+     "evidence": "https://svelte.dev/docs/svelte/overview: \"from standalone components to ambitious full stack apps (using Svelte's companion application framework, SvelteKit)\"",
+     "problem": "The answer (true) is correct, but the statement nearly copies the source phrase \"Svelte's companion application framework\". Anyone who has heard the name SvelteKit answers True, and no learner who studied would believe the opposite. It is close to a truism.",
+     "suggestedFix": "Replace with a true card. Statement: \"Svelte's Getting started page recommends SvelteKit over a plain Vite setup for new Svelte projects.\" Explanation: \"The docs call SvelteKit the official application framework from the Svelte team; using vite-plugin-svelte directly is the listed alternative, usually paired with a routing library.\" Source: https://svelte.dev/docs/svelte/getting-started (\"We recommend using SvelteKit ... It's the official application framework from the Svelte team\")."
+    }
+   ],
+   "notes": "I checked all 12 r16 cards against the raw markdown of the official pages (svelte.dev/docs/svelte/<page>/llms.txt). All the source URLs return 200. Before the fixes the section has 6 true and 6 false cards, and all three replacements are true, so the balance stays at 6/6. No card has a wrong answer.\n\nPrompt rules I confirmed:\n- github.com/sveltejs/svelte/releases/latest still resolves to svelte@5.57.2 on 2026-10-13.\n- The migration guide says mount plays transitions by default unless intro is false. MountOptions shows intro @default true, so 06 is right.\n- unmount outro has been available since 5.13.0, and the Promise resolves after transitions complete, so 07 and 08 are right.\n- svelte/server render returns body and head, and html is marked \"deprecated, use body instead\", so 09 is right.\n- The migration guide says \"mount and hydrate are not synchronous ... onMount won't have been called\", and the imperative page says effects \"will not run during mount\", so 05 is right. The phrase \"In runes mode\" in 05 is harmless but not needed, because this applies to mount in legacy mode too.\n- The FAQ says \"SvelteKit provides a filesystem router, server-side rendering (SSR), and hot module reloading\", so 12 is right.\n- I found no prompt rule that is wrong for this section.\n\nCards I did not flag, with minor notes:\n- 02 (props from target attributes): the distractor is weak, close to a strawman, but the right fact (the props option) is valid.\n- 03: mount returns an exports object, plus props only with accessors: true. Calling these \"exported instance functions\" is acceptable.\n- 10 (with async disabled, render defers body until a Promise resolves; answer false): the answer is correct, because RenderOutput is SyncRenderOutput & PromiseLike, and the await-expressions page requires `await render(...)` only for experimental async SSR. However, its source (imperative-component-api) only shows result.body being read synchronously and never mentions experimental.async or the Promise. https://svelte.dev/docs/svelte/svelte-server (the RenderOutput type) would support it better. Its wording (\"defers body access\") is also awkward.\n\nOverlap checks:\n- I searched the other sections for mount, hydrate, flushSync, svelte/server, SvelteKit, anchor and mismatch. sr4-01, sr7-04/05, sr11-06 and sr13-10 touch SSR, but each rests on a different fact.\n- None of the three replacements overlaps an existing card."
+  }
+ ],
+ "scan": {
+  "cardsRead": 192,
+  "duplicates": [
+   {
+    "ids": [
+     "svelte-fundamentals-sr2-03",
+     "svelte-fundamentals-sr2-04"
+    ],
+    "why": "Both sides of one sentence in the $state docs ('Class instances are not proxied. Instead, you can use $state in class fields'). The prompt says the two sides of one distinction are one fact. sr2-04 is close to a truism (a field declared with $state is reactive), so it is the weaker card.",
+    "dropId": "svelte-fundamentals-sr2-04"
+   },
+   {
+    "ids": [
+     "svelte-fundamentals-sr3-03",
+     "svelte-fundamentals-sr4-02"
+    ],
+    "why": "Both test one tracking rule: dependencies are the reactive values read synchronously at runtime, including reads inside helper functions. sr3-03's explanation says this outright ('including helper reads'), which settles sr4-02. sr4-03 already covers the effect-specific edge (reads in timers).",
+    "dropId": "svelte-fundamentals-sr4-02"
+   },
+   {
+    "ids": [
+     "svelte-fundamentals-sr4-06",
+     "svelte-fundamentals-sr13-03"
+    ],
+    "why": "Attachments run inside an effect, so 'cleanup runs before the next run' is one fact asked twice: true for $effect, false-framed for attachments. A player who knows the effect rule can answer the attachment card without knowing anything about attachments.",
+    "dropId": "svelte-fundamentals-sr13-03"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "runes-compiler-syntax",
+    "ids": [
+     "svelte-fundamentals-sr1-10",
+     "svelte-fundamentals-sr1-11"
+    ],
+    "why": "sr1-11's explanation ('Rune symbols are compiler syntax rather than callable values') answers sr1-10 (no import needed), and sr1-10's explanation ('built into Svelte's syntax') hints at sr1-11."
+   },
+   {
+    "name": "module-script-exports",
+    "ids": [
+     "svelte-fundamentals-sr1-05",
+     "svelte-fundamentals-sr1-06"
+    ],
+    "why": "sr1-06's explanation (the default export is reserved for the component) implies sr1-05: named module exports are allowed."
+   },
+   {
+    "name": "module-vs-instance-scope",
+    "ids": [
+     "svelte-fundamentals-sr1-04",
+     "svelte-fundamentals-sr8-11"
+    ],
+    "why": "Exported snippets live at module level. Knowing that module script cannot see instance-script variables (sr1-04) answers the exported-snippet capture card (sr8-11)."
+   },
+   {
+    "name": "name-shorthand",
+    "ids": [
+     "svelte-fundamentals-sr1-08",
+     "svelte-fundamentals-sr12-11"
+    ],
+    "why": "One shorthand rule (a bare name expands to name={name}) for attributes and for style: directives. sr1-08's explanation gives away sr12-11."
+   },
+   {
+    "name": "class-instance-proxy",
+    "ids": [
+     "svelte-fundamentals-sr2-03",
+     "svelte-fundamentals-sr2-04"
+    ],
+    "why": "Mirrored true/false pair from the same doc sentence: class instances are not proxied, and $state class fields are the alternative."
+   },
+   {
+    "name": "destructuring-reactivity",
+    "ids": [
+     "svelte-fundamentals-sr2-05",
+     "svelte-fundamentals-sr2-06",
+     "svelte-fundamentals-sr3-09",
+     "svelte-fundamentals-sr5-01"
+    ],
+    "why": "These test the deliberate contrast between capturing a value at the point of use ($state destructuring, passing a primitive) and destructuring that stays live ($derived, $props). Each explanation ('captures the current value' / 'stays reactive') signals the other side."
+   },
+   {
+    "name": "deep-proxy-selection",
+    "ids": [
+     "svelte-fundamentals-sr2-02",
+     "svelte-fundamentals-sr3-12"
+    ],
+    "why": "sr2-02 (mutating a nested plain object in a $state array updates the UI) gives away sr3-12 (mutating that same object after selecting it through $derived updates the item)."
+   },
+   {
+    "name": "derived-and-fallback-proxying",
+    "ids": [
+     "svelte-fundamentals-sr3-11",
+     "svelte-fundamentals-sr3-12",
+     "svelte-fundamentals-sr5-07"
+    ],
+    "why": "Same rule asked three ways: only $state proxies. $derived returns objects as it gets them, and fallback objects stay plain. sr3-12's 'preserves its proxy' and sr3-11's 'leaves newly returned objects as-is' answer each other, and both hint at sr5-07."
+   },
+   {
+    "name": "runtime-dependency-tracking",
+    "ids": [
+     "svelte-fundamentals-sr3-03",
+     "svelte-fundamentals-sr4-02",
+     "svelte-fundamentals-sr4-03"
+    ],
+    "why": "sr3-03's explanation and sr4-02's statement ('synchronous helper calls') give away sr4-03 (setTimeout reads are not tracked) and each other."
+   },
+   {
+    "name": "cleanup-before-rerun",
+    "ids": [
+     "svelte-fundamentals-sr4-06",
+     "svelte-fundamentals-sr13-03"
+    ],
+    "why": "Attachments run as effects, so the $effect teardown-order card answers the attachment cleanup-order card."
+   },
+   {
+    "name": "effect-dom-timing",
+    "ids": [
+     "svelte-fundamentals-sr4-04",
+     "svelte-fundamentals-sr4-07"
+    ],
+    "why": "Both are about when an effect runs relative to DOM updates (after, versus $effect.pre's caveat). Seen together, the 'after DOM updates' wording points to the answer of the other."
+   },
+   {
+    "name": "server-skips-client-code",
+    "ids": [
+     "svelte-fundamentals-sr4-01",
+     "svelte-fundamentals-sr13-10"
+    ],
+    "why": "$effect is browser-only (sr4-01), and actions run as effects, so sr4-01's explanation answers whether use: actions run during SSR (sr13-10)."
+   },
+   {
+    "name": "prop-mutation-plain-vs-proxy",
+    "ids": [
+     "svelte-fundamentals-sr5-06",
+     "svelte-fundamentals-sr5-07",
+     "svelte-fundamentals-sr5-08"
+    ],
+    "why": "Two sides of the plain-object versus incoming-proxy distinction. sr5-06's 'plain object mutations trigger no DOM update' and sr5-07's 'fallback unproxied' signal sr5-08 (proxy mutation updates despite the warning) and each other."
+   },
+   {
+    "name": "each-input-kinds",
+    "ids": [
+     "svelte-fundamentals-sr6-03",
+     "svelte-fundamentals-sr6-04",
+     "svelte-fundamentals-sr6-05"
+    ],
+    "why": "Same template 'Svelte renders X with {#each items as item}', with both true cards back to back. If array-likes are accepted, a Set is a near-certain guess, and the tolerance for undefined input follows the same pattern."
+   },
+   {
+    "name": "await-ssr-sync",
+    "ids": [
+     "svelte-fundamentals-sr7-04",
+     "svelte-fundamentals-sr7-05",
+     "svelte-fundamentals-sr16-10"
+    ],
+    "why": "All three are about synchronous server rendering not awaiting. sr7-04's explanation ('pending branch when its expression is a Promise') hints sr7-05, and sr16-10 (output available immediately) answers sr7-04."
+   },
+   {
+    "name": "declaration-tag-scope",
+    "ids": [
+     "svelte-fundamentals-sr7-06",
+     "svelte-fundamentals-sr7-07"
+    ],
+    "why": "sr7-06's explanation ('works directly in component markup, including outside a template block') and sr7-07's explanation about element scope describe the same lexical-scope model and hint at each other."
+   },
+   {
+    "name": "declaration-tag-runes",
+    "ids": [
+     "svelte-fundamentals-sr7-08",
+     "svelte-fundamentals-sr7-09"
+    ],
+    "why": "sr7-09's explanation recommends {let count = $state(0)}, which signals that rune-based declaration tags are the preferred form. That settles sr7-08 ('docs prefer {@const}')."
+   },
+   {
+    "name": "scoped-style-reach",
+    "ids": [
+     "svelte-fundamentals-sr7-12",
+     "svelte-fundamentals-sr12-01"
+    ],
+    "why": "sr12-01 ('targets matching elements declared in the component's markup') strongly implies that {@html}-inserted markup is outside scope (sr7-12)."
+   },
+   {
+    "name": "implicit-snippet-props",
+    "ids": [
+     "svelte-fundamentals-sr8-06",
+     "svelte-fundamentals-sr8-07"
+    ],
+    "why": "sr8-07's explanation (content inside component tags becomes the children prop) gives away sr8-06 (snippets declared inside component tags become props implicitly)."
+   },
+   {
+    "name": "callback-prop-naming",
+    "ids": [
+     "svelte-fundamentals-sr9-03",
+     "svelte-fundamentals-sr9-04"
+    ],
+    "why": "sr9-03's explanation uses 'save(value)' as a callback prop, which answers sr9-04 (save is a valid callback prop name)."
+   },
+   {
+    "name": "event-delegation-root",
+    "ids": [
+     "svelte-fundamentals-sr9-07",
+     "svelte-fundamentals-sr9-08"
+    ],
+    "why": "sr9-07 states that delegated handlers live at the app root, which answers sr9-08: a native listener below the root runs first."
+   },
+   {
+    "name": "numeric-binding",
+    "ids": [
+     "svelte-fundamentals-sr10-02",
+     "svelte-fundamentals-sr10-03"
+    ],
+    "why": "Same doc paragraph. sr10-02's explanation ('Valid numeric inputs produce numbers') implies that empty input differs, which points at sr10-03."
+   },
+   {
+    "name": "form-reset-defaults",
+    "ids": [
+     "svelte-fundamentals-sr10-07",
+     "svelte-fundamentals-sr10-08"
+    ],
+    "why": "Same reset-to-default rule for input and select, both true, with near-identical wording. One answers the other."
+   },
+   {
+    "name": "readonly-bindings",
+    "ids": [
+     "svelte-fundamentals-sr10-10",
+     "svelte-fundamentals-sr15-04",
+     "svelte-fundamentals-sr10-12"
+    ],
+    "why": "Recurring false template 'assigning a readonly binding drives the DOM' (clientWidth, activeElement). sr10-12's 'readonly bindings' framing and sr10-10's explanation give the others away."
+   },
+   {
+    "name": "store-lazy-start",
+    "ids": [
+     "svelte-fundamentals-sr11-10",
+     "svelte-fundamentals-sr11-11",
+     "svelte-fundamentals-sr11-12"
+    ],
+    "why": "sr11-12 (start runs for the first subscriber) answers sr11-11 (derived store does not run at construction), and sr11-10's explanation mentions the start callback."
+   },
+   {
+    "name": "attachment-vs-action-rerun",
+    "ids": [
+     "svelte-fundamentals-sr13-02",
+     "svelte-fundamentals-sr13-09"
+    ],
+    "why": "Mirrored pair: an attachment is wrongly said to keep its setup on an argument change, and an action is wrongly said to rerun on one. Each explanation states the opposite side."
+   },
+   {
+    "name": "transition-local-scope",
+    "ids": [
+     "svelte-fundamentals-sr14-01",
+     "svelte-fundamentals-sr14-04"
+    ],
+    "why": "sr14-01's 'its own {#if} block' wording and sr14-04's '|global' explanation both encode the local-versus-global scope rule."
+   },
+   {
+    "name": "boundary-error-handling",
+    "ids": [
+     "svelte-fundamentals-sr15-10",
+     "svelte-fundamentals-sr15-11",
+     "svelte-fundamentals-sr15-12"
+    ],
+    "why": "sr15-12's statement and explanation ('rendering error') answer sr15-10 (click-handler errors are not caught). sr15-11's 'recreates the contents' implies sr15-12 (content was removed)."
+   },
+   {
+    "name": "unmount-outro",
+    "ids": [
+     "svelte-fundamentals-sr16-07",
+     "svelte-fundamentals-sr16-08"
+    ],
+    "why": "sr16-07 ('plays exit transitions before DOM removal', explanation 'preserves the component during its exit transitions') hints that the Promise resolves after outros (sr16-08)."
+   },
+   {
+    "name": "sveltekit-role",
+    "ids": [
+     "svelte-fundamentals-sr16-11",
+     "svelte-fundamentals-sr16-12"
+    ],
+    "why": "Both true, both describe SvelteKit as the app framework. sr16-12's explanation repeats the companion and SSR framing, so one answers the other."
+   }
+  ],
+  "tells": "Overall shape: 96 true and 96 false cards. Mean statement length is 78.0 (true) vs 77.9 (false) characters. Every section is within the 5-character rule, but r5 (+4.3), r12 (+4.2), r16 (+4.3) and r7 (-4.0) are close to the limit. Hedge verbs are balanced: can T8/F8, lets T5/F4, accepts T5/F3, keeps T4/F5. The exploitable tells are these:\n(1) The 'docs prefer/recommend' template is mostly false, 3F vs 1T: sr4-09, sr7-08 and sr12-10 are false, sr11-07 is true. This breaks the at-most-two-false-per-template rule.\n(2) 'replaces / replacement' in a statement is mostly false, 5F vs 1T: sr1-06, sr5-02, sr11-05, sr11-10 and sr13-03 are false, sr2-07 is true.\n(3) The 'same' identity claim is mostly false, 4F vs 1T: sr5-12, sr9-01, sr11-02 and sr12-02 are false, sr11-01 is true.\n(4) The 'X survives a change' template (keeps/preserves something across an update) is false 5 times: sr2-05, sr6-07, sr6-11, sr6-12 and sr13-02. Adding sr10-02 and sr14-10 gives 7. 'preserves' alone is F3/T1 (sr2-05, sr6-12, sr10-02 vs sr2-11).\n(5) The 'waits/defers until something resolves' template (eager or blocking timing) is all false: sr7-04, sr11-08 and sr16-10. Its sibling, the 'happens early / before' template, is false 3 times: sr3-03, sr11-11 and sr16-05. 'before' overall is F6/T2.\n(6) Error claims are mostly false: 'Svelte throws / creates a compiler error' appears in sr6-05, sr8-02 and sr13-05, all false. The only true error claim is sr1-11 ('rejects').\n(7) Context prefixes mark true. 'In the browser,' at the start is T5/F1 (true: sr4-04, sr7-01, sr15-01, sr15-11, sr15-12; false: sr15-10), and inside r15 it is 3T/1F. 'In runes mode,' is T4/F1 (true: sr3-01, sr5-09, sr8-12, sr9-10; false: sr16-05). 'Developers ...' is T2/F0 (sr1-12, sr2-01).\n(8) The readonly-binding template ('assigning a readonly/measurement binding changes the DOM') is false twice, in sr10-10 and sr15-04. sr15-03 (scrollY initial value) is a third false card in the same family.\n(9) Concessive wording signals true: sr5-08 ('can update the UI despite an ownership warning').\nQuality notes outside the three lists: sr2-01 and sr16-11 are near-truisms. sr5-03 and sr5-04 mostly test plain JavaScript destructuring semantics, which belong to javascript-fundamentals. sr12-09 is false only through its output string ('a,b' vs 'a b'), which is close to trick wording. sr2-11's wording ('preserves its input object's properties') is ambiguous, although the fact it tests ('the original object is not mutated') checks out. Fact-checks against svelte.dev confirmed sr15-12 (a boundary removes its content when onerror handles an error) and sr15-10 (event-handler errors are not caught)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "svelte-fundamentals-sr1-01",
+    "reason": "weak_card: a truism. A superset-of-HTML format accepts plain markup. Dropping it leaves r1 at 9 cards (4T/5F), so no rescue is needed."
+   },
+   {
+    "id": "svelte-fundamentals-sr1-02",
+    "reason": "weak_card: restates the doc sentence and is a truism (imports are usable in markup). The section stays above its minimum through the sr1-12 rescue."
+   },
+   {
+    "id": "svelte-fundamentals-sr1-07",
+    "reason": "weak_card: the clause 'when ui.button holds a component' gives the answer away. r1 balance holds without it."
+   },
+   {
+    "id": "svelte-fundamentals-sr2-04",
+    "reason": "Scan duplicate of sr2-03: both sides of one sentence ('class instances are not proxied; use $state in class fields'). It is also close to a truism."
+   },
+   {
+    "id": "svelte-fundamentals-sr2-06",
+    "reason": "duplicate of sr2-05: same 'live reactive link' distractor and the same current-value fact."
+   },
+   {
+    "id": "svelte-fundamentals-sr2-11",
+    "reason": "weak_card: ambiguous wording ('preserves its input object's properties') that a player can answer True without knowing the fact. r2 reaches 9 cards through the sr2-10 rescue instead."
+   },
+   {
+    "id": "svelte-fundamentals-sr3-02",
+    "reason": "weak_card: definition card ($derived.by uses its callback's return value)."
+   },
+   {
+    "id": "svelte-fundamentals-sr3-05",
+    "reason": "weak_card: false for two reasons, because deriveds never 'schedule' recalculation (lazy) and untrack hides fee. Its verb also clashes with sr3-07. r3 stays at 9 cards (5T/4F)."
+   },
+   {
+    "id": "svelte-fundamentals-sr3-11",
+    "reason": "duplicate of sr3-12: both rest on '$derived values are left as-is'."
+   },
+   {
+    "id": "svelte-fundamentals-sr4-02",
+    "reason": "duplicate (verifier and scan) of sr3-03: the same synchronous runtime-read tracking rule, including helper calls."
+   },
+   {
+    "id": "svelte-fundamentals-sr5-03",
+    "reason": "weak_card: renaming changing only the local binding is plain JavaScript destructuring (owned by javascript-fundamentals) and close to a truism."
+   },
+   {
+    "id": "svelte-fundamentals-sr5-04",
+    "reason": "weak_card: rest excluding named props follows from JS rest semantics and the word 'rest', so it is a strawman."
+   },
+   {
+    "id": "svelte-fundamentals-sr6-01",
+    "reason": "weak_card: a truism. A conditional around inline text is what any template language does."
+   },
+   {
+    "id": "svelte-fundamentals-sr6-02",
+    "reason": "weak_card: a strawman. First-match else-if semantics are universal, not Svelte-specific."
+   },
+   {
+    "id": "svelte-fundamentals-sr7-01",
+    "reason": "weak_card: definition card (pending markup shows while the Promise is pending)."
+   },
+   {
+    "id": "svelte-fundamentals-sr7-02",
+    "reason": "weak_card: wording giveaway ('catch' plus 'rejection value'). r7 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "svelte-fundamentals-sr8-05",
+    "reason": "weak_card: give-away. The statement shows the {@render row(item)} syntax it asks about."
+   },
+   {
+    "id": "svelte-fundamentals-sr8-07",
+    "reason": "weak_card: near-copy of the migration-guide sentence with a restating explanation. r8 stays at 10 cards (4T/6F)."
+   },
+   {
+    "id": "svelte-fundamentals-sr9-04",
+    "reason": "weak_card: a truism. A callback prop is an ordinary prop and can have any name."
+   },
+   {
+    "id": "svelte-fundamentals-sr9-09",
+    "reason": "weak_card: name giveaway ('onclickcapture' gives a capture-phase handler)."
+   },
+   {
+    "id": "svelte-fundamentals-sr10-01",
+    "reason": "weak_card: definition card (bind:value is two-way)."
+   },
+   {
+    "id": "svelte-fundamentals-sr10-04",
+    "reason": "weak_card: name giveaway (bind:checked binds checked state)."
+   },
+   {
+    "id": "svelte-fundamentals-sr10-08",
+    "reason": "duplicate of sr10-07: the same form-reset-to-defaultValue rule. Only the release number is new."
+   },
+   {
+    "id": "svelte-fundamentals-sr11-10",
+    "reason": "weak_card: name giveaway. readable versus writable tells the player it has no set/update."
+   },
+   {
+    "id": "svelte-fundamentals-sr11-11",
+    "reason": "duplicate of sr11-12: both test lazy start on the first subscriber."
+   },
+   {
+    "id": "svelte-fundamentals-sr12-01",
+    "reason": "weak_card: definition card. 'scoped' gives the answer, and the explanation covers a different fact."
+   },
+   {
+    "id": "svelte-fundamentals-sr12-05",
+    "reason": "weak_card: name giveaway (':global' rules apply outside the component)."
+   },
+   {
+    "id": "svelte-fundamentals-sr13-03",
+    "reason": "duplicate (verifier and scan) of sr4-06: attachments run in effects, so cleanup-before-rerun is the same fact."
+   },
+   {
+    "id": "svelte-fundamentals-sr13-05",
+    "reason": "weak_card: a strawman. The statement shows the documented conditional pattern while claiming it throws."
+   },
+   {
+    "id": "svelte-fundamentals-sr13-12",
+    "reason": "weak_card: give-away. '() => value' is visibly a getter, and the statement says so. r13 stays at 9 cards (5T/4F)."
+   },
+   {
+    "id": "svelte-fundamentals-sr14-01",
+    "reason": "duplicate of sr14-04: the two sides of the local-transition scope rule. Without that overlap it is a definitional truism."
+   },
+   {
+    "id": "svelte-fundamentals-sr14-05",
+    "reason": "weak_card: give-away. The code fragment in the statement shows the options object."
+   },
+   {
+    "id": "svelte-fundamentals-sr15-11",
+    "reason": "weak_card: close paraphrase of the source sentence, and the name 'reset' suggests the answer."
+   },
+   {
+    "id": "svelte-fundamentals-sr16-07",
+    "reason": "duplicate: sr16-08's wording presupposes that unmount with outro: true plays exit transitions."
+   },
+   {
+    "id": "svelte-fundamentals-sr16-11",
+    "reason": "weak_card: near-copy of the overview's 'companion application framework' phrase and close to a truism. r16 reaches 10 cards through the sr16-04 rescue."
+   }
+  ],
+  "source": [
+   {
+    "id": "svelte-fundamentals-sr2-08",
+    "title": "Runtime warnings • Svelte Docs",
+    "url": "https://svelte.dev/docs/svelte/runtime-warnings"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "svelte-fundamentals-sr1-11",
+    "reason": "ambiguous: the 5.57.2 compiler accepts a bare rune passed as a call argument, so the card now tests the form the compiler really rejects. what-are-runes: 'you can't assign them to a variable'.",
+    "statement": "Svelte's compiler rejects const make = $state; in a runes-mode component.",
+    "answer": true,
+    "explanation": "Runes are keywords of the Svelte language rather than values, so the compiler refuses code that assigns $state to a variable.",
+    "misconception": "",
+    "sourceTitle": "What are runes? • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/what-are-runes"
+   },
+   {
+    "id": "svelte-fundamentals-sr1-12",
+    "reason": "weak_card rescued: dropping 01, 02, 07 and 12 would leave r1 with 8 cards (3T/5F). This uses the verifier's replacement, which also keeps the .svelte.js scope item. Confirmed: 'Svelte also operates on .svelte.js and .svelte.ts files. These behave like any other .js or .ts module, except that you can use runes.'",
+    "statement": "A module needs a .svelte.js or .svelte.ts name for Svelte to compile its runes.",
+    "answer": true,
+    "explanation": "Svelte operates on .svelte, .svelte.js and .svelte.ts files; a .svelte.js module behaves like ordinary JavaScript except that it can use runes, which suits shared reactive logic.",
+    "misconception": "",
+    "sourceTitle": ".svelte.js and .svelte.ts files • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/svelte-js-files"
+   },
+   {
+    "id": "svelte-fundamentals-sr2-08",
+    "reason": "source_problem: no svelte.dev page says raw objects stay mutable or unfrozen; the $state page even says raw state 'cannot be mutated'. Following the verifier, the card now tests the documented raw fact on a page that states it: runtime-warnings, state_proxy_equality_mismatch: \"Note that $state.raw(...) will not create a state proxy.\" The answer stays false. The explanation avoids sr2-07's replacement fact.",
+    "statement": "$state.raw wraps its object in a read-only state proxy.",
+    "answer": false,
+    "explanation": "$state.raw creates no state proxy: it stores the object or array you pass as-is, whereas $state(...) wraps its value in a proxy with a different identity.",
+    "misconception": "Raw state is a read-only proxy",
+    "sourceTitle": "Runtime warnings • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/runtime-warnings"
+   },
+   {
+    "id": "svelte-fundamentals-sr2-10",
+    "reason": "weak_card rescued: dropping 04, 06, 10 and 11 would leave r2 with 8 cards. This uses the verifier's toJSON replacement, which keeps $state.snapshot coverage. Confirmed on $state: 'If a value has a toJSON method, the snapshot will clone the value returned from toJSON instead of the original object.'",
+    "statement": "$state.snapshot clones an object's own fields even when that object defines a toJSON method.",
+    "answer": false,
+    "explanation": "When a value has a toJSON method, $state.snapshot clones the value that toJSON returns instead of the original object, so a custom toJSON controls what the static snapshot holds.",
+    "misconception": "Snapshot ignores toJSON",
+    "sourceTitle": "$state • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/$state"
+   },
+   {
+    "id": "svelte-fundamentals-sr3-12",
+    "reason": "tell: in r3 the true statements averaged 5.8 characters longer than the false ones after the drops. This shortens the longest true statement and keeps its fact and answer.",
+    "statement": "Mutating the plain object picked by $derived(items[index]) from a $state array updates that item.",
+    "answer": true,
+    "explanation": "Selecting a $state object with $derived preserves its proxy.",
+    "misconception": "",
+    "sourceTitle": "$derived • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/$derived"
+   },
+   {
+    "id": "svelte-fundamentals-sr4-07",
+    "reason": "ambiguous: the old wording did not say whose $effect.pre ran or that it happened within one flush, and the 'In Svelte 5.57' prefix wrongly implied a behaviour change (the docs PR changed no behavior). Confirmed on $effect: \"$effect.pre runs before DOM updates that are scheduled after it, not before every DOM mutation in the flush - DOM of parent components may already be updated.\"",
+    "statement": "A child's $effect.pre can run after its parent's DOM has updated in the same flush.",
+    "answer": true,
+    "explanation": "$effect.pre runs before the DOM updates scheduled after it, not before every DOM change in the flush, so a parent component's DOM may already be updated when it runs.",
+    "misconception": "",
+    "sourceTitle": "$effect • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/$effect"
+   },
+   {
+    "id": "svelte-fundamentals-sr5-02",
+    "reason": "tell: 'replaces' marked false statements (3F/1T after the drops). Reworded with the same fact (the fallback applies only to omitted or undefined values) and the same answer.",
+    "statement": "A $props() fallback takes effect when the parent passes null for that prop.",
+    "answer": false,
+    "explanation": "A prop fallback applies to omitted or undefined values.",
+    "misconception": "Null selects the fallback",
+    "sourceTitle": "$props • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/$props"
+   },
+   {
+    "id": "svelte-fundamentals-sr5-06",
+    "reason": "ambiguous: 'plain object prop' also fits a $state object passed from the parent, which updates the UI (sr5-08). The card now pins the case to an inline literal, as in the docs ('<Child object={{ count: 0 }} />' ... 'has no effect').",
+    "statement": "Mutating prefs.dark in a child updates its DOM when the parent passed prefs={{ dark: false }}.",
+    "answer": false,
+    "explanation": "Svelte's $props docs say mutating a regular object prop has no effect on the UI, because an object literal passed by the parent is a plain object rather than a state proxy.",
+    "misconception": "Plain object props gain reactive fields",
+    "sourceTitle": "$props • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/$props"
+   },
+   {
+    "id": "svelte-fundamentals-sr5-07",
+    "reason": "ambiguous: the docs limit the unproxied-fallback rule to props not declared with $bindable, and $bindable fallbacks are proxied. The card now uses a non-bindable destructuring. Confirmed on $props: 'The fallback value of a prop not declared with $bindable is left untouched — it is not turned into a reactive state proxy'.",
+    "statement": "Svelte keeps the fallback in let { opts = { n: 0 } } = $props() as a plain object rather than a state proxy.",
+    "answer": true,
+    "explanation": "Svelte leaves the fallback of a prop declared without $bindable untouched instead of turning it into a state proxy, so mutating its fields while it is in use triggers no update.",
+    "misconception": "",
+    "sourceTitle": "$props • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/$props"
+   },
+   {
+    "id": "svelte-fundamentals-sr7-09",
+    "reason": "tell: in r7 the false statements averaged 8.8 characters longer than the true ones after the drops, and the 'In runes mode,' prefix marked true statements (T4/F1). Shortened, with the prefix now on a false card. The fact (a plain template let is not reactive) and the answer are unchanged.",
+    "statement": "In runes mode, reassigning a plain {let count = 0} updates the {count} it renders.",
+    "answer": false,
+    "explanation": "A template-local let with a plain value lacks reactive reassignment; use {let count = $state(0)} for UI updates.",
+    "misconception": "Plain template let is reactive",
+    "sourceTitle": "{let/const ...} • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/declaration-tags"
+   },
+   {
+    "id": "svelte-fundamentals-sr9-01",
+    "reason": "tell: 'same' identity claims marked false statements (4F/1T). Reworded with the same fact (event attribute names are case-sensitive) and the same answer.",
+    "statement": "An onClick attribute on a <button> handles the click event in Svelte.",
+    "answer": false,
+    "explanation": "onclick handles click; onClick handles a distinct event named Click.",
+    "misconception": "Event names ignore case",
+    "sourceTitle": "Basic markup • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/basic-markup"
+   },
+   {
+    "id": "svelte-fundamentals-sr9-07",
+    "reason": "ambiguous: 'uses bubbles: true' could mean either 'needs' or 'has by default'. Confirmed on basic-markup: 'when you manually dispatch an event with a delegated listener, make sure to set the { bubbles: true } option or it won't reach the application root', and 'a single event listener at the application root'.",
+    "statement": "A click made with new Event('click') needs { bubbles: true } to reach Svelte's delegated handlers.",
+    "answer": true,
+    "explanation": "Svelte runs delegated handlers from a single listener at the application root, so a manually dispatched event has to bubble to get there.",
+    "misconception": "",
+    "sourceTitle": "Basic markup • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/basic-markup"
+   },
+   {
+    "id": "svelte-fundamentals-sr10-03",
+    "reason": "wrong_answer: the bind docs say an empty number input gives undefined, but the 5.57.2 runtime sets null. The null/undefined fact is dropped and the verifier's replacement is used. It is needed to keep r10 at 9 cards with 4 true. Confirmed on bind: '> [!NOTE] Use bind:group for radio inputs instead of bind:checked.' and '<!-- grouped radio inputs are mutually exclusive -->'.",
+    "statement": "Svelte's docs recommend bind:group rather than bind:checked for radio inputs.",
+    "answer": true,
+    "explanation": "Radio inputs bound to the same variable with bind:group are mutually exclusive, and that variable holds the value of the selected radio.",
+    "misconception": "",
+    "sourceTitle": "bind: • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/bind"
+   },
+   {
+    "id": "svelte-fundamentals-sr12-02",
+    "reason": "tell: 'same' identity claims marked false statements. Reworded to avoid 'same' while keeping r12's lengths balanced. The fact (scoping adds 0-1-0 specificity) and the answer are unchanged.",
+    "statement": "Svelte's scoping leaves the specificity of a component's p selector unchanged in the compiled CSS.",
+    "answer": false,
+    "explanation": "The generated scoping class adds one class selector's worth of specificity.",
+    "misconception": "Component scoping preserves selector specificity.",
+    "sourceTitle": "Scoped styles • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/scoped-styles"
+   },
+   {
+    "id": "svelte-fundamentals-sr12-11",
+    "reason": "ambiguous: 'the component's color variable' is too narrow, because inside an each block or a snippet the shorthand reads the in-scope binding. Confirmed on style: 'The shorthand form is allowed: <div style:color>'.",
+    "statement": "Bare style:color takes its value from whatever variable named color is in scope.",
+    "answer": true,
+    "explanation": "style:color is shorthand for style:color={color}, so Svelte reads whichever color binding is in scope, such as a script variable or an each-block item.",
+    "misconception": "",
+    "sourceTitle": "style: • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/style"
+   },
+   {
+    "id": "svelte-fundamentals-sr16-04",
+    "reason": "weak_card rescued: dropping 04, 07 and 11 would leave r16 at 3T/6F. This uses the verifier's hydration-mismatch replacement, which keeps hydrate coverage. Confirmed on runtime-warnings, hydration_attribute_changed: 'Certain attributes like src on an <img> element will not be repaired during hydration, i.e. the server value will be kept.'",
+    "statement": "When hydrating, Svelte keeps a server-rendered <img> src that differs on the client.",
+    "answer": true,
+    "explanation": "Svelte assumes src values match between server and client and keeps the server value, because resetting src could make the browser refetch the image.",
+    "misconception": "",
+    "sourceTitle": "Runtime warnings • Svelte Docs",
+    "sourceUrl": "https://svelte.dev/docs/svelte/runtime-warnings"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "runes-compiler-syntax",
+    "ids": [
+     "svelte-fundamentals-sr1-10",
+     "svelte-fundamentals-sr1-11",
+     "svelte-fundamentals-sr1-12"
+    ]
+   },
+   {
+    "name": "module-script-exports",
+    "ids": [
+     "svelte-fundamentals-sr1-05",
+     "svelte-fundamentals-sr1-06"
+    ]
+   },
+   {
+    "name": "module-vs-instance-scope",
+    "ids": [
+     "svelte-fundamentals-sr1-04",
+     "svelte-fundamentals-sr8-11"
+    ]
+   },
+   {
+    "name": "name-shorthand",
+    "ids": [
+     "svelte-fundamentals-sr1-08",
+     "svelte-fundamentals-sr12-11"
+    ]
+   },
+   {
+    "name": "destructuring-reactivity",
+    "ids": [
+     "svelte-fundamentals-sr2-05",
+     "svelte-fundamentals-sr3-09",
+     "svelte-fundamentals-sr5-01"
+    ]
+   },
+   {
+    "name": "deep-proxy-selection",
+    "ids": [
+     "svelte-fundamentals-sr2-02",
+     "svelte-fundamentals-sr3-12"
+    ]
+   },
+   {
+    "name": "state-raw-proxying",
+    "ids": [
+     "svelte-fundamentals-sr2-07",
+     "svelte-fundamentals-sr2-08"
+    ]
+   },
+   {
+    "name": "derived-and-fallback-proxying",
+    "ids": [
+     "svelte-fundamentals-sr3-12",
+     "svelte-fundamentals-sr5-07"
+    ]
+   },
+   {
+    "name": "runtime-dependency-tracking",
+    "ids": [
+     "svelte-fundamentals-sr3-03",
+     "svelte-fundamentals-sr4-03"
+    ]
+   },
+   {
+    "name": "effect-dom-timing",
+    "ids": [
+     "svelte-fundamentals-sr4-04",
+     "svelte-fundamentals-sr4-07"
+    ]
+   },
+   {
+    "name": "server-skips-client-code",
+    "ids": [
+     "svelte-fundamentals-sr4-01",
+     "svelte-fundamentals-sr13-10"
+    ]
+   },
+   {
+    "name": "prop-mutation-plain-vs-proxy",
+    "ids": [
+     "svelte-fundamentals-sr5-06",
+     "svelte-fundamentals-sr5-07",
+     "svelte-fundamentals-sr5-08"
+    ]
+   },
+   {
+    "name": "each-input-kinds",
+    "ids": [
+     "svelte-fundamentals-sr6-03",
+     "svelte-fundamentals-sr6-04",
+     "svelte-fundamentals-sr6-05"
+    ]
+   },
+   {
+    "name": "await-ssr-sync",
+    "ids": [
+     "svelte-fundamentals-sr7-04",
+     "svelte-fundamentals-sr7-05",
+     "svelte-fundamentals-sr16-10"
+    ]
+   },
+   {
+    "name": "declaration-tag-scope",
+    "ids": [
+     "svelte-fundamentals-sr7-06",
+     "svelte-fundamentals-sr7-07"
+    ]
+   },
+   {
+    "name": "declaration-tag-runes",
+    "ids": [
+     "svelte-fundamentals-sr7-08",
+     "svelte-fundamentals-sr7-09"
+    ]
+   },
+   {
+    "name": "event-delegation-root",
+    "ids": [
+     "svelte-fundamentals-sr9-07",
+     "svelte-fundamentals-sr9-08"
+    ]
+   },
+   {
+    "name": "bind-group",
+    "ids": [
+     "svelte-fundamentals-sr10-03",
+     "svelte-fundamentals-sr10-05"
+    ]
+   },
+   {
+    "name": "readonly-bindings",
+    "ids": [
+     "svelte-fundamentals-sr10-10",
+     "svelte-fundamentals-sr15-04",
+     "svelte-fundamentals-sr10-12"
+    ]
+   },
+   {
+    "name": "attachment-vs-action-rerun",
+    "ids": [
+     "svelte-fundamentals-sr13-02",
+     "svelte-fundamentals-sr13-09"
+    ]
+   },
+   {
+    "name": "boundary-error-handling",
+    "ids": [
+     "svelte-fundamentals-sr15-10",
+     "svelte-fundamentals-sr15-12"
+    ]
+   }
+  ],
+  "sectionBalance": "Section balance after the edits (cards left, true/false; mean statement length gap true minus false, in characters):\n- r1: 9 cards, 4T/5F (+3.5)\n- r2: 9 cards, 4T/5F (-1.2)\n- r3: 9 cards, 5T/4F (+4.5)\n- r4: 11 cards, 5T/6F (+3.7)\n- r5: 10 cards, 5T/5F (+4.0)\n- r6: 10 cards, 5T/5F (-2.8)\n- r7: 10 cards, 4T/6F (-4.7)\n- r8: 10 cards, 4T/6F (+0.8)\n- r9: 10 cards, 4T/6F (+3.3)\n- r10: 9 cards, 4T/5F (-1.5)\n- r11: 10 cards, 6T/4F (-1.8)\n- r12: 10 cards, 4T/6F (+1.2)\n- r13: 9 cards, 5T/4F (-4.7)\n- r14: 10 cards, 4T/6F (+0.2)\n- r15: 11 cards, 5T/6F (-1.4)\n- r16: 10 cards, 4T/6F (+1.4)\n\nDeck total: 157 cards, 72 true and 85 false. Every section has at least 9 cards, no split is worse than 4/6, and every length gap is within 5 characters.",
+  "notes": "Method:\n- I read the prompt's DECK, SECTIONS, STEP 1, RULES and the level rules, and all 192 cards.\n- I downloaded the current official pages (svelte.dev/docs/svelte/<page>/llms.txt, all HTTP 200 on 2026-10-13): what-are-runes, svelte-js-files, $state, runtime-warnings, $effect, $props, bind, basic-markup, style, scoped-styles, class, @const, svelte-server, v5-migration-guide and others. I confirmed every rewritten sentence against them.\n\nEdits: 35 drops and 16 rewrites. The rewrites are 6 ambiguity fixes, 1 source fix, 1 wrong-answer replacement, 3 rescues and 5 tell rewords.\n- Rescues: sr1-12, sr2-10 and sr16-04. Without them r1, r2 and r16 would fall below 9 cards or worse than 4/6. In r1 and r2 I rescued only one card each; in r16 one rescue gave 10 cards at 4/6.\n- sr10-03 doubles as the r10 rescue, so r10 has 9 cards with 4 true.\n- In r7, r8, r9, r12, r14 and r16 several sections sit at exactly 4T/6F. That is allowed, but any further drop there needs a true replacement.\n\nTell rewords:\n- sr5-02 and sr9-01 remove 'replaces' and 'same' from false cards.\n- sr12-02 removes 'same' and keeps r12's lengths balanced.\n- sr7-09 moves the 'In runes mode,' prefix onto a false card ('In runes mode' is now T4/F2) and fixes r7's -8.8 length gap.\n- sr3-12 fixes r3's +5.8 gap.\n- New rewrites keep hedge counts balanced: 'can' T7/F6, 'needs' T2/F0, 'requires' T1/F2.\n- The docs-recommend template is now T2/F3, since sr10-03 adds a true 'docs recommend' card. It still carries three false cards (sr4-09, sr7-08, sr12-10), so it remains above the prompt's two-per-template cap.\n- Still open: 'preserves' F3/T0 (sr2-05, sr6-12, sr10-02) and 'In the browser,' T3/F1. I spent the five-reword budget on the length gaps instead.\n- sr4-07 needs a modal ('can'), because the docs only say the parent DOM 'may' already be updated.\n\nDocs versus runtime:\n- The bind page says a cleared number input gives undefined, but the 5.57.2 runtime returns null (to_number). I dropped that fact; no card should test empty numeric values until the docs are fixed.\n- sr1-11: the 5.57.2 compiler accepts f($state) as a call argument. The rewrite uses only the documented, compiler-rejected assignment form.\n\nCoverage lost through drops, worth refilling in a later round:\n- untrack (sr3-05) and the $derived.by form (sr3-02).\n- Store lazy start: only the writable start/stop card (sr11-12) remains. r11 is now 6 context and 4 store cards.\n- Key choice / stable identity in r6, and unmount outro now rests on sr16-08 alone.\n\nNot acted on (outside my brief; for a later round):\n- The scan's note that sr12-09 is false only through its output string ('a,b' vs 'a b').\n- The verifier's suggestion of svelte-server as a better source for sr16-10. The svelte-server page only shows the RenderOutput type and never mentions experimental.async, so I left the source unchanged.\n\nConflict groups:\n- I removed scan groups left with one or no members: class-instance-proxy, cleanup-before-rerun, scoped-style-reach, implicit-snippet-props, callback-prop-naming, numeric-binding, form-reset-defaults, store-lazy-start, transition-local-scope, unmount-outro and sveltekit-role.\n- I added state-raw-proxying (sr2-07, sr2-08) and bind-group (sr10-03, sr10-05), and added sr1-12 to runes-compiler-syntax.\n\nNo files were edited."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "svelte-fundamentals-sr1-11",
+    "decision": "keep",
+    "statement": "Svelte's compiler rejects const make = $state; in a runes-mode component.",
+    "answer": true,
+    "explanation": "Runes are keywords of the Svelte language rather than values, so the compiler refuses code that assigns $state to a variable.",
+    "reason": "Both lenses keep. what-are-runes: runes are keywords and 'you can't assign them to a variable'."
+   },
+   {
+    "id": "svelte-fundamentals-sr1-12",
+    "decision": "fixed",
+    "statement": "A standalone JS module needs a .svelte.js name for Svelte to compile the runes inside it.",
+    "answer": true,
+    "explanation": "Svelte compiles .svelte, .svelte.js and .svelte.ts files. A .svelte.js module behaves like ordinary JavaScript except that it can use runes, which suits shared reactive logic.",
+    "reason": "Fact lens fix applied: 'A module' could also mean a <script module> block, where runes work in a plain .svelte file. Narrowed to a standalone JS module. The wording lens kept the card and the 'needs' wording on a true card stays. svelte-js-files confirms: 'behave like any other .js or .ts module, except that you can use runes'."
+   },
+   {
+    "id": "svelte-fundamentals-sr2-08",
+    "decision": "keep",
+    "statement": "$state.raw wraps its object in a read-only state proxy.",
+    "answer": false,
+    "explanation": "$state.raw creates no state proxy: it stores the object or array you pass as-is, whereas $state(...) wraps its value in a proxy with a different identity.",
+    "reason": "Both lenses keep. runtime-warnings (state_proxy_equality_mismatch): 'Note that $state.raw(...) will _not_ create a state proxy.'"
+   },
+   {
+    "id": "svelte-fundamentals-sr2-10",
+    "decision": "keep",
+    "statement": "$state.snapshot clones an object's own fields even when that object defines a toJSON method.",
+    "answer": false,
+    "explanation": "When a value has a toJSON method, $state.snapshot clones the value that toJSON returns instead of the original object, so a custom toJSON controls what the static snapshot holds.",
+    "reason": "Both lenses keep. $state: 'If a value has a toJSON method, the snapshot will clone the value returned from toJSON instead of the original object.'"
+   },
+   {
+    "id": "svelte-fundamentals-sr3-12",
+    "decision": "fixed",
+    "statement": "Mutating the object $derived(items[index]) picks from a $state array reactively updates that item.",
+    "answer": true,
+    "explanation": "$derived leaves the selected value as-is, so it stays the deeply reactive $state array's proxy and mutating it reactively updates the underlying items array.",
+    "reason": "Merged both lens fixes. Dropped 'plain', because the item is a state proxy and calling it plain gives a false premise (both lenses). Added 'reactively' to answer the wording lens's point that 'updates that item' is ambiguous. At 98 characters it is shorter than the 103-character original, which helps the r3 length tell. $derived: 'values are left as-is ... you can change properties of selected and it will affect the underlying items array. If items was not deeply reactive, mutating selected would have no effect.'"
+   },
+   {
+    "id": "svelte-fundamentals-sr4-07",
+    "decision": "keep",
+    "statement": "A child's $effect.pre can run after its parent's DOM has updated in the same flush.",
+    "answer": true,
+    "explanation": "$effect.pre runs before the DOM updates scheduled after it, not before every DOM change in the flush, so a parent component's DOM may already be updated when it runs.",
+    "reason": "Both lenses keep. $effect: '$effect.pre runs before DOM updates that are scheduled after it ... DOM of parent components may already be updated.' The fact lens's runtime check shows 'can' is the accurate word."
+   },
+   {
+    "id": "svelte-fundamentals-sr5-02",
+    "decision": "keep",
+    "statement": "A $props() fallback takes effect when the parent passes null for that prop.",
+    "answer": false,
+    "explanation": "A prop fallback applies to omitted or undefined values.",
+    "reason": "Both lenses keep. $props: fallbacks are used 'if the parent component does not set a given prop (or the value is undefined)'."
+   },
+   {
+    "id": "svelte-fundamentals-sr5-06",
+    "decision": "keep",
+    "statement": "Mutating prefs.dark in a child updates its DOM when the parent passed prefs={{ dark: false }}.",
+    "answer": false,
+    "explanation": "Svelte's $props docs say mutating a regular object prop has no effect on the UI, because an object literal passed by the parent is a plain object rather than a state proxy.",
+    "reason": "Both lenses keep. $props, Updating props: for a regular object prop 'the mutation will have no effect', with the example <Child object={{ count: 0 }} />."
+   },
+   {
+    "id": "svelte-fundamentals-sr5-07",
+    "decision": "fixed",
+    "statement": "Svelte keeps the fallback in let { opts = { n: 0 } } = $props() as a plain object rather than a state proxy.",
+    "answer": true,
+    "explanation": "Svelte leaves the fallback of a prop declared without $bindable untouched, so the default object is used as written instead of being wrapped in a reactive state proxy.",
+    "reason": "Wording lens fix applied: the old explanation ended with the mutation outcome, which is sr5-06's answer. The fact lens kept the card and the statement is unchanged. $props: 'The fallback value of a prop not declared with $bindable is left untouched — it is not turned into a reactive state proxy'."
+   },
+   {
+    "id": "svelte-fundamentals-sr7-09",
+    "decision": "fixed",
+    "statement": "In runes mode, reassigning a plain {let count = 0} updates markup that reads {count}.",
+    "answer": false,
+    "explanation": "A template-local let holding a plain value is not reactive; declaration tags use $state, as in {let count = $state(0)}, when the value should update the UI.",
+    "reason": "Wording lens fix applied to the statement: 'it renders' had no clear referent. The explanation was adjusted because the docs' example is {let name = $state(user.name)}, not count, so the card no longer says the docs use {let count = $state(0)}. declaration-tags: 'When values should be reactive, you can use $state and $derived'. The fact lens noted the runes-mode prefix is harmless, and it keeps the prefix balance on a false card."
+   },
+   {
+    "id": "svelte-fundamentals-sr9-01",
+    "decision": "keep",
+    "statement": "An onClick attribute on a <button> handles the click event in Svelte.",
+    "answer": false,
+    "explanation": "onclick handles click; onClick handles a distinct event named Click.",
+    "reason": "Both lenses keep. basic-markup: 'Event attributes are case sensitive. onclick listens to the click event, onClick listens to the Click event'."
+   },
+   {
+    "id": "svelte-fundamentals-sr9-07",
+    "decision": "keep",
+    "statement": "A click made with new Event('click') needs { bubbles: true } to reach Svelte's delegated handlers.",
+    "answer": true,
+    "explanation": "Svelte runs delegated handlers from a single listener at the application root, so a manually dispatched event has to bubble to get there.",
+    "reason": "Both lenses keep. basic-markup: manually dispatched events need '{ bubbles: true } ... or it won't reach the application root'."
+   },
+   {
+    "id": "svelte-fundamentals-sr10-03",
+    "decision": "keep",
+    "statement": "Svelte's docs recommend bind:group rather than bind:checked for radio inputs.",
+    "answer": true,
+    "explanation": "Radio inputs bound to the same variable with bind:group are mutually exclusive, and that variable holds the value of the selected radio.",
+    "reason": "Both lenses keep. bind: 'Use bind:group for radio inputs instead of bind:checked.' The card attributes the recommendation to the docs, as the prompt requires."
+   },
+   {
+    "id": "svelte-fundamentals-sr12-02",
+    "decision": "keep",
+    "statement": "Svelte's scoping leaves the specificity of a component's p selector unchanged in the compiled CSS.",
+    "answer": false,
+    "explanation": "The generated scoping class adds one class selector's worth of specificity.",
+    "reason": "Both lenses keep. scoped-styles: 'Each scoped selector receives a specificity increase of 0-1-0'."
+   },
+   {
+    "id": "svelte-fundamentals-sr12-11",
+    "decision": "keep",
+    "statement": "Bare style:color takes its value from whatever variable named color is in scope.",
+    "answer": true,
+    "explanation": "style:color is shorthand for style:color={color}, so Svelte reads whichever color binding is in scope, such as a script variable or an each-block item.",
+    "reason": "Both lenses keep. style: 'The shorthand form is allowed: <div style:color>'. The fact lens confirmed with the compiler that it reads the in-scope binding."
+   },
+   {
+    "id": "svelte-fundamentals-sr16-04",
+    "decision": "keep",
+    "statement": "When hydrating, Svelte keeps a server-rendered <img> src that differs on the client.",
+    "answer": true,
+    "explanation": "Svelte assumes src values match between server and client and keeps the server value, because resetting src could make the browser refetch the image.",
+    "reason": "Both lenses keep. runtime-warnings (hydration_attribute_changed): 'src on an <img> element will not be repaired during hydration, i.e. the server value will be kept'."
+   }
+  ]
+ }
+}

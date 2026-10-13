@@ -36,9 +36,12 @@ const routes: { name: string; pool: Card[] }[] = decks.flatMap((deck) => {
 // one of them keep the groups, or makes another route lose them, this list has to change with it.
 const GROUPS_GIVE_WAY = [
   "azure-az-900/STO",
+  "csharp-fundamentals/RES",
   "docker-fundamentals/REG",
   "docker-fundamentals/SEC",
   "linux-command-line/SYS",
+  "tailwind-css/THM",
+  "tailwind-css/UTL",
   "terraform-associate/MOD",
   "typescript-fundamentals/ENM",
 ];

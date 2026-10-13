@@ -1,0 +1,1420 @@
+{
+ "deck": "prometheus-fundamentals",
+ "verdicts": [
+  {
+   "section": "r1",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (prometheus.io/docs/guides/utf8/), current",
+     "evidence": "https://prometheus.io/docs/guides/utf8/: \"By default, Prometheus 3.0 accepts all UTF-8 strings as valid metric and label names.\" Pinned config https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md: \"[ metric_name_validation_scheme: <string> | default \\\"utf8\\\" ]\". The UTF-8 guide only shows the legacy value and never names the utf8 value the card sets.",
+     "problem": "The answer is a name giveaway: a statement that a setting with the value utf8 accepts UTF-8 names can be answered True from the wording alone. It also hides the useful operator fact, that utf8 is already the default in Prometheus 3, so the explicit setting changes nothing.",
+     "suggestedFix": "Replace (answer true). Statement: \"Prometheus 3.15.0 accepts a scraped metric named http.server.duration under its default validation settings.\" Explanation: \"Since 3.0, metric_name_validation_scheme defaults to utf8. Setting it to legacy makes Prometheus reject names outside the classic ASCII pattern.\" Source: https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md (or https://prometheus.io/docs/guides/utf8/)."
+    },
+    {
+     "id": "prometheus-fundamentals-sr1-04",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (prometheus.io/docs/concepts/data_model/), current",
+     "evidence": "https://prometheus.io/docs/concepts/data_model/: \"Label names beginning with __ (two underscores) MUST be reserved for internal Prometheus use.\" Card: \"Prometheus reserves label names beginning with __ for its internal use.\"",
+     "problem": "The fact is correct, but the statement is the source sentence with a few words changed, which breaks the original-wording rule. It is also a recall-only definition that an operator meets on the first read of the data model page.",
+     "suggestedFix": "Reword as an applied case (answer true). Statement: \"An exporter label named __region uses a prefix that Prometheus's data model reserves for internal Prometheus use.\" Explanation: \"Label names that start with two underscores belong to Prometheus itself, such as __address__ during target configuration. Application labels should use other names.\" Same source URL."
+    }
+   ],
+   "notes": "I checked all 12 r1 cards. 6 are true and 6 are false. Every source URL loaded (HTTP 200) and is official: the data model page, querying basics, the UTF-8 guide, exposition formats, and tsdb/head_append.go at the v3.15.0 tag.\n\nCards that pass, with the deciding evidence:\n- sr1-01: data model says \"Every time series is uniquely identified by its metric name and optional key-value pairs called labels\" and \"The change of any label's value, including adding or removing labels, will create a new time series\". This is basic but not a strawman for this audience.\n- sr1-02: querying basics says \"http_requests_total is equivalent to {__name__=\\\"http_requests_total\\\"}\". The data model also says the metric name is internally represented as a __name__ label pair.\n- sr1-03: data model says \"Labels with an empty label value are considered equivalent to labels that do not exist\".\n- sr1-06: data model says \"For the best compatibility it's recommended to stick to the recommended (\\\"SHOULD\\\") character set\". The may_change volatility setting is justified.\n- sr1-07: data model says \"Label values MAY contain any UTF-8 characters\".\n- sr1-08: exposition formats says \"NaN, +Inf, and -Inf are valid values\". The data model's float64 also covers it.\n- sr1-09: data model says \"a millisecond-precision timestamp\".\n- sr1-10: querying basics says \"Both vectors and time series may contain a mix of float samples and histogram samples\".\n- sr1-11: exposition formats says \"When metric_name is quoted with double quotes, it appears inside the braces instead of outside\". The data model page shows the same {\"<metric name>\", ...} series notation and would be a closer source for the phrase \"series notation\", but the current URL does support the card.\n- sr1-12: v3.15.0 head_append.go memSeries.appendable rejects a float at the same timestamp with a different value (NewDuplicateFloatErr) and accepts only exact duplicates. The out-of-order head and vertical compaction also keep a single value per timestamp, so I found no reading under which the true answer could be defended.\n\nDuplicate check across the deck: sr7-09 (nonempty matcher validity), sr7-12 (vector() with an empty label set), sr5-04 (removal of __meta_ labels) and sr9-11 (arithmetic dropping __name__) are related to r1 cards but test different facts. I found no duplicate.\n\nPrompt rules I verified on the official pages, all correct:\n- Pins: prometheus.io/download lists 3.15.0 / 2026-09-24 as Latest and 3.13.4 / 2026-09-29 as LTS, so the LTS release is newer by date but is a separate track. Alertmanager is 0.34.1 / 2026-09-17, Latest.\n- Data-model UTF-8 trap: matches the data model page and the UTF-8 guide.\n- Native histograms: stable since 3.8.0, the feature flag is a no-op since 3.9 (spec page), scrape_native_histograms defaults to false, and always_scrape_classic_histograms defaults to false (v3.15.0 configuration.md).\n\nI found no prompt rule to be wrong for this section."
+  },
+  {
+   "section": "r2",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr2-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (prometheus.io/docs/practices/histograms/)",
+     "evidence": "https://prometheus.io/docs/practices/histograms/: \"Histograms and summaries both record observations, typically request durations or response sizes.\" The statement restates this sentence almost word for word. It is also the type's basic definition, the KCNA-level identification the prompt says to go beyond.",
+     "problem": "Near-copy of a source sentence and a definition card: anyone who knows what a histogram is answers True. It teaches nothing an operator needs to choose or read a metric type.",
+     "suggestedFix": "Replacement (TRUE, keeps the 6/6 balance): \"Prometheus's metric types page advises native over classic histograms when the instrumentation library supports them.\" Explanation: \"Native histograms need no bucket boundaries set during instrumentation and give higher resolution, so the docs suggest preferring them where supported.\" Source: https://prometheus.io/docs/concepts/metric_types/ (\"you should probably prefer native histograms over classic histograms\")."
+    },
+    {
+     "id": "prometheus-fundamentals-sr2-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (prometheus.io/docs/practices/naming/)",
+     "evidence": "https://prometheus.io/docs/practices/naming/: \"...SHOULD have a suffix describing the unit, in plural form.\" The statement asks whether response_latency, a name with no unit word in it, follows the \"unit-suffix convention\".",
+     "problem": "Give-away from the wording: the statement names a unit-suffix convention and shows a name with no unit, so a player who knows nothing about Prometheus can answer False. The explanation also mentions _seconds, which gives away sr2-06 (seconds as the base unit for durations).",
+     "suggestedFix": "Replacement (FALSE): \"Prometheus naming guidance expresses a percentage metric as 0 to 100 with a _percent suffix.\" Explanation: \"The naming guide's base unit for percentages is a ratio from 0 to 1, used as a suffix in names such as disk_usage_ratio.\" Same URL (Base Units table: \"Percent ratio Values are 0–1 (rather than 0–100). ratio is only used as a suffix for names like disk_usage_ratio\")."
+    },
+    {
+     "id": "prometheus-fundamentals-sr2-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (prometheus.io/docs/practices/naming/)",
+     "evidence": "https://prometheus.io/docs/practices/naming/: \"Do not put the label names in the metric name, as this introduces redundancy and will cause confusion if the respective labels are aggregated away.\" Same page: \"Note that an accumulating count has total as a suffix\".",
+     "problem": "The example name http_requests_total_method is false for two reasons: it puts the label name in the metric name, and _total is not at the end. The rule asks for exactly one reason. The misplaced _total also gives the answer away to anyone who knows the _total suffix (sr2-08), so the card does not test the label-redundancy fact.",
+     "suggestedFix": "Replacement (FALSE): \"Prometheus naming guidance recommends http_requests_by_method_total for request counts split by a method label.\" Explanation: \"Prometheus advises keeping label names out of metric names, as in http_requests_total{method=\\\"GET\\\"}, because aggregating the label away leaves a misleading name.\" Same URL."
+    },
+    {
+     "id": "prometheus-fundamentals-sr2-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (prometheus.io/docs/practices/rules/)",
+     "evidence": "https://prometheus.io/docs/practices/rules/: \"level represents the aggregation level and labels of the rule output.\" The statement is \"The level in Prometheus's recommended recording-rule names describes the output's aggregation labels.\"",
+     "problem": "This is the source sentence with a word or two changed. The answer can also be guessed from the word \"level\", so the card does not earn its difficulty 3 (a hard card should test a real distinction). The explanation only repeats the statement.",
+     "suggestedFix": "Replacement (TRUE, same factKey area, recording-rule naming): \"Prometheus's recording-rule naming guidance strips _total from a counter's name in rules that apply rate().\" Explanation: \"In level:metric:operations, the metric part stays unchanged except that _total is dropped after rate() or irate(), as in instance_path:requests:rate5m.\" Same URL (\"metric is the metric name and should be unchanged other than stripping _total off counters when using rate() or irate()\")."
+    }
+   ],
+   "notes": "I checked all 12 r2 cards against the official pages. All 4 source URLs return 200 and are official and current: concepts/metric_types, practices/naming, practices/histograms and practices/rules. Each one supports its card's answer, so no card has a wrong answer or a source problem.\n\nThe 8 cards that pass, with the source sentence that settles each:\n- sr2-01: \"can only increase or be reset to zero on restart\".\n- sr2-02: \"do not use a counter for the number of currently running processes; instead use a gauge\", and gauges cover \"the number of concurrent requests\".\n- sr2-04: a gauge histogram represents \"the current state of a distribution\".\n- sr2-05: \"The Prometheus server does not yet make use of the type information and flattens all types except native histograms into untyped time series of floating point values\". Even the experimental type-and-unit-labels flag only adds __type__/__unit__ labels; type-aware PromQL help is described as future work, so False holds. The phrase \"operators choose functions\" in its explanation reads ambiguously (human operators or PromQL operators?) but is not wrong.\n- sr2-06: Base Units table, \"Time seconds\".\n- sr2-08: \"an accumulating count has total as a suffix\".\n- sr2-09: \"mixing the capacity of a queue with the current number of elements in the queue is not\" good.\n- sr2-10: \"SHOULD have a (single-word) application prefix\".\n\nAll 4 flags are weak_card, and each replacement keeps its card's answer, so the section stays at 6 true and 6 false. The replacements do not repeat facts tested by r3 (sr3-01, -04, -05, -12), r8 or r6-09.\n\nPrompt rules I checked:\n- Pins are correct. prometheus.io/download lists prometheus-3.15.0 and alertmanager-0.34.1, plus a separate 3.13.4 entry, which I take to be the LTS. The v3.15.0 release page loads.\n- The rule that naming guidance is a recommendation, not validation, is confirmed: \"not required for using Prometheus, but can serve as both a style-guide and a collection of best practices\". One nuance the prompt glosses over: the same guide uses MUST for a single unit and a single quantity, so the cards are right to say \"naming guidance\" rather than \"Prometheus validates\".\n\nI found no wrong prompt rule that bears on r2."
+  },
+  {
+   "section": "r3",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr3-07",
+     "verdict": "ambiguous",
+     "urlStatus": "200 OK, https://prometheus.io/docs/prometheus/latest/querying/functions/ (official, current)",
+     "evidence": "functions page, histogram_quantile(): \"Since the `le` label is required by `histogram_quantile()` to deal with classic histograms, it has to be included in the `by` clause.\" Aggregation itself does not keep le. sum(rate(x_bucket[5m])) drops it, and the user has to name it in by. The statement has no actor (\"Classic histogram aggregation ... retains le\"), so it reads as automatic behavior. An expert could answer False on that reading.",
+     "problem": "The statement does not say who keeps le. Read literally, it says aggregation keeps le by itself, which is false. That breaks the 'name the actor' rule and makes the true answer arguable.",
+     "suggestedFix": "Keep answer true, name the actor: \"To aggregate classic buckets for histogram_quantile(), the by clause of sum() must include le.\" (94 chars). Explanation: \"histogram_quantile() needs le to identify classic bucket boundaries; sum by (job) without le merges all buckets into one and breaks the calculation.\" (148 chars). Same URL."
+    },
+    {
+     "id": "prometheus-fundamentals-sr3-04",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://prometheus.io/docs/practices/histograms/ (official, current)",
+     "evidence": "histograms practice page: \"The instrumented program calculates a number of pre-configured quantiles (e.g. the median or the 90th percentile) over pre-configured time windows ... and exposes them as additional metrics. Prometheus implements this approach in the form of a metric type called _summary_.\" The answer is right.",
+     "problem": "Strawman, and false for two reasons. No learner thinks a p99 can be rebuilt from only a sum and a count, since those give just an average. The statement is false both on who calculates and on what from, so the intended misconception (server-side calculation) is not cleanly tested.",
+     "suggestedFix": "Keep answer false: \"The Prometheus server computes a summary's quantile values when a query reads its quantile series.\" (98 chars). Explanation: \"The instrumented application calculates summary quantiles over its configured sliding window and exposes them as ready-made series; PromQL only reads them.\" (155 chars). Same URL."
+    },
+    {
+     "id": "prometheus-fundamentals-sr3-12",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://prometheus.io/docs/practices/histograms/ (official, current)",
+     "evidence": "histograms practice page: \"Both the sum and count of observations are additive, so you can easily aggregate – after the rate, but before the division, and no matter what the underlying metric type is.\" The card's own explanation says \"Summary sums and counts are additive, so they combine across instances.\"",
+     "problem": "Truism by arithmetic: a sum of sums is a sum and a count of counts is a count, so the answer needs no Prometheus knowledge. It is also the other side of the distinction sr3-05 tests (quantiles do not aggregate, sums and counts do), which the rule on two-sided distinctions forbids.",
+     "suggestedFix": "Replace with a true card: \"A Prometheus summary that exposes just _sum and _count series is a legitimate quantile-less summary.\" (about 95 chars). Explanation: \"Quantile-less summaries are a legitimate use: they still track the count and sum of observations, which is enough to compute a rate or an average.\" (146 chars). Same URL (section 'Instrumentation library support' and 'Count and sum of observations')."
+    },
+    {
+     "id": "prometheus-fundamentals-sr3-06",
+     "verdict": "weak_card",
+     "urlStatus": "200 OK, https://prometheus.io/docs/prometheus/latest/querying/functions/ (official, current)",
+     "evidence": "functions page: \"In the (common) case that a quantile value does not coincide with a bucket boundary, the `histogram_quantile()` function interpolates the quantile value within the bucket the quantile value falls into.\" The answer is right.",
+     "problem": "Name giveaway and wording tell: histogram_quantile() 'estimates a percentile from histogram bucket data' just restates the function name. A player who knows nothing about Prometheus answers True. 'Estimates' is the only content and nothing in the statement suggests otherwise.",
+     "suggestedFix": "Keep answer true and test the documented behavior: \"For a quantile in a classic histogram's +Inf bucket, histogram_quantile() returns the second-highest bucket's upper bound.\" (about 118 chars). Explanation: \"Classic buckets give no position inside the +Inf bucket, so histogram_quantile() falls back to the highest finite le boundary for quantiles located there.\" (154 chars). Same URL (quote: \"If a quantile is located in the highest bucket, the upper bound of the second highest bucket is returned.\")."
+    },
+    {
+     "id": "prometheus-fundamentals-sr3-11",
+     "verdict": "source_problem",
+     "urlStatus": "200 OK, https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md (official, matches pin)",
+     "evidence": "The v3.15.0 configuration reference only says: \"Specifies whether to convert scraped classic histograms into native histograms with custom buckets. [ convert_classic_histograms_to_nhcb: <bool> | default = false ]\". It never says the classic boundaries are kept. That is stated at https://prometheus.io/docs/concepts/metric_types/: \"However, the buckets of NHCBs still have the same layout as in their classic counterparts, statically configured during instrumentation\".",
+     "problem": "The cited page confirms the setting name but not the fact in the explanation (boundaries kept, not mapped to exponential buckets). There is also a minor giveaway: NHCB means 'native histograms with custom buckets', so anyone who knows the acronym reads the answer from the setting name.",
+     "suggestedFix": "Change the source URL to https://prometheus.io/docs/concepts/metric_types/ (or https://prometheus.io/docs/practices/histograms/), keeping the pinned config reference in appliesTo. Optionally avoid the acronym in the statement: \"Prometheus maps scraped classic histogram boundaries onto exponential buckets when it converts them to native histograms.\" (false, same explanation)."
+    }
+   ],
+   "notes": "I checked all 12 r3 cards (6 true: 01, 06, 07, 08, 09, 12; 6 false: 02, 03, 04, 05, 10, 11). All the replacements I suggest keep the original answer, so the 6/6 balance holds. All source URLs load (HTTP 200) and are official.\n\nCards that pass, with the evidence:\n- 01: metric_types says \"every bucket counts all observations less than or equal to the upper boundary\".\n- 02: the native histogram spec says \"NHCBs (schema -53) are only compatible with each other\", and incompatibility gives a warn annotation.\n- 03: practices/histograms says a sum drop with negative observations \"would erroneously be considered a counter reset in the rate(...)\"; it notes this only affects summaries and classic histograms.\n- 05: practices/histograms says \"you cannot aggregate quantiles\".\n- 08: the composite sample \"contains the count and sum of observations and a dynamic number of buckets\".\n- 09: the spec says \"Histograms with standard schemas can always be converted to the smallest (i.e. lowest resolution) common schema by decreasing the resolution\".\n- 10: functions.md at v3.15.0 says \"Float samples are ignored and do not show up in the returned vector.\"\n\nI found no wrong answers.\n\nDuplicates within the deck: sr3-03 and sr8-02 are distinct facts (negative-sum false resets versus rate reset adjustment). sr3-02 and sr3-09 cover the two different reconciliation regimes, not one fact. sr3-12 and sr3-05 are two sides of one distinction, which is flagged above.\n\nPrompt rules I confirmed on official pages, none found wrong:\n- download page lists prometheus-3.15.0 and alertmanager-0.34.1 with dates 2026-09-24 and 2026-09-17, and separately an LTS line 3.13.4.\n- native histogram spec: stable since v3.8.0, the feature flag is \"a true no-op\" since v3.9, and from v4 scrape/send will default to true.\n- v3.15.0 configuration.md: scrape_native_histograms default false, always_scrape_classic_histograms default false, convert_classic_histograms_to_nhcb default false.\n- functions.md: classic aggregation needs le in by, native aggregation works without it.\n\nSide observation: practices/histograms still says native histogram exposition requires protobuf, with text support \"underway\". The prompt rightly excludes exposition and library matrices.\n\nFiles I read: content/raw/prometheus-fundamentals-b1.json (the r3 cards) and content/prompts/ready-v2-prometheus-fundamentals.txt."
+  },
+  {
+   "section": "r4",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr4-01",
+     "verdict": "duplicate",
+     "urlStatus": "200, https://prometheus.io/docs/introduction/overview/ loads (official, current)",
+     "evidence": "Overview: \"time series collection happens via a pull model over HTTP\". This supports the card, but the fact is already tested by kubernetes-kcna-s4.1-01 (factKey prometheus-pull-scrape): \"In Prometheus's primary collection model, monitored targets push samples to the Prometheus server.\" The prompt's overlap rule says KCNA already introduces Prometheus and this deck must go deeper rather than repeat those identification cards. The explanation also only restates the statement.",
+     "problem": "This is the same pull-versus-push identification fact as the KCNA card, written the other way round. It is also an easy guess from the word 'scrape' and teaches nothing new at this deck's depth.",
+     "suggestedFix": "Replace (answer True). Statement: \"Prometheus records up=0 for a target whose scrape runs longer than its scrape_timeout.\" Explanation: \"A scrape that exceeds scrape_timeout counts as a failed scrape, so Prometheus stores up=0 for that target, which makes a slow endpoint look like a missing one.\" Source: https://prometheus.io/docs/concepts/jobs_instances/ (\"`1` if the instance is healthy, i.e. reachable, or `0` if the scrape failed\") together with the config page (\"Per-scrape timeout when scraping this job.\")."
+    },
+    {
+     "id": "prometheus-fundamentals-sr4-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://prometheus.io/docs/concepts/jobs_instances/ loads (official, current)",
+     "evidence": "Jobs and instances: \"`job`: The configured job name that the target belongs to. `instance`: The `<host>:<port>` part of the target's URL that was scraped.\" The source supports the answer.",
+     "problem": "The wording gives the answer away. Every endpoint 'within a scrape job' has the same job label by construction, so a player can reason to False without knowing Prometheus. The job versus instance split is also KCNA-level identification.",
+     "suggestedFix": "Replace (answer False, keeps the 6/6 balance). Statement: \"Prometheus merges two scrape_configs that share one job_name into a single job when it loads its configuration.\" Explanation: \"Prometheus rejects such a configuration: each job_name must be unique across all scrape configurations, so a second scrape config with the same name makes loading fail.\" Source: https://prometheus.io/docs/prometheus/latest/configuration/configuration/ (\"Where `<job_name>` must be unique across all scrape configurations.\"; v3.15.0 config.go returns \"found multiple scrape configs with job name\")."
+    },
+    {
+     "id": "prometheus-fundamentals-sr4-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md loads (official, version-tagged)",
+     "evidence": "v3.15.0 configuration.md: \"Specifies whether to additionally scrape the classic parts of a histogram, even if it is also exposed with native parts\" and \"If scrape_native_histograms is true, the histogram is ingested as a native histogram ... However, there will be a classic histogram if (and only if) always_scrape_classic_histograms is set to true.\" The answer is correct.",
+     "problem": "The setting's name gives the answer away: 'always_scrape_classic_histograms: true' plainly says that classic histograms are kept. A player who knows nothing can answer True. The useful operator consequence, losing classic series by default once native scraping is on, is not tested.",
+     "suggestedFix": "Replace (answer True). Statement: \"With scrape_native_histograms: true, Prometheus drops the classic buckets of a dual-exposed histogram by default.\" Explanation: \"When a target exposes both forms, Prometheus stores only the native histogram unless always_scrape_classic_histograms is true, which keeps the classic series too.\" Same v3.15.0 configuration.md URL; appliesTo \"Prometheus 3.15.0, scrape_native_histograms: true\"."
+    }
+   ],
+   "notes": "Checked all 12 r4 cards against the live pages and the v3.15.0 tag. Every source URL returns 200. The living configuration.md is byte-identical to the v3.15.0 tag.\n\nPrompt rules confirmed:\n- prometheus.io/download lists prometheus-3.15.0 and the separate LTS 3.13.4, plus alertmanager-0.34.1.\n- The v3.15.0 CHANGELOG dates 3.15.0 to 2026-09-24.\n- Native histograms became stable in 3.8.0 (#17232). The native-histogram flag is a no-op since 3.9.0 (#17528).\n- scrape_native_histograms defaults to false.\n- scrape_classic_histograms was renamed to always_scrape_classic_histograms in 3.0 (#15178).\n- 3.0 removed the implicit text fallback for invalid or missing Content-Type and added fallback_scrape_protocol (#15136).\n\nCards that pass:\n- 03: evaluation_interval schedules rule evaluation, not scrapes.\n- 04: config.go v3.15.0 rejects an explicit scrape_timeout greater than scrape_interval and clamps an inherited global timeout to the job interval, so 'effective' is accurate.\n- 05: per-job override of scrape_interval.\n- 06: \"After relabeling, the `instance` label is set to the value of `__address__` by default\".\n- 07: up=1 means a successful scrape, not application health.\n- 08: scrape_duration_seconds is the \"duration of the scrape\".\n- 09: honor_labels true keeps \"label values from the scraped data\".\n- 10: v3 \"will now fail the scrape in such cases\".\n- 11: default false in v3.15.0.\n\nMinor issues, not flagged:\n1) Card 07's source page itself says up is \"1 if the instance is healthy, i.e. reachable\". The answer still holds, but the page does not state the explanation's 'application-specific signals' clause.\n2) Card 11's explanation says activation happens \"globally or for the job\". Since 3.13.0 (#18929), relabeling can also override it per target through __scrape_native_histograms__, so the prompt's 'global or per-job' framing is incomplete. It is not wrong.\n3) The 3.15.0 CHANGELOG adds an OM2.0 scrape format (#18606) that the scrape_protocols list does not mention. No r4 card depends on it.\n\nPrompt rules found wrong: none for r4.\n\nThe flagged replacements keep the section's 6 true / 6 false balance: 01 True, 02 False, 12 True. Overlap check against r5, r6 and r14: sr4-07 does not duplicate any r6 card, and no other section card tests honor_labels or always_scrape_classic_histograms."
+  },
+  {
+   "section": "r5",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr5-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://prometheus.io/docs/prometheus/latest/configuration/configuration/ (live page matches the v3.15.0 docs/configuration/configuration.md)",
+     "evidence": "The config reference (relabel_config) says: \"Relabeling is a powerful tool to dynamically rewrite the label set of a target before it gets scraped.\" and \"drop: Drop targets for which regex matches the concatenated source_labels.\" The answer (false) is right. But the statement names the stage as \"target relabeling\", and the scrape_config intro says relabel_configs modify targets \"before scraping\". So the wording all but gives the answer away. The statement tests when target relabeling happens, while its factKey (relabel-drop-target-match) and explanation are about concatenated source_labels matching, so the fact the card claims to teach is never tested. The real misconception is mixing up relabel_configs and metric_relabel_configs, and the wording rules that out.",
+     "problem": "The answer can be read from the phrase \"target relabeling\", so this is close to a strawman. The statement and the factKey/explanation also test different facts.",
+     "suggestedFix": "Replace (answer false): \"A drop rule in relabel_configs removes matching series from the samples Prometheus scrapes from a target.\" Explanation: \"In relabel_configs, drop removes whole targets before any scrape happens; dropping individual scraped series needs the same action in metric_relabel_configs.\" Same URL. (Avoid a regex-anchoring replacement: sr7-06 already tests anchoring.)"
+    },
+    {
+     "id": "prometheus-fundamentals-sr5-11",
+     "verdict": "weak_card",
+     "urlStatus": "200, https://prometheus.io/docs/prometheus/latest/configuration/configuration/",
+     "evidence": "The <remote_write> section says: \"write_relabel_configs is relabeling applied to samples before sending them to the remote endpoint. Write relabeling is applied after external labels. This could be used to limit which samples are sent.\" The answer (true) is correct, but the statement only repeats what the option name says (write + relabel = choosing what is written remotely). A player who knows nothing about Prometheus can guess True from the name.",
+     "problem": "The answer can be read from the option name write_relabel_configs. The card does not test the useful distinction an operator needs: write relabeling changes only the outgoing stream, not local ingestion.",
+     "suggestedFix": "Replace (answer true): \"Dropping a series with write_relabel_configs stops remote sending while Prometheus still stores it locally.\" Explanation: \"Write relabeling filters only the outgoing stream to that remote endpoint; to stop a series from being ingested into local storage, use metric_relabel_configs instead.\" Same URL."
+    }
+   ],
+   "notes": "Checked all 12 r5 cards (6 true: 01, 03, 05, 08, 11, 12; 6 false: 02, 04, 06, 07, 09, 10). The suggested fixes keep the 6/6 balance. Both pins are confirmed on https://prometheus.io/download/ today: Prometheus 3.15.0 / 2026-09-24 Latest (LTS is 3.13.4 / 2026-09-29, listed separately) and Alertmanager 0.34.1 / 2026-09-17 Latest. I found no wrong prompt rule for r5. The collection trap is confirmed on the pinned and live config reference: target relabeling happens before scraping, __ labels are removed after target relabeling, and \\\"Metric relabeling does not apply to automatically generated timeseries such as up\\\". The live page and the v3.15.0 configuration.md agree word for word on every sentence used here.\n\nHow each card was verified:\n- 01: schema allows static_configs and *_sd_configs in one scrape_config.\n- 02: \\\"Changes to all defined files are detected via disk watches and applied immediately\\\" and \\\"Only changes resulting in well-formed target groups are applied\\\".\n- 03: \\\"applied to the label set of each target in order of their appearance in the configuration file\\\"; relabel.go ProcessBuilder loops cfgs in order.\n- 04: target.go \\\"Meta labels are deleted after relabelling\\\"; doc \\\"Labels starting with __ will be removed from the label set after target relabeling is completed\\\".\n- 05: target.go reads host from __address__. The \\\"TCP scrapes\\\" qualifier correctly excludes __unix_socket__, which v3.15.0 documents.\n- 06: \\\"__param_<name> label is set to the value of the first passed URL parameter called <name>\\\"; target.go URL() writes it into params[ks][0].\n- 08: replace substitutes ${1}, ${2}.\n- 09: labelkeep \\\"Match regex against all label names\\\"; code calls MatchString(l.Name).\n- 10: verified by the up exclusion quoted above.\n- 12: \\\"Alert relabeling is applied after external labels\\\"; notifier/alert.go relabelAlerts adds missing external labels before ProcessBuilder.\n\nNo duplicates with other sections:\n- sr1-04 (reserved __ prefix) is a different fact from 04.\n- sr4-06 (instance comes from the address) is a different fact from 05.\n- sr4-07 (up=1 meaning) is a different fact from 10.\n- sr14-04 (external labels fill-in) is a different fact from 11/12.\n\nMinor, not flagged: cards 02, 03, 04, 05, 06, 08 and 09 cite Go source files at the v3.15.0 tag. These load (200) and do support the claims through code or comments. However, the config reference https://prometheus.io/docs/prometheus/latest/configuration/configuration/ (#file_sd_config and #relabel_config) states each of them in plain prose. The prompt's own source rule allows implementation sources only \\\"when needed\\\", so the docs page would be the better player-facing source for all seven. Card 05 is borderline as a name giveaway (__address__ used as the address), but it is an allowed easy card and passes."
+  },
+  {
+   "section": "r6",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr6-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (prometheus.io/docs/practices/naming/), current",
+     "evidence": "https://prometheus.io/docs/practices/naming/: \"Do not use labels to store dimensions with high cardinality (many different label values), such as user IDs, email addresses, or other unbounded sets of values.\" The answer (false) is correct, but the card copies the source's own example (email addresses), and nobody who has studied labels would answer True that customer emails are a suitable request-metric label. That makes it a strawman at KCNA identification depth. The deck's r6 source, https://prometheus.io/docs/practices/instrumentation/, has a less obvious form of the bounded-dimension fact: \"If you are unsure, start with no labels and add more labels over time as concrete use cases arise.\"",
+     "problem": "Strawman and near-copy of the source's example. The answer can be guessed from common sense about unbounded per-user values, so the card teaches nothing beyond the KCNA-level cardinality warning.",
+     "suggestedFix": "Replacement (answer false, keeps the section at 6 true / 6 false): statement \"Prometheus instrumentation guidance suggests adding labels up front and removing unused ones later.\" Explanation: \"When unsure, Prometheus advises starting with no labels and adding them as concrete use cases arise, because each extra label set is another time series with RAM, CPU and disk costs.\" URL: https://prometheus.io/docs/practices/instrumentation/ (factKey can stay bounded-label-dimensions)."
+    }
+   ],
+   "notes": "I checked all 12 r6 cards (sr6-01 to sr6-12, in prometheus-fundamentals-b2.json). I fetched the three r6 source pages and the naming page with curl; all returned HTTP 200, are official prometheus.io pages and are current. Each passing card has a settling sentence: 01 writing_exporters (\"If you are instrumenting your own code, the general rules of how to instrument code with a Prometheus client library should be followed\"; also /docs/instrumenting/exporters/: exporters are for cases \"where it is not feasible to instrument a given system ... directly\"); 02 writing_exporters (\"Metrics should only be pulled from the application when Prometheus scrapes them, exporters should not perform scrapes based on their own timers\"); 03 (\"If a metric is particularly expensive to retrieve, i.e. takes more than a minute, it is acceptable to cache it. This should be noted in the HELP string.\"); 04 instrumentation (\"The key metrics in such a system are the number of performed queries, errors, and latency\"); 05 (\"When they end is suggested, as it will line up with the error and latency stats\"); 06 (\"The key metric of a batch job is the last time it succeeded\"); 07 (\"export a default value such as 0 for any time series you know may exist in advance\"); 08 (\"export the Unix timestamp at which it happened ... time() - my_timestamp_metric\"); 10 (\"The latter [myexporter_up] is better where there's still some useful metrics you can get even with a failed scrape\"); 11 pushing (\"Usually, the only valid use case for the Pushgateway is for capturing the outcome of a service-level batch job\"); 12 (\"The Pushgateway never forgets series pushed to it ... unless those series are manually deleted via the Pushgateway's API\"). None of these depends on a version.\n\nMinor issues I did not flag:\n(a) sr6-02's explanation (\"ties ordinary value collection to the scrape request\") gives no reason. Suggested rewrite: \"Exporters should fetch values synchronously when Prometheus scrapes them, not on their own timers, so each scrape reflects the system's current state.\"\n(b) sr6-02 and sr6-03 both come from the same Scheduling paragraph (the rule and its caching exception). Neither answer gives the other away, so I did not call them duplicates. Merge them if you want a tighter deck.\n(c) sr6-12: pushed series are also lost when the Pushgateway itself restarts without --persistence.file. The statement is about the pushing process exiting, so the answer stands.\n(d) There are no conflicts with other sections. sr10-10 (exporter timestamps and staleness) and sr1-09 (timestamp precision) rest on different facts from sr6-08.\n\nPrompt rules: the r6 rules hold on the official pages. These are known-zero initialization, bounded dimensions, event timestamps as values, collecting during scrapes with the documented HELP-noted caching qualification, the Pushgateway being principally for service-level batch outcomes, and pushed series persisting until deleted.\nThere are two documentation tensions the deck author should know about:\n(1) The instrumentation page says batch-job gauges \"should be pushed to a PushGateway\" without qualification. The pushing page limits this to service-level jobs and sends machine-level batch jobs to the Node Exporter textfile collector. sr6-11 follows the stricter pushing page, which is fine.\n(2) writing_exporters still says \"Only [a-zA-Z0-9:_] are valid in metric names\". That contradicts the prompt's UTF-8 data-model rule, which data_model supports, so no card should cite writing_exporters for name validity.\nI did not re-verify the version pins (Prometheus 3.15.0, Alertmanager 0.34.1), because no r6 card depends on them."
+  },
+  {
+   "section": "r7",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr7-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (https://prometheus.io/docs/prometheus/latest/querying/basics/); it matches v3.15.0 docs/querying/basics.md and the v3.15.0 grammar",
+     "evidence": "basics: \"The metric name must not be one of the keywords bool, on, ignoring, group_left and group_right. The following expression is illegal: on{} # Bad! A workaround for this restriction is to use the __name__ label: {__name__=\"on\"} # Good!\" The v3.15.0 promql/parser/generated_parser.y metric_identifier rule leaves out ON, IGNORING, GROUP_LEFT, GROUP_RIGHT and BOOL, and lex.go emits ON as a keyword. The answer True is correct.",
+     "problem": "The answer is right, but the card is parser trivia rated difficulty 3. The prompt says hard cards should test a real distinction between two similar things, not an obscure detail. The useful part for an operator is how to select such a metric, and the explanation leaves that out. The factKey (keyword-metric-selector-workaround) names the workaround, but the card tests only the restriction.",
+     "suggestedFix": "Replacement (answer True): statement \"PromQL selects a stored metric named on through the selector {__name__=\\\"on\\\"}.\" Explanation: \"PromQL reserves bool, on, ignoring, group_left and group_right, so on{} fails to parse; a matcher on the internal __name__ label still selects a metric with that name.\" Same URL; set difficulty to 2. Or drop."
+    }
+   ],
+   "notes": "I checked all 12 r7 cards: 6 true (01, 03, 06, 07, 10, 12) and 6 false (02, 04, 05, 08, 09, 11). Every answer is correct for Prometheus 3.15.0.\n\nEvidence per card:\n- 02, 05, 06, 08, 09, 10: the live basics page and the v3.15.0 docs/querying/basics.md agree. Quotes: \"Regex matches are fully anchored\", \"Multiple matchers can be used for the same label name; they all must pass\", \"Vector selectors must either specify a name or at least one label matcher that does not match the empty string ... {job=~\\\".*\\\"} # Bad!\", and \"=: Select labels that are exactly equal to the provided string\".\n- 03: the API page says \"evaluates an expression query over a range of time\" and \"step: Query resolution step width\". The basics sentence \"a range query at equally-spaced steps between a start and an end time\" is the stronger source.\n- 04: basics says \"Range queries only support scalar-typed and instant-vector-typed expressions.\"\n- 07: the migration guide says \"The . pattern in regular expressions in PromQL matches newline characters.\" It adds that this also applies to relabel configs.\n- 01: v3.15.0 parser/functions.go declares time() with ReturnType: ValueTypeScalar. The functions doc never states the type, so the implementation source is justified.\n- 09: parse.go line 919 has \"vector selector must contain at least one non-empty matcher\".\n- 11: funcScalar returns NaN when it finds more than one float, and the functions doc says \"If the input vector does not have exactly one element with a float sample, scalar will return NaN\".\n- 12: functions doc says \"returns it as a single-element instant vector with no labels\".\n\nMinor points I did not flag:\n- 09 and 11 cite Go source even though the docs pages state the same fact more readably. The basics page has the exact {job=~\".*\"} example, and the functions page covers scalar(). Switching would help players, but the current URLs do support the cards.\n- 01 adds \"when evaluated as an instant query\". The statement is still true, but time() is a scalar in range queries too, so the qualifier is unnecessary.\n- Wording tell: the hedge verbs \"supports\" (05) and \"can use\" (09) appear only in false statements in this section, none in true ones. Please rebalance across the deck as the prompt requires.\n- Coverage gaps: no r7 card tests float versus native histogram elements, and no r7 card tests empty-label matching. sr1-03 covers empty-versus-absent labels in r1, so there is no duplicate.\n- No duplicates found against other sections. sr10-03 (@ across range-query steps) and the r5 regex cards rest on different facts.\n\nPrompt rules checked:\n- The download page lists Prometheus 3.15.0 (2026-09-24) as Latest, separate from LTS 3.13.4 (2026-09-29), and Alertmanager 0.34.1 (2026-09-17) as Latest. This matches the pins.\n- The PromQL trap rules for r7 match the official pages: regex dot matches newlines in Prometheus 3, and a range query is repeated evaluation rather than the range-vector type.\n- The basics keyword list (bool, on, ignoring, group_left, group_right) matches the v3.15.0 grammar. The grammar also allows newer keywords such as fill (only when not followed by a parenthesis), anchored and smoothed as metric names. That does not affect any card.\n- I found no prompt rule that is wrong for this section."
+  },
+  {
+   "section": "r8",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr8-09",
+     "verdict": "ambiguous",
+     "urlStatus": "200, official (prometheus.io/docs/specs/native_histograms/)",
+     "evidence": "Spec, counter reset considerations: \"At this point in the procedure, both histograms have the same schema and zero bucket width ... any of the following constitutes a counter reset: ... A drop in the population count of any bucket ... This includes the case where a populated bucket disappears\" (https://prometheus.io/docs/specs/native_histograms/). functions.md v3.15.0 resets(): \"Any decrease in any bucket ... but also the disappearance of any previously populated bucket, a decrease of the zero-bucket width, or any schema change that is not a compatible decrease of resolution.\"",
+     "problem": "The answer (true) is right in substance, but the qualifier \"with unchanged bucket layout\" contradicts itself: when a populated bucket disappears, the set of represented buckets (spans) has changed, so the bucket layout has changed. The spec's actual precondition is the same schema and zero-bucket width. A careful expert could read the card as impossible or false. Difficulty 1 is also too low for native-histogram reset detection, and the hedge \"can detect\" is vague.",
+     "suggestedFix": "Answer true. Statement: \"resets(h[5m]) counts a reset when a populated bucket of native counter histogram h disappears and the schema stays the same.\" Explanation: \"At the same schema and zero-bucket width, a missing bucket counts as a population of zero, so a populated bucket that disappears is a drop and resets() counts it.\" Set difficulty 2 or 3. Keep the URL https://prometheus.io/docs/specs/native_histograms/, or use https://prometheus.io/docs/prometheus/latest/querying/functions/#resets."
+    },
+    {
+     "id": "prometheus-fundamentals-sr8-07",
+     "verdict": "duplicate",
+     "urlStatus": "200, official code file (github.com/prometheus/prometheus/blob/v3.15.0/promql/functions.go)",
+     "evidence": "functions.go v3.15.0: \"// extrapolatedRate is a utility function for rate/increase/delta. ... extrapolates if the first/last sample is close to the boundary\". Docs: delta \"is extrapolated to cover the full time range as specified in the range vector selector\" and rate \"extrapolates to the ends of the time range\" (https://prometheus.io/docs/prometheus/latest/querying/functions/).",
+     "problem": "rate() and delta() share one extrapolation routine, so this card tests the same fact as sr8-03 (rate-window-end-extrapolation). Both cards are true and use the same \"extrapolates ... across/toward the selected window\" template, so the second one becomes a wording tell. The gauge-specific purpose of delta() is left untested.",
+     "suggestedFix": "Answer true. Statement: \"The Prometheus docs restrict delta() to gauges, covering both float gauges and gauge native histograms.\" Explanation: \"delta() takes a gauge's first-to-last difference; on a counter, a process restart would show up as a large negative change, which is why counters use rate() or increase().\" URL: https://prometheus.io/docs/prometheus/latest/querying/functions/#delta"
+    },
+    {
+     "id": "prometheus-fundamentals-sr8-05",
+     "verdict": "duplicate",
+     "urlStatus": "200, official (prometheus.io functions page)",
+     "evidence": "\"Note that when combining rate() with an aggregation operator (e.g. sum()) ... always take a rate() first, then aggregate. Otherwise rate() cannot detect counter resets when your target restarts.\" (https://prometheus.io/docs/prometheus/latest/querying/functions/#rate)",
+     "problem": "The answer (true) is correct, but the statement asserts that rate() performs reset correction (\"keeps reset correction separate for the contributing series\"). That gives away the answer to sr8-02, which is false because rate() does adjust for resets. Knowing one card answers the other. The rate-before-aggregation fact can be tested without restating reset correction.",
+     "suggestedFix": "Answer true. Statement: \"For float counters c, Prometheus documentation says to apply rate() before sum() when the two are combined.\" Explanation: \"Taking rate() per series first lets it see each counter's own drop on restart; summing raw counters first can hide one series' drop behind growth in another.\" URL unchanged."
+    },
+    {
+     "id": "prometheus-fundamentals-sr8-03",
+     "verdict": "explanation_error",
+     "urlStatus": "200, but an implementation file (github.com/prometheus/prometheus/blob/v3.15.0/promql/functions.go); the docs page states the fact directly",
+     "evidence": "functions.go v3.15.0: \"If samples are close enough to the (lower or upper) boundary of the range, we extrapolate the rate all the way to the boundary ... We still extrapolate the rate in this case, but not all the way to the boundary, but only by half of the average duration between samples\". Docs: \"the calculation extrapolates to the ends of the time range, allowing for missed scrapes or imperfect alignment of scrape cycles with the range's time period.\" (https://prometheus.io/docs/prometheus/latest/querying/functions/#rate)",
+     "problem": "The answer (true) is right. The explanation says rate() extrapolates \"when scrapes fall near the window edges\", which suggests no extrapolation otherwise. In fact rate() always extrapolates: all the way to the edge when a sample is within 1.1 average intervals of it, and by half an average interval otherwise. A Go source file is also a poor source when the docs page says it plainly.",
+     "suggestedFix": "Keep the statement (true). Explanation: \"rate() stretches the observed increase out to the range boundaries to allow for missed or misaligned scrapes; when a sample sits far from an edge, it extends only half a sampling interval.\" URL: https://prometheus.io/docs/prometheus/latest/querying/functions/#rate"
+    },
+    {
+     "id": "prometheus-fundamentals-sr8-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official (prometheus.io/docs/specs/native_histograms/)",
+     "evidence": "\"A change in flavor from counter histogram to gauge histogram and vice versa does not count as a change for changes().\" (https://prometheus.io/docs/specs/native_histograms/). The same rule is in functions.md v3.15.0: \"A counter histogram sample followed by a gauge histogram sample with otherwise exactly the same values, or vice versa, does not count as a change.\"",
+     "problem": "The answer (false) is correct and sourced. But a series that flips between counter and gauge flavor while every value stays identical almost never happens in practice. This is an obscure edge case, not the real distinction the prompt asks hard cards to test, and it is beyond a working operator's depth. The statement is also near the 120-character limit, and the basic purpose of changes() goes untested.",
+     "suggestedFix": "Answer false. Statement: \"For float gauge g, changes(g[5m]) counts the rises of g within that window and skips its drops.\" Explanation: \"changes() counts every sample-to-sample value change in the range, whether up or down, which suits state or config-hash gauges; resets() is the function that counts decreases.\" URL: https://prometheus.io/docs/prometheus/latest/querying/functions/#changes"
+    },
+    {
+     "id": "prometheus-fundamentals-sr8-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, implementation file (github.com/prometheus/prometheus/blob/v3.15.0/promql/functions.go)",
+     "evidence": "The code supports the card only indirectly: \"returns the result as either per-second (if isRate is true) or overall\". The docs page says it outright: \"It is syntactic sugar for rate(v) multiplied by the number of seconds under the specified time range window\" (https://prometheus.io/docs/prometheus/latest/querying/functions/#increase).",
+     "problem": "The answer (false) and the explanation are correct. But the cited source is a 3,000-line Go file that never states the rate-times-window relation in prose. The prompt allows implementation sources only when they are needed, and here the current docs page covers the whole card.",
+     "suggestedFix": "Change the URL to https://prometheus.io/docs/prometheus/latest/querying/functions/#increase, with title \"Query functions\". Keep the card."
+    },
+    {
+     "id": "prometheus-fundamentals-sr8-11",
+     "verdict": "source_problem",
+     "urlStatus": "200, implementation file (github.com/prometheus/prometheus/blob/v3.15.0/promql/functions.go)",
+     "evidence": "Docs: \"Note that all values in the specified interval have the same weight in the aggregation even if the values are not equally spaced throughout the interval.\" (https://prometheus.io/docs/prometheus/latest/querying/functions/#aggregation_over_time). funcAvgOverTime in functions.go only computes a plain mean and says nothing about weighting.",
+     "problem": "The answer (true) and the explanation are correct, but the cited code never states the equal-weight property; a reader would have to infer it from the arithmetic. The docs page states it explicitly.",
+     "suggestedFix": "Change the URL to https://prometheus.io/docs/prometheus/latest/querying/functions/#aggregation_over_time, with title \"Query functions\". Keep the card."
+    }
+   ],
+   "notes": "I checked all 12 cards of section r8 (sr8-01 to sr8-12; all are in prometheus-fundamentals-b2.json).\n\nSources: I read the live functions page (https://prometheus.io/docs/prometheus/latest/querying/functions/) and the same file at the pinned tag (raw prometheus/prometheus v3.15.0 docs/querying/functions.md). They differ only in that main adds the experimental integral(), which does not affect any card. I also read promql/functions.go at v3.15.0 (extrapolatedRate, funcResets, funcChanges) and the native histograms spec (prometheus/docs, docs/specs/native_histograms.md). Every source URL in the section returns 200.\n\nPins: on https://prometheus.io/download/ today, prometheus-3.15.0 is listed alongside a separate LTS build, 3.13.4, and alertmanager-0.34.1 is listed. That is consistent with the prompt's pins. I did not re-check the release dates.\n\nPrompt rules: the PromQL trap rule matches the docs in every point that r8 uses. rate is an extrapolated per-second average, irate uses the last two data points, increase is \\\"syntactic sugar for rate(v) multiplied by the number of seconds\\\" and can be non-integer, and the docs say to take rate()/irate() first and then aggregate. I found no prompt rule wrong for r8. One nuance for the authors: in v3.15.0, extrapolatedRate skips left-side extrapolation when a counter has a start timestamp inside the range, and it has separate anchored/smoothed paths. Both are experimental features, excluded by the prompt's default-flags assumption, so sr8-03 still holds.\n\nPassing cards:\n- sr8-01: irate uses the last two data points.\n- sr8-02: rate adjusts for resets (but see the sr8-05 overlap).\n- sr8-06: the docs say \\\"Use rate for alerts and slow-moving counters\\\".\n- sr8-08: deriv uses simple linear regression.\n- sr8-12: rate on a native histogram returns a histogram; the spec says \\\"All these functions return gauge histograms as results\\\".\n\nLower-priority source hygiene: sr8-07 and sr8-08 also cite functions.go when the docs page states their facts directly. I recommend switching every r8 card to the functions docs page with an anchor and keeping the GitHub code only where truly needed.\n\nBalance: after the suggested replacements the section stays at 6 true and 6 false. Current average statement length is 97.8 for true and 102.2 for false, within the 5-character rule.\n\nNo other card in the deck duplicates an r8 fact. sr2-01 (counter restart) and sr3-03 (negative observations making _sum decrease) are adjacent topics but test different facts."
+  },
+  {
+   "section": "r9",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr9-12",
+     "verdict": "duplicate",
+     "urlStatus": "engine.go at v3.15.0 loads (200), but it is Go code with no prose; the operators page states the fact directly",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/: \"vector1 and vector2 results in a vector consisting of the elements of vector1 for which there are elements in vector2 with exactly matching label sets\" and \"As these logical/set binary operators do not interact with the sample values, they work in the same way for float samples and histogram samples.\" The card is true. Its only twist, that a zero-valued sample still counts as present, is the same principle as sr10-11 (\"A zero-valued sample still supplies an element\") and sr11-07 (\"including elements with a zero value\"). A player who knows one of these knows all three.",
+     "problem": "This is the third card in the deck on the idea that a zero value is still a present element. It also uses the implementation file as its source.",
+     "suggestedFix": "Replace (answer true): \"For float vectors a and b, PromQL a or b keeps a's value when both sides hold the same label set.\" Explanation: \"or returns every element of a, then adds only those elements of b whose label sets have no match in a, so the left side wins where both exist.\" URL: https://prometheus.io/docs/prometheus/latest/querying/operators/"
+    },
+    {
+     "id": "prometheus-fundamentals-sr9-06",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/: \"avg(v) divides the sum of v by the number of aggregated samples in the same way as the / operator.\" The answer (false) is correct. The statement describes a mechanism that cannot exist: avg(m) receives only the means and no request volume, so a learner who studied would not answer True. It also tests the same equal-weighting idea as sr8-11 (avg_over_time gives equal weight to samples).",
+     "problem": "Strawman. The real misconception is that an average of per-instance averages gives the overall mean, not that avg() secretly weights inputs.",
+     "suggestedFix": "Replace (answer false): \"For float per-instance latency means m, PromQL avg(m) returns the mean latency across all requests.\" Explanation: \"avg() divides the sum of the series values by the number of series, so an idle instance counts as much as a busy one; a request-weighted mean needs request totals.\" Same URL."
+    },
+    {
+     "id": "prometheus-fundamentals-sr9-08",
+     "verdict": "weak_card",
+     "urlStatus": "ast.go at v3.15.0 loads (200). It is a Go struct definition; the only supporting text is a code comment, \"MatchingLabels contains the labels which define equality of a pair of elements\"",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/: \"on(<label list>): Only match on provided labels.\" The statement (\"can match ... on(job) when job values agree and both sides have one series per job\") restates what on(job) means. It sets up the textbook one-to-one case, so the answer is clear from the wording and there is no realistic misconception behind it.",
+     "problem": "Definition card that gives away its answer, with an implementation file as the source.",
+     "suggestedFix": "Replace (answer true): \"For float vectors a and b, PromQL a / on(job) b drops the instance label from its one-to-one result series.\" Explanation: \"In one-to-one matching, the labels listed in on() become the output label set, so labels outside that list, such as instance, are removed from the result.\" URL: https://prometheus.io/docs/prometheus/latest/querying/operators/ (\"with the grouping labels becoming the output label set\"; confirmed in v3.15.0 engine.go resultMetric: matching.On -> lb.Keep(MatchingLabels))."
+    },
+    {
+     "id": "prometheus-fundamentals-sr9-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads (200), official, current",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/: \"by does the opposite and drops labels that are not listed in the by clause, even if their label values are identical between all elements of the vector.\" The card is true, but \"sum by(job)(g) merges series sharing job\" can be read straight off the keyword. A player who does not know PromQL would guess True.",
+     "problem": "The answer can be read from the wording. The documented, non-obvious part of by (it drops unlisted labels even when their values are identical) is left untested.",
+     "suggestedFix": "Replace (answer true): \"For float gauge g, PromQL sum by(job)(g) drops a region label even when every input series shares the same region.\" Explanation: \"by keeps only the listed labels and drops the rest even when their values are identical across all inputs; without(instance) would keep region.\" Same URL."
+    },
+    {
+     "id": "prometheus-fundamentals-sr9-10",
+     "verdict": "source_problem",
+     "urlStatus": "https://github.com/prometheus/prometheus/blob/v3.15.0/promql/engine.go loads (200), but it is a 170 KB Go file with no sentence a learner can check",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/: \"By default, series for which no matching entry in the opposite vector can be found are not part of the result. This behavior can be adjusted using fill modifiers.\" Fill modifiers are experimental (--enable-feature=promql-binop-fill-modifiers), so \"by default\" in the statement covers them. The answer (false) and the explanation are correct.",
+     "problem": "The source is implementation code, although the prompt's own r9 scope page states the fact in prose. The prompt allows implementation sources only when needed.",
+     "suggestedFix": "Change the URL to https://prometheus.io/docs/prometheus/latest/querying/operators/ (title \"Operators\"). Keep the card."
+    },
+    {
+     "id": "prometheus-fundamentals-sr9-07",
+     "verdict": "source_problem",
+     "urlStatus": "engine.go at v3.15.0 loads (200); Go code, no prose",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/: \"By default they filter. Their behavior can be modified by providing bool after the operator, which will return 0 or 1 for the value rather than filtering.\" and \"vector elements between which the comparison result is false get dropped from the result vector.\" The answer (true) is correct.",
+     "problem": "The source is implementation code although the documentation states the fact.",
+     "suggestedFix": "Change the URL to https://prometheus.io/docs/prometheus/latest/querying/operators/ (title \"Operators\"). Keep the card."
+    },
+    {
+     "id": "prometheus-fundamentals-sr9-11",
+     "verdict": "source_problem",
+     "urlStatus": "engine.go at v3.15.0 loads (200); Go code, no prose",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/querying/operators/ (identical in docs/querying/operators.md at tag v3.15.0): \"In any arithmetic binary operation involving vectors, the metric name is dropped. This occurs even if __name__ is explicitly mentioned in on (see https://github.com/prometheus/prometheus/issues/16631 ...).\" Issue 16631 was closed in October 2025 with a documentation change, not a behavior change, so the card is stable. The answer (true) is correct.",
+     "problem": "The source is implementation code although the documentation states the fact word for word.",
+     "suggestedFix": "Change the URL to https://prometheus.io/docs/prometheus/latest/querying/operators/ (title \"Operators\"). Keep the card."
+    }
+   ],
+   "notes": "I checked all 12 r9 cards against the v3.15.0 operators doc (raw docs/querying/operators.md at the tag), the live operators page, the native histogram spec, and v3.15.0 engine.go/ast.go. All source URLs load (200). Every answer is correct; no wrong_answer or ambiguous verdicts.\n\nCards that pass:\n- sr9-02 (count counts elements, histograms included; spec lists count among operators that work the same way for histograms)\n- sr9-03 (topk keeps the original labels)\n- sr9-04 (spec: \"All other aggregation operators do not work with native histograms. Histograms in the input vector are simply ignored, and an info-level annotation is added\")\n- sr9-05 (spec: \"Both sum and avg remove elements from the output vector that would require the aggregation of float samples with histogram samples. Such a removal is flagged by a warn-level annotation\")\n- sr9-09 (engine error: \"many-to-many matching not allowed: matching labels must be unique on one side\")\n\nOverlap: the zero-is-present idea appears in sr9-12, sr10-11 and sr11-07. I flagged sr9-12 because the r9 scope (and/or/unless) is better served by an or-precedence card. Equal weighting appears in sr9-06 and sr8-11.\n\nBalance: true 6 / false 6. Current average statement lengths are 95.2 (true) and 95.8 (false). With all replacements applied they become about 99 and 97, still within 5 characters. All replacements keep their card's answer.\n\nPrompt rules: the pins are correct. https://prometheus.io/download/ lists Prometheus 3.15.0 / 2026-09-24 as Latest, 3.13.4 / 2026-09-29 as LTS, and Alertmanager 0.34.1 / 2026-09-17 as Latest. I found no wrong prompt rule for r9. One thing the prompt does not mention: the pinned operators doc documents experimental fill modifiers (fill, fill_left, fill_right behind promql-binop-fill-modifiers). Unmatched-series cards therefore need the \"by default\" qualifier, which sr9-10 already has. The main-branch docs add __type__/__unit__ dropping under the type-and-unit-labels flag; this does not affect any card under default flags."
+  },
+  {
+   "section": "r10",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr10-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official functions page (https://prometheus.io/docs/prometheus/latest/querying/functions/), matches v3.15.0 docs/querying/functions.md",
+     "evidence": "\"absent_over_time(v range-vector) returns an empty vector if the range vector passed to it has any elements (float samples or histogram samples) and a 1-element vector with the value 1 if the range vector passed to it has no elements.\" (https://prometheus.io/docs/prometheus/latest/querying/functions/)",
+     "problem": "The answer is correct, but the statement restates the documented definition almost word for word, and the function's name already gives it away (absent over time returns 1 when nothing is there). It also tests the same contract as sr10-11 (absent: empty if any element, 1-element vector valued 1 if none), so a player who knows one card knows the other.",
+     "suggestedFix": "Replace (keeps answer TRUE). Statement (107 chars): \"For gauge g scraped every 15s until it went stale 2m ago, absent_over_time(g[10m]) returns an empty vector.\" Explanation (about 170 chars): \"The 10m range still holds g's samples from before the stale marker, so absent_over_time() finds elements and returns nothing, even though absent(g) returns 1 at that moment.\" Keep the functions URL; factKey e.g. absent-over-time-survives-staleness."
+    },
+    {
+     "id": "prometheus-fundamentals-sr10-07",
+     "verdict": "duplicate",
+     "urlStatus": "200, official basics page, matches v3.15.0 docs/querying/basics.md",
+     "evidence": "\"The timestamps at which to sample data, during a query, are selected independently of the actual present time series data.\" (https://prometheus.io/docs/prometheus/latest/querying/basics/); sr7-03 (range-query-repeated-evaluation): \"Prometheus evaluates a range query at regularly spaced steps across its requested time span.\"",
+     "problem": "The answer (False) is correct. But a player who knows sr7-03 (range queries run at regularly spaced steps set by the request) already knows the steps are not lined up with the stored samples, so the two cards rest on the same fact. The statement also reads like a strawman at difficulty 1.",
+     "suggestedFix": "Replace (keeps answer FALSE) with an r10 fact the deck does not yet test. Statement (91 chars): \"PromQL returns different results for g @ 1609746000 offset 5m and g offset 5m @ 1609746000.\" Explanation: \"PromQL applies offset relative to the @ time, so both modifier orders after the selector select the same data and return identical results.\" Source: https://prometheus.io/docs/prometheus/latest/querying/basics/ (\"It works with the offset modifier where the offset is applied relative to the @ modifier time. The results are the same irrespective of the order of the modifiers.\")"
+    },
+    {
+     "id": "prometheus-fundamentals-sr10-08",
+     "verdict": "source_problem",
+     "urlStatus": "200, but it is the 3.15.0 promql/engine.go source file, which does not state the rule in prose",
+     "evidence": "Official docs state it directly: \"Prometheus needs to assign a value at those timestamps for each relevant time series. It does so by taking the newest sample that is less than the lookback period ago.\" and \"Time series are only returned if their most recent sample is less than the lookback period ago.\" (https://prometheus.io/docs/prometheus/latest/querying/basics/)",
+     "problem": "The answer (True) and the explanation are correct. The cited source is thousands of lines of Go with no prose a player or reviewer can check. The prompt allows implementation code only 'when needed', and here the documentation page settles the card.",
+     "suggestedFix": "Change source to {title: \"Querying basics\", url: \"https://prometheus.io/docs/prometheus/latest/querying/basics/\"} (or the pinned https://github.com/prometheus/prometheus/blob/v3.15.0/docs/querying/basics.md)."
+    },
+    {
+     "id": "prometheus-fundamentals-sr10-09",
+     "verdict": "source_problem",
+     "urlStatus": "200, but it is the 3.15.0 promql/engine.go source file, with no prose statement of the rule",
+     "evidence": "\"If a query is evaluated at a sampling timestamp after a time series is marked as stale, then no value is returned for that time series.\" (https://prometheus.io/docs/prometheus/latest/querying/basics/, Gotchas > Staleness)",
+     "problem": "The answer (False) and the explanation are correct, but the cited engine.go does not support the card in checkable prose. The official querying page states the right fact word for word.",
+     "suggestedFix": "Change source to {title: \"Querying basics\", url: \"https://prometheus.io/docs/prometheus/latest/querying/basics/\"}."
+    }
+   ],
+   "notes": "I checked all 12 r10 cards against the live docs and against the pinned v3.15.0 docs from raw.githubusercontent.com (querying/basics.md, querying/functions.md, configuration/configuration.md, migration.md). Four cards are flagged, and none has a wrong answer. Two point to promql/engine.go when the docs state the fact directly (08, 09). One rests on the same fact as sr7-03 (07). One restates the function's own definition and is the same fact as sr10-11 (12).\n\nThe other eight pass:\n- 01: the docs show sum(x offset 5m) as GOOD and sum(x) offset 5m as INVALID. The true statement is close to the docs' own GOOD example, but I left it.\n- 02: \"a negative offset will enable temporal comparisons forward in time ... allows a query to look ahead of its evaluation time\".\n- 03: numeric @ fixes the selection time; the docs also say start()/end() \"remain the same for all steps\".\n- 04: \"The result of a subquery is a range vector.\"\n- 05: \"<resolution> is optional. Default is the global evaluation interval.\"\n- 06: the migration guide says \"Lookback and range selectors are now left-open and right-closed\", and basics.md says the same.\n- 10: configuration.md (v3.15.0) says track_timestamps_staleness defaults to false and \"If ... true, a staleness marker will be inserted\". The card holds under the default honor_timestamps: true, which appliesTo states. It is 110 chars, within the limit.\n- 11: absent \"returns an empty vector if the vector passed to it has any elements\".\n\nThe section's true/false balance is 6/6. Both replacements keep their card's answer, so the balance stays 6/6.\n\nPrompt rules I verified: prometheus.io/download currently lists prometheus-3.15.0 and the LTS 3.13.4. The pinned tag URLs load (HTTP 200). The left-open/right-closed boundaries, flag-free @ and negative offsets, and track_timestamps_staleness wording all match the pinned docs. I found no prompt rule wrong for r10.\n\nOne gap in the prompt: it lets the author cite implementation code \"when needed\". That let two cards use engine.go even though prose docs exist. It is worth tightening so that code is only a last resort."
+  },
+  {
+   "section": "r11",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr11-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (live page and v3.15.0 docs/configuration/recording_rules.md read the same)",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/ : \"To include rules in Prometheus, create a file containing the necessary rule statements and have Prometheus load the file via the rule_files field in the Prometheus configuration.\" The page supports the card, but the answer can be read straight from the field name rule_files. No studied learner answers False, so the card is a name giveaway and a truism. The same page has a stronger operator fact: \"The rule files can be reloaded at runtime by sending SIGHUP to the Prometheus process. The changes are only applied if all rule files are well-formatted.\"",
+     "problem": "The answer follows from the field name rule_files, so the card is a name giveaway and a truism that teaches nothing at operator depth.",
+     "suggestedFix": "Replace (answer True, keeps 6T/6F). Statement: \"After a SIGHUP, Prometheus applies changed rule files only when every rule file parses successfully.\" (100 chars; the absolute wording comes from the source.) Explanation: \"Prometheus reloads rule files at runtime on SIGHUP, but it applies the changes only when all rule files are well-formatted; otherwise the previously loaded rules stay in effect.\" factKey rule-files-reload-all-or-nothing. Same URL."
+    },
+    {
+     "id": "prometheus-fundamentals-sr11-05",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, current",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/ : \"To quickly check whether a rule file is syntactically correct without starting a Prometheus server, you can use Prometheus's promtool command-line utility tool\". The card is correct and supported. But sr11-06 (false: \"promtool test rules evaluates its test cases against metrics stored in a running Prometheus server\") tests the same idea: promtool's rule tooling works offline, with no running server. Knowing one answer all but gives away the other, and the two use the same 'needs a running server' frame from both sides. The phrase \"while the Prometheus server is stopped\" also hints at the answer.",
+     "problem": "This card and sr11-06 rest on one fact, that promtool rule checking and testing run offline. They form a mirrored pair, and the first answer gives away the second.",
+     "suggestedFix": "Keep sr11-06 and replace this card (answer True). Statement: \"When a rule group and one of its rules set the same label name, Prometheus keeps the rule's value.\" (98 chars) Explanation: \"Group-level labels are added to every rule output in the group, but a label defined on the rule itself overrides the group value for the same name.\" Source: https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/ (\"Labels to add or overwrite before storing the result for its rules. Labels defined in <rule> will override the key if it has a collision.\"). factKey rule-group-labels-precedence."
+    },
+    {
+     "id": "prometheus-fundamentals-sr11-03",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, current, but it supports only part of the card",
+     "evidence": "The cited https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/ says only \"Rules within a group are run sequentially at a regular interval, with the same evaluation time.\" It says nothing about list order or about later rules using earlier results, which the explanation claims. The pinned feature-flag page covers both: https://github.com/prometheus/prometheus/blob/v3.15.0/docs/feature_flags.md : \"By default, rule groups execute concurrently, but the rules within a group execute sequentially; this is because rules can use the output of a preceding rule as its input.\" It also confirms that concurrent-rule-eval is an opt-in experimental flag, which is why the statement says \"ordinary\". The code agrees: rules/group.go at v3.15.0 iterates `for i, rule := range g.rules`.",
+     "problem": "The cited page does not state the configured order or the dependency reason that the explanation gives, so the whole card cannot be checked on it.",
+     "suggestedFix": "Change the URL to https://prometheus.io/docs/prometheus/latest/feature_flags/ (or the v3.15.0 tagged docs/feature_flags.md). Optionally tighten the explanation: \"Rules in a group run one after another in list order, so a rule can use a series recorded by an earlier rule in the same group at that evaluation.\" (146 chars)"
+    },
+    {
+     "id": "prometheus-fundamentals-sr11-12",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/ : \"Prometheus may be configured to periodically send information about alert states to an Alertmanager instance, which then takes care of dispatching the right notifications.\" The answer (True) is right. The code agrees: rules/alerting.go v3.15.0 needsSending() resends when `a.LastSentAt.Add(resendDelay).Before(ts)` and also resends resolved alerts. The explanation (\"Prometheus refreshes firing alert information at Alertmanager while the alert continues firing\") only restates the statement and adds no reason or context, which the prompt's explanation rules require for true cards.",
+     "problem": "The explanation repeats the statement and does not say why Prometheus resends, so the card teaches little beyond its own wording.",
+     "suggestedFix": "Keep the statement (True) and replace the explanation: \"Alertmanager holds no rule state, so Prometheus re-sends active alerts on a resend delay to keep them open there, and keeps sending resolved alerts for a while after they clear.\" (about 170 chars) Same URL, or add https://github.com/prometheus/prometheus/blob/v3.15.0/rules/alerting.go for the resend logic."
+    }
+   ],
+   "notes": "Pins confirmed on https://prometheus.io/download/ (fetched 2026-10-13): Prometheus 3.15.0 / 2026-09-24, Alertmanager 0.34.1 / 2026-09-17, and a separately listed 3.13.4 / 2026-09-29 (the LTS line). The live rule pages match the v3.15.0 tagged docs (recording_rules.md, alerting_rules.md, unit_testing_rules.md). Passed cards, with checks against the docs and the v3.15.0 code: sr11-02 (recording_rules: \\\"the next evaluation will be skipped\\\"); sr11-04 (record: \\\"The name of the time series to output to\\\"); sr11-06 (test files supply input_series and expected outputs); sr11-07 (\\\"Whenever the alert expression results in one or more vector elements ... the alert counts as active\\\", so zero-valued elements also activate); sr11-08 (for; alerting.go deletes a pending alert that disappears, which resets the wait); sr11-09 (keep_firing_for: \\\"keep this alert firing for the specified duration after the firing condition was last met\\\"); sr11-10 (alerting.go: \\\"Check whether we already have alerting state for the identifying label set. Update the last value and annotations if so\\\"; identity is lbs.Hash()); sr11-11 (ALERTS: \\\"The sample value is set to 1\\\"). Section balance is 6 true / 6 false, and the suggested replacements keep it. Difficulty mix is 5/5/2. No r11 card duplicates a card in another section: sr4-03 (evaluation_interval vs scrape_interval), sr2-11 (recording-rule naming) and sr12-12 (silence vs Prometheus state) are distinct facts. Prompt rules: I found no rule wrong for r11. The alerting-boundary and experimental concurrent-rule-eval exclusions match the pinned feature_flags.md. The r11 source list in the prompt omits feature_flags, the only page that states within-group order and why it exists (see sr11-03)."
+  },
+  {
+   "section": "r12",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr12-02",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (prometheus.io/docs/alerting/latest/configuration/, same text as alertmanager v0.34.1 docs/configuration.md)",
+     "evidence": "https://prometheus.io/docs/alerting/latest/configuration/: \"The labels by which incoming alerts are grouped together. For example, multiple alerts coming in for cluster=A and alertname=LatencyHigh would be batched into a single group.\" The answer (false) and the explanation are correct, but nothing in the docs or code (dispatch/route.go: opts.GroupBy is set only from cr.GroupBy) suggests an implicit instance grouping. The misconception is invented, so anyone who has read what group_by does answers correctly: this is a strawman.",
+     "problem": "Strawman. 'group_by adds implicit grouping by instance' is not a misconception a learner who studied would hold, so the card teaches almost nothing about grouping.",
+     "suggestedFix": "Replace (answer false): \"With group_by: ['...'] on a route, Alertmanager collects all alerts reaching that route into a single group.\" Explanation: \"The special value '...' groups by every label, so each distinct alert gets its own group. The docs say this effectively disables aggregation.\" Same URL. The docs say: \"To aggregate by all possible labels use the special value '...' ... This effectively disables aggregation entirely\"."
+    },
+    {
+     "id": "prometheus-fundamentals-sr12-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current",
+     "evidence": "https://prometheus.io/docs/alerting/latest/configuration/: \"How long to wait before sending the first notification for a new group of alerts.\" The statement is a paraphrase of this definition, and the setting's name (group_wait) already says it is a wait before a group is notified. The fact is correct; the dispatch.go v0.34.1 'Alert is old enough for immediate flush' path is covered by the word 'newly'.",
+     "problem": "Name giveaway and definition card: a player who has never used Alertmanager answers True from the word group_wait alone.",
+     "suggestedFix": "Replace (answer true): \"Alertmanager sends nothing for a new group whose only alert resolves before group_wait elapses.\" Explanation: \"An alert that resolves inside group_wait never reaches a first notification, which filters out flapping. A group with no earlier notification and no firing alert is skipped.\" Same URL. The docs say: \"If an alert is resolved before group_wait has elapsed, no notification will be sent for that alert.\" Code: notify/dedup_stage.go needsUpdate returns ReasonDoNotNotify when entry == nil and there are no firing alerts."
+    },
+    {
+     "id": "prometheus-fundamentals-sr12-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current",
+     "evidence": "https://prometheus.io/docs/alerting/latest/configuration/: \"How long to wait before repeating the last notification. Notifications are not repeated if any new alerts have fired or any firing alerts have resolved since the last group_interval.\" The answer is correct, but 'repeat_interval ... reminders' can be read from the setting's name. The explanation's 'resolved alert sets stay the same' only matters when send_resolved is true (dedup_stage.go: n.rs.SendResolved() && !entry.IsResolvedSubset(resolved)).",
+     "problem": "Near giveaway: someone who does not know Alertmanager guesses True from 'repeat'. The real operator distinction (repeat is checked on group_interval ticks) goes untested.",
+     "suggestedFix": "Replace (answer true): \"Alertmanager checks repeat_interval at group_interval ticks, so reminders can arrive later than repeat_interval.\" Explanation: \"Repeat checks happen at each group_interval flush, so the effective repeat rounds up to the next multiple of group_interval. Keep repeat_interval a multiple of it.\" Same URL. The docs say: \"Since the repeat_interval is checked after each group_interval ... the repeat_interval is rounded up to the next multiple of the group_interval.\""
+    },
+    {
+     "id": "prometheus-fundamentals-sr12-01",
+     "verdict": "source_problem",
+     "urlStatus": "200 (github.com/prometheus/alertmanager/blob/v0.34.1/notify/dedup_stage.go), official, pinned tag",
+     "evidence": "dedup_stage.go only shows the query n.nflog.Query(nflog.QGroupKey(gkey), nflog.QReceiver(n.recv)). Nothing in that file shows that recv is per integration. The keying is in notify/notify.go v0.34.1 lines 202-206: \"recv := &nflogpb.Receiver{ GroupName: name, Integration: integrations[i].Name(), Idx: uint32(integrations[i].Index()), }\". The answer (true) is correct.",
+     "problem": "The cited file does not show the per-integration part of the claim, which is the card's whole point. Difficulty 1 is also too low for a fact you can only see in the code.",
+     "suggestedFix": "Change URL to https://github.com/prometheus/alertmanager/blob/v0.34.1/notify/notify.go (keep dedup_stage.go as a secondary reference if two are allowed), and raise difficulty to 2."
+    },
+    {
+     "id": "prometheus-fundamentals-sr12-12",
+     "verdict": "source_problem",
+     "urlStatus": "200, official, current (prometheus.io/docs/alerting/latest/overview/)",
+     "evidence": "The overview only says: \"Alerting rules in Prometheus servers send alerts to an Alertmanager. The Alertmanager then manages those alerts, including silencing, inhibition, aggregation and sending out notifications\". It never says that Prometheus keeps its own alert state. https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/ is explicit about the one-way split: \"they are not a fully-fledged notification solution. Another layer is needed to add summarization, notification rate limiting, silencing ... the Alertmanager takes on this role. Thus, Prometheus may be configured to periodically send information about alert states to an Alertmanager instance\". The answer (false) is correct.",
+     "problem": "The cited page does not support the explanation's right fact: that Prometheus keeps evaluating and setting the alert state.",
+     "suggestedFix": "Change URL to https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/ (title \"Alerting rules\"). Statement and explanation can stay."
+    }
+   ],
+   "notes": "I checked all 12 r12 cards (6 true, 6 false) against the live prometheus.io Alertmanager pages and the Alertmanager v0.34.1 tag (docs/configuration.md, docs/alertmanager.md, dispatch/route.go, dispatch/dispatch.go, notify/dedup_stage.go, notify/notify.go, inhibit/inhibit.go, config/config.go). Every source URL returned 200. No answer is wrong.\n\nCards that pass:\n- 04: dispatch.go insert() never resets the timer, and run() calls resetTimer(GroupInterval) on each tick. The docs agree: \"group_interval is a recurring timer that starts as soon as group_wait has elapsed\".\n- 06: route.go \"If no child nodes were matches, the current node itself is a match\". The docs say the same.\n- 07: newRoute copies parent.RouteOpts and overrides Receiver only if it is set. Its explanation only restates the statement and adds no reason; consider \"Optional route parameters are inherited from the parent node if not set, so only the root route must name a receiver.\"\n- 08: config.go \"root route must not have any matchers\". The docs say \"must match all alerts (i.e. not have any configured matchers)\".\n- 09: route.go Match breaks only if matches != nil && !cr.Continue.\n- 10: the docs say \"Both target and source alerts must have the same label values for the label names in the equal list\". The config page would be a cleaner source than inhibit.go, whose hasEqual body is not self-explanatory.\n- 11: alertmanager.md says \"Incoming alerts are checked whether they match all the equality or regular expression matchers of an active silence\".\n\nNo card in r12 repeats a fact of another section. sr11-12 (Prometheus resends firing alerts) and sr5-12 (alert relabeling sees external labels) are related but separate facts.\n\nPrompt rules checked:\n- Pin confirmed: the download page lists alertmanager-0.34.1, and its GitHub release title is \"Release 0.34.1 / 2026-09-17\".\n- The rule that match and match_re are deprecated in favor of matchers is correct: the docs say \"DEPRECATED: Use matchers below.\" The same applies to target_match and source_match in inhibit rules.\n- The rule that routing depends on inherited settings and continue is correct.\n- I found no prompt rule wrong for r12.\n\nOne caution for authors: the docs sentence \"If an alert is resolved before group_wait has elapsed, no notification will be sent for that alert\" is only fully exact when the alert is alone in its group. If other alerts in the group are firing, the first flush still sends the whole alert list, so with send_resolved the resolved alert can appear in it. That is why my sr12-03 replacement says \"whose only alert\"."
+  },
+  {
+   "section": "r13",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr13-09",
+     "verdict": "duplicate",
+     "urlStatus": "200; https://prometheus.io/docs/prometheus/latest/storage/ (matches docs/storage.md at tag v3.15.0)",
+     "evidence": "Storage page, Compaction: \"Because both the source blocks and the new compacted block must coexist on disk, on-disk size can briefly exceed `storage.tsdb.retention.size`; the excess is released when the next retention cleanup removes the source blocks.\" The page itself ties card sr13-04's fact (source and compacted blocks coexist) directly to this card's answer (retention.size is not a strict ceiling). It also says: \"Only the persistent blocks are deleted to honor this retention although WAL and m-mapped chunks are counted in the total size.\"",
+     "problem": "The answer is right, but it rests on the same disk-headroom fact as sr13-04. A player who learned that compaction keeps source and output blocks on disk at the same time already knows that size retention can be exceeded. The explanation also gets muddled: it says WAL and head-chunk usage 'can exceed the configured limit'. The documented point is that WAL and m-mapped chunks count toward the limit but are never deleted to honor it.",
+     "suggestedFix": "Replacement, still answer false, which keeps the 6/6 balance. Statement: \"Prometheus deletes old WAL segments to honor storage.tsdb.retention.size when the TSDB grows too large.\" Explanation: \"Size retention deletes only persistent blocks. WAL and m-mapped head chunks count toward the limit, so the disk must still hold their peak size.\" factKey: size-retention-blocks-only. URL: https://prometheus.io/docs/prometheus/latest/storage/"
+    },
+    {
+     "id": "prometheus-fundamentals-sr13-01",
+     "verdict": "weak_card",
+     "urlStatus": "200; https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/head.go",
+     "evidence": "head.go v3.15.0, memSeries: \"// Most recent chunks in memory that are still being built or waiting to be mmapped.\" Storage page: \"The current block for incoming samples is kept in memory and is not fully persisted.\" It also lists the directory `chunks_head` as \"(m-mapped Head chunks)\".",
+     "problem": "The fact is correct, but the wording gives it away. 'Active ... chunks that are still receiving samples' are kept 'in memory', and anyone would guess True without knowing Prometheus, so the card teaches almost nothing. The source is a 3,000-line Go file, while the storage page states the fact in plain prose.",
+     "suggestedFix": "Replacement, still answer true. Statement: \"Prometheus memory-maps full head chunks from the chunks_head directory instead of keeping all head data in RAM.\" Explanation: \"Once a head chunk is full, Prometheus writes it to chunks_head and memory-maps it. Only chunks still being built stay in memory until the head is compacted into a block.\" URL: https://prometheus.io/docs/prometheus/latest/storage/"
+    },
+    {
+     "id": "prometheus-fundamentals-sr13-05",
+     "verdict": "source_problem",
+     "urlStatus": "200; https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go",
+     "evidence": "db.go v3.15.0, deletableBlocks(): the results of BeyondTimeRetention and BeyondSizeRetention are added to one deletable set, with no prose that says which policy wins. Storage page: \"If both time and size retention policies are specified, whichever triggers first will be used.\"",
+     "problem": "The answer (false) and the explanation are correct. The cited source shows 'first trigger wins' only through union logic in Go code, which a player cannot check. The official storage page, the prompt's scope source for r13, states it word for word.",
+     "suggestedFix": "Change the source to https://prometheus.io/docs/prometheus/latest/storage/ (title: Storage). Keep the card."
+    },
+    {
+     "id": "prometheus-fundamentals-sr13-07",
+     "verdict": "source_problem",
+     "urlStatus": "200; https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go",
+     "evidence": "db.go BeyondTimeRetention: \"if i > 0 && blocks[0].Meta().MaxTime-block.Meta().MaxTime >= retentionDuration\". This compares block MaxTime only, so it shows whole-block expiry by logic, not in words. Storage page: \"Blocks must be fully expired before they are removed.\" The backfilling section adds: \"Time-based retention policies must keep the entire block around if even one sample of the (potentially large) block is still within the retention policy.\"",
+     "problem": "The answer (true) is correct. The cited source supports it only through code logic. The storage page states it directly and supports the explanation's point that retained blocks can hold samples older than the retention period.",
+     "suggestedFix": "Change the source to https://prometheus.io/docs/prometheus/latest/storage/ (title: Storage). Keep the card."
+    },
+    {
+     "id": "prometheus-fundamentals-sr13-08",
+     "verdict": "source_problem",
+     "urlStatus": "200; https://github.com/prometheus/prometheus/blob/v3.15.0/tsdb/db.go",
+     "evidence": "db.go run(): a loop on time.After(db.opts.BlockReloadInterval) calls db.reloadBlocks(), which deletes retention-expired blocks, with no prose about background cleanup. Storage page: \"Expired block cleanup happens in the background. It may take up to two hours to remove expired blocks.\"",
+     "problem": "The answer (true) and the explanation are correct, but the cited Go file proves them only by reading the code. The storage page states both the background cleanup and the delay that the explanation relies on.",
+     "suggestedFix": "Change the source to https://prometheus.io/docs/prometheus/latest/storage/ (title: Storage). Keep the card."
+    }
+   ],
+   "notes": "Section r13 has 12 cards: 6 true (01, 02, 04, 07, 08, 10) and 6 false (03, 05, 06, 09, 11, 12). Average statement length is 90.8 characters for true cards and 92.8 for false ones. All four source URLs return 200. I read them at tag v3.15.0 (docs/storage.md, tsdb/head.go, tsdb/db.go, tsdb/docs/format/index.md). The live storage page at prometheus.io/docs/prometheus/latest/storage/ matches docs/storage.md at v3.15.0, including the compaction coexist sentence, 'whichever triggers first', 'Blocks must be fully expired', the NFS/EFS caution, the snapshot recommendation and 'not clustered or replicated'.\n\nThese cards passed on their facts:\n- 02 (WAL replay): head.go says 'Init loads data from the write ahead log'.\n- 03 (the index maps series to chunk references and holds no samples): confirmed in index.md.\n- 04 (compaction headroom).\n- 06 (size retention deletes oldest first): the db.go comment says 'This ensures that the retentions will remove the oldest blocks'.\n- 10 (snapshots for backups).\n- 11 (NFS unsupported).\n- 12 (single node, no replication).\n\nFor 02 and 06, the storage page would be a clearer source than the Go file, but the code comments are enough.\n\nMinor points not flagged:\n- 12 is labelled difficulty 3, but it is the best-known limitation of Prometheus storage, not a distinction between two similar things. Difficulty 1 or 2 fits better; to keep the 40/40/20 mix, another card would need to move to 3.\n- 08 is close to a give-away, since 'background cleanup' sounds plausible to anyone. It is kept because the explanation teaches the delayed disk release.\n- 07 nuance: in v3.15.0 code, time retention is measured from the newest block's MaxTime, not from wall-clock time. The card does not contradict this.\n\nNo cross-section duplicates found. The r14 WAL cards cover remote-write buffering, which is a separate fact.\n\nPrompt rules checked:\n- Pins are correct: prometheus.io/download shows 3.15.0 / 2026-09-24 Latest, 3.13.4 / 2026-09-29 LTS, and Alertmanager 0.34.1 / 2026-09-17 Latest.\n- The storage trap rules match the official page: first-triggering policy, fully expired blocks removed in the background, size retention is not a strict ceiling, single-node storage.\n- Not mentioned in the prompt: v3.15.0 adds an experimental storage retention `percentage` option (configuration.md: 'Alternative to `size`... This is an experimental feature'). It overrides the size limit in code. No r13 card relies on it, and it should stay out of the deck as experimental.\n\nNo prompt rule was found to be wrong for this section."
+  },
+  {
+   "section": "r14",
+   "checked": 12,
+   "flagged": [
+    {
+     "id": "prometheus-fundamentals-sr14-05",
+     "verdict": "ambiguous",
+     "urlStatus": "200 (github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md)",
+     "evidence": "The pinned config reference says \"# For the `io.prometheus.write.v2.Request` message, this option is noop (always true). [ send_native_histograms: <boolean> | default = false ]\". The v3.15.0 code says otherwise. storage/remote/write.go passes rwConf.SendNativeHistograms straight to NewQueueManager for every protobuf_message. queue_manager.go AppendHistograms starts with \"if !t.sendNativeHistograms { return true }\". tsdb/wlog/watcher.go has \"case record.HistogramSamples ...: // Skip if \\\"native histograms over remote write\\\" is not enabled. if !w.sendHistograms { break }\". config/config.go has no v2 override. Also, storage.md v3.15.0 calls Remote Write 2.0 an \"experimental specification\", and https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/ shows \"Version: 2.0-rc.5 Status: Experimental\".",
+     "problem": "The card is False because of the doc comment, but the pinned implementation still applies send_native_histograms: false to a v2 queue: its WAL watcher skips histogram records. An expert reading the v3.15.0 code would answer True. The card also teaches behavior of a protocol whose spec is still Experimental, which the prompt's no-preview-features rule excludes.",
+     "suggestedFix": "Replace with a v1-only card (answer False). Statement: \"In Prometheus 3.15.0, a remote write v1 queue sends native histograms while send_native_histograms is left at its default.\" Explanation: \"send_native_histograms defaults to false, and that queue's WAL reader skips native histogram records until it is set to true. Native histogram scraping is a separate setting.\" Source: https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md (backed by tsdb/wlog/watcher.go at v3.15.0). appliesTo: Prometheus 3.15.0, remote write v1."
+    },
+    {
+     "id": "prometheus-fundamentals-sr14-04",
+     "verdict": "source_problem",
+     "urlStatus": "200, but it does not state the precedence",
+     "evidence": "The v3.15.0 configuration.md only says external_labels are \"The labels to add to any time series or alerts when communicating with external systems (federation, remote storage, Alertmanager)\" and \"Write relabeling is applied after external labels.\" It says nothing about which value wins on a conflict. The rule is in https://github.com/prometheus/prometheus/blob/v3.15.0/storage/remote/queue_manager.go: \"// processExternalLabels merges externalLabels into b. If b contains a label in externalLabels, the value in b wins.\" with \"if b.Get(el.Name) == \\\"\\\" { b.Set(el.Name, el.Value) }\".",
+     "problem": "The answer (False) and the explanation are correct for v3.15.0, but the cited page does not support the precedence fact the card turns on.",
+     "suggestedFix": "Change source to https://github.com/prometheus/prometheus/blob/v3.15.0/storage/remote/queue_manager.go (processExternalLabels), titled \"Prometheus 3.15.0 remote write queue manager\". Keep statement, answer and explanation."
+    },
+    {
+     "id": "prometheus-fundamentals-sr14-11",
+     "verdict": "weak_card",
+     "urlStatus": "200 (prometheus.io/docs/prometheus/latest/federation/)",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/federation/: \"the federation topology resembles a tree, with higher-level Prometheus servers collecting aggregated time series data from a larger number of subordinated servers.\"",
+     "problem": "The statement is a near paraphrase of the source's definition of hierarchical federation. Its answer can be guessed from \"hierarchy\" plus \"aggregated\", so it teaches nothing an operator can act on.",
+     "suggestedFix": "Replace (answer True). Statement: \"A global Prometheus in a federation hierarchy typically federates recording-rule outputs such as job: series from lower tiers.\" Explanation: \"Lower-tier servers precompute aggregates with recording rules; the global server selects them with match[] like {__name__=~\\\"job:.*\\\"}, so it gets a global view while instance drill-down stays local.\" Source unchanged (federation page, whose example uses '{__name__=~\"job:.*\"}')."
+    },
+    {
+     "id": "prometheus-fundamentals-sr14-12",
+     "verdict": "explanation_error",
+     "urlStatus": "200 (prometheus.io/docs/prometheus/latest/federation/)",
+     "evidence": "https://prometheus.io/docs/prometheus/latest/federation/: \"In cross-service federation, a Prometheus server of one service is configured to scrape selected data from another service's Prometheus server to enable alerting and queries against both datasets within a single server.\"",
+     "problem": "The answer (True) is right, but the explanation says the receiving server pulls metrics \"from a service's peer\". The source is another service's Prometheus server, not a peer service. The wording blurs who is scraped and why the data becomes queryable locally.",
+     "suggestedFix": "Explanation: \"The receiving server scrapes selected series from another service's Prometheus and ingests them, so its alerts and queries can use both datasets in one server.\" Statement, answer and source unchanged."
+    }
+   ],
+   "notes": "I checked all 12 r14 cards (6 True, 6 False). True statements average 101 characters and False ones 97, so the 5-character rule holds. All source URLs return 200. The remote write tuning, federation and storage pages, the PRW 1.0 spec and the v3.15.0 configuration reference were read in full or grepped as raw text. Implementation at tag v3.15.0 was checked where the docs were silent or disagreed.\n\nCards that pass:\n- 01 (WAL feeds shard queues) and 02 (adaptive shards): remote write tuning page, \"continuously calculate the optimal number of shards ... incoming sample rate, number of outstanding samples not sent, and time taken to send each sample\".\n- 03 (finite buffer): \"retried without loss of data unless the remote endpoint remains down for more than 2 hours\".\n- 06 (remote read): storage.md, \"All PromQL evaluation on the raw data still happens in Prometheus itself\".\n- 07 (5xx retry): the PRW 1.0 spec says senders \"MUST retry write requests on HTTP 5xx responses\", and client.go v3.15.0 treats StatusCode/100 == 5 as RecoverableError.\n- 08 (/federate current value), 09 (union of match[]), 10 (match[] must be an instant vector selector): federation page.\nNo duplicates were found against r4-09 (honor_labels), r5-11 and r5-12 (write and alert relabeling) or r13-02 (WAL replay).\n\nPrompt rules I found wrong or questionable:\n1. The rule \"with io.prometheus.write.v2.Request [send_native_histograms] is ignored and sending is enabled\" repeats the v3.15.0 config doc comment, but the v3.15.0 implementation contradicts it. write.go passes SendNativeHistograms unchanged for both protocols, and the WAL watcher and AppendHistograms drop histograms when it is false.\n2. Remote Write 2.0 is still Experimental (spec 2.0-rc.5, and storage.md calls it \"experimental\"). That conflicts with the prompt's no-preview-features rule.\n\nPins confirmed on prometheus.io/download: 3.15.0 dated 2026-09-24, and an LTS line 3.13.4 dated 2026-09-29. Alertmanager was not rechecked because r14 has no Alertmanager cards."
+  }
+ ],
+ "scan": {
+  "cardsRead": 168,
+  "duplicates": [
+   {
+    "ids": [
+     "prometheus-fundamentals-sr3-05",
+     "prometheus-fundamentals-sr3-12"
+    ],
+    "why": "Both cards test the two sides of one distinction from the prompt's distribution trap: summary quantiles cannot be aggregated, but summary _sum and _count can. Under the prompt's rule, the two sides of a distinction count as one fact. sr3-12 is also close to a truism, since its own explanation is just 'sums and counts are additive'.",
+    "dropId": "prometheus-fundamentals-sr3-12"
+   },
+   {
+    "ids": [
+     "prometheus-fundamentals-sr1-05",
+     "prometheus-fundamentals-sr1-11"
+    ],
+    "why": "Both answer whether Prometheus 3 accepts non-legacy (UTF-8) metric names. Once sr1-11 says a dotted name has a quoted series notation, sr1-05 follows. sr1-05 is also a name giveaway, because a validation scheme called utf8 accepting UTF-8 names is true by definition, and utf8 is already the Prometheus 3 default.",
+    "dropId": "prometheus-fundamentals-sr1-05"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "summary-quantile-aggregation",
+    "ids": [
+     "prometheus-fundamentals-sr3-04",
+     "prometheus-fundamentals-sr3-05",
+     "prometheus-fundamentals-sr3-12"
+    ],
+    "why": "sr3-04's explanation says the client calculates the quantiles, which hints that they cannot be averaged (sr3-05). sr3-12 states the additive counterpart of sr3-05."
+   },
+   {
+    "name": "utf8-metric-names",
+    "ids": [
+     "prometheus-fundamentals-sr1-05",
+     "prometheus-fundamentals-sr1-06",
+     "prometheus-fundamentals-sr1-11"
+    ],
+    "why": "sr1-05 and sr1-11 both say UTF-8 or dotted names are valid. sr1-05's explanation mentions 'the older ASCII character pattern', which primes sr1-06 (docs recommend the traditional patterns for compatibility)."
+   },
+   {
+    "name": "double-underscore-internal",
+    "ids": [
+     "prometheus-fundamentals-sr1-02",
+     "prometheus-fundamentals-sr1-04",
+     "prometheus-fundamentals-sr5-04"
+    ],
+    "why": "sr1-02 calls __name__ an 'internal' label, which gives away sr1-04 (__ is reserved for internal use). Together they hint that __meta_ labels are removed from the final labels (sr5-04 is false)."
+   },
+   {
+    "name": "nhcb-layout-reconciliation",
+    "ids": [
+     "prometheus-fundamentals-sr3-02",
+     "prometheus-fundamentals-sr3-09",
+     "prometheus-fundamentals-sr3-11"
+    ],
+    "why": "sr3-02's explanation calls NHCB layouts 'custom' and incompatible with exponential layouts. That gives away sr3-11 (NHCB conversion keeps the classic boundaries) and pairs with sr3-09 (standard exponential resolutions do reconcile)."
+   },
+   {
+    "name": "classic-le-boundaries",
+    "ids": [
+     "prometheus-fundamentals-sr3-01",
+     "prometheus-fundamentals-sr3-07"
+    ],
+    "why": "sr3-01's explanation says le names the bucket's upper boundary, which strongly hints that histogram_quantile() must keep le after aggregation (sr3-07)."
+   },
+   {
+    "name": "native-composite-sample",
+    "ids": [
+     "prometheus-fundamentals-sr3-08",
+     "prometheus-fundamentals-sr8-12"
+    ],
+    "why": "sr8-12's explanation says rate(h) returns a native histogram holding rates for its buckets, count and sum. That states sr3-08's composite-sample fact outright."
+   },
+   {
+    "name": "gauge-values-fall",
+    "ids": [
+     "prometheus-fundamentals-sr2-02",
+     "prometheus-fundamentals-sr2-04"
+    ],
+    "why": "sr2-02's explanation (a gauge suits a count that falls) primes the answer to sr2-04 (a gauge histogram's buckets can rise or fall, so it does not accumulate)."
+   },
+   {
+    "name": "seconds-base-unit",
+    "ids": [
+     "prometheus-fundamentals-sr2-06",
+     "prometheus-fundamentals-sr2-07"
+    ],
+    "why": "sr2-07's explanation recommends the _seconds suffix for durations, which gives away sr2-06 (seconds is the base unit for durations)."
+   },
+   {
+    "name": "counter-reset-correction",
+    "ids": [
+     "prometheus-fundamentals-sr2-01",
+     "prometheus-fundamentals-sr3-03",
+     "prometheus-fundamentals-sr8-02",
+     "prometheus-fundamentals-sr8-05"
+    ],
+    "why": "sr8-05's statement asserts that rate() does per-series 'reset correction', which answers sr8-02. sr3-03's explanation (rate treats decreases as resets) and sr2-01 (counters reset on restart) point the same way."
+   },
+   {
+    "name": "irate-spike-sensitivity",
+    "ids": [
+     "prometheus-fundamentals-sr8-01",
+     "prometheus-fundamentals-sr8-06"
+    ],
+    "why": "Once sr8-01 says irate uses only the last two samples, it is easy to infer that irate is a poor choice for slow-counter alerts (sr8-06 is false)."
+   },
+   {
+    "name": "range-function-extrapolation",
+    "ids": [
+     "prometheus-fundamentals-sr8-03",
+     "prometheus-fundamentals-sr8-07"
+    ],
+    "why": "rate() extrapolating to the window edges (sr8-03) strongly hints that delta() extrapolates too (sr8-07). Both are true."
+   },
+   {
+    "name": "job-instance-labels",
+    "ids": [
+     "prometheus-fundamentals-sr4-02",
+     "prometheus-fundamentals-sr4-06",
+     "prometheus-fundamentals-sr5-05"
+    ],
+    "why": "sr4-06's statement and explanation say the instance label comes from the target host:port, which answers sr4-02 (instance, not job, distinguishes endpoints) and primes sr5-05 (__address__)."
+   },
+   {
+    "name": "scrape-interval-precedence",
+    "ids": [
+     "prometheus-fundamentals-sr4-04",
+     "prometheus-fundamentals-sr4-05"
+    ],
+    "why": "sr4-04 speaks of the 'effective scrape_interval' and its explanation says 'configured for that job', which gives away sr4-05 (per-job override)."
+   },
+   {
+    "name": "evaluation-interval-role",
+    "ids": [
+     "prometheus-fundamentals-sr4-03",
+     "prometheus-fundamentals-sr10-05"
+    ],
+    "why": "Both test the split between scrape_interval and the global evaluation interval. Each card's explanation names the other interval's role, which primes the opposite card."
+   },
+   {
+    "name": "target-relabel-before-scrape",
+    "ids": [
+     "prometheus-fundamentals-sr5-03",
+     "prometheus-fundamentals-sr5-07"
+    ],
+    "why": "sr5-03's explanation ('for targets still retained') implies relabeling drops targets before they are used, which answers sr5-07."
+   },
+   {
+    "name": "exporter-collection-timing",
+    "ids": [
+     "prometheus-fundamentals-sr6-02",
+     "prometheus-fundamentals-sr6-03"
+    ],
+    "why": "sr6-03 describes the documented caching exception, which implies the default of collecting on scrape (sr6-02)."
+   },
+   {
+    "name": "timestamp-as-value",
+    "ids": [
+     "prometheus-fundamentals-sr6-06",
+     "prometheus-fundamentals-sr6-08"
+    ],
+    "why": "A last-success timestamp as a key signal (sr6-06) is a direct instance of exporting an event's Unix time as the metric value (sr6-08)."
+   },
+   {
+    "name": "online-serving-signals",
+    "ids": [
+     "prometheus-fundamentals-sr6-04",
+     "prometheus-fundamentals-sr6-05"
+    ],
+    "why": "sr6-05's statement names requests, errors and latency as statistics that belong together, which gives away sr6-04."
+   },
+   {
+    "name": "range-vector-brackets",
+    "ids": [
+     "prometheus-fundamentals-sr7-02",
+     "prometheus-fundamentals-sr10-04"
+    ],
+    "why": "sr10-04 says a bracketed subquery forms a range vector, which hints that requests_total[5m] is a range vector (sr7-02 is false)."
+   },
+   {
+    "name": "range-query-steps",
+    "ids": [
+     "prometheus-fundamentals-sr7-03",
+     "prometheus-fundamentals-sr10-03",
+     "prometheus-fundamentals-sr10-07"
+    ],
+    "why": "sr7-03 ('regularly spaced steps') and sr10-03's explanation (the query 'advances through its evaluation times') give away that evaluation times are not aligned to sample timestamps (sr10-07 is false)."
+   },
+   {
+    "name": "on-keyword",
+    "ids": [
+     "prometheus-fundamentals-sr7-10",
+     "prometheus-fundamentals-sr9-08",
+     "prometheus-fundamentals-sr9-11"
+    ],
+    "why": "sr9-08 and sr9-11 use on(...) as matching syntax, which strongly hints that bare on is a grammar keyword (sr7-10)."
+   },
+   {
+    "name": "vector-matching-cardinality",
+    "ids": [
+     "prometheus-fundamentals-sr9-08",
+     "prometheus-fundamentals-sr9-09"
+    ],
+    "why": "sr9-08's qualifier ('both sides have one series per job') hints at the cardinality requirement that makes sr9-09 false."
+   },
+   {
+    "name": "zero-valued-element-present",
+    "ids": [
+     "prometheus-fundamentals-sr9-12",
+     "prometheus-fundamentals-sr10-11",
+     "prometheus-fundamentals-sr11-07"
+    ],
+    "why": "All three rest on the same principle: a zero-valued sample is still a present element. Each explanation states that principle, which answers the other two."
+   },
+   {
+    "name": "absent-functions",
+    "ids": [
+     "prometheus-fundamentals-sr10-11",
+     "prometheus-fundamentals-sr10-12"
+    ],
+    "why": "sr10-11's explanation ('absent() tests whether its input vector has elements') primes sr10-12's empty-range behavior."
+   },
+   {
+    "name": "alertmanager-group-timers",
+    "ids": [
+     "prometheus-fundamentals-sr12-03",
+     "prometheus-fundamentals-sr12-04",
+     "prometheus-fundamentals-sr12-05"
+    ],
+    "why": "Together the three cards split the work among group_wait, group_interval and repeat_interval. sr12-05 (repeat_interval covers unchanged groups) and sr12-03 imply that group_interval handles changes on a schedule, which answers sr12-04."
+   },
+   {
+    "name": "route-fallback-inheritance",
+    "ids": [
+     "prometheus-fundamentals-sr12-06",
+     "prometheus-fundamentals-sr12-07"
+    ],
+    "why": "sr12-06's explanation ('the current route's receiver and settings') overlaps with inheritance of the parent's receiver (sr12-07)."
+   },
+   {
+    "name": "tsdb-head-wal",
+    "ids": [
+     "prometheus-fundamentals-sr13-01",
+     "prometheus-fundamentals-sr13-02",
+     "prometheus-fundamentals-sr13-10"
+    ],
+    "why": "Replaying the WAL to rebuild head samples (sr13-02), and sr13-10's mention of data 'since the latest block', imply an in-memory head (sr13-01)."
+   },
+   {
+    "name": "remote-write-wal-queues",
+    "ids": [
+     "prometheus-fundamentals-sr14-01",
+     "prometheus-fundamentals-sr14-02",
+     "prometheus-fundamentals-sr14-03"
+    ],
+    "why": "sr14-01 mentions WAL-fed shard queues, which hints at sr14-02 (adaptive shards). sr14-03's explanation (WAL cleanup drops old samples) qualifies sr14-01's WAL buffering."
+   },
+   {
+    "name": "federation-match-selectors",
+    "ids": [
+     "prometheus-fundamentals-sr14-08",
+     "prometheus-fundamentals-sr14-09",
+     "prometheus-fundamentals-sr14-10",
+     "prometheus-fundamentals-sr14-11"
+    ],
+    "why": "sr14-10's explanation (match[] is an instant-vector selector) hints at current samples (sr14-08) and at series-union semantics (sr14-09). sr14-11 ('higher tiers collect aggregated series') could mislead a player toward true on sr14-10's sum(g) match[]."
+   }
+  ],
+  "tells": "Statement length is balanced: overall true 92.1 vs false 92.2 characters, and every section is within 5. Explanation length is less even (the player reads it only after answering): r14 false 131.8 vs true 114.5, r7 false 80.2 vs true 98.2, r2 false 103.3 vs true 85.8, r10 false 100.3 vs true 112.8, r11 false 95.0 vs true 108.0. 'can' is balanced (8 true / 8 false).\n\nWord tells:\n(1) 'treats' marks false: 7 false (sr1-03, sr2-09, sr6-09, sr7-02, sr7-08, sr8-02, sr11-07) vs 2 true (sr6-06, sr7-10). The 'X treats A as B' template carries 7 false cards, more than the limit of 2.\n(2) Concessive 'even'/'despite' marks true: 5 true, 0 false (sr7-10, sr9-11, sr9-12, sr8-11, sr9-01).\n(3) 'after' marks true: 5 true, 0 false (sr11-09, sr12-09, sr12-11, sr13-02, sr14-07). 'before' leans false: 4 false (sr2-05, sr5-02, sr5-07, sr5-10) vs 2 true (sr5-12, sr12-03).\n(4) Absolute or timing words only in false statements: 'whenever' (sr12-04), 'immediately' (sr10-10), 'strict' (sr13-09), 'rejects' (sr1-08, sr7-04), 'replaces' (sr14-04). 'removes' is 3 false (sr5-07, sr6-12, sr13-06) vs 1 true (sr13-08). 'both' is 4 false (sr3-10, sr9-09, sr13-05, sr14-09) vs 1 true (sr9-08).\n(5) Opener 'For native (counter) histogram ... h,' is 3 false, 0 true (sr8-12, sr9-02, sr9-04). 'For float ...' is 10 true vs 5 false.\n(6) 'favor(s)' appears only in false statements (sr1-06, sr6-01).\n\nRecurring false templates:\n(a) 'Prometheus documentation/guidance recommends/favors <the wrong alternative> for <use case>': sr1-06, sr2-02, sr6-01, sr8-06, sr6-10, sr13-11 (6 cards, limit 2).\n(b) A config option name mismatched with the claimed behavior is false: sr4-03 (evaluation_interval schedules scrapes), sr4-09 (honor_labels keeps the server's job), sr10-05 (scrape_interval as subquery step), sr10-10 (track_timestamps_staleness: false yet immediate staleness), sr3-11 (convert..._to_nhcb maps to exponential buckets).\n(c) The mirror of (b), name giveaways where the option does what its name says, are all true: sr1-05, sr4-12 (always_scrape_classic_histograms), sr5-11 (write_relabel_configs), sr11-01 (rule_files), sr11-09 (keep_firing_for), sr12-03 (group_wait), sr12-05 (repeat_interval). Only sr13-09 and sr14-05 break the pattern.\n(d) Timing or lifecycle swaps 'Prometheus does X before/when Y': sr5-02, sr5-07, sr6-12, sr10-10, sr12-04.\n\nStrawmen (easy false cards nobody who studied would accept): sr1-01, sr4-07 (up=1 means the app serves users; also overlaps KCNA), sr6-09 (customer emails as a label), sr9-10, sr11-04, sr13-06 (largest blocks first), sr13-12.\n\nTruisms or definition cards that read as obviously true: sr2-03 (histograms record observations), sr4-01 (Prometheus pulls), sr1-07, sr11-01, sr14-11."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "prometheus-fundamentals-sr1-04",
+    "reason": "weak_card: near-copy of the data-model sentence and a recall-only definition; r1 keeps 10 cards (4 true / 6 false) without it."
+   },
+   {
+    "id": "prometheus-fundamentals-sr1-05",
+    "reason": "weak_card and scan duplicate of sr1-11: a utf8 validation scheme accepting UTF-8 names is a name giveaway, and utf8 is already the Prometheus 3 default."
+   },
+   {
+    "id": "prometheus-fundamentals-sr2-03",
+    "reason": "weak_card: near-copy of the histograms page and a type definition every learner answers True."
+   },
+   {
+    "id": "prometheus-fundamentals-sr2-11",
+    "reason": "weak_card: paraphrase of the practices/rules sentence, answer readable from the word level."
+   },
+   {
+    "id": "prometheus-fundamentals-sr2-12",
+    "reason": "weak_card: http_requests_total_method is false for two reasons (label name in metric name and misplaced _total); the second gives the answer away."
+   },
+   {
+    "id": "prometheus-fundamentals-sr3-04",
+    "reason": "weak_card: strawman (nobody rebuilds p99 from sum and count) and false for two reasons; also in the summary-quantile conflict group."
+   },
+   {
+    "id": "prometheus-fundamentals-sr3-06",
+    "reason": "weak_card: name giveaway, histogram_quantile() estimating a percentile restates the function name."
+   },
+   {
+    "id": "prometheus-fundamentals-sr3-12",
+    "reason": "weak_card and scan duplicate of sr3-05: the additive side of the summary-aggregation distinction, a truism by arithmetic."
+   },
+   {
+    "id": "prometheus-fundamentals-sr4-01",
+    "reason": "duplicate: pull-versus-push is already tested by kubernetes-kcna-s4.1-01; identification card the prompt says to go beyond."
+   },
+   {
+    "id": "prometheus-fundamentals-sr4-02",
+    "reason": "weak_card: every endpoint in one job shares the job label by construction, so the answer follows from the wording; KCNA-level identification."
+   },
+   {
+    "id": "prometheus-fundamentals-sr4-12",
+    "reason": "weak_card: name giveaway, always_scrape_classic_histograms: true plainly keeps classic histograms."
+   },
+   {
+    "id": "prometheus-fundamentals-sr5-07",
+    "reason": "weak_card: the phrase target relabeling gives away that it runs before scraping, and the statement tests a different fact from its factKey."
+   },
+   {
+    "id": "prometheus-fundamentals-sr5-11",
+    "reason": "weak_card: answer readable from the option name write_relabel_configs."
+   },
+   {
+    "id": "prometheus-fundamentals-sr6-09",
+    "reason": "weak_card: strawman copying the source's own email-address example."
+   },
+   {
+    "id": "prometheus-fundamentals-sr7-10",
+    "reason": "weak_card: parser keyword trivia rated hard, and sr9-11 shows on(...) as syntax, which hints the answer."
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-05",
+    "reason": "duplicate: its statement asserts rate() does per-series reset correction, which answers sr8-02."
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-07",
+    "reason": "duplicate: delta() shares rate()'s extrapolation routine, so it rests on the same fact as sr8-03 and repeats its template."
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-10",
+    "reason": "weak_card: obscure counter-to-gauge flavor-flip edge case beyond operator depth."
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-06",
+    "reason": "weak_card: strawman, avg() cannot see request volume; also overlaps sr8-11 equal weighting."
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-08",
+    "reason": "weak_card: definition of on(job) with the textbook one-to-one case spelled out, sourced to ast.go."
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-12",
+    "reason": "duplicate: third card on 'a zero value is still a present element' (with sr10-11 and sr11-07)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr10-07",
+    "reason": "duplicate: rests on the same fact as sr7-03 (range-query steps are set by the request, not by samples)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr10-12",
+    "reason": "weak_card: restates the absent_over_time() definition and the function name; same contract as sr10-11."
+   },
+   {
+    "id": "prometheus-fundamentals-sr11-05",
+    "reason": "duplicate: mirrors sr11-06 (promtool rule tooling works without a running server)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr11-12",
+    "reason": "weak_card: explanation only restates the statement; dropped in favor of the rule-reload rewrite of sr11-01."
+   },
+   {
+    "id": "prometheus-fundamentals-sr12-02",
+    "reason": "weak_card: strawman, nothing suggests group_by adds implicit grouping by instance."
+   },
+   {
+    "id": "prometheus-fundamentals-sr12-03",
+    "reason": "weak_card: name giveaway and definition of group_wait."
+   },
+   {
+    "id": "prometheus-fundamentals-sr12-05",
+    "reason": "weak_card: answer readable from the setting name repeat_interval."
+   },
+   {
+    "id": "prometheus-fundamentals-sr13-01",
+    "reason": "weak_card: wording gives the answer away (active chunks still receiving samples are in memory); Go source instead of the storage page."
+   },
+   {
+    "id": "prometheus-fundamentals-sr13-09",
+    "reason": "duplicate: same disk-headroom fact as sr13-04, and its explanation muddles WAL counting."
+   },
+   {
+    "id": "prometheus-fundamentals-sr14-11",
+    "reason": "weak_card: near paraphrase of the federation page's hierarchy definition, guessable from 'hierarchy' plus 'aggregated'."
+   }
+  ],
+  "source": [
+   {
+    "id": "prometheus-fundamentals-sr3-11",
+    "title": "Metric types",
+    "url": "https://prometheus.io/docs/concepts/metric_types/"
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-04",
+    "title": "Query functions",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/#increase"
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-11",
+    "title": "Query functions",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/functions/#aggregation_over_time"
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-07",
+    "title": "Operators",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/operators/#comparison-binary-operators"
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-10",
+    "title": "Operators",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/operators/#vector-matching"
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-11",
+    "title": "Operators",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/operators/#arithmetic-binary-operators"
+   },
+   {
+    "id": "prometheus-fundamentals-sr10-08",
+    "title": "Querying basics",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/basics/#staleness"
+   },
+   {
+    "id": "prometheus-fundamentals-sr10-09",
+    "title": "Querying basics",
+    "url": "https://prometheus.io/docs/prometheus/latest/querying/basics/#staleness"
+   },
+   {
+    "id": "prometheus-fundamentals-sr11-03",
+    "title": "Feature flags",
+    "url": "https://prometheus.io/docs/prometheus/latest/feature_flags/"
+   },
+   {
+    "id": "prometheus-fundamentals-sr12-01",
+    "title": "Alertmanager 0.34.1 notification pipeline (notify.go)",
+    "url": "https://github.com/prometheus/alertmanager/blob/v0.34.1/notify/notify.go"
+   },
+   {
+    "id": "prometheus-fundamentals-sr12-12",
+    "title": "Alerting rules",
+    "url": "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/"
+   },
+   {
+    "id": "prometheus-fundamentals-sr13-05",
+    "title": "Storage",
+    "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+   },
+   {
+    "id": "prometheus-fundamentals-sr13-07",
+    "title": "Storage",
+    "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+   },
+   {
+    "id": "prometheus-fundamentals-sr13-08",
+    "title": "Storage",
+    "url": "https://prometheus.io/docs/prometheus/latest/storage/"
+   },
+   {
+    "id": "prometheus-fundamentals-sr14-04",
+    "title": "Prometheus 3.15.0 remote write queue manager (processExternalLabels)",
+    "url": "https://github.com/prometheus/prometheus/blob/v3.15.0/storage/remote/queue_manager.go"
+   }
+  ],
+  "rewrite": [
+   {
+    "id": "prometheus-fundamentals-sr2-07",
+    "statement": "A disk usage metric that follows Prometheus naming guidance reports 75 for a disk that is 75% full.",
+    "answer": false,
+    "explanation": "Prometheus's base unit for percentages is a ratio from 0 to 1, so a disk that is 75% full reads 0.75, in a metric named like disk_usage_ratio.",
+    "misconception": "Percentage metrics follow a 0 to 100 scale.",
+    "sourceTitle": "Metric and label naming",
+    "sourceUrl": "https://prometheus.io/docs/practices/naming/",
+    "reason": "weak_card rewrite (verifier's replacement, adapted): dropping all four flagged r2 cards would leave 8. The old card was a wording giveaway and its explanation gave away sr2-06. Confirmed on the naming page Base Units table: 'Percent | ratio | Values are 0-1 (rather than 0-100)... disk_usage_ratio'. Phrased as an applied case to avoid the 'guidance recommends' false template."
+   },
+   {
+    "id": "prometheus-fundamentals-sr3-07",
+    "statement": "To aggregate classic buckets for histogram_quantile(), the by clause of sum() must include le.",
+    "answer": true,
+    "explanation": "histogram_quantile() needs le to find each classic bucket's upper boundary, so sum by (job) without le merges all buckets into one series and breaks the estimate.",
+    "misconception": "",
+    "sourceTitle": "Query functions",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/querying/functions/#histogram_quantile",
+    "reason": "ambiguous: the statement named no actor and read as if aggregation keeps le by itself. Functions page: 'Since the le label is required by histogram_quantile() to deal with classic histograms, it has to be included in the by clause.'"
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-03",
+    "statement": "For float counter c, rate(c[5m]) extrapolates observed growth toward the selected window's edges.",
+    "answer": true,
+    "explanation": "rate() extends the observed increase out to the ends of the range, which allows for missed scrapes and for scrape cycles that do not line up with the window.",
+    "misconception": "",
+    "sourceTitle": "Query functions",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/querying/functions/#rate",
+    "reason": "explanation_error: the old explanation implied that rate() extrapolates only near the window edges. The source moves from functions.go to the docs page, which says 'the calculation extrapolates to the ends of the time range, allowing for missed scrapes or imperfect alignment of scrape cycles'."
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-09",
+    "statement": "For native counter histogram h at fixed schema and zero-bucket width, resets(h[5m]) counts a vanished populated bucket.",
+    "answer": true,
+    "explanation": "With schema and zero-bucket width unchanged, a bucket that is no longer represented holds zero observations, so a populated bucket that disappears is a drop that resets() counts.",
+    "misconception": "",
+    "sourceTitle": "Native Histograms specification",
+    "sourceUrl": "https://prometheus.io/docs/specs/native_histograms/",
+    "reason": "ambiguous: 'unchanged bucket layout' contradicted a disappearing bucket, and the hedge 'can detect' was vague. Spec: once both histograms have the same schema and zero bucket width, 'a drop in the population count of any bucket... includes the case where a populated bucket disappears'. The statement also puts the 'For native counter histogram h' opener on a true card; the scan found that opener only on false cards."
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-01",
+    "statement": "For float gauge g, PromQL sum by(job)(g) drops a region label that has one value across all input series.",
+    "answer": true,
+    "explanation": "by keeps only the listed labels, so region leaves the output even when every input carries the same value; sum without(instance)(g) would keep it.",
+    "misconception": "",
+    "sourceTitle": "Operators",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators",
+    "reason": "weak_card rewrite (verifier's replacement): dropping the four weak r9 cards would leave 8 cards at 3 true / 5 false. Operators page: 'by does the opposite and drops labels that are not listed in the by clause, even if their label values are identical between all elements of the vector.' Reworded to avoid the 'even' tell."
+   },
+   {
+    "id": "prometheus-fundamentals-sr11-01",
+    "statement": "Prometheus keeps running its previous rules if a SIGHUP reload finds one malformed rule file.",
+    "answer": true,
+    "explanation": "Rule files reload at runtime on SIGHUP, but Prometheus applies the changes only when all rule files are well-formatted, so one bad file blocks the whole update.",
+    "misconception": "",
+    "sourceTitle": "Defining recording rules",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/configuration/recording_rules/",
+    "reason": "weak_card rewrite (verifier's replacement, reworded away from the source sentence): dropping sr11-01, sr11-05 and sr11-12 would leave r11 at 3 true / 6 false. Recording rules page: 'The rule files can be reloaded at runtime by sending SIGHUP... The changes are only applied if all rule files are well-formatted.' New factKey: rule-files-reload-all-or-nothing."
+   },
+   {
+    "id": "prometheus-fundamentals-sr14-05",
+    "statement": "Prometheus 3.15.0 sends native histograms over remote write v1 with send_native_histograms left at its default.",
+    "answer": false,
+    "explanation": "send_native_histograms defaults to false, so a remote write v1 (prometheus.WriteRequest) queue leaves native histogram samples out until it is set to true.",
+    "misconception": "Remote write v1 sends native histograms by default.",
+    "sourceTitle": "Prometheus 3.15.0 configuration reference",
+    "sourceUrl": "https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md#remote_write",
+    "reason": "ambiguous: the v3.15.0 code contradicts the documented v2 behavior (watcher.go skips histogram records when sendHistograms is false, whatever the protocol), and Remote Write 2.0 is still experimental. Rewritten as a v1-only card. Pinned config: protobuf_message defaults to prometheus.WriteRequest; '[ send_native_histograms: <boolean> | default = false ]', 'Enables sending of native histograms... over remote write.' appliesTo should read 'Prometheus 3.15.0, remote write v1'."
+   },
+   {
+    "id": "prometheus-fundamentals-sr14-12",
+    "statement": "With cross-service federation, Prometheus stores selected peer-service metrics beside its own collected metrics.",
+    "answer": true,
+    "explanation": "The receiving server scrapes selected series from another service's Prometheus server and ingests them, so its alerts and queries can use both datasets in one place.",
+    "misconception": "",
+    "sourceTitle": "Federation",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/federation/",
+    "reason": "explanation_error: 'from a service's peer' named the wrong source of the data. Federation page: 'a Prometheus server of one service is configured to scrape selected data from another service's Prometheus server to enable alerting and queries against both datasets within a single server.'"
+   },
+   {
+    "id": "prometheus-fundamentals-sr1-03",
+    "statement": "A Prometheus label with an empty value creates a different series than leaving it out.",
+    "answer": false,
+    "explanation": "An empty label value and an absent label are equivalent in Prometheus's data model.",
+    "misconception": "An empty label creates a separate identity from an absent label.",
+    "sourceTitle": "Data model",
+    "sourceUrl": "https://prometheus.io/docs/concepts/data_model/",
+    "reason": "tell: 'treats' appeared in 7 false statements and 2 true ones. Same fact and answer (an empty label value equals an absent label); also shortened to keep r1's length balance."
+   },
+   {
+    "id": "prometheus-fundamentals-sr5-02",
+    "statement": "Prometheus holds file-discovery target changes until its next configuration reload.",
+    "answer": false,
+    "explanation": "Prometheus watches discovery files and applies valid target-group changes as they arrive.",
+    "misconception": "File-based discovery updates depend on reloading the main configuration.",
+    "sourceTitle": "Prometheus 3.15.0 file discovery implementation",
+    "sourceUrl": "https://github.com/prometheus/prometheus/blob/v3.15.0/discovery/file/file.go",
+    "reason": "tell: 'before' leaned false (4 false vs 2 true). Same fact and answer (file discovery applies changes through disk watches, with no reload)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr7-02",
+    "statement": "PromQL evaluates requests_total[5m] to an instant vector of current samples.",
+    "answer": false,
+    "explanation": "requests_total[5m] yields a range vector containing samples from the selected five-minute window for its series.",
+    "misconception": "A bracketed time window selects one current sample per series.",
+    "sourceTitle": "Querying basics",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/querying/basics/",
+    "reason": "tell: 'treats' false template. Same fact and answer (requests_total[5m] is a range vector)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr7-08",
+    "statement": "A PromQL selector keeps series that pass either of two matchers on one label name.",
+    "answer": false,
+    "explanation": "PromQL combines same-label matchers with AND: a series must satisfy both.",
+    "misconception": "Same-label matchers use OR.",
+    "sourceTitle": "Querying basics",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/querying/basics/",
+    "reason": "tell: 'treats' false template. Same fact and answer (every matcher on the same label must pass)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-02",
+    "statement": "For float counter c, rate(c[5m]) counts the drop at an observed reset inside that window as negative growth.",
+    "answer": false,
+    "explanation": "rate() adjusts observed counter resets before calculating the counter's rate.",
+    "misconception": "A counter reset subtracts from the rate calculated by rate().",
+    "sourceTitle": "Query functions",
+    "sourceUrl": "https://prometheus.io/docs/prometheus/latest/querying/functions/",
+    "reason": "tell: 'treats' false template. Same fact and answer (rate() adjusts for counter resets)."
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "utf8-metric-names",
+    "ids": [
+     "prometheus-fundamentals-sr1-06",
+     "prometheus-fundamentals-sr1-11"
+    ]
+   },
+   {
+    "name": "double-underscore-internal",
+    "ids": [
+     "prometheus-fundamentals-sr1-02",
+     "prometheus-fundamentals-sr5-04"
+    ]
+   },
+   {
+    "name": "nhcb-layout-reconciliation",
+    "ids": [
+     "prometheus-fundamentals-sr3-02",
+     "prometheus-fundamentals-sr3-09",
+     "prometheus-fundamentals-sr3-11"
+    ]
+   },
+   {
+    "name": "classic-le-boundaries",
+    "ids": [
+     "prometheus-fundamentals-sr3-01",
+     "prometheus-fundamentals-sr3-07"
+    ]
+   },
+   {
+    "name": "native-composite-sample",
+    "ids": [
+     "prometheus-fundamentals-sr3-08",
+     "prometheus-fundamentals-sr8-12"
+    ]
+   },
+   {
+    "name": "gauge-values-fall",
+    "ids": [
+     "prometheus-fundamentals-sr2-02",
+     "prometheus-fundamentals-sr2-04"
+    ]
+   },
+   {
+    "name": "base-units",
+    "ids": [
+     "prometheus-fundamentals-sr2-06",
+     "prometheus-fundamentals-sr2-07"
+    ]
+   },
+   {
+    "name": "counter-reset-correction",
+    "ids": [
+     "prometheus-fundamentals-sr2-01",
+     "prometheus-fundamentals-sr3-03",
+     "prometheus-fundamentals-sr8-02"
+    ]
+   },
+   {
+    "name": "irate-spike-sensitivity",
+    "ids": [
+     "prometheus-fundamentals-sr8-01",
+     "prometheus-fundamentals-sr8-06"
+    ]
+   },
+   {
+    "name": "job-instance-labels",
+    "ids": [
+     "prometheus-fundamentals-sr4-06",
+     "prometheus-fundamentals-sr5-05"
+    ]
+   },
+   {
+    "name": "scrape-interval-precedence",
+    "ids": [
+     "prometheus-fundamentals-sr4-04",
+     "prometheus-fundamentals-sr4-05"
+    ]
+   },
+   {
+    "name": "evaluation-interval-role",
+    "ids": [
+     "prometheus-fundamentals-sr4-03",
+     "prometheus-fundamentals-sr10-05"
+    ]
+   },
+   {
+    "name": "exporter-collection-timing",
+    "ids": [
+     "prometheus-fundamentals-sr6-02",
+     "prometheus-fundamentals-sr6-03"
+    ]
+   },
+   {
+    "name": "timestamp-as-value",
+    "ids": [
+     "prometheus-fundamentals-sr6-06",
+     "prometheus-fundamentals-sr6-08"
+    ]
+   },
+   {
+    "name": "online-serving-signals",
+    "ids": [
+     "prometheus-fundamentals-sr6-04",
+     "prometheus-fundamentals-sr6-05"
+    ]
+   },
+   {
+    "name": "range-vector-brackets",
+    "ids": [
+     "prometheus-fundamentals-sr7-02",
+     "prometheus-fundamentals-sr10-04"
+    ]
+   },
+   {
+    "name": "range-query-steps",
+    "ids": [
+     "prometheus-fundamentals-sr7-03",
+     "prometheus-fundamentals-sr10-03"
+    ]
+   },
+   {
+    "name": "zero-valued-element-present",
+    "ids": [
+     "prometheus-fundamentals-sr10-11",
+     "prometheus-fundamentals-sr11-07"
+    ]
+   },
+   {
+    "name": "route-fallback-inheritance",
+    "ids": [
+     "prometheus-fundamentals-sr12-06",
+     "prometheus-fundamentals-sr12-07"
+    ]
+   },
+   {
+    "name": "tsdb-head-wal",
+    "ids": [
+     "prometheus-fundamentals-sr13-02",
+     "prometheus-fundamentals-sr13-10"
+    ]
+   },
+   {
+    "name": "remote-write-wal-queues",
+    "ids": [
+     "prometheus-fundamentals-sr14-01",
+     "prometheus-fundamentals-sr14-02",
+     "prometheus-fundamentals-sr14-03"
+    ]
+   },
+   {
+    "name": "federation-match-selectors",
+    "ids": [
+     "prometheus-fundamentals-sr14-08",
+     "prometheus-fundamentals-sr14-09",
+     "prometheus-fundamentals-sr14-10"
+    ]
+   },
+   {
+    "name": "native-histogram-defaults-false",
+    "ids": [
+     "prometheus-fundamentals-sr4-11",
+     "prometheus-fundamentals-sr14-05"
+    ]
+   }
+  ],
+  "sectionBalance": "After the edits, 137 cards remain: 63 true and 74 false. Every section has at least 9 cards, and each section's statement lengths stay within 5 characters between true and false (largest gap -4.7, in r1 and r5).\n\n| Section | Cards | True / False | Avg statement length, true vs false (chars) |\n|---|---|---|---|\n| r1 | 10 | 4 / 6 | 76.8 vs 81.5 |\n| r2 | 9 | 4 / 5 | 89.2 vs 91.2 |\n| r3 | 9 | 4 / 5 | 102.0 vs 98.4 |\n| r4 | 9 | 4 / 5 | 89.5 vs 92.8 |\n| r5 | 10 | 5 / 5 | 81.0 vs about 85.6 |\n| r6 | 11 | 6 / 5 | 99.8 vs 96.8 |\n| r7 | 11 | 5 / 6 | 78.0 vs about 78 |\n| r8 | 9 | 4 / 5 | about 98.7 vs 100.0 |\n| r9 | 9 | 4 / 5 | 95.2 vs 97.0 |\n| r10 | 10 | 5 / 5 | 91.0 vs 89.6 |\n| r11 | 10 | 4 / 6 | 97.2 vs 95.0 |\n| r12 | 9 | 4 / 5 | 101.0 vs 96.8 |\n| r13 | 10 | 5 / 5 | 91.4 vs 93.2 |\n| r14 | 11 | 5 / 6 | 100.2 vs 97.5 |",
+  "notes": "**How the editing rule played out.** Weak, duplicate and out-of-scope cards were dropped wherever the section stayed at 9 or more cards with a split no worse than 4 to 6. I rewrote a card instead of dropping it in only three places:\n- **r2 (sr2-07):** dropping all four flagged cards would have left 8.\n- **r9 (sr9-01):** dropping would have left 8 cards at 3 true / 5 false.\n- **r11 (sr11-01):** dropping would have left 3 true / 6 false.\n\nAs a result, r2, r3, r4, r8, r9 and r12 sit at exactly 9 cards. Some scope items no longer have a card:\n- rate before aggregation (sr8-05)\n- group_wait and repeat_interval (sr12-03, sr12-05)\n- always_scrape_classic_histograms (sr4-12)\n- the reserved __ prefix (sr1-04)\n- recording-rule naming (sr2-11)\n\nA later top-up batch could refill them, written as applied cases rather than name giveaways.\n\n**What I checked myself.** Every rewrite and source change was checked against the official page or the v3.15.0 / v0.34.1 tagged file. I checked these sentences:\n- the naming Base Units row: Percent is a ratio, \"Values are 0–1 (rather than 0–100)\"\n- the functions page on histogram_quantile: le \"has to be included in the by clause\"\n- the functions page on rate: it \"extrapolates to the ends of the time range\"\n- the functions page: increase is \"syntactic sugar\", and avg_over_time gives values \"the same weight\"\n- the native histogram spec on counter resets: a populated bucket that disappears counts as a drop, at the same schema and zero bucket width\n- the operators page: by \"drops labels that are not listed ... even if their label values are identical\"; the metric name is dropped in arithmetic; comparisons filter by default unless bool is used\n- operators.md at v3.15.0: unmatched series \"are not part of the result\", and fill modifiers are experimental\n- the recording rules page on SIGHUP: changes are \"only applied if all rule files are well-formatted\"\n- feature_flags: \"rules within a group execute sequentially\" because a rule can use a preceding rule's output\n- basics.md at v3.15.0 on lookback (\"newest sample that is less than the lookback period ago\") and staleness (\"no value is returned\")\n- storage.md: \"whichever triggers first\", \"Blocks must be fully expired\", cleanup \"in the background\"\n- the federation page on cross-service federation\n- queue_manager.go processExternalLabels: \"the value in b wins\"\n- alertmanager notify.go: nflog Receiver keyed by Integration and Idx\n- configuration.md at v3.15.0: send_native_histograms defaults to false, and protobuf_message defaults to prometheus.WriteRequest\n\nAll new URLs and anchors return HTTP 200 and resolve.\n\n**sr14-05.** The prompt's rule that send_native_histograms is ignored for io.prometheus.write.v2.Request matches the v3.15.0 config comment (\"noop (always true)\"). The verifier, however, cited v3.15.0 code that applies the flag to every protocol: write.go passes it unchanged, and watcher.go skips histogram records when it is false. I confirmed the watcher.go skip and the write.go pass-through myself. Remote Write 2.0 is also still experimental. So I rewrote the card as v1-only. Its appliesTo should be \"Prometheus 3.15.0, remote write v1\". The prompt rule should be corrected before any v2 card is written.\n\n**Fields the output schema cannot carry:**\n- sr11-01: the new factKey should be rule-files-reload-all-or-nothing.\n- sr2-07: the factKey should become percent-ratio-base-unit.\n- sr8-09: difficulty should go up to 2 or 3.\n- sr12-01: difficulty should go up to 2, because its fact is visible only in code.\n- sr9-01: factKey can become by-drops-unlisted-identical-labels.\n\n**Tell rewrites (5 used).** Four of them remove 'treats' from false statements: sr1-03, sr7-02, sr7-08, sr8-02. That leaves 'treats' in 2 false (sr2-09, sr11-07) and 1 true (sr6-06), within the two-card template limit. The fifth, sr5-02, removes a false-leaning 'before'. Each keeps its card's fact and answer.\n\nWithin the rewrites, two choices also help with tells:\n- sr8-09 puts the 'For native counter histogram h' opener on a true card.\n- sr9-01 and sr11-01 avoid 'even' and 'after' in true statements.\n\n**Problems still open:**\n- 'after' still marks true statements (sr11-09, sr12-09, sr12-11, sr13-02, sr14-07).\n- The 'documentation recommends <wrong option>' false template still carries 6 cards (sr1-06, sr2-02, sr6-01, sr6-10, sr8-06, sr13-11).\n- Strawmen the scan named but the verifiers did not flag remain: sr1-01, sr4-07, sr9-10, sr11-04, sr13-06, sr13-12.\n\nThese need a later pass. They were outside this edit's drop rules and its five-rewrite limit.\n\n**Conflict groups.** Scan groups were pruned of dropped cards. Groups left with fewer than two members were removed: summary-quantile-aggregation, range-function-extrapolation, target-relabel-before-scrape, on-keyword, vector-matching-cardinality, absent-functions and alertmanager-group-timers. seconds-base-unit was renamed base-units. I added native-histogram-defaults-false (sr4-11 with the rewritten sr14-05), because both now teach that a native histogram setting defaults to false."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "prometheus-fundamentals-sr2-07",
+    "decision": "keep",
+    "statement": "A disk usage metric that follows Prometheus naming guidance reports 75 for a disk that is 75% full.",
+    "answer": false,
+    "explanation": "Prometheus's base unit for percentages is a ratio from 0 to 1, so a disk that is 75% full reads 0.75, in a metric named like disk_usage_ratio.",
+    "reason": "Both lenses keep. Naming page Base Units table: Percent -> ratio, values 0-1 rather than 0-100, disk_usage_ratio. No longer gives sr2-06 away."
+   },
+   {
+    "id": "prometheus-fundamentals-sr3-07",
+    "decision": "fixed",
+    "statement": "To aggregate classic buckets for histogram_quantile(), the by clause of sum() must include le.",
+    "answer": true,
+    "explanation": "histogram_quantile() reads each classic bucket's upper bound from le. A sum by (job) that omits le drops it, so the function silently ignores the summed samples.",
+    "reason": "Merged both lens fixes in the explanation only: the wording lens's 'that omits le' replaces 'without le', which read like the without modifier, and the fact lens's 'silently ignores' replaces 'breaks the estimate'. I checked the functions page: 'Float samples without such a label are silently ignored' and 'the le label is required by histogram_quantile() to deal with classic histograms, it has to be included in the by clause.' Statement unchanged. Source unchanged (functions#histogram_quantile)."
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-03",
+    "decision": "keep",
+    "statement": "For float counter c, rate(c[5m]) extrapolates observed growth toward the selected window's edges.",
+    "answer": true,
+    "explanation": "rate() extends the observed increase out to the ends of the range, which allows for missed scrapes and for scrape cycles that do not line up with the window.",
+    "reason": "Both lenses keep. I checked the functions page: 'extrapolates to the ends of the time range, allowing for missed scrapes or imperfect alignment of scrape cycles with the range's time period.'"
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-09",
+    "decision": "keep",
+    "statement": "For native counter histogram h at fixed schema and zero-bucket width, resets(h[5m]) counts a vanished populated bucket.",
+    "answer": true,
+    "explanation": "With schema and zero-bucket width unchanged, a bucket that is no longer represented holds zero observations, so a populated bucket that disappears is a drop that resets() counts.",
+    "reason": "Both lenses keep (118 chars). The functions page resets() section independently confirms it: 'the disappearance of any previously populated bucket' counts as a reset. Source stays the native histograms spec, which supports the explanation's zero-population reasoning. The functions#resets URL, which the wording lens suggested as optional, also works."
+   },
+   {
+    "id": "prometheus-fundamentals-sr9-01",
+    "decision": "keep",
+    "statement": "For float gauge g, PromQL sum by(job)(g) drops a region label that has one value across all input series.",
+    "answer": true,
+    "explanation": "by keeps only the listed labels, so region leaves the output even when every input carries the same value; sum without(instance)(g) would keep it.",
+    "reason": "Both lenses keep. Operators page: by 'drops labels that are not listed in the by clause, even if their label values are identical between all elements of the vector'; without preserves all other labels."
+   },
+   {
+    "id": "prometheus-fundamentals-sr11-01",
+    "decision": "keep",
+    "statement": "Prometheus keeps running its previous rules if a SIGHUP reload finds one malformed rule file.",
+    "answer": true,
+    "explanation": "Rule files reload at runtime on SIGHUP, but Prometheus applies the changes only when all rule files are well-formatted, so one bad file blocks the whole update.",
+    "reason": "Both lenses keep. Recording rules page: 'The changes are only applied if all rule files are well-formatted.' New factKey rule-files-reload-all-or-nothing."
+   },
+   {
+    "id": "prometheus-fundamentals-sr14-05",
+    "decision": "keep",
+    "statement": "Prometheus 3.15.0 sends native histograms over remote write v1 with send_native_histograms left at its default.",
+    "answer": false,
+    "explanation": "send_native_histograms defaults to false, so a remote write v1 (prometheus.WriteRequest) queue leaves native histogram samples out until it is set to true.",
+    "reason": "Both lenses keep. I checked the v3.15.0 configuration.md: line 3931 sets protobuf_message default = prometheus.WriteRequest; line 3955 sets send_native_histograms default = false and marks it a noop for v2. Set appliesTo to 'Prometheus 3.15.0, remote write v1'. Source stays the pinned configuration reference #remote_write."
+   },
+   {
+    "id": "prometheus-fundamentals-sr14-12",
+    "decision": "keep",
+    "statement": "With cross-service federation, Prometheus stores selected peer-service metrics beside its own collected metrics.",
+    "answer": true,
+    "explanation": "The receiving server scrapes selected series from another service's Prometheus server and ingests them, so its alerts and queries can use both datasets in one place.",
+    "reason": "Both lenses keep. Federation page: a server of one service scrapes selected data from another service's Prometheus server to enable alerting and queries against both datasets within a single server."
+   },
+   {
+    "id": "prometheus-fundamentals-sr1-03",
+    "decision": "keep",
+    "statement": "A Prometheus label with an empty value creates a different series than leaving it out.",
+    "answer": false,
+    "explanation": "An empty label value and an absent label are equivalent in Prometheus's data model.",
+    "reason": "Both lenses keep. Data model page: 'Labels with an empty label value are considered equivalent to labels that do not exist.'"
+   },
+   {
+    "id": "prometheus-fundamentals-sr5-02",
+    "decision": "fixed",
+    "statement": "Prometheus holds file-discovery target changes until its next configuration reload.",
+    "answer": false,
+    "explanation": "Prometheus watches discovery files and applies valid target-group changes as they arrive.",
+    "reason": "Text unchanged; only the source changes, as the fact lens asked and the wording lens suggested as optional. New source title 'Prometheus 3.15.0 configuration reference', URL https://github.com/prometheus/prometheus/blob/v3.15.0/docs/configuration/configuration.md#file_sd_config. I checked lines 2156-2169 at that tag: 'Changes to all defined files are detected via disk watches and applied immediately' and 'Only changes resulting in well-formed target groups are applied.' file.go does not state the 'valid' clause in prose."
+   },
+   {
+    "id": "prometheus-fundamentals-sr7-02",
+    "decision": "keep",
+    "statement": "PromQL evaluates requests_total[5m] to an instant vector of current samples.",
+    "answer": false,
+    "explanation": "requests_total[5m] yields a range vector containing samples from the selected five-minute window for its series.",
+    "reason": "Both lenses keep. Querying basics: range vector literals select a range of samples back from the current instant, e.g. [5m]."
+   },
+   {
+    "id": "prometheus-fundamentals-sr7-08",
+    "decision": "keep",
+    "statement": "A PromQL selector keeps series that pass either of two matchers on one label name.",
+    "answer": false,
+    "explanation": "PromQL combines same-label matchers with AND: a series must satisfy both.",
+    "reason": "Both lenses keep. Querying basics: 'Multiple matchers can be used for the same label name; they all must pass for a result to be returned.'"
+   },
+   {
+    "id": "prometheus-fundamentals-sr8-02",
+    "decision": "keep",
+    "statement": "For float counter c, rate(c[5m]) counts the drop at an observed reset inside that window as negative growth.",
+    "answer": false,
+    "explanation": "rate() adjusts observed counter resets before calculating the counter's rate.",
+    "reason": "Both lenses keep. I checked the functions page: 'Breaks in monotonicity (such as counter resets due to target restarts) are automatically adjusted for.' I did not adopt the wording lens's optional richer explanation ('adds the post-reset value'), because the fact lens did not check it."
+   }
+  ]
+ }
+}

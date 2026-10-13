@@ -1,0 +1,985 @@
+{
+ "deck": "gcp-pcd",
+ "verdicts": [
+  {
+   "section": "1.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s1.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/scheduler/docs/configuring/cron-job-schedules)",
+     "evidence": "\"Cloud Scheduler runs on wall clock time.\" ... \"UTC is recommended for Cloud Scheduler to avoid the problem completely.\" (https://docs.cloud.google.com/scheduler/docs/configuring/cron-job-schedules)",
+     "problem": "The answer is correct, but the statement is close to a copy of the source sentence ('runs on wall clock time'), and 'in a configured time zone' gives the answer away: a schedule set in a named local time zone is evaluated in local clock time almost by definition. The useful fact, that DST shifts cause skipped or anomalous runs and that UTC avoids this, appears only in the explanation.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"A Cloud Scheduler job in a daylight-saving time zone can run unexpectedly or be skipped when the clocks change.\" (111 chars). Explanation: \"Cloud Scheduler evaluates schedules in local wall-clock time, so daylight-saving shifts can cause execution anomalies. Google recommends UTC for jobs that need an exact cadence.\" (177 chars). Keep the same URL."
+    },
+    {
+     "id": "gcp-pcd-s1.1-09",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/run/docs/about-concurrency)",
+     "evidence": "\"When concurrency is enabled, Cloud Run does not provide isolation between concurrent requests processed by the same instance.\" (https://docs.cloud.google.com/run/docs/about-concurrency)",
+     "problem": "The documented fact is that Cloud Run does not isolate concurrent requests. The statement turns this into 'share process-level application state'. That holds only when the server handles concurrent requests in one process. A multi-process server in one instance (for example gunicorn with several workers) sends concurrent requests to separate processes that do not share process-level state, so an expert could argue the opposite. 'Let' also suggests Cloud Run grants a feature, when the real point is that it provides no isolation.",
+     "suggestedFix": "Replace (answer stays true). Statement: \"Cloud Run leaves isolation between concurrent requests in one service instance to the application code.\" (103 chars). Explanation: \"With concurrency above 1, Cloud Run provides no isolation between requests one instance processes at once. Shared mutable state, such as globals in a threaded server, needs concurrency-safe code.\" (195 chars). Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.1 (5 true: 01, 02, 05, 09, 10; 5 false: 03, 04, 06, 07, 08). Every source URL loads, is official and current, and supports its card.\n\nEvidence for the 8 cards that pass:\n- 01: \"Individual connections to the read endpoint target the same replica for the lifetime of the connection.\"\n- 02: \"You can use all gRPC types, streaming or unary, with Cloud Run\" and streaming requires HTTP/2.\n- 03: \"Workflows blocks the workflow execution until the operation completes successfully or fails.\" The statement's \"By default\" correctly allows for the connector_params polling options.\n- 04: \"max_concurrent_dispatches: The maximum number of tasks in the queue that can run at once\", separate from the token-bucket dispatch rate.\n- 06: \"There is no in-order, first-in-first-out delivery guarantee.\"\n- 07: \"session affinity takes precedence over any traffic splitting.\" The note that a traffic-split update reassigns some cookie-bearing clients does not make the false answer defensible.\n- 08: \"it considers the average CPU utilization across all CPUs allocated to an instance.\"\n- 10: \"returning a successful HTTP response code ([200 - 299]), the task will be removed from the queue.\"\n\nDuplicate check: no 1.1 card shares a fact with cards in other sections. The nearest are s3.1-07 (traffic rollback reuses an existing revision) and s3.1-08 (Eventarc destination path). Both rest on different facts from 07 and 06.\n\nPrompt rules checked: the exam guide PDF (4 pages) matches the prompt's 1.1 title and considerations. Those include session affinity, Memorystore, HTTP REST/gRPC, Eventarc/Pub/Sub, traffic splitting, and orchestration with Workflows, Eventarc, Cloud Tasks and Cloud Scheduler. The prompt's rule that session affinity is best effort and takes precedence over traffic splitting is confirmed on the session-affinity page. I found no wrong prompt rule relevant to 1.1.\n\nMinor observations, not flagged: section 1.1 has no card on platform choice, load balancers, Apigee/API Gateway rate limiting, or replication/failover, so coverage leans towards orchestration (two Cloud Tasks cards). Card 01's \"can keep\" understates a deterministic behaviour but stays correct. Memorystore for Redis remains a current, non-deprecated product."
+  },
+  {
+   "section": "1.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s1.2-09",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official (docs.cloud.google.com/binary-authorization/docs/overview)",
+     "evidence": "Overview: \"You configure the Binary Authorization policy to verify the attestation before allowing the image to be deployed.\" and \"When you deploy an image, Binary Authorization checks the policy and enforces any rule it finds that governs its deployment.\" (https://docs.cloud.google.com/binary-authorization/docs/overview). The answer (False) is correct and supported. The problem is the premise: no learner who has read even the overview would think an admission controller re-executes test suites, so the card is close to a strawman. It is also rated difficulty 3, although it does not set two similar things against each other.",
+     "problem": "The answer is right but the card is near-strawman: re-running tests at admission is not a misconception that a studied learner holds, and difficulty 3 is overstated.",
+     "suggestedFix": "Replace and keep the False answer. Statement: \"A Cloud Run deploy blocked by Binary Authorization stops traffic to the service's previously serving revision.\" (110 chars, answer false). Explanation: \"When Binary Authorization rejects a new revision's image, the deployment fails and the service continues to serve its previously serving healthy revision.\" (154 chars). Source: https://docs.cloud.google.com/binary-authorization/docs/run/enabling-binauthz-cloud-run (\"the service continues to serve the previously serving healthy revision\"). Difficulty 2."
+    },
+    {
+     "id": "gcp-pcd-s1.2-01",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/run/docs/securing/service-identity)",
+     "evidence": "Page defines the deployer as \"The identity (either a user account or service account) that you use to deploy and manage a Cloud Run resource by making requests to the Cloud Run Admin API\" and the service identity as \"The identity (a service account) that the Cloud Run instance uses ... to make requests from Cloud Run to Google Cloud APIs\" (https://docs.cloud.google.com/run/docs/securing/service-identity). The card is true and supported. But \"X can differ from Y\" is readable from the wording alone: a player who knows nothing would guess True, because two named identities that 'can differ' almost always can.",
+     "problem": "The card is correct, but the hedge 'can differ' gives the answer away and the card tests the definition of the two identities rather than a consequence a developer meets.",
+     "suggestedFix": "Replace and keep the True answer. Statement: \"Attaching a user-managed service identity to a Cloud Run service requires the deployer to hold actAs on that account.\" (117 chars, answer true). Explanation: \"The deployer needs iam.serviceAccounts.actAs on the service account, for example through the Service Account User role, before Cloud Run attaches it to a service or revision.\" (174 chars). Source: https://docs.cloud.google.com/run/docs/configuring/services/service-identity (\"contains the iam.serviceAccounts.actAs permission, which is required to attach a service account on the service or revision\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 1.2. I opened each source URL, and all are current official docs.cloud.google.com pages. Balance is 5 true (01, 03, 05, 07, 08) and 5 false (02, 04, 06, 09, 10). No card has a wrong answer, and I found no duplicate in the rest of the deck. 3.2-03 (image pulls through the node identity) and 2.3-08 (trigger service account) rest on different facts.\n\nVerified quotes:\n- 02: the service-identity page says permissions for a user-managed account must be granted separately. The default Compute Engine account 'might automatically be granted the Editor role', but the statement names a user-managed account, so it stays false.\n- 03: ADC order is 'GOOGLE_APPLICATION_CREDENTIALS environment variable', then the gcloud auth application-default login file, then the attached service account from the metadata server.\n- 04: GOOGLE_APPLICATION_CREDENTIALS can point to a Workforce or Workload Identity Federation credential configuration file, or to a service account key.\n- 05: the GKE WIF page: 'In your IAM policy, you refer to a Kubernetes resource by using an IAM principal identifier'.\n- 06: 'Environment variables are resolved at instance startup time'.\n- 07: 'add a Google-signed OpenID Connect ID token', with the audience set to the service URL or a custom audience. Neither the service-to-service page nor the developers page offers access tokens as an alternative.\n- 08: 'Artifact Analysis continues to scan images and packages as long as they have been pulled within the last 30 days'.\n- 10: 'Secret Manager triggers a SECRET_ROTATE message to the designated Pub/Sub topics', and the subscriber does the work, 'such as creating a new version of the secret'.\n\nMinor, not flagged:\n- 08 does not say 'in Artifact Registry with automatic scanning'. Continuous analysis applies only to automatic scanning, not to On-Demand Scanning results. Adding 'Artifact Registry' to the statement would close that gap.\n- 04 reads awkwardly ('requires a private key in a credential file supplied through ...'), but both readings are false.\n\nPrompt rules checked against the official pages:\n- The exam guide PDF loads with 4 pages, and the 1.2 heading and bullets match the prompt.\n- The prompt's 1.2 scope statements (deployer vs runtime identity, ADC order, federation config file, startup-resolved secret env vars) are all confirmed on the official pages.\n- I found no wrong prompt rule.\n- Coverage gap: the guide's 1.2 also lists data retention and organization policies (Object Lifecycle Management, retention policy lock), IAP and Web Security Scanner, Cloud KMS, Security Command Center, Cloud SQL/AlloyDB Auth Proxy authentication, and secure service-to-service networking. The prompt's 1.2 scope and the deck's cards cover none of these, so the section skews toward identity and secrets. This is a breadth issue in the prompt, not a factual error.\n\nWebSearch was unavailable because the session search budget was exhausted. All verification used WebFetch or curl on the official pages."
+  },
+  {
+   "section": "1.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s1.3-04",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/bigtable/docs/schema-design)",
+     "evidence": "Source: \"Row keys that start with a timestamp. This pattern causes sequential writes to be pushed onto a single node, creating a hotspot.\" The fact is correct, but gcp-pde-s3.1-01 (gcp-pde-b2.json) already tests it: \"Bigtable can concentrate sequential writes on one node when row keys begin with timestamps.\" (True, factKey bigtable-timestamp-prefix-hotspot, same URL). The prompt assigns schema-design facts for data platforms to gcp-pde and says never to retest a PDE fact at the same depth. The statement also closely paraphrases the source sentence.",
+     "problem": "This card rests on the same fact, at the same depth, as gcp-pde-s3.1-01, and its wording is close to that card and to the source. It teaches nothing new at the developer level.",
+     "suggestedFix": "Replace with a True card. Statement: \"Bigtable reads can return cells that already match a garbage collection rule until compaction removes them.\" Explanation: \"Bigtable can take up to a week to delete data its garbage collection rules match, and it stays readable until then. Apps add a read filter that matches those rules.\" URL: https://docs.cloud.google.com/bigtable/docs/garbage-collection (\"when a piece of data becomes eligible for garbage collection, you can continue to read it until the next compaction occurs\"). No garbage collection card exists in the GCP decks."
+    },
+    {
+     "id": "gcp-pcd-s1.3-02",
+     "verdict": "ambiguous",
+     "urlStatus": "loads, official, current (docs.cloud.google.com/firestore/native/docs/query-data/order-limit-data, Core operations, Standard and Enterprise)",
+     "evidence": "Source: \"An orderBy() clause also filters for existence of the given field. The result set will not include documents that do not contain the given field.\" The fact and the answer (True) are right. But the statement \"Firestore requires an ordered field to exist in each document returned by that query\" refers to \"that query\" with no query named before it. Its use of \"requires\" also allows a reading in which Firestore rejects or errors on the query when some documents lack the field, and that reading is false.",
+     "problem": "The wording is defective: \"that query\" has nothing to refer back to, and \"requires\" lets an expert read it as a validation error rather than silent filtering, which would make the answer False. The card's real point is the silent exclusion of documents, and the statement hides it.",
+     "suggestedFix": "Keep True. Statement: \"A Firestore query ordered by a field omits documents that lack that field, even when they match its filters.\" Explanation: \"In Firestore, an orderBy clause also filters on the field's existence, so documents without the field drop out of results silently. Give every document the field or run a separate query.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 section 1.3 cards (5 true, 5 false) against their source pages, the current product documentation and the four-page exam guide PDF.\n\nEight cards pass:\n- 01: composite indexes are not automatic. Source: \"If you attempt a compound query ... that doesn't map to an existing index, you receive an error\". This is a different fact from s2.1-04, which is about the emulator.\n- 03: deleting a document does not delete its subcollections. Server libraries offer an explicit recursiveDelete, which matches the explanation.\n- 05: interleaved keys. The DDL reference says the parent key must be a prefix of the child key for both INTERLEAVE IN and INTERLEAVE IN PARENT. This is a different fact from gcp-pde-s3.1-04, which is about locality.\n- 06: Cloud SQL for PostgreSQL replicas lag. Source: \"writes might be counted as lagging ... if the replica hasn't yet applied the write\". The replication overview page states \"asynchronous\" more directly, but the cited source is enough.\n- 07: object listing is strongly consistent. Source: \"when you create a bucket or object and then immediately perform the relevant list operation, the newly created bucket or object appears\". The cached public object exception does not apply to listings.\n- 08: signed URLs and the JSON API. Source: \"Signed URLs can only be used to access Cloud Storage resources through XML API endpoints.\" The explanation's second sentence is vague filler but not wrong.\n- 09: a document reference performs no network operation and creates nothing.\n- 10: in the Storage Write API, \"The JSON data is encoded as a string\". It is in scope because the guide's 1.3 bullet says \"Writing data to BigQuery for analytics and AI/ML workloads\".\n\nIf both suggested fixes are applied, the section keeps its 5 true and 5 false balance.\n\nPrompt rules checked against the guide PDF:\n- The four-page guide, the 1.3 title and its bullets match the prompt.\n- The 1.3 scope rules on signed URLs (XML API) and automatic basic indexes are correct.\n- Inaccuracy: the 1.3 scope text leaves out AlloyDB, although the guide names it in two 1.3 bullets (schemas, and eventual vs strong replication). The section therefore has no AlloyDB card.\n- The guide's 2.1 bullet names Gemini Cloud Assist, which the prompt treats as Preview and excludes from cards. That belongs to section 2.1 and is not judged here.\n- I did not open the prompt's Preview claim, the retirement dates or the Cloud Build identity rule, because no 1.3 card relies on them.\n\nCross-deck check: s1.3-04 duplicates gcp-pde-s3.1-01 in gcp-pde-b2.json.\n\nFiles: content/raw/gcp-pcd-b1.json and content/raw/gcp-pde-b2.json."
+  },
+  {
+   "section": "2.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s2.1-09",
+     "verdict": "explanation_error",
+     "urlStatus": "loads (docs.cloud.google.com/run/docs/local-dev-functions, official, current)",
+     "evidence": "The source page lists only `--signature-type` / `FUNCTION_SIGNATURE_TYPE` for Node.js. The current Node.js samples use declarative registration, though, and the framework takes the type from that call. Functions Framework Node.js main.ts says: \"It is possible to overwrite the configured signature type in code so we reset it here based on what we loaded.\" function_registry.ts: `http = (...) => register(functionName, 'http', handler)` and `cloudEvent = (...) => register(functionName, 'cloudevent', handler)`. https://docs.cloud.google.com/run/docs/write-functions registers Node.js handlers with functions.http() and functions.cloudEvent().",
+     "problem": "The False answer is right: the framework does not read handler parameters. The explanation says the framework \"uses a configured signature type\" and tells the developer to \"Set that type when preparing the local function environment\". That is misleading for the documented functions.http/functions.cloudEvent style, where the registration call sets the type and code overrides any flag. It is only right for plain exports.",
+     "suggestedFix": "Keep the statement (answer False). Explanation (about 205 chars): \"The Node.js Functions Framework takes the type from a functions.http or functions.cloudEvent registration, or from --signature-type for a plain export. It never infers the type from handler parameters.\" Keep the local-dev-functions URL. Optionally cite https://docs.cloud.google.com/run/docs/write-functions for the registration part."
+    },
+    {
+     "id": "gcp-pcd-s2.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads (docs.cloud.google.com/workstations/docs/customize-container-images, official, current)",
+     "evidence": "\"To expedite the environment setup of specific development use cases, you can create custom container images that extend these base images to pre-install tools and dependencies and that run automation scripts.\" (https://docs.cloud.google.com/workstations/docs/customize-container-images). Same page: \"When the workstation configuration specifies a persistent home directory (which is the default behavior), a persistent disk backing the home directory is dynamically attached to the container at runtime. This process overwrites modifications made to the `/home` directory at container image build time.\"",
+     "problem": "The statement is true by the definition of a custom container image: anyone who knows what a custom image is answers True. It is also a close paraphrase of the source sentence. It teaches no developer consequence, and it reuses the image topic of s2.1-02.",
+     "suggestedFix": "Replace (answer True). Statement (about 104 chars): \"Cloud Workstations hides files a custom image adds under /home once the persistent home disk is mounted.\" Explanation (about 215 chars): \"With the default persistent home directory, a disk attaches over /home at container start and replaces build-time changes there. Install tools outside /home or copy files in with a startup script.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 2.1 against their source pages, which all load and are current, and against current product docs and code. The answers are balanced, 5 True and 5 False, and both replacements keep that balance.\n\nCards that pass, with the quote that settles each:\n- s2.1-01: \"All files you store in your home directory ... persist between sessions\". Ephemeral mode is excluded by the word \"regular\".\n- s2.1-02: \"You're responsible for maintaining and updating custom packages...\" and \"we recommend setting up a pipeline to automatically rebuild these images\".\n- s2.1-03: \"Cloud Code leverages Skaffold under the hood to run or debug your application\". The page was updated 2026-10-09.\n- s2.1-04: \"The emulator does not track composite indexes and will instead execute any valid query\". The emulator defaults to Standard edition.\n- s2.1-06: \"IAM operations are not supported.\"\n- s2.1-07: \"When this environment variable is set, the server client libraries automatically connect to the emulator.\"\n- s2.1-08: \"Because the emulator stores data only in memory, it won't persist data across runs.\"\n- s2.1-10: \"By default, Gemini Code Assist uses the current open file as context.\"\n\nDuplicate check:\n- s2.1-04 is not a duplicate of s1.3-01. That card is about production not auto-building a missing composite index; s2.1-04 is about emulator fidelity.\n- s2.1-09 is not a duplicate of s2.3-02 or s2.3-03, which test local invocation and the separation from Eventarc.\n- There are 2 AI-tool cards (s2.1-10 and s2.3-04), within the cap of 3.\n\nPrompt rules checked and found correct:\n- The guide PDF is 4 pages. Its 2.1 bullets name the gcloud emulators, Cloud Code, Gemini Cloud Assist, Cloud Shell and Cloud Workstations, plus IDE AI tooling (coding assistants and MCP servers).\n- Gemini Cloud Assist is still labeled Preview.\n\nNo prompt rule was found wrong. One gap in the prompt's 2.1 scope note: it points only to local-dev-functions, which documents Node.js signature types only as a flag or environment variable. The prompt should also cite https://docs.cloud.google.com/run/docs/write-functions, where Node.js signature types come from declarative registration."
+  },
+  {
+   "section": "2.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s2.2-02",
+     "verdict": "duplicate",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/build/docs/configuring-builds/pass-data-between-steps: \"In the next step, everything in the environment is discarded EXCEPT items in '/workspace'\" and \"Anything written to user-defined volumes and /workspace by any step will be available to subsequent steps.\"",
+     "problem": "The answer (false) is right, but the card rests on the same fact as gcp-pcd-s2.2-01. The source states it as one rule: /workspace persists between steps, the rest of the step environment does not. The two cards are the two sides of one distinction, and the prompt treats those as one fact. A player who knows that only /workspace carries state can answer both cards.",
+     "suggestedFix": "Replace, keeping the answer False. Statement: \"Cloud Build keeps a built image for later builds when the config neither pushes it nor lists it in images.\" Explanation: \"Cloud Build discards images that a build creates but does not push. List them in the images field, or push them to Artifact Registry, to keep them after the build.\" URL: https://docs.cloud.google.com/build/docs/build-config-file-schema (quote: \"if you build images and don't push them to the registry, the images are discarded on build completion\")."
+    },
+    {
+     "id": "gcp-pcd-s2.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current; supports the card",
+     "evidence": "https://docs.cloud.google.com/build/docs/configuring-builds/substitute-variable-values: \"Use substitutions in your build's steps and images to resolve their values at build time.\" (example '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/my-image')",
+     "problem": "The answer (true) is right, but it follows from what the word \"substitution\" means: a parameter lets one config produce different values. A player can answer it from the wording alone (\"let one build configuration choose different ... paths\"). It is close to a definition card and adds nothing about how Cloud Build behaves.",
+     "suggestedFix": "Replace, keeping the answer True. Statement: \"Cloud Build fills $SHORT_SHA in a trigger-invoked build without the build file defining that substitution.\" Explanation: \"Cloud Build supplies default substitutions such as $COMMIT_SHA and $SHORT_SHA for builds invoked by triggers. A manually submitted build gets these values only when the developer passes them.\" The URL stays the same (quote: \"Cloud Build provides the following default substitutions for builds invoked by triggers: ... $COMMIT_SHA, $REVISION_ID, $SHORT_SHA ...\")."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 2.2 against their source pages (all load, are official and current) and against the build config schema and the projects.builds REST reference. All 10 answers are correct. The section has 5 true and 5 false cards. Evidence for the cards that pass: 01 (/workspace persists: \\\"Anything written to user-defined volumes and /workspace by any step will be available to subsequent steps\\\"). 03 (waitFor: \\\"By default, build steps run sequentially, but you can configure them to run concurrently\\\"). 04 (\\\"Use the name field of a build step to specify a cloud builder, which is a container image running common tools\\\"). 06 (\\\"If your build is invoked by a trigger, the dynamicSubstitutions field is always set to true\\\"; REST: \\\"always enabled for triggered builds and cannot be overridden\\\"). 07 (REST images: \\\"A list of images to be pushed upon the successful completion of all build steps\\\"). 08 (\\\"If a variable is defined in both globally and in a build step, the variable will use the build step value\\\"). 09 (\\\"Cloud Build can't generate provenance if you push your image to Artifact Registry using an explicit docker push step\\\"). 10 (\\\"Builds will only be marked successful if provenance is generated\\\"). Card 04 is a borderline easy card: the name field versus the -t destination is a confusion beginners really have, so I left it. Card 06's \\\"nested build substitutions\\\" is the author's paraphrase of \\\"reference the value of another variable within a user-defined substitution\\\". It is acceptable. Prompt rules: I checked the 2.2 scope against the exam guide PDF. 2.2 reads \\\"Using Cloud Build and Artifact Registry to build and store containers from source code\\\" and \\\"Configuring provenance in Cloud Build (e.g., Binary Authorization)\\\", which matches the prompt. Section 2 is weighted ~23% as pinned. No prompt rule relevant to 2.2 was wrong. Side observation for another section: the guide's 2.1 lists Gemini Cloud Assist among the tools, which the prompt deliberately excludes as Preview. Limit: I could not run a fresh web search for a recent Cloud Build change to how provenance treats docker push (search budget exhausted). The current provenance page still states the restriction, so card 09 stands."
+  },
+  {
+   "section": "2.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s2.3-04",
+     "verdict": "out_of_scope",
+     "urlStatus": "200, official, last updated 2026-10-09; carries a deprecation banner",
+     "evidence": "https://docs.cloud.google.com/gemini/docs/codeassist/sunset (last updated 2026-10-09): \"Starting October 9, 2026, you can no longer purchase new Gemini Code Assist Standard or Enterprise subscriptions. Your existing subscriptions will continue to work and remain supported until the end of your contractual agreement.\" ... \"Going forward, agentic coding assistance will be available through Antigravity\". The source page itself opens with: \"We have unified our tools into a single, multi-agent platform called Antigravity ... Starting June 18, 2026, Gemini Code Assist IDE Extensions and Gemini CLI stopped serving requests for the Gemini Code Assist for individuals, Google AI Pro, and Google AI Ultra tiers.\" The smart-action text itself still holds: \"Select an action such as Generate unit tests.\"",
+     "problem": "The answer (True) still holds for existing subscribers, but the product has been closed to new customers since 2026-10-09 and is being replaced by Antigravity. The prompt's own rule says to leave out products that are closed to new customers, and the prompt's assumption that this is a current, generally available workflow was overtaken one day after its 2026-10-08 verification.",
+     "suggestedFix": "Drop and replace with a true non-AI card. Statement (119 chars): \"Cloud Build steps share a local Docker network, so an integration-test step can call a service an earlier step started.\" Explanation (198): \"Cloud Build attaches each step's container to a local Docker network named cloudbuild, which lets steps communicate, for example a test step calling a service container started earlier in the build.\" Answer True. URL https://docs.cloud.google.com/build/docs/overview (\"Each build step is run with its container attached to a local Docker network named cloudbuild. This allows build steps to communicate with each other and share data.\")"
+    },
+    {
+     "id": "gcp-pcd-s2.3-03",
+     "verdict": "duplicate",
+     "urlStatus": "200, official, last updated 2026-10-09",
+     "evidence": "https://docs.cloud.google.com/run/docs/local-dev-functions: \"You can trigger locally-running functions by sending them HTTP requests routed using a local serving process.\" followed by the curl -X POST examples to localhost:8080 with ce-* headers. The page never mentions any Eventarc routing option for local tests.",
+     "problem": "This card rests on the same fact as gcp-pcd-s2.3-02: a local CloudEvent test is a direct HTTP POST to the local Functions Framework process. Knowing 02 gives away 03. Both are difficulty 1. It also leans toward a strawman, because nobody who has read the local-testing page would expect Functions Framework to route through Eventarc. The source supports the answer only by omission.",
+     "suggestedFix": "Replace, keeping False. Statement (118): \"A Pub/Sub sample event posted to a local Functions Framework handler arrives with message data already base64-decoded.\" Explanation (189): \"Pub/Sub event payloads carry message.data base64-encoded, in local Functions Framework tests as in production. The handler is expected to decode it, so a test sample should encode its data.\" Same URL (\"Functions that need access to the original Pub/Sub message's data value are expected to perform this decoding.\")"
+    },
+    {
+     "id": "gcp-pcd-s2.3-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, last updated 2026",
+     "evidence": "https://docs.cloud.google.com/build/docs/private-pools/use-in-private-network: \"create a private connection between the private pool and your managed VPC network. This enables the private pool to access resources in your VPC network\". https://docs.cloud.google.com/build/docs/private-pools/private-pools-overview feature table: \"Peer into a VPC or shared VPC to access private resources\" (private pool only).",
+     "problem": "The statement is a truism: a test \"can reach a private VPC endpoint when its private pool has the required network connectivity\" is true by definition. It teaches nothing about the real distinction, which is private pool versus default pool and VPC peering.",
+     "suggestedFix": "Replace, keeping True. Statement (112): \"Cloud Build private pools can peer with a customer VPC so integration tests reach test databases on private IPs.\" Explanation (199): \"Private pools run in a Google-owned service producer network that you peer with your VPC, giving builds access to private resources. The default pool offers public internet access but no VPC peering.\" URL https://docs.cloud.google.com/build/docs/private-pools/private-pools-overview"
+    },
+    {
+     "id": "gcp-pcd-s2.3-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, last updated 2026-10-09",
+     "evidence": "https://docs.cloud.google.com/build/docs/building/build-python: \"If you've defined unit tests in your application using a testing framework such as pytest, you can configure Cloud Build to run the tests by adding the following fields in a build step\". The page supports explicit test steps only by implication and states nothing about discovery.",
+     "problem": "This is a strawman. No learner who has written a cloudbuild.yaml believes Cloud Build adds test steps on its own because a tests directory exists. The card also overlaps 2.2's ownership of step configuration and tests no Cloud Build behavior specific to test gating.",
+     "suggestedFix": "Replace, keeping False. Statement (103): \"Cloud Build marks a build failed when every step fails even though each step sets allowFailure to true.\" Explanation (194): \"When every step sets allowFailure to true, Cloud Build still reports the build as Successful even if all steps fail. Use allowExitCodes or no allowFailure on test steps that must gate the build.\" URL https://docs.cloud.google.com/build/docs/build-config-file-schema (\"If all of the build steps in a build have allowFailure set to true and all of the build steps fail, then the status of the build is still Successful.\")"
+    }
+   ],
+   "notes": "Checked all 10 cards in section 2.3, all in raw/gcp-pcd-b2.json. Every source URL returned 200 on 2026-10-13. Six cards pass:\n- 02: the local-dev-functions page shows curl -X POST with ce-* headers and a JSON body.\n- 05: the schema says \\\"However, if the build step fails, and it produces another exit code ... then the overall build will fail\\\" and \\\"This field takes precedence over allowFailure\\\".\n- 06: step order says \\\"A step is dependent on every id in its waitFor and will not launch until each dependency has completed successfully\\\".\n- 07: REST says artifacts are \\\"uploaded upon successful completion of all build steps\\\", and build-python shows artifacts.objects for the JUnit XML. The card is mildly guessable and close in spirit to 2.2-07 (images pushed after steps succeed), but it is accurate.\n- 08: triggers says \\\"If you specified a service account in your build config, it will be ignored during build execution when using triggers.\\\"\n- 10: REST says \\\"Time limit for executing this build step\\\", and step order says dependents \\\"will not launch until\\\" dependencies succeed. That waiting time falls outside the step timeout is an inference from these two pages rather than a quoted sentence. It is defensible but weakly sourced.\n\nIf all four suggested replacements are applied, the true/false balance stays at 5/5. Replacements 01 and 03 stay False; 04 and 09 stay True.\n\nPrompt rules found wrong or outdated:\n1. The AI-scope rule treats Gemini Code Assist unit-test generation as a current, generally available workflow. Since 2026-10-09 (https://docs.cloud.google.com/gemini/docs/codeassist/sunset), new Gemini Code Assist Standard/Enterprise subscriptions can no longer be bought, and Antigravity is the stated successor. The individuals, Google AI Pro and Google AI Ultra tiers stopped being served on 2026-06-18 (https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals). Under the prompt's own \\\"closed to new customers\\\" rule, this also hits gcp-pcd-s2.1-10 (Gemini Code Assist chat context), which is outside my section and should be rechecked. The exam guide may still name Gemini Code Assist; I did not re-open the PDF.\n2. The allowExitCodes precedence rule and the Functions Framework local-invocation rule are confirmed on the official pages.\n\nThe web search budget for this session was exhausted, so all verification used direct fetches of official pages."
+  },
+  {
+   "section": "3.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s3.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last updated 2026-10-09",
+     "evidence": "https://docs.cloud.google.com/run/docs/container-contract: \"For Cloud Run jobs, the container must exit with exit code 0 when the job has successfully completed.\" The answer is right and sourced, but it is the generic Unix/POSIX convention (exit 0 = success). Anyone can answer True from common sense, so it teaches nothing specific to Cloud Run (truism rule).",
+     "problem": "Truism. Exit status 0 means success in every process runner, so a player who knows nothing about Cloud Run jobs gets this right.",
+     "suggestedFix": "Replace (answer TRUE, keeps the balance): statement \"Cloud Run sets CLOUD_RUN_TASK_INDEX so each parallel job task's container can pick its own slice of the input.\" Explanation: \"Each Cloud Run job task receives CLOUD_RUN_TASK_INDEX, from 0 to the task count minus 1, together with CLOUD_RUN_TASK_COUNT, so application code can shard work across tasks.\" Same source URL (container contract lists both variables)."
+    },
+    {
+     "id": "gcp-pcd-s3.1-07",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, last updated 2026-10-09",
+     "evidence": "https://docs.cloud.google.com/run/docs/rollouts-rollbacks-traffic-migration: to roll back, \"Select Send all traffic to one revision\" and pick an existing revision, so rebuilding is never involved. https://docs.cloud.google.com/run/docs/managing/revisions: \"When you deploy to a service or change the configuration of a service, an immutable revision is created.\"",
+     "problem": "Close to a strawman. Nobody who has studied Cloud Run revisions thinks a traffic rollback rebuilds an image. The answer also follows directly from card 06's fact (configuration is kept in immutable revisions), so the two cards overlap. The same page has a real developer trap that the card misses.",
+     "suggestedFix": "Replace (answer FALSE, keeps the balance): statement \"After a rollback to an older revision, Cloud Run sends all traffic to the next revision a developer deploys.\" Explanation: \"Once traffic is assigned to a previous revision, later deployments keep that traffic split. The developer must send traffic to the latest revision again to resume automatic routing to new deployments.\" Evidence from the same URL: \"If you split traffic between multiple revisions or assigned traffic to a previous revision, all subsequent deployments use that traffic split pattern going forward.\""
+    }
+   ],
+   "notes": "I checked all 10 cards in section 3.1 against their sources, and every source URL loads (docs last updated 2026-10-09). No answers are wrong. The 8 cards I did not flag hold up. 01: the Dockerfile is used when present, buildpacks otherwise, quoted on deploying-source-code; the statement says 'with a build', which rules out the Preview 'deploy prebuilt source' option, and that option has no Dockerfile support. 02: the container contract says 'must listen for requests on 0.0.0.0'. 04: creating-api-config says 'You cannot modify an existing API config other than to update its labels and its display name.' 05: the contract says end-to-end HTTP/2 requires h2c because TLS is terminated by Cloud Run. 06: an immutable revision is created on a configuration change. The 'can' hedge undersells this, since it always happens, but the card is still not false. 08: the Service URL path is optional, and events go to the root '/' by default. 09: the comparison page says 'functions created with the Cloud Run Admin API cannot be modified with the Cloud Functions API'. This is borderline API-compatibility trivia rather than one of the guide's 3.1 bullets, but the prompt allows it. 10: the Deploy overview says 'the call to invoke the promotion causes Cloud Deploy to create a new rollout'. There are 2 Cloud Deploy cards in total (3.1-10 and 3.2-10), within the cap. Hedge words are balanced across true and false cards (2 and 2), and so is the 5/5 true/false split. Both replacements keep it. I found no duplicate with other sections; s1.1-02 (bidirectional gRPC) and s3.1-05 (h2c) test different facts. Prompt rules: the pinned guide (PDF fetched and text extracted) does have 3.1 'Deploying applications to Cloud Run' with four bullets. Those bullets are source deploy, triggers (Eventarc, Pub/Sub), event receivers (Eventarc, Pub/Sub), and versioning/exposing/securing APIs (e.g., Apigee). The prompt's 3.1 scope leaves out Pub/Sub triggers and receivers and Apigee, and adds container-contract and job-exit material that the guide does not list. As a result, the section has no Pub/Sub push receiver card and no API versioning card. Also, the guide's 3.2 bullet 'Implementing Kubernetes health checks to increase application availability' conflicts with the prompt's instruction to avoid probe rules in 3.2. That is outside my section, but I am reporting it. The other prompt claims I checked (source-deploy Dockerfile/buildpacks, 0.0.0.0/PORT, h2c, Functions API asymmetry, promotion creates rollout) match the current docs."
+  },
+  {
+   "section": "3.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s3.2-06",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/kubernetes-engine/docs/concepts/custom-and-external-metrics)",
+     "evidence": "Source: \"Your application can report a custom metric to Monitoring. You can configure Kubernetes to respond to these metrics and scale your workload automatically.\" The answer (False) is right, but nobody who studied believes that writing a metric makes GKE create a HorizontalPodAutoscaler object on its own, so this is a strawman. It also half-overlaps 3.2-05, whose wording ('configured ... metric') already tells the player that scaling has to be configured. The real developer step that gets missed is the metrics adapter. https://docs.cloud.google.com/kubernetes-engine/docs/how-to/expose-custom-metrics-autoscaling: \"To fetch the metrics, you can use a GKE managed metrics adapter ... As an alternative ... installing a third-party adapter, such as the Stackdriver Adapter\" and \"After you fetch the metric, you then reference the metric in a HorizontalPodAutoscaler object.\"",
+     "problem": "Strawman false statement: it is false for a reason no learner would miss, so it teaches nothing at the professional developer depth.",
+     "suggestedFix": "Replace (answer False): \"GKE's horizontal Pod autoscaler queries Cloud Monitoring itself to read an application's custom metric.\" (102 chars) Explanation: \"The HPA reads metrics through the Kubernetes metrics APIs. A metrics adapter, such as GKE's managed metrics adapter or the Custom Metrics Stackdriver Adapter, fetches Cloud Monitoring data and serves it to the HPA.\" URL: https://docs.cloud.google.com/kubernetes-engine/docs/how-to/expose-custom-metrics-autoscaling"
+    },
+    {
+     "id": "gcp-pcd-s3.2-10",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/deploy/docs/verify-deployment)",
+     "evidence": "\"By default, deployment verification runs in the Cloud Deploy execution environment. You can also configure Skaffold to run verification on the same cluster where your application is running.\" \"The executionMode stanza is optional, and if you omit it, Skaffold runs the verification containers in the Cloud Deploy execution environment.\" \"This ability is available for deployments to GKE only, not for Cloud Run.\"",
+     "problem": "The answer (True) is supported, but the condition gives it away: if Skaffold 'selects cluster execution', the containers obviously run in the cluster. The fact worth testing is the default location, and the statement hides it. 'Skaffold selects' is also inaccurate: the developer sets executionMode.kubernetesCluster in skaffold.yaml, and Skaffold selects nothing.",
+     "suggestedFix": "Replace (answer True): \"By default, Cloud Deploy runs a GKE target's verification containers in its execution environment, outside the cluster.\" (119 chars) Explanation: \"Verify containers run in the Cloud Deploy execution environment unless skaffold.yaml sets executionMode.kubernetesCluster, a GKE-only option. Cloud Run targets always verify there.\" Keep the same URL."
+    },
+    {
+     "id": "gcp-pcd-s3.2-07",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/stackdriver/docs/managed-prometheus/hpa)",
+     "evidence": "\"All queries issued by prometheus-adapter are global in scope. This means that if you have applications in two namespaces that emit identically named metrics, an HPA configuration using that metric scales using data from both applications.\" The same page calls it \"the third-party Prometheus Adapter library\", and of the Custom Metrics Stackdriver Adapter it says \"The HPA query is scoped to the namespace and cluster in which the HPA resource is installed\".",
+     "problem": "The answer (False) and the explanation are correct, and the contrast with the Stackdriver adapter makes this a good hard distinction. But the statement calls it \"GKE's prometheus-adapter\". Google's page describes a third-party library, so the card teaches a false ownership and breaks the official-naming rule.",
+     "suggestedFix": "Reword (answer False): \"The third-party Prometheus Adapter scopes Managed Service for Prometheus queries to the HPA's namespace.\" (104 chars) Explanation: \"Prometheus Adapter queries are global in scope, so add namespace or cluster filters in PromQL. The Custom Metrics Stackdriver Adapter instead scopes HPA queries to its namespace and cluster.\" Keep the same URL."
+    },
+    {
+     "id": "gcp-pcd-s3.2-08",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/stackdriver/docs/managed-prometheus/hpa)",
+     "evidence": "\"Some Cloud Monitoring system metrics such as Pub/Sub metrics are delayed by 60 seconds or more. As Prometheus Adapter executes queries using the current timestamp, querying these metrics using the Prometheus Adapter might incorrectly result in no data. To query delayed metrics, use the offset modifier in PromQL to change your query's time offset by the necessary amount.\"",
+     "problem": "The answer (True) is correct: in PromQL a positive offset looks back in time. Like 07, though, the statement calls the third-party Prometheus Adapter \"GKE's prometheus-adapter\". The fact is also a troubleshooting tip from the same page as 07, which puts three of the section's ten cards on adapter details.",
+     "suggestedFix": "Reword (answer True): \"A positive PromQL offset helps the Prometheus Adapter read delayed Pub/Sub metrics from Managed Service for Prometheus.\" (119 chars) Explanation: \"Pub/Sub system metrics can arrive 60 seconds or more late, and the adapter queries at the current time. An offset moves the query to older samples so the HPA receives data.\" Keep the same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards of section 3.2 (5 true, 5 false); the fixes above keep that balance at 5/5. All 9 source URLs returned 200 on 2026-10-13, and I read every one in full.\n\nCards that passed, with the evidence:\n- 01: deploy-workloads says Cluster Viewer \"does not authorize you to perform any actions inside those clusters\".\n- 02: ingress-routing-security warns that later readiness probe changes \"will not be copied to the health check\".\n- 03: workload-identity says GKE \"still uses the configured IAM service account for the node pool to pull container images\". The image-pulls troubleshooting page confirms that kubelet pulls from Artifact Registry do not use Workload Identity Federation for GKE.\n- 04: image-streaming says \"If your workloads read many files in an image during initialization, you might notice increased initialization times\".\n- 05: horizontalpodautoscaler says \"create an external metric for the size of the queue, and configure the horizontal Pod autoscaler\".\n- 09: node-pool-upgrade-strategies says PodDisruptionBudget is respected \"for up to one hour. After one hour, any remaining Pods are forcefully evicted\".\n\nPoints to watch:\n- 03 sits near gcp-ace-s3.1-05 (nodes pull with the node service account, not the deployer's credentials). The PCD card adds the Workload Identity Federation distinction, so I did not flag it as a duplicate.\n- 09's wording \"bounds the protection\" is vague but correct. Node pool management is excluded by the prompt, but this card tests the workload consequence, so it stays in scope.\n- 05 needs a metrics adapter in practice. \"Configured\" covers that, and the suggested 06 replacement makes the adapter explicit.\n- GKE's managed metrics adapter is new: GA from 1.37.0-gke.3100000, and fetching from Cloud Monitoring is still Preview. No card should depend on its behavior yet.\n\nPrompt rules I confirmed:\n- The guide PDF loads and lists 3.2 \"Deploying containers to GKE\" with three considerations: deploying containerized applications, Kubernetes health checks, and HPA attributes (scaling, metrics).\n- Cloud Deploy is not named in the guide, as the prompt says.\n- Within 3.1 and 3.2 the deck has two Cloud Deploy cards (3.1-10 and 3.2-10), which is within the cap.\n\nPrompt rules that are wrong or incomplete:\n- None is factually wrong for this section.\n- The 3.2 rule says to avoid \"probe rules already owned by the Kubernetes decks\", yet the guide explicitly lists \"Implementing Kubernetes health checks\". Card 02 handles this well with GKE Ingress behavior.\n- The prompt does not warn that prometheus-adapter is a third-party library, not a GKE component. That gap produced the naming problem in 07 and 08."
+  },
+  {
+   "section": "4.1",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s4.1-09",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/pubsub/docs/exactly-once-delivery)",
+     "evidence": "\"A redelivery can happen either because of client-initiated negative acknowledgment of a message or when the client doesn't extend the acknowledgment deadline of the message before the acknowledgment deadline expires.\" These are \"considered valid\". https://docs.cloud.google.com/pubsub/docs/exactly-once-delivery",
+     "problem": "The answer follows from what a negative acknowledgment means: a nack is a request to redeliver. It is close to a definition card and adds 'exactly-once' to something gcp-ace-s2.2-07 already teaches at the same depth (unacked messages are redelivered, not deleted). The answer is correct.",
+     "suggestedFix": "Replace (keeps True): \"A validly redelivered message on a Pub/Sub exactly-once pull subscription keeps the message ID of its first delivery.\" Explanation: \"Pub/Sub keeps a message ID across redelivery attempts, so subscribers can use it to spot redeliveries; publisher retries can still create copies with different message IDs.\" Source: \"A redelivered message retains the same message ID between redelivery attempts.\" (same URL). Rename the factKey to pubsub-redelivery-message-id-retained."
+    },
+    {
+     "id": "gcp-pcd-s4.1-03",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/firestore/native/docs/transaction-data-contention)",
+     "evidence": "\"The mobile and web SDKs don't use the built-in transactions feature, so even if the database concurrency mode is configured for PESSIMISTIC, mobile clients still behave optimistically.\" https://docs.cloud.google.com/firestore/native/docs/transaction-data-contention",
+     "problem": "The fact is correct, but the statement copies the source sentence almost word for word (\"even if ... PESSIMISTIC ... still behave optimistically\" became \"even with a PESSIMISTIC database setting\"). The concessive \"even with\" also hints that the answer is True.",
+     "suggestedFix": "Replace (keeps True): \"A Firestore web SDK transaction checks document versions at commit rather than locking the documents it reads.\" Explanation: \"Mobile and web SDKs emulate optimistic concurrency with write preconditions on document versions, so they behave optimistically even when the database concurrency mode is PESSIMISTIC.\" Same URL (\"Mobile and web SDKs emulate optimistic concurrency transactions using write preconditions on document versions.\")."
+    },
+    {
+     "id": "gcp-pcd-s4.1-05",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/sql/docs/postgres/manage-connections)",
+     "evidence": "\"If errors happen in the middle of a transaction, the application must do the retrying, and it must retry from the beginning of a transaction.\" and \"So even if your pool is configured properly, the application might still see errors if connections are lost.\" https://docs.cloud.google.com/sql/docs/postgres/manage-connections",
+     "problem": "Restarting a transaction after its connection is lost is general database behaviour: a dropped connection rolls back any open transaction, on any engine. Nothing in the card is specific to Google Cloud, which the overlap rule requires (sql-fundamentals owns SQL). The part the doc adds for Cloud SQL, that the application has to retry and the pool will not, is missing from the statement.",
+     "suggestedFix": "Replace (keeps True): \"Cloud SQL for PostgreSQL apps need their own retry logic for transactions interrupted by a lost pooled connection.\" Explanation: \"Pools and backoff help open new connections, but an error in the middle of a transaction must be retried by the application from the transaction's start; a well-configured pool can still surface lost connections.\" Same URL."
+    },
+    {
+     "id": "gcp-pcd-s4.1-01",
+     "verdict": "weak_card",
+     "urlStatus": "200, official, current (docs.cloud.google.com/firestore/native/docs/manage-data/transactions)",
+     "evidence": "\"A function calling a transaction (transaction function) might run more than once if a concurrent edit affects a document that the transaction reads.\" and \"Transaction functions should not directly modify application state.\" https://docs.cloud.google.com/firestore/native/docs/manage-data/transactions. Retry: \"The Firestore client libraries automatically retry transactions that fail due to data contention.\" https://docs.cloud.google.com/firestore/native/docs/transaction-data-contention",
+     "problem": "The answer (True) is correct, but the wording gives it away: once the statement says \"SDK retries\", the call inside them obviously repeats. What should be tested is that a retry reruns the whole callback, including its external side effects. The explanation is also hard to follow: \"can happen again because Firestore's commit protects its database writes\" should say *only* its database writes. It also says \"Firestore reruns\" when the client library does the rerunning.",
+     "suggestedFix": "Replace (keeps True): \"A Firestore server SDK transaction callback that sends an email can send it twice for one committed transaction.\" Explanation: \"Server client libraries rerun the whole transaction callback after contention, while Firestore's atomic commit covers only database writes. Return data from the callback and trigger side effects after it succeeds.\" Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.1 (5 true, 5 false). Every source URL loads, is an official docs.cloud.google.com page and supports its card. None of the answers is wrong. The four flags are quality problems (a definition card, a near-copy of the source sentence, a generic DB truism, a wording give-away), not factual errors. Each replacement keeps its card's original answer, so the section stays 5 true / 5 false.\n\nPassed:\n- 02 (reads before writes): \"Read operations must be executed before write operations.\" The Node, Python, Go and Java server SDKs enforce this.\n- 04 (Auth Proxy does not pool): \"The Cloud SQL Auth Proxy doesn't provide connection pooling, but can be paired with other connection pooling.\"\n- 06 (resumable upload offset): \"The 308 response has a Range header, which specifies which bytes Cloud Storage has persisted so far\". With no Range header, start from the beginning. Minor point, not flagged: the statement is normative (\"an uploader treats ... as proof\") and the word \"proof\" leans slightly towards False.\n- 07 (ack with response): \"Supported client libraries have an interface for acknowledgment with response.\"\n- 08 (latest ack ID): \"only the latest acknowledgment ID can be used to acknowledge the message. Any requests with a previous acknowledgment ID fail.\"\n- 10 (publish-side duplicates): \"A subscription might receive multiple copies of the same message due to publish side duplicates, even with exactly-once delivery enabled.\"\n\nPrompt rules for 4.1, checked against the official pages; all confirmed, none found wrong:\n- A transaction callback can rerun.\n- Reads come before writes.\n- Transactions fail offline.\n- Mobile/web SDKs behave optimistically regardless of the database's concurrency setting; server client libraries follow it.\n- Standard edition defaults to PESSIMISTIC and Enterprise edition to OPTIMISTIC.\n- The Auth Proxy \"does not provide a new connectivity path\" and no pooling.\n- After a mid-transaction error, the application retries from the beginning.\n- Exactly-once delivery is pull only, not push or export, and the guarantee applies only within the same region.\n\nBalance and overlap:\n- Coverage is narrow: 4 of the 10 cards come from the single exactly-once page and 3 from the Firestore transaction pages, as the prompt directs. Breadth across 4.1 (for example Cloud Storage reads/writes, Spanner or Bigtable client behaviour) is thin.\n- Within the deck, 08 and 09 overlap somewhat: both are about redelivery under exactly-once.\n- 09 also overlaps gcp-ace-s2.2-07 (unacked messages are redelivered when the deadline expires).\n- No overlap found with gcp-pde-s2.1-05 (push subscriptions and exactly-once) or the other gcp-pde exactly-once cards; 4.1 goes one level deeper as the prompt intends."
+  },
+  {
+   "section": "4.2",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s4.2-05",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, current (https://docs.cloud.google.com/storage/docs/batch)",
+     "evidence": "https://docs.cloud.google.com/storage/docs/batch: \"Cloud Storage returns a 200 status code, even if some or all of the sub-requests fail.\" Each sub-request gets its own status code in the multipart response; a malformed batch returns 400.",
+     "problem": "The answer is right, but the statement only says that a batch response reports a status for each request. Anyone can guess that, because a batch response could not be useful otherwise, so it reads as a truism. The real developer trap is that the outer HTTP 200 hides sub-request failures, and that fact appears only in the explanation, not in the statement.",
+     "suggestedFix": "Keep answer true. Statement: \"A Cloud Storage JSON API batch request returns HTTP 200 even when some or all of its sub-requests fail.\" (103 chars) Explanation: \"The outer 200 only means Cloud Storage accepted the batch; each response part carries its own status code. A malformed batch returns 400 and runs no sub-requests.\" (162 chars) Same URL."
+    },
+    {
+     "id": "gcp-pcd-s4.2-09",
+     "verdict": "explanation_error",
+     "urlStatus": "loads, official, current (https://docs.cloud.google.com/storage/docs/request-preconditions)",
+     "evidence": "https://docs.cloud.google.com/storage/docs/request-preconditions: when preconditions aren't met, \"the request fails with a 412 Precondition Failed response\". The page's recommended handling is to get the object's metadata again for the current generation/metageneration and retry with those values. https://docs.cloud.google.com/storage/docs/retry-strategy lists 408, 429, 5xx and socket/TCP errors as retryable; 412 is not among them.",
+     "problem": "The answer (false) is right, but the explanation does not give the correct recovery. It only says that repeating the request fails. Its absolute claim that a stale generation-match value \"stays invalid\" also has an exception: with ifGenerationMatch=0 (create only), the same request succeeds if the object is deleted in the meantime. The statement is also close to a strawman, since a precondition mismatch is clearly not a transient error, and it pairs with s4.2-08 (same-precondition retry after transient errors). Rewriting the explanation to teach the recovery step makes the card useful.",
+     "suggestedFix": "Keep statement and answer false. Explanation: \"A 412 means the precondition no longer matches the object. Reread its metadata, decide whether the change still applies, then retry with the current generation.\" (160 chars) Same URL."
+    }
+   ],
+   "notes": "I checked all 10 cards in section 4.2 (s4.2-01 to s4.2-10). Every source URL loads and is official. developers.google.com/apis-explorer counts as an official google.com property. Each page supports its card, and here is the deciding sentence for each card that passed.\n- 01 (true): enable-disable page: \"Using the enable or disable method returns a long-running operation (LRO)... When the done field is set to true, the operation is complete.\"\n- 02 (false): APIs Explorer page: \"The APIs Explorer acts on real data, so use caution when trying methods that create, modify, or delete data.\" It is slightly strawman-ish but acceptable, because the guide names API Explorer explicitly.\n- 03 (true): objects.list page: \"The service may return fewer results than maxResults so the presence of nextPageToken should always be checked.\"\n- 04 (false): batch page: \"The server may perform your requests in any order. Do not rely on requests executing in the order you specify them.\"\n- 06 (true): JSON API overview: \"Whenever a nested field is returned, the response includes the enclosing parent objects.\"\n- 07 (false): metadata page: \"Cloud Storage ignores this header and sets response Cache-Control headers based on stored metadata values.\" This card is in scope because the guide lists \"Caching results\".\n- 08 (true): retry-strategy page: object insert is \"Safe to retry if ifGenerationMatch or generation was passed in as an option\"; 408, 429, 5xx and socket timeouts are transient.\n- 10 (false): Bigtable status-codes page: for state-changing operations, DEADLINE_EXCEEDED \"may be returned even if the operation has completed successfully.\" I kept it in 4.2 because it is API error handling, not a transaction retry, so it does not belong to 4.1.\n\nI found no wrong answers and no duplicates against the other sections. s1.3-07 (listing consistency) and s4.1-06 (resumable upload progress) touch Cloud Storage too, but they rest on different facts. True/false balance is 5/5. Average statement length is 101.0 for true and 103.6 for false, within the 5-character rule. Both replacements keep the balance: s4.2-05 stays true, s4.2-09 stays false.\n\nPrompt rules: I opened the pinned guide PDF myself. Its 4.2 lists enabling services; API calls via Cloud Client Libraries, REST, gRPC and API Explorer; batching; restricting return data; pagination; caching results; error handling with exponential backoff; and service accounts for API calls. That matches the deck's section name. The prompt's own 4.2 scope paragraph leaves out the guide's \"Caching results\" and \"API Explorer\" items, but it does not exclude them, and cards 02 and 07 are correctly in scope through the guide. Moving \"using service accounts\" to 1.2 is a deck decision, not an error. I found no prompt rule wrong for this section.\n\nMinor observation, not flagged: Cloud Storage is the API for 8 of the 10 cards. That is narrow, but each card tests a separate guide consideration."
+  },
+  {
+   "section": "4.3",
+   "checked": 10,
+   "flagged": [
+    {
+     "id": "gcp-pcd-s4.3-04",
+     "verdict": "weak_card",
+     "urlStatus": "loads, official, Last updated 2026; supports the card",
+     "evidence": "https://docs.cloud.google.com/trace/docs/trace-context: \"Trace context and context propagation let your distributed applications pass request identifiers across services in headers or metadata. Cloud Trace uses this shared context to link individual spans into complete distributed traces\". The card restates what trace context propagation is for, so a player who has not studied would still answer True. The explanation is also a close paraphrase of the page's own sentences: \"it passes identifiers, such as the trace ID, parent span ID, and sampling status, by using request headers or metadata\" and \"Trace reconstructs the execution hierarchy\".",
+     "problem": "Truism or definition card. Linking spans across services through propagated context is the definition of trace context, so the wording gives the answer away. The explanation also nearly copies the source. The guide bullet it covers (\"Using trace IDs to correlate trace spans across services\") is still worth testing, but one level deeper.",
+     "suggestedFix": "Replacement (answer TRUE, keeps 5/5 balance): Statement: \"Google Cloud services that support trace propagation typically accept both traceparent and X-Cloud-Trace-Context headers.\" Explanation: \"Google recommends the W3C traceparent header for HTTP context propagation, while services that support propagation still accept the legacy X-Cloud-Trace-Context header from older applications.\" Source: https://docs.cloud.google.com/trace/docs/trace-context (\"Google Cloud services that support trace context propagation typically support both the traceparent and the legacy X-Cloud-Trace-Context header.\"). factKey: trace-traceparent-and-legacy-header."
+    }
+   ],
+   "notes": "All 10 cards of section 4.3 were checked against live official pages (fetched 2026-10-13). True/false balance is 5/5. Nine cards pass.\n\nEvidence for the cards that pass:\n- 01: run/docs/logging says \"if your JSON includes a severity property, it is removed from the jsonPayload and appears instead as the log entry's severity\".\n- 02: same page says \"Container logs are not automatically correlated to request logs unless you use a Cloud Logging client library\", and names the logging.googleapis.com/trace alternative.\n- 03: run/docs/trace says traces are generated automatically, but instrumentation is needed to \"Create custom trace spans\" for internal work.\n- 05: trace/docs/setup says \"configure your application with an OTLP exporter that sends your trace data to your Google Cloud project by using the Telemetry API\". The collector route is the recommended one; the direct route the card uses is also documented.\n- 06: trace/docs/setup says \"services accept the parent sampling flag as a hint while enforcing their own sampling rate limits\".\n- 07: monitoring creating-metrics says \"If you write metric data when a metric descriptor for that user-defined metric doesn't yet exist, then a metric descriptor is created automatically\". Minor nit: the docs now say \"user-defined metric\", while the card says \"custom metric\". Not flagged.\n- 08: timeSeries.create reference says \"The new data point must be more recent than any other point in its time series.\"\n- 09: Error Reporting formatting page gives the jsonPayload @type ReportedErrorEvent format for a text message.\n- 10: correct. The concepts-profiling HTML table has an empty CPU-time cell for Node.js and Y only for Heap and Wall time. profiler/docs/profiling-nodejs states it directly: \"Profile types for Node.js: Heap, Wall time\". That page is a better source URL than the concepts page. Be careful: a summarising fetch tool misread the flattened table as Node.js having CPU time, so this needed checking against the raw HTML. Card 10 is borderline trivia (a per-language support matrix) but tests the real CPU-time versus wall-time distinction, so it is not flagged.\n\nPrompt rules checked:\n- Exam guide PDF loads. Its 4.3 is \\\"Troubleshooting and observability\\\", with bullets on instrumentation, Observability, Error Reporting, trace IDs across services and AI-assisted observability. This matches the prompt.\n- Gemini Cloud Assist is still Preview (cloud-assist/overview: \\\"Use of this Preview offering\\\"). Leaving it out of 4.3 is correct, so the AI-assisted observability bullet has no card. That is acceptable under the prompt's rules.\n- The prompt's 4.3 rules are accurate: plain container logs are not auto-correlated, Google recommends OpenTelemetry/OTLP via the Telemetry API, and the Error Reporting formatting page is the right source.\n- One small inaccuracy: the prompt calls Cloud Profiler documented for \\\"CPU and memory-allocation profiling\\\". Allocated-heap profiles are Go-only, and Node.js has no CPU profiles. This did not cause a wrong card.\n\nNo prompt rule relied on by these cards was found wrong."
+  }
+ ],
+ "scan": {
+  "cardsRead": 110,
+  "duplicates": [
+   {
+    "ids": [
+     "gcp-pcd-s2.3-02",
+     "gcp-pcd-s2.3-03"
+    ],
+    "why": "Both test one fact: a local CloudEvent test is an HTTP POST straight to the local Functions Framework process, not a trip through Eventarc. If you know 2.3-02 is true (direct local HTTP POST), you also know 2.3-03 is false, and the reverse. Each explanation also states the other card's answer. 2.3-03 is close to a strawman: nobody who studied would think a local test goes through Eventarc.",
+    "dropId": "gcp-pcd-s2.3-03"
+   },
+   {
+    "ids": [
+     "gcp-pcd-s2.2-01",
+     "gcp-pcd-s2.2-02"
+    ],
+    "why": "These are the two sides of one Cloud Build distinction: what carries over between steps. Files in the shared /workspace volume carry over; shell-exported variables do not, because each step runs in its own container. The prompt's rule counts the two sides of one distinction as one fact. 2.2-01 is the weaker card, since /workspace persistence is the basic, widely known half; 2.2-02 carries the real misconception.",
+    "dropId": "gcp-pcd-s2.2-01"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "functions-framework-local-cloudevent",
+    "ids": [
+     "gcp-pcd-s2.3-02",
+     "gcp-pcd-s2.3-03"
+    ],
+    "why": "Each explanation answers the other card: the event goes as an HTTP POST to the local endpoint, and the test bypasses Eventarc. Only needed if both cards are kept."
+   },
+   {
+    "name": "cloud-build-cross-step-state",
+    "ids": [
+     "gcp-pcd-s2.2-01",
+     "gcp-pcd-s2.2-02"
+    ],
+    "why": "This is a mirrored true/false pair. 2.2-02's explanation ('steps in separate containers') and 2.2-01's explanation ('shared workspace volume mounted into step containers') each settle the other card. Only needed if both are kept."
+   },
+   {
+    "name": "firestore-composite-index",
+    "ids": [
+     "gcp-pcd-s1.3-01",
+     "gcp-pcd-s2.1-04"
+    ],
+    "why": "2.1-04's explanation ('verify index requirements against a real Firestore Standard edition database') implies that the real database enforces indexes and does not build them, which answers 1.3-01. 1.3-01's explanation ('reports a missing index') puts a real-versus-emulator contrast in front of the 2.1-04 question."
+   },
+   {
+    "name": "cloud-run-service-identity",
+    "ids": [
+     "gcp-pcd-s1.2-01",
+     "gcp-pcd-s1.2-02"
+    ],
+    "why": "1.2-02's statement presupposes that a user-managed service account is attached as the service identity, and its explanation says attaching only 'selects an identity'. That strongly hints the runtime identity is separate from the deployer (1.2-01 true)."
+   },
+   {
+    "name": "cloud-run-revisions",
+    "ids": [
+     "gcp-pcd-s3.1-06",
+     "gcp-pcd-s3.1-07"
+    ],
+    "why": "3.1-06's explanation ('Cloud Run stores service configuration in immutable revisions') tells the player that rolling back routes traffic to an existing revision without rebuilding, which answers 3.1-07. 3.1-07's explanation in turn confirms that revisions are kept as versions."
+   },
+   {
+    "name": "cloud-run-http2",
+    "ids": [
+     "gcp-pcd-s1.1-02",
+     "gcp-pcd-s3.1-05"
+    ],
+    "why": "3.1-05's statement says Cloud Run services can be 'configured for end-to-end HTTP/2', and 1.1-02's explanation says streaming works 'when the service uses HTTP/2'. Each card makes the other's HTTP/2 premise obvious."
+   },
+   {
+    "name": "cloud-build-images-provenance",
+    "ids": [
+     "gcp-pcd-s2.2-07",
+     "gcp-pcd-s2.2-09"
+    ],
+    "why": "2.2-09's explanation ('native container provenance uses the images output field'; an explicit docker push is the alternative upload) tells the player that the images field is Cloud Build's output-push mechanism, which answers 2.2-07."
+   },
+   {
+    "name": "cloud-build-substitutions",
+    "ids": [
+     "gcp-pcd-s2.2-05",
+     "gcp-pcd-s2.2-06"
+    ],
+    "why": "2.2-06's statement and explanation about nested trigger substitutions presuppose that substitution values parameterize the build config, which gives away 2.2-05 (already close to a definition card)."
+   },
+   {
+    "name": "workstations-custom-image",
+    "ids": [
+     "gcp-pcd-s2.1-02",
+     "gcp-pcd-s2.1-05"
+    ],
+    "why": "2.1-02's statement presupposes that teams build custom Cloud Workstations images, which answers 2.1-05 (true). 2.1-05's explanation about a team-packaged image hints that the team, not Google, maintains it (2.1-02 false)."
+   },
+   {
+    "name": "gke-metric-autoscaling",
+    "ids": [
+     "gcp-pcd-s3.2-05",
+     "gcp-pcd-s3.2-06",
+     "gcp-pcd-s3.2-08"
+    ],
+    "why": "3.2-06's explanation ('a developer separately configures autoscaling to respond to that metric') and 3.2-08's statement (retrieving Pub/Sub metrics for the autoscaler) each confirm that an HPA can scale on a Pub/Sub backlog metric (3.2-05). 3.2-05's 'configured' metric in turn hints that 3.2-06 is false."
+   },
+   {
+    "name": "gke-prometheus-adapter",
+    "ids": [
+     "gcp-pcd-s3.2-07",
+     "gcp-pcd-s3.2-08"
+    ],
+    "why": "These are two prometheus-adapter PromQL-tuning cards in one subsection. 3.2-07's explanation ('add namespace or cluster filters in PromQL') tells the player that PromQL modifiers are how the adapter's queries get tuned, which makes the offset card (3.2-08) easy to guess."
+   },
+   {
+    "name": "pubsub-exactly-once-ack",
+    "ids": [
+     "gcp-pcd-s4.1-07",
+     "gcp-pcd-s4.1-08",
+     "gcp-pcd-s4.1-09"
+    ],
+    "why": "4.1-08's explanation ('a valid redelivery creates a new acknowledgment ID ... an older delivery's ID fails') answers 4.1-09 (a valid redelivery after a nack) and hints at 4.1-07 (an ack can fail, so the result is exposed). 4.1-09's explanation ('treats this redelivery as valid') in turn primes 4.1-08."
+   },
+   {
+    "name": "storage-precondition-retry",
+    "ids": [
+     "gcp-pcd-s4.2-08",
+     "gcp-pcd-s4.2-09"
+    ],
+    "why": "This is a mirrored pair: 'retry with the same ifGenerationMatch precondition' is true after a transient error and false after a 412. Dealt together, one card's explanation settles the other, and the opposite verdicts on the same action invite guessing by contrast."
+   },
+   {
+    "name": "trace-context-header",
+    "ids": [
+     "gcp-pcd-s4.3-04",
+     "gcp-pcd-s4.3-06"
+    ],
+    "why": "4.3-06's statement presupposes that a trace header carrying a sampled flag is passed to downstream services, which answers 4.3-04 (context propagation links spans across services)."
+   },
+   {
+    "name": "trace-application-spans",
+    "ids": [
+     "gcp-pcd-s4.3-03",
+     "gcp-pcd-s4.3-05"
+    ],
+    "why": "4.3-03's explanation ('application instrumentation adds spans') points the player at app-side span export, which makes 4.3-05 (an OpenTelemetry OTLP exporter sending spans) easy to answer."
+   },
+   {
+    "name": "cloud-run-structured-logging",
+    "ids": [
+     "gcp-pcd-s4.3-01",
+     "gcp-pcd-s4.3-02"
+    ],
+    "why": "4.3-02's explanation tells the player that structured JSON fields (logging.googleapis.com/trace) are recognized and promoted by Cloud Run logging, which hints that the JSON severity field is promoted too (4.3-01). 4.3-01's explanation, which contrasts structured promotion with plain text, in turn hints that plain-text logs are not correlated (4.3-02)."
+   }
+  ],
+  "tells": "Lengths are fine. Over all 110 cards, true statements average 97.8 characters and false ones 97.5, and every section is within 5 characters (largest gaps: 2.2 is T 94.6 vs F 98.6, 3.1 is T 96.4 vs F 93.0). Explanations average T 162.8 vs F 159.2. 'can' is balanced (14 T / 13 F). The real tells are wording templates:\n\n1) Recurring 'the platform does hidden work for you when X happens' template. This is the biggest tell, far over the two-card cap. 10 false cards: s1.2-02 (grants storage permissions when an SA is attached), s1.2-06 (refreshes a secret env var when a new version appears), s1.2-10 (Secret Manager creates a new version when rotation is due), s1.3-01 (builds a missing composite index when a query is submitted), s1.3-03 (deletes subcollections when the parent is deleted), s1.3-09 (creates an empty doc when a reference is constructed), s2.1-02 (rebuilds a custom image when the base updates), s2.3-01 (adds a test step when a tests directory exists), s3.1-07 (rebuilds an image on rollback), s3.2-06 (creates an HPA when code publishes a metric). Only about 4 true cards share the shape (s1.1-10, s3.1-06, s4.3-07, s2.1-07). A player who answers False to 'service automatically does extra work when...' wins about 10 of 14. The words 'automatically' (T 2 / F 3) and 'creates' (T 1 / F 3) lean false. 'when' appears in 14 false vs 10 true statements.\n\n2) Control/override verbs predict False, 7 of 7: 'guarantee' (s1.1-06), 'enforce' (s1.1-07, s4.2-04), 'take(s) precedence' (s2.2-08, s4.3-06), 'override' (s2.3-08, s4.2-07). No true statement uses any of them. Most also follow 'X can [overclaim]', a second recurring false template, alongside s1.2-09 'can re-run', s2.1-06 'can validate', s2.3-03 'can route', s4.1-08 'can reuse'.\n\n3) The emulator-fidelity template breaks the two-card cap. Every 'The <X> emulator <does production-like thing>' card is false, 3 of 3: s2.1-04 (rejects a missing index), s2.1-06 (validates IAM), s2.1-08 (restores data). The only true emulator card, s2.1-07, is about client routing.\n\n4) 'rebuild(s)' appears only in false cards, 2 of 2 (s2.1-02, s3.1-07). Both use the same 'automatically rebuilds an image' trick.\n\n5) Precision qualifiers mark True. 'configured' appears only in true statements, 3 of 3 (s1.1-05, s3.1-05, s3.2-05). The tier qualifier 'Gemini Code Assist Standard and Enterprise' appears only in true cards, 2 of 2 (s2.1-10, s2.3-04), and all AI-tool cards are true. Long precondition clauses also sit mostly on true cards: s2.3-09 'when its private pool has the required network connectivity', s3.2-10 'when Skaffold selects cluster execution', s4.3-09 'when its @type identifies ReportedErrorEvent', s4.2-08 'using the same ifGenerationMatch'.\n\n6) Hedge verbs are reversed against the rule. 'supports/support' appears only in false cards, 3 of 3 (s3.1-09, s4.1-02, s4.3-10). 'let' (no s) appears only in true cards, 2 of 2 (s1.1-09, s2.2-05). 'helps' appears once, true (s3.2-08).\n\n7) The 'Firestore Standard edition' qualifier leans false, 3 of 4 (F: s1.3-01, s2.1-04, s4.1-02; T: s4.1-01). 'Firestore server client(s)' leans false, 2 of 3 (F: s1.3-03, s1.3-09; T: s2.1-07).\n\n8) Strawman-ish false cards that a guesser gets right on common sense: s2.3-01 (Cloud Build auto-adds a test step for a tests directory), s2.3-03 (local test routed through Eventarc), s4.2-02 (APIs Explorer deletes a 'temporary copy'), s3.1-07 (rollback rebuilds the image), s1.3-09 (a reference creates an empty doc).\n\nMinor, and not visible to players if difficulty is hidden: difficulty 3 is skewed toward false cards (14 F vs 8 T)."
+ },
+ "edits": {
+  "drop": [
+   {
+    "id": "gcp-pcd-s1.1-05",
+    "reason": "weak_card: the statement nearly copies the source sentence, and 'in a configured time zone' gives the answer away. 1.1 keeps 9 cards (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s1.2-09",
+    "reason": "weak_card: near-strawman, since nobody expects an admission controller to re-run tests. Dropped instead of 1.2-01 because the 1.2-01 replacement (actAs, a true card that uses 'requires') also helps the wording-tell balance. 1.2 keeps 9 (5T/4F)."
+   },
+   {
+    "id": "gcp-pcd-s1.3-04",
+    "reason": "duplicate: the same fact at the same depth as gcp-pde-s3.1-01 (Bigtable timestamp-prefix hotspot), which the prompt assigns to gcp-pde. 1.3 keeps 9 (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s2.1-10",
+    "reason": "out_of_scope, found while editing (raised in the 2.3 verifier's notes): https://docs.cloud.google.com/gemini/docs/codeassist/sunset says 'Starting October 9, 2026, you can no longer purchase new Gemini Code Assist Standard or Enterprise subscriptions'. That makes the product closed to new customers, which the prompt's rule excludes. Because of this drop, 2.1-05 is rewritten instead of dropped. 2.1 keeps 9 (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s2.2-01",
+    "reason": "duplicate with 2.2-02 (the two sides of the /workspace-only state rule). Dropped this card, as the scan proposes: it is the basic half, while 2.2-02 carries the misconception. The verifier's replacement for 2.2-02 (images not pushed are discarded) would give away 2.2-07, so it was not used. 2.2 keeps 9 (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s2.3-01",
+    "reason": "weak_card: strawman, since nobody expects Cloud Build to add a test step on its own. 2.3 had four flags, so only one could be dropped. I dropped this one because its replacement (allowFailure on every step) leans on allowFailure and needs an allowExitCodes contrast, which would hint at 2.3-05. 2.3 keeps 9 (5T/4F)."
+   },
+   {
+    "id": "gcp-pcd-s3.1-07",
+    "reason": "weak_card: near-strawman (a rollback does not rebuild the image) and overlaps 3.1-06. The verifier's replacement ('the next deploy gets all traffic after a rollback' is false) can be argued: the rollouts page shows the console's 'Serve this revision immediately' checkbox, which overrides an existing split. So I dropped this card and rewrote 3.1-03 instead. 3.1 keeps 9 (5T/4F)."
+   },
+   {
+    "id": "gcp-pcd-s3.2-08",
+    "reason": "weak_card: third-party adapter misnamed as GKE's, a troubleshooting tip from the same page as 3.2-07, and the scan put it in conflict groups with 3.2-05 and 3.2-07. 3.2 had four flags, so this is the one drop. 3.2 keeps 9 (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s4.1-09",
+    "reason": "weak_card: follows from what a nack means, and overlaps gcp-ace-s2.2-07 and 4.1-08. 4.1 had four true-card flags, so this is the one drop. 4.1 keeps 9 (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s4.2-05",
+    "reason": "weak_card: the statement (a batch response holds per-request statuses) is a truism, and the real trap sits only in the explanation. 4.2 keeps 9 (4T/5F)."
+   },
+   {
+    "id": "gcp-pcd-s4.3-04",
+    "reason": "weak_card: definition card for trace context propagation, with an explanation close to the source. 4.3 keeps 9 (4T/5F)."
+   }
+  ],
+  "source": [],
+  "rewrite": [
+   {
+    "id": "gcp-pcd-s1.1-09",
+    "reason": "ambiguous: 'share process-level state' is wrong for multi-process servers. Now states the documented fact: Cloud Run gives no isolation between concurrent requests.",
+    "statement": "Cloud Run leaves isolation between concurrent requests in one service instance to the application code.",
+    "answer": true,
+    "explanation": "With concurrency above 1, Cloud Run provides no isolation between requests one instance processes at once. Shared mutable state, such as globals in a threaded server, needs concurrency-safe code.",
+    "misconception": "",
+    "sourceTitle": "Maximum concurrent requests for services",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/about-concurrency"
+   },
+   {
+    "id": "gcp-pcd-s1.1-07",
+    "reason": "tell: removes the control verb 'enforce' (7 of 7 such verbs were on false cards). Same fact, same answer.",
+    "statement": "Cloud Run keeps configured traffic percentages for returning clients when session affinity is enabled.",
+    "answer": false,
+    "explanation": "Cloud Run's best-effort session affinity takes precedence over traffic splits. Returning clients can skew the observed proportions across revisions.",
+    "misconception": "Session affinity preserves configured traffic proportions for returning clients.",
+    "sourceTitle": "Set session affinity for services",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/configuring/session-affinity"
+   },
+   {
+    "id": "gcp-pcd-s1.2-01",
+    "reason": "weak_card: the hedge 'can differ' gave away the answer. Replaced with the verifier's actAs card (kept here instead of dropped because 1.2-09 is dropped). Page: the Service Account User role 'contains the iam.serviceAccounts.actAs permission, which is required to attach a service account on the service or revision'.",
+    "statement": "Attaching a user-managed service identity to a Cloud Run service requires the deployer to hold actAs on that account.",
+    "answer": true,
+    "explanation": "The deployer needs iam.serviceAccounts.actAs on the service account, for example through the Service Account User role, to attach it to a Cloud Run service or revision.",
+    "misconception": "",
+    "sourceTitle": "Configure service identity for services",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/configuring/services/service-identity"
+   },
+   {
+    "id": "gcp-pcd-s1.3-02",
+    "reason": "ambiguous: 'that query' had nothing to refer to, and 'requires' suggested a query error. Now states the silent exclusion. Page: 'An orderBy() clause also filters for existence of the given field. The result set will not include documents that do not contain the given field.'",
+    "statement": "A Firestore query ordered by a field omits documents that lack that field, even when they match its filters.",
+    "answer": true,
+    "explanation": "In Firestore, an orderBy clause also filters on the field's existence, so documents without the field drop out of results silently. Give every document the field or run a separate query.",
+    "misconception": "",
+    "sourceTitle": "Order and limit data",
+    "sourceUrl": "https://docs.cloud.google.com/firestore/native/docs/query-data/order-limit-data"
+   },
+   {
+    "id": "gcp-pcd-s2.1-05",
+    "reason": "weak_card (definition card). Rewritten instead of dropped because 2.1-10 is dropped. Page: a persistent home directory (the default) is attached at runtime and 'overwrites modifications made to the /home directory at container image build time... To preserve updates, modify the /home directory at container runtime'.",
+    "statement": "Cloud Workstations' persistent home disk replaces files a custom image added under /home at build time.",
+    "answer": true,
+    "explanation": "By default a persistent disk attaches over /home when the container starts, overwriting build-time changes there. Install tools outside /home or modify /home at runtime.",
+    "misconception": "",
+    "sourceTitle": "Customize container images",
+    "sourceUrl": "https://docs.cloud.google.com/workstations/docs/customize-container-images"
+   },
+   {
+    "id": "gcp-pcd-s2.1-09",
+    "reason": "explanation_error: Node.js handlers declare their type through functions.http or functions.cloudEvent registration, not only through a configured flag. Statement and answer are unchanged. The source moves to the page that shows the registration and says code 'must specify one of the two signature types'.",
+    "statement": "The Node.js Functions Framework detects HTTP or CloudEvent signatures from handler parameters.",
+    "answer": false,
+    "explanation": "Node.js code declares the signature type by registering its handler with functions.http or functions.cloudEvent. The framework does not read the handler's parameter list to decide.",
+    "misconception": "The Node.js Functions Framework infers the trigger signature from the handler's parameters.",
+    "sourceTitle": "Write Cloud Run functions",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/write-functions"
+   },
+   {
+    "id": "gcp-pcd-s2.2-05",
+    "reason": "weak_card (definition of substitution). Rewritten instead of dropped because 2.2-01 is dropped. The verifier's text used 'without' (a negation), so it is reworded. Page: 'default substitutions for builds invoked by triggers: ... $SHORT_SHA'. With gcloud builds submit 'you can manually provide values for ... $SHORT_SHA'.",
+    "statement": "Cloud Build supplies $SHORT_SHA as a default substitution to builds that a trigger invokes.",
+    "answer": true,
+    "explanation": "Trigger-invoked builds get default substitutions such as $COMMIT_SHA and $SHORT_SHA. A build started with gcloud builds submit gets these values only when the developer passes them.",
+    "misconception": "",
+    "sourceTitle": "Substituting variable values",
+    "sourceUrl": "https://docs.cloud.google.com/build/docs/configuring-builds/substitute-variable-values"
+   },
+   {
+    "id": "gcp-pcd-s2.3-03",
+    "reason": "duplicate of 2.3-02 and near-strawman. Replaced with the verifier's base64 card, reworded so it does not presuppose an HTTP POST, which would hint at 2.3-02. Page: 'data values from Pub/Sub events have base64-encoded data values. Functions that need access to the original Pub/Sub message's data value are expected to perform this decoding.'",
+    "statement": "Functions Framework base64-decodes a Pub/Sub event's message data before a local CloudEvent handler receives it.",
+    "answer": false,
+    "explanation": "Pub/Sub events carry base64-encoded data values, and the function is expected to decode them. A local sample event therefore needs base64-encoded data as well.",
+    "misconception": "Functions Framework hands a local handler already-decoded Pub/Sub message data.",
+    "sourceTitle": "Local functions development",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/local-dev-functions"
+   },
+   {
+    "id": "gcp-pcd-s2.3-04",
+    "reason": "out_of_scope: Gemini Code Assist Standard/Enterprise is closed to new customers since 2026-10-09 (sunset page). Kept as a rewrite with the verifier's non-AI replacement because 2.3-01 is the section's one drop. Shortened to one fact. Page: 'Each build step is run with its container attached to a local Docker network named cloudbuild. This allows build steps to communicate with each other and share data.'",
+    "statement": "Cloud Build attaches every build step's container to a shared local Docker network named cloudbuild.",
+    "answer": true,
+    "explanation": "Because steps share that network, they can communicate: an integration-test step can call a service container that an earlier step started on the cloudbuild network.",
+    "misconception": "",
+    "sourceTitle": "Overview of Cloud Build",
+    "sourceUrl": "https://docs.cloud.google.com/build/docs/overview"
+   },
+   {
+    "id": "gcp-pcd-s2.3-09",
+    "reason": "weak_card (truism: 'when it has the required connectivity'). Replaced with the verifier's private pool peering card, without the hedge. Page: private pools sit in a 'Google-owned service producer network... you can create a private VPC peering connection between your VPC network and the service producer network'. In the feature table, 'Peer into a VPC' is listed for private pools only.",
+    "statement": "Cloud Build private pools reach private VPC resources through a peering connection with the customer's network.",
+    "answer": true,
+    "explanation": "Private pools run in a Google-owned service producer network that you peer with your VPC, so integration tests can reach private test databases. The default pool cannot peer into a VPC.",
+    "misconception": "",
+    "sourceTitle": "Private pools overview",
+    "sourceUrl": "https://docs.cloud.google.com/build/docs/private-pools/private-pools-overview"
+   },
+   {
+    "id": "gcp-pcd-s2.3-05",
+    "reason": "tell: puts a precedence verb on a true card (7 of 7 'precedence'/'override'/'enforce' statements were false). The fact (allowExitCodes beats allowFailure) and the answer are unchanged. Page: 'This field takes precedence over allowFailure' and a non-listed exit code makes 'the overall build... fail'.",
+    "statement": "Cloud Build's allowExitCodes takes precedence over allowFailure in a test step that sets both.",
+    "answer": true,
+    "explanation": "With allowFailure true and allowExitCodes [1], a test step that exits with 2 still fails the build, because only the listed exit codes are tolerated.",
+    "misconception": "",
+    "sourceTitle": "Build configuration file schema",
+    "sourceUrl": "https://docs.cloud.google.com/build/docs/build-config-file-schema"
+   },
+   {
+    "id": "gcp-pcd-s3.1-03",
+    "reason": "weak_card (exit 0 = success truism). Rewritten instead of dropped because 3.1-07 is dropped. Based on the verifier's task-index suggestion, sourced to the jobs page: 'Each task is aware of its index, which is stored in the CLOUD_RUN_TASK_INDEX environment variable... your code is responsible for determining which task handles which subset of the data.'",
+    "statement": "Cloud Run job code picks each task's share of the input from CLOUD_RUN_TASK_INDEX.",
+    "answer": true,
+    "explanation": "Each task reads its index from CLOUD_RUN_TASK_INDEX and the task total from CLOUD_RUN_TASK_COUNT. Cloud Run runs the tasks; splitting the input among them is the code's job.",
+    "misconception": "",
+    "sourceTitle": "Create jobs",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/create-jobs"
+   },
+   {
+    "id": "gcp-pcd-s3.1-06",
+    "reason": "tell: removes the hedge 'can' from a true card and puts 'automatically creates' on a true card ('automatically'/'creates' leaned false). Same fact and answer. Page: 'When you deploy to a service or change the configuration of a service, an immutable revision is created.'",
+    "statement": "Cloud Run automatically creates a revision when a developer edits a service's environment variables.",
+    "answer": true,
+    "explanation": "Cloud Run stores service configuration in immutable revisions. Changing environment variables versions the runtime configuration even when the container image stays the same.",
+    "misconception": "",
+    "sourceTitle": "Manage revisions",
+    "sourceUrl": "https://docs.cloud.google.com/run/docs/managing/revisions"
+   },
+   {
+    "id": "gcp-pcd-s3.2-06",
+    "reason": "weak_card (strawman: publishing a metric creates an HPA). Replaced with the verifier's adapter card. Page: 'To fetch the metrics, you can use a GKE managed metrics adapter... As an alternative... manually configuring a metrics adapter to send metrics to an autoscaler... such as the Stackdriver Adapter'.",
+    "statement": "GKE's horizontal Pod autoscaler queries Cloud Monitoring itself to read an application's custom metric.",
+    "answer": false,
+    "explanation": "The autoscaler gets Cloud Monitoring metrics through a metrics adapter, such as GKE's managed metrics adapter or an installed Stackdriver Adapter, which fetches them for it.",
+    "misconception": "The horizontal Pod autoscaler reads Cloud Monitoring metrics directly, with no metrics adapter in between.",
+    "sourceTitle": "Autoscale Pods by using custom or external metrics",
+    "sourceUrl": "https://docs.cloud.google.com/kubernetes-engine/docs/how-to/expose-custom-metrics-autoscaling"
+   },
+   {
+    "id": "gcp-pcd-s3.2-07",
+    "reason": "weak_card (naming): the page calls it 'the third-party Prometheus Adapter', not a GKE component. Same fact and answer. Page: 'All queries issued by prometheus-adapter are global in scope... We recommend always using namespace or cluster filters in your PromQL'.",
+    "statement": "The third-party Prometheus Adapter scopes Managed Service for Prometheus queries to the HPA's namespace.",
+    "answer": false,
+    "explanation": "Prometheus Adapter queries are global in scope, so identically named metrics from other namespaces feed the HPA. Add namespace or cluster filters to the PromQL query.",
+    "misconception": "The Prometheus Adapter automatically restricts metric queries to the namespace containing the HPA.",
+    "sourceTitle": "Horizontal pod autoscaling (HPA)",
+    "sourceUrl": "https://docs.cloud.google.com/stackdriver/docs/managed-prometheus/hpa"
+   },
+   {
+    "id": "gcp-pcd-s3.2-10",
+    "reason": "weak_card: the condition gave away the answer, and 'Skaffold selects' was inaccurate. Now tests the default location. Page: 'By default, deployment verification runs in the Cloud Deploy execution environment', with executionMode.kubernetesCluster for in-cluster runs, 'available for deployments to GKE only'.",
+    "statement": "By default, Cloud Deploy runs a GKE target's verification containers in its execution environment, outside the cluster.",
+    "answer": true,
+    "explanation": "Verification runs in the Cloud Deploy execution environment unless skaffold.yaml sets executionMode.kubernetesCluster on the verify containers, an option for GKE targets only.",
+    "misconception": "",
+    "sourceTitle": "Verify your deployment",
+    "sourceUrl": "https://docs.cloud.google.com/deploy/docs/verify-deployment"
+   },
+   {
+    "id": "gcp-pcd-s4.1-01",
+    "reason": "weak_card: 'SDK retries' gave away the repeat. Now tests the external side effect of a rerun callback. Page: a transaction function 'might run more than once if a concurrent edit affects a document that the transaction reads' and 'should not directly modify application state'.",
+    "statement": "A Firestore server SDK transaction callback that sends an email can send it twice for one commit.",
+    "answer": true,
+    "explanation": "Server client libraries rerun the whole transaction callback after contention, while Firestore's atomic commit covers only database writes. Return data from the callback and send email after it succeeds.",
+    "misconception": "",
+    "sourceTitle": "Transactions and batched writes",
+    "sourceUrl": "https://docs.cloud.google.com/firestore/native/docs/manage-data/transactions"
+   },
+   {
+    "id": "gcp-pcd-s4.1-03",
+    "reason": "weak_card: near-copy of the source sentence, and the concessive 'even with' hinted at True. Page: 'Mobile and web SDKs emulate optimistic concurrency transactions using write preconditions on document versions. This emulation occurs regardless of the database's concurrency mode setting.'",
+    "statement": "A Firestore web SDK transaction checks document versions at commit rather than locking the documents it reads.",
+    "answer": true,
+    "explanation": "Mobile and web SDKs emulate optimistic concurrency with write preconditions on document versions, so they behave optimistically even when the database concurrency mode is PESSIMISTIC.",
+    "misconception": "",
+    "sourceTitle": "Data contention in transactions",
+    "sourceUrl": "https://docs.cloud.google.com/firestore/native/docs/transaction-data-contention"
+   },
+   {
+    "id": "gcp-pcd-s4.1-05",
+    "reason": "weak_card (generic database truism). Now tests the documented Cloud SQL point: the application, not the pool, retries. Page: 'If errors happen in the middle of a transaction, the application must do the retrying, and it must retry from the beginning of a transaction. So even if your pool is configured properly, the application might still see errors if connections are lost.'",
+    "statement": "Cloud SQL for PostgreSQL apps need their own retry logic for a transaction cut off by a lost connection.",
+    "answer": true,
+    "explanation": "Pools and backoff help when opening a connection, but the application must retry a transaction interrupted mid-way from its beginning; a well-configured pool still surfaces lost connections.",
+    "misconception": "",
+    "sourceTitle": "Manage database connections",
+    "sourceUrl": "https://docs.cloud.google.com/sql/docs/postgres/manage-connections"
+   },
+   {
+    "id": "gcp-pcd-s4.2-07",
+    "reason": "tell: removes 'override' (a control verb found only on false cards). Same fact and answer. Page: 'Cloud Storage ignores this header and sets response Cache-Control headers based on the stored metadata values.'",
+    "statement": "Cloud Storage sets a download's Cache-Control response header from the caller's Cache-Control request header.",
+    "answer": false,
+    "explanation": "Cloud Storage derives a download's Cache-Control response header from the object's stored metadata. It ignores the caller's Cache-Control request header when setting that response value.",
+    "misconception": "The download request's caching header overrides Cloud Storage's stored object caching metadata.",
+    "sourceTitle": "Object metadata",
+    "sourceUrl": "https://docs.cloud.google.com/storage/docs/metadata"
+   },
+   {
+    "id": "gcp-pcd-s4.2-09",
+    "reason": "explanation_error: the old explanation gave no recovery step and made an absolute 'stays invalid' claim. The new explanation teaches the documented recovery: a 412 lets you request the current metadata and generation before a new conditional request. Statement and answer are unchanged.",
+    "statement": "A Cloud Storage client fixes an HTTP 412 generation mismatch by retrying the request with the same precondition.",
+    "answer": false,
+    "explanation": "A 412 means the object no longer matches the precondition. Request its current metadata, decide whether the change still applies, then send a new request with the current generation.",
+    "misconception": "A precondition mismatch is a transient failure resolved by resending the same stale condition.",
+    "sourceTitle": "Request preconditions",
+    "sourceUrl": "https://docs.cloud.google.com/storage/docs/request-preconditions"
+   },
+   {
+    "id": "gcp-pcd-s4.3-10",
+    "reason": "tell plus source: removes 'supports' (3 of 3 uses were on false cards). Same fact and answer. The source moves from the concepts table, whose flattened layout misreads, to the Node.js page that states 'Profile types for Node.js: Heap, Wall time'.",
+    "statement": "Cloud Profiler's Node.js agent collects CPU-time profiles for diagnosing slow production handlers.",
+    "answer": false,
+    "explanation": "Cloud Profiler offers heap and wall-time profiles for Node.js, not CPU time. A wall-time profile also counts time a handler spends waiting.",
+    "misconception": "The Cloud Profiler Node.js agent offers the same CPU-time profile type as its Go or Java agents.",
+    "sourceTitle": "Profiling Node.js applications",
+    "sourceUrl": "https://docs.cloud.google.com/profiler/docs/profiling-nodejs"
+   }
+  ],
+  "conflictGroups": [
+   {
+    "name": "firestore-composite-index",
+    "ids": [
+     "gcp-pcd-s1.3-01",
+     "gcp-pcd-s2.1-04"
+    ]
+   },
+   {
+    "name": "cloud-run-http2",
+    "ids": [
+     "gcp-pcd-s1.1-02",
+     "gcp-pcd-s3.1-05"
+    ]
+   },
+   {
+    "name": "cloud-build-images-provenance",
+    "ids": [
+     "gcp-pcd-s2.2-07",
+     "gcp-pcd-s2.2-09"
+    ]
+   },
+   {
+    "name": "cloud-build-substitutions",
+    "ids": [
+     "gcp-pcd-s2.2-05",
+     "gcp-pcd-s2.2-06"
+    ]
+   },
+   {
+    "name": "workstations-custom-image",
+    "ids": [
+     "gcp-pcd-s2.1-02",
+     "gcp-pcd-s2.1-05"
+    ]
+   },
+   {
+    "name": "functions-framework-local-cloudevent",
+    "ids": [
+     "gcp-pcd-s2.3-02",
+     "gcp-pcd-s2.3-03"
+    ]
+   },
+   {
+    "name": "gke-metric-autoscaling",
+    "ids": [
+     "gcp-pcd-s3.2-05",
+     "gcp-pcd-s3.2-06",
+     "gcp-pcd-s3.2-07"
+    ]
+   },
+   {
+    "name": "pubsub-exactly-once-ack",
+    "ids": [
+     "gcp-pcd-s4.1-07",
+     "gcp-pcd-s4.1-08"
+    ]
+   },
+   {
+    "name": "storage-precondition-retry",
+    "ids": [
+     "gcp-pcd-s4.2-08",
+     "gcp-pcd-s4.2-09"
+    ]
+   },
+   {
+    "name": "trace-application-spans",
+    "ids": [
+     "gcp-pcd-s4.3-03",
+     "gcp-pcd-s4.3-05"
+    ]
+   },
+   {
+    "name": "cloud-run-structured-logging",
+    "ids": [
+     "gcp-pcd-s4.3-01",
+     "gcp-pcd-s4.3-02"
+    ]
+   }
+  ],
+  "sectionBalance": "99 cards in all, 9 per section, 46 true and 53 false. Average statement length (T vs F) is shown after each split. 1.1: 9 cards, 4T/5F (88.0 vs 88.2). 1.2: 9, 5T/4F (99.6 vs 96.2). 1.3: 9, 4T/5F (100.2 vs 96.6). 2.1: 9, 4T/5F (99.0 vs 94.0, exactly at the 5-character limit). 2.2: 9, 4T/5F (95.8 vs 98.6). 2.3: 9, 5T/4F (100.3 vs 104.2). 3.1: 9, 5T/4F (94.6 vs 92.2). 3.2: 9, 4T/5F (103.0 vs 103.8). 4.1: 9, 4T/5F (103.5 vs 102.8). 4.2: 9, 4T/5F (104.2 vs 103.4). 4.3: 9, 4T/5F (102.5 vs 99.2).",
+  "notes": "I checked every rewrite against the official page with curl text extraction on 2026-10-13, and every rewritten statement and explanation was length-checked (statements 82-119 characters, explanations at most 203).\n\nDecisions that go beyond the verifiers:\n1. Dropped gcp-pcd-s2.1-10. Gemini Code Assist Standard/Enterprise has been closed to new purchases since 2026-10-09 (docs.cloud.google.com/gemini/docs/codeassist/sunset), and the prompt's rule excludes products closed to new customers. 2.3-04 is replaced for the same reason, so the deck now has no AI-tool cards. The prompt's AI-scope rule (Gemini Code Assist as a current GA workflow) is out of date and should change to Antigravity or note the gap.\n2. Rejected the verifier's replacement for 3.1-07. The rollouts page documents the console's 'Serve this revision immediately' checkbox, which overrides an existing traffic split, so 'the next deploy gets all traffic after a rollback' is defensible either way. Instead I dropped 3.1-07 and rewrote 3.1-03 (CLOUD_RUN_TASK_INDEX, sourced to the create-jobs page).\n3. Rejected the verifier's replacement for 2.2-02 (unpushed images are discarded) because it gives away 2.2-07. I followed the scan instead: dropped 2.2-01 and kept 2.2-02.\n4. In 2.3 I dropped 01 rather than 04. The allowFailure replacement for 01 would need an allowExitCodes contrast that hints at 2.3-05. 2.3-04 took the verifier's non-AI replacement (cloudbuild Docker network).\n5. 2.1-09's source moved to run/docs/write-functions, which shows the functions.http / functions.cloudEvent registration.\n\nTell rewrites (5, each keeps its fact and answer):\n- 1.1-07 removes 'enforce'.\n- 4.2-07 removes 'override'.\n- 4.3-10 removes 'supports' and also takes the better source the verifier suggested.\n- 2.3-05 puts 'takes precedence' on a true card.\n- 3.1-06 puts 'automatically creates' on a true card and drops its hedge.\n\nOther rewrites also remove tells: 'let' is gone from both true cards (1.1-09, 2.2-05), the Gemini tier qualifier is gone, the precondition-clause true cards 2.3-09 and 3.2-10 are rewritten, and 'rebuilds' now appears only in 2.1-02.\n\nTells still open:\n- The 'platform does hidden work when X' false template still carries 7 false cards: 1.2-02, 1.2-06, 1.2-10, 1.3-01, 1.3-03, 1.3-09, 2.1-02. It is now offset by more true cards of the same shape: 1.1-10, 2.1-07, 2.2-07, 2.3-04, 3.1-06, 4.3-07. It is still above the two-per-template cap, so it needs regeneration rather than rewording.\n- The emulator-fidelity template is still 3 of 3 false (2.1-04, 2.1-06, 2.1-08).\n\nRemoved conflict groups: cloud-build-cross-step-state, cloud-run-service-identity (the new 1.2-01 is about the deployer's actAs, not runtime grants), cloud-run-revisions, gke-prometheus-adapter and trace-context-header. 3.2-07 was added to gke-metric-autoscaling because the new 3.2-06 explanation names metrics adapters.\n\nSuggested difficulty for rewrites:\n- 1: 2.2-05, 2.3-04\n- 2: 1.1-09, 1.2-01, 1.3-02, 2.1-05, 2.3-03, 2.3-09, 3.1-03, 3.2-06, 4.1-01, 4.1-05\n- 3: 3.2-07, 3.2-10, 4.1-03\nRename these factKeys: 1.2-01 cloud-run-deployer-actas-required, 1.3-02 firestore-orderby-excludes-missing-field, 2.1-05 workstations-persistent-home-overwrites-image-home, 2.2-05 cloud-build-trigger-default-substitutions, 2.3-03 functions-framework-pubsub-data-base64, 2.3-04 cloud-build-step-docker-network, 2.3-09 cloud-build-private-pool-vpc-peering, 3.1-03 cloud-run-job-task-index-sharding, 3.2-06 gke-hpa-needs-metrics-adapter, 3.2-10 cloud-deploy-verify-default-location, 4.1-01 firestore-callback-side-effect-repeat.\n\nPrompt issues to fix for the next generation:\n- The Gemini Code Assist rule is out of date (point 1).\n- Prometheus Adapter is third-party, not a GKE component.\n- 1.3 scope leaves out AlloyDB, which the guide names.\n- The 3.2 'avoid probe rules' line conflicts with the guide's 'Kubernetes health checks' bullet.\n- 3.1 scope leaves out the guide's Pub/Sub receivers and Apigee API versioning.\n\nEvery section has 9 cards, the deck has 99, and true cards are 46 of 99. If the game expects exactly 10 per section, each section needs one more card in a top-up pass, preferably true in sections at 4T/5F."
+ },
+ "final": {
+  "cards": [
+   {
+    "id": "gcp-pcd-s1.1-09",
+    "decision": "keep",
+    "statement": "Cloud Run leaves isolation between concurrent requests in one service instance to the application code.",
+    "answer": true,
+    "explanation": "With concurrency above 1, Cloud Run provides no isolation between requests one instance processes at once. Shared mutable state, such as globals in a threaded server, needs concurrency-safe code.",
+    "reason": "Both lenses keep. Confirmed on about-concurrency: 'When concurrency is enabled, Cloud Run does not provide isolation between concurrent requests processed by the same instance.'"
+   },
+   {
+    "id": "gcp-pcd-s1.1-07",
+    "decision": "keep",
+    "statement": "Cloud Run keeps configured traffic percentages for returning clients when session affinity is enabled.",
+    "answer": false,
+    "explanation": "Cloud Run's best-effort session affinity takes precedence over traffic splits. Returning clients can skew the observed proportions across revisions.",
+    "reason": "Both lenses keep. Confirmed on session-affinity: affinity is best effort and 'takes precedence over any traffic splitting'."
+   },
+   {
+    "id": "gcp-pcd-s1.2-01",
+    "decision": "keep",
+    "statement": "Attaching a user-managed service identity to a Cloud Run service requires the deployer to hold actAs on that account.",
+    "answer": true,
+    "explanation": "The deployer needs iam.serviceAccounts.actAs on the service account, for example through the Service Account User role, to attach it to a Cloud Run service or revision.",
+    "reason": "Both lenses keep. Confirmed on service-identity: the Service Account User role 'contains the iam.serviceAccounts.actAs permission, which is required to attach a service account on the service or revision'."
+   },
+   {
+    "id": "gcp-pcd-s1.3-02",
+    "decision": "keep",
+    "statement": "A Firestore query ordered by a field omits documents that lack that field, even when they match its filters.",
+    "answer": true,
+    "explanation": "In Firestore, an orderBy clause also filters on the field's existence, so documents without the field drop out of results silently. Give every document the field or run a separate query.",
+    "reason": "Both lenses keep. Confirmed on order-limit-data: 'An orderBy() clause also filters for existence of the given field. The result set will not include documents that do not contain the given field.'"
+   },
+   {
+    "id": "gcp-pcd-s2.1-05",
+    "decision": "keep",
+    "statement": "Cloud Workstations' persistent home disk replaces files a custom image added under /home at build time.",
+    "answer": true,
+    "explanation": "By default a persistent disk attaches over /home when the container starts, overwriting build-time changes there. Install tools outside /home or modify /home at runtime.",
+    "reason": "Both lenses keep. Confirmed on customize-container-images: the persistent home disk (the default) is attached at runtime and 'overwrites modifications made to the /home directory at container image build time'."
+   },
+   {
+    "id": "gcp-pcd-s2.1-09",
+    "decision": "keep",
+    "statement": "The Node.js Functions Framework detects HTTP or CloudEvent signatures from handler parameters.",
+    "answer": false,
+    "explanation": "Node.js code declares the signature type by registering its handler with functions.http or functions.cloudEvent. The framework does not read the handler's parameter list to decide.",
+    "reason": "Both lenses keep and note the minor --signature-type option. The explanation does not say registration is the only way, so it stays accurate. Confirmed on write-functions: Node.js registers handlers with functions.http and functions.cloudEvent, and the page documents no inference from parameters."
+   },
+   {
+    "id": "gcp-pcd-s2.2-05",
+    "decision": "keep",
+    "statement": "Cloud Build supplies $SHORT_SHA as a default substitution to builds that a trigger invokes.",
+    "answer": true,
+    "explanation": "Trigger-invoked builds get default substitutions such as $COMMIT_SHA and $SHORT_SHA. A build started with gcloud builds submit gets these values only when the developer passes them.",
+    "reason": "Both lenses keep. The wording lens's note that the card is slightly easy is not a drop reason. Confirmed on substitute-variable-values: $SHORT_SHA is listed among the trigger defaults, and with gcloud builds submit 'you can manually provide values for ... $SHORT_SHA'."
+   },
+   {
+    "id": "gcp-pcd-s2.3-03",
+    "decision": "keep",
+    "statement": "Functions Framework base64-decodes a Pub/Sub event's message data before a local CloudEvent handler receives it.",
+    "answer": false,
+    "explanation": "Pub/Sub events carry base64-encoded data values, and the function is expected to decode them. A local sample event therefore needs base64-encoded data as well.",
+    "reason": "Both lenses keep. Confirmed on local-dev-functions: Pub/Sub events have base64-encoded data values, and 'Functions that need access to the original Pub/Sub message's data value are expected to perform this decoding.'"
+   },
+   {
+    "id": "gcp-pcd-s2.3-04",
+    "decision": "keep",
+    "statement": "Cloud Build attaches every build step's container to a shared local Docker network named cloudbuild.",
+    "answer": true,
+    "explanation": "Because steps share that network, they can communicate: an integration-test step can call a service container that an earlier step started on the cloudbuild network.",
+    "reason": "Both lenses keep. Confirmed on the Cloud Build overview: 'Each build step is run with its container attached to a local Docker network named cloudbuild.' Housekeeping from the fact lens: this is no longer an AI-tool card, so set volatility to stable and clear the volatilityNote."
+   },
+   {
+    "id": "gcp-pcd-s2.3-09",
+    "decision": "keep",
+    "statement": "Cloud Build private pools reach private VPC resources through a peering connection with the customer's network.",
+    "answer": true,
+    "explanation": "Private pools run in a Google-owned service producer network that you peer with your VPC, so integration tests can reach private test databases. The default pool cannot peer into a VPC.",
+    "reason": "Both lenses keep. Confirmed on private-pools-overview: pools are hosted in a Google-owned service producer network, VPC peering is available, and only private pools can 'Peer into a VPC or shared VPC'."
+   },
+   {
+    "id": "gcp-pcd-s2.3-05",
+    "decision": "keep",
+    "statement": "Cloud Build's allowExitCodes takes precedence over allowFailure in a test step that sets both.",
+    "answer": true,
+    "explanation": "With allowFailure true and allowExitCodes [1], a test step that exits with 2 still fails the build, because only the listed exit codes are tolerated.",
+    "reason": "Both lenses keep. Confirmed on build-config-file-schema: allowExitCodes 'takes precedence over allowFailure', and an exit code missing from the list fails the build."
+   },
+   {
+    "id": "gcp-pcd-s3.1-03",
+    "decision": "keep",
+    "statement": "Cloud Run job code picks each task's share of the input from CLOUD_RUN_TASK_INDEX.",
+    "answer": true,
+    "explanation": "Each task reads its index from CLOUD_RUN_TASK_INDEX and the task total from CLOUD_RUN_TASK_COUNT. Cloud Run runs the tasks; splitting the input among them is the code's job.",
+    "reason": "Both lenses keep. Confirmed on create-jobs: tasks get CLOUD_RUN_TASK_INDEX and CLOUD_RUN_TASK_COUNT, and 'your code is responsible for determining which task handles which subset of the data.'"
+   },
+   {
+    "id": "gcp-pcd-s3.1-06",
+    "decision": "keep",
+    "statement": "Cloud Run automatically creates a revision when a developer edits a service's environment variables.",
+    "answer": true,
+    "explanation": "Cloud Run stores service configuration in immutable revisions. Changing environment variables versions the runtime configuration even when the container image stays the same.",
+    "reason": "Both lenses keep. Confirmed on managing/revisions: 'When you deploy to a service or change the configuration of a service, an immutable revision is created.'"
+   },
+   {
+    "id": "gcp-pcd-s3.2-06",
+    "decision": "drop",
+    "statement": "GKE's horizontal Pod autoscaler queries Cloud Monitoring itself to read an application's custom metric.",
+    "answer": false,
+    "explanation": "The autoscaler gets Cloud Monitoring metrics through a metrics adapter, such as GKE's managed metrics adapter or an installed Stackdriver Adapter, which fetches them for it.",
+    "reason": "The wording lens's drop holds up when I check the deck. The statement of 3.2-08 says a prometheus-adapter retrieves Pub/Sub metrics from Cloud Monitoring for the autoscaler, and 3.2-07 is also about an adapter feeding the HPA. A player who has seen either card knows an adapter sits between Cloud Monitoring and the HPA, which breaks the prompt's give-away rule. Rewording cannot fix that. The new built-in managed adapter (GKE 1.36.2-gke.2771000+) also makes 'itself' arguable. Section 3.2 now has 9 cards."
+   },
+   {
+    "id": "gcp-pcd-s3.2-07",
+    "decision": "keep",
+    "statement": "The third-party Prometheus Adapter scopes Managed Service for Prometheus queries to the HPA's namespace.",
+    "answer": false,
+    "explanation": "Prometheus Adapter queries are global in scope, so identically named metrics from other namespaces feed the HPA. Add namespace or cluster filters to the PromQL query.",
+    "reason": "Both lenses keep. Confirmed on managed-prometheus/hpa: the page calls it 'the third-party Prometheus Adapter', says its queries are 'global in scope', and recommends namespace or cluster filters. The misconception is realistic because the page says the Stackdriver adapter does scope its queries to the HPA's namespace."
+   },
+   {
+    "id": "gcp-pcd-s3.2-10",
+    "decision": "keep",
+    "statement": "By default, Cloud Deploy runs a GKE target's verification containers in its execution environment, outside the cluster.",
+    "answer": true,
+    "explanation": "Verification runs in the Cloud Deploy execution environment unless skaffold.yaml sets executionMode.kubernetesCluster on the verify containers, an option for GKE targets only.",
+    "reason": "Both lenses keep. The statement is 119 characters. Confirmed on verify-deployment: 'By default, deployment verification runs in the Cloud Deploy execution environment', and the kubernetesCluster mode is 'available for deployments to GKE only'."
+   },
+   {
+    "id": "gcp-pcd-s4.1-01",
+    "decision": "keep",
+    "statement": "A Firestore server SDK transaction callback that sends an email can send it twice for one commit.",
+    "answer": true,
+    "explanation": "Server client libraries rerun the whole transaction callback after contention, while Firestore's atomic commit covers only database writes. Return data from the callback and send email after it succeeds.",
+    "reason": "Both lenses keep. Confirmed on transactions: a transaction function 'might run more than once if a concurrent edit affects a document that the transaction reads' and 'should not directly modify application state'."
+   },
+   {
+    "id": "gcp-pcd-s4.1-03",
+    "decision": "keep",
+    "statement": "A Firestore web SDK transaction checks document versions at commit rather than locking the documents it reads.",
+    "answer": true,
+    "explanation": "Mobile and web SDKs emulate optimistic concurrency with write preconditions on document versions, so they behave optimistically even when the database concurrency mode is PESSIMISTIC.",
+    "reason": "Both lenses keep. Confirmed on transaction-data-contention: mobile and web SDKs use write preconditions on document versions and behave optimistically even when the mode is PESSIMISTIC."
+   },
+   {
+    "id": "gcp-pcd-s4.1-05",
+    "decision": "keep",
+    "statement": "Cloud SQL for PostgreSQL apps need their own retry logic for a transaction cut off by a lost connection.",
+    "answer": true,
+    "explanation": "Pools and backoff help when opening a connection, but the application must retry a transaction interrupted mid-way from its beginning; a well-configured pool still surfaces lost connections.",
+    "reason": "Both lenses keep. Confirmed on postgres/manage-connections: 'If errors happen in the middle of a transaction, the application must do the retrying, and it must retry from the beginning of a transaction.'"
+   },
+   {
+    "id": "gcp-pcd-s4.2-07",
+    "decision": "keep",
+    "statement": "Cloud Storage sets a download's Cache-Control response header from the caller's Cache-Control request header.",
+    "answer": false,
+    "explanation": "Cloud Storage derives a download's Cache-Control response header from the object's stored metadata. It ignores the caller's Cache-Control request header when setting that response value.",
+    "reason": "Both lenses keep. Confirmed on storage metadata: 'Cloud Storage ignores this header and sets response Cache-Control headers based on the stored metadata values.'"
+   },
+   {
+    "id": "gcp-pcd-s4.2-09",
+    "decision": "keep",
+    "statement": "A Cloud Storage client fixes an HTTP 412 generation mismatch by retrying the request with the same precondition.",
+    "answer": false,
+    "explanation": "A 412 means the object no longer matches the precondition. Request its current metadata, decide whether the change still applies, then send a new request with the current generation.",
+    "reason": "Both lenses keep. Confirmed on request-preconditions: a generation mismatch returns 412 Precondition Failed, and the page says to get the object's metadata first to learn its current generation."
+   },
+   {
+    "id": "gcp-pcd-s4.3-10",
+    "decision": "keep",
+    "statement": "Cloud Profiler's Node.js agent collects CPU-time profiles for diagnosing slow production handlers.",
+    "answer": false,
+    "explanation": "Cloud Profiler offers heap and wall-time profiles for Node.js, not CPU time. A wall-time profile also counts time a handler spends waiting.",
+    "reason": "Both lenses keep. Confirmed on profiling-nodejs: the profile types for Node.js are only Heap and Wall time."
+   }
+  ]
+ }
+}
