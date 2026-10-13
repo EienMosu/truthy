@@ -11,7 +11,7 @@ const CONTENT_TYPES = ["@/src/content/schema", "@/src/content/play"] as const;
 const PURE: readonly { files: string[]; mayImport: readonly string[] }[] = [
   { files: sources("src/engine"), mayImport: [...CONTENT_TYPES, "./"] },
   { files: sources("src/input"), mayImport: ["./"] },
-  { files: ["src/progress/progress.ts"], mayImport: ["zod", ...CONTENT_TYPES, "./"] },
+  { files: ["src/progress/progress.ts"], mayImport: ["zod/mini", ...CONTENT_TYPES, "./"] },
   { files: ["src/content/play.ts"], mayImport: ["./schema"] },
   { files: ["src/content/text.ts"], mayImport: [] },
   // The service worker's decisions (offline spec section 5): the worker and the unit tests run the same code.

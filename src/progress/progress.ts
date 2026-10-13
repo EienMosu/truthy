@@ -2,7 +2,7 @@
 // Pure: every function returns new objects and never changes its inputs.
 // The storage side lives in ./local, behind the ProgressStore interface.
 
-import { z } from "zod";
+import * as z from "zod/mini";
 import { routeKey, type Route } from "@/src/content/schema";
 import { MODES, type CardHistory, type History, type Mode, type RoundResult } from "@/src/content/play";
 
@@ -116,22 +116,22 @@ export function seenShare(history: History, cardIds: readonly string[]): number 
 // own, so one part that fails (a mode a later version added, a count that cannot be) costs only that part.
 // Unknown fields are dropped.
 const CardHistorySchema = z.object({
-  seen: z.number().int().nonnegative(),
+  seen: z.number().check(z.int(), z.nonnegative()),
   lastCorrect: z.boolean(),
-  lastSeenAt: z.number().nonnegative(),
+  lastSeenAt: z.number().check(z.nonnegative()),
 });
 
-const RecordSchema = z.number().int().nonnegative();
+const RecordSchema = z.number().check(z.int(), z.nonnegative());
 
-const LastSchema = z
-  .object({
-    route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
+const LastSchema = z.nullable(
+  z.object({
+    route: z.object({ deckId: z.string().check(z.minLength(1)), sectionId: z.string().check(z.minLength(1)) }),
     mode: z.enum(MODES),
     // Missing in progress stored before scores were kept: it reads as a round without a score.
-    score: z.number().int().nonnegative().nullable().default(null),
-    total: z.number().int().nonnegative().nullable().default(null),
-  })
-  .nullable();
+    score: z._default(z.nullable(z.number().check(z.int(), z.nonnegative())), null),
+    total: z._default(z.nullable(z.number().check(z.int(), z.nonnegative())), null),
+  }),
+);
 
 /** A stored value as read: the progress kept from it, and whether all of it was kept. */
 export interface ProgressRead {
@@ -173,7 +173,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 // The entries of a stored map that pass the schema. Object.fromEntries defines each key as an own
 // property, so a "__proto__" key in stored data stays a plain key and never changes a prototype.
-function validEntries<T>(value: unknown, schema: z.ZodType<T>): { kept: Record<string, T>; whole: boolean } {
+function validEntries<T>(value: unknown, schema: z.ZodMiniType<T>): { kept: Record<string, T>; whole: boolean } {
   if (!isObject(value)) return { kept: {}, whole: false };
   const kept: [string, T][] = [];
   let whole = true;

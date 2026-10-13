@@ -2,7 +2,7 @@
 // so that a reload of /play keeps it and a new tab starts clean (spec section 4, "Routes"), and in
 // memory for when the browser blocks storage.
 
-import { z } from "zod";
+import * as z from "zod/mini";
 import { browserSessionStorage } from "@/src/app-state/services";
 import type { Route } from "@/src/content/schema";
 import { MODES, type Mode } from "@/src/content/play";
@@ -16,7 +16,7 @@ export const PENDING_KEY = "truthy.pending.v1";
 
 // Only a mode the game knows: anything else reads as no pending round.
 const PendingSchema = z.object({
-  route: z.object({ deckId: z.string().min(1), sectionId: z.string().min(1) }),
+  route: z.object({ deckId: z.string().check(z.minLength(1)), sectionId: z.string().check(z.minLength(1)) }),
   mode: z.enum(MODES),
 });
 
