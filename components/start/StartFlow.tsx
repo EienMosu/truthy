@@ -417,9 +417,9 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   }, [index, online, services]);
 
   // The latest values for the history listener, which is subscribed once.
-  const latest = useRef({ index, view, boarding });
+  const latest = useRef({ index, view, boarding, recent });
   useLayoutEffect(() => {
-    latest.current = { index, view, boarding };
+    latest.current = { index, view, boarding, recent };
   });
 
   // While the flow moves the browser itself (after a reload, below, and for the platform of the pass on the recent
@@ -437,10 +437,12 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     history.replace(entryState({ step: 1, choice: {} }));
     return history.listen((state) => {
       const entry = readEntry(state);
-      const { index: currentIndex, view: current, boarding: leaving } = latest.current;
+      const { index: currentIndex, view: current, boarding: leaving, recent: played } = latest.current;
       if (!entry || !currentIndex || leaving || rewinding.current) return;
       if (entry.step === current.step && sameChoice(entry.choice, current.choice)) return; // our own go()
-      if (!canShow(currentIndex, entry.step, entry.choice)) {
+      // The recent decks' step from before a reload, when none are left now (the progress or the catalog changed).
+      const noneLeft = entry.step === 3 && entry.choice.via === RECENT && played.length === 0;
+      if (noneLeft || !canShow(currentIndex, entry.step, entry.choice)) {
         history.replace(entryState({ step: 1, choice: {} }));
         setView((v) => ({ step: 1, choice: {}, dir: -1, seq: v.seq + 1 }));
         return;

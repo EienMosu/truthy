@@ -111,11 +111,29 @@ export function decksLabel(count: number): string {
   return `${count} ${count === 1 ? "deck" : "decks"}`;
 }
 
-/** The decks of the index that the player has history on (a card id starts with `${deck.id}-`). */
+/**
+ * The id of the deck a card belongs to, among `deckIds`: the one whose `${id}-` is the card id's longest prefix, so a
+ * deck whose id begins another deck's ("gcp-cdl" and "gcp-cdl-pro") never takes that deck's cards. It tries the card
+ * id's prefixes that end just before a "-", longest first: one look-up per dash, whatever the number of decks.
+ */
+function deckOfCard(cardId: string, deckIds: ReadonlySet<string>): string | undefined {
+  for (let i = cardId.lastIndexOf("-"); i > 0; i = cardId.lastIndexOf("-", i - 1)) {
+    const prefix = cardId.slice(0, i);
+    if (deckIds.has(prefix)) return prefix;
+  }
+  return undefined;
+}
+
+/** The decks of the index that the player has history on (they own a card with a history entry, deckOfCard). */
 function decksWithHistory(index: DeckIndex, progress: Progress): IndexDeck[] {
-  const ids = Object.keys(progress.cards);
   const decks = index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks));
-  return decks.filter((deck) => ids.some((id) => id.startsWith(`${deck.id}-`)));
+  const deckIds = new Set(decks.map((deck) => deck.id));
+  const played = new Set<string>();
+  for (const cardId of Object.keys(progress.cards)) {
+    const owner = deckOfCard(cardId, deckIds);
+    if (owner !== undefined) played.add(owner);
+  }
+  return decks.filter((deck) => played.has(deck.id));
 }
 
 /** Drops the history of cards that are no longer in their deck, and saves the progress when that changed it. */
@@ -183,11 +201,11 @@ export const RECENT_LIMIT = 4;
  */
 export function recentDecks(index: DeckIndex, progress: Progress, limit = RECENT_LIMIT): RecentDeck[] {
   const placed = index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks.map((deck) => ({ area, platform, deck }))));
-  const longestFirst = [...placed].sort((a, b) => b.deck.id.length - a.deck.id.length);
+  const deckIds = new Set(placed.map(({ deck }) => deck.id));
   const latest = new Map<string, number>();
   for (const [cardId, entry] of Object.entries(progress.cards)) {
-    const owner = longestFirst.find(({ deck }) => cardId.startsWith(`${deck.id}-`));
-    if (owner) latest.set(owner.deck.id, Math.max(latest.get(owner.deck.id) ?? Number.NEGATIVE_INFINITY, entry.lastSeenAt));
+    const owner = deckOfCard(cardId, deckIds);
+    if (owner !== undefined) latest.set(owner, Math.max(latest.get(owner) ?? Number.NEGATIVE_INFINITY, entry.lastSeenAt));
   }
   return placed
     .flatMap((place) => {

@@ -1269,6 +1269,21 @@ describe("StartFlow: the recent path", () => {
     await waitFor(() => expect(h.history.position).toBe(0));
   });
 
+  it("goes to step 1 when the browser moves forward to the recent decks and none are left", async () => {
+    await start();
+    expect(screen.queryByRole("button", { name: /^Recent/ })).toBeNull();
+    // An entry ahead from before a reload, when there were recent decks; the progress has been cleared since.
+    h.history.push({ truthyStart: { step: 3, choice: { via: "recent" } } });
+    act(() => h.history.back());
+    await act(async () => {}); // the browser reports step 1, where the flow already is
+    expect(heading()).toBe("Choose an area");
+    act(() => h.history.forward());
+    await waitFor(() => expect(h.history.state).toEqual({ truthyStart: { step: 1, choice: {} } }));
+    expect(h.history.position).toBe(1);
+    expect(heading()).toBe("Choose an area");
+    expect(screen.getByRole("button", { name: "Cloud, 2 decks" })).toBeTruthy();
+  });
+
   it("reads an entry with a via it does not know as the ordinary path", async () => {
     await start(harness(playedDecks(TWO)));
     await choose("Cloud, 2 decks", "Choose a platform");
