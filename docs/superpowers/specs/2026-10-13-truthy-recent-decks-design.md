@@ -1,6 +1,6 @@
 # Truthy: recent decks and long start-flow lists
 
-Date: 2026-10-13. Status: approved direction (owner, 2026-10-13: "Son desteler + kaydırma düzeltmesi", placement "1. adımda 'Recent' kartı"); this document is for review.
+Date: 2026-10-13. Status: approved by the owner on 2026-10-14; built from docs/superpowers/plans/2026-10-14-truthy-recent-decks/README.md, with the amendments of section 12.
 
 ## 1. Why
 
@@ -13,7 +13,7 @@ Two facts from the exploration on 2026-10-13 shape the answer:
 
 ## 2. What changes
 
-1. **A "Recent" destination on step 1.** When the player has played at least two decks that are still in the catalog, step 1 lists a "Recent" card before the areas. It opens a deck step that lists those decks, most recent first, at most five. Choosing one fills area, platform and deck at once and goes on to the section step (or the class step for a deck without sections), exactly as if the player had walked there.
+1. **A "Recent" destination on step 1.** When the player has played at least two decks that are still in the catalog, step 1 lists a "Recent" card before the areas. It opens a deck step that lists those decks, most recent first, at most four. Choosing one fills area, platform and deck at once and goes on to the section step (or the class step for a deck without sections), exactly as if the player had walked there.
 2. **Going back scrolls the chosen card into view** in its list before it takes focus, on every step and on the return from a round.
 3. **Step lists are lists for assistive technology:** each step's options are announced as a list with its number of items, so a screen reader user knows how many choices lie beyond the visible part.
 
@@ -25,16 +25,16 @@ Out of scope: search, filters, favourites or pinning, clearing or editing the re
 
 - A deck is recent when at least one of its cards has a history entry (`truthy.progress.v1`, `cards[id].lastSeenAt`). Card ids start with `<deck id>-`, as `seenPercent` already relies on.
 - Its recency is the latest `lastSeenAt` among those entries. Decks are ordered by it, newest first; equal times keep catalog order.
-- Only decks in the current index count (a deck removed from the catalog drops out). At most five are listed.
+- Only decks in the current index count (a deck removed from the catalog drops out). At most four are listed (section 12).
 - The "Recent" card shows only when two or more decks qualify. With one, the continue line already brings it back.
 - The list is worked out when step 1 appears and does not reorder while the player is on the start screen.
 - Nothing new is stored. The recent list is derived from the progress the game keeps already, so the stored-format rule of the offline spec (section 10, item 5) is untouched and an older release reads the same data.
-- A pure function `recentDecks(index, progress, limit = 5)` in `components/start/useCatalog.ts` (next to `continueTarget` and `seenPercent`) returns the decks with their area and platform.
+- A pure function `recentDecks(index, progress, limit = 4)` in `components/start/useCatalog.ts` (next to `continueTarget` and `seenPercent`) returns the decks with their area and platform.
 
 ## 4. The "Recent" card (step 1)
 
 - Place: first in step 1's list, above Cloud. With four areas the step shows five cards, the most principle 1 allows.
-- Variant: the area card of design system 5.3 (at least 104 tall, stub with the chevron). Name "Recent". Sub-line in `mono-data` ink-muted: the deck codes, newest first, joined by " · " ("CLF · GIT · SQL"). With five codes the line is "CLF · GIT · SQL · TSC · RCT" (26 characters), which fits the 320 px card.
+- Variant: the area card of design system 5.3 (at least 104 tall, stub with the chevron). Name "Recent". Sub-line in `mono-data` ink-muted: the deck codes, newest first, joined by " · " ("CLF · GIT · SQL"). With four codes the line is "CLF · GIT · SQL · TSC", which fits the 320 px card.
 - Accessible name: "Recent, 3 decks" (the same shape as "Cloud, 14 decks").
 - It is not an area: it carries `data-recent`, not `data-option`, so the catalog's own order stays what the catalog spec pins.
 - Offline it stays a button; the decks inside show their own "Needs a connection" state (5.3).
@@ -62,7 +62,7 @@ The only new visible word is "Recent". The accessible name follows the existing 
 
 ## 9. Tests
 
-- Unit (`tests/components/start/useCatalog.test.ts`): `recentDecks` with no history, one deck, two and more, equal times, a deck missing from the index, more than five, and a deck id that is a prefix of another (`gcp-pca` and `gcp-pcd` style ids stay apart because the prefix ends in "-").
+- Unit (`tests/components/start/useCatalog.test.ts`): `recentDecks` with no history, one deck, two and more, equal times, a deck missing from the index, more than four, and a deck id that is a prefix of another (`gcp-pca` and `gcp-pcd` style ids stay apart because the prefix ends in "-").
 - Unit (`tests/components/start/StartFlow.test.tsx`): the Recent card shows only with two or more recent decks and comes first; its accessible name; the recent deck step's order and offline states; choosing a recent deck fills the pass and opens the section or class step; Back from that step returns to the recent deck step and from there to step 1; the pass fields' ways back.
 - Unit: going back scrolls the chosen card into view before focusing it (spy on the list's scroll, or measure in jsdom where possible) and the list roles.
 - e2e (`e2e/recent-decks.spec.ts`, both engines, reduced motion and not): after rounds on two decks, Recent appears with their codes; a round started through Recent records like any other; at 320 by 568 and 390 by 844 nothing overflows; Back paths. A second spec case: choose the last DevOps platform by keyboard, press Escape, and the focused card lies inside the list's visible part.
@@ -76,3 +76,10 @@ The only new visible word is "Recent". The accessible name follows the existing 
 ## 11. Release
 
 App code: production needs the owner's approval for this release (the standing approval covers deck batches only).
+
+## 12. Amendments after the plan (2026-10-14)
+
+1. **Four decks, not five.** Measured in Chromium with the shipped Overpass Mono 400 at 12 px, five codes joined by " · " are 199.6 px wide and four are 155.2 px; the area card's main column at 320 px is 192 px (card 288, stub 64, padding 20 and 12). The sub-line must fit that card, so Recent lists four.
+2. **The start opening after a round** (section 6) has no chosen card: it lands on step 1 with the choices cleared and focuses the step 1 title (design system 8), as before.
+3. **Short screens:** where the whole column scrolls and the list does not, a way back by a press keeps the column at its top and a way back from the keyboard brings the card into the column's view (design system 8), as before. The list scroll of section 6 applies where the list itself scrolls.
+4. **While the flow moves the browser** for "Change platform" on the recent path, Back, Escape, the pass fields and forward choices are ignored, as during the reload rewind.

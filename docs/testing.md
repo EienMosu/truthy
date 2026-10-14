@@ -79,6 +79,7 @@ After a release that changes the service worker, the owner checks on an iPhone i
 4. Turn flight mode off: the labels go without a reload.
 5. After a deploy with a visible change: open the game online from the home screen, wait about 10 s, swipe the app away, turn on flight mode and open it again: the change shows, with no prompt (it came from the new release's cache). Online every page comes from the network, so only an offline open shows which release the phone holds.
 6. With VoiceOver on and flight mode on, swipe through the deck step of a platform with a deck the phone has never loaded: VoiceOver stops on its dimmed card and reads its whole name, ending in "needs a connection" ("CDL, Cloud Digital Leader, needs a connection"), and a double tap does nothing. The card is a group with that name whose parts are hidden from VoiceOver, so a swipe that passes over it without stopping is a failure. The continue line on step 1 is built the same way when its deck has no copy on the device, which a phone check cannot set up (the last round's deck always has one).
+7. With VoiceOver on, open DevOps: entering the platforms VoiceOver says it is a list of 10 items. After rounds on two decks, step 1 starts with "Recent" and its codes; through it, play a round on one of them, and back on the start that deck's code comes first.
 
 ## Releases after step 3
 
