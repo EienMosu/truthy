@@ -1288,7 +1288,7 @@ In `docs/testing.md`, "On a phone", add item 7:
 - [ ] **Step 6: Run the gates**
 
 Run: `pnpm typecheck && pnpm test`
-Expected: all pass. Run `git grep -n $'—' -- design docs components e2e tests` and expect no new hits in the lines this plan added.
+Expected: all pass. Run `git grep -n $'\u2014' -- design docs components e2e tests` and expect no new hits in the lines this plan added.
 
 - [ ] **Step 7: Commit**
 

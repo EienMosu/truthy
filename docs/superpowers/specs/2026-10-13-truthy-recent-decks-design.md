@@ -14,7 +14,7 @@ Two facts from the exploration on 2026-10-13 shape the answer:
 ## 2. What changes
 
 1. **A "Recent" destination on step 1.** When the player has played at least two decks that are still in the catalog, step 1 lists a "Recent" card before the areas. It opens a deck step that lists those decks, most recent first, at most four. Choosing one fills area, platform and deck at once and goes on to the section step (or the class step for a deck without sections), exactly as if the player had walked there.
-2. **Going back scrolls the chosen card into view** in its list before it takes focus, on every step and on the return from a round.
+2. **Going back scrolls the chosen card into view** in its list before it takes focus, on every step and on the return from a round (see section 12).
 3. **Step lists are lists for assistive technology:** each step's options are announced as a list with its number of items, so a screen reader user knows how many choices lie beyond the visible part.
 
 Nothing else in the start flow changes: the continue line, the areas, platforms, decks, sections, classes, the pass and its motion stay as they are.
@@ -48,8 +48,8 @@ Out of scope: search, filters, favourites or pinning, clearing or editing the re
 
 ## 6. Going back on a long list
 
-- When a step comes back with a chosen card (Back, Escape, a pass field, the browser's back, or the start opening after a round), the card is scrolled into view in its list first, then focused. The scroll is instant (it is a return, not a movement to watch) and puts the card fully inside the list's visible part, nearest edge first.
-- This holds for every step and every list length, with and without reduced motion.
+- When a step comes back with a chosen card (Back, Escape, a pass field, the browser's back, or the start opening after a round), the card is scrolled into view in its list first, then focused (see section 12). The scroll is instant (it is a return, not a movement to watch) and puts the card fully inside the list's visible part, nearest edge first.
+- This holds for every step and every list length, with and without reduced motion (see section 12).
 
 ## 7. Lists for assistive technology
 

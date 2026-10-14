@@ -112,11 +112,42 @@ for (const motion of ["reduce", "no-preference"] as const) {
       await expect(page).toHaveURL(/\/$/);
     });
 
+    test("opens the platform's own deck step from the platform of the pass, whose history is the ordinary path's", async ({ page }) => {
+      await openWithPlayed(page, [CLF_ID, CDL_ID]);
+      await option(page, "Recent, 2 decks").click();
+      await atStep(page, "Choose a deck");
+      await option(page, CLF_SECURITY.deck).click();
+      await atStep(page, "Choose a section");
+      await page.getByRole("button", { name: "Change platform, now AWS" }).click();
+      await atStep(page, "Choose a deck");
+      await expect(page.locator(":focus")).toHaveAttribute("aria-label", /^CLF, Cloud Practitioner/);
+      const ids = await optionIds(page);
+      expect(ids[0]).toBe(CLF_ID);
+      expect(ids).not.toContain(CDL_ID);
+      await page.goBack();
+      await atStep(page, "Choose a platform");
+      await expect(page.locator(":focus")).toHaveAttribute("aria-label", CLF_SECURITY.platform);
+      await page.goBack();
+      await atStep(page, "Choose an area");
+
+      // The area of the pass returns to step 1, on the Recent card.
+      await option(page, "Recent, 2 decks").click();
+      await atStep(page, "Choose a deck");
+      await option(page, CLF_SECURITY.deck).click();
+      await atStep(page, "Choose a section");
+      await page.getByRole("button", { name: "Change area, now Cloud" }).click();
+      await atStep(page, "Choose an area");
+      await expect(page.locator(":focus")).toHaveAttribute("aria-label", "Recent, 2 decks");
+    });
+
     test("brings the chosen platform into view on a long list when going back, by keyboard and by a press", async ({ page }) => {
       await openHome(page);
       await option(page, /^DevOps, /).click();
       await atStep(page, "Choose a platform");
-      await expect(page.locator("[data-step]:not([inert]) [role=list] > [role=listitem]")).toHaveCount(10);
+      const platforms = page.locator("[data-step]:not([inert]) [role=list] > [role=listitem]");
+      await expect(platforms).toHaveCount(10);
+      // Networking is the last platform, so going back to it has to scroll the list.
+      await expect(platforms.last().getByRole("button", { name: "Networking, 1 deck", exact: true })).toHaveCount(1);
       await option(page, "Networking, 1 deck").focus();
       await page.keyboard.press("Enter");
       await atStep(page, "Choose a deck");
