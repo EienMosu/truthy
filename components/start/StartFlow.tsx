@@ -69,8 +69,13 @@ export const browserStartServices: StartServices = {
 
 export type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
+/** The Recent card's choice on step 1: the deck step then lists the decks played last (the recent path). */
+export const RECENT = "recent";
+
 /** What the player has chosen so far, as ids. sectionId is a section id or WHOLE_DECK. */
 export interface Choice {
+  /** RECENT on the recent path: step 1 chose "Recent", and the deck step fills area, platform and deck at once. */
+  via?: typeof RECENT;
   areaId?: string;
   platformId?: string;
   deckId?: string;
@@ -79,10 +84,15 @@ export interface Choice {
 }
 
 type ChoiceKey = keyof Choice;
-const CHOICE_KEYS: readonly ChoiceKey[] = ["areaId", "platformId", "deckId", "sectionId", "mode"];
+const CHOICE_KEYS: readonly ChoiceKey[] = ["via", "areaId", "platformId", "deckId", "sectionId", "mode"];
 
-/** The step on which each choice is made. */
-export const STEP_OF: Record<ChoiceKey, Step> = { areaId: 1, platformId: 2, deckId: 3, sectionId: 4, mode: 5 };
+/** The step on which each choice is made on the ordinary path. */
+export const STEP_OF: Record<ChoiceKey, Step> = { via: 1, areaId: 1, platformId: 2, deckId: 3, sectionId: 4, mode: 5 };
+
+/** The step on which `key` is chosen in `choice`: on the recent path the area and the platform come with the deck. */
+export function stepOf(key: ChoiceKey, choice: Choice): Step {
+  return choice.via === RECENT && (key === "areaId" || key === "platformId") ? 3 : STEP_OF[key];
+}
 
 const STEP_OF_FIELD: Record<PassFieldName, Step> = { area: 1, platform: 2, deck: 3, section: 4, mode: 5 };
 
@@ -90,21 +100,31 @@ const STEP_OF_FIELD: Record<PassFieldName, Step> = { area: 1, platform: 2, deck:
 export function clearFrom(choice: Choice, step: Step): Choice {
   const kept: Choice = {};
   for (const key of CHOICE_KEYS) {
-    if (STEP_OF[key] < step && choice[key] !== undefined) Object.assign(kept, { [key]: choice[key] });
+    if (stepOf(key, choice) < step && choice[key] !== undefined) Object.assign(kept, { [key]: choice[key] });
   }
   return kept;
 }
 
-/** The steps a player passes through up to `step`. A deck without sections has no step 4. */
-export function pathTo(step: Step, hasSections: boolean): Step[] {
+/** The steps a player passes through up to `step`. A deck without sections has no step 4; the recent path has no step 2. */
+export function pathTo(step: Step, hasSections: boolean, recent = false): Step[] {
   const all: Step[] = hasSections ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 5, 6];
-  return all.filter((s) => s <= step);
+  return all.filter((s) => s <= step && !(recent && s === 2));
 }
 
-/** Where Back goes from `step`: one step back, and from the class step of a deck without sections to the deck step. */
-export function previousStep(step: Step, hasSections: boolean): Step {
-  const path = pathTo(step, hasSections);
+/** Where Back goes from `step`: one step back on its path, so from the class step of a deck without sections to the deck step. */
+export function previousStep(step: Step, hasSections: boolean, recent = false): Step {
+  const path = pathTo(step, hasSections, recent);
   return path[path.length - 2] ?? 1;
+}
+
+/** The choice made on each step, whose card takes focus when the flow comes back to that step. */
+const CHOSEN_ON: Partial<Record<Step, Exclude<ChoiceKey, "via">>> = { 1: "areaId", 2: "platformId", 3: "deckId", 4: "sectionId", 5: "mode" };
+
+/** The id of the card chosen on `target` in `choice`; on step 1 of the recent path, the Recent card (RECENT). */
+export function chosenOn(target: Step, choice: Choice): string | undefined {
+  if (target === 1 && choice.via === RECENT) return RECENT;
+  const key = CHOSEN_ON[target];
+  return key ? choice[key] : undefined;
 }
 
 function sameChoice(a: Choice, b: Choice): boolean {
@@ -149,8 +169,12 @@ function resolve(index: DeckIndex, choice: Choice): Resolved {
 /** True when every choice needed to show `step` exists in the index (a stale history entry may not). */
 export function canShow(index: DeckIndex, step: Step, choice: Choice): boolean {
   const r = resolve(index, choice);
-  if (step >= 2 && !r.area) return false;
-  if (step >= 3 && !r.platform) return false;
+  const recent = choice.via === RECENT;
+  if (recent && step === 2) return false; // the recent path has no platform step
+  // The recent decks' step needs no area or platform: each of its decks brings its own.
+  const placed = !(recent && step === 3);
+  if (step >= 2 && placed && !r.area) return false;
+  if (step >= 3 && placed && !r.platform) return false;
   if (step >= 4 && !r.deck) return false;
   if (step === 4 && r.deck && r.deck.sections.length === 0) return false;
   if (step >= 5 && !r.section) return false;
@@ -174,12 +198,13 @@ function entryState(entry: Entry): Record<string, unknown> {
 /**
  * How many of the flow's entries lie behind `entry`: one per step on its path. Whether the path has the
  * section step comes from the index; for a deck it no longer has, only a chosen section says so, and a whole
- * deck counts as none, so a stale entry never moves the browser back past the flow's first entry.
+ * deck counts as none, so a stale entry never moves the browser back past the flow's first entry. On the recent
+ * path the platform step is not among them.
  */
 export function entriesBehind(index: DeckIndex, entry: Entry): number {
   const deck = resolve(index, entry.choice).deck;
   const hasSections = entry.step === 4 || (deck ? deck.sections.length > 0 : entry.choice.sectionId !== undefined && entry.choice.sectionId !== WHOLE_DECK);
-  return pathTo(entry.step, hasSections).length - 1;
+  return pathTo(entry.step, hasSections, entry.choice.via === RECENT).length - 1;
 }
 
 function readEntry(state: unknown): Entry | null {
@@ -191,7 +216,7 @@ function readEntry(state: unknown): Entry | null {
   const picked: Choice = {};
   for (const key of CHOICE_KEYS) {
     const v = (choice as Record<string, unknown>)[key];
-    if (typeof v === "string") Object.assign(picked, { [key]: v });
+    if (typeof v === "string" && (key !== "via" || v === RECENT)) Object.assign(picked, { [key]: v });
   }
   return { step: step as Step, choice: picked };
 }
@@ -406,9 +431,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
         return;
       }
       const dir: Direction = entry.step > current.step ? 1 : -1;
-      const focusKey = CHOICE_KEYS.find((key) => STEP_OF[key] === entry.step);
       setTravel(null);
-      setView((v) => ({ ...entry, dir, focusId: dir < 0 && focusKey ? current.choice[focusKey] : undefined, seq: v.seq + 1 }));
+      setView((v) => ({ ...entry, dir, focusId: dir < 0 ? chosenOn(entry.step, current.choice) : undefined, seq: v.seq + 1 }));
     });
   }, [services]);
 
@@ -543,13 +567,12 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   function backTo(target: Step) {
     const from = view.step;
     if (target >= from || boarding) return;
-    const focusKey = CHOICE_KEYS.find((key) => STEP_OF[key] === target);
     setTravel(null);
     setView((v) => ({
       step: target,
       choice: clearFrom(v.choice, target),
       dir: -1,
-      focusId: focusKey ? v.choice[focusKey] : undefined,
+      focusId: chosenOn(target, v.choice),
       seq: v.seq + 1,
     }));
     // Keep the browser history in step: drop the entries of the steps left behind.

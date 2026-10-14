@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { continueTarget, deckCount, decksLabel, seenPercent, useCatalog, type CatalogStatus } from "@/components/start/useCatalog";
+import { RECENT_LIMIT, continueTarget, deckCount, decksLabel, recentDecks, seenPercent, useCatalog, type CatalogStatus } from "@/components/start/useCatalog";
 import type { AppServices } from "@/src/app-state/services";
 import { INDEX_CACHE_KEY, INDEX_URL, createDeckCache, deckCacheKey, type Fetcher } from "@/src/content/load";
 import { findRoute, type DeckFile, type DeckIndex } from "@/src/content/schema";
@@ -70,6 +70,66 @@ describe("seenPercent", () => {
     const never = { seen: 0, lastCorrect: false, lastSeenAt: 0 };
     expect(seenPercent(progressWith({ cards: { "aws-clf-c02-1": never } }), deck)).toBe(0);
     expect(seenPercent(progressWith({ cards: { "aws-clf-c02-1": never } }), deck, ["aws-clf-c02-1"])).toBe(0);
+  });
+});
+
+describe("recentDecks", () => {
+  const at = (lastSeenAt: number) => ({ seen: 1, lastCorrect: true, lastSeenAt });
+  const codes = (progress: Progress, index: DeckIndex = INDEX, limit?: number) =>
+    recentDecks(index, progress, limit).map((played) => played.deck.code);
+
+  /** INDEX with `count` decks on Azure, azure-az0 to azure-az<count-1>, codes AZ0 to AZ<count-1>. */
+  function indexWithAzure(count: number): DeckIndex {
+    const index = structuredClone(INDEX);
+    const azure = index.areas[0]!.platforms[2]!;
+    azure.decks = Array.from({ length: count }, (_, i) => ({
+      id: `azure-az${i}`,
+      code: `AZ${i}`,
+      title: `Azure ${i}`,
+      cardCount: 10,
+      version: "2026-10-01",
+      hash: `az-${i}`,
+      sections: [],
+    }));
+    return index;
+  }
+
+  it("lists nothing without history", () => {
+    expect(recentDecks(INDEX, emptyProgress())).toEqual([]);
+  });
+
+  it("gives each deck its area, platform and latest time, newest first", () => {
+    const progress = progressWith({
+      cards: { "aws-clf-c02-1": at(100), "aws-clf-c02-2": at(300), "gcp-cdl-1": at(200), "nextjs-rendering-1": at(50) },
+    });
+    expect(recentDecks(INDEX, progress).map((p) => [p.area.id, p.platform.id, p.deck.code, p.lastSeenAt])).toEqual([
+      ["cloud", "aws", "CLF", 300],
+      ["cloud", "gcp", "CDL", 200],
+      ["frontend", "nextjs", "RND", 50],
+    ]);
+  });
+
+  it("keeps catalog order for equal times", () => {
+    expect(codes(progressWith({ cards: { "nextjs-rendering-1": at(5), "gcp-cdl-1": at(5), "aws-clf-c02-1": at(5) } }))).toEqual(["CLF", "CDL", "RND"]);
+  });
+
+  it("leaves out a deck the index no longer has", () => {
+    expect(codes(progressWith({ cards: { "aws-gone-1": at(900), "gcp-cdl-1": at(1) } }))).toEqual(["CDL"]);
+  });
+
+  it("lists four at most, or as many as asked", () => {
+    const index = indexWithAzure(5);
+    const progress = progressWith({ cards: Object.fromEntries([0, 1, 2, 3, 4].map((i) => [`azure-az${i}-1`, at(i)])) });
+    expect(RECENT_LIMIT).toBe(4);
+    expect(codes(progress, index)).toEqual(["AZ4", "AZ3", "AZ2", "AZ1"]);
+    expect(codes(progress, index, 2)).toEqual(["AZ4", "AZ3"]);
+  });
+
+  it("gives a card to the deck whose id is its longest prefix, so an id that begins another deck's stays apart", () => {
+    const index = structuredClone(INDEX);
+    index.areas[0]!.platforms[1]!.decks.push({ id: "gcp-cdl-pro", code: "CDP", title: "Pro", cardCount: 5, version: "2026-10-01", hash: "cdp-1", sections: [] });
+    expect(codes(progressWith({ cards: { "gcp-cdl-pro-1": at(10) } }), index)).toEqual(["CDP"]);
+    expect(codes(progressWith({ cards: { "gcp-cdl-pro-1": at(10), "gcp-cdl-7": at(20) } }), index)).toEqual(["CDL", "CDP"]);
   });
 });
 
@@ -219,6 +279,19 @@ describe("useCatalog: the seen share after a deck update", () => {
     expect(Object.keys(parseProgress(local.getItem(PROGRESS_KEY)).cards)).toHaveLength(10);
     expect(net.calls).toEqual([INDEX_URL, "/decks/aws-clf-c02.json?v=clf-2"]);
   });
+
+  it("works out the recent decks once: the progress replaced after a deck update keeps the same list", async () => {
+    const old = deckFile("aws-clf-c02", "clf-1", CLF_IDS);
+    const updated = deckFile("aws-clf-c02", "clf-2", [...CLF_IDS.slice(10), "aws-clf-c02-new"]);
+    const local = deviceWith(old);
+    const net = network(indexWithClf("clf-2", 11), [updated]);
+    const status = await ready(
+      { fetcher: net.fetcher, localStorage: () => local, sessionStorage: () => undefined, offline: noOfflineClient },
+      (s) => "aws-clf-c02" in s.cardIds,
+    );
+    expect(Object.keys(status.progress.cards)).toEqual([]);
+    expect(status.recent.map((played) => played.deck.code)).toEqual(["CLF"]);
+  });
 });
 
 describe("useCatalog", () => {
@@ -232,6 +305,17 @@ describe("useCatalog", () => {
     expect(status.index.areas.map((a) => a.title)).toEqual(["Cloud", "Frontend", "DevOps"]);
     expect(status.progress.records).toEqual({ "gcp-cdl/ALL#classic": 7 });
     expect(h.network.calls).toEqual(["/decks/index.json"]);
+  });
+
+  it("carries the recent decks with the index and the progress", async () => {
+    const h = harness(
+      storedProgress({ cards: { "aws-clf-c02-1": { seen: 1, lastCorrect: true, lastSeenAt: 1 }, "gcp-cdl-1": { seen: 1, lastCorrect: true, lastSeenAt: 2 } } }),
+    );
+    const { result } = renderHook(() => useCatalog(h.services));
+    await waitFor(() => expect(result.current.status.kind).toBe("ready"));
+    const status = result.current.status;
+    if (status.kind !== "ready") throw new Error("not ready");
+    expect(status.recent.map((played) => played.deck.code)).toEqual(["CDL", "CLF"]);
   });
 
   it("uses the cached index when the network fails", async () => {

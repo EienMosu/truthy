@@ -78,3 +78,29 @@ export function useListCue(list: RefObject<HTMLElement | null>, content: RefObje
   }, [list, content]);
   return more;
 }
+
+/**
+ * How far to scroll a list so that a card at `item` (px from the top of the list's view) shows whole in a view
+ * `viewHeight` tall, with `room` px around it for its focus ring and, below it, room for the fade (FADE_PX): positive
+ * scrolls down, negative up, 0 when it already shows. Nearest edge first: a card taller than the view shows its top.
+ */
+export function revealDelta(viewHeight: number, item: ItemSpan, room: number): number {
+  const top = item.top - room;
+  const bottom = item.bottom + room + FADE_PX;
+  if (top < 0) return top;
+  if (bottom > viewHeight) return Math.min(bottom - viewHeight, top);
+  return 0;
+}
+
+/**
+ * Scrolls `list` at once so that `item`, one of the cards in `content`, shows whole (revealDelta). The card is placed
+ * by its layout offset, as the cue places its cards, since it may still be rising into place. A list that does not
+ * scroll (on a short screen the column scrolls instead) is left alone.
+ */
+export function revealInList(list: HTMLElement, content: HTMLElement, item: HTMLElement, room: number): void {
+  if (list.scrollHeight <= list.clientHeight) return;
+  const contentTop = content.getBoundingClientRect().top - list.getBoundingClientRect().top;
+  const top = contentTop + item.offsetTop - content.offsetTop;
+  const delta = revealDelta(list.clientHeight, { top, bottom: top + item.offsetHeight }, room);
+  if (delta !== 0) list.scrollTop += delta;
+}

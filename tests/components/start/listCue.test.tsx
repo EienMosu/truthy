@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { FADE_PX, listCue, useListCue, type ItemSpan } from "@/components/start/listCue";
+import { FADE_PX, listCue, revealDelta, useListCue, type ItemSpan } from "@/components/start/listCue";
 
 afterEach(cleanup);
 
@@ -156,5 +156,23 @@ describe("useListCue", () => {
       HTMLElement.prototype.getBoundingClientRect = rect;
       for (const [name, descriptor] of descriptors) if (descriptor) Object.defineProperty(HTMLElement.prototype, name, descriptor);
     }
+  });
+});
+
+describe("revealDelta", () => {
+  it("leaves a card that shows whole, with room for its ring and for the fade below it", () => {
+    expect(revealDelta(400, { top: 100, bottom: 200 }, 8)).toBe(0);
+  });
+
+  it("scrolls down to a card below the view, just far enough, the fade's room included", () => {
+    expect(revealDelta(400, { top: 500, bottom: 600 }, 8)).toBe(600 + 8 + FADE_PX - 400);
+  });
+
+  it("scrolls up to a card above the view", () => {
+    expect(revealDelta(400, { top: -150, bottom: -50 }, 8)).toBe(-158);
+  });
+
+  it("shows the top of a card taller than the view", () => {
+    expect(revealDelta(100, { top: 50, bottom: 300 }, 8)).toBe(42);
   });
 });

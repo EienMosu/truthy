@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MotionGlobalConfig } from "motion/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { StartFlow, canShow, clearFrom, pathTo, previousStep } from "@/components/start/StartFlow";
+import { RECENT, StartFlow, canShow, chosenOn, clearFrom, entriesBehind, pathTo, previousStep, stepOf } from "@/components/start/StartFlow";
 import { PENDING_KEY } from "@/src/app-state/pending";
 import { SWIPE } from "@/src/input/swipe";
 import { INDEX_CACHE_KEY } from "@/src/content/load";
@@ -91,6 +91,46 @@ describe("the steps (pure)", () => {
     expect(canShow(INDEX, 4, { areaId: "cloud", platformId: "gcp", deckId: "gcp-cdl" })).toBe(false);
     expect(canShow(INDEX, 3, { areaId: "cloud", platformId: "gone" })).toBe(false);
     expect(canShow(INDEX, 6, { areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02", sectionId: "SEC", mode: "streak" })).toBe(true);
+  });
+
+  it("clears the area and platform with the deck on the recent path, where they come with it", () => {
+    const all = { via: RECENT, areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02", sectionId: "SEC" } as const;
+    expect(clearFrom(all, 3)).toEqual({ via: RECENT });
+    expect(clearFrom(all, 4)).toEqual({ via: RECENT, areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" });
+    expect(clearFrom(all, 1)).toEqual({});
+    expect(stepOf("areaId", all)).toBe(3);
+    expect(stepOf("areaId", { areaId: "cloud" })).toBe(1);
+    expect(stepOf("via", all)).toBe(1);
+  });
+
+  it("walks the recent path without the platform step", () => {
+    expect(pathTo(6, true, true)).toEqual([1, 3, 4, 5, 6]);
+    expect(pathTo(5, false, true)).toEqual([1, 3, 5]);
+    expect(previousStep(3, true, true)).toBe(1);
+    expect(previousStep(4, true, true)).toBe(3);
+    expect(previousStep(5, false, true)).toBe(3);
+  });
+
+  it("names the card to focus on the way back: the Recent card on step 1 of the recent path", () => {
+    const recent = { via: RECENT, areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" } as const;
+    expect(chosenOn(1, recent)).toBe(RECENT);
+    expect(chosenOn(3, recent)).toBe("aws-clf-c02");
+    expect(chosenOn(1, { areaId: "cloud" })).toBe("cloud");
+    expect(chosenOn(2, { areaId: "cloud", platformId: "aws" })).toBe("aws");
+    expect(chosenOn(6, { mode: "classic" })).toBeUndefined();
+  });
+
+  it("shows the recent decks' step without an area or platform, and never a platform step on the recent path", () => {
+    expect(canShow(INDEX, 3, { via: RECENT })).toBe(true);
+    expect(canShow(INDEX, 3, {})).toBe(false);
+    expect(canShow(INDEX, 2, { via: RECENT, areaId: "cloud" })).toBe(false);
+    expect(canShow(INDEX, 4, { via: RECENT, areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" })).toBe(true);
+  });
+
+  it("counts the entries behind a recent-path entry without the platform step", () => {
+    expect(entriesBehind(INDEX, { step: 3, choice: { via: RECENT } })).toBe(1);
+    expect(entriesBehind(INDEX, { step: 4, choice: { via: RECENT, areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" } })).toBe(2);
+    expect(entriesBehind(INDEX, { step: 5, choice: { via: RECENT, areaId: "cloud", platformId: "gcp", deckId: "gcp-cdl", sectionId: "ALL" } })).toBe(2);
   });
 });
 

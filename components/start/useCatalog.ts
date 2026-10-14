@@ -1,6 +1,7 @@
 // What the start flow shows, loaded on the device: the deck index (spec section 5, "Loading") and the
 // player's progress (section 7). Also the small pure questions the flow asks of them: how many decks an
-// area has, how much of a deck has been seen, the best for a route, and where "Continue" leads.
+// area has, how much of a deck has been seen, the best for a route, and where "Continue" leads. Also which
+// decks were played last ("Recent", recentDecks).
 import { useCallback, useEffect, useState } from "react";
 import type { AppServices } from "@/src/app-state/services";
 import { isOffered } from "@/src/app-state/modes";
@@ -22,6 +23,11 @@ export type CatalogStatus =
       progress: Progress;
       /** For the decks the player has history on: their current card ids, once known (see seenPercent). */
       cardIds: DeckCardIds;
+      /**
+       * The decks played last, newest first (recentDecks). Worked out once, when the index and the progress are
+       * read, so the list does not reorder while the start screen is open.
+       */
+      recent: readonly RecentDeck[];
     };
 
 export interface UseCatalogResult {
@@ -61,7 +67,8 @@ export function useCatalog(services: AppServices): UseCatalogResult {
           else updated.push(deck);
         }
         const progress = withoutRemovedCards(loaded, known, store);
-        setStatus({ kind: "ready", index, progress, cardIds: known });
+        const recent = recentDecks(index, progress);
+        setStatus({ kind: "ready", index, progress, cardIds: known, recent });
         if (updated.length === 0) return;
         const current = (deck: IndexDeck) =>
           loadDeck(deck, cache, services.fetcher).then(
@@ -72,7 +79,7 @@ export function useCatalog(services: AppServices): UseCatalogResult {
           const more: Record<string, readonly string[]> = {};
           for (const file of files) if (file) more[file.id] = file.cards.map((card) => card.id);
           if (!live || Object.keys(more).length === 0) return;
-          setStatus({ kind: "ready", index, progress: withoutRemovedCards(progress, more, store), cardIds: { ...known, ...more } });
+          setStatus({ kind: "ready", index, progress: withoutRemovedCards(progress, more, store), cardIds: { ...known, ...more }, recent });
         });
       },
       () => {
@@ -154,4 +161,39 @@ export function continueTarget(index: DeckIndex, progress: Progress): ContinueTa
   if (!found) return null;
   const lastScore = last.score !== null && last.total !== null ? { score: last.score, total: last.total } : null;
   return { route: last.route, mode: last.mode, found, lastScore };
+}
+
+/** A deck the player has played, where it sits in the catalog, and when one of its cards was last seen. */
+export interface RecentDeck {
+  area: IndexArea;
+  platform: IndexPlatform;
+  deck: IndexDeck;
+  /** The latest lastSeenAt among the history entries of its cards. */
+  lastSeenAt: number;
+}
+
+/** How many decks "Recent" lists at most: the codes of four fit one line of the area card at 320 px. */
+export const RECENT_LIMIT = 4;
+
+/**
+ * The decks of the index the player has played, newest first ("Recent", recent-decks spec section 3). A deck counts
+ * when at least one of its cards has a history entry; its time is the latest lastSeenAt among them, and equal times
+ * keep catalog order. A card belongs to the deck whose `${id}-` is its longest prefix, so a deck whose id begins
+ * another deck's ("gcp-cdl" and "gcp-cdl-pro") never takes that deck's history. Nothing is stored for it.
+ */
+export function recentDecks(index: DeckIndex, progress: Progress, limit = RECENT_LIMIT): RecentDeck[] {
+  const placed = index.areas.flatMap((area) => area.platforms.flatMap((platform) => platform.decks.map((deck) => ({ area, platform, deck }))));
+  const longestFirst = [...placed].sort((a, b) => b.deck.id.length - a.deck.id.length);
+  const latest = new Map<string, number>();
+  for (const [cardId, entry] of Object.entries(progress.cards)) {
+    const owner = longestFirst.find(({ deck }) => cardId.startsWith(`${deck.id}-`));
+    if (owner) latest.set(owner.deck.id, Math.max(latest.get(owner.deck.id) ?? Number.NEGATIVE_INFINITY, entry.lastSeenAt));
+  }
+  return placed
+    .flatMap((place) => {
+      const lastSeenAt = latest.get(place.deck.id);
+      return lastSeenAt === undefined ? [] : [{ ...place, lastSeenAt }];
+    })
+    .sort((a, b) => b.lastSeenAt - a.lastSeenAt)
+    .slice(0, limit);
 }
