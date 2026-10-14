@@ -2,6 +2,8 @@
 
 // The start flow, "filling in the pass" (spec section 9, screen 1; design/flow/screens/start.html).
 // One screen that steps through six states: 1 area, 2 platform, 3 deck, 4 section, 5 class, 6 ready.
+// A "Recent" card on step 1 opens step 3 with the decks played last (the recent path, which has no step 2);
+// choosing one of them fills area, platform and deck at once.
 // Each choice is written onto the fill-in pass; Back, a filled field of the pass and the browser's back
 // button all step back and clear the later choices. "Start round" hands the route and class to /play.
 //
@@ -42,9 +44,9 @@ import type { Mode } from "@/src/content/play";
 import { WHOLE_DECK, deckPassName, type DeckIndex, type IndexArea, type IndexDeck, type IndexPlatform } from "@/src/content/schema";
 import { SWIPE } from "@/src/input/swipe";
 import { availableDeckIds } from "@/src/offline/availability";
-import { bestFor } from "@/src/progress/progress";
+import { bestFor, type Progress } from "@/src/progress/progress";
 import { ContinueLine } from "./ContinueLine";
-import { useListCue } from "./listCue";
+import { revealInList, useListCue } from "./listCue";
 import { continueTarget, deckCount, decksLabel, seenPercent, useCatalog } from "./useCatalog";
 
 // ---------- services ----------
@@ -304,6 +306,13 @@ function layoutBox(el: HTMLElement, frame: Element): { left: number; top: number
 /** Room left around a card brought into view, for its focus ring (the list's own padding is 8). */
 const FOCUS_ROOM = 8;
 
+/** The card chosen before on a step's panel: the option of `focusId`, or the Recent card (RECENT). */
+function chosenCard(panel: Element | null | undefined, focusId: string | undefined): HTMLElement | null {
+  if (!panel || !focusId) return null;
+  const selector = focusId === RECENT ? "[data-recent] button" : `[data-option="${CSS.escape(focusId)}"] button`;
+  return panel.querySelector<HTMLElement>(selector);
+}
+
 /**
  * On a short screen, where the start column scrolls (globals.css, "short"), scrolls `main` just enough to show
  * `card` whole with its focus ring. The card is measured where it comes to rest, without its rise-in transform.
@@ -312,7 +321,7 @@ const FOCUS_ROOM = 8;
 function showInColumn(main: HTMLElement, card: HTMLElement) {
   const overflow = getComputedStyle(main).overflowY;
   if (overflow !== "auto" && overflow !== "scroll") return;
-  const option = card.closest<HTMLElement>("[data-option]");
+  const option = card.closest<HTMLElement>("[data-option], [data-recent]");
   const transform = option ? getComputedStyle(option).transform : "none";
   const shift = transform && transform !== "none" ? new DOMMatrixReadOnly(transform).m42 : 0;
   const area = main.getBoundingClientRect();
@@ -393,8 +402,10 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   const index = status.kind === "ready" ? status.index : null;
   const progress = status.kind === "ready" ? status.progress : null;
   const cardIds = status.kind === "ready" ? status.cardIds : {};
+  const recent = status.kind === "ready" ? status.recent : [];
   const r = index ? resolve(index, view.choice) : {};
   const hasSections = (r.deck?.sections.length ?? 1) > 0;
+  const onRecent = view.choice.via === RECENT;
 
   // The decks that can be played now (offline spec section 8): all of them online; offline, those with a copy
   // on the device. Read again when the network comes or goes, so the deck step's labels follow without a reload.
@@ -411,6 +422,10 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     latest.current = { index, view, boarding };
   });
 
+  // While the flow moves the browser itself (after a reload, below, and for the platform of the pass on the recent
+  // path), it takes no other step and ignores the moves the browser reports.
+  const rewinding = useRef(false);
+
   // History: a reload starts at step 1 (the current entry is overwritten); back and forward restore an entry.
   // The entry a reload overwrote is kept until the index is known, to take out the entries behind it (below).
   // Read once: React runs this effect twice in development, and the second run finds the entry overwritten.
@@ -423,7 +438,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     return history.listen((state) => {
       const entry = readEntry(state);
       const { index: currentIndex, view: current, boarding: leaving } = latest.current;
-      if (!entry || !currentIndex || leaving) return;
+      if (!entry || !currentIndex || leaving || rewinding.current) return;
       if (entry.step === current.step && sameChoice(entry.choice, current.choice)) return; // our own go()
       if (!canShow(currentIndex, entry.step, entry.choice)) {
         history.replace(entryState({ step: 1, choice: {} }));
@@ -441,7 +456,6 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
   // finding U27). Once the index says which steps lay on that path, the browser moves back to the flow's
   // first entry, as Start round does; the entries left ahead are dropped by the next step. While it moves,
   // the flow takes no step forward, which would land among the entries being left.
-  const rewinding = useRef(false);
   useEffect(() => {
     const entry = reloadedOn.current;
     const history = services.history();
@@ -503,6 +517,18 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     };
   }, []);
 
+  // Going back on a long list (recent-decks spec section 6): the card chosen before is scrolled into view in its
+  // list at once, before the paint and before the effect below focuses it, so the list never shows its top first.
+  // Where the list does not scroll (a short screen, where the column scrolls instead) this does nothing.
+  useLayoutEffect(() => {
+    if (view.seq === 0 || !view.focusId) return;
+    const panel = mainRef.current?.querySelector(`[data-step="${view.step}"]`);
+    const item = chosenCard(panel, view.focusId)?.closest<HTMLElement>("[data-option], [data-recent]");
+    const list = panel?.querySelector<HTMLElement>("[data-list]");
+    const content = list?.firstElementChild;
+    if (item && list && content instanceof HTMLElement) revealInList(list, content, item, FOCUS_ROOM);
+  }, [view]);
+
   // Focus: the new step's title, or (going back) the card chosen before. On a short screen, a way back from the
   // keyboard also brings that card into view, where its focus ring is. A way back by a press does not: the column
   // stays at its top, so the Back pill and the pass stay under the finger and a second tap cannot land on a card.
@@ -514,7 +540,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
       return;
     }
     const panel = mainRef.current?.querySelector(`[data-step="${view.step}"]`);
-    const card = view.focusId ? panel?.querySelector<HTMLElement>(`[data-option="${CSS.escape(view.focusId)}"] button`) : null;
+    const card = chosenCard(panel, view.focusId);
     (card ?? panel?.querySelector<HTMLElement>("h2"))?.focus({ preventScroll: true });
     if (card && mainRef.current && lastInput.current === "key") showInColumn(mainRef.current, card);
   }, [view, services]);
@@ -542,12 +568,12 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     hiddenName.current = null;
   }, [view.seq, view.dir]);
 
-  /** Moves forward to `step` with `choice`; `source` is the card whose name travels into the pass. */
-  function forward(step: Step, choice: Choice, field: PassFieldName, source?: HTMLElement | null) {
+  /** Moves forward to `step` with `choice`; `source` is the card whose name travels into its `field` of the pass. */
+  function forward(step: Step, choice: Choice, field?: PassFieldName, source?: HTMLElement | null) {
     if (!settled() || rewinding.current) return;
-    const name = source?.querySelector<HTMLElement>("[data-card-name]");
+    const name = field ? source?.querySelector<HTMLElement>("[data-card-name]") : null;
     const frame = layerRef.current?.offsetParent;
-    if (!reduced && name && frame) {
+    if (!reduced && field && name && frame) {
       setTravel({ field, from: lookOf(name, frame) });
       name.style.opacity = "0"; // the card is leaving; its name is now the travelling copy
       hiddenName.current = name;
@@ -558,29 +584,65 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     services.history()?.push(entryState({ step, choice }));
   }
 
-  /** A press on the Back pill or a field of the pass: held back only right after the column jumped (see above). */
+  /** A press on the Back pill: held back only right after the column jumped (see above). */
   function tapBackTo(target: Step) {
     if (!headerHeld()) backTo(target);
+  }
+
+  /** A press on a filled field of the pass: back to its step; on the recent path the platform opens its deck step. */
+  function jump(field: PassFieldName) {
+    if (headerHeld()) return;
+    if (field === "platform" && onRecent) toPlatformDecks();
+    else backTo(STEP_OF_FIELD[field]);
   }
 
   /** Goes back to an earlier step, clearing it and every later choice. Never held back by the settle time. */
   function backTo(target: Step) {
     const from = view.step;
-    if (target >= from || boarding) return;
+    if (target >= from || boarding || rewinding.current) return;
     setTravel(null);
-    setView((v) => ({
-      step: target,
-      choice: clearFrom(v.choice, target),
-      dir: -1,
-      focusId: chosenOn(target, v.choice),
-      seq: v.seq + 1,
-    }));
+    setView((v) => ({ step: target, choice: clearFrom(v.choice, target), dir: -1, focusId: chosenOn(target, v.choice), seq: v.seq + 1 }));
     // Keep the browser history in step: drop the entries of the steps left behind.
-    const distance = pathTo(from, hasSections).length - pathTo(target, hasSections).length;
+    const distance = pathTo(from, hasSections, onRecent).length - pathTo(target, hasSections, onRecent).length;
     if (distance > 0) services.history()?.go(-distance);
   }
 
-  const back = () => backTo(previousStep(view.step, hasSections));
+  /**
+   * The platform field on the recent path opens that platform's own deck step, on the ordinary path (recent-decks
+   * spec section 5), focusing the deck chosen before. The ordinary path has the platform step the recent one skipped,
+   * so the browser moves back to the recent decks' entry, which becomes the platform step's, and the deck step's
+   * entry follows it. While the browser moves, the flow takes no other step and ignores the move it reports.
+   */
+  function toPlatformDecks() {
+    const { areaId, platformId, deckId } = view.choice;
+    if (boarding || rewinding.current || !areaId || !platformId) return;
+    const distance = pathTo(view.step, hasSections, true).length - 2;
+    setTravel(null);
+    setView((v) => ({ step: 3, choice: { areaId, platformId }, dir: -1, focusId: deckId, seq: v.seq + 1 }));
+    const history = services.history();
+    if (!history) return;
+    const rewrite = () => {
+      history.replace(entryState({ step: 2, choice: { areaId } }));
+      history.push(entryState({ step: 3, choice: { areaId, platformId } }));
+    };
+    if (distance <= 0) {
+      rewrite();
+      return;
+    }
+    rewinding.current = true;
+    const arrived = () => {
+      stop();
+      clearTimeout(timer);
+      rewinding.current = false;
+      rewrite();
+    };
+    const stop = history.listen(arrived);
+    // A browser that never reports the move must not hold the flow.
+    const timer = setTimeout(arrived, 1000);
+    history.go(-distance);
+  }
+
+  const back = () => backTo(previousStep(view.step, hasSections, onRecent));
   const backRef = useRef(back);
   useLayoutEffect(() => {
     backRef.current = back;
@@ -637,7 +699,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     const main = mainRef.current;
     if (main && main.scrollTop > 0) main.scrollTo?.({ top: 0, behavior: reduced ? "auto" : "smooth" });
     const history = services.history();
-    const distance = pathTo(view.step, hasSections).length - 1;
+    const distance = pathTo(view.step, hasSections, onRecent).length - 1;
     const state = { rewound: !history || distance <= 0, unrolled: reduced, opened: false, onFirstEntry: Boolean(history) && distance <= 0 };
     boardingRef.current = state;
     if (history && !state.rewound) {
@@ -719,8 +781,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                 {/* Boarding: the Back pill fades out; on /play the Leave round button takes its place. */}
                 <m.button
                   type="button"
-                  aria-label={`Back to ${BACK_TO[previousStep(step, hasSections)]}`}
-                  onClick={() => tapBackTo(previousStep(step, hasSections))}
+                  aria-label={`Back to ${BACK_TO[previousStep(step, hasSections, onRecent)]}`}
+                  onClick={() => tapBackTo(previousStep(step, hasSections, onRecent))}
                   animate={{ opacity: boarding ? 0 : 1 }}
                   transition={{ duration: 0.11 }}
                   className={[
@@ -737,7 +799,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
                   values={passValues}
                   now={NOW_FIELD[step]}
                   sectionChoosable={hasSections}
-                  onJump={(field) => tapBackTo(STEP_OF_FIELD[field])}
+                  onJump={jump}
                   travelling={travel?.field}
                   unroll={boarding && !reduced}
                   onUnrolled={onUnrolled}
@@ -761,7 +823,7 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
         {/* Main area: the title of the step and its options, one step at a time in the same place. */}
         <section className={`mt-(--space-20) grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)] short:flex-none ${returning ? "mb-(--size-foot-gap) short:mb-0" : ""}`}>
           <AnimatePresence initial={false} custom={view.dir}>
-            <StepPanel key={step} step={step} dir={view.dir} reduced={reduced}>
+            <StepPanel key={step} step={step} dir={view.dir} reduced={reduced} list={step !== 6 && status.kind === "ready"}>
               {renderOptions()}
             </StepPanel>
           </AnimatePresence>
@@ -816,8 +878,8 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     }
     if (!index || !progress) return null;
     switch (step) {
-      case 1:
-        return index.areas.map((area) => {
+      case 1: {
+        const areas = index.areas.map((area) => {
           const n = deckCount(area);
           return (
             <Option key={area.id} id={area.id}>
@@ -832,6 +894,21 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
             </Option>
           );
         });
+        // "Recent" comes first when two or more decks have been played (recent-decks spec section 4).
+        if (recent.length < 2) return areas;
+        return [
+          <Option key={RECENT} id={RECENT} recent>
+            <DestinationCard
+              variant="place"
+              name="Recent"
+              sub={recent.map((played) => played.deck.code).join(" · ")}
+              label={`Recent, ${decksLabel(recent.length)}`}
+              onSelect={() => forward(3, { via: RECENT })}
+            />
+          </Option>,
+          ...areas,
+        ];
+      }
       case 2:
         return (r.area?.platforms ?? []).map((platform) => {
           const n = deckCount(platform);
@@ -849,42 +926,10 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
           );
         });
       case 3:
-        return (r.platform?.decks ?? []).map((deck) => {
-          const seen = seenPercent(progress, deck, cardIds[deck.id]);
-          if (!available.has(deck.id)) {
-            return (
-              <Option key={deck.id} id={deck.id}>
-                <DestinationCard
-                  variant="deck"
-                  name={deck.code}
-                  code
-                  detail={deck.title}
-                  seenPercent={seen}
-                  dimmedReason="Needs a connection"
-                  label={`${deck.code}, ${deck.title}, needs a connection`}
-                />
-              </Option>
-            );
-          }
-          const choose = () =>
-            deck.sections.length > 0
-              ? forward(4, { ...view.choice, deckId: deck.id }, "deck", optionEl(deck.id))
-              : forward(5, { ...view.choice, deckId: deck.id, sectionId: WHOLE_DECK }, "deck", optionEl(deck.id));
-          return (
-            <Option key={deck.id} id={deck.id}>
-              <DestinationCard
-                variant="deck"
-                name={deck.code}
-                code
-                detail={deck.title}
-                seenPercent={seen}
-                stub={{ label: "Cards", value: String(deck.cardCount) }}
-                label={`${deck.code}, ${deck.title}, ${deck.cardCount} cards, ${seen > 0 ? `${seen} percent seen` : "not started"}`}
-                onSelect={choose}
-              />
-            </Option>
-          );
-        });
+        if (onRecent) {
+          return recent.map(({ area, platform, deck }) => deckOption(deck, { via: RECENT, areaId: area.id, platformId: platform.id }, progress));
+        }
+        return (r.platform?.decks ?? []).map((deck) => deckOption(deck, view.choice, progress));
       case 4: {
         const deck = r.deck;
         if (!deck) return null;
@@ -940,6 +985,44 @@ export function StartFlow({ services = browserStartServices }: StartFlowProps) {
     }
   }
 
+  /** A deck card of step 3; choosing it adds the deck to `base`, the choices made before it. */
+  function deckOption(deck: IndexDeck, base: Choice, progress: Progress): ReactNode {
+    const seen = seenPercent(progress, deck, cardIds[deck.id]);
+    if (!available.has(deck.id)) {
+      return (
+        <Option key={deck.id} id={deck.id}>
+          <DestinationCard
+            variant="deck"
+            name={deck.code}
+            code
+            detail={deck.title}
+            seenPercent={seen}
+            dimmedReason="Needs a connection"
+            label={`${deck.code}, ${deck.title}, needs a connection`}
+          />
+        </Option>
+      );
+    }
+    const choose = () =>
+      deck.sections.length > 0
+        ? forward(4, { ...base, deckId: deck.id }, "deck", optionEl(deck.id))
+        : forward(5, { ...base, deckId: deck.id, sectionId: WHOLE_DECK }, "deck", optionEl(deck.id));
+    return (
+      <Option key={deck.id} id={deck.id}>
+        <DestinationCard
+          variant="deck"
+          name={deck.code}
+          code
+          detail={deck.title}
+          seenPercent={seen}
+          stub={{ label: "Cards", value: String(deck.cardCount) }}
+          label={`${deck.code}, ${deck.title}, ${deck.cardCount} cards, ${seen > 0 ? `${seen} percent seen` : "not started"}`}
+          onSelect={choose}
+        />
+      </Option>
+    );
+  }
+
   function optionEl(id: string): HTMLElement | null {
     return mainRef.current?.querySelector<HTMLElement>(`[data-step="${step}"] [data-option="${CSS.escape(id)}"]`) ?? null;
   }
@@ -951,6 +1034,8 @@ interface StepPanelProps {
   step: Step;
   dir: Direction;
   reduced: boolean;
+  /** The step shows options, a list for assistive technology, rather than a message. */
+  list: boolean;
   children: ReactNode;
 }
 
@@ -958,7 +1043,7 @@ interface StepPanelProps {
 const ItemMotion = createContext<{ variants: Variants | undefined; dir: Direction }>({ variants: undefined, dir: 1 });
 
 /** One step: its title over its options. Leaving, it is inert, so a quick second tap cannot reach it. */
-function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
+function StepPanel({ step, dir, reduced, list, children }: StepPanelProps) {
   const present = useIsPresent();
   const item = reduced ? undefined : ITEM;
   const listRef = useRef<HTMLDivElement>(null);
@@ -981,7 +1066,8 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
         </m.h2>
         {/* The list scrolls when it is taller than the screen; its margin and padding leave room for the focus ring.
             While more lies below what it shows, it fades out over 28 px at its bottom, or a little higher so that
-            the fade lies over a card (./listCue.ts). A mask: right on any sky, in both themes. */}
+            the fade lies over a card (./listCue.ts). A mask: right on any sky, in both themes. Its options are a
+            list for assistive technology ("list, 9 items"); the fade is visual only. */}
         <div
           ref={listRef}
           data-list=""
@@ -993,7 +1079,7 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
             "data-more:[mask-image:linear-gradient(to_bottom,var(--color-ink)_calc(100%_-_28px_-_var(--list-fade-lift,0px)),transparent_calc(100%_-_var(--list-fade-lift,0px)))]",
           ].join(" ")}
         >
-          <div ref={contentRef} className="flex flex-col gap-(--space-12)">
+          <div ref={contentRef} role={list ? "list" : undefined} className="flex flex-col gap-(--space-12)">
             {children}
           </div>
         </div>
@@ -1002,11 +1088,14 @@ function StepPanel({ step, dir, reduced, children }: StepPanelProps) {
   );
 }
 
-/** One option in a step's list, rising in after the one before it; `id` lets focus come back to it. */
-function Option({ id, children }: { id: string; children: ReactNode }) {
+/**
+ * One option in a step's list, rising in after the one before it; `id` lets focus come back to it. The Recent card
+ * is marked data-recent instead of data-option, so step 1's options stay the catalog's areas (e2e/catalog.spec.ts).
+ */
+function Option({ id, recent = false, children }: { id: string; recent?: boolean; children: ReactNode }) {
   const { variants, dir } = useContext(ItemMotion);
   return (
-    <m.div data-option={id} className="flex-none" variants={variants} custom={dir}>
+    <m.div role="listitem" data-option={recent ? undefined : id} data-recent={recent ? "" : undefined} className="flex-none" variants={variants} custom={dir}>
       {children}
     </m.div>
   );

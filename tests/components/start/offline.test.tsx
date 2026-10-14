@@ -184,3 +184,15 @@ describe("StartFlow offline: the focus when the network goes", () => {
     expect(document.activeElement).toBe(document.body);
   });
 });
+
+describe("StartFlow offline: recent decks", () => {
+  it("keeps Recent a button and dims the recent decks with no copy on the device", async () => {
+    const local = device(["gcp-cdl"]);
+    const played = { seen: 1, lastCorrect: true };
+    local.setItem(PROGRESS_KEY, JSON.stringify({ ...emptyProgress(), cards: { "aws-clf-c02-1": { ...played, lastSeenAt: 100 }, "gcp-cdl-1": { ...played, lastSeenAt: 200 } } }));
+    await startOffline(local);
+    await choose("Recent, 2 decks", "Choose a deck");
+    expect(screen.getByRole("group", { name: "CLF, Cloud Practitioner, needs a connection" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^CDL, Cloud Digital Leader/ })).toBeTruthy();
+  });
+});

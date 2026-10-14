@@ -6,7 +6,7 @@ import { RECENT, StartFlow, canShow, chosenOn, clearFrom, entriesBehind, pathTo,
 import { PENDING_KEY } from "@/src/app-state/pending";
 import { SWIPE } from "@/src/input/swipe";
 import { INDEX_CACHE_KEY } from "@/src/content/load";
-import { INDEX, harness, memoryStorage, storedProgress, type Harness } from "./fixtures";
+import { INDEX, harness, memoryStorage, playedDecks, storedProgress, type Harness } from "./fixtures";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
@@ -1093,5 +1093,216 @@ describe("StartFlow: the column of a short screen", () => {
     await act(async () => {});
     fireEvent.keyDown(document.body, { key: "Escape" });
     await waitFor(() => expect(heading()).toBe("Choose an area"));
+  });
+});
+
+// Recent decks (docs/superpowers/specs/2026-10-13-truthy-recent-decks-design.md): CDL played last, CLF before it.
+const TWO = { "aws-clf-c02": 100, "gcp-cdl": 200 };
+
+/** The ids of the current step's options (the catalog's own: the Recent card is not one). */
+function optionIds(): (string | null)[] {
+  return [...document.querySelectorAll("[data-step]:not([inert]) [data-option]")].map((el) => el.getAttribute("data-option"));
+}
+
+function focusedLabel(): string | null | undefined {
+  return document.activeElement?.getAttribute("aria-label");
+}
+
+describe("StartFlow: recent decks on step 1", () => {
+  it("shows no Recent card with history on one deck or on none", async () => {
+    await start(harness(playedDecks({ "aws-clf-c02": 100 })));
+    expect(screen.queryByRole("button", { name: /^Recent/ })).toBeNull();
+    cleanup();
+    await start();
+    expect(screen.queryByRole("button", { name: /^Recent/ })).toBeNull();
+  });
+
+  it("lists Recent first, with the codes newest first, apart from the catalog's options", async () => {
+    await start(harness(playedDecks(TWO)));
+    const recent = screen.getByRole("button", { name: "Recent, 2 decks" });
+    expect(recent.textContent).toBe("RecentCDL · CLF");
+    const first = document.querySelector("[data-step]:not([inert]) [data-list] > div > *");
+    expect(first?.hasAttribute("data-recent")).toBe(true);
+    expect(first?.hasAttribute("data-option")).toBe(false);
+    expect(optionIds()).toEqual(["cloud", "frontend", "devops"]);
+  });
+
+  it("opens the recent decks' step with a blank pass, and Back returns to step 1 on the Recent card", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    expect(optionIds()).toEqual(["gcp-cdl", "aws-clf-c02"]);
+    expect(field("area")).toBe("Areanot chosen");
+    expect(field("platform")).toBe("Platformnot chosen");
+    expect(field("deck")).toBe("Decknot chosen");
+    expect(document.querySelector('[data-fill-in-pass] [data-field="deck"][data-now]')).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Back to areas" }));
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
+    await waitFor(() => expect(focusedLabel()).toBe("Recent, 2 decks"));
+  });
+});
+
+describe("StartFlow: the recent path", () => {
+  it("fills area, platform and deck at once, and Back from the section step returns to the recent decks", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    expect(field("deck")).toBe("DeckCLF");
+    expect(screen.getByRole("button", { name: "Change area, now Cloud" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Change platform, now AWS" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Back to decks" }));
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["gcp-cdl", "aws-clf-c02"]);
+    await waitFor(() => expect(focusedLabel()).toMatch(/^CLF, Cloud Practitioner/));
+  });
+
+  it("goes from a deck without sections to the class step, and back to the recent decks", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CDL, Cloud Digital Leader/, "Choose how to play");
+    fireEvent.click(screen.getByRole("button", { name: "Back to decks" }));
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["gcp-cdl", "aws-clf-c02"]);
+  });
+
+  it("keeps one history entry per step of the recent path, so the browser's buttons retrace it", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    expect(h.history.position).toBe(2);
+    expect(h.history.state).toEqual({
+      truthyStart: { step: 4, choice: { via: "recent", areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" } },
+    });
+    act(() => h.history.back());
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["gcp-cdl", "aws-clf-c02"]);
+    act(() => h.history.back());
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
+    act(() => h.history.forward());
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["gcp-cdl", "aws-clf-c02"]);
+  });
+
+  it("returns to step 1 from the area of the pass, clearing every choice", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    fireEvent.click(screen.getByRole("button", { name: "Change area, now Cloud" }));
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
+    expect(h.history.position).toBe(0);
+    await waitFor(() => expect(focusedLabel()).toBe("Recent, 2 decks"));
+  });
+
+  it("returns to the recent decks from the deck of the pass", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    await choose(/^SEC, Security and compliance/, "Choose how to play");
+    fireEvent.click(screen.getByRole("button", { name: "Change deck, now CLF" }));
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["gcp-cdl", "aws-clf-c02"]);
+    expect(h.history.position).toBe(1);
+  });
+
+  it("opens the platform's own deck step from the platform of the pass, and the history becomes the ordinary path's", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    await choose(/^SEC, Security and compliance/, "Choose how to play");
+    fireEvent.click(screen.getByRole("button", { name: "Change platform, now AWS" }));
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["aws-clf-c02"]);
+    expect(field("area")).toBe("AreaCloud");
+    expect(field("platform")).toBe("PlatformAWS");
+    expect(screen.getByRole("button", { name: "Back to platforms" })).toBeTruthy();
+    await waitFor(() => expect(focusedLabel()).toMatch(/^CLF, Cloud Practitioner/));
+    await waitFor(() => expect(h.history.state).toEqual({ truthyStart: { step: 3, choice: { areaId: "cloud", platformId: "aws" } } }));
+    expect(h.history.position).toBe(2);
+    expect(h.history.entries).toHaveLength(3);
+    expect(h.history.entries[1]).toEqual({ truthyStart: { step: 2, choice: { areaId: "cloud" } } });
+    expect(heading()).toBe("Choose a deck"); // the flow's own move takes it nowhere
+    act(() => h.history.back());
+    await waitFor(() => expect(heading()).toBe("Choose a platform"));
+    act(() => h.history.back());
+    await waitFor(() => expect(heading()).toBe("Choose an area"));
+  });
+
+  it("ignores Escape and the pass while it moves the browser for the platform of the pass", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "Change platform, now AWS" }));
+      fireEvent.keyDown(document.body, { key: "Escape" }); // before the browser reports the move
+    });
+    await waitFor(() => expect(h.history.state).toEqual({ truthyStart: { step: 3, choice: { areaId: "cloud", platformId: "aws" } } }));
+    expect(heading()).toBe("Choose a deck");
+    expect(h.history.position).toBe(2);
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    await waitFor(() => expect(heading()).toBe("Choose a platform"));
+    expect(h.history.position).toBe(1);
+  });
+
+  it("hands a round started through Recent to /play and takes the recent path's entries out", async () => {
+    await start(harness(playedDecks(TWO)));
+    const positions: number[] = [];
+    router.push.mockImplementation(() => positions.push(h.history.position));
+    await choose("Recent, 2 decks", "Choose a deck");
+    await choose(/^CLF, Cloud Practitioner/, "Choose a section");
+    await choose(/^SEC, Security and compliance/, "Choose how to play");
+    await choose(/^Classic\./, "Your pass is ready");
+    expect(h.history.position).toBe(4);
+    settle();
+    fireEvent.click(screen.getByRole("button", { name: "Start round" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/play"));
+    expect(positions).toEqual([0]);
+    expect(JSON.parse(h.session.data.get(PENDING_KEY) ?? "null")).toEqual({ route: { deckId: "aws-clf-c02", sectionId: "SEC" }, mode: "classic" });
+  });
+
+  it("after a reload in the middle of the recent path, starts at step 1 and moves back past its entries", async () => {
+    h = harness(playedDecks(TWO));
+    h.history.replace({ truthyStart: { step: 1, choice: {} } });
+    h.history.push({ truthyStart: { step: 3, choice: { via: "recent" } } });
+    h.history.push({ truthyStart: { step: 4, choice: { via: "recent", areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02" } } });
+    render(<StartFlow services={h.services} />);
+    await screen.findByRole("button", { name: "Recent, 2 decks" });
+    expect(heading()).toBe("Choose an area");
+    await waitFor(() => expect(h.history.position).toBe(0));
+  });
+
+  it("reads an entry with a via it does not know as the ordinary path", async () => {
+    await start(harness(playedDecks(TWO)));
+    await choose("Cloud, 2 decks", "Choose a platform");
+    await choose("AWS, 1 deck", "Choose a deck");
+    h.history.replace({ truthyStart: { step: 3, choice: { via: "elsewhere", areaId: "cloud", platformId: "aws" } } });
+    act(() => h.history.back());
+    await waitFor(() => expect(heading()).toBe("Choose a platform"));
+    act(() => h.history.forward());
+    await waitFor(() => expect(heading()).toBe("Choose a deck"));
+    expect(optionIds()).toEqual(["aws-clf-c02"]);
+    expect(field("platform")).toBe("PlatformAWS");
+  });
+});
+
+describe("StartFlow: the step lists for assistive technology", () => {
+  function stepList(): Element | null {
+    return document.querySelector("[data-step]:not([inert]) [data-list] > div");
+  }
+
+  it("makes each step's options a list of list items, and the loading step no list", async () => {
+    h = harness(playedDecks(TWO));
+    h.network.hold = true;
+    render(<StartFlow services={h.services} />);
+    expect(stepList()?.getAttribute("role")).toBeNull();
+    await act(async () => h.network.release());
+    await screen.findByRole("button", { name: "Recent, 2 decks" });
+    expect(stepList()?.getAttribute("role")).toBe("list");
+    expect([...(stepList()?.children ?? [])].map((child) => child.getAttribute("role"))).toEqual(["listitem", "listitem", "listitem", "listitem"]);
+  });
+
+  it("makes the ready step no list", async () => {
+    await start();
+    await toClasses();
+    await choose(/^Classic\./, "Your pass is ready");
+    expect(stepList()?.getAttribute("role")).toBeNull();
   });
 });

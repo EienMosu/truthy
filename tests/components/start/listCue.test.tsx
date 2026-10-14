@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { FADE_PX, listCue, revealDelta, useListCue, type ItemSpan } from "@/components/start/listCue";
+import { FADE_PX, listCue, revealDelta, revealInList, useListCue, type ItemSpan } from "@/components/start/listCue";
 
 afterEach(cleanup);
 
@@ -174,5 +174,38 @@ describe("revealDelta", () => {
 
   it("shows the top of a card taller than the view", () => {
     expect(revealDelta(100, { top: 50, bottom: 300 }, 8)).toBe(42);
+  });
+});
+
+describe("revealInList", () => {
+  /** A list of `count` cards laid out as above, scrolled by `scrollTop`, `scrollHeight` tall in all; its scroll is kept by hand (jsdom has none). */
+  function laidOut(count: number, scrollTop: number, scrollHeight: number) {
+    const view = render(<List count={count} />);
+    const list = view.getByTestId("list");
+    const content = view.getByTestId("content");
+    layout(list, content, 518, scrollTop);
+    define(list, "scrollHeight", scrollHeight);
+    const scroll = { top: scrollTop };
+    Object.defineProperty(list, "scrollTop", {
+      configurable: true,
+      get: () => scroll.top,
+      set: (value: number) => {
+        scroll.top = value;
+      },
+    });
+    return { list, content, items: [...content.children] as HTMLElement[], scroll };
+  }
+
+  it("leaves a list that does not scroll alone, even with its last card near the fold", () => {
+    const { list, content, items, scroll } = laidOut(5, 0, 518);
+    revealInList(list, content, items[4] as HTMLElement, 8);
+    expect(scroll.top).toBe(0);
+  });
+
+  it("scrolls a card below the view into it by revealDelta, placing the card from the content's offset", () => {
+    // Scrolled by 63, the content starts 57 above the view and the ninth card lies 759 to 849 down.
+    const { list, content, items, scroll } = laidOut(9, 63, 936);
+    revealInList(list, content, items[8] as HTMLElement, 8);
+    expect(scroll.top).toBe(63 + revealDelta(518, { top: 759, bottom: 849 }, 8));
   });
 });

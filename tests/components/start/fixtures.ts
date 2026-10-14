@@ -85,6 +85,12 @@ export function storedProgress(progress: Partial<Progress>): MemoryStorage {
   return memoryStorage({ [PROGRESS_KEY]: JSON.stringify({ ...emptyProgress(), ...progress }) });
 }
 
+/** Local storage with history on these decks: one card each (`<deck id>-1`), last seen at the given time in ms. */
+export function playedDecks(decks: Readonly<Record<string, number>>): MemoryStorage {
+  const cards = Object.fromEntries(Object.entries(decks).map(([deckId, at]) => [`${deckId}-1`, { seen: 1, lastCorrect: true, lastSeenAt: at }]));
+  return storedProgress({ cards });
+}
+
 export interface FakeNetwork {
   fetcher: AppServices["fetcher"];
   calls: string[];
