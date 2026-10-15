@@ -134,12 +134,14 @@ fun DestinationCard(
     stub: CardStub? = null,
     unavailable: Boolean = false,
     nameHidden: Boolean = false,
+    nameLayout: Modifier = Modifier,
 ) {
     val colors = TruthyTheme.colors
     val shadows = TruthyTheme.shadows
     val metrics = DestinationLayout.of(variant)
     val nameStyle = if (code) TruthyType.deckCode else TruthyType.cardName
-    val nameModifier = if (nameHidden) Modifier.alpha(0f) else Modifier
+    // nameLayout: the start flow measures the name's box for the name that travels into the pass (task 12).
+    val nameModifier = nameLayout.then(if (nameHidden) Modifier.alpha(0f) else Modifier)
 
     if (unavailable) {
         Column(
