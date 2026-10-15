@@ -59,6 +59,13 @@ struct ResultView: View {
                         // Reference 4.4: a New best brings the comparison into view first.
                         if case .newBest? = coordinator.comparison { scroller.scrollTo("score", anchor: .center) }
                     }
+                    .onChange(of: coordinator.comparison) { _, comparison in
+                        if case .newBest? = comparison {
+                            withAnimation(reducedMotion ? nil : Tokens.Curve.ease.animation(Tokens.Duration.t3)) {
+                                scroller.scrollTo("score", anchor: .center)
+                            }
+                        }
+                    }
                 }
                 actions
             }
