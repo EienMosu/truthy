@@ -7,7 +7,7 @@ import TruthyEngine
 
 /// Off until every ported module has its golden tests; task 6 turns it on, and from then on a golden file
 /// without a test fails the suite.
-private let everyFileRequired = false
+private let everyFileRequired = true
 
 private func consumedFileNames() throws -> Set<String> {
     let pattern = try Regex(#"Golden\.load\("([^"]+)", "([^"]+)"\)"#, as: (Substring, Substring, Substring).self)
