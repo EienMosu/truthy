@@ -215,6 +215,28 @@ import TruthyEngine
         #expect(flow.choice == StartChoice(areaId: "cloud", platformId: "aws") && flow.step == 3)
         #expect(flow.focusAfterBack == "aws-clf-c02")
     }
+
+    /// The played "Change platform" first moves the step on screen onto the ordinary path, so the back it then plays
+    /// draws that platform's deck step coming back and keeps the area and the platform on the pass (StartFlow.tsx
+    /// toPlatformDecks), then completes as an ordinary back to step 3.
+    @Test func changePlatformMovesOntoTheOrdinaryPathBeforeItsBackPlays() throws {
+        let flow = try model()
+        let index = try DeckStore(bundle: .main).index()
+        let recent = recentDecks(index, TruthyEngine.Progress(version: 1, cards: ["aws-clf-c02-x": CardHistory(seen: 1, lastCorrect: true, lastSeenAt: 1)], records: [:], last: nil))
+        clock.advance(250)
+        #expect(flow.chooseRecent())
+        clock.advance(250)
+        #expect(flow.chooseRecentDeck(try #require(recent.first)))
+        clock.advance(250)
+        #expect(flow.chooseSection("SEC") && flow.stack == [1, 3, 4, 5])
+        #expect(flow.moveOntoOrdinaryPath())
+        #expect(flow.stack == [1, 2, 3, 4, 5] && !flow.recent && flow.step == 5)
+        #expect(flow.choice == StartChoice(areaId: "cloud", platformId: "aws", deckId: "aws-clf-c02", sectionId: "SEC"))
+        #expect(stepOf(.areaId, flow.choice) < 3 && stepOf(.platformId, flow.choice) < 3 && stepOf(.deckId, flow.choice) == 3)
+        #expect(!flow.moveOntoOrdinaryPath(), "only the recent path moves")
+        #expect(flow.back(to: 3) && flow.stack == [1, 2, 3])
+        #expect(flow.choice == StartChoice(areaId: "cloud", platformId: "aws") && flow.focusAfterBack == "aws-clf-c02")
+    }
 }
 
 @MainActor

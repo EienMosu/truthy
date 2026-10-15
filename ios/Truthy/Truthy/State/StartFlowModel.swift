@@ -151,13 +151,17 @@ final class StartFlowModel {
     /// "Change platform, now {title}" on the recent path (StartFlow.tsx toPlatformDecks): that platform's own deck
     /// step on the ordinary path, [1, 2, 3] with area and platform kept, focus on the deck chosen before.
     @discardableResult func changePlatformOnRecentPath() -> Bool {
-        guard canGoBack, recent, let areaId = choice.areaId, let platformId = choice.platformId else { return false }
-        let deckId = choice.deckId
-        choice = StartChoice(areaId: areaId, platformId: platformId)
-        stack = [1, 2, 3]
-        focusAfterBack = deckId
-        stepShownAt = clock.nowMs()
-        backProgress = nil
+        moveOntoOrdinaryPath() && back(to: 3)
+    }
+
+    /// The first half of "Change platform": the step on screen moves from the recent path onto the ordinary one (the
+    /// platform step joins the stack, the area and the platform count as chosen on steps 1 and 2), so the back the view
+    /// then plays to step 3 draws that platform's deck step coming back and keeps the area and the platform on the
+    /// pass, and completes as an ordinary back. Only on the recent path past its deck step.
+    @discardableResult func moveOntoOrdinaryPath() -> Bool {
+        guard canGoBack, recent, step > 3, choice.areaId != nil, choice.platformId != nil else { return false }
+        choice.via = nil
+        stack = pathTo(step, hasSections)
         return true
     }
 

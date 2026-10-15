@@ -20,8 +20,6 @@ struct StartFlowView: View {
     @State private var backTarget: Step?
     /// True while a played back runs (the Back pill, a pass field, Escape, Change platform): the pans are off then.
     @State private var playingBack = false
-    /// What the played back does when it completes.
-    @State private var playedBack: PlayedBack = .back
     /// True while this view's own pan drives the back: its recognizer stays enabled (disabling it would cancel it).
     @State private var panning = false
     /// The panel on screen arrived forward (its items drop in, staggered) or at rest (launch, after a back).
@@ -36,8 +34,6 @@ struct StartFlowView: View {
     @State private var columnOffset = 0.0
     /// The column was scrolled when the step on screen arrived and jumped to its top (StartFlow.tsx:489-501).
     @State private var columnJumped = false
-
-    private enum PlayedBack { case back, changePlatform }
 
     private var flow: StartFlowModel { model.startFlow }
     private var backRuns: Bool { backTarget != nil && flow.backProgress != nil }
@@ -363,11 +359,10 @@ struct StartFlowView: View {
 
     /// A back played over its own duration: the Back pill, a pass field, Escape. Nil does nothing (step 1). The two
     /// panels are inserted at progress 0 here; runPlayedBack starts the motion from their onAppear.
-    private func playBack(to target: Step?, then completion: PlayedBack = .back) {
+    private func playBack(to target: Step?) {
         guard let target, flow.canGoBack, backTarget == nil, !playingBack else { return }
         travel = nil
         playingBack = true
-        playedBack = completion
         backTarget = target
         flow.backProgress = 0
     }
@@ -376,21 +371,21 @@ struct StartFlowView: View {
         withAnimation(.linear(duration: backMotion(target).durationMs(reducedMotion: reducedMotion) / 1000)) {
             flow.backProgress = 1
         } completion: {
-            switch playedBack {
-            case .back: flow.back(to: target)
-            case .changePlatform: flow.changePlatformOnRecentPath()
-            }
+            flow.back(to: target)
             arrivedForward = false
             backTarget = nil
             playingBack = false
         }
     }
 
-    /// "Change platform, now {title}" on the recent path: B from the step on screen to the platform's deck step, then
-    /// the stack becomes the ordinary path [1, 2, 3] (task 11).
+    /// "Change platform, now {title}" on the recent path: B from the step on screen to the platform's deck step, which
+    /// leaves the ordinary path [1, 2, 3] (task 11). The step on screen first moves onto the ordinary path, so the
+    /// back draws that platform's decks coming back, not the Recent list, and keeps the area and the platform on the
+    /// pass (StartFlow.tsx toPlatformDecks shows step 3 with only those two chosen).
     private func playBackToPlatform() {
-        guard flow.recent, flow.step > 3 else { return }
-        playBack(to: 3, then: .changePlatform)
+        guard flow.recent, flow.step > 3, flow.canGoBack, backTarget == nil, !playingBack else { return }
+        flow.moveOntoOrdinaryPath()
+        playBack(to: 3)
     }
 
     /// The back gestures: the finger drives the progress; release completes or cancels with a spring seeded with the
