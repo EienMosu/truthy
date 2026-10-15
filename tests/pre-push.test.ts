@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { ALLOWED_EMAIL, pushRanges, scanCommits } from "@/scripts/hygiene";
+import { png } from "@/tests/support/png";
 
 // The pre-push gate scans every commit about to be pushed, not only the tree it ends with: a public
 // repository publishes each commit. These tests build throwaway repositories in the system temp folder.
@@ -13,6 +14,7 @@ const ZERO = "0".repeat(40);
 // Samples are built from pieces so that this file never contains what it looks for.
 const home = "/" + "Users/alex";
 const email = "someone" + "@" + "example.org";
+const emDash = "\u2014"; // spelled with an escape, so that this file holds none
 
 const made: string[] = [];
 afterEach(() => {
@@ -134,6 +136,74 @@ describe("scanCommits", () => {
   });
 });
 
+describe("scanCommits, native scopes", () => {
+  const plan = "docs/superpowers/plans/2026-10-15-truthy-native-a-shared-data/README.md";
+
+  it("finds an em dash a commit adds under ios, android, native-data or a native document", () => {
+    const dir = repo();
+    const sha = commit(
+      dir,
+      {
+        "ios/Truthy/Strings.swift": `let a = "x ${emDash} y"\n`,
+        "android/Truthy/app/strings.xml": `<s>a ${emDash} b</s>\n`,
+        "native-data/decks/index.json": `{"a": "${emDash}"}\n`,
+        [plan]: `one ${emDash} two\n`,
+      },
+      "feat: native files",
+    );
+    expect(scanCommits(dir, [sha])).toEqual(
+      ["android/Truthy/app/strings.xml", plan, "ios/Truthy/Strings.swift", "native-data/decks/index.json"].map(
+        (path) => `${sha.slice(0, 7)} ${path}: em dash: U+2014`,
+      ),
+    );
+  });
+
+  it("finds an em dash in a file whose name is not ASCII, which git prints quoted", () => {
+    const dir = repo();
+    const sha = commit(dir, { "ios/Truthy/\u00c7evir.swift": `let a = "x ${emDash} y"\n` }, "feat: native file");
+    expect(scanCommits(dir, [sha])).toEqual([`${sha.slice(0, 7)} ios/Truthy/\u00c7evir.swift: em dash: U+2014`]);
+  });
+
+  it("does not find an em dash a commit adds to a web file, or one a native file loses", () => {
+    const dir = repo();
+    const web = commit(dir, { "content/raw/a.json": `{"a": "${emDash}"}\n`, "src/a.ts": `// a ${emDash} b\n` }, "docs: web files");
+    expect(scanCommits(dir, [web])).toEqual([]);
+    const old = commit(dir, { "ios/Truthy/Strings.swift": `let a = "x ${emDash} y"\n` }, "feat: native file");
+    const fix = commit(dir, { "ios/Truthy/Strings.swift": 'let a = "x, y"\n' }, "fix: no dash");
+    expect(scanCommits(dir, [`${old}..${fix}`])).toEqual([]);
+  });
+
+  it("finds a signing file by its type and a PNG with a text chunk, but not the same files outside the native folders", () => {
+    const dir = repo();
+    const text = png(["tEXt", Buffer.from("Software\0Preview", "latin1")]);
+    const sha = commit(
+      dir,
+      {
+        "android/Truthy/app/release.keystore": Buffer.from([0, 1, 2, 0xfe]),
+        "ios/Truthy/Dist.mobileprovision": "not a profile\n",
+        "ios/Truthy/Assets/icon.png": text,
+        "keys/release.jks": Buffer.from([0, 1, 2, 0xfe]),
+        "public/icon.png": text,
+      },
+      "feat: files",
+    );
+    expect(scanCommits(dir, [sha]).sort()).toEqual(
+      [
+        `${sha.slice(0, 7)} android/Truthy/app/release.keystore: signing file: .keystore`,
+        `${sha.slice(0, 7)} ios/Truthy/Assets/icon.png: PNG metadata chunk: tEXt`,
+        `${sha.slice(0, 7)} ios/Truthy/Dist.mobileprovision: signing file: .mobileprovision`,
+      ].sort(),
+    );
+  });
+
+  it("finds a local path in the UTF-16 text of a binary file a commit adds", () => {
+    const dir = repo();
+    const font = Buffer.concat([Buffer.from([0, 1, 2, 3]), Buffer.from(`see ${home}/fonts`, "utf16le").swap16(), Buffer.from([0xff])]);
+    const sha = commit(dir, { "android/Truthy/app/overpass.ttf": font }, "feat: font");
+    expect(scanCommits(dir, [sha])).toEqual([`${sha.slice(0, 7)} android/Truthy/app/overpass.ttf: absolute local path: ${home}`]);
+  });
+});
+
 describe("pushRanges", () => {
   it("scans from the remote's commit for an existing branch, every commit not on a remote for a new one, and skips a deletion", () => {
     const dir = repo();
@@ -227,5 +297,35 @@ describe(".githooks/pre-push", () => {
     const push = git(dir, ["push", "-q", "origin", "main"]);
     expect(push.status, push.stderr).toBe(0);
     expect(git(remote, ["rev-parse", "main"]).stdout.trim()).toBe(head);
+  });
+
+  it("refuses a push that adds an em dash under ios, and lets the same em dash through in a web file", () => {
+    const { dir, remote } = pushSetup();
+    const base = commit(dir, { "README.md": "Truthy\n" }, "docs: readme");
+    expect(git(dir, ["push", "-q", "origin", "main"]).status).toBe(0);
+    const web = commit(dir, { "content/raw/a.json": `{"a": "${emDash}"}\n` }, "docs: web file");
+    const native = commit(dir, { "ios/Truthy/Strings.swift": `let a = "x ${emDash} y"\n` }, "feat: native file");
+    const refused = git(dir, ["push", "-q", "origin", "main"]);
+    expect(refused.status).not.toBe(0);
+    expect(refused.stderr).toContain(`${native.slice(0, 7)} ios/Truthy/Strings.swift: em dash: U+2014`);
+    expect(refused.stderr).not.toContain(web.slice(0, 7));
+    expect(git(remote, ["rev-parse", "main"]).stdout.trim()).toBe(base);
+    git(dir, ["reset", "-q", "--hard", web]);
+    const pushed = git(dir, ["push", "-q", "origin", "main"]);
+    expect(pushed.status, pushed.stderr).toBe(0);
+    expect(git(remote, ["rev-parse", "main"]).stdout.trim()).toBe(web);
+  });
+
+  it("refuses a push that adds a keystore under android, or a PNG with a text chunk under ios", () => {
+    const { dir, remote } = pushSetup();
+    const base = commit(dir, { "README.md": "Truthy\n" }, "docs: readme");
+    expect(git(dir, ["push", "-q", "origin", "main"]).status).toBe(0);
+    const key = commit(dir, { "android/Truthy/app/release.keystore": Buffer.from([0, 1, 2, 0xfe]) }, "feat: key");
+    const text = commit(dir, { "ios/Truthy/Assets/icon.png": png(["tEXt", Buffer.from("Software\0Preview", "latin1")]) }, "feat: icon");
+    const push = git(dir, ["push", "-q", "origin", "main"]);
+    expect(push.status).not.toBe(0);
+    expect(push.stderr).toContain(`${key.slice(0, 7)} android/Truthy/app/release.keystore: signing file: .keystore`);
+    expect(push.stderr).toContain(`${text.slice(0, 7)} ios/Truthy/Assets/icon.png: PNG metadata chunk: tEXt`);
+    expect(git(remote, ["rev-parse", "main"]).stdout.trim()).toBe(base);
   });
 });

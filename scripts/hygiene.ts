@@ -282,14 +282,20 @@ function scanCommit(cwd: string, sha: string): string[] {
     });
   const present = (path: string) => spawnSync("git", ["cat-file", "-e", `${sha}:${path}`], { cwd }).status === 0;
   for (const { path } of changes) {
-    if (present(path)) report(path, findingsIn(path).map((finding) => `file name: ${finding.replace(/^\d+: /, "")}`));
+    if (!present(path)) continue;
+    report(path, findingsIn(path).map((finding) => `file name: ${finding.replace(/^\d+: /, "")}`));
+    report(path, nativePathFindings(path));
   }
 
-  for (const [path, lines] of addedLines(git(cwd, ["show", "--format=", "--unified=0", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", sha]).toString("utf8"))) {
-    report(path, lines.flatMap((line) => findingsIn(line)));
+  // core.quotepath=false keeps a file name with letters outside ASCII unquoted, so that its scope is told.
+  const patch = git(cwd, ["-c", "core.quotepath=false", "show", "--format=", "--unified=0", "--no-color", "--no-ext-diff", "--no-textconv", "--no-renames", sha]);
+  for (const [path, lines] of addedLines(patch.toString("utf8"))) {
+    report(path, lines.flatMap((line) => [...findingsIn(line), ...(inNativeScope(path) ? emDashFindings(line) : [])]));
   }
   for (const { path, binary } of changes) {
-    if (binary && present(path)) report(path, findingsInBytes(git(cwd, ["cat-file", "blob", `${sha}:${path}`])));
+    if (!binary || !present(path)) continue;
+    const blob = git(cwd, ["cat-file", "blob", `${sha}:${path}`]);
+    report(path, [...findingsInBytes(blob), ...(inNativeScope(path) ? pngMetadataFindings(blob) : [])]);
   }
   return found;
 }
