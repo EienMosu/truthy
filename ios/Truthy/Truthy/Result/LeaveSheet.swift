@@ -30,12 +30,17 @@ struct LeaveCard: View {
     static let decidedText = "This round is over and its score is kept. Leaving skips its result."
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Tokens.Space.s16) {
-            Text("Leave round?").typeRole(Tokens.TypeRole.sheetTitle).accessibilityAddTraits(.isHeader)
+        // LeaveDialog.tsx: the title in the step-title role, the text 8 under it, the two buttons 20 under that and 4 apart.
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Leave round?").typeRole(Tokens.TypeRole.stepTitle).accessibilityAddTraits(.isHeader)
             Text(decided ? Self.decidedText : Self.undecided).typeRole(Tokens.TypeRole.body).fixedSize(horizontal: false, vertical: true)
-            // Escape keeps playing: a key command of the presented sheet, which needs no focus.
-            PillButton(title: "Keep playing", action: onKeepPlaying).keyboardShortcut(.cancelAction)
-            QuietButton(title: "Leave round", action: onLeave).frame(maxWidth: .infinity)
+                .padding(.top, Tokens.Space.s8)
+            VStack(spacing: Tokens.Space.s4) {
+                // Escape keeps playing: a key command of the presented sheet, which needs no focus.
+                PillButton(title: "Keep playing", action: onKeepPlaying).keyboardShortcut(.cancelAction)
+                QuietButton(title: "Leave round", action: onLeave).frame(maxWidth: .infinity)
+            }
+            .padding(.top, Tokens.Space.s20)
         }
         .foregroundStyle(palette.ink.color)
         .padding(Tokens.Space.s20)
