@@ -157,25 +157,25 @@ struct BackMotion: ViewModifier, @preconcurrency Animatable {
     }
 
     func body(content: Content) -> some View {
+        let effect = effect
+        content.opacity(effect.opacity).offset(y: effect.offsetY)
+    }
+
+    /// The opacity and the vertical offset of this role at this progress. One structure for every role, so a view
+    /// keeps its identity whichever role, if any, moves it.
+    var effect: (opacity: Double, offsetY: Double) {
         let frame = transition.frame(at: progress, reducedMotion: reducedMotion)
         switch role {
-        case .oldPanel:
-            content.opacity(frame.oldOpacity).offset(y: frame.oldOffsetY)
-        case .oldTitle:
-            content.opacity(frame.oldTitleOpacity)
+        case .oldPanel: return (frame.oldOpacity, frame.oldOffsetY)
+        case .oldTitle: return (frame.oldTitleOpacity, 0)
         case .newItem(let i):
             let item = frame.newItems[min(i, frame.newItems.count - 1)]
-            content.opacity(item.opacity).offset(y: item.offsetY)
-        case .dashes:
-            content.opacity(frame.dashesOpacity)
-        case .tripOut:
-            content.opacity(frame.tripOut.opacity).offset(y: frame.tripOut.offsetY)
-        case .brandIn:
-            content.opacity(frame.brandIn.opacity).offset(y: frame.brandIn.offsetY)
-        case .footIn:
-            content.opacity(frame.footIn.opacity).offset(y: frame.footIn.offsetY)
-        case .footOut:
-            content.opacity(frame.footOut.opacity).offset(y: frame.footOut.offsetY)
+            return (item.opacity, item.offsetY)
+        case .dashes: return (frame.dashesOpacity, 0)
+        case .tripOut: return (frame.tripOut.opacity, frame.tripOut.offsetY)
+        case .brandIn: return (frame.brandIn.opacity, frame.brandIn.offsetY)
+        case .footIn: return (frame.footIn.opacity, frame.footIn.offsetY)
+        case .footOut: return (frame.footOut.opacity, frame.footOut.offsetY)
         }
     }
 }

@@ -24,6 +24,10 @@ struct StartFlowView: View {
     @State private var panning = false
     /// The panel on screen arrived forward (its items drop in, staggered) or at rest (launch, after a back).
     @State private var arrivedForward = false
+    /// The step on screen was settled by a back, completed or cancelled: the zones the back drew are swapped for their
+    /// resting views without an entering motion (N1: the logo, the tagline, the pass and the foot zone did not leave
+    /// and enter again a moment after the back had come to rest).
+    @State private var settledByBack = false
     @State private var cardFrames: [String: CGRect] = [:]
     @State private var fieldFrames: [PassFieldName: CGRect] = [:]
     @State private var travel: NameTravel?
@@ -121,22 +125,20 @@ struct StartFlowView: View {
             topZones
             ZStack(alignment: .top) {
                 if let target = backTarget, flow.backProgress != nil {
-                    ZStack(alignment: .top) {
-                        stepPanel(target, leaving: false)
-                        stepPanel(flow.step, leaving: true)
-                    }
-                    // Inserted at progress 0; a played back animates it from here (a value a view is inserted
-                    // with would not be interpolated).
-                    .onAppear { if playingBack { runPlayedBack(target) } }
-                } else {
-                    stepPanel(flow.step, leaving: nil)
-                        .id(flow.step)
-                        .transition(.asymmetric(
-                            insertion: .identity,
-                            removal: reducedMotion
-                                ? .opacity.animation(Tokens.Curve.easeOut.animation(Tokens.Duration.reducedOut))
-                                : .offset(y: -10).combined(with: .opacity).animation(Tokens.Curve.easeOut.animation(Tokens.Duration.stepExit))))
+                    stepPanel(target, leaving: false)
+                        // Inserted at progress 0; a played back animates it from here (a value a view is inserted
+                        // with would not be interpolated).
+                        .onAppear { if playingBack { runPlayedBack(target) } }
                 }
+                // The step on screen keeps one identity while a back runs over it: a cancelled back leaves its list
+                // scrolled where it was and its items in place (N1), instead of a new panel whose items drop in.
+                stepPanel(flow.step, leaving: backRuns ? true : nil)
+                    .id(flow.step)
+                    .transition(.asymmetric(
+                        insertion: .identity,
+                        removal: reducedMotion
+                            ? .opacity.animation(Tokens.Curve.easeOut.animation(Tokens.Duration.reducedOut))
+                            : .offset(y: -10).combined(with: .opacity).animation(Tokens.Curve.easeOut.animation(Tokens.Duration.stepExit))))
             }
             .padding(.top, Tokens.Space.s20)
             footZones
@@ -177,7 +179,7 @@ struct StartFlowView: View {
                     topZone(flow.step)
                         .id(flow.step == 1)
                         .transition(.asymmetric(
-                            insertion: .offset(y: flow.step == 1 ? -12 : 12).combined(with: .opacity)
+                            insertion: settledByBack ? .identity : .offset(y: flow.step == 1 ? -12 : 12).combined(with: .opacity)
                                 .animation(Tokens.Curve.ease.animation(Tokens.Duration.stepEnter, delay: Tokens.Duration.topEnterDelay)),
                             removal: .offset(y: 12).combined(with: .opacity).animation(Tokens.Curve.ease.animation(Tokens.Duration.topExit))))
                 }
@@ -257,12 +259,12 @@ struct StartFlowView: View {
                 if flow.step == 6 { startRoundButton.modifier(motion(.footOut)) }
             } else if flow.step == 1, let target = model.continueTarget {
                 continueLine(target)
-                    .transition(.offset(y: 12).combined(with: .opacity)
+                    .transition(settledByBack ? .identity : .offset(y: 12).combined(with: .opacity)
                         .animation(Tokens.Curve.ease.animation(Tokens.Duration.stepEnter, delay: Tokens.Duration.topEnterDelay)))
             } else if flow.step == 6 {
                 startRoundButton
                     .transition(.asymmetric(
-                        insertion: .offset(y: 12).combined(with: .opacity)
+                        insertion: settledByBack ? .identity : .offset(y: 12).combined(with: .opacity)
                             .animation(Tokens.Curve.ease.animation(Tokens.Duration.stepEnter, delay: Tokens.Duration.topEnterDelay)),
                         removal: .offset(y: 12).combined(with: .opacity).animation(Tokens.Curve.ease.animation(Tokens.Duration.topExit))))
             }
@@ -272,7 +274,10 @@ struct StartFlowView: View {
     private func continueLine(_ target: ContinueTarget) -> some View {
         ContinueLine(target: target) {
             withAnimation(Tokens.Curve.ease.animation(Tokens.Duration.stepEnter, delay: Tokens.Duration.stepEnterDelay)) {
-                if flow.continueTo(target) { arrivedForward = true }
+                if flow.continueTo(target) {
+                    arrivedForward = true
+                    settledByBack = false
+                }
             }
         }
         .padding(.bottom, 4)
@@ -336,7 +341,10 @@ struct StartFlowView: View {
             case .section(let id): moved = flow.chooseSection(id)
             case .mode(let mode): moved = flow.chooseMode(mode)
             }
-            if moved { arrivedForward = true }
+            if moved {
+                arrivedForward = true
+                settledByBack = false
+            }
         }
     }
 
@@ -372,6 +380,7 @@ struct StartFlowView: View {
         withAnimation(.linear(duration: backMotion(target).durationMs(reducedMotion: reducedMotion) / 1000)) {
             flow.backProgress = 1
         } completion: {
+            settledByBack = true
             flow.back(to: target)
             arrivedForward = false
             backTarget = nil
@@ -411,6 +420,7 @@ struct StartFlowView: View {
             withAnimation(spring) {
                 flow.backProgress = complete ? 1 : 0
             } completion: {
+                settledByBack = true
                 if complete {
                     flow.back(to: target)
                     arrivedForward = false
@@ -553,11 +563,20 @@ struct FadingList: View {
     }
 }
 
-private struct OptionalMotion: ViewModifier {
-    let motion: BackMotion?
+/// A back's motion on a view that moves only while a back runs. The view keeps one identity with or without a motion
+/// (a conditional here rebuilt the whole step panel as a back began and ended, which scrolled its list to the top and
+/// dropped its items in again, N1); it animates the motion's progress itself.
+private struct OptionalMotion: ViewModifier, @preconcurrency Animatable {
+    var motion: BackMotion?
+
+    var animatableData: Double {
+        get { motion?.progress ?? 0 }
+        set { motion?.progress = newValue }
+    }
 
     func body(content: Content) -> some View {
-        if let motion { content.modifier(motion) } else { content }
+        let effect = motion?.effect ?? (opacity: 1, offsetY: 0)
+        content.opacity(effect.opacity).offset(y: effect.offsetY)
     }
 }
 

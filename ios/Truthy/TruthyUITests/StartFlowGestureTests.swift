@@ -31,6 +31,29 @@ final class StartFlowGestureTests: XCTestCase {
         XCTAssertFalse(driver.element("Choose an area").exists)
     }
 
+    /// N1: a cancelled pan leaves the step as it was: the panel keeps its identity, so its list keeps its scroll and
+    /// its cards do not drop in again (the recording showed the panel blank for a moment, then the cards re-entering).
+    @MainActor
+    func testACancelledPanKeepsTheListWhereItWas() {
+        let driver = AppDriver()
+        driver.launch()
+        toTheDeckStep(driver)
+        let card = driver.button(startingWith: "CLF, ")
+        let top = card.frame.minY
+        let list = driver.app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        list.press(forDuration: 0.05, thenDragTo: list.withOffset(CGVector(dx: 0, dy: -120)), withVelocity: XCUIGestureVelocity(300),
+                   thenHoldForDuration: 0.3)
+        driver.pause(1)
+        let scrolled = card.frame.minY
+        XCTAssertLessThan(scrolled, top - 20, "the deck list scrolled")
+        driver.drag(from: CGVector(dx: 0.005, dy: 0.5), to: CGVector(dx: 0.25, dy: 0.5), velocity: XCUIGestureVelocity(60), hold: 0.4)
+        let deadline = Date().addingTimeInterval(1.5)
+        while Date() < deadline {
+            XCTAssertEqual(card.frame.minY, scrolled, accuracy: 1, "the list stays where it was after the cancelled pan")
+        }
+        XCTAssertTrue(driver.element("Choose a deck").exists, "a cancelled pan changes nothing")
+    }
+
     @MainActor
     func testEscapeGoesBackAndIsConsumedOnStepOne() throws {
         try AppDriver.skipEscapeAndReturnOnTheSimulator()
