@@ -1,0 +1,323 @@
+{
+  "format": 1,
+  "module": "src/content/text",
+  "function": "textParts",
+  "source": "src/content/text.ts",
+  "tests": [
+    "tests/content/text.test.ts"
+  ],
+  "cards": {},
+  "cases": [
+    {
+      "name": "one plain part for a text without backticks",
+      "input": {
+        "text": "AWS patches the host."
+      },
+      "output": [
+        {
+          "text": "AWS patches the host.",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "each pair of backticks is a code part, without the backticks",
+      "input": {
+        "text": "An `asserts x is string` function narrows `x` after a call."
+      },
+      "output": [
+        {
+          "text": "An ",
+          "code": false
+        },
+        {
+          "text": "asserts x is string",
+          "code": true
+        },
+        {
+          "text": " function narrows ",
+          "code": false
+        },
+        {
+          "text": "x",
+          "code": true
+        },
+        {
+          "text": " after a call.",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "no empty plain part around a fragment at the start or the end",
+      "input": {
+        "text": "`docker run` starts `nginx`"
+      },
+      "output": [
+        {
+          "text": "docker run",
+          "code": true
+        },
+        {
+          "text": " starts ",
+          "code": false
+        },
+        {
+          "text": "nginx",
+          "code": true
+        }
+      ]
+    },
+    {
+      "name": "no empty plain part between two fragments",
+      "input": {
+        "text": "`a``b`"
+      },
+      "output": [
+        {
+          "text": "a",
+          "code": true
+        },
+        {
+          "text": "b",
+          "code": true
+        }
+      ]
+    },
+    {
+      "name": "a backtick without a partner is a code part of its own",
+      "input": {
+        "text": "one ` two"
+      },
+      "output": [
+        {
+          "text": "one ",
+          "code": false
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": " two",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "an empty pair is two code parts of their own",
+      "input": {
+        "text": "a `` b"
+      },
+      "output": [
+        {
+          "text": "a ",
+          "code": false
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": " b",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "empty for an empty text",
+      "input": {
+        "text": ""
+      },
+      "output": []
+    },
+    {
+      "name": "a code fragment with a quote and a bracket",
+      "input": {
+        "text": "Before narrowing, `x.indexOf(\"a\")` is accepted on `x: string | string[]`."
+      },
+      "output": [
+        {
+          "text": "Before narrowing, ",
+          "code": false
+        },
+        {
+          "text": "x.indexOf(\"a\")",
+          "code": true
+        },
+        {
+          "text": " is accepted on ",
+          "code": false
+        },
+        {
+          "text": "x: string | string[]",
+          "code": true
+        },
+        {
+          "text": ".",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "a text that is one backtick",
+      "input": {
+        "text": "`"
+      },
+      "output": [
+        {
+          "text": "`",
+          "code": true
+        }
+      ]
+    },
+    {
+      "name": "three backticks in a row",
+      "input": {
+        "text": "a ``` b"
+      },
+      "output": [
+        {
+          "text": "a ",
+          "code": false
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": " b",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "four backticks in a row",
+      "input": {
+        "text": "a ```` b"
+      },
+      "output": [
+        {
+          "text": "a ",
+          "code": false
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": "`",
+          "code": true
+        },
+        {
+          "text": " b",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "an odd number of backticks leaves the last one alone",
+      "input": {
+        "text": "`a` and `b` and `"
+      },
+      "output": [
+        {
+          "text": "a",
+          "code": true
+        },
+        {
+          "text": " and ",
+          "code": false
+        },
+        {
+          "text": "b",
+          "code": true
+        },
+        {
+          "text": " and ",
+          "code": false
+        },
+        {
+          "text": "`",
+          "code": true
+        }
+      ]
+    },
+    {
+      "name": "a fragment that spans a line break",
+      "input": {
+        "text": "`line one\nline two` after"
+      },
+      "output": [
+        {
+          "text": "line one\nline two",
+          "code": true
+        },
+        {
+          "text": " after",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "a fragment of spaces",
+      "input": {
+        "text": "x ` ` y"
+      },
+      "output": [
+        {
+          "text": "x ",
+          "code": false
+        },
+        {
+          "text": " ",
+          "code": true
+        },
+        {
+          "text": " y",
+          "code": false
+        }
+      ]
+    },
+    {
+      "name": "text with accents and emoji around a fragment",
+      "input": {
+        "text": "Käse `ß` 😀 ende"
+      },
+      "output": [
+        {
+          "text": "Käse ",
+          "code": false
+        },
+        {
+          "text": "ß",
+          "code": true
+        },
+        {
+          "text": " 😀 ende",
+          "code": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1529 @@
+{
+  "format": 1,
+  "module": "src/progress/progress",
+  "function": "readProgress",
+  "source": "src/progress/progress.ts",
+  "tests": [
+    "tests/progress/progress.test.ts",
+    "tests/progress/progress-polish.test.ts",
+    "tests/progress/partial-read.test.ts"
+  ],
+  "cards": {},
+  "cases": [
+    {
+      "name": "a valid value",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "nothing stored",
+      "input": {
+        "raw": null
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a progress with no last route",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "the last route of an abandoned round, without a score",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":null,\"total\":null}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": null,
+            "total": null
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a last route stored before scores were kept",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\"}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": null,
+            "total": null
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "only unknown fields to drop",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10},\"theme\":\"night\"}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "unknown fields in an entry, in the last route and in its route",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":5,\"flagged\":true}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\",\"label\":\"Security\"},\"mode\":\"classic\",\"at\":9},\"theme\":\"night\"}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 5
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": null,
+            "total": null
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a bad record",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8,\"aws-clf-c02/APP#classic\":7.5},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a record that is a string",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8,\"aws-clf-c02/APP#classic\":\"8\"},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a negative record",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8,\"aws-clf-c02/APP#classic\":-3},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a bad card entry",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"aws-clf-c02-t3.1-01\":{\"seen\":-1,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a card entry with a seen count that is a string",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"a\":{\"seen\":\"1\",\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a card entry with a fractional seen count",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"a\":{\"seen\":1.5,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a card entry with a negative lastSeenAt",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"a\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":-1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a card entry whose lastCorrect is not a boolean",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"a\":{\"seen\":3,\"lastCorrect\":1,\"lastSeenAt\":1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with a mode a later version added",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with a mode that is not known",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"zen\"}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with no mode",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"}}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with an empty deck id",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"\",\"sectionId\":\"SEC\"},\"mode\":\"classic\"}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with an empty section id",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"\"},\"mode\":\"classic\",\"score\":8,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with a negative score",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":-1,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with a fractional total",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":9.5}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with a score that is a string",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":\"7\",\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a last route with a score and no total",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": null
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a card history that is not an object",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":\"x\",\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a card history that is an array",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":[],\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a card history that is null",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":null,\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "records that are not an object",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":[],\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {},
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "records that are null",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":null,\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {},
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "unparsable JSON",
+      "input": {
+        "raw": "{not json"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a value cut short",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "an empty string",
+      "input": {
+        "raw": ""
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a space",
+      "input": {
+        "raw": " "
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "an opening brace only",
+      "input": {
+        "raw": "{"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "the word undefined",
+      "input": {
+        "raw": "undefined"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "NaN",
+      "input": {
+        "raw": "NaN"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "true",
+      "input": {
+        "raw": "true"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a NUL character",
+      "input": {
+        "raw": "\u0000"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "null",
+      "input": {
+        "raw": "null"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a number",
+      "input": {
+        "raw": "42"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a string",
+      "input": {
+        "raw": "\"progress\""
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "an array",
+      "input": {
+        "raw": "[]"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "an empty object",
+      "input": {
+        "raw": "{}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a version and nothing else",
+      "input": {
+        "raw": "{\"version\":1}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a future version",
+      "input": {
+        "raw": "{\"version\":2,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a version stored as a string",
+      "input": {
+        "raw": "{\"version\":\"1\",\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a version stored as true",
+      "input": {
+        "raw": "{\"version\":true,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a version written 1.0",
+      "input": {
+        "raw": "{\"version\":1.0,\"cards\":{},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "no version",
+      "input": {
+        "raw": "{\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "no last key at all",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "aws-clf-c02-t1.1-01": {
+              "seen": 3,
+              "lastCorrect": false,
+              "lastSeenAt": 1790000000000
+            },
+            "aws-clf-c02-t2.1-06": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1790000100000
+            }
+          },
+          "records": {
+            "aws-clf-c02/SEC#classic": 7,
+            "gcp-cdl/ALL#classic": 8
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "no cards key and no records key",
+      "input": {
+        "raw": "{\"version\":1,\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a __proto__ key stays a plain key, next to a dropped neighbour",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"__proto__\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1},\"bad\":{\"seen\":-1}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "__proto__": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1
+            }
+          },
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a __proto__ key in cards and in records",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"__proto__\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{\"__proto__\":3},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "__proto__": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1
+            }
+          },
+          "records": {
+            "__proto__": 3
+          },
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a lastSeenAt of 1e999 reads as Infinity and drops that entry alone",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"a\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1e999},\"b\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":2}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "b": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 2
+            }
+          },
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a record of 1e999 drops that record alone",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{},\"records\":{\"a/ALL#classic\":1e999,\"b/ALL#classic\":2},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {
+            "b/ALL#classic": 2
+          },
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a seen count of 2^53 is not a safe integer",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"a\":{\"seen\":9007199254740992,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a seen count of 2^53 - 1 is kept",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"a\":{\"seen\":9007199254740991,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "a": {
+              "seen": 9007199254740991,
+              "lastCorrect": true,
+              "lastSeenAt": 1
+            }
+          },
+          "records": {},
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a record of 2^53 is dropped",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{},\"records\":{\"a/ALL#classic\":9007199254740992},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    },
+    {
+      "name": "a fractional lastSeenAt is kept",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"a\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1.5}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "a": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": 1.5
+            }
+          },
+          "records": {},
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a lastSeenAt of 0 is kept",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"a\":{\"seen\":0,\"lastCorrect\":false,\"lastSeenAt\":0}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "a": {
+              "seen": 0,
+              "lastCorrect": false,
+              "lastSeenAt": 0
+            }
+          },
+          "records": {},
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a lastSeenAt of -0 is kept as -0",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{\"a\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":-0}},\"records\":{},\"last\":null}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {
+            "a": {
+              "seen": 1,
+              "lastCorrect": true,
+              "lastSeenAt": {
+                "$number": "-0"
+              }
+            }
+          },
+          "records": {},
+          "last": null
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a score written 7.0 is the integer 7",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7.0,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": {
+            "route": {
+              "deckId": "aws-clf-c02",
+              "sectionId": "SEC"
+            },
+            "mode": "classic",
+            "score": 7,
+            "total": 10
+          }
+        },
+        "whole": true
+      }
+    },
+    {
+      "name": "a score of 1e999 drops the last route",
+      "input": {
+        "raw": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":1e999,\"total\":10}}"
+      },
+      "output": {
+        "progress": {
+          "version": 1,
+          "cards": {},
+          "records": {},
+          "last": null
+        },
+        "whole": false
+      }
+    }
+  ]
+}

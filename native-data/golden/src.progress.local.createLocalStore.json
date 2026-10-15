@@ -1,0 +1,1307 @@
+{
+  "format": 1,
+  "module": "src/progress/local",
+  "function": "createLocalStore",
+  "source": "src/progress/local.ts",
+  "tests": [
+    "tests/progress/local.test.ts",
+    "tests/progress/partial-read.test.ts"
+  ],
+  "cards": {},
+  "cases": [
+    {
+      "name": "loads empty progress when nothing has been stored",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {},
+            "records": {},
+            "last": null
+          }
+        ],
+        "items": {}
+      }
+    },
+    {
+      "name": "saves under the progress key as JSON",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t2.1-06\":{\"seen\":2,\"lastCorrect\":true,\"lastSeenAt\":1790000000000}},\"records\":{\"aws-clf-c02/SEC#classic\":7},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "round-trips progress through the storage",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {
+              "aws-clf-c02-t2.1-06": {
+                "seen": 2,
+                "lastCorrect": true,
+                "lastSeenAt": 1790000000000
+              }
+            },
+            "records": {
+              "aws-clf-c02/SEC#classic": 7
+            },
+            "last": {
+              "route": {
+                "deckId": "aws-clf-c02",
+                "sectionId": "SEC"
+              },
+              "mode": "classic",
+              "score": 7,
+              "total": 10
+            }
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t2.1-06\":{\"seen\":2,\"lastCorrect\":true,\"lastSeenAt\":1790000000000}},\"records\":{\"aws-clf-c02/SEC#classic\":7},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "loads what the latest save wrote",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {},
+              "records": {},
+              "last": null
+            }
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {},
+            "records": {},
+            "last": null
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}"
+        }
+      }
+    },
+    {
+      "name": "loads empty progress when the stored value is corrupt",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{corrupt"
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {},
+            "records": {},
+            "last": null
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{corrupt"
+        }
+      }
+    },
+    {
+      "name": "does not touch other keys",
+      "input": {
+        "storage": {
+          "items": {
+            "truthy.deck.aws-clf-c02": "deck"
+          }
+        },
+        "steps": [
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.deck.aws-clf-c02": "deck",
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t2.1-06\":{\"seen\":2,\"lastCorrect\":true,\"lastSeenAt\":1790000000000}},\"records\":{\"aws-clf-c02/SEC#classic\":7},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "without a storage: load is empty, save does nothing",
+      "input": {
+        "storage": null,
+        "steps": [
+          {
+            "op": "load"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {},
+            "records": {},
+            "last": null
+          },
+          {
+            "version": 1,
+            "cards": {},
+            "records": {},
+            "last": null
+          }
+        ],
+        "items": null
+      }
+    },
+    {
+      "name": "loads empty progress when getItem throws",
+      "input": {
+        "storage": {
+          "items": {
+            "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t2.1-06\":{\"seen\":2,\"lastCorrect\":true,\"lastSeenAt\":1790000000000}},\"records\":{\"aws-clf-c02/SEC#classic\":7},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          }
+        },
+        "steps": [
+          {
+            "op": "breakGet"
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {},
+            "records": {},
+            "last": null
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t2.1-06\":{\"seen\":2,\"lastCorrect\":true,\"lastSeenAt\":1790000000000}},\"records\":{\"aws-clf-c02/SEC#classic\":7},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "a save does not throw and writes nothing when getItem throws",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "breakGet"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {}
+      }
+    },
+    {
+      "name": "a save does not throw when setItem throws because the storage is full",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "breakSet",
+            "keys": "all"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {}
+      }
+    },
+    {
+      "name": "keeps the previously stored progress when a save fails",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 2,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000000000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "breakSet",
+            "keys": "all"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {},
+              "records": {},
+              "last": null
+            }
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {
+              "aws-clf-c02-t2.1-06": {
+                "seen": 2,
+                "lastCorrect": true,
+                "lastSeenAt": 1790000000000
+              }
+            },
+            "records": {
+              "aws-clf-c02/SEC#classic": 7
+            },
+            "last": {
+              "route": {
+                "deckId": "aws-clf-c02",
+                "sectionId": "SEC"
+              },
+              "mode": "classic",
+              "score": 7,
+              "total": 10
+            }
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t2.1-06\":{\"seen\":2,\"lastCorrect\":true,\"lastSeenAt\":1790000000000}},\"records\":{\"aws-clf-c02/SEC#classic\":7},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "loads the valid parts of a value with a dropped part",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {
+              "aws-clf-c02-t1.1-01": {
+                "seen": 3,
+                "lastCorrect": false,
+                "lastSeenAt": 1790000000000
+              },
+              "aws-clf-c02-t2.1-06": {
+                "seen": 1,
+                "lastCorrect": true,
+                "lastSeenAt": 1790000100000
+              }
+            },
+            "records": {
+              "aws-clf-c02/SEC#classic": 7,
+              "gcp-cdl/ALL#classic": 8
+            },
+            "last": null
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "the valid records go through a save, as at the start of a round",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          },
+          {
+            "op": "load"
+          }
+        ]
+      },
+      "output": {
+        "loads": [
+          {
+            "version": 1,
+            "cards": {
+              "aws-clf-c02-t1.1-01": {
+                "seen": 3,
+                "lastCorrect": false,
+                "lastSeenAt": 1790000000000
+              },
+              "aws-clf-c02-t2.1-06": {
+                "seen": 1,
+                "lastCorrect": true,
+                "lastSeenAt": 1790000100000
+              }
+            },
+            "records": {
+              "aws-clf-c02/SEC#classic": 7,
+              "gcp-cdl/ALL#classic": 8
+            },
+            "last": null
+          }
+        ],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a bad record under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8,\"aws-clf-c02/APP#classic\":7.5},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8,\"aws-clf-c02/APP#classic\":7.5},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a bad card entry under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"aws-clf-c02-t3.1-01\":{\"seen\":-1,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000},\"aws-clf-c02-t3.1-01\":{\"seen\":-1,\"lastCorrect\":true,\"lastSeenAt\":1}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a last route with a mode a later version added under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"daily\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a card history that is not an object under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":\"x\",\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":\"x\",\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of records that are not an object under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":[],\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":[],\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of unparsable JSON under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{not json"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{not json"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a value cut short under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of null under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "null"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "null"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a number under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "42"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "42"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of an array under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "[]"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "[]"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a future version under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":2,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"version\":2,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of a version stored as a string under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":\"1\",\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"version\":\"1\",\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of no version under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    },
+    {
+      "name": "keeps the raw value of no last key at all under the side key before writing over it",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8}}"
+          },
+          {
+            "op": "resave"
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":null}",
+          "truthy.progress.v1.unreadable": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8}}"
+        }
+      }
+    },
+    {
+      "name": "makes the copy once: later saves over the clean value leave the side key alone",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{not json"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t1.1-01": {
+                  "seen": 3,
+                  "lastCorrect": false,
+                  "lastSeenAt": 1790000000000
+                },
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 1,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000100000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7,
+                "gcp-cdl/ALL#classic": 8
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "put",
+            "key": "truthy.progress.v1.unreadable",
+            "value": "marker"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {},
+              "records": {},
+              "last": null
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}",
+          "truthy.progress.v1.unreadable": "marker"
+        }
+      }
+    },
+    {
+      "name": "replaces the side key with a later unreadable value",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{first"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t1.1-01": {
+                  "seen": 3,
+                  "lastCorrect": false,
+                  "lastSeenAt": 1790000000000
+                },
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 1,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000100000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7,
+                "gcp-cdl/ALL#classic": 8
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{second"
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t1.1-01": {
+                  "seen": 3,
+                  "lastCorrect": false,
+                  "lastSeenAt": 1790000000000
+                },
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 1,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000100000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7,
+                "gcp-cdl/ALL#classic": 8
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}",
+          "truthy.progress.v1.unreadable": "{second"
+        }
+      }
+    },
+    {
+      "name": "writes no side key over a value that reads whole, or when nothing is stored",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t1.1-01": {
+                  "seen": 3,
+                  "lastCorrect": false,
+                  "lastSeenAt": 1790000000000
+                },
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 1,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000100000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7,
+                "gcp-cdl/ALL#classic": 8
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {},
+              "records": {},
+              "last": null
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{},\"records\":{},\"last\":null}"
+        }
+      }
+    },
+    {
+      "name": "does not write over the value when it cannot be kept aside first",
+      "input": {
+        "storage": {
+          "items": {}
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{not json"
+          },
+          {
+            "op": "breakSet",
+            "keys": [
+              "truthy.progress.v1.unreadable"
+            ]
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t1.1-01": {
+                  "seen": 3,
+                  "lastCorrect": false,
+                  "lastSeenAt": 1790000000000
+                },
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 1,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000100000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7,
+                "gcp-cdl/ALL#classic": 8
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1": "{not json"
+        }
+      }
+    },
+    {
+      "name": "writes over the value when the side key already holds it, though the side key cannot be written",
+      "input": {
+        "storage": {
+          "items": {
+            "truthy.progress.v1.unreadable": "{not json"
+          }
+        },
+        "steps": [
+          {
+            "op": "put",
+            "key": "truthy.progress.v1",
+            "value": "{not json"
+          },
+          {
+            "op": "breakSet",
+            "keys": [
+              "truthy.progress.v1.unreadable"
+            ]
+          },
+          {
+            "op": "save",
+            "progress": {
+              "version": 1,
+              "cards": {
+                "aws-clf-c02-t1.1-01": {
+                  "seen": 3,
+                  "lastCorrect": false,
+                  "lastSeenAt": 1790000000000
+                },
+                "aws-clf-c02-t2.1-06": {
+                  "seen": 1,
+                  "lastCorrect": true,
+                  "lastSeenAt": 1790000100000
+                }
+              },
+              "records": {
+                "aws-clf-c02/SEC#classic": 7,
+                "gcp-cdl/ALL#classic": 8
+              },
+              "last": {
+                "route": {
+                  "deckId": "aws-clf-c02",
+                  "sectionId": "SEC"
+                },
+                "mode": "classic",
+                "score": 7,
+                "total": 10
+              }
+            }
+          }
+        ]
+      },
+      "output": {
+        "loads": [],
+        "items": {
+          "truthy.progress.v1.unreadable": "{not json",
+          "truthy.progress.v1": "{\"version\":1,\"cards\":{\"aws-clf-c02-t1.1-01\":{\"seen\":3,\"lastCorrect\":false,\"lastSeenAt\":1790000000000},\"aws-clf-c02-t2.1-06\":{\"seen\":1,\"lastCorrect\":true,\"lastSeenAt\":1790000100000}},\"records\":{\"aws-clf-c02/SEC#classic\":7,\"gcp-cdl/ALL#classic\":8},\"last\":{\"route\":{\"deckId\":\"aws-clf-c02\",\"sectionId\":\"SEC\"},\"mode\":\"classic\",\"score\":7,\"total\":10}}"
+        }
+      }
+    }
+  ]
+}
