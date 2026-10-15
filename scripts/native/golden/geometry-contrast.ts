@@ -4,8 +4,9 @@
 // tokensToCss on design/system/tokens.json, with var() references resolved and the night values laid over the day
 // ones as a browser cascades them; a night pair also says whether both its colours have a night value of their
 // own, so that no pair is checked with a day value. The web test reads the raw file, and no colour of a pair is
-// among the values the token overrides change (they change focus-on-fill, which no pair uses). A native app
-// computes the ratio from its own colour constants and compares.
+// among the values the token overrides change (they change focus-on-fill, which no pair uses);
+// tests/scripts/native/golden-geometry-contrast.test.ts fails if an override ever does. A native app computes the
+// ratio from its own colour constants and compares.
 import { readFileSync } from "node:fs";
 import { tokensToCss } from "@/src/tokens/build";
 import { MINIMUM, PAIRS, luminance } from "@/src/tokens/contrast";
@@ -80,7 +81,7 @@ const round2 = (value: number) => Math.round(value * 100) / 100;
 
 /** The file of this group: contrastPairs, one constant. */
 export function contrastGolden(): GoldenFile[] {
-  const themes = colours(JSON.parse(readFileSync("design/system/tokens.json", "utf8")));
+  const themes = colours(JSON.parse(readFileSync(new URL("../../../design/system/tokens.json", import.meta.url), "utf8")));
   const pairs = (["day", "night"] as const).flatMap((theme) =>
     PAIRS.map(([foreground, background, kind, where]) => {
       const foregroundHex = themes[theme](foreground);

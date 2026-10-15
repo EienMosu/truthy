@@ -133,6 +133,13 @@ describe("the rng helpers", () => {
     expect(() => rngValues([Number.NaN])).toThrow("an rng value is in [0, 1), not NaN");
   });
 
+  it("rngSeed and rngValues write -0 as 0, so the $rng payload stays plain numbers the native decoders read", () => {
+    expect(Object.is(rngSeed(-0).$rng.seed, 0)).toBe(true);
+    expect(Object.is(rngValues([-0, 0.5]).$rng.values[0], 0)).toBe(true);
+    expect(encodeValue(rngSeed(-0))).toEqual({ $rng: { seed: 0 } });
+    expect(JSON.stringify(encodeValue(rngValues([-0])))).toBe('{"$rng":{"values":[0]}}');
+  });
+
   it("rngOf runs the mulberry32 stream of a seed and the values of a list, failing when they run out", () => {
     const stream = rngOf(rngSeed(1));
     expect([stream(), stream()].map((x) => x * 2 ** 32)).toEqual([2693262067, 11749833]);

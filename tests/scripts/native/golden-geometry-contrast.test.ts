@@ -108,4 +108,13 @@ describe("the contrast vector", () => {
       expect(entry.ratio, where).toBe(Math.round(ratioOf(entry.foregroundHex, entry.backgroundHex) * 100) / 100);
     }
   });
+
+  it("no token override changes the value of a pair colour, so the raw tokens the vector reads are the colours the natives resolve", () => {
+    const overrides = JSON.parse(readFileSync("scripts/native-token-overrides.json", "utf8")) as { path: string }[];
+    const roles = new Set(PAIRS.flatMap(([foreground, background]) => [foreground, background]));
+    const touched = overrides
+      .map(({ path }) => /^color\.(day|night)\.([^.]+)\.\$value$/.exec(path)?.[2])
+      .filter((role): role is string => role !== undefined && roles.has(role));
+    expect(touched).toEqual([]);
+  });
 });

@@ -55,20 +55,20 @@ export function deckRef(deckId: string): { $deck: string } {
   return { $deck: deckId };
 }
 
-/** An rng argument: the mulberry32 stream of createRng(seed). The seed must be an unsigned 32-bit integer. */
+/** An rng argument: the mulberry32 stream of createRng(seed). The seed must be an unsigned 32-bit integer; -0 is written as 0. */
 export function rngSeed(seed: number): { $rng: { seed: number } } {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
     throw new Error(`an rng seed is an unsigned 32-bit integer, not ${seed}`);
   }
-  return { $rng: { seed } };
+  return { $rng: { seed: seed + 0 } };
 }
 
-/** An rng argument that returns these values in order and fails when they run out. */
+/** An rng argument that returns these values in order and fails when they run out. A -0 is written as 0. */
 export function rngValues(values: readonly number[]): { $rng: { values: number[] } } {
   for (const value of values) {
     if (!Number.isFinite(value) || value < 0 || value >= 1) throw new Error(`an rng value is in [0, 1), not ${value}`);
   }
-  return { $rng: { values: [...values] } };
+  return { $rng: { values: values.map((value) => value + 0) } };
 }
 
 /** The generator a tag stands for, so a producer runs the function on exactly what the file says. */
