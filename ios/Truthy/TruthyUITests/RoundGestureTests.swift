@@ -76,6 +76,31 @@ final class RoundGestureTests: XCTestCase {
         XCTAssertFalse(driver.element(containing: "Card, 03").exists, "not two")
     }
 
+    /// Reference 4.4 (the ticket scroll after an answer): the slip comes into view above the action row, on the
+    /// first card and on the next. At the largest text size every slip starts below the screen, so nothing passes
+    /// without the scroll.
+    @MainActor
+    func testAfterAnAnswerTheTicketScrollsTheSlipIntoView() {
+        let driver = AppDriver.round(extra: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        driver.launch()
+        _ = statement(driver)
+        for card in ["01", "02"] {
+            driver.waitFor(driver.element(containing: "Card, \(card)"), "card \(card)")
+            driver.pause(0.5)
+            driver.button("True").tap()
+            let next = driver.button("Next card")
+            driver.waitFor(next, "Next card on card \(card)")
+            // The tear (460), then the scroll (t3).
+            driver.pause(1.2)
+            let verdict = driver.element(containing: "The answer is")
+            driver.waitFor(verdict, "the slip of card \(card)")
+            let stage = driver.app.scrollViews.firstMatch.frame
+            XCTAssertGreaterThanOrEqual(verdict.frame.minY, stage.minY - 1, "card \(card): the verdict row is not above the stage")
+            XCTAssertLessThanOrEqual(verdict.frame.maxY, next.frame.minY, "card \(card): the verdict row shows above the action row")
+            next.tap()
+        }
+    }
+
     /// Spec 5.3: the swipe answers once the card has settled (the recognizer is enabled by observable state).
     @MainActor
     func testAHorizontalSwipeAnswers() {

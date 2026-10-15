@@ -223,9 +223,12 @@ struct BoardingPassView: View {
                 Text(timeUp ? "Time is up" : (correct ? "Correct" : "Not quite")).typeRole(Tokens.TypeRole.stampStub)
             }
             .foregroundStyle(colour)
-            .padding(.horizontal, Tokens.Space.s12)
-            .padding(.vertical, Tokens.Space.s6)
+            .padding(.horizontal, Tokens.Space.s18)
+            .padding(.top, Tokens.Space.s8)
+            .padding(.bottom, Tokens.Space.s6)
+            // On raised paper so the barcode under it does not show through (Stamp.tsx STUB_BASE, design system 5.11).
             .background(StampBorder(color: colour))
+            .background(RoundedRectangle(cornerRadius: Tokens.Radius.small).fill(palette.surfaceRaised.color))
         }
         .id(round.answers.count * 2 + (timeUp ? 1 : 0))
     }

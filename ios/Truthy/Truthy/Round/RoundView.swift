@@ -114,6 +114,8 @@ struct RoundView: View {
     @State private var statementFrame = CGRect.zero
     @State private var slipFrame = CGRect.zero
     @State private var slipScrolled = false
+    /// Whether the statement had VoiceOver focus when the player answered (Timed's next card, reference 4.4).
+    @State private var statementHadFocusAtAnswer = false
     @State private var ticketWidth = 0.0
     @AccessibilityFocusState private var statementFocused: Bool
     @AccessibilityFocusState private var actionFocused: Bool
@@ -137,12 +139,21 @@ struct RoundView: View {
                 .onChange(of: slipFrame) { _, frame in
                     guard round.phase == .answered, !slipScrolled, frame.height > 0 else { return }
                     slipScrolled = true
-                    if let y = TicketScrollTarget.afterAnswer(slip: frame, offset: scrollGeometry[0], viewport: scrollGeometry[1], contentHeight: scrollGeometry[2]) {
-                        withAnimation(Tokens.Curve.ease.animation(Tokens.Duration.t3)) { scroll.scrollTo(y: y) }
+                    // After the layout pass has delivered every geometry callback: the slip frame and the content
+                    // height come from two sources whose order is not guaranteed, so both are read once settled.
+                    Task {
+                        await Task.yield()
+                        guard round.phase == .answered, slipFrame.height > 0 else { return }
+                        if let y = TicketScrollTarget.afterAnswer(slip: slipFrame, offset: scrollGeometry[0], viewport: scrollGeometry[1],
+                                                                  contentHeight: scrollGeometry[2]) {
+                            withAnimation(Tokens.Curve.ease.animation(Tokens.Duration.t3)) { scroll.scrollTo(y: y) }
+                        }
                     }
                 }
                 .onChange(of: round.index) { _, _ in
                     slipScrolled = false
+                    // The next slip may land at the same frame; from zero its first frame is always a change.
+                    slipFrame = .zero
                     // After the new card's layout: only as far as shows its statement above the action row.
                     Task {
                         await Task.yield()
@@ -185,6 +196,13 @@ struct RoundView: View {
         }
         .onChange(of: round.index) { _, _ in
             if round.mode == .timed { announce(timedCardText(round)) }
+            // Reference 4.4: the new card's statement takes focus; in Timed only if the old one had it at the answer,
+            // otherwise focus stays on True or False and the announcement carries the new card.
+            Task {
+                await Task.yield()
+                if round.mode != .timed || round.index == 0 || statementHadFocusAtAnswer { statementFocused = true }
+                statementHadFocusAtAnswer = false
+            }
         }
         .onChange(of: coordinator.showsAction) { _, shows in
             // Reference 4.4: after an answer focus goes to Next card or See results when it takes presses (at once with
@@ -293,7 +311,9 @@ struct RoundView: View {
     // MARK: Answering
 
     @discardableResult private func answer(_ value: Bool) -> Bool {
+        let hadFocus = statementFocused
         guard coordinator.answer(value), let answered = lastAnswer(round) else { return false }
+        statementHadFocusAtAnswer = hadFocus
         lastCorrect = answered.correct
         verdicts += 1
         if round.mode == .timed {
