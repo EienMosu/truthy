@@ -54,6 +54,7 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
+    testImplementation(libs.kotlin.test.junit)
     implementation(project(":engine"))
     // :engine keeps kotlinx-serialization-json as an implementation dependency, which is not on :app's compile
     // classpath; the app's own JSON code (DeckStore, RoundJournal, task 9) needs it there.
