@@ -26,11 +26,12 @@
 
 ## Deviations from the spec
 
-The spec is binding, and this plan departs from its wording in three places. Each is recorded here for the owner's review of the plan; if the owner rejects one, the plan is changed before it is executed. An executor follows them and does not stop on them.
+The spec is binding, and this plan departs from its wording in four places. Each is recorded here for the owner's review of the plan; if the owner rejects one, the plan is changed before it is executed. An executor follows them and does not stop on them.
 
 1. **Where the export lives.** Spec 4.1, 4.3 and reference 8.1 name the writer `scripts/export-native.ts`. This plan puts it at `scripts/native/export.ts`, run by `tests/native-data.test.ts` through `pnpm export:native` (`UPDATE_NATIVE_DATA=1 vitest run tests/native-data.test.ts`). Many of the functions it exports live in React component files that only Vitest's environment imports cleanly, so a `tsx` script cannot run them. The behaviour the spec asks for (one export, the drift test, `pnpm export:native`) is the same.
 2. **What "every pinned case" means.** Spec 4.3 asks for every pinned case of a function's web test file. This plan reads that as every `it` that asserts an exact value, at least once, with the loops inside an `it` sampled as the Global Constraints say, so that the vector files stay a few megabytes each (task 5's dealing files are about 4.3 MB, task 6's round files about 4.6 MB). No `it` is dropped: task 6 plays the seeds 77 and 78 test as two traces. The web suites keep running every loop in full.
 3. **UTF-16 runs everywhere.** Spec 8 scopes its hygiene additions to `ios/`, `android/`, `native-data/` and the native documents. Task 1 reads UTF-16 runs in every binary file of the repository, which is stricter: a font name record that holds a local path or an address is a leak wherever the font sits. It passes on today's tree.
+4. **Golden file names.** Spec 4.1 shows `native-data/golden/<function>.json`. This plan names each file `<module with dots>.<function>.json` (for example `src.engine.deal.deal.json`), and the `DEAL` constant `src.engine.deal.DEAL.constant.json`, because two functions of different modules can share a name and because `deal.json` and `DEAL.json` are one file on the default macOS volume. Plans B and C read these names; the export fails if a registry entry has no file of that name.
 
 The manifest follows spec 4.1 without a deviation: `native-data/manifest.json` holds the source hashes (`deckHashes`), the fixed deck index version and a generator version (`generator`), plus `format`, the layout version of `native-data/`.
 
