@@ -77,4 +77,22 @@ import UIKit
         #expect(passLine.leading(at: .xxLarge) < passLine.leading(at: .accessibility5))
         #expect(Tokens.TypeRole.cardName.leading(at: .large) < 0)
     }
+
+    // Task 15's visual review: SwiftUI lays a line of Overpass out with the metrics of the point size rounded to a
+    // whole point, and its box ends on a pixel (15.5 points: 20.33 on a 3x screen where CSS has 19.62), so 1.27 of the
+    // size left every line up to 0.7 taller than the web's. The role's line box is the web's: one line is lineHeight
+    // times the size, and so is each further line.
+    @Test @MainActor func aRolesLinesHaveTheWebsHeight() {
+        func height(_ text: String, _ role: TypeStyle) -> Double {
+            let view = Text(text).typeRole(role).environment(\.displayScale, 3)
+            return UIHostingController(rootView: view).sizeThatFits(in: CGSize(width: 1000, height: 1000)).height
+        }
+        for role in [Tokens.TypeRole.body, Tokens.TypeRole.fieldLabel, Tokens.TypeRole.monoDataStrong, Tokens.TypeRole.listStatement] {
+            #expect(abs(height("Ag", role) - role.lineHeight * role.size) <= 0.34, "one line of \(role.size)")
+        }
+        // Lines further apart than the font's own (SwiftUI cannot draw them closer): the reading text.
+        for role in [Tokens.TypeRole.body, Tokens.TypeRole.listStatement, Tokens.TypeRole.missedExplanation] {
+            #expect(abs(height("Ag\nAg\nAg\nAg", role) - 4 * role.lineHeight * role.size) <= 0.67, "four lines of \(role.size)")
+        }
+    }
 }

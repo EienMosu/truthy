@@ -61,3 +61,23 @@ import TruthyEngine
         #expect(disabled == styles)
     }
 }
+
+// N9: at the accessibility sizes a word never breaks in the middle ("Cloud Practition / er" on a deck card, "Protecti
+// / ng data at rest" on a source link): the text takes the largest size at which its longest word fits its width.
+@Suite struct WordFitTests {
+    @Test @MainActor func theLongestWordFitsItsWidth() {
+        let style = Tokens.TypeRole.listTitle
+        let fit = WordFit.size("Cloud Practitioner", style, width: 160, upTo: .accessibility5)
+        #expect(fit < .accessibility5)
+        #expect(fit >= .large)
+        #expect(WordFit.width(of: "Practitioner", style, at: fit) <= 160)
+        if let larger = DynamicTypeSize.allCases.first(where: { $0 > fit }) {
+            #expect(WordFit.width(of: "Practitioner", style, at: larger) > 160)
+        }
+    }
+
+    @Test @MainActor func roomyTextKeepsItsSizeAndTheDefaultSizesAreLeftAlone() {
+        #expect(WordFit.size("Cloud Practitioner", Tokens.TypeRole.listTitle, width: 1000, upTo: .accessibility5) == .accessibility5)
+        #expect(WordFit.size("Supercalifragilisticexpialidocious", Tokens.TypeRole.cardStatement, width: 40, upTo: .large) == .large)
+    }
+}

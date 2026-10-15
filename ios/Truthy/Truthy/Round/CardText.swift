@@ -16,6 +16,7 @@ struct CardTextView: View {
         }
         .typeRole(style)
         .fixedSize(horizontal: false, vertical: true)
+        .wholeWords(plainText(text), style)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(plainText(text))
     }

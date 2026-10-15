@@ -66,19 +66,42 @@ extension TypeStyle {
     }
 }
 
+extension TypeStyle {
+    /// Overpass's ascent plus descent over its size (all four cuts): 0.883 + 0.383.
+    static let overpassLine = 1.2659912109375
+
+    /// The line box of the role at a Dynamic Type size on a screen of `scale` pixels per point, as SwiftUI needs it to
+    /// draw the web's line height: SwiftUI lays a line out with the metrics of the point size rounded to a whole point,
+    /// the first line's box ending on the next pixel and each further line a rounded number of pixels below the one
+    /// before. `spacing` goes between lines (never below zero) and `padding` above and below the text (half of what one
+    /// line lacks, signed: a role under its natural line trims the box as CSS does).
+    func lineBox(at size: DynamicTypeSize, scale: Double) -> (spacing: Double, padding: Double) {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))
+        // The scale of the text style, unrounded (scaledValue rounds a small value up to a pixel).
+        let points = self.size * UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: 1000, compatibleWith: traits) / 1000
+        let natural = Self.overpassLine * (points.rounded(.toNearestOrAwayFromZero))
+        let pixel = max(scale, 1)
+        let first = (natural * pixel).rounded(.up) / pixel
+        let next = (natural * pixel).rounded() / pixel
+        let css = lineHeight * points
+        return (max(0, css - next), (css - first) / 2)
+    }
+}
+
 private struct TypeRoleModifier: ViewModifier {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.displayScale) private var displayScale
     let style: TypeStyle
 
     func body(content: Content) -> some View {
-        // CSS leading beyond Overpass's own 1.27, scaled with the text: between lines, and half above and below the
-        // box (CSS half-leading). A role under 1.27 gets a negative half, which trims the box as CSS does.
-        let leading = style.leading(at: dynamicTypeSize)
+        // The web's line box (lineBox above): the line height between lines and, for the box, half of the rest above
+        // and below (CSS half-leading).
+        let box = style.lineBox(at: dynamicTypeSize, scale: displayScale)
         content
             .font(style.font)
             .tracking(style.letterSpacing)
-            .lineSpacing(max(0, leading))
-            .padding(.vertical, leading / 2)
+            .lineSpacing(box.spacing)
+            .padding(.vertical, box.padding)
     }
 }
 
@@ -86,5 +109,49 @@ extension View {
     /// Sets a type role of Tokens.TypeRole on the text inside.
     func typeRole(_ style: TypeStyle) -> some View {
         modifier(TypeRoleModifier(style: style))
+    }
+}
+
+/// N9: at the accessibility sizes a narrow column would break a long word in the middle ("Cloud Practition / er").
+/// The text then takes the largest Dynamic Type size, no larger than its own, at which its longest word fits its width;
+/// at the standard sizes (up to xxxLarge) it keeps its size, as the web keeps its words whole there.
+@MainActor
+enum WordFit {
+    /// The width of `word` in `style` at a Dynamic Type size, tracking included.
+    static func width(of word: String, _ style: TypeStyle, at size: DynamicTypeSize) -> Double {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))
+        let points = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledValue(for: style.size, compatibleWith: traits)
+        guard let font = UIFont(name: style.postScriptName, size: points) else { return 0 }
+        let tracking = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledValue(for: style.letterSpacing, compatibleWith: traits)
+        return Double(NSAttributedString(string: word, attributes: [.font: font, .kern: tracking]).size().width)
+    }
+
+    /// The largest size from `upTo` down to xxxLarge at which the longest word of `text` fits `width`.
+    static func size(_ text: String, _ style: TypeStyle, width: Double, upTo: DynamicTypeSize) -> DynamicTypeSize {
+        guard upTo.isAccessibilitySize, width > 0 else { return upTo }
+        let words = text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
+        guard let longest = words.max(by: { Self.width(of: $0, style, at: upTo) < Self.width(of: $1, style, at: upTo) }) else { return upTo }
+        let sizes = DynamicTypeSize.allCases.filter { $0 <= upTo && $0 >= .xxxLarge }.reversed()
+        return sizes.first { Self.width(of: longest, style, at: $0) <= width } ?? .xxxLarge
+    }
+}
+
+private struct WholeWordsModifier: ViewModifier {
+    let text: String
+    let style: TypeStyle
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var width = 0.0
+
+    func body(content: Content) -> some View {
+        content
+            .dynamicTypeSize(WordFit.size(text, style, width: width, upTo: dynamicTypeSize))
+            .onGeometryChange(for: Double.self) { $0.size.width } action: { width = $0 }
+    }
+}
+
+extension View {
+    /// Keeps the words of `text` whole at the accessibility sizes (N9): see WordFit.
+    func wholeWords(_ text: String, _ style: TypeStyle) -> some View {
+        modifier(WholeWordsModifier(text: text, style: style))
     }
 }
