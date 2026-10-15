@@ -27,6 +27,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,6 +36,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
@@ -275,6 +279,10 @@ private fun StartFlowContent(ui: StartFlowUi, actions: StartFlowActions, reduced
         val leaving = motion.leaving
         val layers = motion.layers
         val continueLine = data?.let { continueModel(it) }
+        // The top zone's height, written while it is measured, so the ready step's panel (measured after it in the same
+        // pass) places its title from it without a frame's lag; and the foot's height, for the list's end above it.
+        val topZoneHeight = remember { mutableIntStateOf(0) }
+        var footHeight by remember { mutableIntStateOf(0) }
 
         @Composable
         fun TopZone(snapshot: PanelSnapshot, layer: Layer, interactive: Boolean, isLeaving: Boolean) {
@@ -372,7 +380,16 @@ private fun StartFlowContent(ui: StartFlowUi, actions: StartFlowActions, reduced
                     .then(if (short) Modifier else Modifier.weight(1f)),
             ) {
                 // StartFlow.tsx:772-823: the top zone, 176 tall (its content's height on a short screen).
-                Box(Modifier.fillMaxWidth().then(if (short) Modifier else Modifier.heightIn(min = Tokens.Size.startTopZone))) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .then(if (short) Modifier else Modifier.heightIn(min = Tokens.Size.startTopZone))
+                        .layout { measurable, constraints ->
+                            val placeable = measurable.measure(constraints)
+                            topZoneHeight.intValue = placeable.height
+                            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                        },
+                ) {
                     val leavingTop = leaving?.takeIf { (it.step == Step.ONE) != (shown.step == Step.ONE) }
                     if (leavingTop != null) TopZone(leavingTop, layers.topOut, interactive = false, isLeaving = true)
                     TopZone(shown, if (leavingTop != null) layers.topIn else Layer.Shown, interactive = true, isLeaving = false)
@@ -393,7 +410,13 @@ private fun StartFlowContent(ui: StartFlowUi, actions: StartFlowActions, reduced
                         .fillMaxWidth()
                         .padding(top = Tokens.Space.s20)
                         .then(if (short) Modifier else Modifier.weight(1f))
-                        .padding(bottom = if (!short && shown.step == Step.ONE && continueLine != null) Tokens.Size.footGap else 0.dp),
+                        .padding(
+                            bottom = if (!short && shown.step == Step.ONE && continueLine != null) {
+                                StartLayout.continueGap(with(LocalDensity.current) { footHeight.toDp() })
+                            } else {
+                                0.dp
+                            },
+                        ),
                 ) {
                     // One call site for both panels, keyed by the step and choices drawn, so a panel keeps its own state
                     // (its list's scroll) when it turns from arriving into leaving, and a new step gets fresh state.
@@ -406,6 +429,7 @@ private fun StartFlowContent(ui: StartFlowUi, actions: StartFlowActions, reduced
                                 layers = layers,
                                 short = short,
                                 tight = tight,
+                                topZoneHeight = { topZoneHeight.intValue },
                                 travels = travels,
                                 focus = if (isLeaving) null else focus,
                                 onOption = { if (!isLeaving) onOption(it) },
@@ -422,7 +446,8 @@ private fun StartFlowContent(ui: StartFlowUi, actions: StartFlowActions, reduced
                 Modifier
                     .align(Alignment.BottomCenter)
                     .padding(start = start, end = end, bottom = bottom + Tokens.Space.s4)
-                    .widthIn(max = Tokens.Size.maxWidth),
+                    .widthIn(max = Tokens.Size.maxWidth)
+                    .onSizeChanged { footHeight = it.height },
             )
         }
         TravelOverlay(travels)

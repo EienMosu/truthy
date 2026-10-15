@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
@@ -46,7 +47,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import com.eienmosu.truthy.design.Tokens
 import com.eienmosu.truthy.design.TruthyTheme
 import com.eienmosu.truthy.design.TruthyType
@@ -95,6 +99,7 @@ fun StepPanel(
     layers: StepLayers,
     short: Boolean,
     tight: Boolean,
+    topZoneHeight: () -> Int,
     travels: Travels,
     focus: PanelFocus?,
     onOption: (OptionModel) -> Unit,
@@ -104,9 +109,10 @@ fun StepPanel(
     val panel = if (leaving) layers.oldPanel else Layer(layers.newPanelAlpha, 0f)
     val title = if (leaving) Layer(layers.oldTitleAlpha, 0f) else layers.item(0)
     val titleFocus = remember { FocusRequester() }
-    // StartFlow.tsx:1059: the ready step sits 112 lower, 88 under 600 tall, and at the top of a short screen's column.
-    val readyTop = when {
-        content !is PanelContent.Ready || short -> 0.dp
+    // StartFlow.tsx:1059: the ready step sits 112 below the 176 top zone, 88 under 600 tall, and at the top of a short
+    // screen's column. The pass reaches past the zone, which grows with it here, so the offset counts from the 176 line.
+    val readyOffset = when {
+        content !is PanelContent.Ready || short -> null
         tight -> Tokens.Size.readyOffset - Tokens.Space.s24
         else -> Tokens.Size.readyOffset
     }
@@ -117,7 +123,7 @@ fun StepPanel(
                 .then(if (short) Modifier else Modifier.fillMaxHeight())
                 .moved(panel)
                 .then(if (leaving) Modifier.clearAndSetSemantics { } else Modifier)
-                .padding(top = readyTop),
+                .then(if (readyOffset == null) Modifier else Modifier.readyTop(readyOffset, topZoneHeight)),
         ) {
             Box(
                 Modifier
@@ -139,7 +145,7 @@ fun StepPanel(
                     content.line,
                     style = TruthyType.tagline,
                     color = colors.ink,
-                    modifier = Modifier.widthIn(max = StartGeometry.readyLineMax),
+                    modifier = Modifier.padding(top = StartLayout.readyLineTop).widthIn(max = StartGeometry.readyLineMax),
                 )
             }
         }
@@ -157,6 +163,13 @@ fun StepPanel(
     LaunchedEffect(focus, leaving) {
         if (!leaving && focus == PanelFocus.Title) runCatching { titleFocus.requestFocus() }
     }
+}
+
+/** Moves the ready panel down by [StartLayout.readyTop] of the top zone's height, read while measuring. */
+private fun Modifier.readyTop(offset: Dp, topZoneHeight: () -> Int): Modifier = layout { measurable, constraints ->
+    val top = StartLayout.readyTop(offset, topZoneHeight().toDp()).roundToPx()
+    val placeable = measurable.measure(constraints.offset(vertical = -top))
+    layout(placeable.width, constraints.constrainHeight(placeable.height + top)) { placeable.place(0, top) }
 }
 
 /** StartFlow.tsx:1106-1118: three quiet placeholders while the index loads, and the status "Loading the decks". */

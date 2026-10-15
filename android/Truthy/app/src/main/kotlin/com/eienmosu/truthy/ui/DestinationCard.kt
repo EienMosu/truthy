@@ -31,7 +31,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +62,18 @@ data class DestinationMetrics(val stubWidth: Dp, val minHeight: Dp, val gap: Dp,
 
 /** DestinationCard.tsx STUB_WIDTH, MIN_HEIGHT and MAIN_PADDING. */
 object DestinationLayout {
+    /**
+     * The stub column: the token's width ([base]), or the stub's widest word and 4 on each side when that is wider
+     * (a large font scale), so the stub wraps between words ("not" over "played") and never inside one.
+     */
+    fun stubWidth(base: Dp, widestWord: Dp): Dp = maxOf(base, widestWord + Tokens.Space.s4 * 2)
+
+    /** The words the stub shows, each of which must fit on a line of its own. */
+    fun stubWords(stub: CardStub): List<String> =
+        listOfNotNull(stub.label, stub.value, stub.unit).flatMap { words(it) }
+
+    internal fun words(text: String): List<String> = text.split(' ').filter { it.isNotEmpty() }
+
     fun of(variant: DestinationVariant): DestinationMetrics = when (variant) {
         DestinationVariant.PLACE ->
             DestinationMetrics(Tokens.Size.cardStub, Tokens.Size.cardMin, Tokens.Space.s4, Tokens.Space.s18)
@@ -138,7 +152,23 @@ fun DestinationCard(
 ) {
     val colors = TruthyTheme.colors
     val shadows = TruthyTheme.shadows
-    val metrics = DestinationLayout.of(variant)
+    val base = DestinationLayout.of(variant)
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val metrics = if (stub == null) {
+        base
+    } else {
+        // The stub's texts in their own styles: the label and unit in field-label, the value in the stub value.
+        val widest = remember(stub, density, measurer) {
+            val styled = listOfNotNull(
+                stub.label to TruthyType.fieldLabel,
+                stub.value to TruthyType.stubValue,
+                stub.unit?.let { it to TruthyType.fieldLabel },
+            )
+            styled.flatMap { (text, style) -> DestinationLayout.words(text).map { measurer.measure(it, style).size.width } }.maxOrNull() ?: 0
+        }
+        base.copy(stubWidth = DestinationLayout.stubWidth(base.stubWidth, with(density) { widest.toDp() }))
+    }
     val nameStyle = if (code) TruthyType.deckCode else TruthyType.cardName
     // nameLayout: the start flow measures the name's box for the name that travels into the pass (task 12).
     val nameModifier = nameLayout.then(if (nameHidden) Modifier.alpha(0f) else Modifier)
