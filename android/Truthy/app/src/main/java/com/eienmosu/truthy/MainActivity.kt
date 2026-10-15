@@ -2,6 +2,7 @@ package com.eienmosu.truthy
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -64,6 +65,9 @@ class MainActivity : ComponentActivity() {
             TruthyTheme(theme) { TruthyRoot(app) }
         }
     }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        HardwareKeys.dispatch(event) || super.dispatchKeyEvent(event)
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
