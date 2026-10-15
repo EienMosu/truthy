@@ -85,6 +85,7 @@ private let fixture = #"""
         #expect(text.contains("static let stampStub = TypeStyle(family: .sans, weight: 800, size: 28, lineHeight: 1.27, letterSpacing: -0.24)"))
         #expect(text.contains("static let carrierLabelCompact = TypeStyle(family: .mono, weight: 600, size: 11, lineHeight: 1.27, letterSpacing: 0.66)"))
         #expect(text.contains("static let scoreUnit = TypeStyle(family: .mono, weight: 600, size: 20, lineHeight: 1.27, letterSpacing: 0)"))
+        #expect(text.contains("static let missedAnswer = TypeStyle(family: .sans, weight: 800, size: 17, lineHeight: 1.27, letterSpacing: -0.16)"))
     }
 
     @Test func writesTheNativeGroupAndTheTransitions() throws {

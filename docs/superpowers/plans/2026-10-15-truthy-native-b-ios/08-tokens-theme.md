@@ -190,6 +190,7 @@ private let fixture = #"""
         #expect(text.contains("static let stampStub = TypeStyle(family: .sans, weight: 800, size: 28, lineHeight: 1.27, letterSpacing: -0.24)"))
         #expect(text.contains("static let carrierLabelCompact = TypeStyle(family: .mono, weight: 600, size: 11, lineHeight: 1.27, letterSpacing: 0.66)"))
         #expect(text.contains("static let scoreUnit = TypeStyle(family: .mono, weight: 600, size: 20, lineHeight: 1.27, letterSpacing: 0)"))
+        #expect(text.contains("static let missedAnswer = TypeStyle(family: .sans, weight: 800, size: 17, lineHeight: 1.27, letterSpacing: -0.16)"))
     }
 
     @Test func writesTheNativeGroupAndTheTransitions() throws {
@@ -247,7 +248,7 @@ public enum TokenGen {
         ("stampStub", "stamp", "native.type.stub-stamp-size", nil, nil, nil),
         ("stampResult", "stamp", "native.type.new-best-size", nil, nil, nil),
         ("missedExplanation", "body", "native.type.missed-explanation-size", nil, nil, nil),
-        ("missedAnswer", "body", "native.type.missed-answer-size", 800, "native.type.stub-value.lineHeight", nil),
+        ("missedAnswer", "emphasis", "native.type.missed-answer-size", nil, nil, nil),
         ("carrierTitleCompact", "carrier-title", "native.type.carrier-compact.title", nil, nil, nil),
         ("carrierLabelCompact", "carrier-label", "native.type.carrier-compact.label", nil, nil, 0.66),
         ("sourceLink", "mono-data-strong", "native.type.source-link-size", nil, nil, nil),
@@ -721,6 +722,18 @@ import UIKit
         #expect(Tokens.TypeRole.fieldLabel.postScriptName == "OverpassMono-Regular")
         #expect(Tokens.TypeRole.fieldValue.postScriptName == "OverpassMono-SemiBold")
     }
+
+    // The leading follows the size SwiftUI's environment reports (a capped text keeps its leading in step with its
+    // glyphs), not the device's content size: it is a function of the Dynamic Type size, signed.
+    @Test func theLeadingFollowsTheDynamicTypeSizeOfTheEnvironment() {
+        let passLine = Tokens.TypeRole.passLine
+        let direct: Double = UIFontMetrics(forTextStyle: passLine.uiTextStyle).scaledValue(
+            for: (passLine.lineHeight - 1.27) * passLine.size,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: .extraExtraLarge))
+        #expect(passLine.leading(at: .xxLarge) == direct)
+        #expect(passLine.leading(at: .xxLarge) < passLine.leading(at: .accessibility5))
+        #expect(Tokens.TypeRole.cardName.leading(at: .large) < 0)
+    }
 }
 ```
 
@@ -796,15 +809,24 @@ extension TypeStyle {
         let extra = max(0, lineHeight - 1.27) * size
         return UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: extra)
     }
+
+    /// The CSS leading beyond Overpass's own 1.27 at a Dynamic Type size, signed: a role under 1.27 gives a negative
+    /// value. It scales with the size SwiftUI's environment reports, not with the device setting UIKit reads, so a
+    /// capped text (dynamicTypeSize(...xxLarge)) keeps its leading in step with its glyphs.
+    func leading(at size: DynamicTypeSize) -> Double {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))
+        return UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: (lineHeight - 1.27) * self.size, compatibleWith: traits)
+    }
 }
 
 private struct TypeRoleModifier: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let style: TypeStyle
 
     func body(content: Content) -> some View {
         // CSS leading beyond Overpass's own 1.27, scaled with the text: between lines, and half above and below the
         // box (CSS half-leading). A role under 1.27 gets a negative half, which trims the box as CSS does.
-        let leading = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledValue(for: (style.lineHeight - 1.27) * style.size)
+        let leading = style.leading(at: dynamicTypeSize)
         content
             .font(style.font)
             .tracking(style.letterSpacing)

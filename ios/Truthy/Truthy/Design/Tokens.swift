@@ -346,7 +346,7 @@ enum Tokens {
         static let stampStub = TypeStyle(family: .sans, weight: 800, size: 28, lineHeight: 1.27, letterSpacing: -0.24)
         static let stampResult = TypeStyle(family: .sans, weight: 800, size: 22, lineHeight: 1.27, letterSpacing: -0.24)
         static let missedExplanation = TypeStyle(family: .sans, weight: 600, size: 15, lineHeight: 1.45, letterSpacing: 0)
-        static let missedAnswer = TypeStyle(family: .sans, weight: 800, size: 17, lineHeight: 1.27, letterSpacing: 0)
+        static let missedAnswer = TypeStyle(family: .sans, weight: 800, size: 17, lineHeight: 1.27, letterSpacing: -0.16)
         static let carrierTitleCompact = TypeStyle(family: .sans, weight: 800, size: 14, lineHeight: 1.27, letterSpacing: -0.16)
         static let carrierLabelCompact = TypeStyle(family: .mono, weight: 600, size: 11, lineHeight: 1.27, letterSpacing: 0.66)
         static let sourceLink = TypeStyle(family: .mono, weight: 600, size: 13.5, lineHeight: 1.27, letterSpacing: 0)

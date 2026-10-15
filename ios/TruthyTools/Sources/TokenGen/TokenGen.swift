@@ -17,7 +17,7 @@ public enum TokenGen {
         ("stampStub", "stamp", "native.type.stub-stamp-size", nil, nil, nil),
         ("stampResult", "stamp", "native.type.new-best-size", nil, nil, nil),
         ("missedExplanation", "body", "native.type.missed-explanation-size", nil, nil, nil),
-        ("missedAnswer", "body", "native.type.missed-answer-size", 800, "native.type.stub-value.lineHeight", nil),
+        ("missedAnswer", "emphasis", "native.type.missed-answer-size", nil, nil, nil),
         ("carrierTitleCompact", "carrier-title", "native.type.carrier-compact.title", nil, nil, nil),
         ("carrierLabelCompact", "carrier-label", "native.type.carrier-compact.label", nil, nil, 0.66),
         ("sourceLink", "mono-data-strong", "native.type.source-link-size", nil, nil, nil),

@@ -65,4 +65,16 @@ import UIKit
         #expect(Tokens.TypeRole.fieldLabel.postScriptName == "OverpassMono-Regular")
         #expect(Tokens.TypeRole.fieldValue.postScriptName == "OverpassMono-SemiBold")
     }
+
+    // The leading follows the size SwiftUI's environment reports (a capped text keeps its leading in step with its
+    // glyphs), not the device's content size: it is a function of the Dynamic Type size, signed.
+    @Test func theLeadingFollowsTheDynamicTypeSizeOfTheEnvironment() {
+        let passLine = Tokens.TypeRole.passLine
+        let direct: Double = UIFontMetrics(forTextStyle: passLine.uiTextStyle).scaledValue(
+            for: (passLine.lineHeight - 1.27) * passLine.size,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: .extraExtraLarge))
+        #expect(passLine.leading(at: .xxLarge) == direct)
+        #expect(passLine.leading(at: .xxLarge) < passLine.leading(at: .accessibility5))
+        #expect(Tokens.TypeRole.cardName.leading(at: .large) < 0)
+    }
 }

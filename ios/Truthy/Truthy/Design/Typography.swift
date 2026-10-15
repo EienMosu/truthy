@@ -56,15 +56,24 @@ extension TypeStyle {
         let extra = max(0, lineHeight - 1.27) * size
         return UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: extra)
     }
+
+    /// The CSS leading beyond Overpass's own 1.27 at a Dynamic Type size, signed: a role under 1.27 gives a negative
+    /// value. It scales with the size SwiftUI's environment reports, not with the device setting UIKit reads, so a
+    /// capped text (dynamicTypeSize(...xxLarge)) keeps its leading in step with its glyphs.
+    func leading(at size: DynamicTypeSize) -> Double {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))
+        return UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: (lineHeight - 1.27) * self.size, compatibleWith: traits)
+    }
 }
 
 private struct TypeRoleModifier: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let style: TypeStyle
 
     func body(content: Content) -> some View {
         // CSS leading beyond Overpass's own 1.27, scaled with the text: between lines, and half above and below the
         // box (CSS half-leading). A role under 1.27 gets a negative half, which trims the box as CSS does.
-        let leading = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledValue(for: (style.lineHeight - 1.27) * style.size)
+        let leading = style.leading(at: dynamicTypeSize)
         content
             .font(style.font)
             .tracking(style.letterSpacing)
