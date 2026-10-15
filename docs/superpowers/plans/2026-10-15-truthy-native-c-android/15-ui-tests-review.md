@@ -2,7 +2,7 @@
 
 Tasks 7 to 14 built the app screen by screen, each with unit tests of its logic. This task checks the finished app the way a player meets it, on real emulators, in three parts. First, the Compose UI test stories of spec 7.3, the same stories plan B runs with XCUITest: a Classic round from step 1 to the result, the Recent path, Continue, leaving with and without answers, going back a step with the gesture, the theme switch, Timed running out, Three lives running out, a Streak ending, a source link opening in the in-app browser and the hardware keyboard keys. Second, the feel checks of spec 5.8 that a test can make (N4 the card under the finger, N7 the leave sheet, N8 no selection menu, N9 nothing clips at 200 percent, N11 Custom Tabs, N12 the bars, N13 back on the round) and a checklist with recordings for the ones only a person can judge, each recorded with its API level. Third, the visual review of spec 7.4: an instrumented walk captures the twenty review states plan B also captures, with its ids, in day and night at font scale 1.0 and 2.0, a Playwright script captures the web in the same states at the same viewport and seed, and a pairing script checks the element frames (within 2 dp) and the colours (against `native-data/tokens/resolved.json`) and writes side-by-side pairs for the reviewer and the owner.
 
-The whole UI suite runs on the four emulators of spec 7.6 (API 36, 34, 33 and 26). That is how this task closes Review Focus 1 (back on each API level: a scrubbed back and a cancel on 34 and 36, an instant commit with the right final frame on 33 and 26), Review Focus 3 (the stored theme opposite to the system theme: bars, first frame and, on API 31 and later, the configuration that drives the splash; feel item N12) and Review Focus 4 (font scale 2.0 and `ANIMATOR_DURATION_SCALE` 0: nothing clips, and the recordings show the fades the web keeps). Review Focus 2 (the app killed mid-round) and 5 (a drag in the system gesture inset, a diagonal drag) are owned by tasks 9, 11 and 13; the checklist repeats them on the emulator as items F19 and F22 so the review has them in one place.
+The whole UI suite runs on the four emulators of spec 7.6 (API 36, 34, 33 and 26). That is how this task closes Review Focus 1 (back on each API level: a scrubbed back and a cancel on 34 and 36, an instant commit with the right final frame on 33 and 26), Review Focus 3 (the stored theme opposite to the system theme: bars, first frame and, on API 31 and later, the configuration that drives the splash; feel item N12) and Review Focus 4 (font scale 2.0 and `ANIMATOR_DURATION_SCALE` 0: nothing clips, and the recordings show the fades the web keeps). Review Focus 2 (the app killed mid-round) and 5 (a drag in the system gesture inset, a diagonal drag) are owned by tasks 9, 11 and 13; the checklist repeats them on the emulator as items F19 and F22 so the review has them in one place. TalkBack (spec risk 11 and section 7.6) has tests that read the semantics the screens expose but none that hears the speech; item F23 checks it on the API 36 emulator, whose `google_apis` image ships TalkBack.
 
 Every interaction goes through what a player sees and does: accessibility labels from reference 4.5, real touches injected with real `SystemClock.uptimeMillis` timestamps (the guards and `interpret` compare them with the monotonic clock, so the Compose test's virtual event times would not do), real key events, and the system back key. Only five things are read from behind the scenes: the deck file (to know the right answer to the statement on screen), the progress file (to check what a round saved), the stored theme, the bounds of seven tagged elements, and the screen pixels.
 
@@ -2458,7 +2458,7 @@ test("the summary counts each status", () => {
 
 test("the committed checklist is well formed and every item names where it is checked", () => {
   const items = parseChecklist(readFileSync(new URL("./FEEL-CHECKLIST.md", import.meta.url), "utf8"));
-  assert.ok(items.length >= 22);
+  assert.ok(items.length >= 23);
   assert.deepEqual(structureProblems(items), []);
   for (const entry of items) assert.match(entry.title, /API (36|34|33|26)|phone/, `${entry.id} names no API level`);
 });
@@ -2676,6 +2676,11 @@ Result: PENDING
 Do: task 13's edge-drag test green; on a round with one answer, a drag that starts inside the left gesture inset and moves right (`adb shell input motionevent` from x 3); record f22-api36.mp4.
 Expect: Review Focus 5 and spec 5.3: the system's back takes the drag (the round surface shrinks, the release opens the sheet), and the card never moves.
 Result: PENDING
+
+#### F23. TalkBack reads the start flow, the round and the result, API 36
+Do: `emulators.sh` starts the emulator with `-no-audio`, so run `android/Tools/emulators.sh stop` and start the API 36 emulator with its sound and window: `"$ANDROID_HOME/emulator/emulator" -avd truthy-api36 -no-snapshot &`; turn TalkBack on (`adb shell settings put secure enabled_accessibility_services com.google.android.marvin.talkback/com.google.android.marvin.talkback.TalkBackService` and `adb shell settings put secure accessibility_enabled 1`); swipe through step 1 and take the Classic path with double taps; on the round swipe through the header, answer one card with the True pill, open the leave sheet, close it, and play to the result; then a Timed round with one answer; record f23-api36.mp4 for the focus order (`screenrecord` records no sound: the owner listens live and the Result line names what was heard wrong, if anything); turn TalkBack off afterwards (`adb shell settings delete secure enabled_accessibility_services` and `adb shell settings put secure accessibility_enabled 0`), stop that emulator by its PID and run `android/Tools/emulators.sh start 36` again. The owner listens and gives the result.
+Expect: spec 7.6 and risk 11 (reference 4.5 and 5.9): the round's heading is read as "{deck}, {section}: {class} round" and the Classic header once as one image with its full sentence, "Card N of M." and then which cards were correct and wrong (for example "Card 4 of 10. Cards 1 and 2 correct, card 3 wrong."; RoundScreenTest and FlightPathGoldenTest assert these labels); an answer is read once as "Correct. The answer is True." (or "Not quite. The answer is ..."), politely, after what TalkBack was reading, and not cut off by the sheet; nothing stale is read after the sheet closes; in Timed each new card is read as "Card N. {statement}"; the X reads "Leave round", a source link "{title} (opens in browser)"; no hidden node is read twice and focus never lands on an invisible element.
+Result: PENDING
 ```
 
 Run:
@@ -2685,7 +2690,7 @@ node --test --test-reporter=spec android/Tools/feel/checklist.test.mjs 2>&1 | gr
 node android/Tools/feel/checklist.mjs android/Tools/feel/FEEL-CHECKLIST.md
 ```
 
-Expected: five `✔` lines, `ℹ pass 5`, `ℹ fail 0`; then `22 items: 22 PENDING, 0 PASS, 0 FAIL, 0 SKIP` with exit code 0.
+Expected: five `✔` lines, `ℹ pass 5`, `ℹ fail 0`; then `23 items: 23 PENDING, 0 PASS, 0 FAIL, 0 SKIP` with exit code 0.
 
 Commit:
 
@@ -3699,9 +3704,9 @@ git commit -m "test: record the owner's approvals of the Android visual review"
 
 - [ ] **Step 33: The feel checklist on API 36.**
 
-On the API 36 emulator, work through F1, F5 to F9, F11 to F16 and F18 to F22 of `android/Tools/feel/FEEL-CHECKLIST.md` with the commands the items give (`mkdir -p "$TMPDIR/truthy-feel/api36"` first). The executing agent does everything `adb` can do and records it; items that need a real finger in the emulator window (F9) or a judgement of motion (F1, F5, F6, F14, F18) are prepared as recordings and the owner watches them and gives the result. Write each result on its `Result:` line as the file's header says, with the build's short hash from `git rev-parse --short HEAD`. A FAIL is fixed in the task that owns the behaviour (Rule 5), the affected tests rerun, and the item checked again.
+On the API 36 emulator, work through F1, F5 to F9, F11 to F16 and F18 to F23 of `android/Tools/feel/FEEL-CHECKLIST.md` with the commands the items give (`mkdir -p "$TMPDIR/truthy-feel/api36"` first). The executing agent does everything `adb` can do and records it; items that need a real finger in the emulator window (F9) or a judgement of motion (F1, F5, F6, F14, F18) or of speech (F23) are prepared as recordings and the owner watches or listens to them and gives the result. Write each result on its `Result:` line as the file's header says, with the build's short hash from `git rev-parse --short HEAD`. A FAIL is fixed in the task that owns the behaviour (Rule 5), the affected tests rerun, and the item checked again.
 
-Run `node android/Tools/feel/checklist.mjs android/Tools/feel/FEEL-CHECKLIST.md`. Expected: `22 items:` with no FAIL and exit code 0; the items of steps 34 and 35 are still PENDING.
+Run `node android/Tools/feel/checklist.mjs android/Tools/feel/FEEL-CHECKLIST.md`. Expected: `23 items:` with no FAIL and exit code 0; the items of steps 34 and 35 are still PENDING.
 
 - [ ] **Step 34: The feel checklist on API 34, 33 and 26.**
 
@@ -3713,7 +3718,7 @@ Work through F2 on API 34; then `stop`, `start 33` and F3; then `stop`, `start 2
 
 F10 is SKIP (no Android phone; emulators do not vibrate) unless the owner provides a phone, in which case the owner checks it there and the result names the phone and its Android version.
 
-Run `node android/Tools/feel/checklist.mjs android/Tools/feel/FEEL-CHECKLIST.md --done; echo "exit $?"`. Expected: `22 items: 0 PENDING, 21 PASS, 0 FAIL, 1 SKIP` (or 22 PASS with a phone) and `exit 0`.
+Run `node android/Tools/feel/checklist.mjs android/Tools/feel/FEEL-CHECKLIST.md --done; echo "exit $?"`. Expected: `23 items: 0 PENDING, 22 PASS, 0 FAIL, 1 SKIP` (or 23 PASS with a phone) and `exit 0`.
 
 - [ ] **Step 35: The task's gates, and the commit.**
 
@@ -3731,7 +3736,7 @@ pnpm test
 git status --short
 ```
 
-Expected: `BUILD SUCCESSFUL` twice; `tests 106, failures 0, errors 0, skipped 2` on API 36 (this task's 35 and the 71 of tasks 7 to 14; skipped: NoClipTest at font scale 1.0 and VisualCaptureTest without its argument); `ℹ pass 17`, `ℹ fail 0`; `0 not approved`; `22 items: ...` with exit 0; the web suite green (its hygiene test scans every file this task added); and `git status --short` shows only `android/Tools/feel/FEEL-CHECKLIST.md`.
+Expected: `BUILD SUCCESSFUL` twice; `tests 106, failures 0, errors 0, skipped 2` on API 36 (this task's 35 and the 71 of tasks 7 to 14; skipped: NoClipTest at font scale 1.0 and VisualCaptureTest without its argument); `ℹ pass 17`, `ℹ fail 0`; `0 not approved`; `23 items: ...` with exit 0; the web suite green (its hygiene test scans every file this task added); and `git status --short` shows only `android/Tools/feel/FEEL-CHECKLIST.md`.
 
 ```bash
 git add android/Tools/feel/FEEL-CHECKLIST.md

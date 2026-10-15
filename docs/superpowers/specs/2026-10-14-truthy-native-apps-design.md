@@ -287,7 +287,7 @@ The feel checklist (section 5.8), each item by its stated method.
 ### 7.6 Device
 
 - The owner runs the iOS app on the iPhone 15 Pro Max: haptics, 120 Hz, VoiceOver, the real finger and the sheet material are checked there.
-- Android runs on an API 36 emulator, an API 34 emulator (predictive back progress), an API 33 and an API 26 emulator (instant back commit), and on a phone if the owner provides one.
+- Android runs on an API 36 emulator, an API 34 emulator (predictive back progress), an API 33 and an API 26 emulator (instant back commit), and on a phone if the owner provides one. TalkBack is checked on the API 36 emulator, whose image ships it, with the owner listening.
 
 ## 8. Repository integration
 
