@@ -11,9 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.eienmosu.truthy.design.LocalReducedMotion
 import com.eienmosu.truthy.design.TruthyTheme
-import com.eienmosu.truthy.round.RoundLoadFailed
-import com.eienmosu.truthy.round.RoundLoading
-import com.eienmosu.truthy.round.RoundRoute
+import com.eienmosu.truthy.round.RoundHostRoute
 import com.eienmosu.truthy.start.StartFlowRoute
 import com.eienmosu.truthy.start.rememberReducedMotion
 
@@ -34,13 +32,8 @@ fun TruthyRoot(app: AppViewModel) {
             when (val current = screen) {
                 TopScreen.Start -> Box(Modifier.fillMaxSize().testTag(START_TAG)) { StartFlowRoute(app) }
                 is TopScreen.Round -> Box(Modifier.fillMaxSize().testTag(ROUND_TAG)) {
-                    // Until task 14 adds the leave sheet and back on the round, the X leaves at once with the leave
-                    // rules (task 11's leaveRound: the coordinator's leave, then start step 1).
-                    when (val load = current.load) {
-                        is RoundLoad.Ready -> RoundRoute(load.coordinator, onRequestLeave = { app.leaveRound() })
-                        RoundLoad.Loading -> RoundLoading(onRequestLeave = { app.leaveRound() })
-                        RoundLoad.Failed -> RoundLoadFailed(onRetry = { app.retryRound() }, onRequestLeave = { app.leaveRound() })
-                    }
+                    // The round, its sheet, its scrim, back and the result; every decision is task 11's.
+                    RoundHostRoute(app, current.load)
                 }
             }
         }

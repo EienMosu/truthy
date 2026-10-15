@@ -106,7 +106,12 @@ fun RoundHostRoute(app: AppViewModel, load: RoundLoad, modifier: Modifier = Modi
         else -> {
             val actions = remember(app) { appActions(app, null) }
             RoundHost(round = null, ticket = null, sheetOpen = false, clock = UPTIME, actions = actions, modifier = modifier) { requestClose ->
-                RoundLoading(onRequestLeave = requestClose)
+                // Task 13's load failure keeps its Try again; the X and back still leave at once (task 11's requestLeave).
+                if (load == RoundLoad.Failed) {
+                    RoundLoadFailed(onRetry = app::retryRound, onRequestLeave = requestClose)
+                } else {
+                    RoundLoading(onRequestLeave = requestClose)
+                }
             }
         }
     }
