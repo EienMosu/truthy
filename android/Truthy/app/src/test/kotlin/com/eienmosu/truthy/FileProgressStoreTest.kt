@@ -200,4 +200,12 @@ class FileProgressStoreTest {
             assertFalse(side.exists())
         }
     }
+
+    @Test
+    fun everyStoreUsesTheNamesTheBackupRulesList() {
+        assertEquals(StorageNames.PROGRESS_FILE, FileProgressStore.FILE_NAME)
+        assertEquals(StorageNames.UNREADABLE_FILE, FileProgressStore.UNREADABLE_FILE_NAME)
+        assertEquals(StorageNames.JOURNAL_FILE, RoundJournal.FILE_NAME)
+        assertEquals(StorageNames.PREFS_FILE, ThemeStore.PREFS_NAME)
+    }
 }
