@@ -113,9 +113,36 @@ function chunkText(type: string, data: Buffer): string | null {
   }
 }
 
-// Runs of four or more printable ASCII characters, one per line.
+// Runs of four or more printable ASCII characters, one per line, then the runs of the same kind written as
+// UTF-16 (see utf16Runs).
 function readableRuns(bytes: Buffer): string {
-  return (bytes.toString("latin1").match(/[\x20-\x7e\t]{4,}/g) ?? []).join("\n");
+  const latin1 = bytes.toString("latin1");
+  return [...(latin1.match(/[\x20-\x7e\t]{4,}/g) ?? []), ...utf16Runs(latin1)].join("\n");
+}
+
+// Runs of four or more printable ASCII characters written as UTF-16, which is how the name records of a font on
+// the Windows platform are stored: big endian, a zero byte before every character. Little endian puts the zero
+// after it. The bytes arrive as a Latin-1 string, one character per byte. Inside one run both readings match,
+// one pairing the bytes right and one shifted by a byte; the longest reading of a stretch of bytes wins, and of
+// two equally long ones the earlier, so that a run is reported once and with its right text.
+function utf16Runs(latin1: string): string[] {
+  const readings: { start: number; end: number; text: string }[] = [];
+  for (const [pattern, first] of [
+    [/(?:[\x20-\x7e\t]\0){4,}/g, 0], // little endian: the character comes first
+    [/(?:\0[\x20-\x7e\t]){4,}/g, 1], // big endian: the character comes second
+  ] as const) {
+    for (const match of latin1.matchAll(pattern)) {
+      let text = "";
+      for (let at = first; at < match[0].length; at += 2) text += match[0].charAt(at);
+      readings.push({ start: match.index, end: match.index + match[0].length, text });
+    }
+  }
+  readings.sort((a, b) => b.end - b.start - (a.end - a.start) || a.start - b.start);
+  const kept: typeof readings = [];
+  for (const reading of readings) {
+    if (!kept.some((other) => reading.start < other.end && other.start < reading.end)) kept.push(reading);
+  }
+  return kept.sort((a, b) => a.start - b.start).map((reading) => reading.text);
 }
 
 // A co-author trailer or a tool's "Generated with ..." footer: commits carry the owner's name only.

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { ALLOWED_EMAIL, findingsIn, findingsInBytes } from "@/scripts/hygiene";
+import { png } from "@/tests/support/png";
 
 // The rules live in scripts/hygiene.ts, shared with the pre-push hook.
 const ROOT = join(import.meta.dirname, "..");
@@ -129,18 +130,6 @@ describe("hygiene rules", () => {
     expect(findingsIn(`Author: EienMosu <${ALLOWED_EMAIL}>`)).toEqual([]);
   });
 });
-
-// A PNG file: the signature, then each chunk as length, type, data and checksum (left at zero, nothing here checks it).
-function png(...chunks: [type: string, data: Buffer][]): Buffer {
-  const parts: Buffer[] = [Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])];
-  const all: [string, Buffer][] = [["IHDR", Buffer.alloc(13)], ...chunks, ["IEND", Buffer.alloc(0)]];
-  for (const [type, data] of all) {
-    const length = Buffer.alloc(4);
-    length.writeUInt32BE(data.length);
-    parts.push(length, Buffer.from(type, "latin1"), data, Buffer.alloc(4));
-  }
-  return Buffer.concat(parts);
-}
 
 describe("binary files", () => {
   const home = "/" + "Users/alex";
