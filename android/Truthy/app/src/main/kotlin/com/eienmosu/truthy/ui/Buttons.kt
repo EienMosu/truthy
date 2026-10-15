@@ -29,6 +29,7 @@ import com.eienmosu.truthy.design.TruthyIcon
 import com.eienmosu.truthy.design.TruthyText
 import com.eienmosu.truthy.design.TruthyTheme
 import com.eienmosu.truthy.design.TruthyType
+import com.eienmosu.truthy.design.keyboardFocusRing
 import com.eienmosu.truthy.design.pressFeedback
 import com.eienmosu.truthy.design.rememberPressProgress
 import com.eienmosu.truthy.design.truthyShadow
@@ -76,6 +77,7 @@ fun PillButton(
             .pressFeedback(press, PressFeedback.PILL_SCALE, Tokens.Space.s2)
             .then(shadow)
             .alpha(if (dimmed) Tokens.Opacity.disabled else 1f)
+            .keyboardFocusRing(shape)
             .clip(shape)
             .background(fill)
             .clickable(interactionSource = source, indication = null, role = Role.Button) {
@@ -121,6 +123,7 @@ fun RoundButton(
             .pressFeedback(press, PressFeedback.ROUND_SCALE)
             .then(shadow)
             .alpha(if (enabled) 1f else Tokens.Opacity.disabled)
+            .keyboardFocusRing(CircleShape)
             .clip(CircleShape)
             .background(if (variant == RoundVariant.RAISED) colors.surfaceRaised else colors.surfaceSunk)
             .clickable(interactionSource = source, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
@@ -147,6 +150,7 @@ fun QuietButton(
             .fillMaxWidth()
             .heightIn(min = Tokens.Size.pillSmall)
             .pressFeedback(press, PressFeedback.QUIET_SCALE)
+            .keyboardFocusRing(RoundedCornerShape(Tokens.Radius.pillSmall))
             .clip(RoundedCornerShape(Tokens.Radius.pillSmall))
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick),
         horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s8, Alignment.CenterHorizontally),
@@ -177,6 +181,7 @@ fun BackPill(
             .heightIn(min = Tokens.Size.pillSmall)
             .pressFeedback(press, PressFeedback.BACK_PILL_SCALE)
             .truthyShadow(shadows.small, Tokens.Radius.pillSmall)
+            .keyboardFocusRing(RoundedCornerShape(Tokens.Radius.pillSmall))
             .clip(RoundedCornerShape(Tokens.Radius.pillSmall))
             .background(colors.surfaceRaised)
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)

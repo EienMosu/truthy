@@ -46,6 +46,7 @@ import com.eienmosu.truthy.design.TruthyText
 import com.eienmosu.truthy.design.TruthyTheme
 import com.eienmosu.truthy.design.TruthyType
 import com.eienmosu.truthy.design.drawCardPerforation
+import com.eienmosu.truthy.design.keyboardFocusRing
 import com.eienmosu.truthy.design.pressFeedback
 import com.eienmosu.truthy.design.rememberPressProgress
 import com.eienmosu.truthy.design.truthyShadow
@@ -174,6 +175,7 @@ fun DestinationCard(
             .fillMaxWidth()
             .pressFeedback(press, PressFeedback.CARD_SCALE)
             .truthyShadow(shadows.small, Tokens.Radius.card)
+            .keyboardFocusRing(DestinationCardShape(metrics.stubWidth))
             .background(colors.surfaceRaised, DestinationCardShape(metrics.stubWidth))
             .drawBehind { drawCardPerforation(rule, metrics.stubWidth) }
             .clickable(interactionSource = source, indication = null, role = Role.Button) { onSelect?.invoke() }
