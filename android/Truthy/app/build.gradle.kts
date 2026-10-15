@@ -32,6 +32,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -59,6 +60,8 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
+    implementation(libs.lifecycle.viewmodel)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.kotlin.test.junit)
     implementation(project(":engine"))
     // :engine keeps kotlinx-serialization-json as an implementation dependency, which is not on :app's compile
