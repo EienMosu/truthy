@@ -116,7 +116,7 @@ export function decksLabel(count: number): string {
  * deck whose id begins another deck's ("gcp-cdl" and "gcp-cdl-pro") never takes that deck's cards. It tries the card
  * id's prefixes that end just before a "-", longest first: one look-up per dash, whatever the number of decks.
  */
-function deckOfCard(cardId: string, deckIds: ReadonlySet<string>): string | undefined {
+export function deckOfCard(cardId: string, deckIds: ReadonlySet<string>): string | undefined {
   for (let i = cardId.lastIndexOf("-"); i > 0; i = cardId.lastIndexOf("-", i - 1)) {
     const prefix = cardId.slice(0, i);
     if (deckIds.has(prefix)) return prefix;
@@ -137,7 +137,7 @@ function decksWithHistory(index: DeckIndex, progress: Progress): IndexDeck[] {
 }
 
 /** Drops the history of cards that are no longer in their deck, and saves the progress when that changed it. */
-function withoutRemovedCards(progress: Progress, cardIds: DeckCardIds, store: ProgressStore): Progress {
+export function withoutRemovedCards(progress: Progress, cardIds: DeckCardIds, store: ProgressStore): Progress {
   let pruned = progress;
   for (const [deckId, ids] of Object.entries(cardIds)) pruned = pruneDeck(pruned, deckId, ids);
   if (Object.keys(pruned.cards).length !== Object.keys(progress.cards).length) store.save(pruned);
