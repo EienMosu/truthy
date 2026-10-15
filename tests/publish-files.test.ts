@@ -33,8 +33,16 @@ describe("licences", () => {
 describe("Vercel build", () => {
   it("leaves the build, install and output settings to the Next.js preset", () => {
     const config = JSON.parse(read("vercel.json"));
-    expect(Object.keys(config).sort()).toEqual(["$schema", "regions"]);
+    expect(Object.keys(config).sort()).toEqual(["$schema", "ignoreCommand", "regions"]);
     expect(config.regions).toEqual(["fra1"]);
+  });
+
+  // Vercel skips a build when this command exits 0, which git diff --quiet does only when nothing outside the three
+  // native folders changed since the previously deployed commit (tests/vercel-ignore-command.test.ts runs it).
+  it("skips the build of a change that touches only ios, android and native-data, against the previously deployed commit", () => {
+    expect(JSON.parse(read("vercel.json")).ignoreCommand).toBe(
+      "git diff --quiet ${VERCEL_GIT_PREVIOUS_SHA:-HEAD^} HEAD -- . ':!ios' ':!android' ':!native-data'",
+    );
   });
 
   it("generates the tokens, the decks and the service worker before every build and dev server, because all three are gitignored", () => {
