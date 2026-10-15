@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { tokensToCss } from "@/src/tokens/build";
+import { MINIMUM, PAIRS, luminance } from "@/src/tokens/contrast";
 
 // WCAG 2.x contrast of both themes, computed from the CSS the app ships: tokensToCss on the real
 // design/system/tokens.json, with var() references resolved. The pairs are DESIGN-SYSTEM.md section 2.2 as
@@ -32,57 +33,12 @@ function resolve(theme: Theme, name: string, seen: readonly string[] = []): stri
   return value.replace(/var\((--[\w-]+)\)/g, (_, inner: string) => resolve(theme, inner, [...seen, name]));
 }
 
-/** Relative luminance of an opaque #rrggbb colour (WCAG 2.x). */
-function luminance(hex: string): number {
-  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!match) throw new Error(`${hex} is not an opaque #rrggbb colour`);
-  const [r, g, b] = match.slice(1).map((part) => {
-    const c = parseInt(part, 16) / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  }) as [number, number, number];
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
 /** The contrast ratio of two colour roles in a theme, by their --color-* names. */
 function ratio(theme: Theme, foreground: string, background: string): number {
   const a = luminance(resolve(theme, `--color-${foreground}`));
   const b = luminance(resolve(theme, `--color-${background}`));
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
-
-type Kind = "body text" | "large text" | "non-text";
-const MINIMUM: Record<Kind, number> = { "body text": 4.5, "large text": 3, "non-text": 3 };
-
-// [foreground, background, kind, where the screens use it]. Large text is 24px, or 18.66px bold, and up.
-const PAIRS: readonly [string, string, Kind, string][] = [
-  ["ink", "surface-raised", "body text", "ticket, cards, fill-in pass, Back pill"],
-  ["ink", "surface-sunk", "body text", "answer slip, missed-cards slip"],
-  ["ink-muted", "surface-raised", "body text", "field labels, leg names, card details"],
-  ["ink-muted", "surface-sunk", "body text", "missed-card heads, unavailable card"],
-  ["true", "surface-raised", "body text", "True hint"],
-  ["true", "surface-sunk", "body text", "source link, Why link"],
-  ["false", "surface-raised", "body text", "False hint"],
-  ["on-dark", "true", "body text", "True pill label"],
-  ["on-dark", "false", "body text", "False pill label"],
-  ["on-dark", "ink", "body text", "Next card, Play again, Start round"],
-  ["on-accent", "accent", "body text", "carrier band"],
-  ["ink", "sky-1", "body text", "start-flow tagline (decision: ink)"],
-  ["ink", "sky-2", "body text", "the tagline where it crosses into sky-2, step titles"],
-  ["ink", "sky-3", "body text", "the ready line (decision: ink)"],
-  ["ink", "sky-4", "body text", "continue line, quiet buttons"],
-  ["ink-muted", "sky-4", "body text", "continue line route"],
-  ["correct", "surface-sunk", "large text", "Correct stamp on the slip, 24px ExtraBold"],
-  ["correct", "surface-raised", "large text", "New best stamp, 22px ExtraBold"],
-  ["wrong", "surface-sunk", "large text", "Not quite stamp, 24px ExtraBold"],
-  ["wrong", "surface-raised", "large text", "Not quite stamp on the stub, 28px ExtraBold"],
-  ["false", "surface-raised", "large text", "False intent stamp, 26px"],
-  ["focus", "sky-1", "non-text", "focus ring on the sky"],
-  ["focus", "sky-2", "non-text", "focus ring on the sky"],
-  ["focus", "sky-3", "non-text", "focus ring on the sky (filled pills)"],
-  ["focus", "sky-4", "non-text", "focus ring on the sky (filled pills)"],
-  ["focus", "surface-raised", "non-text", "focus ring inside the pass and the ticket"],
-  ["focus", "surface-sunk", "non-text", "focus ring on the slip"],
-];
 
 describe("day theme contrast", () => {
   for (const [foreground, background, kind, where] of PAIRS) {
