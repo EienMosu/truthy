@@ -32,6 +32,9 @@ tasks.test {
     // files(...) and not file(...): the committed file does not exist before the first generation.
     inputs.files(resolvedTokens)
     inputs.files(committedTokens)
+    // The committed file is an output of generateTokens and an input here: when both run in one
+    // invocation, the generator goes first.
+    mustRunAfter("generateTokens")
 }
 
 tasks.register<JavaExec>("generateTokens") {
