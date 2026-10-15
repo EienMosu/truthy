@@ -435,3 +435,30 @@ function pickAnswer(allowed: readonly boolean[], trues: number, falses: number, 
   if (allowed.length === 1) return allowed[0] === true;
   return rng() * (trues + falses) < trues;
 }
+
+// The steps of a deal, one by one, for the native golden vectors only (scripts/native/golden/deal-steps.ts): the Swift
+// and Kotlin clones port each of them, and each is checked on its own. Nothing in the app reads this.
+export const dealInternals = {
+  dealRanked,
+  uniqueById,
+  dealSize,
+  wasSeen,
+  wasMissed,
+  lastSeenAt,
+  oldestFirst,
+  rankByPriority,
+  balanceFor,
+  choose,
+  searchOverCap,
+  searchWithAllRules,
+  relaxStepByStep,
+  sharesGroup,
+  trueCount,
+  balanceAllows,
+  arrange,
+  joinOf,
+  runLimit,
+  placementCheck,
+  pickAnswer,
+  OVERDUE_AFTER_PASSES,
+} as const;

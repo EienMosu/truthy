@@ -31,6 +31,7 @@ import {
   shippedDecks,
   type Fixture,
 } from "./deal-fixtures";
+import { dealStepFiles } from "./deal-steps";
 import { deckRef, goldenFile, rngSeed, type GoldenCase, type GoldenFile } from "./format";
 
 interface Cases {
@@ -681,5 +682,6 @@ export function golden(): GoldenFile[] {
     goldenFile(meta("DEAL", ["tests/engine/deal.test.ts"]), [{ name: "the value", input: null, output: DEAL }]),
     goldenFile(meta("CHUNK", ["tests/engine/chunks.test.ts"]), [{ name: "the value", input: null, output: CHUNK }]),
     goldenFile(meta("SEARCH_BUDGET", ["tests/engine/search-polish.test.ts"]), [{ name: "the value", input: null, output: SEARCH_BUDGET }]),
+    ...dealStepFiles(),
   ];
 }

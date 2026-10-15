@@ -5,6 +5,7 @@
 // (src/progress/local.ts). canStillFinish is a closure inside searchWithAllRules and is pinned through it.
 
 import type { GoldenFile, GoldenMeta } from "./golden/format";
+import { golden as dealGolden } from "./golden/deal";
 import { golden as rngGolden } from "./golden/rng";
 import { golden as smallGolden } from "./golden/small";
 
@@ -305,5 +306,5 @@ export function metaOf(module: string, name: string): GoldenMeta {
 
 /** One producer per scripts/native/golden/<group>.ts. Tasks 5 to 8 add theirs to this list. */
 export function goldenProducers(): readonly (() => GoldenFile[])[] {
-  return [rngGolden, smallGolden];
+  return [rngGolden, smallGolden, dealGolden];
 }
