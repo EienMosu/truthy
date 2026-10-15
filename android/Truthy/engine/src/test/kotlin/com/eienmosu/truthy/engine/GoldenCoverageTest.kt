@@ -14,7 +14,7 @@ import org.junit.Test
 
 /** Off until every ported module has its golden tests; task 6 turns it on, and from then on a golden file
  * without a test fails the suite. */
-private const val EVERY_FILE_REQUIRED = false
+private const val EVERY_FILE_REQUIRED = true
 
 private val LOAD_CALL = Regex("""Golden\.load\("([^"]+)", "([^"]+)"\)""")
 
