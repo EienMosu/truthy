@@ -6,7 +6,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import kotlin.math.abs
@@ -78,7 +82,8 @@ private class ShadowPlan(val layer: ShadowLayer, val passes: List<ShadowPass>)
 
 /**
  * Draws [spec] behind the element, whose paper has corner radius [cornerRadius]. [alpha] scales the whole shadow, read
- * while drawing (the pill cross-fades its button shadow into its press shadow with it).
+ * while drawing (the pill cross-fades its button shadow into its press shadow with it). As in CSS, nothing is painted
+ * inside the element's own border box, so a notch of the paper shows what is behind it.
  */
 @Composable
 fun Modifier.truthyShadow(
@@ -93,26 +98,29 @@ fun Modifier.truthyShadow(
     return drawBehind {
         val scale = alpha()
         if (scale <= 0f) return@drawBehind
-        for (plan in plans) {
-            val layer = plan.layer
-            val rect = ShadowMath.rect(
-                size.width,
-                size.height,
-                cornerRadius.toPx(),
-                layer.offsetX.toPx(),
-                layer.offsetY.toPx(),
-                layer.spread.toPx(),
-            )
-            for (pass in plan.passes) {
-                val width = rect.right - rect.left + 2f * pass.expand
-                val height = rect.bottom - rect.top + 2f * pass.expand
-                if (width <= 0f || height <= 0f) continue
-                drawRoundRect(
-                    color = layer.color.copy(alpha = pass.alpha * scale),
-                    topLeft = Offset(rect.left - pass.expand, rect.top - pass.expand),
-                    size = Size(width, height),
-                    cornerRadius = CornerRadius(max(0f, rect.cornerRadius + pass.expand)),
+        val own = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(cornerRadius.toPx()))) }
+        clipPath(own, clipOp = ClipOp.Difference) {
+            for (plan in plans) {
+                val layer = plan.layer
+                val rect = ShadowMath.rect(
+                    size.width,
+                    size.height,
+                    cornerRadius.toPx(),
+                    layer.offsetX.toPx(),
+                    layer.offsetY.toPx(),
+                    layer.spread.toPx(),
                 )
+                for (pass in plan.passes) {
+                    val width = rect.right - rect.left + 2f * pass.expand
+                    val height = rect.bottom - rect.top + 2f * pass.expand
+                    if (width <= 0f || height <= 0f) continue
+                    drawRoundRect(
+                        color = layer.color.copy(alpha = pass.alpha * scale),
+                        topLeft = Offset(rect.left - pass.expand, rect.top - pass.expand),
+                        size = Size(width, height),
+                        cornerRadius = CornerRadius(max(0f, rect.cornerRadius + pass.expand)),
+                    )
+                }
             }
         }
     }

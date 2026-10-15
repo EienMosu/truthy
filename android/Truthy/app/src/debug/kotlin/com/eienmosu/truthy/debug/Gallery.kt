@@ -241,14 +241,29 @@ private fun StampsSection() {
 
 @Composable
 private fun ShapesSection() {
-    val colors = TruthyTheme.colors
     Heading("Ticket papers, perforation and shadow")
-    Box(Modifier.fillMaxWidth().truthyShadow(TruthyTheme.shadows.ticket, Tokens.Radius.card)) {
+    GalleryTicket()
+    Heading("Logo marks (44, 26, compact 20)")
+    Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s16), verticalAlignment = Alignment.CenterVertically) {
+        LogoMark()
+        LogoMark(width = 26.dp)
+        LogoMark(width = 20.dp, variant = LogoVariant.COMPACT)
+    }
+}
+
+/** Height of the main paper of [GalleryTicket]; its bottom corners hold the notches. */
+internal val GalleryTicketMainHeight = 160.dp
+
+/** The ticket of the shapes section: a main paper over a lower paper, both notched, with the ticket shadow behind. */
+@Composable
+internal fun GalleryTicket(modifier: Modifier = Modifier) {
+    val colors = TruthyTheme.colors
+    Box(modifier.fillMaxWidth().truthyShadow(TruthyTheme.shadows.ticket, Tokens.Radius.card)) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(GalleryTicketMainHeight)
                     .background(colors.surfaceRaised, TicketMainShape())
                     .drawBehind { drawTicketPerforation(colors.rule) },
                 contentAlignment = Alignment.Center,
@@ -262,11 +277,5 @@ private fun ShapesSection() {
                     .background(colors.surfaceSunk, TicketLowerShape()),
             )
         }
-    }
-    Heading("Logo marks (44, 26, compact 20)")
-    Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s16), verticalAlignment = Alignment.CenterVertically) {
-        LogoMark()
-        LogoMark(width = 26.dp)
-        LogoMark(width = 20.dp, variant = LogoVariant.COMPACT)
     }
 }

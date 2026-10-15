@@ -28,6 +28,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.eienmosu.truthy.debug.GalleryTicket
+import com.eienmosu.truthy.debug.GalleryTicketMainHeight
 import com.eienmosu.truthy.design.IconId
 import com.eienmosu.truthy.design.TruthyIcon
 import com.eienmosu.truthy.design.TruthyTheme
@@ -158,6 +160,54 @@ class ComponentsSemanticsTest {
         assertTrue("a ring after a tap", near(frame, pixelLeftOfButton()))
     }
 
+    // The web paints no box-shadow inside an element's own border box, so a notch shows what is behind the card. The
+    // frame is a known solid colour with room for the shadow; the pixel is the centre of the top notch, 2 px down.
+    @Test
+    fun theTopNotchOfADestinationCardShowsTheBackgroundNotItsShadow() {
+        val background = Color(0xFF, 0x99, 0x33)
+        val stub = DestinationLayout.of(DestinationVariant.DECK).stubWidth
+        show {
+            Box(Modifier.testTag("frame").background(background).padding(NOTCH_FRAME_PADDING)) {
+                DestinationCard(
+                    variant = DestinationVariant.DECK,
+                    name = "CLF",
+                    code = true,
+                    detail = "Cloud Practitioner",
+                    seenPercent = 0,
+                    stub = CardStub("Cards", "214"),
+                    label = "CLF",
+                )
+            }
+        }
+        val image = rule.onNodeWithTag("frame").captureToImage().toPixelMap()
+        val padding = with(rule.density) { NOTCH_FRAME_PADDING.roundToPx() }
+        val x = image.width - padding - with(rule.density) { stub.roundToPx() }
+        assertWithin(background, image[x, padding + 2], "top notch of the card")
+    }
+
+    @Test
+    fun aNotchOfTheGalleryTicketShowsTheBackgroundNotItsShadow() {
+        val background = Color(0xFF, 0x99, 0x33)
+        show {
+            Box(Modifier.testTag("frame").background(background).padding(NOTCH_FRAME_PADDING)) { GalleryTicket() }
+        }
+        val image = rule.onNodeWithTag("frame").captureToImage().toPixelMap()
+        val padding = with(rule.density) { NOTCH_FRAME_PADDING.roundToPx() }
+        val y = padding + with(rule.density) { GalleryTicketMainHeight.roundToPx() }
+        // The right notch is a half disc of 12 dp centred on the ticket's edge, level with the join of the two papers.
+        assertWithin(background, image[image.width - padding - 2, y], "right notch of the ticket")
+        assertWithin(background, image[padding + 2, y], "left notch of the ticket")
+    }
+
+    private fun assertWithin(expected: Color, actual: Color, what: String) {
+        val tolerance = 2f / 255f + 1e-4f
+        assertTrue(
+            "$what: expected $expected, got $actual",
+            abs(expected.red - actual.red) <= tolerance && abs(expected.green - actual.green) <= tolerance &&
+                abs(expected.blue - actual.blue) <= tolerance,
+        )
+    }
+
     private fun realTap(x: Float, y: Float) {
         val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
         val downAt = SystemClock.uptimeMillis()
@@ -180,4 +230,8 @@ class ComponentsSemanticsTest {
 
     private fun near(a: Color, b: Color): Boolean =
         abs(a.red - b.red) < 0.08f && abs(a.green - b.green) < 0.08f && abs(a.blue - b.blue) < 0.08f
+
+    private companion object {
+        val NOTCH_FRAME_PADDING = 40.dp
+    }
 }
