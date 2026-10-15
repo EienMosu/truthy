@@ -1,6 +1,7 @@
 package com.eienmosu.truthy.stories
 
 import android.content.res.Configuration
+import android.os.SystemClock
 import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.core.view.WindowCompat
 import androidx.test.core.app.ActivityScenario
@@ -92,11 +93,20 @@ class ThemeTest {
             }
         }
         ui.idle()
-        // The sky at 4 dp from the left edge, 300 dp down: nothing else is drawn there on step 1.
-        val shot = Device.screenshot()
+        // The sky at 4 dp from the left edge, 300 dp down: nothing else is drawn there on step 1. Read again for up to
+        // 2 s: on API 26 the window's open animation, which Compose's idle does not wait for, can still be fading the
+        // new window in over the old one (one suite run read #0e192e for #101c32). A wrong theme never comes close.
         val y = (300 * Device.density).toInt()
-        val expected = Colours.skyAt(if (light) Tokens.Colors.day else Tokens.Colors.night, y / shot.height.toFloat())
-        val actual = shot.getPixel((4 * Device.density).toInt(), y)
+        var expected = 0
+        var actual = 0
+        val end = SystemClock.uptimeMillis() + 2000
+        do {
+            val shot = Device.screenshot()
+            expected = Colours.skyAt(if (light) Tokens.Colors.day else Tokens.Colors.night, y / shot.height.toFloat())
+            actual = shot.getPixel((4 * Device.density).toInt(), y)
+            if (Colours.close(actual, expected)) break
+            SystemClock.sleep(100)
+        } while (SystemClock.uptimeMillis() < end)
         assertTrue("the sky is ${Colours.hex(actual)}, the stored theme's is ${Colours.hex(expected)}", Colours.close(actual, expected))
     }
 }
