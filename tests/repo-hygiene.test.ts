@@ -1,9 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { ALLOWED_EMAIL, findingsIn, findingsInBytes } from "@/scripts/hygiene";
+import { ALLOWED_EMAIL, findingsIn, findingsInBytes, scanFiles } from "@/scripts/hygiene";
 import { png } from "@/tests/support/png";
 
 // The rules live in scripts/hygiene.ts, shared with the pre-push hook.
@@ -15,23 +14,7 @@ function trackedFiles(): string[] {
 }
 
 function scanRepository(): string[] {
-  const found: string[] = [];
-  for (const path of trackedFiles()) {
-    const full = join(ROOT, path);
-    let stats;
-    try {
-      stats = lstatSync(full);
-    } catch {
-      continue; // deleted in the working tree but not yet committed
-    }
-    if (stats.isSymbolicLink()) {
-      // The link target is published as text.
-      for (const finding of findingsIn(readlinkSync(full))) found.push(`${path} -> ${finding}`);
-      continue;
-    }
-    for (const finding of findingsInBytes(readFileSync(full))) found.push(`${path}:${finding}`);
-  }
-  return found;
+  return scanFiles(ROOT, trackedFiles());
 }
 
 describe("hygiene rules", () => {

@@ -1,4 +1,6 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { lstatSync, readFileSync, readlinkSync } from "node:fs";
+import { join } from "node:path";
 import { inflateSync } from "node:zlib";
 
 // The repository is public. Nothing tracked may reveal a local machine, a work identity or a secret.
@@ -143,6 +145,98 @@ function utf16Runs(latin1: string): string[] {
     if (!kept.some((other) => reading.start < other.end && other.start < reading.end)) kept.push(reading);
   }
   return kept.sort((a, b) => a.start - b.start).map((reading) => reading.text);
+}
+
+// The native apps live in ios/, android/ and native-data/, and their documents under docs/superpowers (a plan or
+// a spec with "native" in its path). The rules below apply to these paths only: the web files keep the
+// conventions they were written under (the course content in content/raw holds em dashes, for example).
+export const NATIVE_SCOPES: readonly RegExp[] = [/^ios\//, /^android\//, /^native-data\//, /^docs\/superpowers\/.*native/i];
+
+export function inNativeScope(path: string): boolean {
+  return NATIVE_SCOPES.some((scope) => scope.test(path));
+}
+
+const EM_DASH = "\u2014";
+
+// One finding per line that holds an em dash: "<line>: em dash: U+2014".
+export function emDashFindings(text: string): string[] {
+  const found: string[] = [];
+  text.split("\n").forEach((line, index) => {
+    if (line.includes(EM_DASH)) found.push(`${index + 1}: em dash: U+2014`);
+  });
+  return found;
+}
+
+// Files that sign an app are told by their type, whatever they hold: the repository never carries one.
+export const SIGNING_EXTENSIONS = [".jks", ".keystore", ".p12", ".mobileprovision"] as const;
+
+export function signingFileFindings(path: string): string[] {
+  const lower = path.toLowerCase();
+  const extension = SIGNING_EXTENSIONS.find((candidate) => lower.endsWith(candidate));
+  return extension ? [`signing file: ${extension}`] : [];
+}
+
+// The chunks in which a PNG carries text, a time stamp of an editor or a camera's EXIF block.
+const PNG_METADATA_CHUNKS: ReadonlySet<string> = new Set(["tEXt", "zTXt", "iTXt", "eXIf"]);
+
+// One finding for each kind of metadata chunk a PNG has, in file order. Chunks are walked by their headers up to
+// IEND, and a chunk that runs past the end of the file still counts by its type. Bytes that do not start with the
+// PNG signature are no PNG and have none.
+export function pngMetadataFindings(bytes: Uint8Array): string[] {
+  const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  if (!buffer.subarray(0, 8).equals(PNG_SIGNATURE)) return [];
+  const found: string[] = [];
+  let offset = 8;
+  while (offset + 12 <= buffer.length) {
+    const type = buffer.toString("latin1", offset + 4, offset + 8);
+    if (PNG_METADATA_CHUNKS.has(type) && !found.includes(`PNG metadata chunk: ${type}`)) found.push(`PNG metadata chunk: ${type}`);
+    if (type === "IEND") break;
+    offset += 12 + buffer.readUInt32BE(offset);
+  }
+  return found;
+}
+
+// What the native rules find in a file's name alone.
+export function nativePathFindings(path: string): string[] {
+  return inNativeScope(path) ? signingFileFindings(path) : [];
+}
+
+// Every finding in a whole file: the rules for every file (findingsInBytes) and, inside a native scope, the
+// signing, em dash and PNG metadata rules. An em dash is looked for in text files only (no zero byte), because
+// the bytes of a binary file, a font for example, are no text.
+export function findingsForPath(path: string, bytes: Uint8Array): string[] {
+  const found = findingsInBytes(bytes);
+  if (!inNativeScope(path)) return found;
+  const buffer = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return [
+    ...found,
+    ...nativePathFindings(path),
+    ...(buffer.includes(0) ? [] : emDashFindings(buffer.toString("utf8"))),
+    ...pngMetadataFindings(bytes),
+  ];
+}
+
+// Every finding in the files `paths` (relative to `root`, for example the output of `git ls-files`), as
+// "<path>:<finding>". A symbolic link is read as the text of its target, which is what gets published; a path that
+// is gone from the working tree is skipped.
+export function scanFiles(root: string, paths: readonly string[]): string[] {
+  const found: string[] = [];
+  for (const path of paths) {
+    const full = join(root, path);
+    let stats;
+    try {
+      stats = lstatSync(full);
+    } catch {
+      continue; // deleted in the working tree but not yet committed
+    }
+    if (stats.isSymbolicLink()) {
+      for (const finding of findingsIn(readlinkSync(full))) found.push(`${path} -> ${finding}`);
+      for (const finding of nativePathFindings(path)) found.push(`${path}:${finding}`);
+      continue;
+    }
+    for (const finding of findingsForPath(path, readFileSync(full))) found.push(`${path}:${finding}`);
+  }
+  return found;
 }
 
 // A co-author trailer or a tool's "Generated with ..." footer: commits carry the owner's name only.
