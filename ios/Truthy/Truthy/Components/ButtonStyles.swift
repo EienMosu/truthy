@@ -2,7 +2,7 @@ import SwiftUI
 
 // Press feedback per control, as the web gives it (spec 5.6, reference 5.7): round buttons 0.92, the Back pill 0.96,
 // pills 2 down plus 0.98 plus the press shadow, cards and the quiet button 0.98, all over 120 ms on the ease curve;
-// the press tint only on the pass fields and the continue line. No tap highlight, no hover.
+// the press tint only on the pass fields and the continue line. No tap highlight, no hover: every style disables the iPad pointer's automatic hover effect.
 
 private let pressAnimation = Tokens.Curve.ease.animation(Tokens.Duration.t1)
 
@@ -13,6 +13,7 @@ struct ScaleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? scale : 1)
             .animation(pressAnimation, value: configuration.isPressed)
+            .hoverEffectDisabled()
     }
 }
 
@@ -35,6 +36,7 @@ struct PressTintButtonStyle<S: Shape>: ButtonStyle {
             .background(shape.fill(configuration.isPressed ? palette.press.color : Color.clear))
             .scaleEffect(configuration.isPressed ? scale : 1)
             .animation(pressAnimation, value: configuration.isPressed)
+            .hoverEffectDisabled()
     }
 }
 
@@ -56,5 +58,6 @@ struct PillButtonStyle: ButtonStyle {
             .scaleEffect(pressed ? 0.98 : 1)
             .opacity(dimmed ? Tokens.Opacity.disabled : 1)
             .animation(pressAnimation, value: pressed)
+            .hoverEffectDisabled()
     }
 }

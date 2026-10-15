@@ -47,3 +47,17 @@ import TruthyEngine
         #expect(landscape.leading == 75 && landscape.trailing == 75 && landscape.top == 8)
     }
 }
+
+@Suite struct NoHoverTests {
+    // Spec 5.7 item 1: no hover state anywhere. The app also runs on iPad (family 1,2), where a pointer gives a Button an
+    // automatic hover effect, so each of the three button styles has to switch it off.
+    @Test func everyButtonStyleDisablesThePointerHoverEffect() throws {
+        let file = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Truthy/Components/ButtonStyles.swift")
+        let source = try String(contentsOf: file, encoding: .utf8)
+        let styles = source.components(separatedBy: ": ButtonStyle {").count - 1
+        let disabled = source.components(separatedBy: ".hoverEffectDisabled()").count - 1
+        #expect(styles == 3)
+        #expect(disabled == styles)
+    }
+}
