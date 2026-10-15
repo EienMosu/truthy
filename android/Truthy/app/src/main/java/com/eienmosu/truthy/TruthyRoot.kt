@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.eienmosu.truthy.design.LocalReducedMotion
 import com.eienmosu.truthy.design.TruthyTheme
+import com.eienmosu.truthy.round.RoundLoading
+import com.eienmosu.truthy.round.RoundRoute
 import com.eienmosu.truthy.start.StartFlowRoute
 import com.eienmosu.truthy.start.rememberReducedMotion
 
@@ -25,12 +27,19 @@ const val ROUND_TAG = "truthy.round"
 @Composable
 fun TruthyRoot(app: AppViewModel) {
     val screen by app.screen.collectAsState()
-    // Rule 4: Settings.Global.ANIMATOR_DURATION_SCALE == 0, provided at the root so every screen sees the real value.
+    // Task 12, rule 4: reduced motion for every screen, provided once.
     CompositionLocalProvider(LocalReducedMotion provides rememberReducedMotion()) {
         Box(Modifier.fillMaxSize().background(TruthyTheme.colors.surface).testTag(ROOT_TAG)) {
-            when (screen) {
+            when (val current = screen) {
                 TopScreen.Start -> Box(Modifier.fillMaxSize().testTag(START_TAG)) { StartFlowRoute(app) }
-                is TopScreen.Round -> Box(Modifier.fillMaxSize().testTag(ROUND_TAG))
+                is TopScreen.Round -> Box(Modifier.fillMaxSize().testTag(ROUND_TAG)) {
+                    // Until task 14 adds the leave sheet and back on the round, the X leaves at once with the leave
+                    // rules (task 11's leaveRound: the coordinator's leave, then start step 1).
+                    when (val load = current.load) {
+                        is RoundLoad.Ready -> RoundRoute(load.coordinator, onRequestLeave = { app.leaveRound() })
+                        else -> RoundLoading(onRequestLeave = { app.leaveRound() })
+                    }
+                }
             }
         }
     }
