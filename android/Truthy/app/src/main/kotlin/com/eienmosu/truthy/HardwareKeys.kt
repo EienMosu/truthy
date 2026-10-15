@@ -22,6 +22,15 @@ object HardwareKeys {
     fun dispatch(event: KeyEvent): Boolean = handlers.lastOrNull()?.invoke(event) ?: false
 }
 
+/**
+ * Whether the back key goes straight to the activity's OnBackPressedDispatcher instead of to the views. Below API 33
+ * the system back key reaches the views as a key event first, and Compose turns a back that no node used into a focus
+ * exit: with focus inside the round (the statement after a new card) every back only moved focus and never reached
+ * the round's back handler (task 15's BackTest on API 26). From API 33 back arrives as an OnBackInvokedCallback and
+ * never as a key, so nothing changes there.
+ */
+fun backSkipsViews(sdk: Int, keyCode: Int): Boolean = sdk < 33 && keyCode == KeyEvent.KEYCODE_BACK
+
 /** Registers `onKey` with HardwareKeys while this composable is on screen. */
 @Composable
 fun HardwareKeyHandler(onKey: (KeyEvent) -> Boolean) {
