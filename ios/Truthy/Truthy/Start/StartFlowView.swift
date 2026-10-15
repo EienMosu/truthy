@@ -32,6 +32,7 @@ struct StartFlowView: View {
     @State private var fieldFrames: [PassFieldName: CGRect] = [:]
     @State private var travel: NameTravel?
     @State private var windowHeight = 0.0
+    @State private var topContentHeight = 0.0
     @Environment(\.dynamicTypeSize) private var typeSize
     /// The whole column's scroll on a short screen or at an accessibility text size (rule 9).
     @State private var columnPosition = ScrollPosition(edge: .top)
@@ -202,16 +203,33 @@ struct StartFlowView: View {
             .animation(Tokens.Curve.ease.animation(Tokens.Duration.topExit), value: flow.unrolling)
         }
         .foregroundStyle(palette.ink.color)
-        .frame(minHeight: !short && (flow.step == 1 || backTarget == 1) ? Tokens.Size.startTopZone : nil, alignment: .top)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: Double.self) { $0.size.height } action: { topContentHeight = $0 }
+        .frame(height: topZoneHeight.map { CGFloat($0) }, alignment: .top)
+    }
+
+    /// The top zone is 176 tall (StartFlow.tsx), its content reaching below it where it is taller. The title of a step
+    /// starts 20 under it, so a taller pass pushes the title down; on step 6 the pass may reach into the 112 above
+    /// the title. Where the column scrolls (rule 9) the zone is as tall as what it holds.
+    private var topZoneHeight: Double? {
+        guard !short else { return nil }
+        let overlap = flow.step == 6 && backTarget == nil ? readyOffset : 0
+        return max(Tokens.Size.startTopZone, topContentHeight - overlap)
+    }
+
+    /// Reference 4.1 S6: 112 above the title, 88 under 600 tall, none where the column scrolls (rule 9).
+    private var readyOffset: Double {
+        short ? 0 : windowHeight < 600 ? Tokens.Size.readyOffset - 24 : Tokens.Size.readyOffset
     }
 
     /// The top zone of `step`: the logo and the tagline on step 1, the Back pill and the pass on the others.
     @ViewBuilder private func topZone(_ step: Step) -> some View {
         if step == 1 {
             VStack(alignment: .leading, spacing: Tokens.Space.s14) {
-                HStack(spacing: Tokens.Space.s10) {
+                // Logo.tsx: the mark, 12 (a third of the type size) and the wordmark, 0.111em of padding above it.
+                HStack(spacing: Tokens.Space.s12) {
                     LogoMark()
-                    Text("Truthy").typeRole(Tokens.TypeRole.logo)
+                    Text("Truthy").typeRole(Tokens.TypeRole.logo).padding(.top, Tokens.TypeRole.logo.size * 0.1111)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Truthy")
@@ -234,11 +252,12 @@ struct StartFlowView: View {
         let showing = back.map { $0.changesStage ? $0.transition.to : step } ?? step
         return VStack(alignment: .leading, spacing: Tokens.Space.s12) {
             Button { if !headerHeld { playBack(to: flow.previous) } } label: {
-                HStack(spacing: Tokens.Space.s6) {
+                HStack(spacing: Tokens.Space.s8) {
                     IconView(icon: .backPill, size: 18)
                     Text("Back").typeRole(Tokens.TypeRole.buttonBack)
                 }
-                .padding(.horizontal, Tokens.Space.s16)
+                .padding(.leading, Tokens.Space.s14)
+                .padding(.trailing, Tokens.Space.s20)
                 .frame(minHeight: Tokens.Size.pillSmall)
                 .background(Capsule().fill(palette.surfaceRaised.color))
             }
@@ -249,6 +268,8 @@ struct StartFlowView: View {
                        onBack: { target in if !headerHeld { playBack(to: target) } },
                        onChangePlatform: { if !headerHeld { playBackToPlatform() } },
                        onFieldFrame: { name, frame in fieldFrames[name] = frame })
+                // StartFlow.tsx: the ready pass sits 8 lower than the pass of steps 2 to 5.
+                .padding(.top, step == 6 ? Tokens.Space.s8 : 0)
         }
     }
 
@@ -294,9 +315,6 @@ struct StartFlowView: View {
     /// arriving forward.
     private func stepPanel(_ step: Step, leaving: Bool?) -> some View {
         let content = StepContent(flow: flow, app: model, step: step, choose: choose)
-        // Reference 4.1 S6: 112 above the title, 88 under 600 tall, none where the column scrolls (rule 9).
-        let readyOffset = short ? 0
-            : windowHeight < 600 ? Tokens.Size.readyOffset - 24 : Tokens.Size.readyOffset
         return VStack(alignment: .leading, spacing: Tokens.Space.s8) {
             Text(content.title)
                 .typeRole(Tokens.TypeRole.stepTitle)

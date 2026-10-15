@@ -251,25 +251,27 @@ struct FillInPass: View, @preconcurrency Animatable {
     /// The band of the stage shown: its look changes at once, its height with the paper (FillInPass.tsx: the band's
     /// height transition).
     private func band(minHeight: Double) -> some View {
-        HStack(spacing: Tokens.Space.s8) {
+        Group {
             if stage == .ready {
-                IconShape(icon: .carrierCloud).fill(palette.onAccent.color).frame(width: 22, height: 16)
-                Text("Truthy").typeRole(Tokens.TypeRole.carrierTitle)
-                Spacer()
-                Text("BOARDING PASS").typeRole(Tokens.TypeRole.carrierLabel)
+                TicketBand()
             } else {
-                LogoMark(width: 20, variant: .compact)
-                Text("Truthy").typeRole(Tokens.TypeRole.carrierTitleCompact)
-                Spacer()
-                Text("YOUR PASS").typeRole(Tokens.TypeRole.carrierLabelCompact)
+                // FillInPass.tsx CompactBand: 14 in from the sides, 8 apart, the mark 20 wide in a 22 by 16 box.
+                HStack(spacing: Tokens.Space.s8) {
+                    LogoMark(width: 20, variant: .compact).frame(width: 22, height: 16)
+                    Text("Truthy").typeRole(Tokens.TypeRole.carrierTitleCompact)
+                    Spacer(minLength: 0)
+                    Text("YOUR PASS").typeRole(Tokens.TypeRole.carrierLabelCompact)
+                }
+                .foregroundStyle(palette.onAccent.color)
+                .padding(.horizontal, Tokens.Space.s14)
+                .frame(maxWidth: .infinity)
+                .background(palette.accent.color)
+                .accessibilityHidden(true)
             }
         }
-        .foregroundStyle(palette.onAccent.color)
-        .padding(.horizontal, Tokens.Space.s16)
         .frame(minHeight: minHeight)
         .background(palette.accent.color)
         .clipped()
-        .accessibilityHidden(true)
     }
 
     /// What the paper holds under its band in one layout. `current` is the block on screen; the block a change of
@@ -342,52 +344,78 @@ struct FillInPass: View, @preconcurrency Animatable {
         .padding(.horizontal, Tokens.Space.s10)
         .padding(.top, Tokens.Space.s8)
         .frame(maxWidth: .infinity, minHeight: Tokens.Size.passLine, alignment: .leading)
+        // The words reach over the fields below (their hit areas are 48 tall); they lie above them.
+        .zIndex(1)
     }
 
+    /// A word of the pass line: 22 tall in the layout, 6 in from its sides, muted; its hit area reaches 13 above and
+    /// below and is at least 48 wide (FillInPass.tsx LineWord).
     private func lineWord(_ label: String, _ text: String, _ field: PassFieldName, hidden: Set<PassFieldName>,
                           _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            value(text, Tokens.TypeRole.passLine, .route, field, hidden: hidden).foregroundStyle(palette.ink.color)
-                .frame(minWidth: Tokens.Size.touchMin, minHeight: Tokens.Size.touchMin).contentShape(Rectangle())
+            value(text, Tokens.TypeRole.passLine, .route, field, hidden: hidden).foregroundStyle(palette.inkMuted.color)
+                .padding(.horizontal, Tokens.Space.s6)
+                .frame(height: 22)
+                .contentShape(Rectangle().inset(by: -13))
         }
-        .buttonStyle(PressTintButtonStyle(shape: RoundedRectangle(cornerRadius: Tokens.Radius.small)))
-        .keyboardFocusRing(RoundedRectangle(cornerRadius: Tokens.Radius.small))
+        .buttonStyle(PressTintButtonStyle(shape: RoundedRectangle(cornerRadius: 6)))
+        .keyboardFocusRing(RoundedRectangle(cornerRadius: 6))
         .accessibilityLabel(label)
     }
 
+    /// The field being chosen on a step (FillInPass.tsx NOW_FIELD): its label and its dashes are in ink.
+    static func nowField(_ step: Step) -> PassFieldName? {
+        [2: .platform, 3: .deck, 4: .section, 5: .mode][step]
+    }
+
+    /// The destination grid (0.9, 1.45 and 0.8 of the width) or the route grid (0.75, 1.1 and 1.15, each at least as
+    /// wide as its value), 16 in from the paper's sides.
     private func fieldRow(_ fields: [PassField], stage: Stage, current: Bool, hidden: Set<PassFieldName>) -> some View {
-        HStack(alignment: .top, spacing: Tokens.Space.s8) {
-            ForEach(fields) { field in
-                fieldView(field, stage: stage, current: current, hidden: hidden).frame(maxWidth: .infinity, alignment: .leading)
+        let now = current ? Self.nowField(step) : nil
+        return FieldColumns(fractions: stage == .destination ? [0.9, 1.45, 0.8] : [0.75, 1.1, 1.15], contentMinimum: stage != .destination) {
+            ForEach(Array(fields.enumerated()), id: \.element.id) { i, field in
+                fieldView(field, stage: stage, current: current, now: now == field.id, first: i == 0, hidden: hidden)
             }
         }
         .padding(.horizontal, Tokens.Space.s16)
-        .padding(.vertical, Tokens.Space.s10)
     }
 
-    @ViewBuilder private func fieldView(_ field: PassField, stage: Stage, current: Bool, hidden: Set<PassFieldName>) -> some View {
-        let content = VStack(alignment: .leading, spacing: Tokens.Space.s2) {
-            Text(field.label).typeRole(Tokens.TypeRole.fieldLabel).foregroundStyle(palette.inkMuted.color)
-            if let text = field.value {
-                // A field a running back clears turns back into dashes (BackTransition's dashes part).
-                let clearing = current && back.map { stepOf(field.id.choiceKey, flow.choice) >= $0.transition.to } ?? false
-                let dashes = back?.frame.dashesOpacity ?? 1
-                ZStack(alignment: .topLeading) {
-                    value(text, field.mono ? Tokens.TypeRole.fieldValue : Tokens.TypeRole.fieldValuePass, stage, field.id, hidden: hidden)
+    /// A cell (FillInPass.tsx Field): 9 above the label, the value or the dashes 3 under it in a 20 tall box, 11 below;
+    /// from the second on, a rule at the left and 12 after it. A filled field of an earlier step is a way back.
+    @ViewBuilder private func fieldView(_ field: PassField, stage: Stage, current: Bool, now: Bool, first: Bool,
+                                        hidden: Set<PassFieldName>) -> some View {
+        let content = VStack(alignment: .leading, spacing: 3) {
+            Text(field.label).typeRole(now ? Self.nowLabel : Tokens.TypeRole.fieldLabel)
+                .foregroundStyle(now ? palette.ink.color : palette.inkMuted.color)
+                .lineLimit(1)
+            ZStack(alignment: .topLeading) {
+                if let text = field.value {
+                    // A field a running back clears turns back into dashes (BackTransition's dashes part).
+                    let clearing = current && back.map { stepOf(field.id.choiceKey, flow.choice) >= $0.transition.to } ?? false
+                    let dashes = back?.frame.dashesOpacity ?? 1
+                    value(text, field.mono ? Self.passCode : Tokens.TypeRole.fieldValuePass, stage, field.id, hidden: hidden)
+                        .truncationMode(.tail)
                         .opacity(clearing ? 1 - dashes : 1)
-                    if clearing { Text("---").typeRole(Tokens.TypeRole.fieldValue).opacity(dashes).accessibilityHidden(true) }
+                    if clearing { PassBlank(now: false).opacity(dashes) }
+                } else {
+                    PassBlank(now: now).accessibilityLabel("not chosen")
                 }
-            } else {
-                Text("---").typeRole(Tokens.TypeRole.fieldValue).accessibilityLabel("not chosen")
             }
+            .frame(height: Tokens.Space.s20, alignment: .topLeading)
         }
         .foregroundStyle(palette.ink.color)
-        .frame(minHeight: 43, alignment: .topLeading)
+        .padding(.top, 9)
+        .padding(.bottom, 11)
+        .padding(.leading, first ? 0 : Tokens.Space.s12 + Tokens.Stroke.rule)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .leading) {
+            if !first { Rectangle().fill(palette.rule.color).frame(width: Tokens.Stroke.rule) }
+        }
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("flow")) } action: { if current { onFieldFrame(field.id, $0) } }
         if let step = field.backTo, let text = field.value {
             Button { onBack(step) } label: { content.contentShape(Rectangle()) }
-                .buttonStyle(PressTintButtonStyle(shape: RoundedRectangle(cornerRadius: Tokens.Radius.small)))
-                .keyboardFocusRing(RoundedRectangle(cornerRadius: Tokens.Radius.small))
+                .buttonStyle(PressTintButtonStyle(shape: RoundedRectangle(cornerRadius: 6)))
+                .keyboardFocusRing(RoundedRectangle(cornerRadius: 6))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(changeLabel(field.id, text))
                 .accessibilityAddTraits(.isButton)
@@ -396,39 +424,52 @@ struct FillInPass: View, @preconcurrency Animatable {
         }
     }
 
+    /// The label of the field being chosen: the field-label role at the mono semibold weight.
+    static let nowLabel = TypeStyle(family: .mono, weight: 600, size: Tokens.TypeRole.fieldLabel.size,
+                                    lineHeight: Tokens.TypeRole.fieldLabel.lineHeight, letterSpacing: Tokens.TypeRole.fieldLabel.letterSpacing)
+    /// A code on the pass (FillInPass.tsx PASS_CODE): mono semibold at the pass value's size and leading, 0.02em apart.
+    static let passCode = TypeStyle(family: .mono, weight: 600, size: Tokens.TypeRole.fieldValuePass.size,
+                                    lineHeight: Tokens.TypeRole.fieldValuePass.lineHeight, letterSpacing: Tokens.TypeRole.fieldValuePass.size * 0.02)
+
+    /// The ready stage (FillInPass.tsx ReadyBody): the legs and the ruled Class, Cards and Gate grid of the round's
+    /// ticket, then 18 of paper. The deck's name is its pass name ("AWS Cloud Practitioner").
     private func readyBody(hidden: Set<PassFieldName>) -> some View {
         let section = flow.deck?.sections.first { $0.id == flow.choice.sectionId }
         let cards = section?.cardCount ?? flow.deck?.cardCount ?? 0
+        let deckName = Self.deckName(flow)
         return VStack(spacing: 0) {
-            HStack {
-                legButton(.deck, code: flow.deck?.code ?? "", name: flow.deck?.title ?? "", hidden: hidden)
-                Spacer()
+            TicketLegs {
+                legButton(.deck, code: flow.deck?.code ?? "", name: deckName, hidden: hidden)
+            } to: {
                 legButton(.section, code: flow.choice.sectionId ?? "", name: section?.title ?? "Whole deck", hidden: hidden)
             }
-            .padding(Tokens.Space.s16)
-            Perforation(axis: .horizontal)
-            HStack(alignment: .top) {
-                readyField("Class", modeName ?? "", backTo: 5, name: .mode, hidden: hidden)
-                readyField("Cards", "\(cards)", backTo: nil, name: nil, hidden: hidden)
-                VStack(alignment: .leading, spacing: Tokens.Space.s2) {
-                    Text("Gate").typeRole(Tokens.TypeRole.fieldLabel).foregroundStyle(palette.inkMuted.color)
-                    Text("F ← → T").typeRole(Tokens.TypeRole.fieldValue).accessibilityHidden(true)
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Gate, False left, true right")
-            }
-            .foregroundStyle(palette.ink.color)
-            .padding(Tokens.Space.s16)
+            FieldGrid(fields: [
+                TicketField("Class", spoken: changeLabel(.mode, modeName ?? ""), action: { onBack(5) }) {
+                    value(modeName ?? "", Tokens.TypeRole.fieldValue, .ready, .mode, hidden: hidden).fixedSize()
+                },
+                TicketField("Cards", "\(cards)"),
+                TicketField("Gate", "F ← → T", spoken: "Gate, False left, true right"),
+            ])
+            Color.clear.frame(height: Tokens.Space.s18)
         }
+        .foregroundStyle(palette.ink.color)
+    }
+
+    /// The deck's name on the ready pass and the ticket: its pass name ("AWS Cloud Practitioner", ContentHelpers).
+    static func deckName(_ flow: StartFlowModel) -> String {
+        flow.deck.map { deck in flow.platform.map { deckPassName($0, deck) } ?? deck.title } ?? ""
     }
 
     private func legButton(_ name: PassFieldName, code: String, name title: String, hidden: Set<PassFieldName>) -> some View {
         let label = name == .section && code == WHOLE_DECK ? "Whole deck" : code
         let canReturn = !(name == .section && !flow.hasSections)
+        let trailing = name == .section
         return Button { onBack(name == .deck ? 3 : 4) } label: {
-            VStack(alignment: .leading, spacing: Tokens.Space.s2) {
+            VStack(alignment: trailing ? .trailing : .leading, spacing: Tokens.Space.s6) {
                 value(code, Tokens.TypeRole.legCode, .ready, name, hidden: hidden)
                 Text(title).typeRole(Tokens.TypeRole.legName).foregroundStyle(palette.inkMuted.color)
+                    .multilineTextAlignment(trailing ? .trailing : .leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(palette.ink.color)
             .contentShape(Rectangle())
@@ -438,27 +479,21 @@ struct FillInPass: View, @preconcurrency Animatable {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(canReturn ? changeLabel(name, label) : "\(label), \(title)")
     }
+}
 
-    private func readyField(_ label: String, _ text: String, backTo: Step?, name: PassFieldName?, hidden: Set<PassFieldName>) -> some View {
-        let content = VStack(alignment: .leading, spacing: Tokens.Space.s2) {
-            Text(label).typeRole(Tokens.TypeRole.fieldLabel).foregroundStyle(palette.inkMuted.color)
-            if let name {
-                value(text, Tokens.TypeRole.fieldValue, .ready, name, hidden: hidden)
-            } else {
-                Text(text).typeRole(Tokens.TypeRole.fieldValue)
+/// Three dashes in a 20 tall box: a field not chosen yet (FillInPass.tsx Blank), in ink on the field being chosen.
+struct PassBlank: View {
+    let now: Bool
+    @Environment(\.palette) private var palette
+
+    var body: some View {
+        HStack(spacing: 5) {
+            ForEach(0..<3, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: Tokens.Radius.tick).fill(now ? palette.ink.color : palette.rule.color).frame(width: 14, height: 3)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        return Group {
-            if let backTo, let name {
-                Button { onBack(backTo) } label: { content.contentShape(Rectangle()) }
-                    .buttonStyle(PressTintButtonStyle(shape: RoundedRectangle(cornerRadius: Tokens.Radius.small)))
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(changeLabel(name, text))
-            } else {
-                content.accessibilityElement(children: .combine)
-            }
-        }
+        .frame(height: Tokens.Space.s20)
+        .accessibilityElement(children: .ignore)
     }
 }
 
