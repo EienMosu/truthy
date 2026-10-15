@@ -48,6 +48,7 @@ struct LeaveCard: View {
             withAnimation(reducedMotion ? .linear(duration: Tokens.Native.sheetReducedDuration)
                           : Tokens.Curve.ease.animation(Tokens.Transition.sheetOpen.duration)) { arrived = true }
         }
+        .reviewFrame(ReviewName.sheet)
     }
 }
 

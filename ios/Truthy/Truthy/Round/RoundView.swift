@@ -257,6 +257,7 @@ struct RoundView: View {
                                 onAnswer: { answer($0) },
                                 onSource: { url in SafariPresenter.present(url, theme: theme, palette: palette) },
                                 onStatementFrame: { statementFrame = $0 }, onSlipFrame: { slipFrame = $0 })
+            .reviewFrame(ReviewName.card)
             // CSS translateX(dx) rotate(dx/18deg): the card turns about its own moved centre.
             .rotationEffect(.degrees(dx / Tokens.Gesture.rotationDivisor))
             .offset(x: dx)

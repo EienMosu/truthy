@@ -245,6 +245,7 @@ struct FillInPass: View, @preconcurrency Animatable {
         .tokenShadow(stage == .ready ? shadows.ticket : shadows.small, shape)
         .paperTextSize()
         .accessibilityElement(children: .contain)
+        .reviewFrame(ReviewName.pass)
     }
 
     /// The band of the stage shown: its look changes at once, its height with the paper (FillInPass.tsx: the band's

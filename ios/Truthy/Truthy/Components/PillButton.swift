@@ -32,6 +32,7 @@ struct PillButton: View {
         .buttonStyle(PillButtonStyle(fill: fillColor, dimmed: dimmed))
         .keyboardFocusRing(Capsule())
         .accessibilityLabel(title)
+        .reviewFrame(ReviewName.pill(title))
     }
 
     private var fillColor: Color {

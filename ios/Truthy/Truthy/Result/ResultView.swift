@@ -113,6 +113,7 @@ struct ResultView: View {
         .padding(Tokens.Size.ticketInset)
         .background(RoundedRectangle(cornerRadius: Tokens.Radius.card).fill(palette.surfaceRaised.color))
         .tokenShadow(shadows.ticket, RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .reviewFrame(ReviewName.ticket)
     }
 
     private var actions: some View {

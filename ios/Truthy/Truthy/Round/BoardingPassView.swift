@@ -42,6 +42,7 @@ struct BoardingPassView: View {
             lower
         }
         .tokenShadow(shadows.ticket, RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .reviewFrame(ReviewName.ticket)
     }
 
     private var joltDelay: Double {
@@ -180,6 +181,7 @@ struct BoardingPassView: View {
         .rotationEffect(.degrees(intent * 2), anchor: UnitPoint(x: 0.2, y: 0))
         .accessibilityHidden(true)
         .paperTextSize()
+        .reviewFrame(ReviewName.stub)
     }
 
     /// "swipe to board": the mono face at the strong data size, regular weight.

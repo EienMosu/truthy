@@ -214,6 +214,7 @@ struct StartFlowView: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Truthy")
                 .accessibilityAddTraits(.isHeader)
+                .reviewFrame(ReviewName.logo)
                 Text("True or false cards that teach you IT, one swipe at a time.")
                     .typeRole(Tokens.TypeRole.tagline)
                     .frame(maxWidth: 300, alignment: .leading)
