@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -94,7 +96,9 @@ import com.eienmosu.truthy.design.Tokens
 import com.eienmosu.truthy.design.TruthyFrame
 import com.eienmosu.truthy.design.TruthyIcon
 import com.eienmosu.truthy.design.TruthyTheme
+import com.eienmosu.truthy.design.TruthyType
 import com.eienmosu.truthy.design.keyboardFocusRing
+import com.eienmosu.truthy.design.truthyShadow
 import com.eienmosu.truthy.start.FullSpeed
 import com.eienmosu.truthy.ui.PillButton
 import com.eienmosu.truthy.ui.PillTone
@@ -698,6 +702,52 @@ fun RoundLoading(onRequestLeave: () -> Unit, modifier: Modifier = Modifier) {
             Spacer(Modifier.height(Tokens.Space.s12))
             Box(Modifier.weight(1f).fillMaxWidth()) { PlaceholderTicket() }
             Spacer(Modifier.height(Tokens.Space.s12 + Tokens.Size.actions))
+        }
+    }
+}
+
+/**
+ * P1: the sky, the X, the alert card "This deck didn't load" with its heading, and the pill "Try again" in the actions
+ * area that P0 reserves (useRound.ts LOAD_FAILED_MESSAGE). Reachable with embedded decks only on a corrupt bundle.
+ */
+@Composable
+fun RoundLoadFailed(onRetry: () -> Unit, onRequestLeave: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = TruthyTheme.colors
+    BoxWithConstraints(modifier.fillMaxSize().background(colors.surface)) {
+        SkyBackdrop(lowerCloud = LowerCloud.GAME)
+        TruthyFrame {
+            Row(Modifier.fillMaxWidth().heightIn(min = Tokens.Size.header), verticalAlignment = Alignment.CenterVertically) {
+                RoundButton(label = "Leave round", onClick = onRequestLeave) { TruthyIcon(IconId.CLOSE) }
+            }
+            Spacer(Modifier.height(Tokens.Space.s12))
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .truthyShadow(TruthyTheme.shadows.small, Tokens.Radius.card)
+                        .clip(RoundedCornerShape(Tokens.Radius.card))
+                        .background(colors.surfaceRaised)
+                        .semantics { liveRegion = LiveRegionMode.Assertive }
+                        .padding(Tokens.Space.s20),
+                ) {
+                    Text(
+                        "This deck didn't load",
+                        style = TruthyType.emphasis,
+                        color = colors.ink,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(
+                        "Check your connection and try again.",
+                        style = TruthyType.body,
+                        color = colors.ink,
+                        modifier = Modifier.padding(top = Tokens.Space.s8),
+                    )
+                }
+            }
+            Spacer(Modifier.height(Tokens.Space.s12))
+            Box(Modifier.fillMaxWidth().heightIn(min = Tokens.Size.actions), contentAlignment = Alignment.BottomCenter) {
+                PillButton(label = "Try again", onClick = onRetry)
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.eienmosu.truthy.design.LocalReducedMotion
 import com.eienmosu.truthy.design.TruthyTheme
+import com.eienmosu.truthy.round.RoundLoadFailed
 import com.eienmosu.truthy.round.RoundLoading
 import com.eienmosu.truthy.round.RoundRoute
 import com.eienmosu.truthy.start.StartFlowRoute
@@ -37,7 +38,8 @@ fun TruthyRoot(app: AppViewModel) {
                     // rules (task 11's leaveRound: the coordinator's leave, then start step 1).
                     when (val load = current.load) {
                         is RoundLoad.Ready -> RoundRoute(load.coordinator, onRequestLeave = { app.leaveRound() })
-                        else -> RoundLoading(onRequestLeave = { app.leaveRound() })
+                        RoundLoad.Loading -> RoundLoading(onRequestLeave = { app.leaveRound() })
+                        RoundLoad.Failed -> RoundLoadFailed(onRetry = { app.retryRound() }, onRequestLeave = { app.leaveRound() })
                     }
                 }
             }
