@@ -197,7 +197,6 @@ function escapeRegExp(text) {
 async function webFrames(page) {
   /** @type {[string, import("@playwright/test").Locator][]} */
   const named = [
-    ["logo", page.getByRole("heading", { level: 1, name: "Truthy" })],
     ["pass", page.locator("[data-fill-in-pass]")],
     ["ticket", page.locator("[data-boarding-pass]")],
     ["card", page.locator("[data-swipe-card]")],
@@ -214,5 +213,32 @@ async function webFrames(page) {
     if (box === null) continue;
     frames[name] = [box.x, box.y, box.width, box.height].map((n) => Math.round(n * 100) / 100);
   }
+  const logo = await logoFrame(page);
+  if (logo !== null) frames.logo = logo;
   return Object.fromEntries(Object.entries(frames).sort(([a], [b]) => (a < b ? -1 : 1)));
+}
+
+/**
+ * The step 1 logo: the union of the boxes of the h1 "Truthy"'s own children (the mark and the wordmark). The h1
+ * itself is a full-width flex block; the app names the mark with its wordmark, which hug their content.
+ * @param {import("@playwright/test").Page} page
+ */
+async function logoFrame(page) {
+  const h1 = page.getByRole("heading", { level: 1, name: "Truthy" }).first();
+  if ((await page.getByRole("heading", { level: 1, name: "Truthy" }).count()) === 0 || !(await h1.isVisible())) return null;
+  const children = h1.locator(":scope > *");
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (let i = 0; i < (await children.count()); i += 1) {
+    const box = await children.nth(i).boundingBox();
+    if (box === null) continue;
+    minX = Math.min(minX, box.x);
+    minY = Math.min(minY, box.y);
+    maxX = Math.max(maxX, box.x + box.width);
+    maxY = Math.max(maxY, box.y + box.height);
+  }
+  if (minX === Infinity) return null;
+  return [minX, minY, maxX - minX, maxY - minY].map((n) => Math.round(n * 100) / 100);
 }
