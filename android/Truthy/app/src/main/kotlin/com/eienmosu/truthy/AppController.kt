@@ -222,6 +222,8 @@ class AppController(
             return null
         }
         round = prepared
+        // ON_STOP or ON_START may have arrived while the deck decoded; round was still null then.
+        if (foreground) prepared.onStart() else prepared.onStop()
         _screen.value = TopScreen.Round(request, RoundLoad.Ready(prepared))
         return prepared
     }

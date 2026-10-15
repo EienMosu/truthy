@@ -23,6 +23,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -158,6 +159,46 @@ class AppControllerTest {
         gate.complete(Unit)
         runCurrent()
         assertEquals(TopScreen.Start, app.screen.value, "the cancelled deal opens nothing")
+    }
+
+    @Test
+    fun aTimedRoundStoppedWhileLoadingOpensPaused() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val rig = Rig(this, gate = gate)
+        val app = rig.start()
+        app.booted.join()
+        app.openRound(RoundRequest(sec, Mode.TIMED))
+        runCurrent()
+        app.onStop()
+        gate.complete(Unit)
+        assertNotNull(app.roundJob).join()
+        val round = coordinatorOf(app)
+        assertTrue(round.state.value.clock!!.hidden, "ON_STOP during the deal pauses the clock it arms")
+        val remaining = round.state.value.clock!!.remainingMs
+        rig.wall.now += 5_000.0
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(remaining, round.state.value.clock!!.remainingMs, "the minute does not drain in the background")
+        app.onStart()
+        assertFalse(round.state.value.clock!!.hidden)
+        round.close()
+    }
+
+    @Test
+    fun aTimedRoundStartedWhileLoadingRuns() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val rig = Rig(this, gate = gate)
+        val app = rig.start()
+        app.booted.join()
+        app.onStop()
+        app.openRound(RoundRequest(sec, Mode.TIMED))
+        runCurrent()
+        app.onStart()
+        gate.complete(Unit)
+        assertNotNull(app.roundJob).join()
+        val round = coordinatorOf(app)
+        assertFalse(round.state.value.clock!!.hidden, "ON_START during the deal leaves the clock running")
+        round.close()
     }
 
     @Test
