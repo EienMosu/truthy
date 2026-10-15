@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.expand
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -95,7 +96,13 @@ fun MissedCardsList(missed: List<MissedCard>, openSource: (String) -> Unit, modi
                 style = TruthyType.monoData.copy(color = colors.inkMuted),
                 modifier = Modifier.semantics { heading() },
             )
-            BasicText(ResultText.toReview(missed.size), style = TruthyType.monoDataStrong.copy(color = colors.ink))
+            // At a large font scale the two no longer fit on one line: 8 between them keeps them two words apart, and
+            // the count wraps to the right. At 1.0 the space between them is wider than 8, as on the web (justify-between).
+            BasicText(
+                ResultText.toReview(missed.size),
+                style = TruthyType.monoDataStrong.copy(color = colors.ink, textAlign = TextAlign.End),
+                modifier = Modifier.padding(start = LeaveResultConstants.MISSED_HEADER_GAP_DP.dp),
+            )
         }
         Column(Modifier.fillMaxWidth().padding(start = Tokens.Size.ticketInset, end = Tokens.Size.ticketInset, bottom = Tokens.Space.s20)) {
             missed.forEachIndexed { i, item -> MissedRow(item, first = i == 0, openSource = openSource) }

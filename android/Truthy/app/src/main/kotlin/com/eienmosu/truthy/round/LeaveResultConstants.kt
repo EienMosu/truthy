@@ -27,4 +27,10 @@ object LeaveResultConstants {
 
     /** components/FlightPath.tsx CompletedMarks: the stroke of the Streak ring, in the 276 by 34 drawing's units. */
     const val RING_STROKE = 1.4f
+
+    /**
+     * The least room between "Missed cards" and "N to review" (Android only): at a large font scale the two meet,
+     * and the web's justify-between has no gap, so they would read as one word. At 1.0 the room between them is wider.
+     */
+    const val MISSED_HEADER_GAP_DP = 8f
 }

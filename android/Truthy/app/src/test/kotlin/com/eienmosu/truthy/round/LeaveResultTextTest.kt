@@ -80,4 +80,12 @@ class LeaveResultTextTest {
         val path = "components/FlightPath.tsx"
         assertIn(web(path), path, "strokeWidth=\"${js(c.RING_STROKE)}\"")
     }
+
+    // The web's header is justify-between with no gap; Android keeps 8 (space-8) between the two at a large font scale.
+    @Test
+    fun theMissedCardsHeaderKeepsItsWordsApart() {
+        val missed = "components/MissedCards.tsx"
+        assertIn(web(missed), missed, "flex flex-none items-baseline justify-between px-(--size-ticket-inset)")
+        assertEquals(com.eienmosu.truthy.design.Tokens.Space.s8.value, LeaveResultConstants.MISSED_HEADER_GAP_DP)
+    }
 }

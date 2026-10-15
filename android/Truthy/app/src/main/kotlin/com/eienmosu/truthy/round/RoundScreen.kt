@@ -76,6 +76,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
@@ -611,7 +612,10 @@ private fun ActionRows(
                 label = view.actionLabel,
                 onClick = onNext,
                 modifier = Modifier.fillMaxWidth().focusRequester(nextFocus).testTag("next"),
-                trailingIcon = { TruthyIcon(IconId.FORWARD, tint = TruthyTheme.colors.onDark) },
+                // PlayScreen.tsx:843: the web's trailing icon is the text arrow in the button's type, as on Start round.
+                trailingIcon = {
+                    Text("→", style = TruthyType.button, color = TruthyTheme.colors.onDark, modifier = Modifier.clearAndSetSemantics { })
+                },
             )
         }
     }
