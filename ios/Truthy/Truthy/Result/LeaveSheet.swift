@@ -1,8 +1,123 @@
 import SwiftUI
+import TruthyEngine
 
-// A stand-in until task 14 writes the leave sheet: the round screen already calls it.
+// "Leave round?" (spec 5.4): the platform sheet for behaviour, the web's floating card for looks. The sheet is
+// transparent and has no grabber; its detent is the card's measured height plus the bottom inset, and .large when
+// that is taller than the screen (the card then scrolls). Swiping down and tapping outside call onDismiss, which a
+// flag tells from Leave round. On iOS 18 the card keeps the 16 gutter; on iOS 26 and later the inset sheet is
+// itself the card's frame (sheet chrome under criterion 2).
+
+enum LeaveSheetLayout {
+    /// The detent for a card `height` tall on a screen `screenHeight` tall with a bottom inset (before the screen is
+    /// measured, the card's own height).
+    static func detent(cardHeight: Double, bottomInset: Double, screenHeight: Double) -> PresentationDetent {
+        let needed = cardHeight + bottomInset
+        return screenHeight > 0 && needed > screenHeight ? .large : .height(needed)
+    }
+}
+
+struct LeaveCard: View {
+    let decided: Bool
+    /// Before iOS 26 the card draws its paper; on iOS 26 and later the inset sheet is the paper (SheetPaper).
+    var drawsPaper = true
+    let onKeepPlaying: () -> Void
+    let onLeave: () -> Void
+    @Environment(\.palette) private var palette
+    @Environment(\.accessibilityReduceMotion) private var reducedMotion
+    @State private var arrived = false
+
+    static let undecided = "Your answers so far stay in your history. This round won't count toward your best."
+    static let decidedText = "This round is over and its score is kept. Leaving skips its result."
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.s16) {
+            Text("Leave round?").typeRole(Tokens.TypeRole.sheetTitle).accessibilityAddTraits(.isHeader)
+            Text(decided ? Self.decidedText : Self.undecided).typeRole(Tokens.TypeRole.body).fixedSize(horizontal: false, vertical: true)
+            // Escape keeps playing: a key command of the presented sheet, which needs no focus.
+            PillButton(title: "Keep playing", action: onKeepPlaying).keyboardShortcut(.cancelAction)
+            QuietButton(title: "Leave round", action: onLeave).frame(maxWidth: .infinity)
+        }
+        .foregroundStyle(palette.ink.color)
+        .padding(Tokens.Space.s20)
+        .frame(minWidth: Tokens.Native.sheetMinWidth)
+        .background(RoundedRectangle(cornerRadius: Tokens.Radius.card).fill(drawsPaper ? palette.surfaceRaised.color : Color.clear))
+        // The card's arrival (the web's sheet motion, from the native group of the tokens).
+        .offset(y: arrived || reducedMotion ? 0 : Tokens.Native.sheetOffsetY)
+        .opacity(arrived ? 1 : 0)
+        .onAppear {
+            withAnimation(reducedMotion ? .linear(duration: Tokens.Native.sheetReducedDuration)
+                          : Tokens.Curve.ease.animation(Tokens.Transition.sheetOpen.duration)) { arrived = true }
+        }
+    }
+}
+
+/// Before iOS 26 the sheet is transparent and the card draws its paper inside the 16 gutter; on iOS 26 and later the
+/// inset sheet is the paper itself and takes its corner radius, so no glass or clear strip shows around the card.
+private struct SheetPaper: ViewModifier {
+    @Environment(\.palette) private var palette
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.presentationBackground(palette.surfaceRaised.color)
+        } else {
+            content.presentationBackground(.clear)
+        }
+    }
+}
+
+private struct LeaveSheetModifier: ViewModifier {
+    @Bindable var coordinator: RoundCoordinator
+    let onLeave: () -> Void
+    @State private var cardHeight = 300.0
+    @State private var screenHeight = 0.0
+    @State private var bottomInset = 0.0
+    @State private var leaving = false
+    @State private var announcedDecision = false
+
+    func body(content: Content) -> some View {
+        content
+            // Measured on the presenting round, outside the sheet: a reader inside would measure the sheet the detent sizes.
+            .onGeometryChange(for: Double.self) { $0.safeAreaInsets.bottom } action: { bottomInset = $0 }
+            .onGeometryChange(for: Double.self) { $0.size.height + $0.safeAreaInsets.top + $0.safeAreaInsets.bottom } action: { screenHeight = $0 }
+            .sheet(isPresented: Binding(get: { coordinator.sheetOpen }, set: { if !$0 { coordinator.keepPlaying() } }),
+                   onDismiss: {
+                       if leaving { onLeave() } else { coordinator.keepPlaying() }
+                       leaving = false
+                   }) {
+            ScrollView {
+                LeaveCard(decided: coordinator.decided, drawsPaper: !Self.insetSheet, onKeepPlaying: { coordinator.keepPlaying() }, onLeave: {
+                    leaving = true
+                    coordinator.keepPlaying()
+                })
+                .onGeometryChange(for: Double.self) { $0.size.height } action: { cardHeight = $0 }
+                .padding(.horizontal, sheetGutter)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .presentationDetents([LeaveSheetLayout.detent(cardHeight: cardHeight, bottomInset: max(bottomInset, Tokens.Size.safeBottom),
+                                                          screenHeight: screenHeight)])
+            .presentationDragIndicator(.hidden)
+            .modifier(SheetPaper())
+            .onChange(of: coordinator.decided) { _, decided in
+                if decided && !coordinator.decidedWhenSheetOpened && !announcedDecision {
+                    announcedDecision = true
+                    AccessibilityNotification.Announcement(LeaveCard.decidedText).post()
+                }
+            }
+        }
+    }
+
+    private static var insetSheet: Bool {
+        if #available(iOS 26, *) { return true }
+        return false
+    }
+
+    private var sheetGutter: Double {
+        Self.insetSheet ? 0 : Tokens.Size.gutter
+    }
+}
+
 extension View {
     func leaveSheet(coordinator: RoundCoordinator, onLeave: @escaping () -> Void) -> some View {
-        self
+        modifier(LeaveSheetModifier(coordinator: coordinator, onLeave: onLeave))
     }
 }
