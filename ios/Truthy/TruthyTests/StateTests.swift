@@ -353,6 +353,45 @@ import TruthyEngine
         round.answer(true)
         #expect(round.xAction == .openSheet)
     }
+
+    @Test func aSecondLeaveSavesNothingMore() async throws {
+        let directory = Scratch.directory()
+        let round = try await coordinator(.classic, directory: directory)
+        let journal = RoundJournal(directory: directory)
+        mono.advance(250)
+        #expect(round.answer(true))
+        let cardId = try #require(round.state.answers.first).card.id
+        await round.leave()
+        await round.leave()
+        let stored = await FileProgressStore(directory: directory).load()
+        #expect(stored.cards[cardId]?.seen == 1, "a double Leave saves the left round once")
+        let last = try #require(stored.last)
+        #expect(last.score == nil)
+        #expect(await journal.pending() == nil)
+    }
+
+    @Test func noAnswerIsTakenWhileLeaving() async throws {
+        let directory = Scratch.directory()
+        let round = try await coordinator(.classic, directory: directory)
+        let journal = RoundJournal(directory: directory)
+        mono.advance(250)
+        #expect(round.canAnswer)
+        let leaving = Task { await round.leave() }
+        // A Task made on the main actor begins only when this test suspends: wait until the leave has begun.
+        var spins = 0
+        while round.canAnswer && spins < 100 {
+            spins += 1
+            await Task.yield()
+        }
+        #expect(round.canAnswer == false)
+        #expect(round.answer(true) == false)
+        await leaving.value
+        await round.journalSettled()
+        #expect(await journal.pending() == nil)
+        let stored = await FileProgressStore(directory: directory).load()
+        let ids = Set(round.deck.cards.map(\.id))
+        #expect(stored.cards.keys.filter { ids.contains($0) }.isEmpty)
+    }
 }
 
 @MainActor

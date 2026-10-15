@@ -32,6 +32,8 @@ final class RoundCoordinator {
     private(set) var decidedWhenSheetOpened = false
     private(set) var resultShownAt: Double?
     private(set) var outcome: ApplyOutcome?
+    /// Set once leave() begins: the round then takes no answer, press, tick or journal write, and a second leave() does nothing.
+    private(set) var leaving = false
     /// The record before this round, read when it was dealt (the ticket's best).
     let previousBest: Int?
 
@@ -83,7 +85,7 @@ final class RoundCoordinator {
 
     /// An answer is taken in the question phase, with no sheet open, 250 ms after the card appeared (reference 4.3).
     var canAnswer: Bool {
-        state.phase == .question && !sheetOpen && mono.nowMs() - cardShownAt >= SWIPE.settleMs
+        state.phase == .question && !sheetOpen && mono.nowMs() - cardShownAt >= SWIPE.settleMs && !leaving
     }
 
     /// The one answer path of the swipe, the buttons, the custom actions and the arrow keys.
@@ -101,13 +103,13 @@ final class RoundCoordinator {
     private func send(_ event: RoundEvent) {
         let before = (state.answers.count, decided)
         state = reduce(state, event)
-        if !finished && (state.answers.count, decided) != before { writeJournal() }
+        if !finished && !leaving && (state.answers.count, decided) != before { writeJournal() }
     }
 
     /// Next card and See results take presses 420 ms after they came (NEXT_ARRIVES_MS).
     var actionReady: Bool {
         guard let at = actionShownAt else { return false }
-        return !sheetOpen && mono.nowMs() - at >= NEXT_ARRIVES_MS
+        return !sheetOpen && mono.nowMs() - at >= NEXT_ARRIVES_MS && !leaving
     }
 
     /// Next card, or See results on a decided round. Returns false when the press is too early or does nothing.
@@ -137,7 +139,7 @@ final class RoundCoordinator {
     }
 
     func tick() {
-        guard request.mode == .timed, !finished else { return }
+        guard request.mode == .timed, !finished, !leaving else { return }
         let before = state
         send(.tick(now: wall.nowMs()))
         if state.index != before.index { cardShownAt = mono.nowMs() }
@@ -160,7 +162,7 @@ final class RoundCoordinator {
     }
 
     private func visibility(hidden: Bool) {
-        guard request.mode == .timed, !finished else { return }
+        guard request.mode == .timed, !finished, !leaving else { return }
         send(.visibility(hidden: hidden, at: wall.nowMs()))
         if decided && actionShownAt == nil { actionShownAt = mono.nowMs() }
     }
@@ -185,6 +187,8 @@ final class RoundCoordinator {
 
     /// Leaves the round: saves what leaving leaves (task 6: leavesSomething, saveLeftRound) and deletes the journal.
     func leave() async {
+        guard !leaving else { return }
+        leaving = true
         stopTicker()
         if leavesSomething(state) && !finished { await store.saveLeftRound(state) }
         await journalWrite?.value
@@ -195,7 +199,7 @@ final class RoundCoordinator {
 
     /// Finishes the round and records it exactly once (task 6's recordRound in the store).
     func showResult() async {
-        guard !finished else { return }
+        guard !finished, !leaving else { return }
         stopTicker()
         state = reduce(state, .next)
         resultShownAt = mono.nowMs()
@@ -225,6 +229,7 @@ final class RoundCoordinator {
     }
 
     private func writeJournal() {
+        guard !leaving else { return }
         let entry = journalEntry
         let previous = journalWrite
         let journal = journal
