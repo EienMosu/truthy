@@ -90,6 +90,12 @@ enum TicketScrollTarget {
     static func newCard(statement: CGRect, viewport: Double) -> Double {
         statementScroll(Span(top: statement.minY, bottom: statement.maxY), viewport)
     }
+
+    /// Timed (PlayScreen.tsx): when the stub takes its stamp (the beat after an answer, or Time is up) the ticket goes to
+    /// its end, so the stamp and its hint show above the action row.
+    static func stubStamped(viewport: Double, contentHeight: Double) -> Double {
+        max(0, contentHeight - viewport)
+    }
 }
 
 struct RoundView: View {
@@ -125,6 +131,9 @@ struct RoundView: View {
 
     private var round: RoundState { coordinator.state }
 
+    /// The Timed card whose stub has its stamp now (the beat after an answer, or Time is up), nil otherwise.
+    private var stampedStub: Int? { round.mode == .timed && round.phase == .stamped ? round.index : nil }
+
     var body: some View {
         AppFrame {
             VStack(spacing: Tokens.Space.s12) {
@@ -148,6 +157,14 @@ struct RoundView: View {
                                                                   contentHeight: scrollGeometry[2]) {
                             withAnimation(Tokens.Curve.ease.animation(Tokens.Duration.t3)) { scroll.scrollTo(y: y) }
                         }
+                    }
+                }
+                .onChange(of: stampedStub) { _, stamped in
+                    guard stamped != nil else { return }
+                    Task {
+                        await Task.yield()
+                        let y = TicketScrollTarget.stubStamped(viewport: scrollGeometry[1], contentHeight: scrollGeometry[2])
+                        withAnimation(reducedMotion ? nil : Tokens.Curve.ease.animation(Tokens.Duration.t3)) { scroll.scrollTo(y: y) }
                     }
                 }
                 .onChange(of: round.index) { _, _ in

@@ -52,73 +52,55 @@ struct BoardingPassView: View {
 
     private var main: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: Tokens.Space.s8) {
-                IconShape(icon: .carrierCloud).fill(palette.onAccent.color).frame(width: 22, height: 16)
-                Text("Truthy").typeRole(Tokens.TypeRole.carrierTitle)
-                Spacer()
-                Text("BOARDING PASS").typeRole(Tokens.TypeRole.carrierLabel)
+            TicketBand().paperTextSize()
+            TicketLegs {
+                LegText(code: ticket.deckCode, name: ticket.deckName).accessibilityElement(children: .combine)
+            } to: {
+                LegText(code: ticket.sectionCode, name: ticket.sectionName, trailing: true).accessibilityElement(children: .combine)
             }
-            .foregroundStyle(palette.onAccent.color)
-            .padding(.horizontal, Tokens.Size.ticketInset)
-            .frame(minHeight: Tokens.Size.carrier)
-            .background(palette.accent.color)
-            .accessibilityHidden(true)
             .paperTextSize()
-            HStack {
-                leg(ticket.deckCode, ticket.deckName)
-                Spacer()
-                leg(ticket.sectionCode, ticket.sectionName)
-            }
-            .padding(Tokens.Size.ticketInset)
+            FieldGrid(fields: [
+                TicketField("Class", ticket.modeLabel),
+                TicketField("Card", round.mode == .classic ? "\(pad2(round.index + 1)) / \(pad2(round.cards.count))" : pad2(round.index + 1)),
+                coordinator.decided && round.mode == .timed
+                    ? TicketField("Gate", spoken: "Gate, Closed") {
+                        Text("Closed").typeRole(Tokens.TypeRole.fieldValue).foregroundStyle(palette.inkMuted.color).lineLimit(1).fixedSize()
+                    }
+                    : TicketField("Gate", "F ← → T", spoken: "Gate, False left, true right"),
+            ])
             .paperTextSize()
-            HStack(alignment: .top) {
-                field("Class", ticket.modeLabel)
-                field("Card", round.mode == .classic ? "\(pad2(round.index + 1)) / \(pad2(round.cards.count))" : pad2(round.index + 1))
-                field("Gate", coordinator.decided && round.mode == .timed ? "Closed" : "F ← → T",
-                      label: coordinator.decided && round.mode == .timed ? "Gate, Closed" : "Gate, False left, true right")
-            }
-            .padding(.horizontal, Tokens.Size.ticketInset)
-            .paperTextSize()
-            VStack(alignment: .leading, spacing: Tokens.Space.s8) {
-                if let card = coordinator.card, !card.appliesTo.isEmpty {
-                    Text(card.appliesTo).typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.inkMuted.color)
-                        .accessibilityLabel("Applies to \(card.appliesTo)")
-                }
-                if let card = coordinator.card {
-                    CardTextView(text: card.text.en.statement, style: Tokens.TypeRole.cardStatement)
-                        .foregroundStyle(coordinator.decided && round.mode == .timed ? palette.inkMuted.color : palette.ink.color)
-                        .accessibilityIdentifier("statement")
-                        .accessibilityFocused(statementFocus)
-                        .accessibilityAction(named: "Answer true") { _ = onAnswer(true) }
-                        .accessibilityAction(named: "Answer false") { _ = onAnswer(false) }
-                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("ticketContent")) } action: { onStatementFrame($0) }
-                }
-            }
-            .frame(maxWidth: .infinity, minHeight: Tokens.Size.statementMin, alignment: .topLeading)
-            .padding(Tokens.Size.ticketInset)
+            statement
         }
         .foregroundStyle(palette.ink.color)
         .background(NotchedPaper(edge: .bottom).fill(palette.surfaceRaised.color))
         .clipShape(NotchedPaper(edge: .bottom))
+        // The perforation lies along the main part's foot, between the notches (12 and 6 in from each side).
+        .overlay(alignment: .bottom) { Perforation(axis: .horizontal).padding(.horizontal, Tokens.Size.notch + Tokens.Space.s6) }
     }
 
-    /// A leg (code over name) is content; only the empty arrow column between the legs is decoration (reference 5.9).
-    private func leg(_ code: String, _ name: String) -> some View {
-        VStack(alignment: .leading, spacing: Tokens.Space.s2) {
-            Text(code).typeRole(Tokens.TypeRole.legCode)
-            Text(name).typeRole(Tokens.TypeRole.legName).foregroundStyle(palette.inkMuted.color)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func field(_ label: String, _ value: String, label spoken: String? = nil) -> some View {
-        VStack(alignment: .leading, spacing: Tokens.Space.s2) {
-            Text(label).typeRole(Tokens.TypeRole.fieldLabel).foregroundStyle(palette.inkMuted.color)
-            Text(value).typeRole(Tokens.TypeRole.fieldValue)
+    /// The statement area (PassStatement): at least 188 tall, 18 above and 24 below, the text centred in what is left;
+    /// the appliesTo line, when there is one, 6 above the statement.
+    private var statement: some View {
+        VStack(alignment: .leading, spacing: Tokens.Space.s6) {
+            if let card = coordinator.card, !card.appliesTo.isEmpty {
+                Text(card.appliesTo).typeRole(Tokens.TypeRole.monoData).foregroundStyle(palette.inkMuted.color)
+                    .accessibilityLabel("Applies to \(card.appliesTo)")
+            }
+            if let card = coordinator.card {
+                CardTextView(text: card.text.en.statement, style: Tokens.TypeRole.cardStatement)
+                    .foregroundStyle(coordinator.decided && round.mode == .timed ? palette.inkMuted.color : palette.ink.color)
+                    .accessibilityIdentifier("statement")
+                    .accessibilityFocused(statementFocus)
+                    .accessibilityAction(named: "Answer true") { _ = onAnswer(true) }
+                    .accessibilityAction(named: "Answer false") { _ = onAnswer(false) }
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("ticketContent")) } action: { onStatementFrame($0) }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spoken ?? "\(label), \(value)")
+        .padding(.horizontal, Tokens.Size.ticketInset)
+        .padding(.top, Tokens.Space.s18)
+        .padding(.bottom, Tokens.Space.s24)
+        .frame(minHeight: Tokens.Size.statementMin)
     }
 
     /// The side the stub tears to: left after a right answer, right after a wrong one.
@@ -139,33 +121,38 @@ struct BoardingPassView: View {
         }
     }
 
+    /// The stub (PassStub): 22 above the route line and 14 under the hints, the route line, the barcode and the hints
+    /// spread over the 228 of the lower part.
     private var stub: some View {
-        VStack(spacing: Tokens.Space.s8) {
-            Perforation(axis: .horizontal).padding(.horizontal, Tokens.Size.notch + 6)
+        SpreadColumn(minHeight: Tokens.Size.lower - 22 - Tokens.Space.s14) {
             HStack(alignment: .firstTextBaseline) {
                 Text("\(ticket.deckCode) → \(ticket.sectionCode) · \(ticket.modeLabel)").typeRole(Tokens.TypeRole.monoData)
                     .foregroundStyle(palette.inkMuted.color)
-                Spacer()
+                Spacer(minLength: 0)
                 Text("Card \(pad2(round.index + 1))").typeRole(Tokens.TypeRole.monoDataStrong)
             }
             BarcodeView(data: coordinator.card?.id ?? "")
-            if round.mode == .timed {
-                Text(timedHint ?? "swipe to board").typeRole(Self.monoRegular).foregroundStyle(palette.inkMuted.color)
-                    .frame(maxWidth: .infinity)
-            } else {
-                HStack {
-                    Text("← False").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.answerFalse.color)
-                    Spacer()
-                    Text("swipe to board").typeRole(Self.monoRegular).foregroundStyle(palette.inkMuted.color)
-                    Spacer()
-                    Text("True →").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.answerTrue.color)
+            Group {
+                if round.mode == .timed {
+                    Text(timedHint ?? "swipe to board").typeRole(Self.monoRegular).foregroundStyle(palette.inkMuted.color)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    HStack {
+                        Text("← False").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.answerFalse.color)
+                        Spacer(minLength: Tokens.Space.s8)
+                        Text("swipe to board").typeRole(Self.monoRegular).foregroundStyle(palette.inkMuted.color)
+                        Spacer(minLength: Tokens.Space.s8)
+                        Text("True →").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.answerTrue.color)
+                    }
                 }
             }
+            .frame(minHeight: 32)
         }
         .foregroundStyle(palette.ink.color)
         .padding(.horizontal, Tokens.Size.ticketInset)
-        .padding(.vertical, Tokens.Space.s12)
-        .frame(maxWidth: .infinity, minHeight: Tokens.Size.lower)
+        .padding(.top, 22)
+        .padding(.bottom, Tokens.Space.s14)
+        .frame(maxWidth: .infinity)
         .overlay(alignment: .topLeading) {
             if round.mode != .timed { intentStamp(true).padding(.leading, Tokens.Space.s16).padding(.top, 64) }
         }
@@ -216,7 +203,7 @@ struct BoardingPassView: View {
         let correct = lastAnswer(round)?.correct == true
         let colour = timeUp ? palette.ink.color : (correct ? palette.correct.color : palette.wrong.color)
         return LandingStamp(duration: Tokens.Duration.stampTimed, delay: timeUp ? 0.12 : 0, reducedMotion: reducedMotion) {
-            HStack(spacing: Tokens.Space.s6) {
+            HStack(spacing: Tokens.Space.s8) {
                 if timeUp {
                     IconView(icon: .clockHands, size: 22)
                 } else {
@@ -225,9 +212,9 @@ struct BoardingPassView: View {
                 Text(timeUp ? "Time is up" : (correct ? "Correct" : "Not quite")).typeRole(Tokens.TypeRole.stampStub)
             }
             .foregroundStyle(colour)
-            .padding(.horizontal, Tokens.Space.s18)
-            .padding(.top, Tokens.Space.s8)
-            .padding(.bottom, Tokens.Space.s6)
+            .padding(.horizontal, Tokens.Space.s18 + Tokens.Stroke.stamp)
+            .padding(.top, Tokens.Space.s8 + Tokens.Stroke.stamp)
+            .padding(.bottom, Tokens.Space.s6 + Tokens.Stroke.stamp)
             // On raised paper so the barcode under it does not show through (Stamp.tsx STUB_BASE, design system 5.11).
             .background(StampBorder(color: colour))
             .background(RoundedRectangle(cornerRadius: Tokens.Radius.small).fill(palette.surfaceRaised.color))
@@ -240,36 +227,45 @@ struct BoardingPassView: View {
         let newBest = coordinator.request.mode == .streak && answered.correct && (coordinator.previousBest ?? 0) >= 1
             && round.answers.prefix { $0.correct }.count == (coordinator.previousBest ?? 0) + 1
         let colour = answered.correct ? palette.correct.color : palette.wrong.color
-        return VStack(alignment: .leading, spacing: Tokens.Space.s12) {
-            HStack(alignment: .top) {
+        // PassSlip: 18 above, 12 below; the answer and its stamp on a row at least 60 tall, the explanation 10 under it
+        // and the source link at the foot of the lower part's 228 when the slip is shorter.
+        return SpreadColumn(minHeight: Tokens.Size.lower - Tokens.Space.s18 - Tokens.Space.s12, spread: .beforeLast, gaps: [Tokens.Space.s10]) {
+            HStack(alignment: .center, spacing: Tokens.Space.s12) {
                 VStack(alignment: .leading, spacing: Tokens.Space.s2) {
                     Text("The answer is").typeRole(Tokens.TypeRole.answerLabel).foregroundStyle(palette.inkMuted.color)
                     Text(card.answer ? "True" : "False").typeRole(Tokens.TypeRole.answerValue)
                 }
                 .accessibilityElement(children: .combine)
-                Spacer()
+                Spacer(minLength: 0)
                 LandingStamp(duration: Tokens.Transition.stamp.duration, delay: Tokens.Transition.stamp.delay, reducedMotion: reducedMotion) {
-                    HStack(spacing: Tokens.Space.s6) {
+                    // Stamp.tsx: 8 between the icon and the word, 14 at the sides, 6 above and 4 below, inside the 3 point
+                    // double border.
+                    HStack(spacing: Tokens.Space.s8) {
                         IconView(icon: newBest ? .star : (answered.correct ? .check : .cross), size: newBest ? 20 : (answered.correct ? 22 : 18), strokeWidth: 3)
                         Text(newBest ? "New best" : (answered.correct ? "Correct" : "Not quite")).typeRole(Tokens.TypeRole.stamp)
                     }
                     .foregroundStyle(colour)
-                    .padding(.horizontal, Tokens.Space.s10)
-                    .padding(.vertical, Tokens.Space.s4)
+                    .padding(.horizontal, Tokens.Space.s14 + Tokens.Stroke.stamp)
+                    .padding(.top, Tokens.Space.s6 + Tokens.Stroke.stamp)
+                    .padding(.bottom, Tokens.Space.s4 + Tokens.Stroke.stamp)
                     .background(StampBorder(color: colour))
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(newBest ? "Correct. New best" : (answered.correct ? "Correct" : "Not quite"))
             }
+            .frame(minHeight: 60)
             .paperTextSize()
             CardTextView(text: card.text.en.explanation, style: Tokens.TypeRole.body)
+                .frame(maxWidth: .infinity, alignment: .leading)
             if let url = URL(string: card.source.url) {
                 SourceLink(title: card.source.title) { onSource(url) }
             }
         }
         .foregroundStyle(palette.ink.color)
-        .padding(Tokens.Size.ticketInset)
-        .frame(maxWidth: .infinity, minHeight: Tokens.Size.lower, alignment: .topLeading)
+        .padding(.horizontal, Tokens.Size.ticketInset)
+        .padding(.top, Tokens.Space.s18)
+        .padding(.bottom, Tokens.Space.s12)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(NotchedPaper(edge: .top).fill(palette.surfaceSunk.color))
         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("ticketContent")) } action: { onSlipFrame($0) }
     }
@@ -320,9 +316,9 @@ struct SourceLink: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Tokens.Space.s6) {
+            HStack(spacing: Tokens.Space.s8) {
                 IconView(icon: .book, size: 18)
-                Text(title).underline().multilineTextAlignment(.leading)
+                Text(title).underline().multilineTextAlignment(.leading).wholeWords(title, Tokens.TypeRole.sourceLink)
                 Text("→").accessibilityHidden(true)
             }
             .typeRole(Tokens.TypeRole.sourceLink)

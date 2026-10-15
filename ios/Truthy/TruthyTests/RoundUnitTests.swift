@@ -44,4 +44,11 @@ import TruthyEngine
         #expect(TicketScrollTarget.afterAnswer(slip: CGRect(x: 0, y: 400, width: 300, height: 300), offset: 0, viewport: 500, contentHeight: 750) == 250)
         #expect(TicketScrollTarget.newCard(statement: CGRect(x: 0, y: 100, width: 300, height: 200), viewport: 400) == 0)
     }
+
+    /// Timed (PlayScreen.tsx): when the stub takes its stamp (the beat after an answer, or Time is up) the ticket
+    /// scrolls to its end, so the stamp and its hint show above the action row on a small phone.
+    @Test func aStampedTimedStubScrollsTheTicketToItsEnd() {
+        #expect(TicketScrollTarget.stubStamped(viewport: 513, contentHeight: 627) == 114)
+        #expect(TicketScrollTarget.stubStamped(viewport: 700, contentHeight: 627) == 0)
+    }
 }
