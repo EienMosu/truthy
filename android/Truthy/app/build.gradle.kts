@@ -51,6 +51,11 @@ android {
 // The unit tests read source files (resources, the manifest, the fonts) and native-data/tokens/resolved.json.
 tasks.withType<Test>().configureEach {
     systemProperty("truthy.repo", repoRoot.path)
+    // The icon and logo tests compare the Kotlin path data with the web's source files (task 10).
+    inputs.files(
+        rootDir.resolve("../../components/icons.tsx"),
+        rootDir.resolve("../../components/Logo.tsx"),
+    )
 }
 
 dependencies {
