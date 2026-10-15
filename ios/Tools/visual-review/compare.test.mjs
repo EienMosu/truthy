@@ -73,6 +73,10 @@ test("the probes of a screen follow its frames; the leave sheet reads the sky un
   assert.deepEqual(p4.map((p) => p.name), ["sky-120", "sky-300", "sky-560", "sky-860", "sheet", "pill:Keep playing"]);
   assert.ok(p4.filter((p) => p.role === "sky").every((p) => p.scrim === true));
   assert.deepEqual(probesFor("s1", {}, { width: 375, height: 667 }).map((p) => p.name), ["sky-120", "sky-300", "sky-560"]);
+  // A ticket scrolled up past the screen's top (the slip scrolled into view, an open Why) hides its band and the
+  // paper under it: its two probes would read the sky, so they are left out.
+  const scrolled = { ticket: [16, -98, 343, 700], "pill:Next card": [16, 587, 343, 60] };
+  assert.deepEqual(probesFor("p3", scrolled, { width: 375, height: 667 }).map((p) => p.name), ["sky-120", "sky-300", "sky-560", "pill:Next card"]);
 });
 
 test("the sky is the gradient of the four sky colours at the native stops, the scrim over it under the sheet", () => {

@@ -89,7 +89,8 @@ export function compareFrames(web, ios, key, approved = {}) {
  * Where to sample which colour role on a screen, in points (the points plan C probes). The sky column at x 4 and
  * y 120, 300, 560 and 860 (those inside the screen), each expected as the sky gradient at that height, with the scrim
  * over it on the leave sheet (p4); the ticket's band 4 points below its top at its centre; its paper 6 points in from
- * the left and 50 down, just under the band; the sheet card 10 points in from its left edge (inside its 20 padding)
+ * the left and 50 down, just under the band (both only while the ticket's top is on screen: a ticket scrolled up past
+ * it hides its band, and the probes would read the sky); the sheet card 10 points in from its left edge (inside its 20 padding)
  * at half its height; a pill 14 points in at half its height. On p4 only the sky column, the sheet and its pill.
  * @param {string} state @param {Frames} frames @param {{ width: number, height: number }} screen
  * @returns {{ name: string, x: number, y: number, role: string, fraction?: number, scrim?: boolean }[]}
@@ -102,7 +103,7 @@ export function probesFor(state, frames, screen) {
   }
   if (state !== "p4") {
     const ticket = frames.ticket;
-    if (ticket !== undefined) {
+    if (ticket !== undefined && ticket[1] >= 0) {
       probes.push({ name: "ticket band", x: ticket[0] + ticket[2] / 2, y: ticket[1] + 4, role: "accent" });
       probes.push({ name: "ticket paper", x: ticket[0] + 6, y: ticket[1] + 50, role: "surface-raised" });
     }
