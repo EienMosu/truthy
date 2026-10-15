@@ -25,8 +25,13 @@ Node 24 and pnpm 10. The build needs no network: the fonts are committed in `app
 | `pnpm test:watch` | Unit tests in watch mode |
 | `pnpm typecheck` | Strict TypeScript over app, scripts and tests |
 | `pnpm e2e` | End-to-end tests (Playwright) at phone size in Chromium and WebKit, against the production build: it builds first and serves on port 3100 (another with `E2E_PORT`); outside CI it reuses a server already running there |
+| `pnpm export:native` | Regenerate `native-data/` (the decks, tokens and golden vectors the native apps read) and write it to disk; `pnpm test` fails when it is out of date |
 
 Before the first `pnpm e2e`, install the browsers once with `pnpm exec playwright install chromium webkit`. [docs/testing.md](docs/testing.md) describes the gates and how the specs are written.
+
+## Native apps
+
+An iOS app (SwiftUI) and an Android app (Kotlin and Jetpack Compose) that play the same game are designed in [the native apps design](docs/superpowers/specs/2026-10-14-truthy-native-apps-design.md); the measured facts they port are in [the port reference](docs/superpowers/specs/2026-10-14-truthy-native-port-reference.md). They read `native-data/`, which this repository generates and commits: the 54 decks, the design tokens and golden vectors computed by the TypeScript code. `pnpm export:native` writes it and `pnpm test` fails when it is out of date; [docs/testing.md](docs/testing.md#native-data) says when to export. A commit that changes only `ios/` or `android/` skips the web CI, and one that changes nothing outside `ios/`, `android/` and `native-data/` does not deploy the web app.
 
 ## Before you push
 

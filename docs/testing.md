@@ -1,6 +1,6 @@
 # Testing
 
-Four gates, all run by CI (`.github/workflows/ci.yml`) on every push and pull request:
+Four gates, all run by CI (`.github/workflows/ci.yml`) on every push and pull request, except one that changes only files under `ios/` or `android/` (see Native data below):
 
 | Command | What it runs |
 |---|---|
@@ -10,6 +10,29 @@ Four gates, all run by CI (`.github/workflows/ci.yml`) on every push and pull re
 | `pnpm e2e` | Playwright (`e2e/`) at 390 by 844 with touch, in `phone-chromium` and `phone-webkit`, against `pnpm build && pnpm start --port 3100` (the port comes from `E2E_PORT`, see below) |
 
 Install the browsers once with `pnpm exec playwright install chromium webkit`.
+
+## Native data
+
+`native-data/` is what the iOS and Android apps read: the 54 decks as the web builds them, the design tokens with the native overrides applied, and golden vectors, the inputs and outputs of the TypeScript functions the apps port. It is generated and committed, and nothing in it is edited by hand. `scripts/native-token-overrides.json` is the only hand-kept native data file.
+
+- **The drift gate.** `pnpm test` includes `tests/native-data.test.ts`. It builds every file in memory and compares it with the committed one, and a failure names the first file that differs. A change to a card, a token, an override or an engine constant that is not followed by an export fails there.
+- **Exporting.** After such a change run `pnpm export:native`, read the diff of `native-data/` (every changed vector is a behaviour change both native apps must make too), and commit it with the change that caused it.
+- **Same tree, same bytes.** Running the export twice gives identical files. The deck index keeps the version recorded in `native-data/manifest.json` until the hash of a deck changes, so a new day alone changes nothing.
+- **Vectors are computed.** A vector comes from running the TypeScript function, never from typing it. A function in the port inventory (section 3.9 of the port reference) without a vector file fails the same test.
+- **Ids are permanent.** Deck ids and card ids are never renamed or reused: the native apps key progress by them, as the web does. A removed deck shows in the drift gate as `committed but no longer exported`.
+- **Typecheck.** `tsconfig.json` leaves `ios/` and `android/` out of `pnpm typecheck`.
+
+### What a change runs
+
+| Changed files | Web CI | Vercel build |
+|---|---|---|
+| only `ios/` or `android/` | skipped | skipped |
+| only `native-data/` | runs | skipped |
+| anything else | runs | builds |
+
+- **Web CI.** `.github/workflows/ci.yml` has `paths-ignore` for `ios/**` and `android/**` on both triggers. GitHub skips a run only when every changed file matches, so a push that also touches the web still runs. `native-data/**` is not ignored, because the drift test and the hygiene test (`tests/repo-hygiene.test.ts`) live in the web checks. A required check that a path filter skips never reports, so the web check is not made a required check for native-only merges.
+- **Vercel.** `vercel.json` has an `ignoreCommand` that runs `git diff --quiet` between the previously deployed commit and `HEAD`, outside `ios`, `android` and `native-data`; exit 0 (no difference) skips the build. The base is `VERCEL_GIT_PREVIOUS_SHA`, the last successful deployment of the branch, so a native-only commit that follows a web commit nobody has deployed yet still builds. The variable is empty on a branch's first deploy, and the command then compares with `HEAD^`. When the base is missing from Vercel's shallow clone, `git diff` fails with 128 and Vercel builds, the safe side. `tests/vercel-ignore-command.test.ts` runs the committed command in scratch repositories.
+- **Why skip.** Every build writes a new `sw.js` (its version is the commit and the build time), so deploying a native-only commit would make every installed web client update for nothing. The Vercel build runs no tests and never reads `native-data/`.
 
 ## End-to-end specs
 
