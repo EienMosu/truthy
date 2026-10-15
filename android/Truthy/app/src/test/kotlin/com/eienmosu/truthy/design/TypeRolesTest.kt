@@ -4,11 +4,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
+import java.nio.ByteBuffer
 
 // The 30 roles the app uses, against reference 5.3 (size, weight, line height ratio) and tokens.json (letter
 // spacing in px at the role's own size). list-title carries the code's 1.25.
@@ -112,6 +115,44 @@ class TypeRolesTest {
             TruthyType.timedClock, TruthyType.stubValue, TruthyType.passCode, TruthyType.continueDeckName,
         )
         assertTrue(styles.all { it.fontSynthesis == FontSynthesis.None })
+    }
+
+    // A line height below Overpass's own (1.266) keeps the web's line box: Tight, both ends trimmed, so Compose does
+    // not pad the first and last line back to the font's height. At or above it, the leading goes above and below.
+    @Test
+    fun aLineHeightBelowTheFontsOwnKeepsTheLineBox() {
+        val tight = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both, LineHeightStyle.Mode.Tight)
+        val open = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None)
+        for (row in rows) {
+            val expected = if (row.lineHeight < 1.266f) tight else open
+            assertEquals(row.name, expected, row.style.lineHeightStyle)
+        }
+        val tightRoles = rows.filter { it.style.lineHeightStyle == tight }.map { it.name }
+        assertEquals(
+            listOf("logo", "card-name", "deck-code", "answer-label", "leg-code", "leg-name", "field-value-pass", "list-title", "score"),
+            tightRoles,
+        )
+        assertEquals(tight, TruthyType.passCode.lineHeightStyle)
+        assertEquals(tight, TruthyType.continueDeckName.lineHeightStyle)
+        assertEquals(open, TruthyType.stubValue.lineHeightStyle)
+        assertEquals(open, TruthyType.missedExplanation.lineHeightStyle)
+    }
+
+    // The constant is the fonts' own: (hhea ascender - descender) / unitsPerEm, the same in the four cuts.
+    @Test
+    fun overpassLineHeightIsReadFromTheFonts() {
+        for (name in listOf("overpass_600", "overpass_800", "overpass_mono_400", "overpass_mono_600")) {
+            val data = ByteBuffer.wrap(File("src/main/res/font/$name.ttf").readBytes())
+            val tables = (0 until (data.getShort(4).toInt() and 0xFFFF)).associate { index ->
+                val record = 12 + 16 * index
+                String(ByteArray(4) { data.get(record + it) }, Charsets.US_ASCII) to data.getInt(record + 8)
+            }
+            val unitsPerEm = data.getShort(tables.getValue("head") + 18).toInt() and 0xFFFF
+            val hhea = tables.getValue("hhea")
+            val ascender = data.getShort(hhea + 4).toInt()
+            val descender = data.getShort(hhea + 6).toInt()
+            assertEquals(name, OVERPASS_LINE_HEIGHT, (ascender - descender).toFloat() / unitsPerEm, 0f)
+        }
     }
 
     // 35 roles are defined, 30 used (reference 5.0). The five unused ones stay in the tokens, undrawn.

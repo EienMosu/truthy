@@ -6,11 +6,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.sp
 
+/**
+ * Overpass's own line height: hhea ascender 1766 plus descender 766 over 2000 units, the same in all four cuts
+ * (TypeRolesTest reads it from the font files).
+ */
+const val OVERPASS_LINE_HEIGHT = 2532f / 2000f
+
 // The browser puts the extra leading above and below the line; Center with no trim does the same.
 private val LINES = LineHeightStyle(
     alignment = LineHeightStyle.Alignment.Center,
     trim = LineHeightStyle.Trim.None,
 )
+
+// A line height below the font's own: the browser's line box is still the line height, and the glyphs reach past it,
+// half above and half below. Compose's default (Mode.Fixed) pads the first and last line back to the font's height,
+// which made the logo, the leg code, the score and the 1.2 roles taller than on the web. Tight with both ends trimmed
+// keeps every line, the first and the last included, at the line height.
+private val TIGHT_LINES = LineHeightStyle(
+    alignment = LineHeightStyle.Alignment.Center,
+    trim = LineHeightStyle.Trim.Both,
+    mode = LineHeightStyle.Mode.Tight,
+)
+
+/** The line style of a role: the web's line box, whether the line height is above or below the font's own. */
+fun lineStyleFor(lineHeight: Float): LineHeightStyle = if (lineHeight < OVERPASS_LINE_HEIGHT) TIGHT_LINES else LINES
 
 /** The Compose style of a role. Sizes, line height and letter spacing are sp, so they follow the system font scale. */
 fun TypeRole.toTextStyle(): TextStyle = TextStyle(
@@ -20,7 +39,7 @@ fun TypeRole.toTextStyle(): TextStyle = TextStyle(
     lineHeight = (sizeSp * lineHeight).sp,
     letterSpacing = letterSpacingSp.sp,
     fontSynthesis = FontSynthesis.None,
-    lineHeightStyle = LINES,
+    lineHeightStyle = lineStyleFor(lineHeight),
 )
 
 /**
