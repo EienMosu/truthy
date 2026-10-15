@@ -136,9 +136,14 @@ struct Player {
         atStep("Your pass is ready", file: file, line: line)
     }
 
-    /// "Start round", then the round's X.
+    /// "Start round", then the round's X. At the accessibility text sizes the start column scrolls (README deviation
+    /// 7) and the pill can sit partly below the screen, where a tap at its centre lands under the home indicator: a
+    /// person scrolls it into view first, and so does the player.
     func startRound(file: StaticString = #filePath, line: UInt = #line) {
-        button("Start round").tap()
+        let start = button("Start round")
+        let window = app.windows.firstMatch
+        for _ in 0..<8 where !window.frame.contains(start.frame) { app.swipeUp() }
+        start.tap()
         wait(for: button("Leave round"), "the round's X", file: file, line: line)
     }
 
