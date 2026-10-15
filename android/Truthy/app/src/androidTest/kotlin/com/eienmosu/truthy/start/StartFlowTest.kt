@@ -6,6 +6,7 @@ import android.view.KeyEvent
 import androidx.activity.BackEventCompat
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.performClick
@@ -16,6 +17,7 @@ import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.eienmosu.truthy.MainActivity
+import com.eienmosu.truthy.ROUND_TAG
 import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -108,6 +110,24 @@ class StartFlowTest {
         assertTrue(exists("Change class, now Classic"))
         assertTrue(exists("Start round"))
         assertTrue(exists("Back to classes"))
+    }
+
+    @Test
+    fun startRoundSurvivesARecreationDuringTheUnroll() {
+        launch()
+        choose("Cloud, 17 decks", "Choose a platform")
+        choose("AWS, 7 decks", "Choose a deck")
+        choose("CLF, Cloud Practitioner, 214 cards, not started", "Choose a section")
+        choose("SEC, Security and compliance, ", "Choose how to play", substring = true)
+        choose("Classic. Correct answers out of 10 cards. Not played yet.", "Your pass is ready")
+        SystemClock.sleep(SETTLE_WAIT_MS)
+        compose.mainClock.autoAdvance = false
+        compose.onNode(labelled("Start round")).performClick()
+        // Boarding starts while the paper is still unrolling: the recreation drops the remembered request.
+        compose.mainClock.advanceTimeByFrame()
+        checkNotNull(scenario).recreate()
+        compose.mainClock.autoAdvance = true
+        compose.waitUntil(TIMEOUT_MS) { compose.onAllNodes(hasTestTag(ROUND_TAG)).fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test

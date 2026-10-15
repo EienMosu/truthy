@@ -11,6 +11,7 @@ import com.eienmosu.truthy.Direction
 import com.eienmosu.truthy.RoundRequest
 import com.eienmosu.truthy.StartFlowModel
 import com.eienmosu.truthy.engine.PassFieldName
+import com.eienmosu.truthy.engine.Route
 import com.eienmosu.truthy.engine.Step
 
 /** The start flow on screen, bound to task 11's models. */
@@ -75,9 +76,19 @@ private class RouteActions(private val model: StartFlowModel, private val app: A
     }
 
     override fun onUnrolled() {
-        val next = request ?: return
+        val next = request ?: recovered() ?: return
         request = null
         app.openRound(next)
+    }
+
+    /** After an activity recreation mid-unroll the remembered request is gone, but the model is still boarding on a full pass: rebuild the same request startRound returned from that pass. */
+    private fun recovered(): RoundRequest? {
+        if (!model.boarding.value) return null
+        val choice = model.view.value.choice
+        val deckId = choice.deckId ?: return null
+        val sectionId = choice.sectionId ?: return null
+        val mode = choice.mode ?: return null
+        return RoundRequest(Route(deckId, sectionId), mode)
     }
 
     override fun switchTheme() {
