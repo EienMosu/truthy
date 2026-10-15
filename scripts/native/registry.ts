@@ -10,6 +10,9 @@ import { golden as rngGolden } from "./golden/rng";
 import { golden as smallGolden } from "./golden/small";
 import { golden as roundGolden } from "./golden/round";
 import { golden as swipeGolden } from "./golden/swipe";
+import { golden as contentGolden } from "./golden/content";
+import { golden as progressGolden } from "./golden/progress";
+import { golden as startGolden } from "./golden/start";
 
 export interface NativeFunction {
   module: string;
@@ -308,5 +311,5 @@ export function metaOf(module: string, name: string): GoldenMeta {
 
 /** One producer per scripts/native/golden/<group>.ts. Tasks 5 to 8 add theirs to this list. */
 export function goldenProducers(): readonly (() => GoldenFile[])[] {
-  return [rngGolden, smallGolden, dealGolden, roundGolden, swipeGolden];
+  return [rngGolden, smallGolden, dealGolden, roundGolden, swipeGolden, progressGolden, contentGolden, startGolden];
 }
