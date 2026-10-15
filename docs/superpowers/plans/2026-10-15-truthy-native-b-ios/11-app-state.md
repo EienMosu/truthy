@@ -68,7 +68,7 @@ git status --short
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' -only-testing:TruthyTests 2>&1 | grep -E 'Test run with|TEST (SUCCEEDED|FAILED)' | tail -2
 ```
 
-Expected: nothing; `Test run with 30 tests in 12 suites passed` and `** TEST SUCCEEDED **`.
+Expected: nothing; `Test run with 31 tests in 12 suites passed` and `** TEST SUCCEEDED **`.
 
 - [ ] **Step 2: Write the tests.**
 
@@ -1527,7 +1527,7 @@ DEST26='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5'
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination "$DEST26" -only-testing:TruthyTests 2>&1 | grep -E 'Test run with|✘|TEST (SUCCEEDED|FAILED)' | tail -4
 ```
 
-Expected: `Test run with 61 tests in 17 suites passed` (30 in 12 before, plus back motion 9, start flow 6, round 9, launch 5 of which one parameterised over the three journal cases, launch arguments 2) and `** TEST SUCCEEDED **`. A failing `theTickerKeepsFiringWhileAScrollIsTracking` means the timer is in the default mode only: rule 3.
+Expected: `Test run with 62 tests in 17 suites passed` (31 in 12 before, plus back motion 9, start flow 6, round 9, launch 5 of which one parameterised over the three journal cases, launch arguments 2) and `** TEST SUCCEEDED **`. A failing `theTickerKeepsFiringWhileAScrollIsTracking` means the timer is in the default mode only: rule 3.
 
 - [ ] **Step 9: Look at the app and the gallery.**
 

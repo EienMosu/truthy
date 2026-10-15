@@ -57,7 +57,7 @@ git status --short
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' -only-testing:TruthyTests 2>&1 | grep -E 'Test run with|TEST (SUCCEEDED|FAILED)' | tail -2
 ```
 
-Expected: nothing; `Test run with 25 tests in 10 suites passed` and `** TEST SUCCEEDED **`.
+Expected: nothing; `Test run with 26 tests in 10 suites passed` and `** TEST SUCCEEDED **`.
 
 - [ ] **Step 2: Write the tests.**
 
@@ -1002,7 +1002,7 @@ DEST26='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5'
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination "$DEST26" -only-testing:TruthyTests 2>&1 | grep -E 'Test run with|✘|TEST (SUCCEEDED|FAILED)' | tail -4
 ```
 
-Expected: `Test run with 30 tests in 12 suites passed` (plus `SVGPathTests` 2, the icon test parameterised over 19 icons, and `FrameLayoutTests` 3) and `** TEST SUCCEEDED **`. The gallery opens once task 11 reads `-screen gallery`; look at it then in both themes (task 11, step 9).
+Expected: `Test run with 31 tests in 12 suites passed` (plus `SVGPathTests` 2, the icon test parameterised over 19 icons, and `FrameLayoutTests` 3) and `** TEST SUCCEEDED **`. The gallery opens once task 11 reads `-screen gallery`; look at it then in both themes (task 11, step 9).
 
 - [ ] **Step 8: Run the gates and commit.**
 

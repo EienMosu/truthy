@@ -36,7 +36,7 @@ struct ThemeStore { init(defaults: UserDefaults); var stored: StoredTheme? { get
 
 **Rules:**
 
-1. **The engine decides, the files keep.** `FileProgressStore` runs `createLocalStore(FileKeyValueStorage(directory:))`: the side copy is written whenever a read is not whole, skipped when the stored copy is identical, and the main write is skipped if that write fails (reference 6). `FileKeyValueStorage` writes atomically (`Data.write(options: .atomic)`), throws on any failure, and returns nil only for a missing file, so a file that cannot be read is a throwing read and the engine loads empty progress. A storage failure never reaches the player.
+1. **The engine decides, the files keep.** `FileProgressStore` runs `createLocalStore` over `FileKeyValueStorage(directory:)`: the side copy is written whenever a read is not whole, skipped when the stored copy is identical, and the main write is skipped if that write fails (reference 6). `FileKeyValueStorage` writes atomically (`Data.write(options: .atomic)`), throws on any failure, and returns nil only for a missing file, so a file that cannot be read is a throwing read and the engine loads empty progress. A save never writes over the stored progress after the read it was built on failed; it waits for a load that succeeds. On the web a throwing `localStorage` stays blocked, but on iOS a read can fail and later work (a file still locked by data protection before the first unlock), so the store keeps its storage in a private `GuardedStorage` that remembers a failed read of the progress and refuses to write the progress until a load succeeds; the side copy is never held back. A storage failure never reaches the player.
 2. **One serial writer.** Every read and write of the progress goes through the one `FileProgressStore` actor, off the main thread; every save is a whole read, modify and write (reference 6, rule 5).
 3. **The journal applies the leave rules** without a `RoundState`: `JournalEntry.leftResult` rebuilds the round's result from its answers and the deck (a recorded round or one with no answers that is not decided leaves nothing; an undecided round with answers is abandoned; a decided round is finished), and `FileProgressStore.apply` writes `applyResult` over the stored progress. The test compares this with task 6's `saveLeftRound` on the same round played with the reducer: both leave the same progress. The journal is deleted after it is applied, and also when it is unreadable. A kill between the apply and the delete applies it once more at the next launch (one more `seen` per card; the record and `last` do not change): accepted, as plan C accepts it (README, "Cross-platform agreements").
 4. **Backups stay on** (spec 4.5): Application Support is backed up, and nothing sets `isExcludedFromBackup`.
@@ -164,8 +164,35 @@ import TruthyEngine
 
     @Test func aFailingReadIsEmptyProgressAndNeverReachesThePlayer() async throws {
         let directory = Scratch.directory()
-        try FileManager.default.createDirectory(at: directory.appending(path: "truthy.progress.v1.json"), withIntermediateDirectories: true)
-        #expect(await FileProgressStore(directory: directory).load() == emptyProgress())
+        let main = directory.appending(path: "truthy.progress.v1.json")
+        try FileManager.default.createDirectory(at: main, withIntermediateDirectories: true)
+        let store = FileProgressStore(directory: directory)
+        #expect(await store.load() == emptyProgress())
+        await store.save(played)
+        var isFolder: ObjCBool = false
+        #expect(FileManager.default.fileExists(atPath: main.path(percentEncoded: false), isDirectory: &isFolder) && isFolder.boolValue,
+                "nothing is written over a progress that cannot be read")
+        #expect(!FileManager.default.fileExists(atPath: directory.appending(path: "truthy.progress.v1.unreadable.json").path(percentEncoded: false)))
+    }
+
+    @Test func aSaveAfterAFailedReadWaitsForALoadThatSucceeds() async throws {
+        let directory = Scratch.directory()
+        let main = directory.appending(path: "truthy.progress.v1.json")
+        let store = FileProgressStore(directory: directory)
+        await store.save(played)
+        let saved = try Data(contentsOf: main)
+        // A read that fails: bytes that are not UTF-8 here, on a device a file still locked before the first unlock.
+        try Data([0xFF, 0xFE]).write(to: main)
+        #expect(await store.load() == emptyProgress())
+        // The read works again, but this save was built on the failed one: the stored progress stays.
+        try saved.write(to: main)
+        await store.save(emptyProgress())
+        #expect(await FileProgressStore(directory: directory).load() == played)
+        // A load that succeeds lets the next save through.
+        #expect(await store.load() == played)
+        let next = TruthyEngine.Progress(version: 1, cards: [:], records: ["aws-clf-c02/SEC#streak": 3], last: nil)
+        await store.save(next)
+        #expect(await FileProgressStore(directory: directory).load() == next)
     }
 
     @Test func theProgressIsBackedUp() async throws {
@@ -396,21 +423,55 @@ import TruthyEngine
 // Progress on the device (spec 4.5): truthy.progress.v1.json in Application Support, with the unreadable side copy
 // truthy.progress.v1.unreadable.json, written by the engine's createLocalStore (task 4) so the web's rules hold
 // exactly. One actor is the one serial writer, off the main thread; every save is a whole read, modify and write,
-// and a storage failure never reaches the player.
+// and a storage failure never reaches the player. A save never writes over the stored progress after the read it was
+// built on failed; it waits for a load that succeeds.
 
 protocol ProgressStore: Sendable {
     func load() async -> Progress
     func save(_ progress: Progress) async
 }
 
+private struct ProgressReadFailed: Error {}
+
+/// The files under the engine's store, remembering a failed read of the progress. On the web a throwing storage stays
+/// blocked; on iOS a read can fail and later work (a file still locked before the first unlock), and a save built on
+/// the empty progress of the failed read would then write over every stored history and record. So once a read of
+/// the progress throws, writes of the progress throw too, until the store loads again. The side copy is never held
+/// back.
+private final class GuardedStorage: KeyValueStorage {
+    let files: FileKeyValueStorage
+    var progressReadFailed = false
+
+    init(_ files: FileKeyValueStorage) {
+        self.files = files
+    }
+
+    func getItem(_ key: String) throws -> String? {
+        do {
+            return try files.getItem(key)
+        } catch {
+            if key == PROGRESS_KEY { progressReadFailed = true }
+            throw error
+        }
+    }
+
+    func setItem(_ key: String, _ value: String) throws {
+        if key == PROGRESS_KEY && progressReadFailed { throw ProgressReadFailed() }
+        try files.setItem(key, value)
+    }
+}
+
 actor FileProgressStore: ProgressStore {
     let directory: URL
+    private let storage: GuardedStorage
     private let local: LocalStore
     private let recorded = RecordedRounds()
 
     init(directory: URL) {
         self.directory = directory
-        local = createLocalStore(FileKeyValueStorage(directory: directory))
+        let storage = GuardedStorage(FileKeyValueStorage(directory: directory))
+        self.storage = storage
+        local = createLocalStore(storage)
     }
 
     /// The app's own directory: Application Support, which iOS backs up (spec 4.5: backups stay on).
@@ -419,35 +480,45 @@ actor FileProgressStore: ProgressStore {
     }
 
     func load() -> Progress {
-        local.load()
+        freshLoad()
     }
 
     func save(_ progress: Progress) {
         local.save(progress)
     }
 
-    /// Leaving a round (task 6's saveLeftRound): abandoned before its deciding answer, recorded after it.
+    /// Leaving a round (task 6's saveLeftRound): abandoned before its deciding answer, recorded after it. The engine
+    /// loads before it saves, so the guard starts clean here.
     func saveLeftRound(_ round: RoundState) {
+        storage.progressReadFailed = false
         TruthyEngine.saveLeftRound(round, local)
     }
 
-    /// Recording a finished round, exactly once however often it is asked (task 6's recordRound).
+    /// Recording a finished round, exactly once however often it is asked (task 6's recordRound). The engine loads
+    /// before it saves, so the guard starts clean here.
     func record(_ round: RoundState) -> ApplyOutcome {
-        recordRound(round, local, recorded)
+        storage.progressReadFailed = false
+        return recordRound(round, local, recorded)
     }
 
     /// A round result applied as the leave rules apply it (task 9's journal): history, `last`, and a record unless it
     /// is abandoned.
     func apply(_ result: RoundResult) {
-        local.save(applyResult(local.load(), result).progress)
+        local.save(applyResult(freshLoad(), result).progress)
     }
 
     /// Start of a round (reference 6, save rule 2): load, prune the round's deck, save, and hand back the pruned
     /// progress to deal from.
     func prunedForRound(_ deck: DeckFile) -> Progress {
-        let pruned = pruneDeck(local.load(), deck.id, deck.cards.map(\.id))
+        let pruned = pruneDeck(freshLoad(), deck.id, deck.cards.map(\.id))
         local.save(pruned)
         return pruned
+    }
+
+    /// A load that the next save is built on: only a failure of this read holds that save back.
+    private func freshLoad() -> Progress {
+        storage.progressReadFailed = false
+        return local.load()
     }
 }
 ```
@@ -570,7 +641,7 @@ DEST26='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5'
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination "$DEST26" -only-testing:TruthyTests 2>&1 | grep -E 'Test run with|✘|TEST (SUCCEEDED|FAILED)' | tail -4
 ```
 
-Expected: `Test run with 25 tests in 10 suites passed` (13 in 6 before, plus 12 in 4: decks 1, store 5, journal 5, theme 1) and `** TEST SUCCEEDED **`. If `aFailingSideWriteSkipsTheMainWrite` fails, the side write did not throw: check that `FileKeyValueStorage.setItem` lets the error of `Data.write` through.
+Expected: `Test run with 26 tests in 10 suites passed` (13 in 6 before, plus 13 in 4: decks 1, store 6, journal 5, theme 1) and `** TEST SUCCEEDED **`. If `aFailingSideWriteSkipsTheMainWrite` fails, the side write did not throw: check that `FileKeyValueStorage.setItem` lets the error of `Data.write` through.
 
 - [ ] **Step 6: Check that the journal tests bite.** In `RoundJournal.swift` change `abandoned: !decided` to `abandoned: decided`, run `-only-testing:TruthyTests/RoundJournalTests`, and put it back:
 

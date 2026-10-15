@@ -43,7 +43,7 @@ git status --short
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' 2>&1 | grep -E 'Test run with|Executed [0-9]+ tests?,|TEST (SUCCEEDED|FAILED)' | tail -3
 ```
 
-Expected: nothing; `Test run with 73 tests in 21 suites passed`, `Executed 11 tests, with 1 test skipped and 0 failures`, `** TEST SUCCEEDED **`.
+Expected: nothing; `Test run with 74 tests in 21 suites passed`, `Executed 11 tests, with 1 test skipped and 0 failures`, `** TEST SUCCEEDED **`.
 
 - [ ] **Step 2: Write the tests.**
 
@@ -610,7 +610,7 @@ DEST26='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5'
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination "$DEST26" 2>&1 | grep -E 'Test run with|Executed [0-9]+ tests?,|✘|TEST (SUCCEEDED|FAILED)' | tail -6
 ```
 
-Expected: `Test run with 74 tests in 22 suites passed`, `Executed 17 tests, with 2 tests skipped and 0 failures` (plus the six leave and result tests, of which `testEscapeOnTheSheetKeepsPlaying` skips on the simulator, as task 12's Escape test does) and `** TEST SUCCEEDED **`.
+Expected: `Test run with 75 tests in 22 suites passed`, `Executed 17 tests, with 2 tests skipped and 0 failures` (plus the six leave and result tests, of which `testEscapeOnTheSheetKeepsPlaying` skips on the simulator, as task 12's Escape test does) and `** TEST SUCCEEDED **`.
 
 - [ ] **Step 7: Only if `testADoubleTapOnTheXLeavesTheSheetOpen` failed: add the scrim guard.** The web ignores a scrim tap for 250 ms after the sheet opens (reference 3.10). In `LeaveSheet.swift`, add to the sheet's content, after `.modifier(SheetPaper())`:
 

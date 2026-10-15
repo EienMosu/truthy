@@ -57,7 +57,7 @@ git status --short
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' 2>&1 | grep -E 'Test run with|Executed [0-9]+ tests?,|TEST (SUCCEEDED|FAILED)' | tail -3
 ```
 
-Expected: nothing; `Test run with 68 tests in 18 suites passed`, `Executed 5 tests, with 1 test skipped and 0 failures`, `** TEST SUCCEEDED **`.
+Expected: nothing; `Test run with 69 tests in 18 suites passed`, `Executed 5 tests, with 1 test skipped and 0 failures`, `** TEST SUCCEEDED **`.
 
 - [ ] **Step 2: Write the unit tests and the UI tests.**
 
@@ -1451,7 +1451,7 @@ DEST26='platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5'
 xcodebuild test -project ios/Truthy/Truthy.xcodeproj -scheme Truthy -destination "$DEST26" 2>&1 | grep -E 'Test run with|Executed [0-9]+ tests?,|✘|TEST (SUCCEEDED|FAILED)' | tail -6
 ```
 
-Expected: `Test run with 73 tests in 21 suites passed` (plus `CrossingCounterTests` 2, `SpringBackTests` 2 and `TicketScrollTargetTests` 1), `Executed 11 tests, with 1 test skipped and 0 failures` (plus the six round gesture tests; task 12's Escape test skips on the simulator) and `** TEST SUCCEEDED **`. If `testADiagonalDragOnALongStatementScrollsOrAnswersNeverBoth` reports both, the card recognizer began on a steep drag: check the delegate's horizontal rule; if it reports neither, the scroll view did not get the vertical part: check that nothing else on the ticket claims vertical pans.
+Expected: `Test run with 74 tests in 21 suites passed` (plus `CrossingCounterTests` 2, `SpringBackTests` 2 and `TicketScrollTargetTests` 1), `Executed 11 tests, with 1 test skipped and 0 failures` (plus the six round gesture tests; task 12's Escape test skips on the simulator) and `** TEST SUCCEEDED **`. If `testADiagonalDragOnALongStatementScrollsOrAnswersNeverBoth` reports both, the card recognizer began on a steep drag: check the delegate's horizontal rule; if it reports neither, the scroll view did not get the vertical part: check that nothing else on the ticket claims vertical pans.
 
 - [ ] **Step 8: Play by hand once.** Launch with `-seed 7 -route aws-clf-c02/SEC -mode classic -screen round` (task 11, step 9) and play: a drag under 90 springs back carrying its speed; a drag over 90 answers, the stub tears off to the side of the verdict, the slip comes, the stamp lands after 380 and the ticket jolts; the ticket scrolls only when the slip is not in view; Next card rises after 360 and waits its 420 ms; a vertical drag scrolls with bounce, also on a short ticket; the source link opens the in-app browser; the edge pan shrinks the round. Then `-mode timed`: the clock runs, the stub takes its stamp for 700 ms, the card leaves towards the answered side and the next comes from below; at the end Time is up and See results (task 14's stand-in result shows "Round complete"). Then Streak and Three lives headers. Note differences from the web for task 15.
 
