@@ -23,3 +23,5 @@ dependencyResolutionManagement {
 rootProject.name = "Truthy"
 include(":engine")
 include(":app")
+
+include(":tokengen")
