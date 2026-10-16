@@ -378,6 +378,25 @@ struct Bitmap: CustomStringConvertible {
         #expect(drawn.count == own.count && zip(drawn, own).allSatisfy { abs($0 - $1) <= 2 }, "cards drawn \(drawn) tall, their own heights \(own)")
     }
 
+    /// Step 52 review: a step's list fades at the bottom only while cards lie below the view. The web measures the end
+    /// of its content on the inner list, without the scroller's 24 of bottom padding (listCue.ts useListCue); the app
+    /// counted the padding, so on step 2, where the three cards fit and only the padding lies below, the Azure card
+    /// faded over its last 28 (pair s2, day and night).
+    @Test func aListWhoseCardsFitDoesNotFade() {
+        let options = (0..<3).map { i in
+            StepOption(id: "\(i)", card: DestinationCard(variant: .place, name: "Cloud", sub: "17 decks", label: "Cloud", action: {}))
+        }
+        let natural = UIHostingController(rootView: ListHost(options: options)).sizeThatFits(in: CGSize(width: 375, height: 10_000)).height
+        // The view shows the 6 above the cards, the cards and 2 of the 24 under them.
+        let view = natural - 24 + 2
+        let list = ScrollingListHost(options: options).frame(width: 343, height: view).padding(.horizontal, 16)
+        let map = Bitmap(onScreen: ZStack(alignment: .top) { Color(red: 1, green: 0, blue: 0); list }, width: 375, height: view)
+        let paper = [Tokens.day.surfaceRaised.red, Tokens.day.surfaceRaised.green, Tokens.day.surfaceRaised.blue].map { Int(($0 * 255).rounded()) }
+        // 10 above the last card's foot, in its bottom padding: paper, not paper fading into what lies under the list.
+        let foot = view - 2 - 10
+        #expect(map.shows(paper, at: 100, foot, tolerance: 4), "10 above the last card's foot: \(map.at(100, foot))")
+    }
+
     /// A wrapped link is underlined under each line, from its first letter to its last: the space it wraps at is not.
     @Test func aWrappedLinkIsUnderlinedToEachLinesLastLetter() {
         let link = SourceLink(title: "Protecting data at rest", action: {}).frame(width: 190, alignment: .leading)
@@ -408,6 +427,16 @@ private struct PassHost: View {
     var body: some View {
         BoardingPassView(coordinator: coordinator, statementFocus: $focused, onAnswer: { _ in false }, onSource: { _ in })
             .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+private struct ScrollingListHost: View {
+    let options: [StepOption]
+    @AccessibilityFocusState private var focused: String?
+
+    var body: some View {
+        FadingList(options: options, step: 2, scrolls: true, focusedCard: $focused, revealId: nil, motion: { _ in nil },
+                    entering: { EnteringItem(index: $0, animate: false, reducedMotion: false) }, onCardFrame: { _, _ in })
     }
 }
 

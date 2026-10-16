@@ -572,6 +572,9 @@ struct FadingList: View {
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("flow")) } action: { onCardFrame(option.id, $0) }
             }
         }
+        // listCue.ts: the content ends where the inner list ends, not under the scroller's 24 of bottom padding, so a
+        // list whose cards fit does not fade over its last card.
+        .onGeometryChange(for: Double.self) { $0.frame(in: .named("list")).maxY } action: { contentBottom = $0 }
         .padding(EdgeInsets(top: 6, leading: 8, bottom: 24, trailing: 8))
     }
 
@@ -579,7 +582,6 @@ struct FadingList: View {
         let cue = listCue(viewHeight, contentBottom, frames.sorted { $0.key < $1.key }.map { ItemSpan(top: $0.value.minY, bottom: $0.value.maxY) })
         return ScrollView {
             cards
-                .onGeometryChange(for: Double.self) { $0.frame(in: .named("list")).maxY } action: { contentBottom = $0 }
         }
         .scrollPosition($position)
         .onScrollGeometryChange(for: Double.self) { $0.contentOffset.y } action: { _, y in offsetY = y }
