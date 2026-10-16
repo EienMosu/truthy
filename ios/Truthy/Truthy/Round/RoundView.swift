@@ -313,7 +313,8 @@ struct RoundView: View {
                 Task { await coordinator.next() }
             }
             .accessibilityFocused($actionFocused)
-            .frame(minHeight: Tokens.Size.actions)
+            // PlayScreen.tsx: the 60 pill fills the 64 row from its top (absolute inset-0), 4 free under it.
+            .frame(minHeight: Tokens.Size.actions, alignment: .top)
             .transition(reducedMotion ? .opacity : .offset(y: 12).combined(with: .opacity).animation(
                 Tokens.Curve.ease.animation(Tokens.Transition.answerRow.duration, delay: Tokens.Transition.answerRow.delay)))
         } else {
@@ -323,7 +324,7 @@ struct RoundView: View {
             }
             // Two half-width pills: past xxLarge "False" breaks in the middle of the word (README deviation 6).
             .paperTextSize()
-            .frame(minHeight: Tokens.Size.actions)
+            .frame(minHeight: Tokens.Size.actions, alignment: .top)
             .transition(.opacity.animation(Tokens.Curve.ease.animation(Tokens.Duration.t2)))
         }
     }

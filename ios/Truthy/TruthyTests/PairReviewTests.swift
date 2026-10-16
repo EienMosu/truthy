@@ -288,6 +288,26 @@ struct Bitmap: CustomStringConvertible {
         let backEdges = edges(backMap, centre: (44, 44), radius: Tokens.Size.pillSmall / 2) { $0[0] > 160 }
         #expect(backEdges.allSatisfy { abs($0) <= 0.35 }, "the Back pill's edge off its semicircle: \(backEdges)")
     }
+
+    /// Step 52 review: the round's 60 pills sit at the top of the 64 action row (PlayScreen.tsx: the row is
+    /// h-(--size-actions), the answer row or Next card fills it with absolute inset-0 and the pill is h-(--size-pill));
+    /// the app centred them, 2 lower (pairs p2, p3, p4, streak-p2, lives-p2, timed-p2 and timed-up).
+    @Test func theRoundsPillsSitAtTheTopOfTheActionRow() async throws {
+        let directory = Scratch.directory()
+        let model = try AppModel(bundle: .main, directory: directory, defaults: Scratch.defaults(), wall: FakeClock(), mono: FakeClock(),
+                                 arguments: LaunchArguments())
+        let decks = DeckStore(bundle: .main)
+        let route = Route(deckId: "aws-clf-c02", sectionId: "SEC")
+        let round = try RoundCoordinator(request: RoundRequest(route: route, mode: .classic, seed: 7), deck: try await decks.deck("aws-clf-c02"),
+                                         found: try #require(findRoute(try decks.index(), route)), progress: emptyProgress(),
+                                         store: FileProgressStore(directory: directory), journal: RoundJournal(directory: directory),
+                                         wall: FakeClock(1_790_000_000_000), mono: FakeClock(1_000))
+        let map = Bitmap(onScreen: RoundView(model: model, coordinator: round), width: 402, height: 874)
+        // The frame leaves 34 under the row, so the row runs from 776 to 840 and the False pill from 776 to 836.
+        let red = [Tokens.day.answerFalse.red, Tokens.day.answerFalse.green, Tokens.day.answerFalse.blue].map { Int(($0 * 255).rounded()) }
+        let foot = stride(from: 873.5, to: 700, by: -0.5).first { map.shows(red, at: 60, $0, tolerance: 12) } ?? 0
+        #expect(foot >= 834.5 && foot <= 835.5, "the False pill's last row of pixels is at \(foot)")
+    }
 }
 
 private struct PassHost: View {
