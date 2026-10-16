@@ -18,6 +18,8 @@ struct ResultView: View {
     /// part; the missed cards take the rest, at least 228, and scroll inside it.
     @State private var stageHeight = 0.0
     @State private var mainHeight = 0.0
+    /// The height of Play again, under which the ticket runs on.
+    @State private var pillHeight = Tokens.Size.pill
 
     private var result: RoundResult { summarise(coordinator.state) }
     private var copy: ResultCopy {
@@ -27,17 +29,14 @@ struct ResultView: View {
     var body: some View {
         AppFrame {
             VStack(spacing: Tokens.Space.s12) {
-                HStack(alignment: .top, spacing: Tokens.Space.s12) {
+                HStack(alignment: .center, spacing: Tokens.Space.s12) {
                     RoundIconButton(icon: .cross, label: "Close results") { close() }
-                    VStack(spacing: Tokens.Space.s4) {
-                        RouteCanvas(flown: 1, plane: nil, marks: (0..<copy.marks).map { i in
-                            RouteMark(t: waypointT(Double(i), Double(copy.marks)),
-                                      state: i < result.answers.count ? (result.answers[i].correct ? .correct : .wrong) : .future,
-                                      scale: completedScale(copy.marks), last: i == copy.marks - 1)
-                        }, ring: copy.ring.map { waypointT(Double($0), Double(copy.marks)) })
-                        .frame(height: Tokens.Size.flightPathHeight)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(copy.label)
+                    // FlightPath.tsx, the completed variant in its PathFrame: the drawing, then the label row 2 under it.
+                    VStack(spacing: Tokens.Space.s2) {
+                        CompletedRoute(results: result.answers.map(\.correct), total: copy.marks, ring: copy.ring)
+                            .frame(height: Tokens.Size.flightPathHeight)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(copy.label)
                         HStack {
                             Text(copy.ended).bold() + Text(copy.endedDetail)
                             Spacer()
@@ -56,6 +55,9 @@ struct ResultView: View {
                         ticket(scroller)
                     }
                     .scrollIndicators(.hidden)
+                    // The ticket runs on under Play again (opaque), not under the quiet button; the stage it fills is
+                    // the scroll's layout height, above the gap over the pill.
+                    .scrollsUnderRow(Tokens.Space.s12 + pillHeight)
                     .onGeometryChange(for: Double.self) { $0.size.height } action: { stageHeight = $0 }
                     // A heading VoiceOver reads but nobody sees (an opacity-0 view would leave the accessibility tree);
                     // it takes no room, so the ticket starts 12 under the header as on the web.
@@ -139,6 +141,7 @@ struct ResultView: View {
                 guard coordinator.resultActionsReady else { return }
                 model.playAgain(coordinator.request)
             }
+            .onGeometryChange(for: Double.self) { $0.size.height } action: { pillHeight = $0 }
             QuietButton(title: "Choose another route", leading: .routeCurve) { close() }
         }
     }
@@ -282,7 +285,8 @@ struct ShrinkRow: Layout {
         let widths = Self.shrink(basis: basis(subviews), total: bounds.width, gap: gap)
         for (i, subview) in subviews.enumerated() {
             let size = subview.sizeThatFits(ProposedViewSize(width: widths[i], height: nil))
-            let x = i == 0 ? bounds.minX : bounds.maxX - widths[i]
+            // The second part ends at the trailing edge whatever width its lines take (text-right in the last flex item).
+            let x = i == 0 ? bounds.minX : bounds.maxX - min(widths[i], size.width)
             subview.place(at: CGPoint(x: x, y: bounds.maxY - size.height), anchor: .topLeading,
                           proposal: ProposedViewSize(width: widths[i], height: size.height))
         }

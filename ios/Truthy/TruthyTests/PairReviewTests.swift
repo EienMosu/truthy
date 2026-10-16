@@ -1,0 +1,233 @@
+import SwiftUI
+import Testing
+import TruthyEngine
+import UIKit
+@testable import Truthy
+
+// Task 15, step 52: the review of the web and iOS pairs found these differences that the frame and colour probes do
+// not measure. Each test draws the view and reads its pixels, or measures it, against the web's value.
+
+/// A view drawn into memory at a known scale, its pixels read as sRGB bytes, top row first.
+struct Bitmap: CustomStringConvertible {
+    let width: Int
+    let height: Int
+    let scale: Double
+    let bytes: [UInt8]
+
+    @MainActor
+    init(_ view: some View, width: Double, height: Double, scale: Double = 2) {
+        let renderer = ImageRenderer(content: view.frame(width: width, height: height))
+        renderer.scale = scale
+        let image = renderer.cgImage!
+        var bytes = [UInt8](repeating: 0, count: image.width * image.height * 4)
+        let context = CGContext(data: &bytes, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        self.width = image.width
+        self.height = image.height
+        self.scale = scale
+        self.bytes = bytes
+    }
+
+    /// Drawn on screen, in a window of the test host's scene, where a Canvas clips to its bounds (ImageRenderer does not).
+    @MainActor
+    init(onScreen view: some View, width: Double, height: Double, scale: Double = 2) {
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first!
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: width, height: height)
+        let host = UIHostingController(rootView: view.frame(width: width, height: height))
+        // The window's status bar and home indicator insets would move the view down.
+        host.safeAreaRegions = []
+        window.rootViewController = host
+        window.isHidden = false
+        host.view.frame = window.bounds
+        host.view.layoutIfNeeded()
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+            _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        window.isHidden = true
+        self.init(image: image.cgImage!, scale: scale)
+    }
+
+    private init(image: CGImage, scale: Double) {
+        var bytes = [UInt8](repeating: 0, count: image.width * image.height * 4)
+        let context = CGContext(data: &bytes, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        self.width = image.width
+        self.height = image.height
+        self.scale = scale
+        self.bytes = bytes
+    }
+
+    var description: String { "Bitmap \(width) by \(height)" }
+
+    /// The colour at (x, y) in points, as 0 to 255 per channel.
+    func at(_ x: Double, _ y: Double) -> [Int] {
+        let i = (Int(y * scale) * width + Int(x * scale)) * 4
+        return (0..<4).map { Int(bytes[i + $0]) }
+    }
+
+    /// Whether the colour at (x, y) is `rgb` within `tolerance` per channel.
+    func shows(_ rgb: [Int], at x: Double, _ y: Double, tolerance: Int = 3) -> Bool {
+        zip(at(x, y).prefix(3), rgb).allSatisfy { abs($0 - $1) <= tolerance }
+    }
+}
+
+@MainActor
+@Suite struct PairReviewTests {
+    private let red = [255, 0, 0]
+
+    /// A box shadow is never painted inside its box (CSS): a destination card's notches show the sky under them, where
+    /// the app showed the shadow there, grey by day and black by night (pairs s1 to s5).
+    @Test(arguments: [false, true])
+    func aCardsNotchesShowWhatLiesUnderThem(night: Bool) {
+        let card = DestinationCard(variant: .place, name: "Cloud", sub: "17 decks", label: "Cloud", action: {})
+            .frame(width: 343, height: 104)
+            .environment(\.palette, night ? Tokens.night : Tokens.day)
+            .environment(\.shadows, night ? Tokens.nightShadows : Tokens.dayShadows)
+        let map = Bitmap(ZStack { Color(red: 1, green: 0, blue: 0); card }.frame(width: 383, height: 144), width: 383, height: 144)
+        let x = 20 + 343 - Tokens.Size.cardStub
+        for (dx, dy) in [(0.0, -2.5), (-3, -2), (3, -2), (0, -5.5)] {
+            let bottom = map.shows(red, at: x + dx, 124 + dy)
+            let top = map.shows(red, at: x + dx, 20 - dy)
+            #expect(bottom, "bottom notch at \(dx), \(dy): \(map.at(x + dx, 124 + dy))")
+            #expect(top, "top notch at \(dx), \(-dy): \(map.at(x + dx, 20 - dy))")
+        }
+    }
+
+    /// The ticket's side notches on the perforation show the sky too (pairs p2, p3, r1).
+    @Test func theTicketsSideNotchesShowWhatLiesUnderThem() {
+        let paper = VStack(spacing: 0) {
+            NotchedPaper(edge: .bottom).fill(Tokens.day.surfaceRaised.color).frame(height: 100)
+            NotchedPaper(edge: .top).fill(Tokens.day.surfaceSunk.color).frame(height: 100)
+        }
+        .tokenShadow(Tokens.dayShadows.ticket, RoundedRectangle(cornerRadius: Tokens.Radius.card))
+        .frame(width: 343, height: 200)
+        let map = Bitmap(ZStack { Color(red: 1, green: 0, blue: 0); paper }.frame(width: 383, height: 260), width: 383, height: 260)
+        // The notches of r16 are centred on the perforation at y 30 + 100, on both edges of the paper (x 20 and 363).
+        for (x, dy) in [(22.0, 0.0), (25, -6), (25, 6), (361, 0), (358, -6), (358, 6)] {
+            let sky = map.shows(red, at: x, 130 + dy)
+            #expect(sky, "notch at \(x), \(dy): \(map.at(x, 130 + dy))")
+        }
+    }
+
+    /// The amber dot of a deck's progress track sits on the end of the part seen and shows whole at 1 percent, half of
+    /// it before the track's start (DestinationCard.tsx, -right-[4px]); the app cut it at the track's edge (pair s3-recent).
+    @Test func theProgressDotShowsWholeAtTheStartOfTheTrack() {
+        let card = DestinationCard(variant: .deck, name: "CDL", nameStyle: .code, detail: "Cloud Digital Leader", seenPercent: 1,
+                                   stubLabel: "Cards", stubValue: "133", label: "CDL", action: {})
+        let map = Bitmap(onScreen: card.frame(width: 343, height: 128).padding(20).background(Color.white), width: 383, height: 168)
+        // The amber pixels left of the card's text column: the track starts 20 into the card (x 40), the dot's centre
+        // 0.56 into it and its radius is 4, so its left edge is at x 36.6.
+        var amber: [Double] = []
+        for y in stride(from: 20.0, to: 148, by: 0.5) {
+            for x in stride(from: 20.0, to: 80, by: 0.5) {
+                let pixel = map.at(x, y)
+                if pixel[0] > 200 && pixel[2] < 60 { amber.append(x) }
+            }
+        }
+        let left = amber.min() ?? 0
+        #expect(!amber.isEmpty && left <= 37.5, "the dot starts at \(left), the track at 40")
+    }
+
+    /// The comparison of the score row is flush with the row's trailing edge when it wraps (ScoreBlock.tsx text-right in a
+    /// flex item at the end); the app left it at the start of its share, short of the edge (pair streak-r1).
+    @Test func aWrappedComparisonEndsAtTheRowsTrailingEdge() {
+        let row = ShrinkRow(gap: 16) {
+            Color.blue.frame(width: 120, height: 20)
+            Text("First round on this route").font(.system(size: 18, weight: .semibold)).multilineTextAlignment(.trailing)
+        }
+        let map = Bitmap(row.frame(width: 250).padding(10).background(Color.white), width: 270, height: 80)
+        // The rightmost inked pixel of the comparison's lines, in points from the left.
+        var right = 0.0
+        for y in stride(from: 10.0, to: 70, by: 0.5) {
+            for x in stride(from: 140.0, to: 270, by: 0.5) where map.at(x, y)[0] < 128 {
+                right = max(right, x)
+            }
+        }
+        #expect(right >= 256, "the comparison ends at \(right), the row at 260")
+    }
+
+    /// The continue line (ContinueLine.tsx): 4 before the logo's disc, 12 after the chevron, the chevron in ink; the
+    /// app had 8 on both sides and a muted chevron (pair s1-returning).
+    @Test func theContinueLineHasTheWebsInsetsAndAnInkChevron() throws {
+        let index = try DeckStore(bundle: .main).index()
+        let route = Route(deckId: "aws-clf-c02", sectionId: "SEC")
+        let found = try #require(findRoute(index, route))
+        let line = ContinueLine(target: ContinueTarget(route: route, mode: .classic, found: found, lastScore: nil), action: {})
+        let map = Bitmap(onScreen: ZStack { Color(red: 1, green: 0, blue: 0); line }.frame(width: 343, height: 60), width: 343, height: 60)
+        let paper = [Tokens.day.surfaceRaised.red, Tokens.day.surfaceRaised.green, Tokens.day.surfaceRaised.blue].map { Int(($0 * 255).rounded()) }
+        let disc = stride(from: 0.0, to: 40, by: 0.5).first { map.shows(paper, at: $0, 30, tolerance: 6) } ?? -1
+        #expect(abs(disc - 4) <= 0.5, "the disc starts at \(disc)")
+        // The chevron (M6 3l5 5-5 5 in its 16 box) has its point at x 11 of the box, which ends 12 before the row's end.
+        let ink = [Tokens.day.ink.red, Tokens.day.ink.green, Tokens.day.ink.blue].map { Int(($0 * 255).rounded()) }
+        let point = stride(from: 343.0, to: 300, by: -0.5).first { map.at($0, 30)[0] < 128 } ?? -1
+        #expect(abs(point - 327) <= 1.5, "the chevron's point is at \(point)")
+        let darkest = stride(from: 320.0, to: 330, by: 0.5).map { map.at($0, 30) }.min { $0[0] < $1[0] } ?? []
+        #expect(zip(darkest.prefix(3), ink).allSatisfy { abs($0 - $1) <= 30 }, "the chevron is \(darkest), ink is \(ink)")
+    }
+
+    /// The ticket runs on under the row below it (PlayScreen.tsx SCROLLER_ENDS, ResultView.tsx UNDER_PILL): its scroller
+    /// ends 12 plus the row lower, with as much padding, so the ticket shows behind and between the pills. The app
+    /// stopped it 12 above the row, a hard edge across the ticket (pairs p2, r1 and timed-r1 on the SE).
+    @Test func aStageScrollRunsUnderTheRowBelowIt() {
+        let stage = VStack(spacing: 12) {
+            ScrollView { Color(red: 0, green: 0, blue: 1).frame(height: 1000) }.scrollsUnderRow(72)
+            Color.clear.frame(height: 60)
+        }
+        let map = Bitmap(onScreen: stage.background(Color.white), width: 100, height: 300)
+        // The stage ends at y 228; the gap is 228 to 240 and the row 240 to 300.
+        let gap = map.shows([0, 0, 255], at: 50, 234, tolerance: 8)
+        let row = map.shows([0, 0, 255], at: 50, 270, tolerance: 8)
+        #expect(gap && row, "the gap shows \(map.at(50, 234)), the row \(map.at(50, 270))")
+    }
+
+    /// Scrolled to its end, the ticket ends at the stage's foot, above the row: nothing of it is left under the row.
+    @Test func aStageScrollEndsAboveTheRow() {
+        let stage = VStack(spacing: 12) {
+            ScrollView {
+                VStack(spacing: 0) { Color(red: 0, green: 0, blue: 1).frame(height: 990); Color(red: 0, green: 1, blue: 0).frame(height: 10) }
+            }
+            .defaultScrollAnchor(.bottom)
+            .scrollsUnderRow(72)
+            Color.clear.frame(height: 60)
+        }
+        let map = Bitmap(onScreen: stage.background(Color.white), width: 100, height: 300)
+        let end = map.at(50, 224)
+        let under = map.at(50, 270)
+        #expect(end[1] > 100 && end[2] < 60, "the ticket's end shows \(end) at the stage's foot")
+        #expect(under[0] > 240 && under[1] > 240 && under[2] > 240, "under the row: \(under)")
+    }
+
+    /// Step lists keep 12 between their cards (StartFlow.tsx, flex-col gap-(--space-12)); the app had 8.
+    @Test func aStepsListKeepsTwelveBetweenItsCards() {
+        func height(_ count: Int) -> Double {
+            let options = (0..<count).map { i in
+                StepOption(id: "\(i)", card: DestinationCard(variant: .place, name: "Cloud", sub: "17 decks", label: "Cloud", action: {}))
+            }
+            return UIHostingController(rootView: ListHost(options: options)).sizeThatFits(in: CGSize(width: 375, height: 10_000)).height
+        }
+        let one = height(1)
+        let two = height(2)
+        #expect(abs((two - one) - (one - 30) - 12) < 0.5, "two cards \(two), one card \(one)")
+    }
+
+    /// On the ready step the mode's line sits 14 under the title, where the web's list wrapper puts it (mt-8 and pt-6).
+    @Test func theReadyStepsLineSitsFourteenUnderTheTitle() {
+        #expect(StartFlowView.readyLineGap == 14)
+    }
+}
+
+private struct ListHost: View {
+    let options: [StepOption]
+    @AccessibilityFocusState private var focused: String?
+
+    var body: some View {
+        FadingList(options: options, step: 1, scrolls: false, focusedCard: $focused, revealId: nil, motion: { _ in nil },
+                    entering: { EnteringItem(index: $0, animate: false, reducedMotion: false) }, onCardFrame: { _, _ in })
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}

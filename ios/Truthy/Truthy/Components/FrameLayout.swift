@@ -39,3 +39,14 @@ struct AppFrame<Content: View>: View {
         .ignoresSafeArea()
     }
 }
+
+extension View {
+    /// A stage's scroll that also runs under the row below it (PlayScreen.tsx SCROLLER_ENDS, ResultView.tsx UNDER_PILL):
+    /// the scroll view reaches `extra` lower, the row's height and the 12 above it, and its content has as much margin
+    /// at the bottom. The ticket shows behind and between the row's opaque pills, and scrolled to its end it stops above
+    /// the row. The layout keeps the stage's own height; the scroll's visible stage is its height less the bottom inset.
+    func scrollsUnderRow(_ extra: Double) -> some View {
+        contentMargins(.bottom, extra, for: .scrollContent)
+            .padding(.bottom, -extra)
+    }
+}

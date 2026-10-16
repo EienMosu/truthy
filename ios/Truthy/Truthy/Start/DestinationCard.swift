@@ -118,7 +118,9 @@ struct DestinationCard: View {
         .foregroundStyle(palette.ink.color)
         .frame(maxWidth: .infinity, minHeight: variant.minHeight)
         .background(shape.fill(palette.surfaceRaised.color))
-        .tokenShadow(shadows.small, shape)
+        // The shadow of the card's box (DestinationCard.tsx: box-shadow on the rounded card, the notches cut into its
+        // background), so the notches show the sky.
+        .tokenShadow(shadows.small, RoundedRectangle(cornerRadius: Tokens.Radius.card))
         .contentShape(shape)
     }
 
@@ -160,7 +162,9 @@ struct DestinationCard: View {
 }
 
 /// The 56 by 8 progress track of a deck card (DestinationCard.tsx ProgressTrack): dashes 4 on 4 for the part not
-/// seen, a solid ink line with an amber dot for the part seen. Decoration.
+/// seen, a solid ink line with an amber dot for the part seen. The dot is centred on the end of the part seen, so at a
+/// low share half of it lies before the track (-right-[4px]); it is drawn outside the track's canvas, which clips to
+/// its bounds on screen. Decoration.
 struct ProgressTrack: View {
     let percent: Int
     @Environment(\.palette) private var palette
@@ -175,11 +179,17 @@ struct ProgressTrack: View {
             context.stroke(dashes, with: .color(palette.rule.color), style: StrokeStyle(lineWidth: Tokens.Stroke.perforation, dash: [4, 4]))
             guard seen > 0 else { return }
             context.fill(Path(roundedRect: CGRect(x: 0, y: 3, width: seen, height: Tokens.Stroke.perforation), cornerRadius: 1), with: .color(palette.ink.color))
-            let dot = CGRect(x: seen - 4, y: 0, width: 8, height: 8)
-            context.fill(Path(ellipseIn: dot.insetBy(dx: -1.5, dy: -1.5)), with: .color(palette.ink.color))
-            context.fill(Path(ellipseIn: dot), with: .color(palette.accent.color))
         }
         .frame(width: width, height: Tokens.Space.s8)
+        .overlay(alignment: .topLeading) {
+            if seen > 0 {
+                Circle().fill(palette.accent.color)
+                    .padding(1.5)
+                    .background(Circle().fill(palette.ink.color))
+                    .frame(width: 11, height: 11)
+                    .offset(x: seen - 5.5, y: -1.5)
+            }
+        }
         .accessibilityHidden(true)
     }
 }

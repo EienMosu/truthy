@@ -7,6 +7,9 @@ import TruthyEngine
 // as lists and fade at the bottom while more lies below (task 5's listCue).
 
 struct StartFlowView: View {
+    /// The gap between the ready step's title and the mode's line: the list wrapper's 8 and its 6 of padding, in which
+    /// the web puts the line (StartFlow.tsx, step 6).
+    static let readyLineGap = Tokens.Space.s8 + 6
     let model: AppModel
     @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
@@ -328,6 +331,7 @@ struct StartFlowView: View {
                 Text("\(modeInfo(mode).description) Swipe right for true, left for false.")
                     .typeRole(Tokens.TypeRole.tagline)
                     .frame(maxWidth: 320, alignment: .leading)
+                    .padding(.top, Self.readyLineGap - Tokens.Space.s8)
                     .modifier(OptionalMotion(motion: leaving == false ? motion(.newItem(1)) : nil))
                     .modifier(EnteringItem(index: 1, animate: leaving == nil && arrivedForward, reducedMotion: reducedMotion))
             } else {
@@ -538,7 +542,8 @@ struct FadingList: View {
     }
 
     private var cards: some View {
-        VStack(spacing: Tokens.Space.s8) {
+        // StartFlow.tsx: flex-col gap-(--space-12).
+        VStack(spacing: Tokens.Space.s12) {
             ForEach(Array(options.enumerated()), id: \.element.id) { i, option in
                 option.card
                     .accessibilityFocused($focusedCard, equals: option.id)

@@ -123,6 +123,8 @@ struct RoundView: View {
     /// Whether the statement had VoiceOver focus when the player answered (Timed's next card, reference 4.4).
     @State private var statementHadFocusAtAnswer = false
     @State private var ticketWidth = 0.0
+    /// The action row's height: the ticket runs on under it.
+    @State private var actionsHeight = Tokens.Size.actions
     @AccessibilityFocusState private var statementFocused: Bool
     @AccessibilityFocusState private var actionFocused: Bool
     @AccessibilityFocusState private var xFocused: Bool
@@ -142,7 +144,8 @@ struct RoundView: View {
                     ticket.coordinateSpace(name: "ticketContent")
                 }
                 .scrollPosition($scroll)
-                .onScrollGeometryChange(for: [Double].self) { [$0.contentOffset.y, $0.containerSize.height, $0.contentSize.height] } action: { _, g in
+                // The visible stage is the scroll's height less its bottom inset, the part under the action row.
+                .onScrollGeometryChange(for: [Double].self) { [$0.contentOffset.y, $0.containerSize.height - $0.contentInsets.bottom, $0.contentSize.height] } action: { _, g in
                     scrollGeometry = g
                 }
                 .onChange(of: slipFrame) { _, frame in
@@ -177,7 +180,9 @@ struct RoundView: View {
                         scroll.scrollTo(y: TicketScrollTarget.newCard(statement: statementFrame, viewport: scrollGeometry[1]))
                     }
                 }
+                .scrollsUnderRow(Tokens.Space.s12 + actionsHeight)
                 actions
+                    .onGeometryChange(for: Double.self) { $0.size.height } action: { actionsHeight = $0 }
             }
         }
         .scaleEffect(roundBack)
@@ -245,7 +250,8 @@ struct RoundView: View {
     // MARK: Header and ticket
 
     private var header: some View {
-        HStack(alignment: .top, spacing: Tokens.Space.s12) {
+        // PlayScreen.tsx Header: 56 tall, the X and the class's header centred in it.
+        HStack(alignment: .center, spacing: Tokens.Space.s12) {
             RoundIconButton(icon: .cross, label: "Leave round") { pressX() }
                 .accessibilityFocused($xFocused)
             Group {
