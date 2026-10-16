@@ -8,11 +8,15 @@ import TruthyEngine
 // itself the card's frame (sheet chrome under criterion 2).
 
 enum LeaveSheetLayout {
-    /// The detent for a card `height` tall on a screen `screenHeight` tall with a bottom inset (before the screen is
-    /// measured, the card's own height).
+    /// The detent for a card `height` tall on a screen `screenHeight` tall whose system bottom inset is `bottomInset`.
+    /// The card's foot lies the larger of that inset and 34 above the screen's bottom, as the web's spacing; the sheet
+    /// already keeps its content above the system inset (the visual review saw the card 34 too high on a phone with a
+    /// home indicator), so the detent adds only what of the 34 the system inset leaves. `.large` when card and gap are
+    /// taller than the screen (before the screen is measured, the card's own height).
     static func detent(cardHeight: Double, bottomInset: Double, screenHeight: Double) -> PresentationDetent {
-        let needed = cardHeight + bottomInset
-        return screenHeight > 0 && needed > screenHeight ? .large : .height(needed)
+        let gap = max(bottomInset, Tokens.Size.safeBottom)
+        if screenHeight > 0 && cardHeight + gap > screenHeight { return .large }
+        return .height(cardHeight + gap - bottomInset)
     }
 }
 
@@ -99,8 +103,7 @@ private struct LeaveSheetModifier: ViewModifier {
                 .padding(.horizontal, sheetGutter)
             }
             .scrollBounceBehavior(.basedOnSize)
-            .presentationDetents([LeaveSheetLayout.detent(cardHeight: cardHeight, bottomInset: max(bottomInset, Tokens.Size.safeBottom),
-                                                          screenHeight: screenHeight)])
+            .presentationDetents([LeaveSheetLayout.detent(cardHeight: cardHeight, bottomInset: bottomInset, screenHeight: screenHeight)])
             .presentationDragIndicator(.hidden)
             .modifier(SheetPaper())
             .onChange(of: coordinator.decided) { _, decided in
