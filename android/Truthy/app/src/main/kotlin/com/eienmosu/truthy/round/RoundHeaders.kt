@@ -4,10 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -37,8 +35,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Constraints
 import com.eienmosu.truthy.design.Text
 import com.eienmosu.truthy.design.IconPaths
 import com.eienmosu.truthy.design.Tokens
@@ -63,6 +61,7 @@ import com.eienmosu.truthy.engine.waypointStates
 import com.eienmosu.truthy.engine.waypointT
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.max
 
 private object HeaderGeometry {
     const val VIEW_WIDTH = 276f
@@ -128,7 +127,6 @@ private fun label(vararg parts: Pair<String, Boolean>): AnnotatedString = buildA
 }
 
 /** One image with a full-sentence label, the drawing and the label row (FlightPath.tsx PathFrame). */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun InkFrame(label: String, progress: AnnotatedString, tally: AnnotatedString?, modifier: Modifier, draw: DrawScope.(Ink) -> Unit) {
     val colors = TruthyTheme.colors
@@ -141,9 +139,50 @@ private fun InkFrame(label: String, progress: AnnotatedString, tally: AnnotatedS
                 scale(s, s, pivot = Offset.Zero)
             }) { this.draw(ink) }
         }
-        FlowRow(Modifier.fillMaxWidth().padding(top = Tokens.Space.s2), horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s8)) {
-            Text(progress, style = TruthyType.routeLabel, color = colors.ink)
-            if (tally != null) Text(tally, Modifier.weight(1f), style = TruthyType.routeLabel, color = colors.ink, textAlign = TextAlign.End)
+        LabelRow(progress, tally, colors.ink, Modifier.fillMaxWidth().padding(top = Tokens.Space.s2))
+    }
+}
+
+/** Where the label row puts the tally, in px: x and y of its top left corner, and the row's height. */
+internal data class LabelPlacement(val tallyX: Int, val tallyY: Int, val height: Int)
+
+/**
+ * The web's label row (FlightPath.tsx PathFrame: flex-wrap, justify-between, gap-x 8, each label whitespace-nowrap):
+ * each label stays on one line with its number. The two share a line when both fit with [gap] between them, the tally at
+ * the right; otherwise the row wraps between them and the tally keeps to the right on the next line (ml-auto). A label
+ * wider than the row runs past its end rather than breaking. Review F1: at font scale 2 the tally broke inside itself.
+ */
+internal fun labelPlacement(width: Int, gap: Int, progressWidth: Int, progressHeight: Int, tallyWidth: Int, tallyHeight: Int): LabelPlacement {
+    val x = (width - tallyWidth).coerceAtLeast(0)
+    return if (progressWidth + gap + tallyWidth <= width) {
+        LabelPlacement(x, 0, max(progressHeight, tallyHeight))
+    } else {
+        LabelPlacement(x, progressHeight, progressHeight + tallyHeight)
+    }
+}
+
+@Composable
+private fun LabelRow(progress: AnnotatedString, tally: AnnotatedString?, color: Color, modifier: Modifier) {
+    Layout(
+        content = {
+            Text(progress, style = TruthyType.routeLabel, color = color, softWrap = false, maxLines = 1)
+            if (tally != null) Text(tally, style = TruthyType.routeLabel, color = color, softWrap = false, maxLines = 1)
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        // Each label at its own width on one line: it is never squeezed into what the other leaves.
+        val oneLine = Constraints()
+        val first = measurables[0].measure(oneLine)
+        val second = measurables.getOrNull(1)?.measure(oneLine)
+        val width = if (constraints.hasBoundedWidth) constraints.maxWidth else first.width + (second?.width ?: 0)
+        if (second == null) {
+            layout(width, first.height) { first.place(0, 0) }
+        } else {
+            val placement = labelPlacement(width, Tokens.Space.s8.roundToPx(), first.width, first.height, second.width, second.height)
+            layout(width, placement.height) {
+                first.place(0, 0)
+                second.place(placement.tallyX, placement.tallyY)
+            }
         }
     }
 }
