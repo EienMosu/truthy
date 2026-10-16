@@ -29,11 +29,10 @@ struct MissedCardsView: View {
                     .accessibilityLabel("Missed cards, No missed cards")
             } else {
                 VStack(spacing: 0) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Missed cards").typeRole(Tokens.TypeRole.monoData).foregroundStyle(palette.inkMuted.color)
-                            .accessibilityAddTraits(.isHeader)
-                        Spacer(minLength: Tokens.Space.s8)
-                        Text("\(missed.count) to review").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.ink.color)
+                    // One line, or two at the largest text sizes, so neither is cut (N9).
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .firstTextBaseline) { missedHeading; Spacer(minLength: Tokens.Space.s8); toReview }
+                        VStack(alignment: .leading, spacing: Tokens.Space.s2) { missedHeading; toReview }
                     }
                     .padding(.horizontal, Tokens.Size.ticketInset)
                     .padding(.top, Tokens.Space.s16)
@@ -51,6 +50,15 @@ struct MissedCardsView: View {
         }
         .background(NotchedPaper(edge: .top).fill(palette.surfaceSunk.color))
         .clipShape(NotchedPaper(edge: .top))
+    }
+
+    private var missedHeading: some View {
+        Text("Missed cards").typeRole(Tokens.TypeRole.monoData).foregroundStyle(palette.inkMuted.color).fixedSize()
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private var toReview: some View {
+        Text("\(missed.count) to review").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(palette.ink.color).fixedSize()
     }
 
     private var list: some View {
@@ -71,10 +79,16 @@ struct MissedCardsView: View {
     private func row(_ card: MissedCard, first: Bool, scroller: ScrollViewProxy) -> some View {
         let isOpen = open.contains(card.number)
         return VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Card \(pad2(card.number))")
-                Spacer(minLength: Tokens.Space.s8)
-                Text("You said \(card.given ? "True" : "False")")
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    Text("Card \(pad2(card.number))").fixedSize()
+                    Spacer(minLength: Tokens.Space.s8)
+                    Text("You said \(card.given ? "True" : "False")").fixedSize()
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Card \(pad2(card.number))")
+                    Text("You said \(card.given ? "True" : "False")")
+                }
             }
             .typeRole(Tokens.TypeRole.monoCaption)
             .foregroundStyle(palette.inkMuted.color)

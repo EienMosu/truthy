@@ -244,6 +244,8 @@ struct BoardingPassView: View {
                         IconView(icon: newBest ? .star : (answered.correct ? .check : .cross), size: newBest ? 20 : (answered.correct ? 22 : 18), strokeWidth: 3)
                         Text(newBest ? "New best" : (answered.correct ? "Correct" : "Not quite")).typeRole(Tokens.TypeRole.stamp)
                     }
+                    // A stamp never wraps (Stamp.tsx whitespace-nowrap).
+                    .fixedSize()
                     .foregroundStyle(colour)
                     .padding(.horizontal, Tokens.Space.s14 + Tokens.Stroke.stamp)
                     .padding(.top, Tokens.Space.s6 + Tokens.Stroke.stamp)

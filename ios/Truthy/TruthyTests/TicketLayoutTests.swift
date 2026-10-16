@@ -62,10 +62,19 @@ import UIKit
     /// The score block's row shrinks as the web's flex row does: on the small phone "Correct in a row" (116) and
     /// "First round on this route" (190) with 16 between them overflow 303 by 19, which they share by width.
     @Test func theScoreRowSharesTheOverflowByWidth() {
-        let widths = ShrinkRow.shrink(basis: [116, 190], narrowest: 30, total: 303, gap: 16)
+        let widths = ShrinkRow.shrink(basis: [116, 190], total: 303, gap: 16)
         #expect(abs(widths[0] - 108.80) < 0.01 && abs(widths[1] - 178.20) < 0.01)
-        #expect(ShrinkRow.shrink(basis: [80, 190], narrowest: 30, total: 398, gap: 16) == [80, 190])
-        #expect(ShrinkRow.shrink(basis: [116, 190], narrowest: 112, total: 303, gap: 16) == [112, 175])
+        #expect(ShrinkRow.shrink(basis: [80, 190], total: 398, gap: 16) == [80, 190])
+    }
+
+    /// At the largest text size the comparison goes under the score: the row is as tall as both.
+    @Test func atTheLargestSizeTheComparisonGoesUnderTheScore() {
+        let copy = resultCopy(RoundResult(mode: .streak, route: Route(deckId: "aws-clf-c02", sectionId: "SEC"), score: 1, total: 2, answers: [], missed: [], abandoned: false), "Streak", 10, nil)
+        func block(_ size: DynamicTypeSize) -> Double {
+            height(ScoreBlock(copy: copy, score: 1, comparison: .first).dynamicTypeSize(size), width: 343)
+        }
+        #expect(block(.large) < 120, "side by side at the default size (the label on two lines, as on the web)")
+        #expect(block(.accessibility5) > block(.large) + 80, "one under the other at the largest size")
     }
 
     @Test func theMissedCardsFillTheLowerPartTheyAreGiven() {

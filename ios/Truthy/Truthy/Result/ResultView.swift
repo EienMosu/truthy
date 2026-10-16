@@ -148,6 +148,7 @@ struct ScoreBlock: View {
     let score: Int
     let comparison: Comparison?
     @Environment(\.palette) private var palette
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         // ScoreBlock.tsx: the score at the left and the comparison at the right, their feet aligned, 14 above and 18
@@ -166,9 +167,13 @@ struct ScoreBlock: View {
                     }
                 }
             } else {
-                ShrinkRow(gap: Tokens.Space.s16) {
+                // At the accessibility text sizes, which the web does not have, the comparison goes under the score,
+                // 10 below it and at the trailing edge, so no word is cut (N9).
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: Tokens.Space.s10)) : AnyLayout(ShrinkRow(gap: Tokens.Space.s16))
+                layout {
                     scoreColumn
-                    comparisonView
+                    comparisonView.frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil, alignment: .trailing)
                 }
             }
         }
@@ -182,11 +187,18 @@ struct ScoreBlock: View {
         VStack(alignment: .leading, spacing: Tokens.Space.s4) {
             Text(copy.scoreLabel).typeRole(Tokens.TypeRole.fieldLabel).foregroundStyle(palette.inkMuted.color)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s8) {
-                Text("\(score)").typeRole(Tokens.TypeRole.score)
-                if let unit = copy.unit { Text(unit).typeRole(Tokens.TypeRole.scoreUnit).foregroundStyle(palette.inkMuted.color).fixedSize() }
+            // The unit goes under the score where the two do not fit on one line (the largest text sizes).
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.s8) {
+                    Text("\(score)").typeRole(Tokens.TypeRole.score)
+                    if let unit = copy.unit { Text(unit).typeRole(Tokens.TypeRole.scoreUnit).foregroundStyle(palette.inkMuted.color) }
+                }
+                .fixedSize()
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("\(score)").typeRole(Tokens.TypeRole.score)
+                    if let unit = copy.unit { Text(unit).typeRole(Tokens.TypeRole.scoreUnit).foregroundStyle(palette.inkMuted.color) }
+                }
             }
-            .fixedSize()
             .accessibilityElement(children: .combine)
         }
     }
@@ -237,39 +249,30 @@ struct ScoreBlock: View {
 
 /// Two parts on a row, the first at the leading edge and the second at the trailing edge, their feet aligned (flex,
 /// justify-between, items-end, gap 16). When they do not fit side by side at their own widths, both give up room in
-/// proportion to those widths, as a flex row shrinks its items, the first never below its narrowest (its longest
-/// word), and their text wraps in what is left.
+/// proportion to those widths, as a flex row shrinks its items, and their text wraps in what is left.
 struct ShrinkRow: Layout {
     let gap: Double
 
-    func widths(_ total: Double, _ subviews: Subviews) -> [Double] {
-        let basis = subviews.map { Double($0.sizeThatFits(.unspecified).width) }
-        let narrowest = subviews.first.map { Double($0.sizeThatFits(ProposedViewSize(width: 0, height: nil)).width) } ?? 0
-        return Self.shrink(basis: basis, narrowest: narrowest, total: total, gap: gap)
-    }
+    private func basis(_ subviews: Subviews) -> [Double] { subviews.map { Double($0.sizeThatFits(.unspecified).width) } }
 
     /// The widths of the parts: their own (`basis`) when they fit `total` with the gaps between them, otherwise each
-    /// less by its share of the overflow in proportion to its basis, the first no narrower than `narrowest`.
-    static func shrink(basis: [Double], narrowest: Double, total: Double, gap: Double) -> [Double] {
+    /// less by its share of the overflow in proportion to its basis.
+    static func shrink(basis: [Double], total: Double, gap: Double) -> [Double] {
         let used = basis.reduce(0, +) + gap * Double(max(0, basis.count - 1))
         let sum = basis.reduce(0, +)
         guard used > total, sum > 0 else { return basis }
-        var widths = basis.map { $0 - (used - total) * $0 / sum }
-        if widths.count > 1, widths[0] < narrowest {
-            widths[1] -= narrowest - widths[0]
-            widths[0] = narrowest
-        }
-        return widths
+        return basis.map { $0 - (used - total) * $0 / sum }
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let total = proposal.width ?? (subviews.map { $0.sizeThatFits(.unspecified).width }.reduce(0, +) + gap)
-        let heights = zip(subviews, widths(total, subviews)).map { $0.sizeThatFits(ProposedViewSize(width: $1, height: nil)).height }
+        let total = proposal.width ?? (basis(subviews).reduce(0, +) + gap)
+        let widths = Self.shrink(basis: basis(subviews), total: total, gap: gap)
+        let heights = zip(subviews, widths).map { $0.sizeThatFits(ProposedViewSize(width: $1, height: nil)).height }
         return CGSize(width: total, height: heights.max() ?? 0)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let widths = widths(bounds.width, subviews)
+        let widths = Self.shrink(basis: basis(subviews), total: bounds.width, gap: gap)
         for (i, subview) in subviews.enumerated() {
             let size = subview.sizeThatFits(ProposedViewSize(width: widths[i], height: nil))
             let x = i == 0 ? bounds.minX : bounds.maxX - widths[i]
