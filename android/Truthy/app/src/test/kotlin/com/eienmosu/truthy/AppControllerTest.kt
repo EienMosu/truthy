@@ -26,6 +26,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -33,6 +34,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNotSame
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,7 +56,17 @@ class AppControllerTest {
         val theme = ThemeBox(fails = themeFails)
         val decks = testDeckStore(io)
         val writer = SerialWriter(scope.backgroundScope)
-        val services = testServices(journal, progress, wall, monotonic, decks, theme, gate)
+
+        /** Every deck decode throws while this is true, as a corrupt bundle would (spec P1). */
+        var deckFails = false
+
+        /** Holds the next deck decodes until it completes. */
+        var deckHold: CompletableDeferred<Unit>? = null
+
+        val services = testServices(journal, progress, wall, monotonic, decks, theme, gate) {
+            deckHold?.await()
+            if (deckFails) throw IOException("the deck did not decode")
+        }
 
         /** A new launch of the app over this rig's files: its boot runs when the test next waits. */
         fun start(): AppController = AppController(scope.backgroundScope, services, writer, systemDark, debug)
@@ -142,6 +154,51 @@ class AppControllerTest {
         assertEquals(TopScreen.Start, app.screen.value)
         assertTrue(app.startFlow.view.value.fromRound)
         assertIs<CatalogState.Ready>(app.startFlow.catalog.value)
+    }
+
+    @Test
+    fun aDeckThatCannotBeDecodedShowsTheLoadFailureAndTryAgainOpensTheRound() = runTest {
+        val rig = Rig(this)
+        val app = rig.start()
+        app.booted.join()
+        val request = RoundRequest(sec, Mode.CLASSIC)
+        rig.deckFails = true
+        app.openRound(request)
+        assertNotNull(app.roundJob).join()
+        assertEquals(TopScreen.Round(request, RoundLoad.Failed), app.screen.value, "a decode failure is P1, never a loading state that never ends")
+
+        rig.deckFails = false
+        val hold = CompletableDeferred<Unit>()
+        rig.deckHold = hold
+        app.retryRound()
+        runCurrent()
+        assertEquals(TopScreen.Round(request, RoundLoad.Loading), app.screen.value, "Try again loads the same route and class again")
+        hold.complete(Unit)
+        assertNotNull(app.roundJob).join()
+        val round = coordinatorOf(app)
+        assertEquals(request, round.request)
+        assertEquals(Phase.QUESTION, round.state.value.phase)
+
+        val loaded = app.roundJob
+        app.retryRound()
+        assertSame(loaded, app.roundJob, "Try again does nothing once the round is on screen")
+        round.close()
+    }
+
+    @Test
+    fun theXOnALoadFailureLeavesAtOnce() = runTest {
+        val rig = Rig(this)
+        val app = rig.start()
+        app.booted.join()
+        rig.deckFails = true
+        app.openRound(RoundRequest(sec, Mode.STREAK))
+        assertNotNull(app.roundJob).join()
+        assertEquals(RoundLoad.Failed, assertIs<TopScreen.Round>(app.screen.value).load)
+        app.requestLeave()
+        assertNotNull(app.leaveJob).join()
+        assertStepOne(app)
+        assertTrue(app.startFlow.view.value.fromRound)
+        assertEquals(0, rig.progress.saves, "a round that never loaded saves nothing")
     }
 
     @Test

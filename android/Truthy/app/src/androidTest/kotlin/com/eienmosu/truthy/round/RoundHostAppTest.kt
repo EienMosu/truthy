@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.eienmosu.truthy.ROUND_TAG
@@ -92,6 +93,34 @@ class RoundHostAppTest {
         rule.waitUntil(WAIT_MS) { rule.onAllNodesWithTagExist(START_TAG) }
         rule.onNodeWithTag(ROUND_TAG).assertDoesNotExist()
         assertEquals(1, runBlocking { rig.progress.load() }.cards.size)
+    }
+
+    @Test
+    fun aDeckThatDoesNotLoadShowsP1AndTryAgainOpensTheRound() {
+        rig.deckFails = true
+        show()
+        open()
+        assertEquals(RoundLoad.Failed, rig.load)
+        rule.onNodeWithText("This deck didn't load").assertIsDisplayed()
+        rule.onNodeWithText("Check your connection and try again.").assertIsDisplayed()
+        rule.onNode(hasContentDescription("Loading your round")).assertDoesNotExist()
+
+        rig.deckFails = false
+        rule.onNode(hasText("Try again") and hasClickAction()).performClick()
+        rule.waitUntil(WAIT_MS) { rig.load is RoundLoad.Ready }
+        rule.waitUntil(WAIT_MS) { rule.onAllNodesWithTagExist("round-screen") }
+        rule.onNodeWithText("This deck didn't load").assertDoesNotExist()
+        assertEquals(request, rig.coordinator.request)
+    }
+
+    @Test
+    fun theXOnP1LeavesAtOnce() {
+        rig.deckFails = true
+        show()
+        open()
+        rule.onNode(hasContentDescription("Leave round") and hasClickAction()).performClick()
+        rule.waitUntil(WAIT_MS) { rig.app.screen.value == TopScreen.Start }
+        rule.waitUntil(WAIT_MS) { rule.onAllNodesWithTagExist(START_TAG) }
     }
 }
 
