@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -340,7 +341,11 @@ private fun Dashes(now: Boolean, alpha: Float, spoken: Boolean) {
     }
 }
 
-/** FillInPass.tsx:218-236: a word of the route pass's quiet line, a way back to the area or the platform. */
+/**
+ * FillInPass.tsx:218-236: a word of the route pass's quiet line, a way back to the area or the platform. Its text sits
+ * at the top of the 22 box, 1 down (pt-px), and reaches 1 past its foot; the middle dot between the words is centred in
+ * the line, so it lies above the words' baseline, as on the web (review s4, s5: the dot was centred on the words).
+ */
 @Composable
 private fun LineWord(word: PassField, interactive: Boolean, travels: Travels, onJump: (PassFieldName) -> Unit) {
     val value = word.value ?: return
@@ -351,7 +356,7 @@ private fun LineWord(word: PassField, interactive: Boolean, travels: Travels, on
             .heightIn(min = StartGeometry.lineWordHeight)
             .then(if (wayBack != null) Modifier.wayBack(wayBack) { onJump(word.field) } else Modifier)
             .padding(horizontal = Tokens.Space.s6),
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.TopCenter,
     ) {
         Text(
             value,
@@ -359,7 +364,9 @@ private fun LineWord(word: PassField, interactive: Boolean, travels: Travels, on
             color = muted,
             maxLines = 1,
             softWrap = false,
-            modifier = Modifier.travelSpot(travels, SpotKey(PassStage.ROUTE, word.field), value, TruthyType.passLine, muted, right = false),
+            modifier = Modifier
+                .offset(y = StartGeometry.lineWordTextTop)
+                .travelSpot(travels, SpotKey(PassStage.ROUTE, word.field), value, TruthyType.passLine, muted, right = false),
         )
     }
 }

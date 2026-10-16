@@ -18,6 +18,7 @@ object StartGeometry {
     val dashHeight = 3.dp              // FillInPass.tsx:151
     val dashGap = 5.dp                 // FillInPass.tsx:141
     val lineWordHeight = 22.dp         // FillInPass.tsx:225
+    val lineWordTextTop = 1.dp         // FillInPass.tsx:231, pt-px: the word's text 1 below the top of its 22 box
     val legGap = 40.dp                 // FillInPass.tsx:285, the empty middle column of the legs
     val readyCellBottom = 7.dp         // FillInPass.tsx:301
     val compactMarkWidth = 20.dp       // FillInPass.tsx:104
