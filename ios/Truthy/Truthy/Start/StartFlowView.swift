@@ -10,6 +10,9 @@ struct StartFlowView: View {
     /// The gap between the ready step's title and the mode's line: the list wrapper's 8 and its 6 of padding, in which
     /// the web puts the line (StartFlow.tsx, step 6).
     static let readyLineGap = Tokens.Space.s8 + 6
+    /// The room between step 1's list and the continue line under it: StartFlow.tsx keeps the section the foot gap (76)
+    /// above the frame's foot, where the line takes its 60 and the 4 under it.
+    static let continueLineGap = Tokens.Size.footGap - Tokens.Size.pill - Tokens.Space.s4
     let model: AppModel
     @Environment(\.palette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
@@ -305,6 +308,8 @@ struct StartFlowView: View {
             }
         }
         .padding(.bottom, 4)
+        // A short screen scrolls the whole column and the line follows the list (short:mb-0, short:static).
+        .padding(.top, short ? 0 : Self.continueLineGap)
     }
 
     private var startRoundButton: some View {

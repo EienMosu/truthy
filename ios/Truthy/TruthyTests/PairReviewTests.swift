@@ -216,6 +216,13 @@ struct Bitmap: CustomStringConvertible {
     }
 
     /// On the ready step the mode's line sits 14 under the title, where the web's list wrapper puts it (mt-8 and pt-6).
+    /// Step 1's list ends 12 above the continue line (StartFlow.tsx: the section's mb-(--size-foot-gap), 76, over the
+    /// line's 60 and its 4 from the foot); the app ran the list down to the line's top (pair s1-returning).
+    @Test func stepOnesListEndsTwelveAboveTheContinueLine() {
+        #expect(StartFlowView.continueLineGap == Tokens.Size.footGap - Tokens.Size.pill - Tokens.Space.s4)
+        #expect(StartFlowView.continueLineGap == 12)
+    }
+
     @Test func theReadyStepsLineSitsFourteenUnderTheTitle() {
         #expect(StartFlowView.readyLineGap == 14)
     }
