@@ -417,6 +417,38 @@ struct Bitmap: CustomStringConvertible {
         #expect(left >= Tokens.Size.ticketInset && left <= Tokens.Size.ticketInset + 6, "the heading starts at \(left)")
     }
 
+    /// Step 52 review: at the largest text sizes a pill's or a quiet button's label that wraps has each line centred, as
+    /// a browser centres a button's text; the app left-aligned the lines ("Keep / playing", "See / results", "Choose /
+    /// another route").
+    @Test(arguments: ["pill", "quiet"])
+    func aWrappedButtonLabelIsCentredLineByLine(_ which: String) {
+        let pill = which == "pill"
+        let button: AnyView = pill
+            // "See results": no descender in "See" to run into the line under it, so the lines part by a blank row.
+            ? AnyView(PillButton(title: "See results", action: {}))
+            : AnyView(QuietButton(title: "Choose another route", action: {}))
+        let width = pill ? 220.0 : 260.0
+        // On screen: the pill's review probe is a UIKit view, which an ImageRenderer draws as a yellow placeholder.
+        let map = Bitmap(onScreen: ZStack { (pill ? Color(white: 0) : Color(white: 1)); button.frame(width: width) }
+            .environment(\.dynamicTypeSize, .accessibility5), width: width, height: 300)
+        // The label's pixels: light on the ink pill, dark on the paper under the quiet button.
+        func label(_ x: Double, _ y: Double) -> Bool { pill ? map.at(x, y)[0] > 160 : map.at(x, y)[0] < 96 }
+        var lines: [(top: Double, left: Double, right: Double)] = []
+        var previous = false
+        for y in stride(from: 0.0, to: 300, by: 0.5) {
+            let xs = stride(from: 0.0, to: width, by: 0.5).filter { label($0, y) }
+            if let left = xs.first, let right = xs.last {
+                if !previous { lines.append((y, left, right)) } else if let last = lines.last {
+                    lines[lines.count - 1] = (last.top, min(last.left, left), max(last.right, right))
+                }
+            }
+            previous = !xs.isEmpty
+        }
+        let centres = lines.map { ($0.left + $0.right) / 2 }
+        #expect(lines.count >= 2, "\(lines.count) lines")
+        #expect(centres.allSatisfy { abs($0 - width / 2) <= 2.5 }, "the lines' centres \(centres), the button's \(width / 2)")
+    }
+
     /// A wrapped link is underlined under each line, from its first letter to its last: the space it wraps at is not.
     @Test func aWrappedLinkIsUnderlinedToEachLinesLastLetter() {
         let link = SourceLink(title: "Protecting data at rest", action: {}).frame(width: 190, alignment: .leading)

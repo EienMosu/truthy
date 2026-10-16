@@ -23,7 +23,8 @@ struct PillButton: View {
         Button(action: { if !dimmed { action() } }) {
             HStack(spacing: Tokens.Space.s10) {
                 if let leading { IconView(icon: leading, size: leadingSize, strokeWidth: leadingStroke) }
-                Text(title).typeRole(Tokens.TypeRole.button)
+                // A wrapped title (the largest text sizes) has each line centred, as a browser centres a button's text.
+                Text(title).typeRole(Tokens.TypeRole.button).multilineTextAlignment(.center)
                 if trailingArrow { Text("→").typeRole(Tokens.TypeRole.button).accessibilityHidden(true) }
             }
             .foregroundStyle(palette.onDark.color)
@@ -78,7 +79,7 @@ struct QuietButton: View {
         Button(action: action) {
             HStack(spacing: Tokens.Space.s8) {
                 if let leading { IconView(icon: leading, size: leading.viewBox.width) }
-                Text(title).typeRole(Tokens.TypeRole.buttonQuiet)
+                Text(title).typeRole(Tokens.TypeRole.buttonQuiet).multilineTextAlignment(.center)
             }
             .foregroundStyle(palette.ink.color)
             .frame(maxWidth: .infinity, minHeight: Tokens.Size.pillSmall)
