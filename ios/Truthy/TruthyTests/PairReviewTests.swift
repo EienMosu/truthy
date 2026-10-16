@@ -250,6 +250,20 @@ struct Bitmap: CustomStringConvertible {
     @Test func theReadyStepsLineSitsFourteenUnderTheTitle() {
         #expect(StartFlowView.readyLineGap == 14)
     }
+
+    /// Step 52 review: the Back pill casts the small elevation (StartFlow.tsx shadow-(--elevation-small), reference
+    /// 5.5); the app drew it flat on the sky (pairs s2 to s6 and s3-recent, day and night).
+    @Test(arguments: [false, true])
+    func theBackPillCastsTheSmallShadow(night: Bool) {
+        let pill = BackPill(label: "Back to areas", action: {})
+            .environment(\.palette, night ? Tokens.night : Tokens.day)
+            .environment(\.shadows, night ? Tokens.nightShadows : Tokens.dayShadows)
+        let map = Bitmap(ZStack(alignment: .topLeading) { Color(white: 1); pill.padding(20) }, width: 200, height: 100)
+        // The pill is 48 tall from y 20; 2.5 under its foot the shadow's blurred layer (6 down, 12 blur, -6 spread).
+        let under = map.at(50, 70.5)
+        #expect(under.prefix(3).allSatisfy { $0 <= 243 }, "2.5 under the pill: \(under)")
+        #expect(map.shows([255, 255, 255], at: 190, 90), "the background: \(map.at(190, 90))")
+    }
 }
 
 private struct PassHost: View {

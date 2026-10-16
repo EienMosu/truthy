@@ -257,19 +257,7 @@ struct StartFlowView: View {
         let back = passBack
         let showing = back.map { $0.changesStage ? $0.transition.to : step } ?? step
         return VStack(alignment: .leading, spacing: Tokens.Space.s12) {
-            Button { if !headerHeld { playBack(to: flow.previous) } } label: {
-                HStack(spacing: Tokens.Space.s8) {
-                    IconView(icon: .backPill, size: 18)
-                    Text("Back").typeRole(Tokens.TypeRole.buttonBack)
-                }
-                .padding(.leading, Tokens.Space.s14)
-                .padding(.trailing, Tokens.Space.s20)
-                .frame(minHeight: Tokens.Size.pillSmall)
-                .background(Capsule().fill(palette.surfaceRaised.color))
-            }
-            .buttonStyle(.backPill)
-            .keyboardFocusRing(Capsule())
-            .accessibilityLabel("Back to \(StepContent.backTo[flow.previous] ?? "areas")")
+            BackPill(label: "Back to \(StepContent.backTo[flow.previous] ?? "areas")") { if !headerHeld { playBack(to: flow.previous) } }
             FillInPass(flow: flow, showing: showing, back: back,
                        onBack: { target in if !headerHeld { playBack(to: target) } },
                        onChangePlatform: { if !headerHeld { playBackToPlatform() } },
@@ -470,6 +458,32 @@ struct StartFlowView: View {
         unrollScale = 0
         unrollRoute = ready.route
         unrollMode = ready.mode
+    }
+}
+
+/// The Back pill of steps 2 to 6 (StartFlow.tsx): the arrow and "Back" on raised paper with the small elevation, 0.96
+/// while pressed. The accessible name says where it goes (reference 4.5).
+struct BackPill: View {
+    let label: String
+    let action: () -> Void
+    @Environment(\.palette) private var palette
+    @Environment(\.shadows) private var shadows
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Tokens.Space.s8) {
+                IconView(icon: .backPill, size: 18)
+                Text("Back").typeRole(Tokens.TypeRole.buttonBack)
+            }
+            .padding(.leading, Tokens.Space.s14)
+            .padding(.trailing, Tokens.Space.s20)
+            .frame(minHeight: Tokens.Size.pillSmall)
+            .background(Capsule().fill(palette.surfaceRaised.color))
+            .tokenShadow(shadows.small, Capsule())
+        }
+        .buttonStyle(.backPill)
+        .keyboardFocusRing(Capsule())
+        .accessibilityLabel(label)
     }
 }
 
