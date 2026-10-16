@@ -70,6 +70,7 @@ fun BoardingPass(
     joltDelayMs: Int = Tokens.Transitions.jolt.delayMs,
     reduced: Boolean = false,
     shortLegs: Boolean = false,
+    shadow: Boolean = true,
     lower: @Composable BoxScope.() -> Unit,
     body: @Composable ColumnScope.() -> Unit,
 ) {
@@ -95,7 +96,8 @@ fun BoardingPass(
     // weight(1f) would get the minimum minus the upper part, 0 once the upper part is taller than the stage at a large
     // font scale or on a 320 by 568 phone, and the result's missed list would be laid out 0 px tall.)
     Box(modifier.fillMaxWidth().testTag(TestTags.TICKET), propagateMinConstraints = true) {
-        Box(Modifier.matchParentSize().truthyShadow(TruthyTheme.shadows.ticket, cornerRadius = Tokens.Radius.card))
+        // shadow false: the caller draws the ticket's shadow itself (the result, ResultScreen's TicketShadow).
+        if (shadow) Box(Modifier.matchParentSize().truthyShadow(TruthyTheme.shadows.ticket, cornerRadius = Tokens.Radius.card))
         Layout(
             content = {
             Box(

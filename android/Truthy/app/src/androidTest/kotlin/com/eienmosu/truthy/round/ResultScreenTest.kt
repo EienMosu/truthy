@@ -1,15 +1,18 @@
 package com.eienmosu.truthy.round
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -18,11 +21,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.eienmosu.truthy.MonotonicClock
 import com.eienmosu.truthy.engine.RoundState
 import com.eienmosu.truthy.engine.completedLabel
+import com.eienmosu.truthy.ui.TestTags
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @RunWith(AndroidJUnit4::class)
 class ResultScreenTest {
@@ -126,6 +132,31 @@ class ResultScreenTest {
         rule.onNode(hasScrollAction()).performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, 100_000f) }
         rule.waitForIdle()
         rule.onNodeWithTag(MISSED_FADE_TAG).assertDoesNotExist()
+    }
+
+    // ResultView.tsx SCROLLER (review r1, streak-r1): the stage's scroller clips the ticket's shadow at the column's
+    // sides and runs on under Play again, so the shadow under the ticket shows in the 12 above the pill.
+    @Test
+    fun theTicketsShadowIsClippedAtTheSidesAndShowsAboveThePill() {
+        result(TestRounds.classic(wrong = setOf(2)))
+        rule.waitForIdle()
+        val ticket = rule.onNodeWithTag(TestTags.TICKET).fetchSemanticsNode().boundsInRoot
+        val pill = rule.onNodeWithText(ResultText.PLAY_AGAIN).fetchSemanticsNode().boundsInRoot
+        val pixels = rule.onRoot().captureToImage().toPixelMap()
+        val d = rule.density.density
+        val red = { x: Float, y: Float -> (pixels[x.roundToInt(), y.roundToInt()].red * 255f).roundToInt() }
+        // Beside the ticket, the sky is the sky: no shadow outside the column (at the cloud-free heights of the probes).
+        for (y in listOf(300f * d, 560f * d)) {
+            val besideTicket = red(ticket.left - 2f, y)
+            val farOut = red(d, y)
+            assertTrue("beside the ticket at $y: $besideTicket against $farOut", abs(besideTicket - farOut) <= 2)
+        }
+        // Under the ticket's foot, above the pill: the ticket's shadow, darker than the sky at the same height.
+        assertTrue("the gap above the pill: ${pill.top - ticket.bottom} px", pill.top - ticket.bottom > 8f * d)
+        val y = ticket.bottom + 4f * d
+        val underTicket = red(ticket.center.x, y)
+        val sky = red(d, y)
+        assertTrue("under the ticket: $underTicket against the sky's $sky", sky - underTicket >= 15)
     }
 
     @Test

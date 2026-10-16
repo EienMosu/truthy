@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,15 +27,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -42,6 +48,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.eienmosu.truthy.MonotonicClock
 import com.eienmosu.truthy.design.IconId
@@ -52,6 +59,7 @@ import com.eienmosu.truthy.design.Tokens
 import com.eienmosu.truthy.design.TruthyFrame
 import com.eienmosu.truthy.design.TruthyIcon
 import com.eienmosu.truthy.design.TruthyTheme
+import com.eienmosu.truthy.design.truthyShadow
 import com.eienmosu.truthy.engine.FADE_PX
 import com.eienmosu.truthy.ui.PillButton
 import com.eienmosu.truthy.ui.QuietButton
@@ -112,6 +120,7 @@ fun ResultScreen(
     var stageBottom by remember { mutableFloatStateOf(0f) }
     val fadePx = with(density) { FADE_PX.toFloat().dp.toPx() }
     val fade = stageScroll.canScrollForward && lowerTop < stageBottom - fadePx
+    var ticketHeight by remember { mutableIntStateOf(0) }
     Box(modifier.fillMaxSize()) {
         SkyBackdrop(lowerCloud = LowerCloud.GAME)
         TruthyFrame {
@@ -137,6 +146,7 @@ fun ResultScreen(
                     .focusable(),
             ) {
                 val stage = maxHeight
+                TicketShadow(ticketHeight, stageScroll)
                 Column(Modifier.fillMaxSize().verticalScroll(stageScroll)) {
                     // Task 13's ticket shell (tagged TestTags.TICKET); with a minimum height of the stage, its lower part
                     // gets at least the height the upper part leaves and grows with the missed list (rule 8).
@@ -147,8 +157,10 @@ fun ResultScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(min = stage)
+                            .onSizeChanged { ticketHeight = it.height }
                             .graphicsLayer { translationY = joltOffset(jolt.value) * LeaveResultConstants.JOLT_DISTANCE_DP.dp.toPx() },
                         shortLegs = shortLegs,
+                        shadow = false,
                         lower = {
                             PassLower(
                                 PaperTone.SUNK,
@@ -195,6 +207,48 @@ fun ResultScreen(
             }
         }
     }
+}
+
+/**
+ * The ticket's shadow as the web's result scroller shows it (ResultView.tsx SCROLLER): the scroller runs on under Play
+ * again, 12 and the pill below the stage, and clips at the column's sides, so the shadow under the ticket shows in the 12
+ * above the pill and none shows beside it. The stage's own scroll clips only its scroll axis and at the stage's foot (the
+ * side shadow reached the screen edge and the bottom one was cut flat, review r1), and making it reach under the pill
+ * would make the hidden part count as in view for scrolling; so the scroll stays as it is, the ticket draws no shadow of
+ * its own, and this layer under it draws the shadow of a ticket [ticketHeight] px tall where the scroll has moved it.
+ * Inside the ticket's own box nothing is drawn (truthyShadow), so under a ticket longer than the stage the gap stays clear.
+ */
+@Composable
+private fun TicketShadow(ticketHeight: Int, scroll: ScrollState) {
+    if (ticketHeight <= 0) return
+    val height = with(LocalDensity.current) { ticketHeight.toDp() }
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .reachingBelow(Tokens.Space.s12 + Tokens.Size.pill)
+            .clipToBounds()
+            .clearAndSetSemantics {},
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .wrapContentHeight(Alignment.Top, unbounded = true)
+                .height(height)
+                .graphicsLayer { translationY = -scroll.value.toFloat() }
+                .truthyShadow(TruthyTheme.shadows.ticket, Tokens.Radius.card),
+        )
+    }
+}
+
+/** The element laid out [extra] taller than the space it is given, the parent told it fills that space: it reaches below. */
+private fun Modifier.reachingBelow(extra: Dp): Modifier = layout { measurable, constraints ->
+    if (!constraints.hasBoundedHeight) {
+        val placeable = measurable.measure(constraints)
+        return@layout layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+    }
+    val height = constraints.maxHeight + extra.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
+    layout(placeable.width, constraints.maxHeight) { placeable.place(0, 0) }
 }
 
 /** The test tag of the missed list's bottom fade cue (rule 8). */
