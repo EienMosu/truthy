@@ -35,6 +35,21 @@ final class LeaveAndResultTests: XCTestCase {
         gone(driver, "a tap above the card")
     }
 
+    /// N7 and final review finding 1: a tap just above the card, where the iOS 18 to 25 sheet carries the clear band
+    /// its shadow is drawn in, means Keep playing as a tap on the scrim does (on iOS 26 it lands outside the sheet).
+    @MainActor
+    func testATapJustAboveTheCardKeepsPlaying() {
+        let driver = AppDriver.round(screen: "answered")
+        driver.launch()
+        driver.waitFor(driver.button("Next card"), "the answered card")
+        openSheet(driver)
+        // The card's top lies 20 above its title (its padding); tap 16 above that, inside the 36 band.
+        let title = driver.element("Leave round?").frame
+        let origin = driver.app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+        origin.withOffset(CGVector(dx: title.midX, dy: title.minY - Double(20 + 16))).tap()
+        gone(driver, "a tap just above the card")
+    }
+
     /// N7: Escape on the sheet means Keep playing (skipped on the simulator, where XCUITest cannot deliver it).
     @MainActor
     func testEscapeOnTheSheetKeepsPlaying() throws {

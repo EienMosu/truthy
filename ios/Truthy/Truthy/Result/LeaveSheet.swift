@@ -4,19 +4,28 @@ import TruthyEngine
 // "Leave round?" (spec 5.4): the platform sheet for behaviour, the web's floating card for looks. The sheet is
 // transparent and has no grabber; its detent is the card's measured height plus the bottom inset, and .large when
 // that is taller than the screen (the card then scrolls). Swiping down and tapping outside call onDismiss, which a
-// flag tells from Leave round. On iOS 18 the card keeps the 16 gutter; on iOS 26 and later the inset sheet is
-// itself the card's frame (sheet chrome under criterion 2).
+// flag tells from Leave round. On iOS 18 the card keeps the 16 gutter and casts the `sheet` elevation upwards
+// (reference 5.5), drawn in a clear band the detent carries above the card, since a sheet clips what lies above its
+// top edge; on iOS 26 and later the inset sheet is itself the card's frame (sheet chrome under criterion 2).
 
 enum LeaveSheetLayout {
     /// The detent for a card `height` tall on a screen `screenHeight` tall whose system bottom inset is `bottomInset`.
     /// The card's foot lies the larger of that inset and 34 above the screen's bottom, as the web's spacing; the sheet
     /// already keeps its content above the system inset (the visual review saw the card 34 too high on a phone with a
     /// home indicator), so the detent adds only what of the 34 the system inset leaves. `.large` when card and gap are
-    /// taller than the screen (before the screen is measured, the card's own height).
-    static func detent(cardHeight: Double, bottomInset: Double, screenHeight: Double) -> PresentationDetent {
+    /// taller than the screen (before the screen is measured, the card's own height). `shadowBand` is the clear band
+    /// above the card that its shadow is drawn in (iOS 18 to 25); it counts towards the screen as the card does.
+    static func detent(cardHeight: Double, bottomInset: Double, screenHeight: Double, shadowBand: Double = 0) -> PresentationDetent {
         let gap = max(bottomInset, Tokens.Size.safeBottom)
-        if screenHeight > 0 && cardHeight + gap > screenHeight { return .large }
-        return .height(cardHeight + gap - bottomInset)
+        if screenHeight > 0 && shadowBand + cardHeight + gap > screenHeight { return .large }
+        return .height(shadowBand + cardHeight + gap - bottomInset)
+    }
+
+    /// How far box shadow `layers` paint above their box: a layer's shape is the box inset by its spread and moved by
+    /// its offset, and its blur paints up to the blur's length beyond that shape (CSS). The `sheet` elevation's
+    /// 0 -18 36 -18 reaches 36; a shadow cast downwards reaches nothing above.
+    static func reachAbove(_ layers: [ShadowLayer]) -> Double {
+        layers.map { $0.blur + $0.spread - $0.y }.reduce(0, max)
     }
 }
 
@@ -49,7 +58,7 @@ struct LeaveCard: View {
         .foregroundStyle(palette.ink.color)
         .padding(Tokens.Space.s20)
         .frame(minWidth: Tokens.Native.sheetMinWidth)
-        .background(RoundedRectangle(cornerRadius: Tokens.Radius.card).fill(drawsPaper ? palette.surfaceRaised.color : Color.clear))
+        .modifier(LeavePaper(drawsPaper: drawsPaper))
         // The card's arrival (the web's sheet motion, from the native group of the tokens).
         .offset(y: arrived || reducedMotion ? 0 : Tokens.Native.sheetOffsetY)
         .opacity(arrived ? 1 : 0)
@@ -58,6 +67,21 @@ struct LeaveCard: View {
                           : Tokens.Curve.ease.animation(Tokens.Transition.sheetOpen.duration)) { arrived = true }
         }
         .reviewFrame(ReviewName.sheet)
+    }
+}
+
+/// The leave card's paper before iOS 26, where the card draws it with the `sheet` elevation pointing up (reference
+/// 5.5, LeaveDialog.tsx shadow-(--elevation-sheet)); on iOS 26 and later the inset sheet is the paper and its chrome.
+struct LeavePaper: ViewModifier {
+    let drawsPaper: Bool
+    @Environment(\.palette) private var palette
+    @Environment(\.shadows) private var shadows
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Tokens.Radius.card)
+        content
+            .background(shape.fill(drawsPaper ? palette.surfaceRaised.color : Color.clear))
+            .tokenShadow(drawsPaper ? shadows.sheet : [], shape)
     }
 }
 
@@ -78,6 +102,7 @@ private struct SheetPaper: ViewModifier {
 private struct LeaveSheetModifier: ViewModifier {
     @Bindable var coordinator: RoundCoordinator
     let onLeave: () -> Void
+    @Environment(\.shadows) private var shadows
     @State private var cardHeight = 300.0
     @State private var screenHeight = 0.0
     @State private var bottomInset = 0.0
@@ -95,15 +120,25 @@ private struct LeaveSheetModifier: ViewModifier {
                        leaving = false
                    }) {
             ScrollView {
-                LeaveCard(decided: coordinator.decided, drawsPaper: !Self.insetSheet, onKeepPlaying: { coordinator.keepPlaying() }, onLeave: {
-                    leaving = true
-                    coordinator.keepPlaying()
-                })
-                .onGeometryChange(for: Double.self) { $0.size.height } action: { cardHeight = $0 }
-                .padding(.horizontal, sheetGutter)
+                VStack(spacing: 0) {
+                    // The clear band the card's shadow is drawn in (iOS 18 to 25). It stands where the web shows its
+                    // scrim, so a tap on it is a tap on the scrim: Keep playing, once 250 ms have passed (reference 3.10).
+                    Color.clear
+                        .frame(height: shadowBand)
+                        .contentShape(Rectangle())
+                        .onTapGesture { if coordinator.scrimTapAccepted { coordinator.keepPlaying() } }
+                        .accessibilityHidden(true)
+                    LeaveCard(decided: coordinator.decided, drawsPaper: !Self.insetSheet, onKeepPlaying: { coordinator.keepPlaying() }, onLeave: {
+                        leaving = true
+                        coordinator.keepPlaying()
+                    })
+                    .onGeometryChange(for: Double.self) { $0.size.height } action: { cardHeight = $0 }
+                    .padding(.horizontal, sheetGutter)
+                }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .presentationDetents([LeaveSheetLayout.detent(cardHeight: cardHeight, bottomInset: bottomInset, screenHeight: screenHeight)])
+            .presentationDetents([LeaveSheetLayout.detent(cardHeight: cardHeight, bottomInset: bottomInset, screenHeight: screenHeight,
+                                                          shadowBand: shadowBand)])
             .presentationDragIndicator(.hidden)
             .modifier(SheetPaper())
             .onChange(of: coordinator.decided) { _, decided in
@@ -122,6 +157,11 @@ private struct LeaveSheetModifier: ViewModifier {
 
     private var sheetGutter: Double {
         Self.insetSheet ? 0 : Tokens.Size.gutter
+    }
+
+    /// The band above the card that the card's `sheet` shadow reaches into; none where the inset sheet is the paper.
+    private var shadowBand: Double {
+        Self.insetSheet ? 0 : LeaveSheetLayout.reachAbove(shadows.sheet)
     }
 }
 

@@ -265,6 +265,28 @@ struct Bitmap: CustomStringConvertible {
         #expect(map.shows([255, 255, 255], at: 190, 90), "the background: \(map.at(190, 90))")
     }
 
+    /// Final review, finding 1: before iOS 26 the app draws the leave card's paper, which casts the `sheet` elevation
+    /// upwards (reference 5.5, LeaveDialog.tsx shadow-(--elevation-sheet): 0 -1 0 0 and 0 -18 36 -18, about 36 above
+    /// the card's top and nothing below its foot). The 18.4 p4 pairs showed the web darkening towards the card's top and
+    /// iOS flat. On iOS 26 and later the inset system sheet is the paper and the card draws neither.
+    @Test(arguments: [false, true])
+    func theLeaveCardCastsTheSheetShadowUpwards(night: Bool) {
+        func paper(_ draws: Bool) -> Bitmap {
+            let card = Color.clear.frame(width: 300, height: 120).modifier(LeavePaper(drawsPaper: draws))
+                .environment(\.palette, night ? Tokens.night : Tokens.day)
+                .environment(\.shadows, night ? Tokens.nightShadows : Tokens.dayShadows)
+            return Bitmap(ZStack(alignment: .topLeading) { Color(white: 1); card.padding(.leading, 20).padding(.top, 60) }, width: 340, height: 200)
+        }
+        let map = paper(true)
+        // The card spans y 60 to 180. 8 above its top the blurred layer darkens the white; 50 above it is past its reach.
+        let near = map.at(170, 52)
+        #expect(near.prefix(3).allSatisfy { $0 <= 240 }, "8 above the card: \(near)")
+        #expect(map.shows([255, 255, 255], at: 170, 10), "50 above the card: \(map.at(170, 10))")
+        #expect(map.at(170, 185).prefix(3).allSatisfy { $0 >= 250 }, "5 under the card's foot: \(map.at(170, 185))")
+        let flat = paper(false)
+        #expect(flat.shows([255, 255, 255], at: 170, 52, tolerance: 0), "no shadow without the paper: \(flat.at(170, 52))")
+    }
+
     /// Step 52 review: a pill's ends are true semicircles (PillButton.tsx rounded-(--radius-pill) on a 60 pill, the Back
     /// pill's rounded-(--radius-pill-small) on 48); SwiftUI's Capsule() draws continuous (squircle) ends, which leave
     /// the circle by up to 0.55 towards the straight edge. The edge of the upper left quarter lies at the radius from
