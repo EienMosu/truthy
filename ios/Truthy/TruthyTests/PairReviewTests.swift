@@ -338,6 +338,46 @@ struct Bitmap: CustomStringConvertible {
         #expect(abs(thickness - 1.5) <= 0.4, "the underline is \(thickness) thick")
     }
 
+    /// Step 52 review: at the largest text size each destination card is as tall as its own content (StartFlow.tsx: the
+    /// list is a flex column of flex-none items). The app gave every card of a step one height, so a card with more
+    /// lines ran past its paper ("Google Cloud" on step 2, "Three lives" on step 5) and a shorter one stood in empty
+    /// paper (Classic, about 70 above and below its text).
+    @Test(arguments: [2, 5])
+    func eachDestinationCardIsAsTallAsItsContentAtTheLargestTextSize(step: Int) throws {
+        let mono = FakeClock(1_000)
+        let model = try AppModel(bundle: .main, directory: Scratch.directory(), defaults: Scratch.defaults(), wall: FakeClock(), mono: mono,
+                                 arguments: LaunchArguments())
+        let flow = model.startFlow
+        for choose in [{ flow.chooseArea("cloud") }, { flow.choosePlatform("aws") }, { flow.chooseDeck("aws-clf-c02") }, { flow.chooseSection("SEC") }]
+            .prefix(step - 1) {
+            mono.advance(1_000)
+            #expect(choose())
+        }
+        let largest = DynamicTypeSize.accessibility5
+        // Each card alone, at its own height, in the column's 398.
+        let own = StepContent(flow: flow, app: model, step: flow.step, choose: { _ in }).options.map { option in
+            UIHostingController(rootView: option.card.frame(width: 398).fixedSize(horizontal: false, vertical: true)
+                .environment(\.dynamicTypeSize, largest))
+                .sizeThatFits(in: CGSize(width: 398, height: 10_000)).height
+        }
+        let map = Bitmap(onScreen: StartFlowView(model: model).environment(\.dynamicTypeSize, largest), width: 430, height: 2400)
+        // The cards' paper down the column at x 32, 16 into each card (past its corner radius, before its text at 36).
+        let paper = [Tokens.day.surfaceRaised.red, Tokens.day.surfaceRaised.green, Tokens.day.surfaceRaised.blue].map { Int(($0 * 255).rounded()) }
+        var runs: [Double] = []
+        var start: Int?
+        for y in 0..<4800 {
+            let onPaper = map.shows(paper, at: 32, Double(y) / 2, tolerance: 6)
+            if onPaper, start == nil { start = y }
+            if !onPaper, let top = start {
+                if y - top >= 120 { runs.append(Double(y - top) / 2) }
+                start = nil
+            }
+        }
+        // The pass is paper too: the cards are the last runs.
+        let drawn = Array(runs.suffix(own.count))
+        #expect(drawn.count == own.count && zip(drawn, own).allSatisfy { abs($0 - $1) <= 2 }, "cards drawn \(drawn) tall, their own heights \(own)")
+    }
+
     /// A wrapped link is underlined under each line, from its first letter to its last: the space it wraps at is not.
     @Test func aWrappedLinkIsUnderlinedToEachLinesLastLetter() {
         let link = SourceLink(title: "Protecting data at rest", action: {}).frame(width: 190, alignment: .leading)

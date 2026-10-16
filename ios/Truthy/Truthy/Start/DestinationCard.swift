@@ -119,6 +119,10 @@ struct DestinationCard: View {
         }
         .foregroundStyle(palette.ink.color)
         .frame(maxWidth: .infinity, minHeight: variant.minHeight)
+        // The card is as tall as its content (StartFlow.tsx: flex-none items in a flex column), the stub stretched to it.
+        // The stub's flexible height alone made the card flexible, and a list given its total height shared it out in
+        // equal parts at the accessibility sizes: a longer card ran past its paper, a shorter one stood in empty paper.
+        .fixedSize(horizontal: false, vertical: true)
         .background(shape.fill(palette.surfaceRaised.color))
         // The shadow of the card's box (DestinationCard.tsx: box-shadow on the rounded card, the notches cut into its
         // background), so the notches show the sky.
