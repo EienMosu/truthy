@@ -22,6 +22,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import com.eienmosu.truthy.design.IconId
 import com.eienmosu.truthy.design.PressFeedback
 import com.eienmosu.truthy.design.Tokens
@@ -89,7 +90,8 @@ fun PillButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leadingIcon?.invoke()
-        TruthyText(label, TruthyType.button, colors.onDark)
+        // A label that wraps at a large font scale centres each line, as the browser does in a button.
+        TruthyText(label, TruthyType.button, colors.onDark, textAlign = TextAlign.Center)
         trailingIcon?.invoke()
     }
 }
@@ -157,7 +159,7 @@ fun QuietButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         leadingIcon?.invoke()
-        TruthyText(label, TruthyType.buttonQuiet, colors.ink)
+        TruthyText(label, TruthyType.buttonQuiet, colors.ink, textAlign = TextAlign.Center)
     }
 }
 
