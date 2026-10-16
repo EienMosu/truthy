@@ -120,7 +120,14 @@ struct ResultView: View {
             .clipShape(NotchedPaper(edge: .bottom))
             .overlay(alignment: .bottom) { Perforation(axis: .horizontal).padding(.horizontal, Tokens.Size.notch + Tokens.Space.s6) }
             .onGeometryChange(for: Double.self) { $0.size.height } action: { mainHeight = $0 }
-            MissedCardsView(missed: missedCards(result.answers), height: lower)
+            MissedCardsView(missed: missedCards(result.answers), height: lower) {
+                // An opened Why brings the whole lower part into view where the stage scrolls (a short phone), so the
+                // explanation does not open under Play again.
+                withAnimation(reducedMotion ? nil : Tokens.Curve.ease.animation(Tokens.Duration.t3)) {
+                    scroller.scrollTo("missed", anchor: .bottom)
+                }
+            }
+            .id("missed")
         }
         .tokenShadow(shadows.ticket, RoundedRectangle(cornerRadius: Tokens.Radius.card))
         .reviewFrame(ReviewName.ticket)

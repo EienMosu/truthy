@@ -11,7 +11,14 @@ struct MissedCardsView: View {
     let missed: [MissedCard]
     /// The height of the lower part (at least 228): the list scrolls inside what the header leaves.
     let height: Double
+    /// Called when a Why opens (the result brings the whole lower part into view).
+    var onOpen: () -> Void = {}
     @State private var open: Set<Int> = []
+    @State private var position = ScrollPosition(edge: .top)
+    /// The list's scroll offset and visible height, and each row's and each opened explanation's span in its content.
+    @State private var listGeometry: [Double] = [0, 0]
+    @State private var rowSpans: [Int: Span] = [:]
+    @State private var explanationTops: [Int: Double] = [:]
     @Environment(\.palette) private var palette
     @Environment(\.resolvedTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reducedMotion
@@ -62,21 +69,24 @@ struct MissedCardsView: View {
     }
 
     private var list: some View {
-        ScrollViewReader { scroller in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(missed.enumerated()), id: \.element.number) { i, card in
-                        row(card, first: i == 0, scroller: scroller)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(missed.enumerated()), id: \.element.number) { i, card in
+                    row(card, first: i == 0)
                 }
-                .padding(.horizontal, Tokens.Size.ticketInset)
-                .padding(.bottom, Tokens.Space.s20)
             }
-            .scrollIndicators(.hidden)
+            .padding(.horizontal, Tokens.Size.ticketInset)
+            .padding(.bottom, Tokens.Space.s20)
+            .coordinateSpace(name: Self.listSpace)
         }
+        .scrollIndicators(.hidden)
+        .scrollPosition($position)
+        .onScrollGeometryChange(for: [Double].self) { [$0.contentOffset.y, $0.containerSize.height] } action: { _, g in listGeometry = g }
     }
 
-    private func row(_ card: MissedCard, first: Bool, scroller: ScrollViewProxy) -> some View {
+    private static let listSpace = "missedList"
+
+    private func row(_ card: MissedCard, first: Bool) -> some View {
         let isOpen = open.contains(card.number)
         return VStack(alignment: .leading, spacing: 0) {
             ViewThatFits(in: .horizontal) {
@@ -112,7 +122,7 @@ struct MissedCardsView: View {
                     withAnimation(reducedMotion ? nil : animation) {
                         if isOpen { open.remove(card.number) } else { open.insert(card.number) }
                     }
-                    if !isOpen { reveal(card.number, scroller) }
+                    if !isOpen { reveal(card.number) }
                 } label: {
                     HStack(spacing: Tokens.Space.s6) {
                         Text("Why").underline().typeRole(Tokens.TypeRole.monoDataStrong)
@@ -135,6 +145,9 @@ struct MissedCardsView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     CardTextView(text: card.explanation, style: Tokens.TypeRole.missedExplanation)
                         .foregroundStyle(palette.ink.color)
+                        .onGeometryChange(for: Double.self) { $0.frame(in: .named(Self.listSpace)).minY } action: {
+                            explanationTops[card.number] = $0
+                        }
                     if let url = URL(string: card.source.url) {
                         SourceLink(title: card.source.title) { SafariPresenter.present(url, theme: theme, palette: palette) }
                     }
@@ -151,14 +164,29 @@ struct MissedCardsView: View {
         .overlay(alignment: .top) {
             if !first { Rectangle().fill(palette.rule.color).frame(height: Tokens.Stroke.rule) }
         }
-        .id("missed-\(card.number)")
+        .onGeometryChange(for: Span.self) { g in
+            let frame = g.frame(in: .named(Self.listSpace))
+            return Span(top: frame.minY, bottom: frame.maxY)
+        } action: { rowSpans[card.number] = $0 }
     }
 
-    /// The opened row scrolls into the list after it has grown (380 ms, 50 with reduced motion).
-    private func reveal(_ number: Int, _ scroller: ScrollViewProxy) {
+    /// The opened row scrolls into the list once it has grown (380 ms, 50 with reduced motion), as MissedCards.tsx does:
+    /// the whole row 16 clear of the list's foot, as far as that leaves the start of the explanation in view.
+    private func reveal(_ number: Int) {
+        onOpen()
         Task {
             try? await Task.sleep(for: .milliseconds(reducedMotion ? 50 : 380))
-            withAnimation(reducedMotion ? nil : Tokens.Curve.ease.animation(Tokens.Duration.t3)) { scroller.scrollTo("missed-\(number)") }
+            guard let row = rowSpans[number], let explanation = explanationTops[number] else { return }
+            guard let y = Self.revealOffset(row: row, explanationTop: explanation, offset: listGeometry[0], visible: listGeometry[1]) else { return }
+            withAnimation(reducedMotion ? nil : Tokens.Curve.ease.animation(Tokens.Duration.t3)) { position.scrollTo(y: y) }
         }
+    }
+
+    /// Where the list scrolls to show an opened row (MissedCards.tsx): nil when the row's foot, 16 clear, is in view;
+    /// otherwise down by what is over, but never past the start of the explanation.
+    static func revealOffset(row: Span, explanationTop: Double, offset: Double, visible: Double) -> Double? {
+        let over = row.bottom + 16 - (offset + visible)
+        guard over > 0 else { return nil }
+        return offset + min(over, explanationTop - offset)
     }
 }

@@ -77,6 +77,14 @@ import UIKit
         #expect(block(.accessibility5) > block(.large) + 80, "one under the other at the largest size")
     }
 
+    /// MissedCards.tsx: an opened row scrolls the list until its foot is 16 clear of the list's foot, never past the
+    /// start of its explanation; a row already in view leaves the list alone.
+    @Test func anOpenedRowScrollsIntoTheList() {
+        #expect(MissedCardsView.revealOffset(row: Span(top: 0, bottom: 150), explanationTop: 90, offset: 0, visible: 200) == nil)
+        #expect(MissedCardsView.revealOffset(row: Span(top: 100, bottom: 300), explanationTop: 160, offset: 0, visible: 200) == 116)
+        #expect(MissedCardsView.revealOffset(row: Span(top: 100, bottom: 500), explanationTop: 160, offset: 0, visible: 200) == 160)
+    }
+
     @Test func theMissedCardsFillTheLowerPartTheyAreGiven() {
         let card = MissedCard(number: 2, given: true, answer: false, appliesTo: nil, statement: "A statement.",
                               explanation: "Why.", source: CardSource(title: "A source", url: "https://example.com"))
