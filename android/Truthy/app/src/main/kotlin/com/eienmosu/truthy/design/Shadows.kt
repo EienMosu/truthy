@@ -9,23 +9,20 @@ import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.DrawResult
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
-import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageBitmapConfig
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.PathOperation
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -127,7 +124,17 @@ private fun blurredMask(rect: ShadowRect, plan: ShadowPlan): ImageBitmap {
     return image
 }
 
-private class LayerDrawing(val color: Color, val rect: ShadowRect, val plan: ShadowPlan?, val mask: ImageBitmap?)
+/**
+ * One layer, ready to draw: [area] is where it paints, the shadow's own shape (a crisp layer) or the blurred bitmap's
+ * area, with the element's own shape taken out. [mask] is the blurred alpha bitmap, null for a crisp layer.
+ */
+private class LayerDrawing(val color: Color, val area: android.graphics.Path, val plan: ShadowPlan?, val mask: ImageBitmap?)
+
+/** The [rect] area of a layer as a path with the element's own shape [own] taken out (the CSS rule: nothing inside). */
+private fun outside(own: Path, left: Float, top: Float, right: Float, bottom: Float, cornerRadius: Float): android.graphics.Path {
+    val shape = Path().apply { addRoundRect(RoundRect(left, top, right, bottom, CornerRadius(cornerRadius))) }
+    return Path.combine(PathOperation.Difference, shape, own).asAndroidPath()
+}
 
 /**
  * Draws [spec] behind the element, whose paper has corner radius [cornerRadius]. [alpha] scales the whole shadow, read
@@ -151,47 +158,47 @@ fun Modifier.truthyShadow(
 private fun shadowDrawing(spec: ShadowSpec, cornerRadius: Dp, alpha: () -> Float): CacheDrawScope.() -> DrawResult = {
     val radius = cornerRadius.toPx()
     val own = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(radius))) }
-    val layers = spec.layers.map { layer ->
+    val layers = spec.layers.mapNotNull { layer ->
         val rect = ShadowMath.rect(size.width, size.height, radius, layer.offsetX.toPx(), layer.offsetY.toPx(), layer.spread.toPx())
+        if (rect.right <= rect.left || rect.bottom <= rect.top) return@mapNotNull null
         val blur = layer.blur.toPx()
-        val drawable = rect.right > rect.left && rect.bottom > rect.top
-        val plan = if (blur > 0f && drawable) ShadowMath.plan(rect, blur) else null
-        LayerDrawing(layer.color, rect, plan, plan?.let { blurredMask(rect, it) })
+        if (blur <= 0f) {
+            LayerDrawing(layer.color, outside(own, rect.left, rect.top, rect.right, rect.bottom, rect.cornerRadius), null, null)
+        } else {
+            val plan = ShadowMath.plan(rect, blur)
+            val area = outside(own, plan.left, plan.top, plan.left + plan.width, plan.top + plan.height, 0f)
+            LayerDrawing(layer.color, area, plan, blurredMask(rect, plan))
+        }
+    }
+    // Each layer fills its area outside the element's shape: no clip. A path clip drew nothing on API 26 inside the
+    // result screen (ResultScreenTest, step 22 on truthy-api26), though it did on a bare white page.
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+    val shaders = layers.map { layer ->
+        val plan = layer.plan
+        val mask = layer.mask
+        if (plan == null || mask == null) {
+            null
+        } else {
+            // An alpha bitmap in a shader paints the paint's colour through its alpha. The bitmap's pixels are the
+            // element's at plan.scale: drawn back at its inverse, bilinear.
+            android.graphics.BitmapShader(mask.asAndroidBitmap(), android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(
+                    android.graphics.Matrix().apply {
+                        setScale(1f / plan.scale, 1f / plan.scale)
+                        postTranslate(plan.left, plan.top)
+                    },
+                )
+            }
+        }
     }
     onDrawBehind {
         val strength = alpha()
         if (strength <= 0f) return@onDrawBehind
-        clipPath(own, clipOp = ClipOp.Difference) {
-            for (layer in layers) {
-                val plan = layer.plan
-                val mask = layer.mask
-                if (plan == null || mask == null) {
-                    val rect = layer.rect
-                    if (rect.right <= rect.left || rect.bottom <= rect.top) continue
-                    drawRoundRect(
-                        color = layer.color.copy(alpha = layer.color.alpha * strength),
-                        topLeft = Offset(rect.left, rect.top),
-                        size = Size(rect.right - rect.left, rect.bottom - rect.top),
-                        cornerRadius = CornerRadius(rect.cornerRadius),
-                    )
-                    continue
-                }
-                // The bitmap's pixels are the element's at plan.scale: drawn back at its inverse, bilinear.
-                withTransform({
-                    translate(plan.left, plan.top)
-                    scale(1f / plan.scale, 1f / plan.scale, pivot = Offset.Zero)
-                }) {
-                    drawImage(
-                        image = mask,
-                        srcOffset = IntOffset.Zero,
-                        srcSize = IntSize(plan.bitmapWidth, plan.bitmapHeight),
-                        dstOffset = IntOffset.Zero,
-                        dstSize = IntSize(plan.bitmapWidth, plan.bitmapHeight),
-                        alpha = strength,
-                        colorFilter = ColorFilter.tint(layer.color),
-                        filterQuality = FilterQuality.Low,
-                    )
-                }
+        drawIntoCanvas { canvas ->
+            for ((index, layer) in layers.withIndex()) {
+                paint.shader = shaders[index]
+                paint.color = layer.color.copy(alpha = layer.color.alpha * strength).toArgb()
+                canvas.nativeCanvas.drawPath(layer.area, paint)
             }
         }
     }
