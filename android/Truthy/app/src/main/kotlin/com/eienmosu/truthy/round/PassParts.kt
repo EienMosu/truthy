@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -32,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.remember
@@ -53,11 +55,17 @@ import com.eienmosu.truthy.engine.barcodeBars
 import com.eienmosu.truthy.ui.IntentKind
 import com.eienmosu.truthy.ui.IntentStamp
 import com.eienmosu.truthy.ui.Stamp
+import com.eienmosu.truthy.ui.StampLanding
 import com.eienmosu.truthy.ui.StampVerdict
 import com.eienmosu.truthy.ui.StubStamp
 import com.eienmosu.truthy.ui.StubStampKind
 import com.eienmosu.truthy.ui.TestTags
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /**
  * The stub of a question (and of every Timed card): route line, barcode, the swipe hint or one hint line, the
@@ -90,12 +98,12 @@ internal fun PassStubContent(
             },
     ) {
         PassLower(PaperTone.RAISED, Modifier.fillMaxWidth().heightIn(min = Tokens.Size.lower)) {
-            Column(
-                Modifier
+            StubColumn(
+                stamp = mark?.let { { key(it) { StubStamp(it.kind()) } } },
+                modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = Tokens.Size.lower)
                     .padding(start = Tokens.Size.ticketInset, end = Tokens.Size.ticketInset, top = RoundGeometry.STUB_TOP, bottom = Tokens.Space.s14),
-                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(routeLine, Modifier.weight(1f, fill = false).alignByBaseline(), style = TruthyType.monoData, color = colors.inkMuted)
@@ -119,12 +127,61 @@ internal fun PassStubContent(
                 }
             }
         }
-        if (mark != null) {
-            Box(Modifier.fillMaxWidth().height(RoundGeometry.STUB_STAMP_CENTRE * 2), contentAlignment = Alignment.Center) {
-                key(mark) { StubStamp(mark.kind()) }
-            }
-        }
         if (hint == null) IntentStamps(stampIntent)
+    }
+}
+
+/** Where the stub's stamp goes and how tall the stub's column is, in px of the column (stubStampSpot). */
+internal data class StubStampSpot(val centreY: Float, val height: Int)
+
+/**
+ * The stamp's centre on the stub: [preferred] (BoardingPass.tsx: 96 from the stub's top), or lower when its tilted
+ * outline ([stampWidth] by [stampHeight] turned [turn] degrees) would reach above [routeBottom], the foot of the route
+ * line; and the column's height, [height] or taller so the hint row ([hintHeight] at the foot) starts under the stamp.
+ * At font scale 1 the stamp is where the web puts it; at 2 the route line wraps and the stamp's top border ran through
+ * its second line (review F2).
+ */
+internal fun stubStampSpot(preferred: Float, routeBottom: Int, stampWidth: Int, stampHeight: Int, turn: Float, height: Int, hintHeight: Int): StubStampSpot {
+    val radians = Math.toRadians(abs(turn).toDouble())
+    val half = ((stampHeight * cos(radians) + stampWidth * sin(radians)) / 2.0).toFloat()
+    val centre = max(preferred, routeBottom + half)
+    return StubStampSpot(centre, max(height, ceil(centre + half).toInt() + hintHeight))
+}
+
+/**
+ * The stub's column (BoardingPass.tsx PassStub: flex-col justify-between): the route line at the top, the barcode in the
+ * middle of what is left, the hint row at the foot; and the Timed stamp over the barcode where stubStampSpot puts it.
+ */
+@Composable
+private fun StubColumn(stamp: (@Composable () -> Unit)?, modifier: Modifier, content: @Composable () -> Unit) {
+    Layout(contents = listOf(content, stamp ?: {}), modifier = modifier) { (rows, stamps), constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val route = rows[0].measure(loose)
+        val barcode = rows[1].measure(loose)
+        val hint = rows[2].measure(loose)
+        val stampPlaceable = stamps.firstOrNull()?.measure(Constraints())
+        val content = route.height + barcode.height + hint.height
+        var height = max(constraints.minHeight, content)
+        var stampY = 0
+        if (stampPlaceable != null) {
+            val spot = stubStampSpot(
+                preferred = (RoundGeometry.STUB_STAMP_CENTRE - RoundGeometry.STUB_TOP).toPx(),
+                routeBottom = route.height,
+                stampWidth = stampPlaceable.width,
+                stampHeight = stampPlaceable.height,
+                turn = StampLanding.REST_ROTATION,
+                height = height,
+                hintHeight = hint.height,
+            )
+            height = spot.height
+            stampY = (spot.centreY - stampPlaceable.height / 2f).roundToInt()
+        }
+        layout(constraints.maxWidth, height) {
+            route.place(0, 0)
+            barcode.place(0, route.height + (height - content) / 2)
+            hint.place(0, height - hint.height)
+            stampPlaceable?.place((constraints.maxWidth - stampPlaceable.width) / 2, stampY)
+        }
     }
 }
 
