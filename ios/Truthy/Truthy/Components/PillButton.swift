@@ -30,7 +30,7 @@ struct PillButton: View {
             .padding(.horizontal, Tokens.Space.s20)
         }
         .buttonStyle(PillButtonStyle(fill: fillColor, dimmed: dimmed))
-        .keyboardFocusRing(Capsule())
+        .keyboardFocusRing(Capsule.pill)
         .accessibilityLabel(title)
         .reviewFrame(ReviewName.pill(title))
     }
@@ -85,7 +85,7 @@ struct QuietButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.quiet)
-        .keyboardFocusRing(Capsule())
+        .keyboardFocusRing(Capsule.pill)
         .accessibilityLabel(title)
     }
 }

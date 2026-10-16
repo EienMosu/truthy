@@ -47,7 +47,7 @@ struct PillButtonStyle: ButtonStyle {
     @Environment(\.shadows) private var shadows
 
     func makeBody(configuration: Configuration) -> some View {
-        let shape = Capsule()
+        let shape = Capsule.pill
         // A dimmed pill is aria-disabled on the web: it shows no press.
         let pressed = configuration.isPressed && !dimmed
         configuration.label

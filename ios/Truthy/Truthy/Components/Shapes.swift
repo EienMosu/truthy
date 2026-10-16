@@ -41,6 +41,13 @@ struct DestinationCardShape: Shape {
     }
 }
 
+extension Capsule {
+    /// The pills' shape: the web's border radius (radius-pill 30 on a 60 pill, radius-pill-small 24 on the 48 Back pill
+    /// and quiet button) draws circular arcs, so the ends are true semicircles. Capsule() defaults to continuous corners,
+    /// squircle ends that leave the circle towards the straight edges; a focus ring takes the same shape.
+    static var pill: Capsule { Capsule(style: .circular) }
+}
+
 /// A dashed perforation: horizontal 2 on, dashes 7 and 5 (butt ends); vertical 1.5, dashes 5 and 5.
 struct Perforation: View {
     enum Axis { case horizontal, vertical }

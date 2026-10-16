@@ -478,11 +478,11 @@ struct BackPill: View {
             .padding(.leading, Tokens.Space.s14)
             .padding(.trailing, Tokens.Space.s20)
             .frame(minHeight: Tokens.Size.pillSmall)
-            .background(Capsule().fill(palette.surfaceRaised.color))
-            .tokenShadow(shadows.small, Capsule())
+            .background(Capsule.pill.fill(palette.surfaceRaised.color))
+            .tokenShadow(shadows.small, Capsule.pill)
         }
         .buttonStyle(.backPill)
-        .keyboardFocusRing(Capsule())
+        .keyboardFocusRing(Capsule.pill)
         .accessibilityLabel(label)
     }
 }

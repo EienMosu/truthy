@@ -264,6 +264,30 @@ struct Bitmap: CustomStringConvertible {
         #expect(under.prefix(3).allSatisfy { $0 <= 243 }, "2.5 under the pill: \(under)")
         #expect(map.shows([255, 255, 255], at: 190, 90), "the background: \(map.at(190, 90))")
     }
+
+    /// Step 52 review: a pill's ends are true semicircles (PillButton.tsx rounded-(--radius-pill) on a 60 pill, the Back
+    /// pill's rounded-(--radius-pill-small) on 48); SwiftUI's Capsule() draws continuous (squircle) ends, which leave
+    /// the circle by up to 0.55 towards the straight edge. The edge of the upper left quarter lies at the radius from
+    /// the end's centre (a circular end measures within 0.2 there, the pixel steps of a 3x drawing).
+    @Test func everyPillHasSemicircleEnds() {
+        func edges(_ map: Bitmap, centre: (Double, Double), radius: Double, inside: ([Int]) -> Bool) -> [Double] {
+            stride(from: 0.0, through: 85, by: 5).map { degrees in
+                let angle = degrees * .pi / 180
+                let r = stride(from: radius - 6, to: radius + 6, by: 0.05).first { r in
+                    !inside(map.at(centre.0 - r * cos(angle), centre.1 - r * sin(angle)))
+                } ?? 0
+                return r - radius
+            }
+        }
+        let pill = PillButton(title: "Next card", action: {}).frame(width: 300).padding(20)
+        let pillMap = Bitmap(ZStack(alignment: .topLeading) { Color(white: 1); pill }, width: 340, height: 100, scale: 3)
+        let pillEdges = edges(pillMap, centre: (50, 50), radius: Tokens.Size.pill / 2) { $0[0] < 128 }
+        #expect(pillEdges.allSatisfy { abs($0) <= 0.35 }, "the pill's edge off its semicircle: \(pillEdges)")
+        let back = BackPill(label: "Back to areas", action: {}).padding(20)
+        let backMap = Bitmap(ZStack(alignment: .topLeading) { Color(red: 0, green: 0, blue: 1); back }, width: 200, height: 100, scale: 3)
+        let backEdges = edges(backMap, centre: (44, 44), radius: Tokens.Size.pillSmall / 2) { $0[0] > 160 }
+        #expect(backEdges.allSatisfy { abs($0) <= 0.35 }, "the Back pill's edge off its semicircle: \(backEdges)")
+    }
 }
 
 private struct PassHost: View {

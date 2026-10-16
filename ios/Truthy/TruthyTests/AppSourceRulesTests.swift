@@ -20,6 +20,8 @@ import Testing
         ("a browser-like dialog", #"\.(?:alert|confirmationDialog|popover)\("#),
         ("a link out of the app", #"\bLink\(|\bopenURL\b|UIApplication\.shared\.open\("#),
         ("a hover or long-press menu", #"\.(?:onHover|hoverEffect|contextMenu)\b"#),
+        // The web's pills have circular ends (border-radius draws arcs); Capsule() is continuous: Capsule.pill.
+        ("a continuous capsule", #"\bCapsule\(\s*\)|\bCapsule\(style:\s*\.continuous\)"#),
     ]
 
     static func findings(in name: String, _ source: String) throws -> [String] {
@@ -43,11 +45,12 @@ import Testing
             .alert("Leave round?", isPresented: $x) { }
             Link("Docs", destination: url)
             .contextMenu { }
+            .background(Capsule().fill(ink))
             """
         // An icon or a frame of a literal size is not a font size; the tokens give fonts their sizes.
         #expect(try Self.findings(in: "icon.swift", "IconView(icon: .cross, size: 16)").isEmpty)
-        #expect(try Self.findings(in: "planted.swift", planted).count == 11)
-        #expect(try Self.findings(in: "ok.swift", "// NavigationStack in a comment\nColor(\"LaunchSurface\")\nColor.clear\nSafariView(url: url)").isEmpty)
+        #expect(try Self.findings(in: "planted.swift", planted).count == 12)
+        #expect(try Self.findings(in: "ok.swift", "// NavigationStack in a comment\nColor(\"LaunchSurface\")\nColor.clear\nSafariView(url: url)\nCapsule.pill").isEmpty)
     }
 
     @Test func appSourcesKeepTheGlobalConstraints() throws {
