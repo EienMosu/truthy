@@ -133,8 +133,9 @@ struct BoardingPassView: View {
             }
             BarcodeView(data: coordinator.card?.id ?? "")
             Group {
-                if round.mode == .timed {
-                    Text(timedHint ?? "swipe to board").typeRole(Self.monoRegular).foregroundStyle(palette.inkMuted.color)
+                // PassStub: one centred line once a Timed stub is stamped; until then every class has the sides' hints.
+                if let timedHint {
+                    Text(timedHint).typeRole(Self.monoRegular).foregroundStyle(palette.inkMuted.color)
                         .frame(maxWidth: .infinity)
                 } else {
                     HStack {
@@ -154,10 +155,10 @@ struct BoardingPassView: View {
         .padding(.bottom, Tokens.Space.s14)
         .frame(maxWidth: .infinity)
         .overlay(alignment: .topLeading) {
-            if round.mode != .timed { intentStamp(true).padding(.leading, Tokens.Space.s16).padding(.top, 64) }
+            if timedHint == nil { intentStamp(true).padding(.leading, Tokens.Space.s16).padding(.top, 64) }
         }
         .overlay(alignment: .topTrailing) {
-            if round.mode != .timed { intentStamp(false).padding(.trailing, Tokens.Space.s16).padding(.top, 64) }
+            if timedHint == nil { intentStamp(false).padding(.trailing, Tokens.Space.s16).padding(.top, 64) }
         }
         .overlay(alignment: .top) {
             // Timed's stub stamp, centred 96 from the stub's top.

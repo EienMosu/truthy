@@ -47,7 +47,10 @@ struct Bitmap: CustomStringConvertible {
         let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
             _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
+        // Take the view out of the scene, so nothing it animates keeps running in other tests' run loops.
         window.isHidden = true
+        window.rootViewController = nil
+        window.windowScene = nil
         self.init(image: image.cgImage!, scale: scale)
     }
 
@@ -223,8 +226,39 @@ struct Bitmap: CustomStringConvertible {
         #expect(StartFlowView.continueLineGap == 12)
     }
 
+    /// A Timed card's stub, while it is a question, carries "← False", "swipe to board" and "True →" as the other
+    /// classes' do (PlayScreen.tsx: no hint until the stub is stamped); the app showed "swipe to board" alone
+    /// (pair large-*-timed-p2).
+    @Test func aTimedQuestionsStubShowsTheSidesHints() async throws {
+        let decks = DeckStore(bundle: .main)
+        let route = Route(deckId: "aws-clf-c02", sectionId: "SEC")
+        let directory = Scratch.directory()
+        let round = try RoundCoordinator(request: RoundRequest(route: route, mode: .timed, seed: 7), deck: try await decks.deck("aws-clf-c02"),
+                                         found: try #require(findRoute(try decks.index(), route)), progress: emptyProgress(),
+                                         store: FileProgressStore(directory: directory), journal: RoundJournal(directory: directory),
+                                         wall: FakeClock(1_790_000_000_000), mono: FakeClock(1_000))
+        let map = Bitmap(onScreen: PassHost(coordinator: round).frame(width: 398, height: 760, alignment: .top).background(Color.white),
+                         width: 398, height: 760)
+        let red = [Tokens.day.answerFalse.red, Tokens.day.answerFalse.green, Tokens.day.answerFalse.blue].map { Int(($0 * 255).rounded()) }
+        var falseInk = 0
+        for y in stride(from: 0.0, to: 760, by: 1) {
+            for x in stride(from: 0.0, to: 120, by: 1) where map.shows(red, at: x, y, tolerance: 24) { falseInk += 1 }
+        }
+        #expect(falseInk > 10, "\(falseInk) pixels of the False colour on the stub's left")
+    }
+
     @Test func theReadyStepsLineSitsFourteenUnderTheTitle() {
         #expect(StartFlowView.readyLineGap == 14)
+    }
+}
+
+private struct PassHost: View {
+    let coordinator: RoundCoordinator
+    @AccessibilityFocusState private var focused: Bool
+
+    var body: some View {
+        BoardingPassView(coordinator: coordinator, statementFocus: $focused, onAnswer: { _ in false }, onSource: { _ in })
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

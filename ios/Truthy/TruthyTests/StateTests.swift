@@ -313,7 +313,10 @@ import TruthyEngine
         let ticker = Ticker()
         var ticks = 0
         ticker.start { ticks += 1 }
-        RunLoop.main.run(mode: .tracking, before: Date().addingTimeInterval(0.35))
+        // run(mode:before:) returns after the first source it handles; another test's window can hand it one, so it runs
+        // again until the time is up.
+        let end = Date().addingTimeInterval(0.35)
+        while Date() < end { RunLoop.main.run(mode: .tracking, before: end) }
         ticker.stop()
         #expect(ticks >= 2, "a timer in the common modes fires in the tracking mode")
         #expect(ticker.mode == .common)
