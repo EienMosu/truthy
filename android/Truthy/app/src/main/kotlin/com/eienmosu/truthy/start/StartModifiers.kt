@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.eienmosu.truthy.design.FocusRingSpec
 import com.eienmosu.truthy.design.Tokens
+import com.eienmosu.truthy.design.borderPx
 import com.eienmosu.truthy.design.keyboardFocusRing
 import com.eienmosu.truthy.design.rememberPressTint
 import com.eienmosu.truthy.engine.FADE_PX
@@ -52,15 +53,15 @@ fun Modifier.moved(layer: Layer): Modifier = this
     .offset { IntOffset(0, layer.offsetY.dp.roundToPx()) }
     .graphicsLayer { alpha = layer.alpha }
 
-/** The 1.5 rule on the start side of a grid cell (FillInPass.tsx:182, :301). */
+/** The 1.5 rule on the start side of a grid cell (FillInPass.tsx:182, :301), as wide as the browser draws it (borderPx). */
 fun Modifier.ruleStart(color: Color): Modifier = this.drawBehind {
-    val width = Tokens.Stroke.rule.toPx()
+    val width = borderPx(Tokens.Stroke.rule)
     drawLine(color, start = Offset(width / 2f, 0f), end = Offset(width / 2f, size.height), strokeWidth = width)
 }
 
-/** The rules above and below the ready pass's Class, Cards and Gate (FillInPass.tsx:297). */
+/** The rules above and below the ready pass's Class, Cards and Gate (FillInPass.tsx:297), as wide as the browser draws them. */
 fun Modifier.ruleTopBottom(color: Color): Modifier = this.drawBehind {
-    val width = Tokens.Stroke.rule.toPx()
+    val width = borderPx(Tokens.Stroke.rule)
     drawLine(color, start = Offset(0f, width / 2f), end = Offset(size.width, width / 2f), strokeWidth = width)
     drawLine(color, start = Offset(0f, size.height - width / 2f), end = Offset(size.width, size.height - width / 2f), strokeWidth = width)
 }

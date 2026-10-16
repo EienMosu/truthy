@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -37,8 +36,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.eienmosu.truthy.design.IconId
+import com.eienmosu.truthy.design.Text
+import com.eienmosu.truthy.design.ruleWidth
 import com.eienmosu.truthy.design.TicketLowerShape
 import com.eienmosu.truthy.design.TicketMainShape
 import com.eienmosu.truthy.design.Tokens
@@ -191,16 +193,17 @@ private fun Leg(leg: PassLeg, compact: Boolean, end: Boolean, modifier: Modifier
 @Composable
 fun PassFieldGrid(fields: List<PassField>, modifier: Modifier = Modifier) {
     val colors = TruthyTheme.colors
+    val rule = ruleWidth()
     Layout(
-        content = { fields.forEachIndexed { i, field -> FieldCell(field, first = i == 0) } },
+        content = { fields.forEachIndexed { i, field -> FieldCell(field, first = i == 0, rule = rule) } },
         modifier = modifier
             .fillMaxWidth()
             .drawBehind {
-                val w = Tokens.Stroke.rule.toPx()
+                val w = rule.toPx()
                 drawLine(colors.rule, Offset(0f, w / 2), Offset(size.width, w / 2), w)
                 drawLine(colors.rule, Offset(0f, size.height - w / 2), Offset(size.width, size.height - w / 2), w)
             }
-            .padding(vertical = Tokens.Stroke.rule),
+            .padding(vertical = rule),
     ) { measurables, constraints ->
         val widths = fieldColumnWidths(measurables.map { it.maxIntrinsicWidth(Constraints.Infinity) }, constraints.maxWidth)
         val height = measurables.indices.maxOfOrNull { measurables[it].maxIntrinsicHeight(widths[it]) } ?: 0
@@ -216,17 +219,17 @@ fun PassFieldGrid(fields: List<PassField>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FieldCell(field: PassField, first: Boolean) {
+private fun FieldCell(field: PassField, first: Boolean, rule: Dp) {
     val colors = TruthyTheme.colors
     val divider = if (first) {
         Modifier
     } else {
         Modifier
             .drawBehind {
-                val w = Tokens.Stroke.rule.toPx()
+                val w = rule.toPx()
                 drawLine(colors.rule, Offset(w / 2, 0f), Offset(w / 2, size.height), w)
             }
-            .padding(start = Tokens.Stroke.rule + Tokens.Space.s12)
+            .padding(start = rule + Tokens.Space.s12)
     }
     val spoken = field.spoken
     Column(divider.padding(top = Tokens.Space.s8, bottom = RoundGeometry.FIELD_BOTTOM)) {

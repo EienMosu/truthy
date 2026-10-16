@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,6 +87,7 @@ import androidx.compose.ui.unit.max
 import androidx.core.view.HapticFeedbackConstantsCompat
 import androidx.core.view.ViewCompat
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.eienmosu.truthy.design.Text
 import com.eienmosu.truthy.design.FocusRingSpec
 import com.eienmosu.truthy.design.IconId
 import com.eienmosu.truthy.design.LocalReducedMotion

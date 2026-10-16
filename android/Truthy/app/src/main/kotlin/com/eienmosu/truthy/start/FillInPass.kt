@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,7 +37,9 @@ import androidx.compose.ui.unit.lerp
 import com.eienmosu.truthy.design.IconId
 import com.eienmosu.truthy.design.LogoMark
 import com.eienmosu.truthy.design.LogoVariant
+import com.eienmosu.truthy.design.Text
 import com.eienmosu.truthy.design.Tokens
+import com.eienmosu.truthy.design.ruleWidth
 import com.eienmosu.truthy.ui.TestTags
 import com.eienmosu.truthy.design.TruthyIcon
 import com.eienmosu.truthy.design.TruthyTheme
@@ -286,7 +287,7 @@ private fun FieldCell(
     Box(
         Modifier
             .fillMaxWidth()
-            .then(if (first) Modifier else Modifier.ruleStart(colors.rule).padding(start = Tokens.Stroke.rule))
+            .then(if (first) Modifier else Modifier.ruleStart(colors.rule).padding(start = ruleWidth()))
             .then(if (wayBack != null) Modifier.wayBack(wayBack) { onJump(field.field) } else Modifier)
             .padding(start = if (first) 0.dp else Tokens.Space.s12, top = StartGeometry.fieldTop, bottom = StartGeometry.fieldBottom),
     ) {
@@ -385,7 +386,7 @@ private fun ReadyContent(block: ReadyBlock, interactive: Boolean, travels: Trave
                 .fillMaxWidth()
                 .padding(horizontal = Tokens.Size.ticketInset)
                 .ruleTopBottom(colors.rule)
-                .padding(vertical = Tokens.Stroke.rule),
+                .padding(vertical = ruleWidth()),
         ) {
             ReadyCell(StartCopy.LABEL_CLASS, first = true, wayBack = block.modeWayBack?.takeIf { interactive }, onClick = { onJump(PassFieldName.MODE) }) {
                 Text(
@@ -449,7 +450,7 @@ private fun ReadyCell(label: String, first: Boolean, wayBack: String?, onClick: 
     Box(
         Modifier
             .fillMaxWidth()
-            .then(if (first) Modifier else Modifier.ruleStart(colors.rule).padding(start = Tokens.Stroke.rule))
+            .then(if (first) Modifier else Modifier.ruleStart(colors.rule).padding(start = ruleWidth()))
             .then(if (wayBack != null) Modifier.wayBack(wayBack, onClick) else Modifier)
             .padding(start = if (first) 0.dp else Tokens.Space.s12, top = Tokens.Space.s8, bottom = StartGeometry.readyCellBottom),
     ) {

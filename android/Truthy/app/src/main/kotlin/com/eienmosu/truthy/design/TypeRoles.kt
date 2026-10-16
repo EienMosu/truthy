@@ -4,7 +4,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.TextUnitType
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import kotlin.math.max
+import kotlin.math.floor
 
 /**
  * Overpass's own line height: hhea ascender 1766 plus descender 766 over 2000 units, the same in all four cuts
@@ -30,6 +35,37 @@ private val TIGHT_LINES = LineHeightStyle(
 
 /** The line style of a role: the web's line box, whether the line height is above or below the font's own. */
 fun lineStyleFor(lineHeight: Float): LineHeightStyle = if (lineHeight < OVERPASS_LINE_HEIGHT) TIGHT_LINES else LINES
+
+// Compose takes the ceiling of a line height in pixels (LineHeightStyleSpan), so a line height a hair under a whole
+// pixel lands on that pixel and not on the next one.
+private const val PIXEL_SLACK = 0.01f
+
+/**
+ * The line box the app draws for a line [exactPx] tall: the nearest whole pixel, at least one. The browser keeps a line
+ * box at its fraction (a 15 px line is 39.375 device px at density 2.625) and lays the next element at the fraction;
+ * Compose rounds every line up to a whole pixel, so a column of lines grew by up to a pixel per line and the ticket's head
+ * drifted 3 dp down against the web (review X4). Rounded to the nearest pixel, each line is within half a pixel of the
+ * browser's, up or down, and the column no longer adds the rounding up.
+ */
+fun pixelLineHeight(exactPx: Float): Float = max(1f, floor(exactPx + 0.5f))
+
+/**
+ * This style with its line height on the whole pixel nearest to the role's own (pixelLineHeight), at [density] and its
+ * font scale. The line height is given in em of the font size in pixels, which Compose also uses under the non-linear
+ * font scaling of Android 14 and later, so the role keeps its ratio at every scale. A style without a line height, or
+ * with a font size that is not in sp, is returned as it is.
+ */
+fun TextStyle.onPixelLines(density: Density): TextStyle {
+    if (fontSize.type != TextUnitType.Sp) return this
+    val ratio = when (lineHeight.type) {
+        TextUnitType.Sp -> lineHeight.value / fontSize.value
+        TextUnitType.Em -> lineHeight.value
+        else -> return this
+    }
+    val fontPx = with(density) { fontSize.toPx() }
+    if (fontPx <= 0f) return this
+    return copy(lineHeight = ((pixelLineHeight(ratio * fontPx) - PIXEL_SLACK) / fontPx).em)
+}
 
 /** The Compose style of a role. Sizes, line height and letter spacing are sp, so they follow the system font scale. */
 fun TypeRole.toTextStyle(): TextStyle = TextStyle(
