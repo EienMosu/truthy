@@ -308,6 +308,57 @@ struct Bitmap: CustomStringConvertible {
         let foot = stride(from: 873.5, to: 700, by: -0.5).first { map.shows(red, at: 60, $0, tolerance: 12) } ?? 0
         #expect(foot >= 834.5 && foot <= 835.5, "the False pill's last row of pixels is at \(foot)")
     }
+
+    /// Step 52 review: the source links and "Why" are underlined as the web's <u class="decoration-[1.5px]
+    /// underline-offset-[3px]">: a line 1.5 thick whose top is 3 under the baseline, clear of the descenders; the app drew
+    /// the system's underline close under the baseline, through the descenders (pairs p3, r1, lives-r1-why).
+    @Test(arguments: ["link", "why"])
+    func theLinksAreUnderlinedAsTheWebUnderlinesThem(_ which: String) {
+        let view: AnyView = which == "link"
+            ? AnyView(SourceLink(title: "What is IAM Identity Center?", action: {}))
+            : AnyView(Text("Why").webUnderline("Why").typeRole(Tokens.TypeRole.monoDataStrong).foregroundStyle(Tokens.day.answerTrue.color))
+        let map = Bitmap(ZStack(alignment: .leading) { Color(white: 1); view.padding(.leading, 10) }.frame(width: 343, height: 60),
+                         width: 343, height: 60, scale: 3)
+        // Ink per pixel row: the underline's rows are inked across most of the text; the baseline is the foot of the
+        // rows most letters reach (the descenders of "y" and "h" ink only a few pixels below it).
+        let rows = (0..<map.height).map { py in
+            (0..<map.width).filter { px in
+                let i = (py * map.width + px) * 4
+                return Int(map.bytes[i]) + Int(map.bytes[i + 1]) + Int(map.bytes[i + 2]) < 600
+            }.count
+        }
+        let widest = rows.max() ?? 0
+        let line = rows.indices.filter { rows[$0] >= widest * 8 / 10 }
+        let letters = rows.indices.filter { rows[$0] > 0 && !line.contains($0) }
+        let busiest = letters.map { rows[$0] }.max() ?? 0
+        let baseline = Double((letters.filter { rows[$0] >= busiest / 4 && $0 < (line.first ?? 0) }.max() ?? 0) + 1) / 3
+        let top = Double(line.first ?? 0) / 3
+        let thickness = Double(line.count) / 3
+        #expect(abs(top - baseline - 3) <= 0.4, "the underline's top is \(top - baseline) under the baseline")
+        #expect(abs(thickness - 1.5) <= 0.4, "the underline is \(thickness) thick")
+    }
+
+    /// A wrapped link is underlined under each line, from its first letter to its last: the space it wraps at is not.
+    @Test func aWrappedLinkIsUnderlinedToEachLinesLastLetter() {
+        let link = SourceLink(title: "Protecting data at rest", action: {}).frame(width: 190, alignment: .leading)
+        let map = Bitmap(ZStack(alignment: .topLeading) { Color(white: 1); link.padding(10) }.frame(width: 260, height: 120),
+                         width: 260, height: 120, scale: 3)
+        func dark(_ px: Int, _ py: Int) -> Bool {
+            let i = (py * map.width + px) * 4
+            return Int(map.bytes[i]) + Int(map.bytes[i + 1]) + Int(map.bytes[i + 2]) < 600
+        }
+        // The underline rows: inked over 60 points or more in one run from the title's start (x 36 after the book).
+        let starts = 36 * 3
+        let lines = (0..<map.height).filter { py in (starts..<(starts + 180)).allSatisfy { dark($0, py) } }
+        #expect(!lines.isEmpty, "no underline found")
+        guard let firstRow = lines.first else { return }
+        // The first line's underline (one run of ink from the title's start; the arrow beside the title may share its
+        // row) ends where the line's letters end.
+        let underlineEnd = ((starts..<map.width).first { !dark($0, firstRow) } ?? map.width) - 1
+        let lettersEnd = ((firstRow - 30)..<(firstRow - 9)).compactMap { py in (starts..<(underlineEnd + 40)).last { dark($0, py) } }.max() ?? 0
+        // Past the last letter's ink by its side bearing at most, short of the 8 a space would add.
+        #expect(abs(Double(underlineEnd - lettersEnd) / 3) <= 3, "the underline ends at \(Double(underlineEnd) / 3), the letters at \(Double(lettersEnd) / 3)")
+    }
 }
 
 private struct PassHost: View {

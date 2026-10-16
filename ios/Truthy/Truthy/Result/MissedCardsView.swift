@@ -125,7 +125,7 @@ struct MissedCardsView: View {
                     if !isOpen { reveal(card.number) }
                 } label: {
                     HStack(spacing: Tokens.Space.s6) {
-                        Text("Why").underline().typeRole(Tokens.TypeRole.monoDataStrong)
+                        Text("Why").webUnderline("Why").typeRole(Tokens.TypeRole.monoDataStrong)
                         IconView(icon: .chevronDown, size: 12)
                             .rotationEffect(.degrees(isOpen ? 180 : 0))
                             .animation(reducedMotion ? nil : Tokens.Curve.ease.animation(Tokens.Duration.t2), value: isOpen)

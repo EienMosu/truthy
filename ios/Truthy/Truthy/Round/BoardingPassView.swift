@@ -321,7 +321,7 @@ struct SourceLink: View {
         Button(action: action) {
             HStack(spacing: Tokens.Space.s8) {
                 IconView(icon: .book, size: 18)
-                Text(title).underline().multilineTextAlignment(.leading).wholeWords(title, Tokens.TypeRole.sourceLink)
+                Text(title).webUnderline(title).multilineTextAlignment(.leading).wholeWords(title, Tokens.TypeRole.sourceLink)
                 Text("→").accessibilityHidden(true)
             }
             .typeRole(Tokens.TypeRole.sourceLink)

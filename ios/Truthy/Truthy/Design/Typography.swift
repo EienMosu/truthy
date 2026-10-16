@@ -120,6 +120,55 @@ extension View {
     }
 }
 
+/// The web's underline of a link (BoardingPass.tsx and MissedCards.tsx: <u class="decoration-[1.5px]
+/// underline-offset-[3px]">): 1.5 thick, its top 3 under the baseline, so it passes under the descenders, drawn under
+/// each line of the text from its first to its last character (the space a line wraps at is not underlined) and
+/// snapped to the pixel grid as the browser snaps it (5 pixels at 3x). SwiftUI's underline is the font's, close under
+/// the baseline and through the descenders.
+struct WebUnderline: TextRenderer {
+    static let thickness = 1.5
+    static let offset = 3.0
+    /// The text drawn, to tell its spaces (a layout's character indices count its UTF-16 units).
+    let text: String
+
+    func draw(layout: Text.Layout, in context: inout GraphicsContext) {
+        let scale = max(1, context.environment.displayScale)
+        let units = Array(text.utf16)
+        let first = layout.flatMap { $0 }.flatMap { $0.characterIndices }.min()
+        let thickness = max(1, (Self.thickness * scale).rounded()) / scale
+        for line in layout {
+            var left = Double.infinity
+            var right = -Double.infinity
+            for run in line {
+                for index in run.indices {
+                    let slice = run[index]
+                    let blank = slice.characterIndices.allSatisfy { character in
+                        guard let first else { return false }
+                        let offset = first.distance(to: character)
+                        guard units.indices.contains(offset), let scalar = Unicode.Scalar(units[offset]) else { return false }
+                        return CharacterSet.whitespacesAndNewlines.contains(scalar)
+                    }
+                    guard !blank else { continue }
+                    left = min(left, slice.typographicBounds.rect.minX)
+                    right = max(right, slice.typographicBounds.rect.maxX)
+                }
+            }
+            if right > left {
+                let top = ((line.typographicBounds.origin.y + Self.offset) * scale).rounded() / scale
+                context.fill(Path(CGRect(x: left, y: top, width: right - left, height: thickness)), with: .foreground)
+            }
+            context.draw(line)
+        }
+    }
+}
+
+extension View {
+    /// Underlines the text inside as the web underlines a link (WebUnderline); `text` is the string it draws.
+    func webUnderline(_ text: String) -> some View {
+        textRenderer(WebUnderline(text: text))
+    }
+}
+
 /// Text with spans in a font of their own (a semibold number in a mono line, a code part, the Timed clock), built at
 /// the Dynamic Type size of the place it is drawn, so a span's font(at:) is its exact size there, a cap of the paper
 /// (paperTextSize) or of a fitted word (wholeWords) applied around it included.
