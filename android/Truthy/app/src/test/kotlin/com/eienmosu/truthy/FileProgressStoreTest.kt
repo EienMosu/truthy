@@ -157,7 +157,31 @@ class FileProgressStoreTest {
             val store = FileProgressStore(dir)
             assertEquals(emptyProgress(), store.load())
             store.save(played)
-            assertTrue(main.isDirectory)
+            assertTrue(main.isDirectory, "nothing is written over a progress that cannot be read")
+            assertFalse(side.exists())
+        }
+    }
+
+    @Test
+    fun aSaveAfterAFailedReadWaitsForALoadThatSucceeds() {
+        runBlocking {
+            val store = FileProgressStore(dir)
+            store.save(played)
+            val saved = main.readText()
+            // A read that fails: a folder where the file was here, on a device a file that cannot be opened for a while.
+            main.delete()
+            main.mkdirs()
+            assertEquals(emptyProgress(), store.load())
+            // The read works again, but this save was built on the failed one: the stored progress stays.
+            main.delete()
+            main.writeText(saved)
+            store.save(emptyProgress())
+            assertEquals(played, FileProgressStore(dir).load())
+            // A load that succeeds lets the next save through.
+            assertEquals(played, store.load())
+            val next = Progress(version = 1, cards = emptyMap(), records = mapOf("aws-clf-c02/SEC#streak" to 3), last = null)
+            store.save(next)
+            assertEquals(next, FileProgressStore(dir).load())
         }
     }
 
