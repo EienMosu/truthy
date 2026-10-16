@@ -29,4 +29,4 @@ How to produce the evidence:
 
 A cell reads `pass`, or `fail:` with what was seen, followed by the date and the evidence. A failing item names the task whose code it concerns and is fixed there before this checklist is marked done.
 
-Done in the simulator on 2026-10-16: every cell of the iOS 18.4 and 26.5 columns reads `pass` or `not applicable`. N5's catch and the haptics of N6 need a real finger and a real phone; task 16 checks them on the device. The Opus reviewer of the visual review (step 52) has not looked at the largest-text screenshots yet.
+Done in the simulator on 2026-10-16: every cell of the iOS 18.4 and 26.5 columns reads `pass` or `not applicable`. N5's catch and the haptics of N6 need a real finger and a real phone; task 16 checks them on the device. The step 52 review (done by the implementer, see `visual-review.md`) checked the largest-text screenshots again on 2026-10-16 at 88b60fb and found no clipped or overlapping text.
