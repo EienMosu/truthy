@@ -11,6 +11,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -62,7 +66,7 @@ class RoundHostTest {
         override fun playAgain() { events += "playAgain" }
     }
 
-    private fun host(state: RoundState?, best: Int? = null, open: Boolean = false) {
+    private fun host(state: RoundState?, best: Int? = null, open: Boolean = false, decidedAtOpen: Boolean = false) {
         sheetOpen = open
         rule.setContent {
             Themed {
@@ -70,6 +74,7 @@ class RoundHostTest {
                     round = state,
                     ticket = TestRounds.ticket(best),
                     sheetOpen = sheetOpen,
+                    decidedWhenSheetOpened = decidedAtOpen,
                     clock = clock,
                     actions = owner,
                     openSource = { events += "open $it" },
@@ -127,6 +132,19 @@ class RoundHostTest {
         rule.onNodeWithText(LeaveText.LEAVE_ROUND).performClick()
         rule.waitForIdle()
         assertEquals(listOf("leaveRound"), events)
+    }
+
+    @Test
+    fun theSheetSaysTheDecisionThroughItsStatusOnlyWhenTheRoundWasNotDecidedAtOpening() {
+        host(TestRounds.streakEndedUnopened(), open = true, decidedAtOpen = false)
+        rule.onNodeWithTag(LEAVE_STATUS_TAG, useUnmergedTree = true).assertContentDescriptionEquals(LeaveText.DECIDED_BODY)
+    }
+
+    @Test
+    fun aSheetOpenedOnADecidedRoundKeepsItsStatusEmpty() {
+        host(TestRounds.streakEndedUnopened(), open = true, decidedAtOpen = true)
+        rule.onNodeWithTag(LEAVE_STATUS_TAG, useUnmergedTree = true)
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
     }
 
     @Test

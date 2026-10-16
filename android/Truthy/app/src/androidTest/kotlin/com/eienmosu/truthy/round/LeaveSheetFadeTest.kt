@@ -30,7 +30,7 @@ class LeaveSheetFadeTest {
         rule.setContent {
             Themed {
                 CompositionLocalProvider(LocalReducedMotion provides reduced) {
-                    LeaveSheetCard(decided = false, hiding = false, onKeepPlaying = {}, onLeave = {})
+                    LeaveSheetCard(decided = false, decidedAtOpen = false, hiding = false, onKeepPlaying = {}, onLeave = {})
                 }
             }
         }

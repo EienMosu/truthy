@@ -46,8 +46,8 @@ interface RoundHostActions {
 
 /**
  * The round's top-level screen (spec 5.2): the round or its result inside the back surface, the web's scrim and the
- * leave sheet. `round` null is loading; `sheetOpen` is the coordinator's. The X and Escape (in `content`, through
- * requestClose), back, the sheet and the result's actions all go to `actions` (rule 1).
+ * leave sheet. `round` null is loading; `sheetOpen` and `decidedWhenSheetOpened` are the coordinator's. The X and
+ * Escape (in `content`, through requestClose), back, the sheet and the result's actions all go to `actions` (rule 1).
  */
 @Composable
 fun RoundHost(
@@ -57,6 +57,7 @@ fun RoundHost(
     clock: MonotonicClock,
     actions: RoundHostActions,
     modifier: Modifier = Modifier,
+    decidedWhenSheetOpened: Boolean = false,
     openSource: (String) -> Unit = rememberSourceOpener(),
     content: @Composable (requestClose: () -> Unit) -> Unit,
 ) {
@@ -88,6 +89,7 @@ fun RoundHost(
     if (sheetOpen && open != null) {
         LeaveSheet(
             decided = isDecided(open),
+            decidedAtOpen = decidedWhenSheetOpened,
             scrimTapAccepted = actions::scrimTapAccepted,
             onKeepPlaying = actions::keepPlaying,
             onLeave = actions::leaveRound,
@@ -122,7 +124,16 @@ private fun ReadyRound(app: AppViewModel, coordinator: RoundCoordinator, modifie
     val round by coordinator.state.collectAsStateWithLifecycle()
     val sheetOpen by coordinator.sheetOpen.collectAsStateWithLifecycle()
     val actions = remember(app, coordinator) { appActions(app, coordinator) }
-    RoundHost(round = round, ticket = coordinator.ticket, sheetOpen = sheetOpen, clock = UPTIME, actions = actions, modifier = modifier) { requestClose ->
+    RoundHost(
+        round = round,
+        ticket = coordinator.ticket,
+        sheetOpen = sheetOpen,
+        clock = UPTIME,
+        actions = actions,
+        modifier = modifier,
+        // Set by requestLeave before sheetOpen turns true, so it is current whenever the sheet is composed.
+        decidedWhenSheetOpened = coordinator.decidedWhenSheetOpened,
+    ) { requestClose ->
         RoundRoute(coordinator, onRequestLeave = requestClose, sheetOpen = sheetOpen)
     }
 }

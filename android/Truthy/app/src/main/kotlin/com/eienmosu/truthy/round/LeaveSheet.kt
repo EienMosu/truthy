@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,6 +43,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +64,7 @@ import kotlinx.coroutines.withContext
 
 const val SHEET_CARD_TAG = TestTags.SHEET_CARD
 const val SCRIM_TAG = "leave.scrim"
+const val LEAVE_STATUS_TAG = "leave.status"
 
 /** The sheet card's current opacity, for tests (the fade is the web's, rule 5). */
 val SheetCardAlpha = SemanticsPropertyKey<Float>("SheetCardAlpha")
@@ -73,11 +76,12 @@ val ScrimAlpha = SemanticsPropertyKey<Float>("ScrimAlpha")
  * "Leave round?" in the platform sheet (spec 5.4), composed while the coordinator's sheetOpen is true: swipe down and
  * the scrim keep playing through Material's onDismissRequest, back through the sheet's own BackHandler. A scrim tap
  * or a swipe-down settle asks scrimTapAccepted first; the host answers true unless task 15 finds the guard needed
- * (rule 4). Material's scrim is transparent: the host draws LeaveScrim (rule 5).
+ * (rule 4). Material's scrim is transparent: the host draws LeaveScrim (rule 5). `decidedAtOpen` is the
+ * coordinator's decidedWhenSheetOpened (LeaveDialog.tsx decidedAtOpen).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LeaveSheet(decided: Boolean, scrimTapAccepted: () -> Boolean, onKeepPlaying: () -> Unit, onLeave: () -> Unit) {
+fun LeaveSheet(decided: Boolean, decidedAtOpen: Boolean, scrimTapAccepted: () -> Boolean, onKeepPlaying: () -> Unit, onLeave: () -> Unit) {
     val theme = TruthyTheme.resolved
     val currentAccepted by rememberUpdatedState(scrimTapAccepted)
     // Material3 1.4.0's SheetState.hide() asks confirmValueChange(Hidden) too (SheetDefaults.kt:222): a close the card
@@ -115,6 +119,7 @@ fun LeaveSheet(decided: Boolean, scrimTapAccepted: () -> Boolean, onKeepPlaying:
         BackHandler { keepPlaying() }
         LeaveSheetCard(
             decided = decided,
+            decidedAtOpen = decidedAtOpen,
             hiding = sheetState.targetValue == SheetValue.Hidden,
             onKeepPlaying = keepPlaying,
             onLeave = onLeave,
@@ -124,7 +129,7 @@ fun LeaveSheet(decided: Boolean, scrimTapAccepted: () -> Boolean, onKeepPlaying:
 
 /** The web's floating card (LeaveDialog.tsx), drawn inside the transparent sheet. */
 @Composable
-fun LeaveSheetCard(decided: Boolean, hiding: Boolean, onKeepPlaying: () -> Unit, onLeave: () -> Unit, modifier: Modifier = Modifier) {
+fun LeaveSheetCard(decided: Boolean, decidedAtOpen: Boolean, hiding: Boolean, onKeepPlaying: () -> Unit, onLeave: () -> Unit, modifier: Modifier = Modifier) {
     val colors = TruthyTheme.colors
     val reduced = LocalReducedMotion.current
     val fade = remember { Animatable(0f) }
@@ -171,11 +176,19 @@ fun LeaveSheetCard(decided: Boolean, hiding: Boolean, onKeepPlaying: () -> Unit,
                 style = TruthyType.stepTitle.copy(color = colors.ink),
                 modifier = Modifier.semantics { heading() },
             )
-            BasicText(
-                text = LeaveText.body(decided),
-                style = TruthyType.body.copy(color = colors.ink),
-                modifier = Modifier.padding(top = Tokens.Space.s8).semantics { liveRegion = LiveRegionMode.Polite },
-            )
+            // LeaveDialog.tsx:149-163: the title, then the body as plain text (a live body was read before the title).
+            // The Timed clock runs under the sheet, so a round decided while it is open says its new body through a
+            // separate status; the status stays empty until then, and a sheet opened on a decided round says nothing more.
+            // The status is drawn over the body's first pixel: under it, Compose would leave it out of what TalkBack gets.
+            Box(Modifier.padding(top = Tokens.Space.s8)) {
+                BasicText(text = LeaveText.body(decided), style = TruthyType.body.copy(color = colors.ink))
+                Box(
+                    Modifier.size(RoundGeometry.SPOKEN_NODE).testTag(LEAVE_STATUS_TAG).semantics {
+                        liveRegion = LiveRegionMode.Polite
+                        if (decided && !decidedAtOpen) contentDescription = LeaveText.body(decided)
+                    },
+                )
+            }
             Column(Modifier.padding(top = Tokens.Space.s20), verticalArrangement = Arrangement.spacedBy(Tokens.Space.s4)) {
                 PillButton(
                     label = LeaveText.KEEP_PLAYING,

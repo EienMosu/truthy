@@ -81,6 +81,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
@@ -310,15 +311,17 @@ private fun RoundBody(
 
     Box(Modifier.fillMaxSize()) {
         SkyBackdrop(lowerCloud = LowerCloud.GAME)
-        LiveRegions(view, said)
         TruthyFrame {
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = Tokens.Size.header),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s12),
-            ) {
-                RoundButton(label = "Leave round", onClick = onRequestLeave) { TruthyIcon(IconId.CLOSE) }
-                RoundHeader(round, view, ticket.best, reduced, Modifier.weight(1f))
+            Box(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = Tokens.Size.header),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s12),
+                ) {
+                    RoundButton(label = "Leave round", onClick = onRequestLeave) { TruthyIcon(IconId.CLOSE) }
+                    RoundHeader(round, view, ticket.best, reduced, Modifier.weight(1f))
+                }
+                LiveRegions(view, said)
             }
             Spacer(Modifier.height(Tokens.Space.s12))
             Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -682,24 +685,52 @@ private fun RoundHeader(round: RoundState, view: RoundView, best: Int?, reduced:
     }
 }
 
-/** The heading and the two live regions, drawn as nothing (reference 4.5 and 5.9). */
+/**
+ * The heading and the two live regions, drawn as nothing (reference 4.5 and 5.9). The heading is read first, as the
+ * web's sr-only h1 is.
+ */
 @Composable
 private fun LiveRegions(view: RoundView, said: Spoken) {
-    Box(Modifier.size(RoundGeometry.SPOKEN_NODE).semantics { heading(); contentDescription = view.heading })
-    Box(
-        Modifier.size(RoundGeometry.SPOKEN_NODE).testTag("status").semantics {
-            liveRegion = LiveRegionMode.Polite
-            if (said.status.isNotEmpty()) contentDescription = said.status
-        },
-    )
-    if (view.timed) {
+    SpokenNodes {
+        SpokenHeading(view.heading)
         Box(
-            Modifier.size(RoundGeometry.SPOKEN_NODE).testTag("card-announcer").semantics {
+            Modifier.size(RoundGeometry.SPOKEN_NODE).testTag("status").semantics {
                 liveRegion = LiveRegionMode.Polite
-                if (said.card.isNotEmpty()) contentDescription = said.card
+                if (said.status.isNotEmpty()) contentDescription = said.status
             },
         )
+        if (view.timed) {
+            Box(
+                Modifier.size(RoundGeometry.SPOKEN_NODE).testTag("card-announcer").semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    if (said.card.isNotEmpty()) contentDescription = said.card
+                },
+            )
+        }
     }
+}
+
+/**
+ * The 1 dp nodes only a screen reader reads, side by side at the top of the frame and drawn over the header. The
+ * system hands TalkBack only what it can reach: Compose leaves out a node that a later sibling covers (stacked, the
+ * status hid the heading), and the system marks a node under the status bar as not visible. So none of them overlap,
+ * none lies under the status bar, and the header (drawn first) does not cover them.
+ */
+@Composable
+private fun SpokenNodes(content: @Composable () -> Unit) {
+    Row { content() }
+}
+
+/** A heading for the screen reader only, read before everything else on the screen. */
+@Composable
+private fun SpokenHeading(text: String) {
+    Box(
+        Modifier.size(RoundGeometry.SPOKEN_NODE).semantics {
+            heading()
+            contentDescription = text
+            traversalIndex = -1f
+        },
+    )
 }
 
 // The 430 column and the safe areas are task 10's TruthyFrame (spec 5.6, one implementation for every screen).
@@ -710,11 +741,15 @@ fun RoundLoading(onRequestLeave: () -> Unit, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier.fillMaxSize().background(TruthyTheme.colors.surface)) {
         val short = maxHeight < Tokens.Native.shortScreenBelow
         SkyBackdrop(lowerCloud = LowerCloud.GAME)
-        Box(Modifier.size(RoundGeometry.SPOKEN_NODE).semantics { heading(); contentDescription = "Your round" })
-        Box(Modifier.size(RoundGeometry.SPOKEN_NODE).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = "Loading your round" })
         TruthyFrame {
-            Row(Modifier.fillMaxWidth().heightIn(min = Tokens.Size.header), verticalAlignment = Alignment.CenterVertically) {
-                RoundButton(label = "Leave round", onClick = onRequestLeave) { TruthyIcon(IconId.CLOSE) }
+            Box(Modifier.fillMaxWidth()) {
+                Row(Modifier.fillMaxWidth().heightIn(min = Tokens.Size.header), verticalAlignment = Alignment.CenterVertically) {
+                    RoundButton(label = "Leave round", onClick = onRequestLeave) { TruthyIcon(IconId.CLOSE) }
+                }
+                SpokenNodes {
+                    SpokenHeading("Your round")
+                    Box(Modifier.size(RoundGeometry.SPOKEN_NODE).semantics { liveRegion = LiveRegionMode.Polite; contentDescription = "Loading your round" })
+                }
             }
             Spacer(Modifier.height(Tokens.Space.s12))
             Box(Modifier.weight(1f).fillMaxWidth()) { PlaceholderTicket() }
