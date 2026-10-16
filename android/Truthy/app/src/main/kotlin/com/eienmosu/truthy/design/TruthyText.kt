@@ -2,12 +2,18 @@ package com.eienmosu.truthy.design
 
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -112,4 +118,50 @@ fun Text(
 @Composable
 fun BasicText(text: String, modifier: Modifier = Modifier, style: TextStyle) {
     FoundationBasicText(text = text, modifier = modifier, style = style.onPixelLines())
+}
+
+/**
+ * The web's underlined link text, <u className="decoration-[1.5px] underline-offset-[3px]"> (BoardingPass.tsx,
+ * MissedCards.tsx): a line THICKNESS_DP thick whose top is OFFSET_DP below the baseline, clear of the descenders.
+ * The font's own underline, a text decoration, is thinner and closer, through the descenders.
+ */
+object WebUnderline {
+    const val THICKNESS_DP = 1.5f
+    const val OFFSET_DP = 3f
+
+    /** The line under each line of [layout]: its top [offsetPx] below the line's baseline, [thicknessPx] tall. */
+    fun rects(layout: TextLayoutResult, offsetPx: Float, thicknessPx: Float): List<Rect> =
+        (0 until layout.lineCount).mapNotNull { line ->
+            val left = layout.getLineLeft(line)
+            val right = layout.getLineRight(line)
+            if (right <= left) {
+                null
+            } else {
+                val top = layout.getLineBaseline(line) + offsetPx
+                Rect(left, top, right, top + thicknessPx)
+            }
+        }
+}
+
+/**
+ * Text underlined as the web underlines its links (WebUnderline). The web's px grow with the text when the page is
+ * zoomed; here the line and its offset grow as much as the font size does at the system font scale, so at 2.0 the line
+ * stays as far below the descenders as at 1.0.
+ */
+@Composable
+fun UnderlinedText(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
+    val density = LocalDensity.current
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val growth = with(density) { style.fontSize.toPx() } / (style.fontSize.value * density.density)
+    FoundationBasicText(
+        text = text,
+        modifier = modifier.drawBehind {
+            val result = layout ?: return@drawBehind
+            val offset = WebUnderline.OFFSET_DP * density.density * growth
+            val thickness = WebUnderline.THICKNESS_DP * density.density * growth
+            for (line in WebUnderline.rects(result, offset, thickness)) drawRect(color, line.topLeft, line.size)
+        },
+        style = style.copy(color = color).onPixelLines(),
+        onTextLayout = { layout = it },
+    )
 }

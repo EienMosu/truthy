@@ -49,7 +49,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.eienmosu.truthy.design.BasicText
@@ -60,6 +59,7 @@ import com.eienmosu.truthy.design.TruthyIcon
 import com.eienmosu.truthy.design.TruthyText
 import com.eienmosu.truthy.design.TruthyTheme
 import com.eienmosu.truthy.design.TruthyType
+import com.eienmosu.truthy.design.UnderlinedText
 import com.eienmosu.truthy.design.keyboardFocusRing
 import com.eienmosu.truthy.engine.MissedCard
 import kotlinx.coroutines.delay
@@ -185,10 +185,7 @@ private fun MissedRow(item: MissedCard, first: Boolean, openSource: (String) -> 
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s6),
             ) {
-                BasicText(
-                    ResultText.WHY,
-                    style = TruthyType.monoDataStrong.copy(color = colors.trueColor, textDecoration = TextDecoration.Underline),
-                )
+                UnderlinedText(ResultText.WHY, TruthyType.monoDataStrong, colors.trueColor)
                 TruthyIcon(IconId.CHEVRON_DOWN, tint = colors.trueColor, modifier = Modifier.graphicsLayer { rotationZ = chevron })
             }
         }
@@ -234,7 +231,7 @@ private fun SourceLink(title: String, url: String, openSource: (String) -> Unit)
         horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s8),
     ) {
         TruthyIcon(IconId.BOOK, tint = colors.trueColor)
-        BasicText(title, style = style.copy(textDecoration = TextDecoration.Underline), modifier = Modifier.weight(1f, fill = false))
+        UnderlinedText(title, TruthyType.monoDataStrong, colors.trueColor, Modifier.weight(1f, fill = false))
         BasicText("→", style = style)
     }
 }

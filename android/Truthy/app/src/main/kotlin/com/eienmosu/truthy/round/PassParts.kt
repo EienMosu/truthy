@@ -32,7 +32,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.Canvas
@@ -41,6 +40,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import com.eienmosu.truthy.design.Text
+import com.eienmosu.truthy.design.UnderlinedText
 import com.eienmosu.truthy.design.IconId
 import com.eienmosu.truthy.design.TicketMainShape
 import com.eienmosu.truthy.design.Tokens
@@ -286,7 +286,7 @@ private fun SourceRow(title: String, url: String, onOpen: (String) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s8),
     ) {
         TruthyIcon(IconId.BOOK, tint = colors.trueColor, width = RoundGeometry.BOOK_ICON)
-        Text(title, Modifier.weight(1f, fill = false), style = TruthyType.sourceLink.copy(textDecoration = TextDecoration.Underline), color = colors.trueColor)
+        UnderlinedText(title, TruthyType.sourceLink, colors.trueColor, Modifier.weight(1f, fill = false))
         Text("→", style = TruthyType.sourceLink, color = colors.trueColor)
     }
 }
