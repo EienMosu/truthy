@@ -397,6 +397,26 @@ struct Bitmap: CustomStringConvertible {
         #expect(map.shows(paper, at: 100, foot, tolerance: 4), "10 above the last card's foot: \(map.at(100, foot))")
     }
 
+    /// Step 52 review: at the largest text sizes, where "Missed cards" and "{n} to review" take two lines, they start at
+    /// the paper's 20 inset as the row does (MissedCards.tsx px-(--size-ticket-inset)); the app centred them, 41 in on
+    /// the large phone (pairs r1, lives-r1 and lives-r1-why at the largest size).
+    @Test func theMissedCardsHeadingStartsAtTheInsetOnTwoLines() {
+        let card = MissedCard(number: 2, given: true, answer: false, appliesTo: nil, statement: "A statement.",
+                              explanation: "Why.", source: CardSource(title: "A source", url: "https://example.com"))
+        let missed = MissedCardsView(missed: [card], height: 300).environment(\.dynamicTypeSize, .accessibility5)
+        let map = Bitmap(missed.frame(width: 358, height: 300), width: 358, height: 300)
+        // The leftmost ink of the heading's first line.
+        var left = 358.0
+        for y in stride(from: 18.0, to: 60, by: 0.5) {
+            for x in stride(from: 0.0, to: 358, by: 0.5) where map.at(x, y).prefix(3).reduce(0, +) < 500 {
+                left = min(left, x)
+                break
+            }
+        }
+        // The inset plus the "M"'s side bearing at that size (about 4).
+        #expect(left >= Tokens.Size.ticketInset && left <= Tokens.Size.ticketInset + 6, "the heading starts at \(left)")
+    }
+
     /// A wrapped link is underlined under each line, from its first letter to its last: the space it wraps at is not.
     @Test func aWrappedLinkIsUnderlinedToEachLinesLastLetter() {
         let link = SourceLink(title: "Protecting data at rest", action: {}).frame(width: 190, alignment: .leading)

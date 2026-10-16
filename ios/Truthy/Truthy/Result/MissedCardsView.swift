@@ -41,6 +41,8 @@ struct MissedCardsView: View {
                         HStack(alignment: .firstTextBaseline) { missedHeading; Spacer(minLength: Tokens.Space.s8); toReview }
                         VStack(alignment: .leading, spacing: Tokens.Space.s2) { missedHeading; toReview }
                     }
+                    // On two lines too they start at the inset, where the list's rows start.
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, Tokens.Size.ticketInset)
                     .padding(.top, Tokens.Space.s16)
                     .padding(.bottom, Tokens.Space.s4)
