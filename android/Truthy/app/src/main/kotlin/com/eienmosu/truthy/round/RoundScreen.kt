@@ -135,7 +135,11 @@ private fun RoundHaptic.feedbackConstant(): Int = when (this) {
     RoundHaptic.REJECT -> HapticFeedbackConstantsCompat.REJECT
 }
 
-/** The round in its question, answered and stamped phases. Draws nothing once the round is finished or abandoned. */
+/**
+ * The round in its question, answered and stamped phases. Draws nothing once the round is finished. A round left
+ * before its result keeps its last frame on screen, inert, while the leave is saved: the start flow replaces it once
+ * the save is done (spec 5.7 item 5 and N10, no empty frame between the two screens).
+ */
 @Composable
 fun RoundScreen(
     round: RoundState,
@@ -150,8 +154,15 @@ fun RoundScreen(
     haptics: (RoundHaptic) -> Unit = rememberRoundHaptics(),
     openLink: (String) -> Unit = rememberSourceOpener(),
 ) {
-    val view = remember(round, ticket) { roundView(round, ticket) }
-    if (view.card == null || round.phase == Phase.FINISHED || round.abandoned) return
+    val lastPlayed = remember { RoundRef(round) }
+    if (!round.abandoned) lastPlayed.state = round
+    val inert = round.abandoned
+    val shown = if (inert) lastPlayed.state else round
+    val view = remember(shown, ticket) { roundView(shown, ticket) }
+    if (view.card == null || shown.phase == Phase.FINISHED) return
+    val answer: (Boolean) -> Unit = if (inert) IGNORED_ANSWER else onAnswer
+    val next: () -> Unit = if (inert) IGNORED else onNext
+    val leave: () -> Unit = if (inert) IGNORED else onRequestLeave
     val rootFocus = remember { FocusRequester() }
     var rootHasFocus by remember { mutableStateOf(false) }
     LaunchedEffect(rootHasFocus, sheetOpen) {
@@ -169,18 +180,19 @@ fun RoundScreen(
             .focusRequester(rootFocus)
             .focusable()
             .onPreviewKeyEvent { event -> event.type == KeyEventType.KeyDown && event.roundKey() != null && event.nativeKeyEvent.repeatCount > 0 }
-            .onKeyEvent { event -> handleRoundKey(event, round.phase, view.awaitsNext, sheetOpen, onAnswer, onNext, onRequestLeave) },
+            .onKeyEvent { event -> handleRoundKey(event, shown.phase, view.awaitsNext, sheetOpen, answer, next, leave) },
     ) {
         RoundBody(
-            round = round,
+            round = shown,
             view = view,
             ticket = ticket,
             short = maxHeight < Tokens.Native.shortScreenBelow,
             cardShownAt = cardShownAt,
-            onAnswer = onAnswer,
-            onNext = onNext,
-            onRequestLeave = onRequestLeave,
+            onAnswer = answer,
+            onNext = next,
+            onRequestLeave = leave,
             sheetOpen = sheetOpen,
+            inert = inert,
             reduced = reducedMotion,
             haptics = haptics,
             openLink = openLink,
@@ -199,6 +211,7 @@ private fun RoundBody(
     onNext: () -> Unit,
     onRequestLeave: () -> Unit,
     sheetOpen: Boolean,
+    inert: Boolean,
     reduced: Boolean,
     haptics: (RoundHaptic) -> Unit,
     openLink: (String) -> Unit,
@@ -330,7 +343,7 @@ private fun RoundBody(
                             .padding(start = Tokens.Size.gutter, end = Tokens.Size.gutter, bottom = with(screenDensity) { underPx.toDp() }),
                     ) {
                         val offsetDp = swipe.drawnPx / screenDensity.density
-                        val takes = view.takesAnswers && !sheetOpen
+                        val takes = view.takesAnswers && !sheetOpen && !inert
                         Box(
                             Modifier
                                 .fillMaxWidth()
@@ -757,6 +770,9 @@ fun RoundLoadFailed(onRetry: () -> Unit, onRequestLeave: () -> Unit, modifier: M
 }
 
 private class RoundRef(var state: RoundState)
+
+private val IGNORED_ANSWER: (Boolean) -> Unit = { }
+private val IGNORED: () -> Unit = { }
 
 private class Placed {
     var coords: LayoutCoordinates? = null

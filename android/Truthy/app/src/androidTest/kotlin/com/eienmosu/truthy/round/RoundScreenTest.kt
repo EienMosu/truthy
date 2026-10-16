@@ -58,6 +58,25 @@ class RoundScreenTest {
     }
 
     @Test
+    fun aLeftRoundKeepsItsLastFrameAndTakesNothingUntilTheStartFlowReplacesIt() {
+        val host = classic()
+        val card = currentCard(host.round)!!
+        rule.setContent { host.Content() }
+        rule.onNodeWithText(card.text.en.statement).assertExists()
+        host.round = reduce(host.round, RoundEvent.Abandon)
+        rule.waitForIdle()
+        rule.onNodeWithTag("round-screen").assertExists()
+        rule.onNodeWithText(card.text.en.statement).assertExists()
+        rule.onNodeWithText("01 / 10").assertExists()
+        rule.onNodeWithTag("answer-true").performClick()
+        rule.onNodeWithContentDescription("Leave round").performClick()
+        rule.waitForIdle()
+        assertTrue(host.answers.isEmpty())
+        assertEquals(0, host.leaveRequests)
+        rule.onNodeWithTag("swipe-card").assert(SemanticsMatcher.keyNotDefined(SemanticsActions.CustomActions))
+    }
+
+    @Test
     fun theTruePillAnswersAndTheSlipShowsTheVerdictTheExplanationAndTheSource() {
         val host = classic()
         val card = currentCard(host.round)!!
