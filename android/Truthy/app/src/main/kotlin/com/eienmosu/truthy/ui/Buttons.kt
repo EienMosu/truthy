@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -24,6 +23,7 @@ import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.eienmosu.truthy.design.IconId
+import com.eienmosu.truthy.design.Pills
 import com.eienmosu.truthy.design.PressFeedback
 import com.eienmosu.truthy.design.Tokens
 import com.eienmosu.truthy.design.TruthyIcon
@@ -33,6 +33,7 @@ import com.eienmosu.truthy.design.TruthyType
 import com.eienmosu.truthy.design.keyboardFocusRing
 import com.eienmosu.truthy.design.pressFeedback
 import com.eienmosu.truthy.design.rememberPressProgress
+import com.eienmosu.truthy.design.truthyPillShadow
 import com.eienmosu.truthy.design.truthyShadow
 
 enum class PillTone { INK, TRUE, FALSE }
@@ -63,13 +64,13 @@ fun PillButton(
         PillTone.TRUE -> colors.trueColor
         PillTone.FALSE -> colors.falseColor
     }
-    val shape = RoundedCornerShape(Tokens.Radius.pill)
+    val shape = Pills.shape
     val shadow = if (dimmed) {
         Modifier
     } else {
         Modifier
-            .truthyShadow(shadows.button, Tokens.Radius.pill, alpha = { 1f - press.value })
-            .truthyShadow(shadows.press, Tokens.Radius.pill, alpha = { press.value })
+            .truthyPillShadow(shadows.button, alpha = { 1f - press.value })
+            .truthyPillShadow(shadows.press, alpha = { press.value })
     }
     Row(
         modifier = modifier
@@ -152,8 +153,8 @@ fun QuietButton(
             .fillMaxWidth()
             .heightIn(min = Tokens.Size.pillSmall)
             .pressFeedback(press, PressFeedback.QUIET_SCALE)
-            .keyboardFocusRing(RoundedCornerShape(Tokens.Radius.pillSmall))
-            .clip(RoundedCornerShape(Tokens.Radius.pillSmall))
+            .keyboardFocusRing(Pills.shape)
+            .clip(Pills.shape)
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick),
         horizontalArrangement = Arrangement.spacedBy(Tokens.Space.s8, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
@@ -182,9 +183,9 @@ fun BackPill(
         modifier = modifier
             .heightIn(min = Tokens.Size.pillSmall)
             .pressFeedback(press, PressFeedback.BACK_PILL_SCALE)
-            .truthyShadow(shadows.small, Tokens.Radius.pillSmall)
-            .keyboardFocusRing(RoundedCornerShape(Tokens.Radius.pillSmall))
-            .clip(RoundedCornerShape(Tokens.Radius.pillSmall))
+            .truthyPillShadow(shadows.small)
+            .keyboardFocusRing(Pills.shape)
+            .clip(Pills.shape)
             .background(colors.surfaceRaised)
             .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description }

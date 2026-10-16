@@ -151,12 +151,23 @@ fun Modifier.truthyShadow(
 ): Modifier {
     // One drawing per spec and radius: a recomposition of the caller keeps the bitmaps; a new size renders them again.
     val currentAlpha = rememberUpdatedState(alpha)
-    val build = remember(spec, cornerRadius) { shadowDrawing(spec, cornerRadius) { currentAlpha.value() } }
+    val build = remember(spec, cornerRadius) { shadowDrawing(spec, { cornerRadius.toPx() }) { currentAlpha.value() } }
     return drawWithCache(build)
 }
 
-private fun shadowDrawing(spec: ShadowSpec, cornerRadius: Dp, alpha: () -> Float): CacheDrawScope.() -> DrawResult = {
-    val radius = cornerRadius.toPx()
+/**
+ * truthyShadow for a pill, whose corner radius is half its height (Pills: the web's pill radius on its fixed height),
+ * also when a wrapped label at a large font scale makes it taller.
+ */
+@Composable
+fun Modifier.truthyPillShadow(spec: ShadowSpec, alpha: () -> Float = { 1f }): Modifier {
+    val currentAlpha = rememberUpdatedState(alpha)
+    val build = remember(spec) { shadowDrawing(spec, { Pills.radius(size) }) { currentAlpha.value() } }
+    return drawWithCache(build)
+}
+
+private fun shadowDrawing(spec: ShadowSpec, cornerRadius: CacheDrawScope.() -> Float, alpha: () -> Float): CacheDrawScope.() -> DrawResult = {
+    val radius = cornerRadius()
     val own = Path().apply { addRoundRect(RoundRect(0f, 0f, size.width, size.height, CornerRadius(radius))) }
     val layers = spec.layers.mapNotNull { layer ->
         val rect = ShadowMath.rect(size.width, size.height, radius, layer.offsetX.toPx(), layer.offsetY.toPx(), layer.spread.toPx())

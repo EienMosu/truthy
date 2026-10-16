@@ -1,5 +1,6 @@
 package com.eienmosu.truthy.design
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -63,6 +64,18 @@ object TicketGeometry {
 }
 
 private fun outlineOf(data: String): Outline = Outline.Generic(PathParser().parsePathString(data).toPath())
+
+/**
+ * The pills (PillButton.tsx, QuietButton.tsx, the start flow's Back pill): the web's radius-pill and radius-pill-small
+ * are half the pill's fixed height, so its ends are semicircles. Here a pill grows when its label wraps at a large font
+ * scale, and its radius stays half its height.
+ */
+object Pills {
+    val shape = RoundedCornerShape(percent = 50)
+
+    /** The corner radius of a pill of [size]: half its shorter side, as RoundedCornerShape(50 %) draws it. */
+    fun radius(size: Size): Float = minOf(size.width, size.height) / 2f
+}
 
 data class TicketMainShape(
     val cornerRadius: Dp = Tokens.Radius.card,
