@@ -9,10 +9,12 @@ struct CardTextView: View {
     let style: TypeStyle
 
     var body: some View {
-        textParts(text).reduce(Text("")) { line, part in
-            line + (part.code
-                ? Text(part.text).font(.custom("OverpassMono-SemiBold", size: style.size * 0.92, relativeTo: style.textStyle))
-                : Text(part.text))
+        SizedText { size in
+            textParts(text).reduce(Text("")) { line, part in
+                line + (part.code
+                    ? Text(part.text).font(.custom("OverpassMono-SemiBold", fixedSize: style.points(at: size) * 0.92))
+                    : Text(part.text))
+            }
         }
         .typeRole(style)
         .fixedSize(horizontal: false, vertical: true)

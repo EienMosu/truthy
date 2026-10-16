@@ -46,8 +46,18 @@ extension TypeStyle {
         }
     }
 
-    var font: Font {
-        .custom(postScriptName, size: size, relativeTo: textStyle)
+    /// The role's size at a Dynamic Type size: the size times its text style's scale, unrounded (at the default size,
+    /// the token's own size). UIFontMetrics' scaledValue rounds the result to a pixel.
+    func points(at dynamicType: DynamicTypeSize) -> Double {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicType))
+        return size * UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: 1000, compatibleWith: traits) / 1000
+    }
+
+    /// The role's font at a Dynamic Type size, at exactly points(at:). Font.custom(_:size:relativeTo:) resolves the
+    /// scaled size to a whole point (10.5 draws as 11, 13.5 as 14, 15.5 as 16, 15 at xLarge as 17), so the role builds
+    /// a fixed-size font from the Dynamic Type size of the environment it is drawn in.
+    func font(at dynamicType: DynamicTypeSize) -> Font {
+        .custom(postScriptName, fixedSize: points(at: dynamicType))
     }
 
     /// The extra space SwiftUI adds between lines to reach the role's line height. Overpass's own line height is about
@@ -71,19 +81,17 @@ extension TypeStyle {
     static let overpassLine = 1.2659912109375
 
     /// The line box of the role at a Dynamic Type size on a screen of `scale` pixels per point, as SwiftUI needs it to
-    /// draw the web's line height: SwiftUI lays a line out with the metrics of the point size rounded to a whole point,
+    /// draw the web's line height: SwiftUI lays a line out with the font's metrics (the role's exact size, font(at:)),
     /// the first line's box ending on the next pixel and each further line a rounded number of pixels below the one
     /// before. `spacing` goes between lines (never below zero) and `padding` above and below the text (half of what one
     /// line lacks, signed: a role under its natural line trims the box as CSS does).
     func lineBox(at size: DynamicTypeSize, scale: Double) -> (spacing: Double, padding: Double) {
-        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))
-        // The scale of the text style, unrounded (scaledValue rounds a small value up to a pixel).
-        let points = self.size * UIFontMetrics(forTextStyle: uiTextStyle).scaledValue(for: 1000, compatibleWith: traits) / 1000
-        let natural = Self.overpassLine * (points.rounded(.toNearestOrAwayFromZero))
+        let exact = points(at: size)
+        let natural = Self.overpassLine * exact
         let pixel = max(scale, 1)
         let first = (natural * pixel).rounded(.up) / pixel
         let next = (natural * pixel).rounded() / pixel
-        let css = lineHeight * points
+        let css = lineHeight * exact
         return (max(0, css - next), (css - first) / 2)
     }
 }
@@ -98,7 +106,7 @@ private struct TypeRoleModifier: ViewModifier {
         // and below (CSS half-leading).
         let box = style.lineBox(at: dynamicTypeSize, scale: displayScale)
         content
-            .font(style.font)
+            .font(style.font(at: dynamicTypeSize))
             .tracking(style.letterSpacing)
             .lineSpacing(box.spacing)
             .padding(.vertical, box.padding)
@@ -112,6 +120,22 @@ extension View {
     }
 }
 
+/// Text with spans in a font of their own (a semibold number in a mono line, a code part, the Timed clock), built at
+/// the Dynamic Type size of the place it is drawn, so a span's font(at:) is its exact size there, a cap of the paper
+/// (paperTextSize) or of a fitted word (wholeWords) applied around it included.
+struct SizedText: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let make: (DynamicTypeSize) -> Text
+
+    init(_ make: @escaping (DynamicTypeSize) -> Text) {
+        self.make = make
+    }
+
+    var body: some View {
+        make(dynamicTypeSize)
+    }
+}
+
 /// N9: at the accessibility sizes a narrow column would break a long word in the middle ("Cloud Practition / er").
 /// The text then takes the largest Dynamic Type size, no larger than its own, at which its longest word fits its width;
 /// at the standard sizes (up to xxxLarge) it keeps its size, as the web keeps its words whole there.
@@ -120,8 +144,7 @@ enum WordFit {
     /// The width of `word` in `style` at a Dynamic Type size, tracking included.
     static func width(of word: String, _ style: TypeStyle, at size: DynamicTypeSize) -> Double {
         let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))
-        let points = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledValue(for: style.size, compatibleWith: traits)
-        guard let font = UIFont(name: style.postScriptName, size: points) else { return 0 }
+        guard let font = UIFont(name: style.postScriptName, size: style.points(at: size)) else { return 0 }
         let tracking = UIFontMetrics(forTextStyle: style.uiTextStyle).scaledValue(for: style.letterSpacing, compatibleWith: traits)
         return Double(NSAttributedString(string: word, attributes: [.font: font, .kern: tracking]).size().width)
     }

@@ -93,8 +93,10 @@ struct DestinationCard: View {
                     HStack(spacing: Tokens.Space.s10) {
                         ProgressTrack(percent: seenPercent)
                         if seenPercent > 0 {
-                            (Text("\(seenPercent)%").font(Self.statusStrong.font).foregroundStyle(palette.ink.color) + Text(" seen"))
-                                .typeRole(Tokens.TypeRole.monoData).foregroundStyle(palette.inkMuted.color)
+                            SizedText { size in
+                                Text("\(seenPercent)%").font(Self.statusStrong.font(at: size)).foregroundStyle(palette.ink.color) + Text(" seen")
+                            }
+                            .typeRole(Tokens.TypeRole.monoData).foregroundStyle(palette.inkMuted.color)
                         } else {
                             Text("Not started").typeRole(Tokens.TypeRole.monoData).foregroundStyle(palette.inkMuted.color)
                         }

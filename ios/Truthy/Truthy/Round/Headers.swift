@@ -9,8 +9,9 @@ import TruthyEngine
 
 struct HeaderFrame<Picture: View>: View {
     let label: String
-    let left: Text
-    let right: Text?
+    /// The labels, built at the Dynamic Type size they are drawn at (SizedText): the Timed clock has a font of its own.
+    let left: (DynamicTypeSize) -> Text
+    let right: ((DynamicTypeSize) -> Text)?
     @ViewBuilder let picture: () -> Picture
     @Environment(\.palette) private var palette
 
@@ -24,15 +25,22 @@ struct HeaderFrame<Picture: View>: View {
                 .accessibilityLabel(label)
                 .accessibilityAddTraits(.isImage)
             HStack {
-                left
+                SizedText(left)
                 Spacer()
-                if let right { right }
+                if let right { SizedText(right) }
             }
             .typeRole(Tokens.TypeRole.routeLabel)
             .foregroundStyle(palette.ink.color)
             .accessibilityHidden(true)
             .paperTextSize()
         }
+    }
+}
+
+extension HeaderFrame {
+    /// Labels that set no font of their own.
+    init(label: String, left: Text, right: Text?, @ViewBuilder picture: @escaping () -> Picture) {
+        self.init(label: label, left: { _ in left }, right: right.map { right in { _ in right } }, picture: picture)
     }
 }
 
@@ -367,8 +375,8 @@ struct TimedHeader: View {
         let shown = reducedMotion ? (remaining / 1000).rounded(.up) * 1000 : remaining
         HeaderFrame(
             label: timedLabel(remaining, correct, results.count - correct),
-            left: Text(clockText(remaining)).font(Tokens.TypeRole.timedClock.font.monospacedDigit()).bold() + Text(" left"),
-            right: Text("\(correct) correct · \(results.count - correct) wrong")
+            left: { size in Text(clockText(remaining)).font(Tokens.TypeRole.timedClock.font(at: size).monospacedDigit()).bold() + Text(" left") },
+            right: { _ in Text("\(correct) correct · \(results.count - correct) wrong") }
         ) {
             TimedRoute(t: min(1, max(0, 1 - shown / TIMED.roundMs)))
         }

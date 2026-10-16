@@ -95,4 +95,85 @@ import UIKit
             #expect(abs(height("Ag\nAg\nAg\nAg", role) - 4 * role.lineHeight * role.size) <= 0.67, "four lines of \(role.size)")
         }
     }
+
+    // Step 52 review: a role whose size is not a whole number (the field label's 10.5, the source link's 13.5, the
+    // body's 15.5) drew one whole point larger, and every role drew its Dynamic Type size rounded to a whole point
+    // (15 at xLarge is 16.5, drawn as 17): Font.custom(_:size:relativeTo:) resolves to the rounded size. Each role draws
+    // its size times its text style's scale, unrounded, as CoreText draws that size.
+    @Test(arguments: [DynamicTypeSize.large, .xLarge, .accessibility1])
+    @MainActor func everyRoleDrawsItsExactSize(at dynamicType: DynamicTypeSize) {
+        let samples: [(TypeStyle, String)] = [
+            (Tokens.TypeRole.fieldLabel, "Your score"),
+            (Tokens.TypeRole.sourceLink, "What is IAM Identity Center?"),
+            (Tokens.TypeRole.body, "Each AWS account has its own root user"),
+            (Tokens.TypeRole.missedExplanation, "Each AWS account has its own root user"),
+            (Tokens.TypeRole.monoData, "17 decks"),
+        ]
+        for (role, text) in samples {
+            let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicType))
+            let points = role.size * UIFontMetrics(forTextStyle: role.uiTextStyle).scaledValue(for: 1000, compatibleWith: traits) / 1000
+            let drawn = InkSpan(Text(text).typeRole(role).foregroundStyle(.black).fixedSize().environment(\.dynamicTypeSize, dynamicType))
+            let expected = InkSpan(text, font: UIFont(name: role.postScriptName, size: points)!, tracking: role.letterSpacing)
+            #expect(abs(drawn.width - expected.width) <= 0.5,
+                    "\(role.size) at \(dynamicType) (\(points) points): \(drawn.width) wide, \(expected.width) at its size")
+            // Its line is the role's line height at that size.
+            let line = UIHostingController(rootView: Text("Ag").typeRole(role).environment(\.displayScale, 3).environment(\.dynamicTypeSize, dynamicType))
+                .sizeThatFits(in: CGSize(width: 1000, height: 1000)).height
+            #expect(abs(line - role.lineHeight * points) <= 0.34, "a line of \(role.size) at \(dynamicType) is \(line) tall")
+        }
+    }
+
+    // A code part of card text is the mono face at 0.92 of the text's size (CardText.tsx 0.92em): 14.26 for the
+    // body's 15.5, which drew as 14.
+    @Test(arguments: [DynamicTypeSize.large, .accessibility1])
+    @MainActor func aCodePartDrawsAtItsExactSize(at dynamicType: DynamicTypeSize) {
+        let role = Tokens.TypeRole.body
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicType))
+        let points = 0.92 * role.size * UIFontMetrics(forTextStyle: role.uiTextStyle).scaledValue(for: 1000, compatibleWith: traits) / 1000
+        let drawn = InkSpan(CardTextView(text: "`IAM Identity Center`", style: role).foregroundStyle(.black).fixedSize()
+            .environment(\.dynamicTypeSize, dynamicType))
+        let expected = InkSpan("IAM Identity Center", font: UIFont(name: "OverpassMono-SemiBold", size: points)!, tracking: 0)
+        #expect(abs(drawn.width - expected.width) <= 0.5, "\(points) points: \(drawn.width) wide, \(expected.width) at its size")
+    }
+}
+
+/// The horizontal extent of the dark pixels of a view or of a string CoreText draws, in points, drawn at 3x on white.
+struct InkSpan {
+    let left: Double
+    let right: Double
+    var width: Double { right - left }
+
+    @MainActor
+    init(_ view: some View) {
+        let renderer = ImageRenderer(content: view.frame(width: 900, height: 160, alignment: .topLeading).background(Color.white))
+        renderer.scale = 3
+        self.init(image: renderer.cgImage!)
+    }
+
+    init(_ text: String, font: UIFont, tracking: Double) {
+        // A kern attribute of 0 would turn the font's kerning off, so it is set only for a tracked role.
+        var attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.black]
+        if tracking != 0 { attributes[.kern] = tracking }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 900, height: 160), format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 900, height: 160))
+            NSAttributedString(string: text, attributes: attributes).draw(at: .zero)
+        }
+        self.init(image: image.cgImage!)
+    }
+
+    private init(image: CGImage) {
+        var bytes = [UInt8](repeating: 0, count: image.width * image.height * 4)
+        let context = CGContext(data: &bytes, width: image.width, height: image.height, bitsPerComponent: 8, bytesPerRow: image.width * 4,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        var columns = [Int]()
+        for x in 0..<image.width where (0..<image.height).contains(where: { bytes[($0 * image.width + x) * 4] < 128 }) {
+            columns.append(x)
+        }
+        left = Double(columns.first ?? 0) / 3
+        right = Double((columns.last ?? -1) + 1) / 3
+    }
 }

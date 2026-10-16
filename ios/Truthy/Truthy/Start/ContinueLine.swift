@@ -36,8 +36,10 @@ struct ContinueLine: View {
                     // largest text size "Google Cloud Digital Leader" no longer fits one line, and text never clips.
                     Text(deckName).typeRole(Tokens.TypeRole.continueDeckName).fixedSize(horizontal: false, vertical: true)
                     // The mono data role, the last score's number semibold in ink.
-                    (Text("\(target.found.deck.code) → \(sectionCode) · \(className)")
-                        + (score.map { Text(" · last ") + Text($0).font(Self.scoreStrong.font).foregroundStyle(palette.ink.color) } ?? Text("")))
+                    SizedText { size in
+                        Text("\(target.found.deck.code) → \(sectionCode) · \(className)")
+                            + (score.map { Text(" · last ") + Text($0).font(Self.scoreStrong.font(at: size)).foregroundStyle(palette.ink.color) } ?? Text(""))
+                    }
                         .typeRole(Tokens.TypeRole.monoData)
                         .foregroundStyle(palette.inkMuted.color)
                         .fixedSize(horizontal: false, vertical: true)
