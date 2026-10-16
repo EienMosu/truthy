@@ -37,9 +37,8 @@ struct ResultView: View {
                             .frame(height: Tokens.Size.flightPathHeight)
                             .accessibilityElement(children: .ignore)
                             .accessibilityLabel(copy.label)
-                        HStack {
+                        RouteLabelRow {
                             Text(copy.ended).bold() + Text(copy.endedDetail)
-                            Spacer()
                             Text("\(result.total - result.missed.count) correct · \(result.missed.count) wrong")
                         }
                         .typeRole(Tokens.TypeRole.routeLabel)

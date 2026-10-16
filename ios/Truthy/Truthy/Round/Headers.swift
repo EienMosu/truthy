@@ -24,15 +24,54 @@ struct HeaderFrame<Picture: View>: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(label)
                 .accessibilityAddTraits(.isImage)
-            HStack {
+            RouteLabelRow {
                 SizedText(left)
-                Spacer()
                 if let right { SizedText(right) }
             }
             .typeRole(Tokens.TypeRole.routeLabel)
             .foregroundStyle(palette.ink.color)
             .accessibilityHidden(true)
             .paperTextSize()
+        }
+    }
+}
+
+/// The label row under a route (FlightPath.tsx PathFrame: flex flex-wrap justify-between gap-x-8, each label
+/// whitespace-nowrap, the right one ml-auto): the labels side by side at the row's ends while both fit with 8 between
+/// them, otherwise each whole on its own line, the right one kept to the right. A label wider than the row on its own
+/// wraps inside the row's width, so it never clips.
+struct RouteLabelRow: Layout {
+    /// Each label's size and place in a row `width` wide, from the labels' sizes on one line.
+    static func frames(_ sizes: [CGSize], width: Double) -> [CGRect] {
+        guard let first = sizes.first else { return [] }
+        guard sizes.count > 1 else { return [CGRect(origin: .zero, size: first)] }
+        let second = sizes[1]
+        if first.width + Tokens.Space.s8 + second.width <= width {
+            return [CGRect(origin: .zero, size: first), CGRect(x: width - second.width, y: 0, width: second.width, height: second.height)]
+        }
+        return [CGRect(origin: .zero, size: first),
+                CGRect(x: max(0, width - second.width), y: first.height, width: second.width, height: second.height)]
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let width = proposal.width ?? (ideal.map(\.width).reduce(0, +) + Tokens.Space.s8 * Double(max(0, ideal.count - 1)))
+        let frames = Self.frames(sizes(subviews, ideal: ideal, width: width), width: width)
+        return CGSize(width: width, height: frames.map(\.maxY).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let frames = Self.frames(sizes(subviews, ideal: ideal, width: bounds.width), width: bounds.width)
+        for (subview, frame) in zip(subviews, frames) {
+            subview.place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY), proposal: ProposedViewSize(frame.size))
+        }
+    }
+
+    /// A label on one line, or wrapped to the row's width when that line is wider than the row.
+    private func sizes(_ subviews: Subviews, ideal: [CGSize], width: Double) -> [CGSize] {
+        zip(subviews, ideal).map { subview, size in
+            size.width <= width ? size : subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
         }
     }
 }

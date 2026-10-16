@@ -68,6 +68,37 @@ import UIKit
         #expect(dot, "\(map.at(18, 40)) at 4 left of the start dot's centre")
     }
 
+    /// Step 52 review: the label row wraps as the web's (PathFrame: flex-wrap, justify-between, gap-x 8, each label
+    /// whitespace-nowrap): when the two labels do not fit side by side, each stays whole on its own line and the right
+    /// one keeps to the right on the second. The app broke each label inside itself ("0 correct ·" over "0 wrong") or
+    /// ran the two together (largest text size, pairs p2 to p4, lives-p2 and the result headers).
+    @Test func theLabelsWrapWholeOntoTheirOwnLines() {
+        let left = Text("Card ") + Text("1").bold() + Text(" of 10")
+        let right = Text("0 correct · 0 wrong")
+        func width(_ text: Text) -> Double {
+            UIHostingController(rootView: text.typeRole(Tokens.TypeRole.routeLabel).fixedSize().environment(\.dynamicTypeSize, .xxLarge))
+                .sizeThatFits(in: CGSize(width: 1000, height: 1000)).width
+        }
+        let (w1, w2) = (width(left), width(right))
+        let frame = max(w1, w2) + 30
+        #expect(w1 + 8 + w2 > frame, "the labels \(w1) and \(w2) fit \(frame) side by side")
+        let header = HeaderFrame(label: "Card 1 of 10.", left: left, right: right) { Color.clear }
+            .environment(\.dynamicTypeSize, .accessibility5)
+        let map = Bitmap(header.frame(width: frame, height: 120, alignment: .top).background(Color.white), width: frame, height: 120)
+        let line = Tokens.TypeRole.routeLabel.points(at: .xxLarge) * Tokens.TypeRole.routeLabel.lineHeight
+        func ink(_ y0: Double, _ y1: Double) -> (Double, Double) {
+            var xs: [Double] = []
+            for y in stride(from: y0, to: y1, by: 0.5) {
+                for x in stride(from: 0.0, to: frame, by: 0.5) where map.at(x, y)[0] < 128 { xs.append(x) }
+            }
+            return (xs.min() ?? -1, xs.max() ?? -1)
+        }
+        let first = ink(36, 36 + line)
+        let second = ink(36 + line, 36 + 2 * line)
+        #expect(first.0 <= 2 && first.1 <= w1 + 1, "the first line's ink spans \(first), the left label is \(w1) wide")
+        #expect(second.0 >= frame - w2 - 1 && second.1 >= frame - 3, "the second line's ink spans \(second), the right label is \(w2) wide")
+    }
+
     @Test func theHeaderIsAsTallAsTheDrawingAndOneLabelLine() {
         // PathFrame: 34 + 2 + one line of the route label role (11 at 1.27).
         let header = HeaderFrame(label: "Card 1 of 10.", left: Text("Card 1 of 10"), right: Text("0 correct · 0 wrong")) { Color.clear }
