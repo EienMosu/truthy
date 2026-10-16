@@ -31,7 +31,10 @@ class ScreenReaderTest {
 
     @Before fun firstLaunch() = Device.reset()
 
+    // Each node is read again from the app: below API 34 the client's node cache can keep a live region's old text,
+    // since Compose sends no change event while no screen reader is on.
     private fun find(root: AccessibilityNodeInfo, matches: (String) -> Boolean): AccessibilityNodeInfo? {
+        if (!root.refresh()) return null
         val said = root.contentDescription?.toString() ?: root.text?.toString()
         if (said != null && matches(said)) return root
         for (i in 0 until root.childCount) {
